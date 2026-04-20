@@ -32,6 +32,18 @@ export const fetchHostDashboard = createAsyncThunk<
     return res.data?.data || {};
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {
+      if (!err.response) {
+        return rejectWithValue(
+          "Unable to reach host backend service. Please verify API server is running."
+        );
+      }
+
+      if (err.response.status === 404) {
+        return rejectWithValue(
+          "Host dashboard endpoint is not available on current backend."
+        );
+      }
+
       return rejectWithValue(
         err.response?.data?.message || "Failed to fetch host dashboard"
       );

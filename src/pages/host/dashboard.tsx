@@ -1,7 +1,8 @@
 import { useEffect } from "react";
-import { Alert, Box, Paper, Stack, Typography } from "@mui/material";
+import { Alert, AlertTitle, Box, Button, Paper, Stack, Typography } from "@mui/material";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { fetchHostDashboard } from "../../features/host/hostDashboard.slice";
+import { API_BASE_URL } from "../../configs/apiConfigs";
 
 const KPI_CARDS = [
     { label: "This Month Earnings", value: "INR 0" },
@@ -13,6 +14,13 @@ const KPI_CARDS = [
 export default function HostDashboard() {
     const dispatch = useAppDispatch();
     const { data, loading, error } = useAppSelector((state) => state.hostDashboard);
+
+    const isConnectivityIssue =
+        Boolean(error) && /unable to reach|network|failed to fetch|connect/i.test(error || "");
+
+    const handleRetry = () => {
+        dispatch(fetchHostDashboard());
+    };
 
     useEffect(() => {
         dispatch(fetchHostDashboard());
@@ -39,7 +47,24 @@ export default function HostDashboard() {
 
     return (
         <Stack spacing={3}>
-            {error && <Alert severity="warning">{error}</Alert>}
+            {error && (
+                <Alert
+                    severity="warning"
+                    action={
+                        <Button color="inherit" size="small" onClick={handleRetry}>
+                            Retry
+                        </Button>
+                    }
+                >
+                    <AlertTitle>Host dashboard data unavailable</AlertTitle>
+                    <Typography variant="body2">{error}</Typography>
+                    {isConnectivityIssue && (
+                        <Typography variant="caption" sx={{ display: "block", mt: 0.5 }}>
+                            Check backend availability and API base URL: {API_BASE_URL}
+                        </Typography>
+                    )}
+                </Alert>
+            )}
 
             <Box>
                 <Typography variant="h5" fontWeight={700} color="#111827">

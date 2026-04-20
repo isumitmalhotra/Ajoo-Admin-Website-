@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import {
   Alert,
+  AlertTitle,
   Box,
   Button,
   Chip,
@@ -18,6 +19,7 @@ import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
   fetchHostBookings,
   type HostBooking,
+  type HostBookingsFilters,
   resetHostBookingsFilters,
   setHostBookingsFilters,
 } from "../../features/host/hostBookings.slice";
@@ -25,6 +27,11 @@ import { Pagination } from "../../components";
 import { useState } from "react";
 import api from "../../services/api";
 import { ADMINENDPOINTS } from "../../services/endpoints";
+import { useSearchParams } from "react-router-dom";
+import { API_BASE_URL } from "../../configs/apiConfigs";
+
+type SortBy = "created_at" | "check_in" | "amount" | "status";
+type SortOrder = "asc" | "desc";
 
 const statusChipColor = (
   status: string
@@ -96,34 +103,173 @@ export default function HostBookings() {
   const { data, loading, error, totalPages, currentPage, filters } = useAppSelector(
     (state) => state.hostBookings
   );
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedBooking, setSelectedBooking] = useState<HostBooking | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [pageSize, setPageSize] = useState(10);
+  const [sortBy, setSortBy] = useState<SortBy>("created_at");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
-  const loadPage = (page: number) => {
+  const isConnectivityIssue =
+    Boolean(error) && /unable to reach|network|failed to fetch|connect/i.test(error || "");
+
+  const updateUrlState = (
+    page: number,
+    currentFilters: HostBookingsFilters,
+    currentPageSize: number,
+    currentSortBy: SortBy,
+    currentSortOrder: SortOrder
+  ) => {
+    const nextParams = new URLSearchParams();
+    nextParams.set("page", String(page));
+    nextParams.set("limit", String(currentPageSize));
+    nextParams.set("sortBy", currentSortBy);
+    nextParams.set("sortOrder", currentSortOrder);
+
+    if (currentFilters.search) nextParams.set("search", currentFilters.search);
+    if (currentFilters.status) nextParams.set("status", currentFilters.status);
+    if (currentFilters.dateFrom) nextParams.set("dateFrom", currentFilters.dateFrom);
+    if (currentFilters.dateTo) nextParams.set("dateTo", currentFilters.dateTo);
+
+    setSearchParams(nextParams, { replace: true });
+  };
+
+  const loadPage = (
+    page: number,
+    options?: {
+      nextFilters?: HostBookingsFilters;
+      nextPageSize?: number;
+      nextSortBy?: SortBy;
+      nextSortOrder?: SortOrder;
+    }
+  ) => {
+    const resolvedFilters = options?.nextFilters || filters;
+    const resolvedPageSize = options?.nextPageSize || pageSize;
+    const resolvedSortBy = options?.nextSortBy || sortBy;
+    const resolvedSortOrder = options?.nextSortOrder || sortOrder;
+
     dispatch(
       fetchHostBookings({
         page,
-        limit: 10,
-        search: filters.search,
-        status: filters.status,
-        dateFrom: filters.dateFrom,
-        dateTo: filters.dateTo,
+        limit: resolvedPageSize,
+        search: resolvedFilters.search,
+        status: resolvedFilters.status,
+        dateFrom: resolvedFilters.dateFrom,
+        dateTo: resolvedFilters.dateTo,
+        sortBy: resolvedSortBy,
+        sortOrder: resolvedSortOrder,
       })
+    );
+
+    updateUrlState(
+      page,
+      resolvedFilters,
+      resolvedPageSize,
+      resolvedSortBy,
+      resolvedSortOrder
     );
   };
 
   useEffect(() => {
-    loadPage(1);
+    const initialPage = Math.max(Number(searchParams.get("page") || 1), 1);
+    const initialPageSize = Math.max(Number(searchParams.get("limit") || 10), 1);
+    const initialSortBy = (searchParams.get("sortBy") || "created_at") as SortBy;
+    const initialSortOrder = (searchParams.get("sortOrder") || "desc") as SortOrder;
+
+    const initialFilters: HostBookingsFilters = {
+      search: searchParams.get("search") || "",
+      status: searchParams.get("status") || "",
+      dateFrom: searchParams.get("dateFrom") || "",
+      dateTo: searchParams.get("dateTo") || "",
+    };
+
+    setPageSize(initialPageSize);
+    setSortBy(initialSortBy);
+    setSortOrder(initialSortOrder);
+    dispatch(setHostBookingsFilters(initialFilters));
+
+    dispatch(
+      fetchHostBookings({
+        page: initialPage,
+        limit: initialPageSize,
+        search: initialFilters.search,
+        status: initialFilters.status,
+        dateFrom: initialFilters.dateFrom,
+        dateTo: initialFilters.dateTo,
+        sortBy: initialSortBy,
+        sortOrder: initialSortOrder,
+      })
+    );
+
+    updateUrlState(
+      initialPage,
+      initialFilters,
+      initialPageSize,
+      initialSortBy,
+      initialSortOrder
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]);
+
+  const sortedData = useMemo(() => {
+    const rows = [...data];
+    rows.sort((a, b) => {
+      let left: string | number = "";
+      let right: string | number = "";
+
+      if (sortBy === "amount") {
+        left = Number(a.amount || 0);
+        right = Number(b.amount || 0);
+      } else if (sortBy === "status") {
+        left = (a.status || "").toLowerCase();
+        right = (b.status || "").toLowerCase();
+      } else {
+        const leftDate = a[sortBy] ? new Date(String(a[sortBy])).getTime() : 0;
+        const rightDate = b[sortBy] ? new Date(String(b[sortBy])).getTime() : 0;
+        left = leftDate;
+        right = rightDate;
+      }
+
+      if (left < right) return sortOrder === "asc" ? -1 : 1;
+      if (left > right) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return rows;
+  }, [data, sortBy, sortOrder]);
 
   const handleFilter = () => {
     loadPage(1);
   };
 
   const handleReset = () => {
+    const clearedFilters: HostBookingsFilters = {
+      search: "",
+      status: "",
+      dateFrom: "",
+      dateTo: "",
+    };
     dispatch(resetHostBookingsFilters());
-    setTimeout(() => loadPage(1), 0);
+    loadPage(1, { nextFilters: clearedFilters });
+  };
+
+  const handleRetry = () => {
+    loadPage(Math.max(currentPage, 1));
+  };
+
+  const handlePageSizeChange = (value: number) => {
+    setPageSize(value);
+    loadPage(1, { nextPageSize: value });
+  };
+
+  const handleSortByChange = (value: SortBy) => {
+    setSortBy(value);
+    loadPage(1, { nextSortBy: value });
+  };
+
+  const handleSortOrderChange = (value: SortOrder) => {
+    setSortOrder(value);
+    loadPage(1, { nextSortOrder: value });
   };
 
   const handleExportCsv = async () => {
@@ -254,6 +400,45 @@ export default function HostBookings() {
 
         <TextField
           size="small"
+          select
+          label="Sort By"
+          value={sortBy}
+          onChange={(e) => handleSortByChange(e.target.value as SortBy)}
+          sx={{ minWidth: 150 }}
+        >
+          <MenuItem value="created_at">Created At</MenuItem>
+          <MenuItem value="check_in">Check-in</MenuItem>
+          <MenuItem value="amount">Amount</MenuItem>
+          <MenuItem value="status">Status</MenuItem>
+        </TextField>
+
+        <TextField
+          size="small"
+          select
+          label="Order"
+          value={sortOrder}
+          onChange={(e) => handleSortOrderChange(e.target.value as SortOrder)}
+          sx={{ minWidth: 120 }}
+        >
+          <MenuItem value="desc">Desc</MenuItem>
+          <MenuItem value="asc">Asc</MenuItem>
+        </TextField>
+
+        <TextField
+          size="small"
+          select
+          label="Page Size"
+          value={String(pageSize)}
+          onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+          sx={{ minWidth: 130 }}
+        >
+          <MenuItem value="10">10</MenuItem>
+          <MenuItem value="25">25</MenuItem>
+          <MenuItem value="50">50</MenuItem>
+        </TextField>
+
+        <TextField
+          size="small"
           type="date"
           label="From"
           value={filters.dateFrom}
@@ -283,8 +468,22 @@ export default function HostBookings() {
       </Stack>
 
       {error && (
-        <Alert sx={{ mt: 2 }} severity="warning">
-          {error}
+        <Alert
+          sx={{ mt: 2 }}
+          severity="warning"
+          action={
+            <Button color="inherit" size="small" onClick={handleRetry}>
+              Retry
+            </Button>
+          }
+        >
+          <AlertTitle>Host bookings data unavailable</AlertTitle>
+          <Typography variant="body2">{error}</Typography>
+          {isConnectivityIssue && (
+            <Typography variant="caption" sx={{ display: "block", mt: 0.5 }}>
+              Check backend availability and API base URL: {API_BASE_URL}
+            </Typography>
+          )}
         </Alert>
       )}
 
@@ -320,7 +519,7 @@ export default function HostBookings() {
               </tr>
             </thead>
             <tbody>
-              {data.map((booking) => (
+              {sortedData.map((booking) => (
                 <tr key={booking.booking_id}>
                   <td style={{ padding: "10px", borderBottom: "1px solid #f3f4f6" }}>
                     #{booking.booking_id}

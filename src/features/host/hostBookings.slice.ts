@@ -60,6 +60,8 @@ export const fetchHostBookings = createAsyncThunk<
     status?: string;
     dateFrom?: string;
     dateTo?: string;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
   } | undefined,
   { rejectValue: string }
 >("hostBookings/fetch", async (payload, { rejectWithValue }) => {
@@ -71,6 +73,8 @@ export const fetchHostBookings = createAsyncThunk<
       status: payload?.status || "",
       dateFrom: payload?.dateFrom || "",
       dateTo: payload?.dateTo || "",
+      sortBy: payload?.sortBy || "created_at",
+      sortOrder: payload?.sortOrder || "desc",
     });
 
     const dataNode = res.data?.data || {};
@@ -88,6 +92,18 @@ export const fetchHostBookings = createAsyncThunk<
     };
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {
+      if (!err.response) {
+        return rejectWithValue(
+          "Unable to reach host backend service. Please verify API server is running."
+        );
+      }
+
+      if (err.response.status === 404) {
+        return rejectWithValue(
+          "Host bookings endpoint is not available on current backend."
+        );
+      }
+
       return rejectWithValue(
         err.response?.data?.message || "Failed to fetch host bookings"
       );
