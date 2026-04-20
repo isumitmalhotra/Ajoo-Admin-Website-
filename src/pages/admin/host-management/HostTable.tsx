@@ -34,6 +34,7 @@ export interface HostTableRow {
   email: string;
   propertyCount: number;
   isVerified: boolean;
+  kycStatus: "verified" | "pending" | "rejected";
   isActive: boolean;
   addedAt: string;
 }

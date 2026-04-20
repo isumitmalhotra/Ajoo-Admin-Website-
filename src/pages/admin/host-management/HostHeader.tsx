@@ -15,13 +15,19 @@ const COLORS = {
 interface HostHeaderProps {
   searchTerm: string;
   status: 1 | 0 | null;
-  onSearch: (search: string, status: 1 | 0 | null) => void;
+  kycStatus: "all" | "verified" | "pending" | "rejected";
+  onSearch: (
+    search: string,
+    status: 1 | 0 | null,
+    kycStatus: "all" | "verified" | "pending" | "rejected"
+  ) => void;
   onAdd: () => void;
 }
 
 export const HostHeader = ({
   searchTerm,
   status,
+  kycStatus,
   onSearch,
   onAdd,
 }: HostHeaderProps) => {
@@ -35,7 +41,7 @@ export const HostHeader = ({
   /* ================= HANDLERS ================= */
 
   const handleSearch = () => {
-    onSearch(localSearch, status);
+    onSearch(localSearch, status, kycStatus);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -47,12 +53,16 @@ export const HostHeader = ({
   const toggleStatus = (value: 1 | 0) => {
     // deselect if clicked again
     const newStatus = status === value ? null : value;
-    onSearch(localSearch, newStatus);
+    onSearch(localSearch, newStatus, kycStatus);
+  };
+
+  const applyKycStatus = (value: "all" | "verified" | "pending" | "rejected") => {
+    onSearch(localSearch, status, value);
   };
 
   const handleClear = () => {
     setLocalSearch("");
-    onSearch("", null);
+    onSearch("", null, "all");
   };
 
   /* ================= RENDER ================= */
@@ -161,6 +171,70 @@ export const HostHeader = ({
             }}
           >
             Inactive
+          </Button>
+        </Stack>
+
+        {/* KYC Filters */}
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant={kycStatus === "all" ? "contained" : "outlined"}
+            onClick={() => applyKycStatus("all")}
+            sx={{
+              minWidth: 72,
+              backgroundColor: kycStatus === "all" ? COLORS.primary : "transparent",
+              borderColor: COLORS.primary,
+              color: kycStatus === "all" ? "#fff" : COLORS.primary,
+              "&:hover": {
+                backgroundColor: kycStatus === "all" ? COLORS.primary : "#f5e9fb",
+              },
+            }}
+          >
+            KYC All
+          </Button>
+          <Button
+            variant={kycStatus === "verified" ? "contained" : "outlined"}
+            onClick={() => applyKycStatus("verified")}
+            sx={{
+              minWidth: 96,
+              backgroundColor: kycStatus === "verified" ? "#2e7d32" : "transparent",
+              borderColor: "#2e7d32",
+              color: kycStatus === "verified" ? "#fff" : "#2e7d32",
+              "&:hover": {
+                backgroundColor: kycStatus === "verified" ? "#2e7d32" : "#e8f5e9",
+              },
+            }}
+          >
+            Verified
+          </Button>
+          <Button
+            variant={kycStatus === "pending" ? "contained" : "outlined"}
+            onClick={() => applyKycStatus("pending")}
+            sx={{
+              minWidth: 92,
+              backgroundColor: kycStatus === "pending" ? "#ed6c02" : "transparent",
+              borderColor: "#ed6c02",
+              color: kycStatus === "pending" ? "#fff" : "#ed6c02",
+              "&:hover": {
+                backgroundColor: kycStatus === "pending" ? "#ed6c02" : "#fff3e0",
+              },
+            }}
+          >
+            Pending
+          </Button>
+          <Button
+            variant={kycStatus === "rejected" ? "contained" : "outlined"}
+            onClick={() => applyKycStatus("rejected")}
+            sx={{
+              minWidth: 96,
+              backgroundColor: kycStatus === "rejected" ? "#d32f2f" : "transparent",
+              borderColor: "#d32f2f",
+              color: kycStatus === "rejected" ? "#fff" : "#d32f2f",
+              "&:hover": {
+                backgroundColor: kycStatus === "rejected" ? "#d32f2f" : "#ffebee",
+              },
+            }}
+          >
+            Rejected
           </Button>
         </Stack>
 

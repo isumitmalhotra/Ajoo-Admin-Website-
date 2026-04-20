@@ -25,6 +25,9 @@ export default function HostManagementPage() {
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<1 | 0 | null>(null);
+  const [kycStatus, setKycStatus] = useState<
+    "all" | "verified" | "pending" | "rejected"
+  >("all");
 
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -96,10 +99,15 @@ export default function HostManagementPage() {
     }
   };
 
-  const handleSearch = (searchValue: string, statusValue: 1 | 0 | null) => {
+  const handleSearch = (
+    searchValue: string,
+    statusValue: 1 | 0 | null,
+    kycStatusValue: "all" | "verified" | "pending" | "rejected"
+  ) => {
     setPage(0); // reset pagination
     setSearch(searchValue);
     setStatus(statusValue);
+    setKycStatus(kycStatusValue);
   };
   const handleDeleteHost = (host: HostTableRow) => {
     setDeleteUserId(host.id);
@@ -109,17 +117,35 @@ export default function HostManagementPage() {
   /* ================= TABLE DATA ================= */
 
   const tableHosts: HostTableRow[] = useMemo(
-    () =>
-      hosts.map((h) => ({
+    () => {
+      const rows = hosts.map((h) => {
+        const rawKycStatus = String(h.userKycDocs?.ud_status || "").toLowerCase();
+        const derivedKycStatus: "verified" | "pending" | "rejected" =
+          h.user_isVerified === 1
+            ? "verified"
+            : rawKycStatus.includes("reject")
+            ? "rejected"
+            : "pending";
+
+        return {
         id: h.user_id,
         name: h.user_fullName,
         email: h.userCred?.cred_user_email ?? "-",
         addedAt: new Date(h.added_at).toLocaleDateString(),
         isActive: h.user_isActive === 1,
         isVerified: h.user_isVerified === 1,
+        kycStatus: derivedKycStatus,
         propertyCount: h.propertyCount ?? 0,
-      })),
-    [hosts]
+      };
+      });
+
+      if (kycStatus === "all") {
+        return rows;
+      }
+
+      return rows.filter((row) => row.kycStatus === kycStatus);
+    },
+    [hosts, kycStatus]
   );
 
   /* ================= RENDER ================= */
@@ -130,6 +156,7 @@ export default function HostManagementPage() {
         <HostHeader
           searchTerm={search}
           status={status}
+          kycStatus={kycStatus}
           onSearch={handleSearch} 
           onAdd={handleAddHost}
         />

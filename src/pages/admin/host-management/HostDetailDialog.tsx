@@ -41,6 +41,7 @@ export default function HostDetailDialog({
   const { data, loading, error, actionLoading, actionError, actionSuccess } =
     useAppSelector((state) => state.hostDetail);
   const [rejectReason, setRejectReason] = useState("");
+  const [actionLogs, setActionLogs] = useState<string[]>([]);
 
   useEffect(() => {
     if (open && host?.id) {
@@ -55,6 +56,7 @@ export default function HostDetailDialog({
   useEffect(() => {
     if (!open) {
       setRejectReason("");
+      setActionLogs([]);
       dispatch(resetHostDetail());
     }
   }, [dispatch, open]);
@@ -80,8 +82,15 @@ export default function HostDetailDialog({
     if (!host?.id) return;
 
     const res = await dispatch(approveHostKyc({ hostId: host.id }));
-    if (approveHostKyc.fulfilled.match(res) && onActionComplete) {
-      onActionComplete();
+    if (approveHostKyc.fulfilled.match(res)) {
+      setActionLogs((prev) => [
+        `${new Date().toLocaleString()}: KYC approved`,
+        ...prev,
+      ]);
+
+      if (onActionComplete) {
+        onActionComplete();
+      }
     }
   };
 
@@ -92,6 +101,10 @@ export default function HostDetailDialog({
       rejectHostKyc({ hostId: host.id, reason: rejectReason.trim() })
     );
     if (rejectHostKyc.fulfilled.match(res)) {
+      setActionLogs((prev) => [
+        `${new Date().toLocaleString()}: KYC rejected - ${rejectReason.trim()}`,
+        ...prev,
+      ]);
       setRejectReason("");
       if (onActionComplete) {
         onActionComplete();
@@ -180,6 +193,51 @@ export default function HostDetailDialog({
             </Typography>
           </Box>
 
+          <Box>
+            <Typography variant="overline" color="text.secondary">
+              KYC Document Preview
+            </Typography>
+            {detail?.kycDocumentImage?.url ? (
+              <Box
+                component="img"
+                src={detail.kycDocumentImage.url}
+                alt="Host KYC document"
+                sx={{
+                  mt: 1,
+                  width: "100%",
+                  maxHeight: 220,
+                  objectFit: "contain",
+                  borderRadius: 1,
+                  border: "1px solid #e5e7eb",
+                  p: 1,
+                }}
+              />
+            ) : (
+              <Typography variant="body2">No KYC document image available</Typography>
+            )}
+          </Box>
+
+          {detail?.profileImage?.url && (
+            <Box>
+              <Typography variant="overline" color="text.secondary">
+                Profile Image
+              </Typography>
+              <Box
+                component="img"
+                src={detail.profileImage.url}
+                alt="Host profile"
+                sx={{
+                  mt: 1,
+                  width: 96,
+                  height: 96,
+                  objectFit: "cover",
+                  borderRadius: "50%",
+                  border: "1px solid #e5e7eb",
+                }}
+              />
+            </Box>
+          )}
+
           <Stack direction="row" spacing={1}>
             <Chip
               size="small"
@@ -213,10 +271,12 @@ export default function HostDetailDialog({
             <TextField
               size="small"
               fullWidth
-              placeholder="Rejection reason"
+              required
+              label="Rejection reason"
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               disabled={actionLoading}
+              helperText="Reason is required for KYC rejection"
             />
             <Button
               variant="outlined"
@@ -227,6 +287,25 @@ export default function HostDetailDialog({
               Reject KYC
             </Button>
           </Stack>
+
+          <Divider />
+
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary" mb={1}>
+              Action Audit Trail
+            </Typography>
+            {actionLogs.length === 0 ? (
+              <Typography variant="body2">No actions recorded in this session.</Typography>
+            ) : (
+              <Stack spacing={0.5}>
+                {actionLogs.map((log, index) => (
+                  <Typography key={`${log}-${index}`} variant="caption" color="text.secondary">
+                    {log}
+                  </Typography>
+                ))}
+              </Stack>
+            )}
+          </Box>
         </Stack>
         )}
       </DialogContent>

@@ -6,36 +6,86 @@ import { ADMINENDPOINTS } from "../../services/endpoints";
 interface HostBooking {
   booking_id: number;
   property_name?: string;
+  guest_name?: string;
   check_in?: string;
   check_out?: string;
+  amount?: number;
   status?: string;
+  created_at?: string;
+}
+
+interface HostBookingsFilters {
+  search: string;
+  status: string;
+  dateFrom: string;
+  dateTo: string;
 }
 
 interface HostBookingsState {
   data: HostBooking[];
   loading: boolean;
   error: string | null;
+  totalPages: number;
+  currentPage: number;
+  totalRecords: number;
+  filters: HostBookingsFilters;
 }
 
 const initialState: HostBookingsState = {
   data: [],
   loading: false,
   error: null,
+  totalPages: 1,
+  currentPage: 1,
+  totalRecords: 0,
+  filters: {
+    search: "",
+    status: "",
+    dateFrom: "",
+    dateTo: "",
+  },
 };
 
 export const fetchHostBookings = createAsyncThunk<
-  HostBooking[],
-  { page?: number; limit?: number } | undefined,
+  {
+    rows: HostBooking[];
+    totalPages: number;
+    currentPage: number;
+    totalRecords: number;
+  },
+  {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  } | undefined,
   { rejectValue: string }
 >("hostBookings/fetch", async (payload, { rejectWithValue }) => {
   try {
     const res = await api.post(ADMINENDPOINTS.HOST_PORTAL_BOOKINGS, {
       page: payload?.page || 1,
       limit: payload?.limit || 10,
+      search: payload?.search || "",
+      status: payload?.status || "",
+      dateFrom: payload?.dateFrom || "",
+      dateTo: payload?.dateTo || "",
     });
 
-    const rows = res.data?.data?.data || res.data?.data || [];
-    return Array.isArray(rows) ? rows : [];
+    const dataNode = res.data?.data || {};
+    const rows = Array.isArray(dataNode?.data)
+      ? dataNode.data
+      : Array.isArray(dataNode)
+      ? dataNode
+      : [];
+
+    return {
+      rows,
+      totalPages: Number(dataNode?.totalPages || 1),
+      currentPage: Number(dataNode?.currentPage || payload?.page || 1),
+      totalRecords: Number(dataNode?.totalRecords || rows.length || 0),
+    };
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {
       return rejectWithValue(
@@ -50,7 +100,17 @@ export const fetchHostBookings = createAsyncThunk<
 const hostBookingsSlice = createSlice({
   name: "hostBookings",
   initialState,
-  reducers: {},
+  reducers: {
+    setHostBookingsFilters(state, action) {
+      state.filters = {
+        ...state.filters,
+        ...action.payload,
+      };
+    },
+    resetHostBookingsFilters(state) {
+      state.filters = initialState.filters;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchHostBookings.pending, (state) => {
@@ -59,7 +119,10 @@ const hostBookingsSlice = createSlice({
       })
       .addCase(fetchHostBookings.fulfilled, (state, action) => {
         state.loading = false;
-        state.data = action.payload;
+        state.data = action.payload.rows;
+        state.totalPages = action.payload.totalPages;
+        state.currentPage = action.payload.currentPage;
+        state.totalRecords = action.payload.totalRecords;
       })
       .addCase(fetchHostBookings.rejected, (state, action) => {
         state.loading = false;
@@ -68,4 +131,6 @@ const hostBookingsSlice = createSlice({
   },
 });
 
+export const { setHostBookingsFilters, resetHostBookingsFilters } =
+  hostBookingsSlice.actions;
 export default hostBookingsSlice.reducer;
