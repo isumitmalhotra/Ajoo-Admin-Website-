@@ -3,7 +3,7 @@ import axios from "axios";
 import api from "../../services/api";
 import { ADMINENDPOINTS } from "../../services/endpoints";
 
-interface HostBooking {
+export interface HostBooking {
   booking_id: number;
   property_name?: string;
   guest_name?: string;
@@ -14,7 +14,7 @@ interface HostBooking {
   created_at?: string;
 }
 
-interface HostBookingsFilters {
+export interface HostBookingsFilters {
   search: string;
   status: string;
   dateFrom: string;

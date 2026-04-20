@@ -24,6 +24,75 @@ import {
 } from "../../../features/admin/userManagement/hostDetail.slice";
 import type { HostTableRow } from "./HostTable";
 
+interface KycAuditEntry {
+  action: string;
+  timestamp: string | null;
+  actor: string;
+  note: string;
+}
+
+const asArray = (value: unknown): any[] => {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+};
+
+const extractKycAuditTrail = (detail: any): KycAuditEntry[] => {
+  const candidates = [
+    detail?.kycAuditTrail,
+    detail?.kyc_audit_trail,
+    detail?.kycTimeline,
+    detail?.auditTrail,
+    detail?.auditLogs,
+    detail?.userKycDocs?.auditTrail,
+    detail?.userKycDocs?.timeline,
+    detail?.userKycDocs?.history,
+  ];
+
+  const source = candidates.map(asArray).find((rows) => rows.length > 0) || [];
+
+  return source
+    .map((entry: any) => ({
+      action: String(
+        entry?.action ||
+          entry?.event ||
+          entry?.status ||
+          entry?.ud_status ||
+          "KYC updated"
+      ),
+      timestamp:
+        entry?.createdAt ||
+        entry?.created_at ||
+        entry?.timestamp ||
+        entry?.time ||
+        entry?.actionAt ||
+        entry?.updated_at ||
+        null,
+      actor: String(
+        entry?.adminName ||
+          entry?.actor ||
+          entry?.by ||
+          entry?.updated_by ||
+          entry?.created_by ||
+          "System"
+      ),
+      note: String(entry?.note || entry?.reason || entry?.remark || entry?.comments || ""),
+    }))
+    .sort((a, b) => {
+      const aTime = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+      const bTime = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+      return bTime - aTime;
+    });
+};
+
 interface HostDetailDialogProps {
   open: boolean;
   host: HostTableRow | null;
@@ -41,7 +110,6 @@ export default function HostDetailDialog({
   const { data, loading, error, actionLoading, actionError, actionSuccess } =
     useAppSelector((state) => state.hostDetail);
   const [rejectReason, setRejectReason] = useState("");
-  const [actionLogs, setActionLogs] = useState<string[]>([]);
 
   useEffect(() => {
     if (open && host?.id) {
@@ -56,7 +124,6 @@ export default function HostDetailDialog({
   useEffect(() => {
     if (!open) {
       setRejectReason("");
-      setActionLogs([]);
       dispatch(resetHostDetail());
     }
   }, [dispatch, open]);
@@ -76,6 +143,8 @@ export default function HostDetailDialog({
     }
   }, [detail?.added_at, host?.addedAt]);
 
+  const auditTrail = useMemo(() => extractKycAuditTrail(detail), [detail]);
+
   if (!host) return null;
 
   const handleApprove = async () => {
@@ -83,10 +152,7 @@ export default function HostDetailDialog({
 
     const res = await dispatch(approveHostKyc({ hostId: host.id }));
     if (approveHostKyc.fulfilled.match(res)) {
-      setActionLogs((prev) => [
-        `${new Date().toLocaleString()}: KYC approved`,
-        ...prev,
-      ]);
+      await dispatch(fetchHostDetail(host.id));
 
       if (onActionComplete) {
         onActionComplete();
@@ -101,10 +167,7 @@ export default function HostDetailDialog({
       rejectHostKyc({ hostId: host.id, reason: rejectReason.trim() })
     );
     if (rejectHostKyc.fulfilled.match(res)) {
-      setActionLogs((prev) => [
-        `${new Date().toLocaleString()}: KYC rejected - ${rejectReason.trim()}`,
-        ...prev,
-      ]);
+      await dispatch(fetchHostDetail(host.id));
       setRejectReason("");
       if (onActionComplete) {
         onActionComplete();
@@ -294,13 +357,19 @@ export default function HostDetailDialog({
             <Typography variant="subtitle2" color="text.secondary" mb={1}>
               Action Audit Trail
             </Typography>
-            {actionLogs.length === 0 ? (
-              <Typography variant="body2">No actions recorded in this session.</Typography>
+            {auditTrail.length === 0 ? (
+              <Typography variant="body2">
+                No backend audit entries found for this host KYC yet.
+              </Typography>
             ) : (
               <Stack spacing={0.5}>
-                {actionLogs.map((log, index) => (
-                  <Typography key={`${log}-${index}`} variant="caption" color="text.secondary">
-                    {log}
+                {auditTrail.map((entry, index) => (
+                  <Typography
+                    key={`${entry.action}-${entry.timestamp || index}-${index}`}
+                    variant="caption"
+                    color="text.secondary"
+                  >
+                    {`${entry.timestamp ? new Date(entry.timestamp).toLocaleString() : "Time unavailable"} | ${entry.action} | ${entry.actor}${entry.note ? ` | ${entry.note}` : ""}`}
                   </Typography>
                 ))}
               </Stack>

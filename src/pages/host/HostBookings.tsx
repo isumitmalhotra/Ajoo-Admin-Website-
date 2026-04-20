@@ -3,6 +3,7 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -16,18 +17,45 @@ import {
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
   fetchHostBookings,
+  type HostBooking,
   resetHostBookingsFilters,
   setHostBookingsFilters,
 } from "../../features/host/hostBookings.slice";
 import { Pagination } from "../../components";
 import { useState } from "react";
 
+const statusChipColor = (
+  status: string
+): "success" | "warning" | "error" | "info" | "default" => {
+  const normalized = status.toLowerCase();
+  if (normalized === "completed") return "success";
+  if (normalized === "confirmed") return "info";
+  if (normalized === "pending") return "warning";
+  if (normalized === "cancelled") return "error";
+  return "default";
+};
+
+const statusLabel = (status?: string) => {
+  if (!status) return "Unknown";
+  return status
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+const csvEscape = (value: unknown) => {
+  const text = String(value ?? "");
+  const needsQuote = text.includes(",") || text.includes("\"") || text.includes("\n");
+  const escaped = text.replace(/\"/g, "\"\"");
+  return needsQuote ? `"${escaped}"` : escaped;
+};
+
 export default function HostBookings() {
   const dispatch = useAppDispatch();
   const { data, loading, error, totalPages, currentPage, filters } = useAppSelector(
     (state) => state.hostBookings
   );
-  const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<HostBooking | null>(null);
 
   const loadPage = (page: number) => {
     dispatch(
@@ -56,11 +84,68 @@ export default function HostBookings() {
     setTimeout(() => loadPage(1), 0);
   };
 
+  const handleExportCsv = () => {
+    if (data.length === 0) return;
+
+    const headers = [
+      "booking_id",
+      "property_name",
+      "guest_name",
+      "check_in",
+      "check_out",
+      "amount",
+      "status",
+      "created_at",
+    ];
+
+    const rows = data.map((booking) => [
+      booking.booking_id,
+      booking.property_name || "",
+      booking.guest_name || "",
+      booking.check_in || "",
+      booking.check_out || "",
+      booking.amount ?? 0,
+      booking.status || "",
+      booking.created_at || "",
+    ]);
+
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell) => csvEscape(cell)).join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `host-bookings-page-${currentPage}-${new Date()
+      .toISOString()
+      .slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Paper sx={{ p: 3, borderRadius: 2 }} elevation={0}>
-      <Typography variant="h6" fontWeight={700}>
-        Host Bookings
-      </Typography>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={1}
+        alignItems={{ xs: "flex-start", sm: "center" }}
+        justifyContent="space-between"
+      >
+        <Box>
+          <Typography variant="h6" fontWeight={700}>
+            Host Bookings
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Showing page {currentPage} of {Math.max(totalPages, 1)}
+          </Typography>
+        </Box>
+        <Button variant="outlined" onClick={handleExportCsv} disabled={data.length === 0}>
+          Export CSV
+        </Button>
+      </Stack>
 
       <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} mt={2}>
         <TextField
@@ -158,7 +243,7 @@ export default function HostBookings() {
               </tr>
             </thead>
             <tbody>
-              {data.map((booking: any) => (
+              {data.map((booking) => (
                 <tr key={booking.booking_id}>
                   <td style={{ padding: "10px", borderBottom: "1px solid #f3f4f6" }}>
                     #{booking.booking_id}
@@ -179,7 +264,12 @@ export default function HostBookings() {
                     INR {booking.amount ?? 0}
                   </td>
                   <td style={{ padding: "10px", borderBottom: "1px solid #f3f4f6" }}>
-                    {booking.status || "-"}
+                    <Chip
+                      size="small"
+                      label={statusLabel(booking.status)}
+                      color={statusChipColor(booking.status || "")}
+                      variant="outlined"
+                    />
                   </td>
                   <td style={{ padding: "10px", borderBottom: "1px solid #f3f4f6" }}>
                     <Button
@@ -218,7 +308,15 @@ export default function HostBookings() {
               <Typography><strong>ID:</strong> #{selectedBooking.booking_id}</Typography>
               <Typography><strong>Property:</strong> {selectedBooking.property_name || "-"}</Typography>
               <Typography><strong>Guest:</strong> {selectedBooking.guest_name || "-"}</Typography>
-              <Typography><strong>Status:</strong> {selectedBooking.status || "-"}</Typography>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Typography><strong>Status:</strong></Typography>
+                <Chip
+                  size="small"
+                  label={statusLabel(selectedBooking.status)}
+                  color={statusChipColor(selectedBooking.status || "")}
+                  variant="outlined"
+                />
+              </Stack>
               <Typography>
                 <strong>Check-in:</strong> {selectedBooking.check_in ? new Date(selectedBooking.check_in).toLocaleDateString() : "-"}
               </Typography>
