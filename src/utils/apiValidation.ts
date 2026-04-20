@@ -4,23 +4,6 @@
  */
 
 import { ADMINENDPOINTS } from "../services/endpoints";
-import type {
-  LedgerEntry,
-  Payout,
-  PayoutSchedule,
-  Invoice,
-  ReconciliationRecord,
-  FinanceDashboardData,
-  RevenueReportResponse,
-  CommissionReportResponse,
-  TaxReportResponse,
-  CashFlowReportResponse,
-  LedgerListResponse,
-  PayoutListResponse,
-  InvoiceListResponse,
-  ReconciliationListResponse,
-  HostLedgerResponse,
-} from "../pages/admin/finance/types";
 
 // ════════════════════════════════════════════════════════════════════════════
 // VALIDATION RESULT TYPES
@@ -459,7 +442,7 @@ export function validateIntegrationPaths(): ValidationResult[] {
 // HELPER FUNCTIONS
 // ════════════════════════════════════════════════════════════════════════════
 
-function validateResponseStructure(type: string, sample: Record<string, unknown>): boolean {
+function validateResponseStructure(_type: string, sample: Record<string, unknown>): boolean {
   // Basic validation: check if object has expected structure
   // In production, use a schema validator like Zod or JSON Schema
   return sample && Object.keys(sample).length > 0;

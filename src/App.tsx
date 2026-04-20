@@ -68,6 +68,13 @@ import SignupOtpVerification from "./auth/SignupOtpVerification";
 import { ForgotPassword } from "./auth/ForgotPassword";
 import { VerifyOtp } from "./auth/VerifyOtp";
 import { ResetPassword } from "./auth/ResetPassword";
+import HostLayout from "./pages/host/layout/HostLayout";
+import HostDashboard from "./pages/host/dashboard";
+import HostBookings from "./pages/host/HostBookings";
+import HostEarnings from "./pages/host/HostEarnings";
+import HostStatements from "./pages/host/HostStatements";
+import HostProfile from "./pages/host/HostProfile";
+import HostSupport from "./pages/host/HostSupport";
 
 function App() {
   return (
@@ -119,6 +126,16 @@ function App() {
           </Route>
         </Route>
         <Route path="/admin/login" element={<AdminLogin />} />
+
+        <Route path="/host" element={<HostLayout />}>
+          <Route index element={<Navigate to="/host/dashboard" replace />} />
+          <Route path="dashboard" element={<HostDashboard />} />
+          <Route path="bookings" element={<HostBookings />} />
+          <Route path="earnings" element={<HostEarnings />} />
+          <Route path="statements" element={<HostStatements />} />
+          <Route path="profile" element={<HostProfile />} />
+          <Route path="support" element={<HostSupport />} />
+        </Route>
 
         <Route element={<AdminProtectedRoute />}>
           <Route

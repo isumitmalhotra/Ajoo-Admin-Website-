@@ -11,6 +11,8 @@ export const ADMINENDPOINTS = {
   HOST_LIST: "/admin/host/search",
   HOST_STATUS_UPDATE: "/admin/user/update/status",
   HOST_SEARCH_ASSIGN_PROPERTY: "/admin/host/search/assign-property",
+  HOST_KYC_APPROVE: "/admin/host/kyc/approve",
+  HOST_KYC_REJECT: "/admin/host/kyc/reject",
   
   // PROPERTY-CATEGORY
   PROPERTY_CATEGORIES: "admin/categories",
@@ -87,4 +89,10 @@ export const ADMINENDPOINTS = {
   FINANCE_REPORT_TAX: "/admin/finance/reports/tax",
   FINANCE_REPORT_CASHFLOW: "/admin/finance/reports/cashflow",
   FINANCE_REPORT_EXPORT: "/admin/finance/reports/export",
+
+  // ================= HOST PORTAL (HMS FOUNDATION) =================
+  HOST_PORTAL_DASHBOARD: "/host/dashboard/summary",
+  HOST_PORTAL_BOOKINGS: "/host/bookings/search",
+  HOST_PORTAL_EARNINGS: "/host/earnings/summary",
+  HOST_PORTAL_PROFILE: "/host/profile",
 };

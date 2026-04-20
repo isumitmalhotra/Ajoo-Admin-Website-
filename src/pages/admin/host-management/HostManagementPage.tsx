@@ -7,6 +7,7 @@ import { deleteUser } from "../../../features/admin/userManagement/userDelete.sl
 import { HostHeader } from "./HostHeader";
 import { HostTable, HostTableRow } from "./HostTable";
 import CustomSnackbar from "../../../components/admin/snackbar/CustomSnackbar";
+import HostDetailDialog from "./HostDetailDialog";
 
 export default function HostManagementPage() {
   const dispatch = useAppDispatch();
@@ -18,6 +19,8 @@ export default function HostManagementPage() {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
+  const [openHostDetail, setOpenHostDetail] = useState(false);
+  const [selectedHost, setSelectedHost] = useState<HostTableRow | null>(null);
 
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
@@ -80,6 +83,12 @@ export default function HostManagementPage() {
   };
 
   const handleHostAction = (host: HostTableRow, mode: "view" | "edit") => {
+    if (mode === "view") {
+      setSelectedHost(host);
+      setOpenHostDetail(true);
+      return;
+    }
+
     if (mode === "edit") {
       setSelectedUserId(host.id); // 👈 user_id
       setModalMode("edit");
@@ -160,6 +169,16 @@ export default function HostManagementPage() {
         onConfirm={handleConfirmDelete} // 👈 HERE
         title="Delete Host"
         description="Are you sure you want to delete this host?"
+      />
+
+      <HostDetailDialog
+        open={openHostDetail}
+        host={selectedHost}
+        onActionComplete={loadHosts}
+        onClose={() => {
+          setOpenHostDetail(false);
+          setSelectedHost(null);
+        }}
       />
     </>
   );

@@ -27,6 +27,7 @@ import userDeleteReducer from "../features/admin/userManagement/userDelete.slice
 import userAddUpdateReducer from "../features/admin/userManagement/userAddUpdate.slice";
 import userImageDeleteReducer from "../features/admin/userManagement/UserImageDelete.slice";
 import hostReducer from "../features/admin/userManagement/host.slice";
+import hostDetailReducer from "../features/admin/userManagement/hostDetail.slice";
 import userStatusUpdateReducer from "../features/admin/userManagement/userStatusUpdate.slice";
 import hostForPropertyReducer from "../features/admin/userManagement/hostForProperty.slice";
 import tagsDropdownReducer from "../features/admin/propertyTag/tagsDropdown.slice";
@@ -61,6 +62,12 @@ import commissionReportReducer from "../features/admin/finance/commissionReport.
 import taxReportReducer from "../features/admin/finance/taxReport.slice";
 import cashFlowReportReducer from "../features/admin/finance/cashFlowReport.slice";
 
+// ================= HOST MANAGEMENT SYSTEM =================
+import hostDashboardReducer from "../features/host/hostDashboard.slice";
+import hostBookingsReducer from "../features/host/hostBookings.slice";
+import hostEarningsReducer from "../features/host/hostEarnings.slice";
+import hostProfileReducer from "../features/host/hostProfile.slice";
+
 export const store = configureStore({
   reducer: {
     ui: uiReducer,
@@ -68,6 +75,7 @@ export const store = configureStore({
     adminAuth: adminAuthReducer,
     users: userReducer,
     hosts: hostReducer,
+    hostDetail: hostDetailReducer,
     userDetails: userDetailsReducer,
     userAddUpdate: userAddUpdateReducer,
     userImageDelete: userImageDeleteReducer,
@@ -125,6 +133,12 @@ export const store = configureStore({
     commissionReport: commissionReportReducer,
     taxReport: taxReportReducer,
     cashFlowReport: cashFlowReportReducer,
+
+    // ================= HOST MANAGEMENT SYSTEM =================
+    hostDashboard: hostDashboardReducer,
+    hostBookings: hostBookingsReducer,
+    hostEarnings: hostEarningsReducer,
+    hostProfile: hostProfileReducer,
   },
 });
 

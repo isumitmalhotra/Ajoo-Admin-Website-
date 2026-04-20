@@ -4,13 +4,15 @@ import { ADMINENDPOINTS } from "../../../services/endpoints";
 import { setMessage, showLoader } from "../../ui/ui.slice";
 
 interface LoginPayload {
-  username: string;
+  username?: string;
+  email?: string;
   password: string;
 }
 
 const DEV_BYPASS_ENABLED =
   import.meta.env.DEV &&
-  import.meta.env.VITE_ENABLE_DEV_ADMIN_BYPASS === "true";
+  (import.meta.env.VITE_ENABLE_DEV_ADMIN_BYPASS === "true" ||
+    import.meta.env.VITE_ADMIN_BYPASS === "true");
 
 const DEV_BYPASS_EMAIL =
   import.meta.env.VITE_DEV_ADMIN_EMAIL || "admin@aajao.test";

@@ -1,7 +1,7 @@
 import {
     Drawer,
     List,
-    ListItem,
+    ListItemButton,
     ListItemText,
     ListItemIcon,
     Typography,
@@ -16,29 +16,22 @@ import ReceiptIcon from '@mui/icons-material/Receipt';
 import PaymentIcon from '@mui/icons-material/Payment';
 import PrivacyTipIcon from '@mui/icons-material/PrivacyTip';
 import SettingsIcon from '@mui/icons-material/Settings';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import LogoutIcon from '@mui/icons-material/Logout';
-import { useSelector } from 'react-redux';
-import { UserType } from '../../types/type';
+import { NavLink } from 'react-router-dom';
 
 const menuItems = [
-    { text: 'Profile', icon: <PersonIcon /> },
-    { text: 'Home', icon: <HomeIcon /> },
-    { text: 'Add Property', icon: <AddHomeIcon /> },
-    { text: 'Booking History', icon: <HistoryIcon /> },
-    { text: 'Invoices', icon: <ReceiptIcon /> },
-    { text: 'Payout', icon: <PaymentIcon /> },
-    { text: 'Privacy Policy', icon: <PrivacyTipIcon /> },
-    { text: 'Settings', icon: <SettingsIcon /> },
-    { text: 'Switch to Renter', icon: <SwapHorizIcon /> },
-    { text: 'Logout', icon: <LogoutIcon /> },
+    { text: 'Dashboard', icon: <HomeIcon />, path: '/host/dashboard' },
+    { text: 'Bookings', icon: <HistoryIcon />, path: '/host/bookings' },
+    { text: 'Earnings', icon: <PaymentIcon />, path: '/host/earnings' },
+    { text: 'Statements', icon: <ReceiptIcon />, path: '/host/statements' },
+    { text: 'Profile', icon: <PersonIcon />, path: '/host/profile' },
+    { text: 'Support', icon: <SettingsIcon />, path: '/host/support' },
+    { text: 'Privacy Policy', icon: <PrivacyTipIcon />, path: '/Privacy-Policy' },
+    { text: 'Add Property', icon: <AddHomeIcon />, path: '/admin/properties/form' },
 ];
 
 const drawerWidth = 240;
 
 export const HostSidebar = () => {
-    const { data } = useSelector(({ auth }:{auth:{data:UserType}}) => auth)
-    console.log(data,"data");
     return (
         <Drawer
             variant="permanent"
@@ -55,25 +48,30 @@ export const HostSidebar = () => {
         >
             <Box sx={{ p: 2 }}>
                 <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                    Welcome, {data?.user_fullName}
+                    Host Portal
                 </Typography>
             </Box>
             <Divider sx={{ borderColor: 'rgba(255,255,255,0.3)' }} />
             <List>
                 {menuItems.map((item) => (
-                    <ListItem
-                        // button
+                    <ListItemButton
                         key={item.text}
-                        component="div"
+                        component={item.path ? NavLink : 'div'}
+                        {...(item.path ? { to: item.path } : {})}
                         sx={{
+                            borderRadius: 1,
+                            mx: 1,
                             '&:hover': {
                                 backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                            },
+                            '&.active': {
+                                backgroundColor: 'rgba(255, 255, 255, 0.2)',
                             },
                         }}
                     >
                         <ListItemIcon sx={{ color: 'white' }}>{item.icon}</ListItemIcon>
                         <ListItemText primary={item.text} />
-                    </ListItem>
+                    </ListItemButton>
                 ))}
             </List>
         </Drawer>

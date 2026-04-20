@@ -69,6 +69,7 @@ const AdminLogin = () => {
       dispatch(
         adminLogin({
           username: values.email,
+          email: values.email,
           password: values.password,
         })
       );

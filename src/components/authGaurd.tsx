@@ -4,7 +4,8 @@ import { API_BASE_URL } from "../configs/apiConfigs";
 
 const DEV_BYPASS_ENABLED =
   import.meta.env.DEV &&
-  import.meta.env.VITE_ENABLE_DEV_ADMIN_BYPASS === "true";
+  (import.meta.env.VITE_ENABLE_DEV_ADMIN_BYPASS === "true" ||
+    import.meta.env.VITE_ADMIN_BYPASS === "true");
 
 const DISABLE_ADMIN_AUTH =
   import.meta.env.DEV &&
@@ -18,6 +19,12 @@ const AdminProtectedRoute = () => {
   }
 
   useEffect(() => {
+    // Local-only bypass for developer verification while auth backend is unavailable.
+    if (DEV_BYPASS_ENABLED) {
+      setIsAuth(true);
+      return;
+    }
+
     const token = localStorage.getItem("adminToken");
 
     if (!token) {
