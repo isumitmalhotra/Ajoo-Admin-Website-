@@ -42,6 +42,25 @@ import bookingStatusListingForAdminPageReducer from "../features/admin/BookingSt
 import updateBookingStatusAdminPageReducer from "../features/admin/BookingStatus/bookingStatusUpdateSlice";
 import adminDashboardSliceReducer from "../features/admin/Dashboard/dashboard.slice";
 
+// ================= FINANCE MANAGEMENT SYSTEM =================
+import financeDashboardReducer from "../features/admin/finance/financeDashboard.slice";
+import ledgerListReducer from "../features/admin/finance/ledgerList.slice";
+import ledgerDetailReducer from "../features/admin/finance/ledgerDetail.slice";
+import hostLedgerReducer from "../features/admin/finance/hostLedger.slice";
+import guestLedgerReducer from "../features/admin/finance/guestLedger.slice";
+import payoutListReducer from "../features/admin/finance/payoutList.slice";
+import payoutDetailReducer from "../features/admin/finance/payoutDetail.slice";
+import payoutActionReducer from "../features/admin/finance/payoutAction.slice";
+import payoutScheduleListReducer from "../features/admin/finance/payoutScheduleList.slice";
+import invoiceListReducer from "../features/admin/finance/invoiceList.slice";
+import invoiceDetailReducer from "../features/admin/finance/invoiceDetail.slice";
+import reconciliationListReducer from "../features/admin/finance/reconciliationList.slice";
+import reconciliationResolveReducer from "../features/admin/finance/reconciliationResolve.slice";
+import revenueReportReducer from "../features/admin/finance/revenueReport.slice";
+import commissionReportReducer from "../features/admin/finance/commissionReport.slice";
+import taxReportReducer from "../features/admin/finance/taxReport.slice";
+import cashFlowReportReducer from "../features/admin/finance/cashFlowReport.slice";
+
 export const store = configureStore({
   reducer: {
     ui: uiReducer,
@@ -87,6 +106,25 @@ export const store = configureStore({
     bookingStatusListingForAdminPage: bookingStatusListingForAdminPageReducer,
     updateBookingStatusAdminPage: updateBookingStatusAdminPageReducer,
     adminDashboardSlice: adminDashboardSliceReducer,
+
+    // ================= FINANCE MANAGEMENT SYSTEM =================
+    financeDashboard: financeDashboardReducer,
+    ledgerList: ledgerListReducer,
+    ledgerDetail: ledgerDetailReducer,
+    hostLedger: hostLedgerReducer,
+    guestLedger: guestLedgerReducer,
+    payoutList: payoutListReducer,
+    payoutDetail: payoutDetailReducer,
+    payoutAction: payoutActionReducer,
+    payoutScheduleList: payoutScheduleListReducer,
+    invoiceList: invoiceListReducer,
+    invoiceDetail: invoiceDetailReducer,
+    reconciliationList: reconciliationListReducer,
+    reconciliationResolve: reconciliationResolveReducer,
+    revenueReport: revenueReportReducer,
+    commissionReport: commissionReportReducer,
+    taxReport: taxReportReducer,
+    cashFlowReport: cashFlowReportReducer,
   },
 });
 

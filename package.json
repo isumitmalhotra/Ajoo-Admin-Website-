@@ -8,7 +8,11 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "vite preview"
+    "start": "vite preview",
+    "test:smoke": "node scripts/financeSmoke.js",
+    "validate:api": "node scripts/financeSmoke.js",
+    "test:integration:staging": "node scripts/financeIntegrationStaging.js",
+    "test:integration:staging:write": "node scripts/financeIntegrationStaging.js --write-tests"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

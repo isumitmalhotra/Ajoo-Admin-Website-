@@ -8,11 +8,46 @@ interface LoginPayload {
   password: string;
 }
 
+const DEV_BYPASS_ENABLED =
+  import.meta.env.DEV &&
+  import.meta.env.VITE_ENABLE_DEV_ADMIN_BYPASS === "true";
+
+const DEV_BYPASS_EMAIL =
+  import.meta.env.VITE_DEV_ADMIN_EMAIL || "admin@aajao.test";
+
+const DEV_BYPASS_PASSWORD =
+  import.meta.env.VITE_DEV_ADMIN_PASSWORD || "Admin@12345";
+
 export const adminLogin = createAsyncThunk(
   "adminAuth/login",
   async (payload: LoginPayload, { dispatch, rejectWithValue }) => {
     try {
       dispatch(showLoader());
+
+      // Dev-only shortcut when backend is unavailable.
+      if (DEV_BYPASS_ENABLED) {
+        if (
+          payload.username === DEV_BYPASS_EMAIL &&
+          payload.password === DEV_BYPASS_PASSWORD
+        ) {
+          const devAdmin = {
+            id: 1,
+            email: DEV_BYPASS_EMAIL,
+            name: "Dev Test Admin",
+            role: "admin",
+          };
+
+          return {
+            admin: devAdmin,
+            token: "dev-admin-token",
+            message: "Dev login successful (bypass mode)",
+          };
+        }
+
+        return rejectWithValue(
+          "Invalid dev credentials. Use configured DEV admin email/password."
+        );
+      }
 
       const res = await api.post(ADMINENDPOINTS.ADMIN_LOGIN, payload);
       console.log(res.data, "admin login response");

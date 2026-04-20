@@ -1,0 +1,168 @@
+{
+  "generatedAt": "2026-03-30T07:57:22.503Z",
+  "baseUrl": "http://localhost:8000",
+  "writeTestsEnabled": false,
+  "timeoutMs": 15000,
+  "summary": {
+    "passed": 0,
+    "warnings": 0,
+    "failed": 10,
+    "skipped": 7,
+    "total": 17
+  },
+  "results": [
+    {
+      "name": "Ledger search",
+      "method": "POST",
+      "path": "/admin/finance/ledger/search",
+      "result": "FAIL",
+      "httpStatus": null,
+      "durationMs": 45,
+      "notes": "Network error: fetch failed; duration=45ms"
+    },
+    {
+      "name": "Payout search",
+      "method": "POST",
+      "path": "/admin/finance/payout/search",
+      "result": "FAIL",
+      "httpStatus": null,
+      "durationMs": 2,
+      "notes": "Network error: fetch failed; duration=2ms"
+    },
+    {
+      "name": "Payout schedule search",
+      "method": "POST",
+      "path": "/admin/finance/payout/schedule/search",
+      "result": "FAIL",
+      "httpStatus": null,
+      "durationMs": 2,
+      "notes": "Network error: fetch failed; duration=2ms"
+    },
+    {
+      "name": "Invoice search",
+      "method": "POST",
+      "path": "/admin/finance/invoice/search",
+      "result": "FAIL",
+      "httpStatus": null,
+      "durationMs": 3,
+      "notes": "Network error: fetch failed; duration=3ms"
+    },
+    {
+      "name": "Reconciliation search",
+      "method": "POST",
+      "path": "/admin/finance/reconciliation/search",
+      "result": "FAIL",
+      "httpStatus": null,
+      "durationMs": 2,
+      "notes": "Network error: fetch failed; duration=2ms"
+    },
+    {
+      "name": "Finance dashboard",
+      "method": "GET",
+      "path": "/admin/finance/dashboard",
+      "result": "FAIL",
+      "httpStatus": null,
+      "durationMs": 1,
+      "notes": "Network error: fetch failed; duration=1ms"
+    },
+    {
+      "name": "Revenue report",
+      "method": "POST",
+      "path": "/admin/finance/reports/revenue",
+      "result": "FAIL",
+      "httpStatus": null,
+      "durationMs": 2,
+      "notes": "Network error: fetch failed; duration=2ms"
+    },
+    {
+      "name": "Commission report",
+      "method": "POST",
+      "path": "/admin/finance/reports/commission",
+      "result": "FAIL",
+      "httpStatus": null,
+      "durationMs": 2,
+      "notes": "Network error: fetch failed; duration=2ms"
+    },
+    {
+      "name": "Tax report",
+      "method": "POST",
+      "path": "/admin/finance/reports/tax",
+      "result": "FAIL",
+      "httpStatus": null,
+      "durationMs": 2,
+      "notes": "Network error: fetch failed; duration=2ms"
+    },
+    {
+      "name": "Cashflow report",
+      "method": "POST",
+      "path": "/admin/finance/reports/cashflow",
+      "result": "FAIL",
+      "httpStatus": null,
+      "durationMs": 3,
+      "notes": "Network error: fetch failed; duration=3ms"
+    },
+    {
+      "name": "Host ledger by id",
+      "method": "POST",
+      "path": "/admin/finance/ledger/host/{hostId}",
+      "result": "SKIP",
+      "httpStatus": null,
+      "durationMs": 0,
+      "notes": "Missing required test ID in environment variables"
+    },
+    {
+      "name": "Guest ledger by id",
+      "method": "POST",
+      "path": "/admin/finance/ledger/user/{userId}",
+      "result": "SKIP",
+      "httpStatus": null,
+      "durationMs": 0,
+      "notes": "Missing required test ID in environment variables"
+    },
+    {
+      "name": "Ledger detail by id",
+      "method": "GET",
+      "path": "/admin/finance/ledger/{ledgerId}",
+      "result": "SKIP",
+      "httpStatus": null,
+      "durationMs": 0,
+      "notes": "Missing required test ID in environment variables"
+    },
+    {
+      "name": "Payout detail by id",
+      "method": "GET",
+      "path": "/admin/finance/payout/{payoutId}",
+      "result": "SKIP",
+      "httpStatus": null,
+      "durationMs": 0,
+      "notes": "Missing required test ID in environment variables"
+    },
+    {
+      "name": "Invoice detail by id",
+      "method": "GET",
+      "path": "/admin/finance/invoice/{invoiceId}",
+      "result": "SKIP",
+      "httpStatus": null,
+      "durationMs": 0,
+      "notes": "Missing required test ID in environment variables"
+    },
+    {
+      "name": "Invoice download",
+      "method": "GET",
+      "path": "/admin/finance/invoice/download/{invoiceId}",
+      "result": "SKIP",
+      "httpStatus": null,
+      "durationMs": 0,
+      "notes": "Missing required test ID in environment variables"
+    },
+    {
+      "name": "Reconciliation detail by id",
+      "method": "GET",
+      "path": "/admin/finance/reconciliation/{reconId}",
+      "result": "SKIP",
+      "httpStatus": null,
+      "durationMs": 0,
+      "notes": "Missing required test ID in environment variables"
+    }
+  ]
+}

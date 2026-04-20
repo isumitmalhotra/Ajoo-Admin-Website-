@@ -25,6 +25,12 @@ import {
   Tag,
   ShieldCheck,
   Star,
+  Wallet,
+  BookText,
+  HandCoins,
+  FileCheck,
+  FileText,
+  BarChart3,
 } from "lucide-react";
 import { useEffect, useState, MouseEvent } from "react";
 
@@ -44,6 +50,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: AlignVerticalJustifyCenter,
   },
   { text: "Bookings", path: "/admin/bookings", icon: BookOpen },
+  { text: "Finance", path: "/admin/finance", icon: Wallet },
   // { text: "Support", path: "/admin/support", icon: Octagon },
 ];
 
@@ -80,6 +87,33 @@ const SUB_ITEMS: Record<string, NavItem[]> = {
       text: "Status",
       path: "/admin/status",
       icon: Activity,
+    },
+  ],
+  Finance: [
+    {
+      text: "Ledgers",
+      path: "/admin/finance/ledgers",
+      icon: BookText,
+    },
+    {
+      text: "Payouts",
+      path: "/admin/finance/payouts",
+      icon: HandCoins,
+    },
+    {
+      text: "Reconciliation",
+      path: "/admin/finance/reconciliation",
+      icon: FileCheck,
+    },
+    {
+      text: "Invoices",
+      path: "/admin/finance/invoices",
+      icon: FileText,
+    },
+    {
+      text: "Reports",
+      path: "/admin/finance/reports/revenue",
+      icon: BarChart3,
     },
   ],
   Configuration: [

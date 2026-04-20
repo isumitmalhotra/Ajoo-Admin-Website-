@@ -1,8 +1,8 @@
 import axios from "axios";
-import { API_BASE_URL_LOCAL } from "../configs/apiConfigs";
+import { API_BASE_URL } from "../configs/apiConfigs";
 
 const api = axios.create({
-  baseURL: API_BASE_URL_LOCAL,
+  baseURL: API_BASE_URL,
 });
 
 /* ================= REQUEST INTERCEPTOR ================= */

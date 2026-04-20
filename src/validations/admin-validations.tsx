@@ -144,3 +144,57 @@ export const bookingStatusRowSchema = Yup.object({
 //     .of(bookingStatusRowSchema)
 //     .required(),
 // });
+
+/* ==================== FINANCE MANAGEMENT SYSTEM ==================== */
+
+export const payoutScheduleSchema = Yup.object({
+  frequency: Yup.string()
+    .oneOf(["DAILY", "WEEKLY", "BIWEEKLY", "MONTHLY"], "Invalid frequency")
+    .required("Frequency is required"),
+  minPayoutAmount: Yup.number()
+    .typeError("Amount must be a number")
+    .min(1, "Minimum payout must be at least ₹1")
+    .required("Minimum payout amount is required"),
+  payoutMethod: Yup.string()
+    .oneOf(["BANK_TRANSFER", "UPI"], "Invalid payout method")
+    .required("Payout method is required"),
+  isActive: Yup.boolean().required("Active status is required"),
+});
+
+export const manualPayoutSchema = Yup.object({
+  hostId: Yup.number()
+    .typeError("Host is required")
+    .required("Host is required"),
+  amount: Yup.number()
+    .typeError("Amount must be a number")
+    .min(1, "Amount must be at least ₹1")
+    .required("Amount is required"),
+  payoutMethod: Yup.string()
+    .oneOf(["BANK_TRANSFER", "UPI"], "Invalid payout method")
+    .required("Payout method is required"),
+  notes: Yup.string().max(500, "Notes cannot exceed 500 characters"),
+});
+
+export const reconciliationResolveSchema = Yup.object({
+  action: Yup.string()
+    .oneOf(["ADJUST", "WRITE_OFF", "ESCALATE"], "Invalid action")
+    .required("Action is required"),
+  notes: Yup.string()
+    .min(10, "Please provide at least 10 characters")
+    .max(1000, "Notes cannot exceed 1000 characters")
+    .required("Resolution notes are required"),
+});
+
+export const reportFilterSchema = Yup.object({
+  dateFrom: Yup.string().required("Start date is required"),
+  dateTo: Yup.string()
+    .required("End date is required")
+    .test("is-after", "End date must be after start date", function (value) {
+      const { dateFrom } = this.parent;
+      if (!dateFrom || !value) return true;
+      return new Date(value) >= new Date(dateFrom);
+    }),
+  groupBy: Yup.string()
+    .oneOf(["day", "week", "month"], "Invalid grouping")
+    .required("Group by is required"),
+});

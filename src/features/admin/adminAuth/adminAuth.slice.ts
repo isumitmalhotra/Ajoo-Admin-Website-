@@ -50,10 +50,10 @@ const adminAuthSlice = createSlice({
         console.log(action, "action");
         state.loading = false;
         state.admin = action.payload.admin;
-        console.log(action.payload.admin.token, "action.payload.admin.token");
-        state.token = action.payload.admin.token;
+        console.log(action.payload.token, "action.payload.token");
+        state.token = action.payload.token;
         state.isAuthenticated = true; 
-        localStorage.setItem("adminToken", action.payload.admin.token);
+        localStorage.setItem("adminToken", action.payload.token);
 
         // ✅ SHOW SUCCESS SNACKBAR
         state.snackbarOpen = true;

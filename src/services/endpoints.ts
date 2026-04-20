@@ -48,4 +48,43 @@ export const ADMINENDPOINTS = {
   BOOKING_STATUS_LIST_FOR_ADMIN:"/admin/booking/status/listing/admin-page",
   UPDATE_BOOKING_STATUS_FROM_STATUS_LISTING_FOR_ADMIN_PAGE:"/admin/booking/status/update",
 
+  // ================= FINANCE MANAGEMENT SYSTEM =================
+  // LEDGER
+  FINANCE_LEDGER_SEARCH: "/admin/finance/ledger/search",
+  FINANCE_LEDGER_BY_ID: "/admin/finance/ledger",
+  FINANCE_LEDGER_HOST: "/admin/finance/ledger/host",
+  FINANCE_LEDGER_USER: "/admin/finance/ledger/user",
+  FINANCE_LEDGER_EXPORT: "/admin/finance/ledger/export",
+
+  // PAYOUT
+  FINANCE_PAYOUT_SEARCH: "/admin/finance/payout/search",
+  FINANCE_PAYOUT_BY_ID: "/admin/finance/payout",
+  FINANCE_PAYOUT_INITIATE: "/admin/finance/payout/initiate",
+  FINANCE_PAYOUT_APPROVE: "/admin/finance/payout/approve",
+  FINANCE_PAYOUT_REJECT: "/admin/finance/payout/reject",
+
+  // PAYOUT SCHEDULE
+  FINANCE_PAYOUT_SCHEDULE_SEARCH: "/admin/finance/payout/schedule/search",
+  FINANCE_PAYOUT_SCHEDULE_CREATE: "/admin/finance/payout/schedule/create",
+  FINANCE_PAYOUT_SCHEDULE_UPDATE: "/admin/finance/payout/schedule/update",
+
+  // INVOICE
+  FINANCE_INVOICE_SEARCH: "/admin/finance/invoice/search",
+  FINANCE_INVOICE_BY_ID: "/admin/finance/invoice",
+  FINANCE_INVOICE_DOWNLOAD: "/admin/finance/invoice/download",
+  FINANCE_INVOICE_VOID: "/admin/finance/invoice/void",
+
+  // RECONCILIATION
+  FINANCE_RECONCILIATION_SEARCH: "/admin/finance/reconciliation/search",
+  FINANCE_RECONCILIATION_BY_ID: "/admin/finance/reconciliation",
+  FINANCE_RECONCILIATION_RESOLVE: "/admin/finance/reconciliation/resolve",
+  FINANCE_RECONCILIATION_RUN: "/admin/finance/reconciliation/run",
+
+  // DASHBOARD & REPORTS
+  FINANCE_DASHBOARD: "/admin/finance/dashboard",
+  FINANCE_REPORT_REVENUE: "/admin/finance/reports/revenue",
+  FINANCE_REPORT_COMMISSION: "/admin/finance/reports/commission",
+  FINANCE_REPORT_TAX: "/admin/finance/reports/tax",
+  FINANCE_REPORT_CASHFLOW: "/admin/finance/reports/cashflow",
+  FINANCE_REPORT_EXPORT: "/admin/finance/reports/export",
 };

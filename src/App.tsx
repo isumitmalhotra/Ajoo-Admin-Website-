@@ -41,6 +41,23 @@ import {
   PropertyReviews,
 } from "./pages";
 
+// Finance Management System pages
+import FinanceDashboard from "./pages/admin/finance/FinanceDashboard";
+import LedgerList from "./pages/admin/finance/LedgerList";
+import HostLedger from "./pages/admin/finance/HostLedger";
+import GuestLedger from "./pages/admin/finance/GuestLedger";
+import PayoutQueue from "./pages/admin/finance/PayoutQueue";
+import PayoutSchedules from "./pages/admin/finance/PayoutSchedules";
+import PayoutHistory from "./pages/admin/finance/PayoutHistory";
+import ReconciliationDashboard from "./pages/admin/finance/ReconciliationDashboard";
+import ReconciliationList from "./pages/admin/finance/ReconciliationList";
+import InvoiceList from "./pages/admin/finance/InvoiceList";
+import InvoiceDetail from "./pages/admin/finance/InvoiceDetail";
+import RevenueReport from "./pages/admin/finance/RevenueReport";
+import CommissionReport from "./pages/admin/finance/CommissionReport";
+import TaxSummary from "./pages/admin/finance/TaxSummary";
+import CashFlowReport from "./pages/admin/finance/CashFlowReport";
+
 // NEED TO SET ORDER
 import CommonLayout from "./components/layout/CommonLayout";
 import { Home } from "./pages";
@@ -129,6 +146,24 @@ function App() {
             <Route path="property-reviews" element={<PropertyReviews />} />
             <Route path="bookings" element={<AdminBooking />} />
             <Route path="status" element={<StatusPage />} />
+
+            {/* Finance Management System */}
+            <Route path="finance" element={<FinanceDashboard />} />
+            <Route path="finance/ledgers" element={<LedgerList />} />
+            <Route path="finance/ledgers/host/:hostId" element={<HostLedger />} />
+            <Route path="finance/ledgers/guest/:userId" element={<GuestLedger />} />
+            <Route path="finance/payouts" element={<PayoutQueue />} />
+            <Route path="finance/payouts/schedules" element={<PayoutSchedules />} />
+            <Route path="finance/payouts/history" element={<PayoutHistory />} />
+            <Route path="finance/reconciliation" element={<ReconciliationDashboard />} />
+            <Route path="finance/reconciliation/records" element={<ReconciliationList />} />
+            <Route path="finance/invoices" element={<InvoiceList />} />
+            <Route path="finance/invoices/:invoiceId" element={<InvoiceDetail />} />
+            <Route path="finance/reports/revenue" element={<RevenueReport />} />
+            <Route path="finance/reports/commission" element={<CommissionReport />} />
+            <Route path="finance/reports/tax" element={<TaxSummary />} />
+            <Route path="finance/reports/cashflow" element={<CashFlowReport />} />
+
             <Route path="settings" element={<h1>Settings</h1>} />
             <Route path="*" element={<Navigate to="/admin/dashboard" />} />
           </Route>
