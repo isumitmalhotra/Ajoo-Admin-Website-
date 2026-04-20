@@ -23,6 +23,8 @@ import {
 } from "../../features/host/hostBookings.slice";
 import { Pagination } from "../../components";
 import { useState } from "react";
+import api from "../../services/api";
+import { ADMINENDPOINTS } from "../../services/endpoints";
 
 const statusChipColor = (
   status: string
@@ -50,12 +52,52 @@ const csvEscape = (value: unknown) => {
   return needsQuote ? `"${escaped}"` : escaped;
 };
 
+const buildBookingsCsv = (rows: HostBooking[]) => {
+  const headers = [
+    "booking_id",
+    "property_name",
+    "guest_name",
+    "check_in",
+    "check_out",
+    "amount",
+    "status",
+    "created_at",
+  ];
+
+  const csvRows = rows.map((booking) => [
+    booking.booking_id,
+    booking.property_name || "",
+    booking.guest_name || "",
+    booking.check_in || "",
+    booking.check_out || "",
+    booking.amount ?? 0,
+    booking.status || "",
+    booking.created_at || "",
+  ]);
+
+  return [headers, ...csvRows]
+    .map((row) => row.map((cell) => csvEscape(cell)).join(","))
+    .join("\n");
+};
+
+const triggerDownload = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
 export default function HostBookings() {
   const dispatch = useAppDispatch();
   const { data, loading, error, totalPages, currentPage, filters } = useAppSelector(
     (state) => state.hostBookings
   );
   const [selectedBooking, setSelectedBooking] = useState<HostBooking | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const loadPage = (page: number) => {
     dispatch(
@@ -84,46 +126,77 @@ export default function HostBookings() {
     setTimeout(() => loadPage(1), 0);
   };
 
-  const handleExportCsv = () => {
-    if (data.length === 0) return;
+  const handleExportCsv = async () => {
+    if (data.length === 0 && !filters.search && !filters.status && !filters.dateFrom && !filters.dateTo) {
+      return;
+    }
 
-    const headers = [
-      "booking_id",
-      "property_name",
-      "guest_name",
-      "check_in",
-      "check_out",
-      "amount",
-      "status",
-      "created_at",
-    ];
+    setExporting(true);
 
-    const rows = data.map((booking) => [
-      booking.booking_id,
-      booking.property_name || "",
-      booking.guest_name || "",
-      booking.check_in || "",
-      booking.check_out || "",
-      booking.amount ?? 0,
-      booking.status || "",
-      booking.created_at || "",
-    ]);
+    const defaultName = `host-bookings-${new Date().toISOString().slice(0, 10)}.csv`;
 
-    const csv = [headers, ...rows]
-      .map((row) => row.map((cell) => csvEscape(cell)).join(","))
-      .join("\n");
+    try {
+      const res = await api.post(
+        ADMINENDPOINTS.HOST_PORTAL_BOOKINGS_EXPORT,
+        {
+          search: filters.search,
+          status: filters.status,
+          dateFrom: filters.dateFrom,
+          dateTo: filters.dateTo,
+          exportAll: true,
+        },
+        {
+          responseType: "blob",
+        }
+      );
 
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `host-bookings-page-${currentPage}-${new Date()
-      .toISOString()
-      .slice(0, 10)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+      const contentType = String(res.headers?.["content-type"] || "").toLowerCase();
+      const contentDisposition = String(res.headers?.["content-disposition"] || "");
+      const filenameMatch = contentDisposition.match(/filename\*?=(?:UTF-8''|\")?([^\";]+)/i);
+      const serverFileName = filenameMatch?.[1]?.replace(/['\"]/g, "");
+
+      if (contentType.includes("application/json")) {
+        const jsonText = await res.data.text();
+        const parsed = JSON.parse(jsonText || "{}");
+
+        const fileUrl =
+          parsed?.data?.fileUrl ||
+          parsed?.data?.url ||
+          parsed?.fileUrl ||
+          parsed?.url ||
+          "";
+
+        const serverRows: HostBooking[] =
+          parsed?.data?.rows || parsed?.data?.data || parsed?.rows || parsed?.data || [];
+
+        if (typeof fileUrl === "string" && fileUrl) {
+          window.open(fileUrl, "_blank", "noopener,noreferrer");
+          return;
+        }
+
+        if (Array.isArray(serverRows) && serverRows.length > 0) {
+          const csv = buildBookingsCsv(serverRows);
+          triggerDownload(new Blob([csv], { type: "text/csv;charset=utf-8;" }), defaultName);
+          return;
+        }
+
+        throw new Error("Server export response did not contain file or rows.");
+      }
+
+      triggerDownload(res.data, serverFileName || defaultName);
+      return;
+    } catch {
+      // Fallback: export currently loaded rows when server export is unavailable.
+      if (data.length > 0) {
+        const csv = buildBookingsCsv(data);
+        triggerDownload(
+          new Blob([csv], { type: "text/csv;charset=utf-8;" }),
+          `host-bookings-page-${currentPage}-${new Date().toISOString().slice(0, 10)}.csv`
+        );
+      }
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -142,8 +215,12 @@ export default function HostBookings() {
             Showing page {currentPage} of {Math.max(totalPages, 1)}
           </Typography>
         </Box>
-        <Button variant="outlined" onClick={handleExportCsv} disabled={data.length === 0}>
-          Export CSV
+        <Button
+          variant="outlined"
+          onClick={handleExportCsv}
+          disabled={exporting || (data.length === 0 && !filters.search && !filters.status && !filters.dateFrom && !filters.dateTo)}
+        >
+          {exporting ? "Exporting..." : "Export CSV"}
         </Button>
       </Stack>
 

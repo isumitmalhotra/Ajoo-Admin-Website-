@@ -93,6 +93,7 @@ export const ADMINENDPOINTS = {
   // ================= HOST PORTAL (HMS FOUNDATION) =================
   HOST_PORTAL_DASHBOARD: "/host/dashboard/summary",
   HOST_PORTAL_BOOKINGS: "/host/bookings/search",
+  HOST_PORTAL_BOOKINGS_EXPORT: "/host/bookings/export",
   HOST_PORTAL_EARNINGS: "/host/earnings/summary",
   HOST_PORTAL_PROFILE: "/host/profile",
 };

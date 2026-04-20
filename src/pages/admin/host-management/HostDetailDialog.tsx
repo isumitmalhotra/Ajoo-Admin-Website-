@@ -31,6 +31,49 @@ interface KycAuditEntry {
   note: string;
 }
 
+const normalizeAction = (action: string) => action.trim().toLowerCase();
+
+const getAuditActionChipColor = (
+  action: string
+): "success" | "error" | "warning" | "info" | "default" => {
+  const normalized = normalizeAction(action);
+
+  if (
+    normalized.includes("approve") ||
+    normalized.includes("verified") ||
+    normalized.includes("accept")
+  ) {
+    return "success";
+  }
+
+  if (
+    normalized.includes("reject") ||
+    normalized.includes("decline") ||
+    normalized.includes("failed")
+  ) {
+    return "error";
+  }
+
+  if (
+    normalized.includes("pending") ||
+    normalized.includes("review") ||
+    normalized.includes("submitted")
+  ) {
+    return "warning";
+  }
+
+  if (normalized.includes("update") || normalized.includes("edit")) {
+    return "info";
+  }
+
+  return "default";
+};
+
+const toActionLabel = (action: string) =>
+  action
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
 const asArray = (value: unknown): any[] => {
   if (Array.isArray(value)) return value;
   if (typeof value === "string") {
@@ -362,15 +405,34 @@ export default function HostDetailDialog({
                 No backend audit entries found for this host KYC yet.
               </Typography>
             ) : (
-              <Stack spacing={0.5}>
+              <Stack spacing={1}>
                 {auditTrail.map((entry, index) => (
-                  <Typography
+                  <Stack
                     key={`${entry.action}-${entry.timestamp || index}-${index}`}
-                    variant="caption"
-                    color="text.secondary"
+                    direction={{ xs: "column", sm: "row" }}
+                    spacing={1}
+                    alignItems={{ xs: "flex-start", sm: "center" }}
                   >
-                    {`${entry.timestamp ? new Date(entry.timestamp).toLocaleString() : "Time unavailable"} | ${entry.action} | ${entry.actor}${entry.note ? ` | ${entry.note}` : ""}`}
-                  </Typography>
+                    <Chip
+                      size="small"
+                      variant="outlined"
+                      label={toActionLabel(entry.action)}
+                      color={getAuditActionChipColor(entry.action)}
+                    />
+                    <Typography variant="caption" color="text.secondary">
+                      {entry.timestamp
+                        ? new Date(entry.timestamp).toLocaleString()
+                        : "Time unavailable"}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      By {entry.actor}
+                    </Typography>
+                    {entry.note ? (
+                      <Typography variant="caption" color="text.secondary">
+                        Note: {entry.note}
+                      </Typography>
+                    ) : null}
+                  </Stack>
                 ))}
               </Stack>
             )}
