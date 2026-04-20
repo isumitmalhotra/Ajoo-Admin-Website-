@@ -96,4 +96,5 @@ export const ADMINENDPOINTS = {
   HOST_PORTAL_BOOKINGS_EXPORT: "/host/bookings/export",
   HOST_PORTAL_EARNINGS: "/host/earnings/summary",
   HOST_PORTAL_PROFILE: "/host/profile",
+  HOST_PORTAL_PROFILE_UPDATE: "/host/profile/update",
 };
