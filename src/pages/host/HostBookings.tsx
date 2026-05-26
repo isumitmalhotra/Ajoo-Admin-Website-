@@ -100,7 +100,7 @@ const triggerDownload = (blob: Blob, filename: string) => {
 
 export default function HostBookings() {
   const dispatch = useAppDispatch();
-  const { data, loading, error, totalPages, currentPage, filters } = useAppSelector(
+  const { data, loading, error, totalPages, currentPage, totalRecords, filters } = useAppSelector(
     (state) => state.hostBookings
   );
   const [searchParams, setSearchParams] = useSearchParams();
@@ -346,7 +346,45 @@ export default function HostBookings() {
   };
 
   return (
-    <Paper sx={{ p: 3, borderRadius: 2 }} elevation={0}>
+    <Paper
+      sx={{
+        p: 3,
+        borderRadius: "1rem",
+        border: "1px solid #ede9fe",
+        boxShadow: "0 12px 28px rgba(17,24,39,0.05)",
+      }}
+      elevation={0}
+    >
+      <Box
+        sx={{
+          p: 1.5,
+          borderRadius: "0.85rem",
+          border: "1px solid #ddd6fe",
+          bgcolor: "#faf5ff",
+          mb: 2,
+        }}
+      >
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          spacing={1}
+          alignItems={{ xs: "flex-start", md: "center" }}
+          justifyContent="space-between"
+        >
+          <Box>
+            <Typography variant="subtitle1" fontWeight={800} color="#4c1d95">
+              Booking Operations Console
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Monitor reservations, export records, and inspect booking details.
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={0.8}>
+            <Chip label={`${totalRecords} records`} size="small" sx={{ bgcolor: "#ede9fe", color: "#5b21b6" }} />
+            <Chip label={`Page ${currentPage}`} size="small" sx={{ bgcolor: "#e0e7ff", color: "#3730a3" }} />
+          </Stack>
+        </Stack>
+      </Box>
+
       <Stack
         direction={{ xs: "column", sm: "row" }}
         spacing={1}
@@ -365,6 +403,7 @@ export default function HostBookings() {
           variant="outlined"
           onClick={handleExportCsv}
           disabled={exporting || (data.length === 0 && !filters.search && !filters.status && !filters.dateFrom && !filters.dateTo)}
+          sx={{ textTransform: "none", fontWeight: 700, borderColor: "#8b5cf6", color: "#6d28d9" }}
         >
           {exporting ? "Exporting..." : "Export CSV"}
         </Button>

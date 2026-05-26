@@ -16,6 +16,8 @@ import type {
   ReconciliationAction,
 } from "../../../pages/admin/finance/types";
 import { useState, useEffect } from "react";
+import { ShieldCheck } from "lucide-react";
+import { formatINR } from "../../../pages/admin/finance/utils";
 
 interface Props {
   open: boolean;
@@ -73,8 +75,30 @@ const ReconciliationResolveModal = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 600, color: "#374151" }}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: "1rem",
+          border: "1px solid #fed7aa",
+          overflow: "hidden",
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          fontWeight: 700,
+          color: "#9a3412",
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          bgcolor: "#fff7ed",
+        }}
+      >
+        <ShieldCheck size={18} />
         Resolve Variance
       </DialogTitle>
       <DialogContent>
@@ -91,8 +115,8 @@ const ReconciliationResolveModal = ({
           <Typography variant="body2" color="text.secondary">
             Variance Amount
           </Typography>
-          <Typography variant="h4" fontWeight={700} color="#ea580c">
-            ₹{Math.abs(record.variance).toLocaleString("en-IN")}
+          <Typography variant="h4" fontWeight={800} color="#9a3412">
+            {formatINR(Math.abs(record.variance))}
           </Typography>
         </Box>
 
@@ -104,11 +128,11 @@ const ReconciliationResolveModal = ({
         <DetailRow label="Host" value={record.host_name || "—"} />
         <DetailRow
           label="Expected"
-          value={`₹${record.expected_amount.toLocaleString("en-IN")}`}
+          value={formatINR(record.expected_amount)}
         />
         <DetailRow
           label="Payment Received"
-          value={`₹${record.payment_amount.toLocaleString("en-IN")}`}
+          value={formatINR(record.payment_amount)}
         />
         {record.notes && (
           <DetailRow label="Existing Notes" value={record.notes} />
@@ -168,6 +192,9 @@ const ReconciliationResolveModal = ({
           disabled={loading}
           sx={{
             bgcolor: "#881f9b",
+            textTransform: "none",
+            fontWeight: 700,
+            px: 2,
             "&:hover": { bgcolor: "#7115bd" },
           }}
         >

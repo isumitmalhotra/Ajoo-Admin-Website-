@@ -10,12 +10,14 @@ import {
   Stack,
   Switch,
   Typography,
+  InputAdornment,
 } from "@mui/material";
 import type {
   PayoutFrequency,
   PayoutMethod,
   PayoutSchedule,
 } from "../../../pages/admin/finance/types";
+import { CalendarClock } from "lucide-react";
 
 const FREQUENCY_OPTIONS: { value: PayoutFrequency; label: string }[] = [
   { value: "DAILY", label: "Daily" },
@@ -98,13 +100,38 @@ const PayoutScheduleModal = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 600, color: "#374151" }}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: "1rem",
+          border: "1px solid #ede9fe",
+          overflow: "hidden",
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          fontWeight: 700,
+          color: "#6b21a8",
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          bgcolor: "#faf5ff",
+        }}
+      >
+        <CalendarClock size={18} />
         {isEdit
           ? `Edit Schedule — ${schedule?.host_name}`
           : "Create Payout Schedule"}
       </DialogTitle>
       <DialogContent>
+        <Typography variant="body2" color="text.secondary" mt={1}>
+          Configure when and how host payouts should be generated.
+        </Typography>
         <Stack spacing={3} mt={1}>
           {!isEdit && (
             <TextField
@@ -152,6 +179,11 @@ const PayoutScheduleModal = ({
             error={!!errors.minPayoutAmount}
             helperText={errors.minPayoutAmount}
             fullWidth
+            slotProps={{
+              input: {
+                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+              },
+            }}
           />
 
           <TextField
@@ -174,7 +206,7 @@ const PayoutScheduleModal = ({
           </TextField>
 
           <Stack direction="row" alignItems="center" spacing={2}>
-            <Typography>Active</Typography>
+            <Typography fontWeight={600}>Auto payout active</Typography>
             <Switch
               checked={form.isActive}
               onChange={(e) =>
@@ -192,7 +224,13 @@ const PayoutScheduleModal = ({
           variant="contained"
           onClick={handleSubmit}
           disabled={loading}
-          sx={{ bgcolor: "#881f9b", "&:hover": { bgcolor: "#7115bd" } }}
+          sx={{
+            bgcolor: "#881f9b",
+            textTransform: "none",
+            fontWeight: 700,
+            px: 2,
+            "&:hover": { bgcolor: "#7115bd" },
+          }}
         >
           {loading
             ? "Saving..."

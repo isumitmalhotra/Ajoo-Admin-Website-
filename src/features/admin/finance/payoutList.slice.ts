@@ -7,6 +7,13 @@ import type {
   PayoutSearchPayload,
   PaginatedState,
 } from "../../../pages/admin/finance/types";
+import {
+  getFinanceDataNode,
+  getPage,
+  getTotalPages,
+  getTotalRecords,
+  normalizePayoutRows,
+} from "../../../services/financeContracts";
 
 const initialState: PaginatedState<Payout> = {
   data: [],
@@ -32,12 +39,13 @@ export const fetchPayoutList = createAsyncThunk<
       ADMINENDPOINTS.FINANCE_PAYOUT_SEARCH,
       payload ?? { page: 1, limit: 10 }
     );
-    const d = res.data.data;
+    const d = getFinanceDataNode(res.data);
+    const payouts = normalizePayoutRows(d?.payouts ?? d?.rows ?? []);
     return {
-      payouts: d.payouts,
-      totalRecords: d.totalRecords,
-      currentPage: d.currentPage,
-      totalPages: d.totalPages,
+      payouts,
+      totalRecords: getTotalRecords(d, payouts.length),
+      currentPage: getPage(d, (payload as PayoutSearchPayload)?.page ?? 1),
+      totalPages: getTotalPages(d),
     };
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {

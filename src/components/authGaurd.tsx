@@ -1,6 +1,8 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { API_BASE_URL } from "../configs/apiConfigs";
+import { getAdminClaims, getAdminToken, clearAdminSession } from "../services/adminSession";
+import { hasAnyRole, type AppRole } from "../services/apiContracts";
 
 const DEV_BYPASS_ENABLED =
   import.meta.env.DEV &&
@@ -10,6 +12,8 @@ const DEV_BYPASS_ENABLED =
 const DISABLE_ADMIN_AUTH =
   import.meta.env.DEV &&
   import.meta.env.VITE_DISABLE_ADMIN_AUTH === "true";
+
+const ADMIN_ALLOWED_ROLES: AppRole[] = ["admin", "finance", "support"];
 
 const AdminProtectedRoute = () => {
   const [isAuth, setIsAuth] = useState<boolean | null>(null);
@@ -25,9 +29,16 @@ const AdminProtectedRoute = () => {
       return;
     }
 
-    const token = localStorage.getItem("adminToken");
+    const token = getAdminToken();
 
     if (!token) {
+      setIsAuth(false);
+      return;
+    }
+
+    const claims = getAdminClaims();
+    if (claims && !hasAnyRole(claims, ADMIN_ALLOWED_ROLES)) {
+      clearAdminSession();
       setIsAuth(false);
       return;
     }
@@ -56,7 +67,7 @@ const AdminProtectedRoute = () => {
 
         setIsAuth(true);
       } catch (error) {
-        localStorage.removeItem("adminToken");
+        clearAdminSession();
         setIsAuth(false);
       }
     };
@@ -68,6 +79,15 @@ const AdminProtectedRoute = () => {
   if (isAuth === null) return null;
 
   return isAuth ? <Outlet /> : <Navigate to="/admin/login" replace />;
+};
+
+export const GuestRoute = () => {
+  const token = getAdminToken();
+  if (token) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  return <Outlet />;
 };
 
 export default AdminProtectedRoute;

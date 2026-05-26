@@ -2,24 +2,49 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import api from "../../services/api";
 import { ADMINENDPOINTS } from "../../services/endpoints";
+import { extractApiData } from "../../services/apiContracts";
+import type {
+  HostBooking,
+  HostBookingsFilters,
+  HostBookingsListResponse,
+} from "../../pages/host/types";
 
-export interface HostBooking {
-  booking_id: number;
-  property_name?: string;
-  guest_name?: string;
-  check_in?: string;
-  check_out?: string;
-  amount?: number;
-  status?: string;
-  created_at?: string;
-}
+export type { HostBooking, HostBookingsFilters };
 
-export interface HostBookingsFilters {
-  search: string;
-  status: string;
-  dateFrom: string;
-  dateTo: string;
-}
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const toNumber = (value: unknown, fallback = 0): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const toStringOrUndefined = (value: unknown): string | undefined =>
+  typeof value === "string" && value.trim().length > 0 ? value : undefined;
+
+const normalizeBookingRow = (value: unknown): HostBooking | null => {
+  if (!isRecord(value)) return null;
+  const bookingId = toNumber(value.booking_id ?? value.bookingId ?? value.id, NaN);
+  if (!Number.isFinite(bookingId)) return null;
+
+  return {
+    booking_id: bookingId,
+    property_name: toStringOrUndefined(value.property_name ?? value.propertyName),
+    guest_name: toStringOrUndefined(value.guest_name ?? value.guestName),
+    check_in: toStringOrUndefined(value.check_in ?? value.checkIn),
+    check_out: toStringOrUndefined(value.check_out ?? value.checkOut),
+    amount: toNumber(value.amount),
+    status: toStringOrUndefined(value.status),
+    created_at: toStringOrUndefined(value.created_at ?? value.createdAt),
+  };
+};
+
+const normalizeBookingRows = (value: unknown): HostBooking[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((row) => normalizeBookingRow(row))
+    .filter((row): row is HostBooking => row !== null);
+};
 
 interface HostBookingsState {
   data: HostBooking[];
@@ -47,12 +72,7 @@ const initialState: HostBookingsState = {
 };
 
 export const fetchHostBookings = createAsyncThunk<
-  {
-    rows: HostBooking[];
-    totalPages: number;
-    currentPage: number;
-    totalRecords: number;
-  },
+  HostBookingsListResponse,
   {
     page?: number;
     limit?: number;
@@ -77,18 +97,17 @@ export const fetchHostBookings = createAsyncThunk<
       sortOrder: payload?.sortOrder || "desc",
     });
 
-    const dataNode = res.data?.data || {};
-    const rows = Array.isArray(dataNode?.data)
-      ? dataNode.data
-      : Array.isArray(dataNode)
-      ? dataNode
-      : [];
+    const dataNode = extractApiData<Record<string, unknown> | HostBooking[]>(res.data);
+    const dataRecord = isRecord(dataNode) ? dataNode : null;
+    const rows = normalizeBookingRows(
+      dataRecord?.data ?? dataRecord?.rows ?? (Array.isArray(dataNode) ? dataNode : [])
+    );
 
     return {
       rows,
-      totalPages: Number(dataNode?.totalPages || 1),
-      currentPage: Number(dataNode?.currentPage || payload?.page || 1),
-      totalRecords: Number(dataNode?.totalRecords || rows.length || 0),
+      totalPages: toNumber(dataRecord?.totalPages, 1),
+      currentPage: toNumber(dataRecord?.currentPage, payload?.page || 1),
+      totalRecords: toNumber(dataRecord?.totalRecords, rows.length || 0),
     };
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {

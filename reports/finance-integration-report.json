@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-03-30T07:57:22.503Z",
-  "baseUrl": "http://localhost:8000",
+  "generatedAt": "2026-04-20T08:49:54.122Z",
+  "baseUrl": "https://aajaodev.onrender.com",
   "writeTestsEnabled": false,
   "timeoutMs": 15000,
   "summary": {
@@ -16,90 +16,90 @@
       "method": "POST",
       "path": "/admin/finance/ledger/search",
       "result": "FAIL",
-      "httpStatus": null,
-      "durationMs": 45,
-      "notes": "Network error: fetch failed; duration=45ms"
+      "httpStatus": 404,
+      "durationMs": 940,
+      "notes": "HTTP 404, body preview: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <title>Error</title> </head> <body> <pre>Cannot POST /admin/finance/ledger/se; duration=940ms"
     },
     {
       "name": "Payout search",
       "method": "POST",
       "path": "/admin/finance/payout/search",
       "result": "FAIL",
-      "httpStatus": null,
-      "durationMs": 2,
-      "notes": "Network error: fetch failed; duration=2ms"
+      "httpStatus": 404,
+      "durationMs": 272,
+      "notes": "HTTP 404, body preview: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <title>Error</title> </head> <body> <pre>Cannot POST /admin/finance/payout/se; duration=272ms"
     },
     {
       "name": "Payout schedule search",
       "method": "POST",
       "path": "/admin/finance/payout/schedule/search",
       "result": "FAIL",
-      "httpStatus": null,
-      "durationMs": 2,
-      "notes": "Network error: fetch failed; duration=2ms"
+      "httpStatus": 404,
+      "durationMs": 273,
+      "notes": "HTTP 404, body preview: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <title>Error</title> </head> <body> <pre>Cannot POST /admin/finance/payout/sc; duration=273ms"
     },
     {
       "name": "Invoice search",
       "method": "POST",
       "path": "/admin/finance/invoice/search",
       "result": "FAIL",
-      "httpStatus": null,
-      "durationMs": 3,
-      "notes": "Network error: fetch failed; duration=3ms"
+      "httpStatus": 404,
+      "durationMs": 293,
+      "notes": "HTTP 404, body preview: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <title>Error</title> </head> <body> <pre>Cannot POST /admin/finance/invoice/s; duration=293ms"
     },
     {
       "name": "Reconciliation search",
       "method": "POST",
       "path": "/admin/finance/reconciliation/search",
       "result": "FAIL",
-      "httpStatus": null,
-      "durationMs": 2,
-      "notes": "Network error: fetch failed; duration=2ms"
+      "httpStatus": 404,
+      "durationMs": 269,
+      "notes": "HTTP 404, body preview: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <title>Error</title> </head> <body> <pre>Cannot POST /admin/finance/reconcili; duration=269ms"
     },
     {
       "name": "Finance dashboard",
       "method": "GET",
       "path": "/admin/finance/dashboard",
       "result": "FAIL",
-      "httpStatus": null,
-      "durationMs": 1,
-      "notes": "Network error: fetch failed; duration=1ms"
+      "httpStatus": 404,
+      "durationMs": 288,
+      "notes": "HTTP 404, body preview: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <title>Error</title> </head> <body> <pre>Cannot GET /admin/finance/dashboard<; duration=288ms"
     },
     {
       "name": "Revenue report",
       "method": "POST",
       "path": "/admin/finance/reports/revenue",
       "result": "FAIL",
-      "httpStatus": null,
-      "durationMs": 2,
-      "notes": "Network error: fetch failed; duration=2ms"
+      "httpStatus": 404,
+      "durationMs": 263,
+      "notes": "HTTP 404, body preview: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <title>Error</title> </head> <body> <pre>Cannot POST /admin/finance/reports/r; duration=263ms"
     },
     {
       "name": "Commission report",
       "method": "POST",
       "path": "/admin/finance/reports/commission",
       "result": "FAIL",
-      "httpStatus": null,
-      "durationMs": 2,
-      "notes": "Network error: fetch failed; duration=2ms"
+      "httpStatus": 404,
+      "durationMs": 272,
+      "notes": "HTTP 404, body preview: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <title>Error</title> </head> <body> <pre>Cannot POST /admin/finance/reports/c; duration=272ms"
     },
     {
       "name": "Tax report",
       "method": "POST",
       "path": "/admin/finance/reports/tax",
       "result": "FAIL",
-      "httpStatus": null,
-      "durationMs": 2,
-      "notes": "Network error: fetch failed; duration=2ms"
+      "httpStatus": 404,
+      "durationMs": 264,
+      "notes": "HTTP 404, body preview: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <title>Error</title> </head> <body> <pre>Cannot POST /admin/finance/reports/t; duration=264ms"
     },
     {
       "name": "Cashflow report",
       "method": "POST",
       "path": "/admin/finance/reports/cashflow",
       "result": "FAIL",
-      "httpStatus": null,
-      "durationMs": 3,
-      "notes": "Network error: fetch failed; duration=3ms"
+      "httpStatus": 404,
+      "durationMs": 264,
+      "notes": "HTTP 404, body preview: <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <title>Error</title> </head> <body> <pre>Cannot POST /admin/finance/reports/c; duration=264ms"
     },
     {
       "name": "Host ledger by id",

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { API_BASE_URL } from "../configs/apiConfigs";
+import { clearAdminSession, getAdminToken } from "./adminSession";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -8,7 +9,7 @@ const api = axios.create({
 /* ================= REQUEST INTERCEPTOR ================= */
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("adminToken");
+    const token = getAdminToken();
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -46,10 +47,7 @@ api.interceptors.response.use(
 
 /* ================= LOGOUT HANDLER ================= */
 function handleLogout() {
-  localStorage.removeItem("adminToken");
-
-  // Optional: clear other auth-related data
-  localStorage.removeItem("adminUser");
+  clearAdminSession();
 
   // Redirect to login
   window.location.replace("/admin/login");

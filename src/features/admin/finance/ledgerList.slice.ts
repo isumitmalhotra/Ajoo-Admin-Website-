@@ -7,6 +7,13 @@ import type {
   LedgerSearchPayload,
   PaginatedState,
 } from "../../../pages/admin/finance/types";
+import {
+  getFinanceDataNode,
+  getPage,
+  getTotalPages,
+  getTotalRecords,
+  normalizeLedgerRows,
+} from "../../../services/financeContracts";
 
 const initialState: PaginatedState<LedgerEntry> = {
   data: [],
@@ -32,12 +39,13 @@ export const fetchLedgerList = createAsyncThunk<
       ADMINENDPOINTS.FINANCE_LEDGER_SEARCH,
       payload ?? { page: 1, limit: 10 }
     );
-    const d = res.data.data;
+    const d = getFinanceDataNode(res.data);
+    const ledgers = normalizeLedgerRows(d?.ledgers ?? d?.rows ?? []);
     return {
-      ledgers: d.ledgers,
-      totalRecords: d.totalRecords,
-      currentPage: d.currentPage,
-      totalPages: d.totalPages,
+      ledgers,
+      totalRecords: getTotalRecords(d, ledgers.length),
+      currentPage: getPage(d, (payload as LedgerSearchPayload)?.page ?? 1),
+      totalPages: getTotalPages(d),
     };
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {

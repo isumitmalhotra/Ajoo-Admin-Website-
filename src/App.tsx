@@ -7,7 +7,7 @@ import {
 import "./App.css";
 import notFound from "./assets/UI/404.jpg";
 import { AdminLayout } from "./components";
-import AdminProtectedRoute from "./components/authGaurd";
+import AdminProtectedRoute, { GuestRoute } from "./components/authGaurd";
 import { SidebarProvider } from "./context/AdminContext";
 import AdminBooking from "./pages/admin/adminBooking/AdminBooking";
 import {
@@ -61,7 +61,6 @@ import CashFlowReport from "./pages/admin/finance/CashFlowReport";
 // NEED TO SET ORDER
 import CommonLayout from "./components/layout/CommonLayout";
 import { Home } from "./pages";
-import GuestRoute from "./components/authGaurd";
 import { LoginForm } from "./auth/Forms/LoginForm";
 import UserSignup from "./auth/UserSignup";
 import SignupOtpVerification from "./auth/SignupOtpVerification";
@@ -75,6 +74,8 @@ import HostEarnings from "./pages/host/HostEarnings";
 import HostStatements from "./pages/host/HostStatements";
 import HostProfile from "./pages/host/HostProfile";
 import HostSupport from "./pages/host/HostSupport";
+import HostPerformance from "./pages/host/HostPerformance";
+import HostCommunication from "./pages/host/HostCommunication";
 
 function App() {
   return (
@@ -132,9 +133,11 @@ function App() {
           <Route path="dashboard" element={<HostDashboard />} />
           <Route path="bookings" element={<HostBookings />} />
           <Route path="earnings" element={<HostEarnings />} />
+          <Route path="performance" element={<HostPerformance />} />
           <Route path="statements" element={<HostStatements />} />
           <Route path="profile" element={<HostProfile />} />
           <Route path="support" element={<HostSupport />} />
+          <Route path="communication" element={<HostCommunication />} />
         </Route>
 
         <Route element={<AdminProtectedRoute />}>

@@ -7,6 +7,14 @@ import type {
   ReconciliationSummary,
   ReconciliationSearchPayload,
 } from "../../../pages/admin/finance/types";
+import {
+  getFinanceDataNode,
+  getPage,
+  getTotalPages,
+  getTotalRecords,
+  normalizeReconciliationRows,
+  normalizeReconciliationSummary,
+} from "../../../services/financeContracts";
 
 interface ReconciliationListState {
   data: ReconciliationRecord[];
@@ -44,13 +52,14 @@ export const fetchReconciliationList = createAsyncThunk<
       ADMINENDPOINTS.FINANCE_RECONCILIATION_SEARCH,
       payload ?? { page: 1, limit: 10 }
     );
-    const d = res.data.data;
+    const d = getFinanceDataNode(res.data);
+    const records = normalizeReconciliationRows(d?.records ?? d?.rows ?? []);
     return {
-      records: d.records,
-      summary: d.summary,
-      totalRecords: d.totalRecords,
-      currentPage: d.currentPage,
-      totalPages: d.totalPages,
+      records,
+      summary: normalizeReconciliationSummary(d?.summary),
+      totalRecords: getTotalRecords(d, records.length),
+      currentPage: getPage(d, (payload as ReconciliationSearchPayload)?.page ?? 1),
+      totalPages: getTotalPages(d),
     };
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {

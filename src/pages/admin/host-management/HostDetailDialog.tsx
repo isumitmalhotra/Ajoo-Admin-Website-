@@ -12,6 +12,8 @@ import {
   Alert,
   TextField,
   CircularProgress,
+  MenuItem,
+  Paper,
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
@@ -30,6 +32,19 @@ interface KycAuditEntry {
   actor: string;
   note: string;
 }
+
+interface HostPayoutPreview {
+  payoutId: string;
+  amount: number;
+  status: "READY" | "ON_HOLD" | "PROCESSING";
+  date: string;
+}
+
+const defaultPayoutPreview: HostPayoutPreview[] = [
+  { payoutId: "PAY-4821", amount: 28600, status: "READY", date: "2026-05-11" },
+  { payoutId: "PAY-4752", amount: 19300, status: "PROCESSING", date: "2026-05-06" },
+  { payoutId: "PAY-4668", amount: 15850, status: "ON_HOLD", date: "2026-04-28" },
+];
 
 const normalizeAction = (action: string) => action.trim().toLowerCase();
 
@@ -153,6 +168,10 @@ export default function HostDetailDialog({
   const { data, loading, error, actionLoading, actionError, actionSuccess } =
     useAppSelector((state) => state.hostDetail);
   const [rejectReason, setRejectReason] = useState("");
+  const [performanceWindow, setPerformanceWindow] = useState<"30D" | "90D">("30D");
+  const [payoutPreview, setPayoutPreview] = useState<HostPayoutPreview[]>(
+    defaultPayoutPreview
+  );
 
   useEffect(() => {
     if (open && host?.id) {
@@ -167,6 +186,8 @@ export default function HostDetailDialog({
   useEffect(() => {
     if (!open) {
       setRejectReason("");
+      setPerformanceWindow("30D");
+      setPayoutPreview(defaultPayoutPreview);
       dispatch(resetHostDetail());
     }
   }, [dispatch, open]);
@@ -187,6 +208,33 @@ export default function HostDetailDialog({
   }, [detail?.added_at, host?.addedAt]);
 
   const auditTrail = useMemo(() => extractKycAuditTrail(detail), [detail]);
+
+  const performanceData = useMemo(() => {
+    const isThirtyDay = performanceWindow === "30D";
+
+    const fallback = {
+      occupancy: isThirtyDay ? 74 : 69,
+      earnings: isThirtyDay ? 168500 : 472000,
+      cancellations: isThirtyDay ? 4 : 11,
+      rating: isThirtyDay ? 4.6 : 4.5,
+    };
+
+    return {
+      occupancy: Number(detail?.occupancyRate ?? detail?.occupancy ?? fallback.occupancy),
+      earnings: Number(
+        detail?.performanceSummary?.earnings ??
+          detail?.hostEarnings ??
+          detail?.monthEarnings ??
+          fallback.earnings
+      ),
+      cancellations: Number(
+        detail?.performanceSummary?.cancellations ??
+          detail?.cancelledBookings ??
+          fallback.cancellations
+      ),
+      rating: Number(detail?.rating ?? detail?.averageRating ?? fallback.rating),
+    };
+  }, [detail, performanceWindow]);
 
   if (!host) return null;
 
@@ -218,8 +266,19 @@ export default function HostDetailDialog({
     }
   };
 
+  const handlePayoutStatusToggle = (payoutId: string) => {
+    setPayoutPreview((prev) =>
+      prev.map((row) => {
+        if (row.payoutId !== payoutId) return row;
+        if (row.status === "ON_HOLD") return { ...row, status: "READY" };
+        if (row.status === "READY") return { ...row, status: "ON_HOLD" };
+        return row;
+      })
+    );
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>Host Details</DialogTitle>
 
       <DialogContent dividers>
@@ -358,6 +417,130 @@ export default function HostDetailDialog({
               variant={isVerified ? "filled" : "outlined"}
             />
           </Stack>
+
+          <Divider />
+
+          <Box>
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={1}
+              alignItems={{ xs: "flex-start", sm: "center" }}
+              justifyContent="space-between"
+              mb={1}
+            >
+              <Typography variant="subtitle2" color="text.secondary">
+                Performance Snapshot
+              </Typography>
+              <TextField
+                select
+                size="small"
+                label="Window"
+                value={performanceWindow}
+                onChange={(event) =>
+                  setPerformanceWindow(event.target.value as "30D" | "90D")
+                }
+                sx={{ minWidth: 130 }}
+              >
+                <MenuItem value="30D">30 Days</MenuItem>
+                <MenuItem value="90D">90 Days</MenuItem>
+              </TextField>
+            </Stack>
+
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+                gap: 1,
+              }}
+            >
+              <Paper variant="outlined" sx={{ p: 1.1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Occupancy
+                </Typography>
+                <Typography variant="subtitle1" fontWeight={700}>
+                  {performanceData.occupancy}%
+                </Typography>
+              </Paper>
+              <Paper variant="outlined" sx={{ p: 1.1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Earnings
+                </Typography>
+                <Typography variant="subtitle1" fontWeight={700}>
+                  INR {performanceData.earnings.toLocaleString("en-IN")}
+                </Typography>
+              </Paper>
+              <Paper variant="outlined" sx={{ p: 1.1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Cancellations
+                </Typography>
+                <Typography variant="subtitle1" fontWeight={700}>
+                  {performanceData.cancellations}
+                </Typography>
+              </Paper>
+              <Paper variant="outlined" sx={{ p: 1.1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Rating
+                </Typography>
+                <Typography variant="subtitle1" fontWeight={700}>
+                  {performanceData.rating.toFixed(1)}/5
+                </Typography>
+              </Paper>
+            </Box>
+          </Box>
+
+          <Divider />
+
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary" mb={1}>
+              Recent Payouts
+            </Typography>
+            <Stack spacing={0.8}>
+              {payoutPreview.map((row) => (
+                <Stack
+                  key={row.payoutId}
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={1}
+                  alignItems={{ xs: "flex-start", sm: "center" }}
+                  justifyContent="space-between"
+                  sx={{ p: 1, border: "1px solid #e5e7eb", borderRadius: "0.7rem" }}
+                >
+                  <Box>
+                    <Typography variant="body2" fontWeight={700}>
+                      {row.payoutId}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {new Date(row.date).toLocaleDateString("en-IN")}
+                    </Typography>
+                  </Box>
+                  <Stack direction="row" spacing={0.8} alignItems="center">
+                    <Typography variant="body2" fontWeight={700}>
+                      INR {row.amount.toLocaleString("en-IN")}
+                    </Typography>
+                    <Chip
+                      size="small"
+                      label={row.status.replace("_", " ")}
+                      color={
+                        row.status === "READY"
+                          ? "success"
+                          : row.status === "ON_HOLD"
+                          ? "warning"
+                          : "info"
+                      }
+                      variant="outlined"
+                    />
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      disabled={row.status === "PROCESSING"}
+                      onClick={() => handlePayoutStatusToggle(row.payoutId)}
+                    >
+                      {row.status === "ON_HOLD" ? "Release" : "Hold"}
+                    </Button>
+                  </Stack>
+                </Stack>
+              ))}
+            </Stack>
+          </Box>
 
           <Divider />
 

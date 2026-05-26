@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Socket.IO Test</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  </head>
+  <body>
+    <h1>Socket.IO Test</h1>
+    <script>
+      const socket = io("https://api.aajoohomes.com", {
+        transports: ["websocket"],
+      });
+
+      socket.on("connect", () => {
+        console.log("🟢 Connected:", socket.id);
+      });
+
+      socket.on("connect_error", (err) => {
+        console.error("❌ Connection Error:", err.message);
+      });
+    </script>
+  </body>
+</html>
+
+
+
+<!-- 
+// Fx7i_jBiATM7kjLAAAAB 
+// bBxZjjwH03U0I6SeAAAB 
+
+// io.on("connection", (socket) => {
+//   // console.log(socket,"socket")
+//   console.log(`User connected: ${socket.id}`);
+
+//   socket.on("join", (userId) => {
+//     socket.join(`user_${userId}`);
+//     console.log(`User ${userId} joined room user_${userId}`);
+//   });
+
+//   socket.on("sendMessage", async (data) => {
+//     const { sender_id, receiver_id, message } = data;
+//     const savedMessage = await model.tbl_messages.create({
+//       sender_id,
+//       receiver_id,
+//       message,
+//     });
+
+//     const messagePayload = {
+//       ...savedMessage.dataValues,
+//       created_at: new Date(), 
+//     };
+
+//     io.to(`user_${receiver_id}`).emit("receiveMessage", messagePayload);
+//     socket.emit("messageSent", messagePayload);
+//   });
+
+//   socket.on("loadMessages", async ({ sender_id, receiver_id }) => {
+//     console.log(sender_id,receiver_id)
+//     const messages = await model.tbl_messages.getConversation(sender_id, receiver_id);
+
+//     console.log(messages,"message111")
+//     socket.emit("chatHistory", messages);
+//   });
+
+//   socket.on("joinNegotiation", ({ userId, propertyId }) => {
+//     const room = `negotiation_${propertyId}_${userId}`;
+//     socket.join(room);
+//     console.log(`User ${userId} joined negotiation room: ${room}`);
+//   });
+
+
+//   socket.on("sendNegotiationMessage", async (data) => {
+//     const { property_id, sender_id, receiver_id, message_text, is_offer, offer_price } = data;
+
+//     const savedMessage = await model.tbl_nagotiate_messages.create({
+//       property_id,
+//       sender_id,
+//       receiver_id,
+//       message_text,
+//       is_offer,
+//       offer_price: is_offer ? offer_price : null,
+//     });
+
+//     const messagePayload = {
+//       ...savedMessage.dataValues,
+//       created_at: new Date(),
+//     };
+
+//     // Emit to the specific room of receiver
+//     const receiverRoom = `negotiation_${property_id}_${receiver_id}`;
+//     negotiationNamespace.to(receiverRoom).emit("receiveNegotiationMessage", messagePayload);
+
+//     // Also emit back to sender
+//     socket.emit("negotiationMessageSent", messagePayload);
+//   });
+
+//   socket.on("loadNegotiationChat", async ({ sender_id, receiver_id, property_id }) => {
+//     const messages = await model.tbl_nagotiate_messages.findAll({
+//       where: {
+//         property_id,
+//         [Sequelize.Op.or]: [
+//           { sender_id, receiver_id },
+//           { sender_id: receiver_id, receiver_id: sender_id },
+//         ]
+//       },
+//       order: [['created_at', 'ASC']],
+//     }); 
+
+//     socket.emit("negotiationChatHistory", messages);
+//   });
+
+//   socket.on("disconnect", () => {
+//     console.log(`User disconnected: ${socket.id}`);
+//   });
+// }); -->
+
+
+
+
+
+
+

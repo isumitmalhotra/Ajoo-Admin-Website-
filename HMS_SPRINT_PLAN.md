@@ -9,6 +9,13 @@
 - Frontend repository only; backend APIs may be partial.
 - Existing admin host list page is available and working.
 - Host portal is currently a stub and needs full implementation.
+- Backend updated source/repo access is unavailable to this team at present.
+
+## Execution Rule (Until Backend Handover)
+- Continue all frontend implementation work to completion where feasible.
+- Mark backend-dependent integration items as blocked with exact endpoint names.
+- Ship UI/UX, validation, state handling, mock/dev fallback, and route wiring even when APIs are pending.
+- Revisit blocked integrations once backend handover or endpoint activation is confirmed.
 
 ## Definition of Done
 - Feature implemented with loading/empty/error states.
@@ -213,6 +220,22 @@
 - Host admin APIs: detail, kyc detail/approve/reject, performance summary, payout actions.
 - Host portal APIs: dashboard, bookings, earnings, profile, payout account, statements, support, messages.
 - Auth/role claims: explicit host role claim for route guards.
+
+## Current Backend-Blocked Items (Frontend Ready Path Active)
+- `/host/dashboard/summary`
+- `/host/bookings/search`
+- `/host/bookings/detail`
+- `/host/bookings/export`
+- `/host/earnings/summary`
+- `/host/payout/history`
+- `/host/profile/get`
+- `/host/profile/update`
+- `/host/payout-account/get`
+- `/host/payout-account/update`
+- `/host/statements/search`
+- `/host/statements/download/:id`
+- `/host/support/tickets/*`
+- `/host/messages/*`
 
 ## Recommended Execution Order (Exact)
 1. HMS-0002 (ship now)

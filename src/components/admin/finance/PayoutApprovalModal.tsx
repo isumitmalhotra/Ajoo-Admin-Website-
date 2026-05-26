@@ -10,6 +10,8 @@ import {
   Box,
 } from "@mui/material";
 import type { Payout } from "../../../pages/admin/finance/types";
+import { CheckCircle2 } from "lucide-react";
+import { formatINR } from "../../../pages/admin/finance/utils";
 
 interface Props {
   open: boolean;
@@ -40,8 +42,30 @@ const PayoutApprovalModal = ({
   if (!payout) return null;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 600, color: "#374151" }}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: "1rem",
+          border: "1px solid #d9f99d",
+          overflow: "hidden",
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          fontWeight: 700,
+          color: "#166534",
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          bgcolor: "#f0fdf4",
+        }}
+      >
+        <CheckCircle2 size={18} />
         Confirm Payout Approval
       </DialogTitle>
       <DialogContent>
@@ -55,8 +79,8 @@ const PayoutApprovalModal = ({
             textAlign: "center",
           }}
         >
-          <Typography variant="h4" fontWeight={700} color="#16a34a">
-            ₹{payout.amount.toLocaleString("en-IN")}
+          <Typography variant="h4" fontWeight={800} color="#166534">
+            {formatINR(payout.amount)}
           </Typography>
           <Typography variant="body2" color="#15803d" mt={0.5}>
             Will be transferred to host
@@ -107,7 +131,13 @@ const PayoutApprovalModal = ({
           variant="contained"
           onClick={onConfirm}
           disabled={loading}
-          sx={{ bgcolor: "#16a34a", "&:hover": { bgcolor: "#15803d" } }}
+          sx={{
+            bgcolor: "#16a34a",
+            textTransform: "none",
+            fontWeight: 700,
+            px: 2,
+            "&:hover": { bgcolor: "#15803d" },
+          }}
         >
           {loading ? "Processing..." : "Approve Payout"}
         </Button>

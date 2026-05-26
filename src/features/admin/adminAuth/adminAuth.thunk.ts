@@ -2,11 +2,22 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../../services/api";
 import { ADMINENDPOINTS } from "../../../services/endpoints";
 import { setMessage, showLoader } from "../../ui/ui.slice";
+import { parseAdminAuthPayload, type AppRole } from "../../../services/apiContracts";
+import type { RbacClaims } from "../../../services/apiContracts";
 
 interface LoginPayload {
   username?: string;
   email?: string;
   password: string;
+}
+
+interface AdminLoginResult {
+  admin: Record<string, unknown>;
+  token: string;
+  roles: AppRole[];
+  permissions: string[];
+  claims: RbacClaims | null;
+  message: string;
 }
 
 const DEV_BYPASS_ENABLED =
@@ -20,7 +31,11 @@ const DEV_BYPASS_EMAIL =
 const DEV_BYPASS_PASSWORD =
   import.meta.env.VITE_DEV_ADMIN_PASSWORD || "Admin@12345";
 
-export const adminLogin = createAsyncThunk(
+export const adminLogin = createAsyncThunk<
+  AdminLoginResult,
+  LoginPayload,
+  { rejectValue: string }
+>(
   "adminAuth/login",
   async (payload: LoginPayload, { dispatch, rejectWithValue }) => {
     try {
@@ -42,6 +57,20 @@ export const adminLogin = createAsyncThunk(
           return {
             admin: devAdmin,
             token: "dev-admin-token",
+            roles: ["admin"],
+            permissions: [
+              "admin:*",
+              "finance:*",
+              "hosts:*",
+              "users:*",
+              "properties:*",
+              "bookings:*",
+            ],
+            claims: {
+              sub: "1",
+              role: "admin",
+              permissions: ["admin:*", "finance:*"],
+            },
             message: "Dev login successful (bypass mode)",
           };
         }
@@ -52,24 +81,35 @@ export const adminLogin = createAsyncThunk(
       }
 
       const res = await api.post(ADMINENDPOINTS.ADMIN_LOGIN, payload);
-      console.log(res.data, "admin login response");
-
+      const parsed = parseAdminAuthPayload(res.data);
+      if (!parsed) {
+        return rejectWithValue("Invalid admin auth response payload");
+      }
       dispatch(
         setMessage({
-          message: res.data.message,
+          message: parsed.message || "Login successful",
           severity: "success",
         })
       );
-
-      // return res.data.data;
       return {
-        admin: res.data.data.admin,
-        token: res.data.data.token,
-        message: res.data.message,
+        admin: parsed.admin,
+        token: parsed.token,
+        roles: parsed.roles,
+        permissions: parsed.permissions,
+        claims: parsed.claims,
+        message: parsed.message || "Login successful",
       };
-      
-    } catch (err: any) {
-      const message = err.response?.data?.message || "Login failed";
+
+    } catch (err: unknown) {
+      const message =
+        typeof err === "object" &&
+        err !== null &&
+        "response" in err &&
+        typeof (err as { response?: { data?: { message?: string } } }).response?.data?.message ===
+          "string"
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message ||
+            "Login failed"
+          : "Login failed";
 
       dispatch(
         setMessage({
@@ -79,9 +119,6 @@ export const adminLogin = createAsyncThunk(
       );
 
       return rejectWithValue(message);
-    } 
-    // finally {
-    //   dispatch(hideLoader());
-    // }
+    }
   }
 );

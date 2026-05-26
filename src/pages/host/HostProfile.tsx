@@ -210,7 +210,15 @@ export default function HostProfile() {
 
   return (
     <Stack spacing={2.5}>
-      <Paper sx={{ p: 3, borderRadius: 2 }} elevation={0}>
+      <Paper
+        sx={{
+          p: 3,
+          borderRadius: "1rem",
+          border: "1px solid #ede9fe",
+          boxShadow: "0 12px 28px rgba(17,24,39,0.05)",
+        }}
+        elevation={0}
+      >
         <Typography variant="h6" fontWeight={700}>
           Host Profile and Banking
         </Typography>

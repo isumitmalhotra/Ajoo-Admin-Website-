@@ -7,6 +7,13 @@ import type {
   InvoiceSearchPayload,
   PaginatedState,
 } from "../../../pages/admin/finance/types";
+import {
+  getFinanceDataNode,
+  getPage,
+  getTotalPages,
+  getTotalRecords,
+  normalizeInvoiceRows,
+} from "../../../services/financeContracts";
 
 const initialState: PaginatedState<Invoice> = {
   data: [],
@@ -32,12 +39,13 @@ export const fetchInvoiceList = createAsyncThunk<
       ADMINENDPOINTS.FINANCE_INVOICE_SEARCH,
       payload ?? { page: 1, limit: 10 }
     );
-    const d = res.data.data;
+    const d = getFinanceDataNode(res.data);
+    const invoices = normalizeInvoiceRows(d?.invoices ?? d?.rows ?? []);
     return {
-      invoices: d.invoices,
-      totalRecords: d.totalRecords,
-      currentPage: d.currentPage,
-      totalPages: d.totalPages,
+      invoices,
+      totalRecords: getTotalRecords(d, invoices.length),
+      currentPage: getPage(d, (payload as InvoiceSearchPayload)?.page ?? 1),
+      totalPages: getTotalPages(d),
     };
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {

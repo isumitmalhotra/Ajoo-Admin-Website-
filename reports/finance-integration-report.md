@@ -1,7 +1,7 @@
 # Finance Staging Integration Report
 
-- Date: 2026-03-30T07:57:22.503Z
-- Base URL: http://localhost:8000
+- Date: 2026-04-20T08:49:54.122Z
+- Base URL: https://aajaodev.onrender.com
 - Write tests enabled: no
 
 ## Summary
@@ -16,16 +16,16 @@
 
 | Name | Method | Path | Result | HTTP | Notes |
 |------|--------|------|--------|------|-------|
-| Ledger search | POST | /admin/finance/ledger/search | FAIL | - | Network error: fetch failed; duration=45ms |
-| Payout search | POST | /admin/finance/payout/search | FAIL | - | Network error: fetch failed; duration=2ms |
-| Payout schedule search | POST | /admin/finance/payout/schedule/search | FAIL | - | Network error: fetch failed; duration=2ms |
-| Invoice search | POST | /admin/finance/invoice/search | FAIL | - | Network error: fetch failed; duration=3ms |
-| Reconciliation search | POST | /admin/finance/reconciliation/search | FAIL | - | Network error: fetch failed; duration=2ms |
-| Finance dashboard | GET | /admin/finance/dashboard | FAIL | - | Network error: fetch failed; duration=1ms |
-| Revenue report | POST | /admin/finance/reports/revenue | FAIL | - | Network error: fetch failed; duration=2ms |
-| Commission report | POST | /admin/finance/reports/commission | FAIL | - | Network error: fetch failed; duration=2ms |
-| Tax report | POST | /admin/finance/reports/tax | FAIL | - | Network error: fetch failed; duration=2ms |
-| Cashflow report | POST | /admin/finance/reports/cashflow | FAIL | - | Network error: fetch failed; duration=3ms |
+| Ledger search | POST | /admin/finance/ledger/search | FAIL | 404 | HTTP 404, body preview: <!DOCTYPE html> <html lang="en"> <head> <meta charset="utf-8"> <title>Error</title> </head> <body> <pre>Cannot POST /admin/finance/ledger/se; duration=940ms |
+| Payout search | POST | /admin/finance/payout/search | FAIL | 404 | HTTP 404, body preview: <!DOCTYPE html> <html lang="en"> <head> <meta charset="utf-8"> <title>Error</title> </head> <body> <pre>Cannot POST /admin/finance/payout/se; duration=272ms |
+| Payout schedule search | POST | /admin/finance/payout/schedule/search | FAIL | 404 | HTTP 404, body preview: <!DOCTYPE html> <html lang="en"> <head> <meta charset="utf-8"> <title>Error</title> </head> <body> <pre>Cannot POST /admin/finance/payout/sc; duration=273ms |
+| Invoice search | POST | /admin/finance/invoice/search | FAIL | 404 | HTTP 404, body preview: <!DOCTYPE html> <html lang="en"> <head> <meta charset="utf-8"> <title>Error</title> </head> <body> <pre>Cannot POST /admin/finance/invoice/s; duration=293ms |
+| Reconciliation search | POST | /admin/finance/reconciliation/search | FAIL | 404 | HTTP 404, body preview: <!DOCTYPE html> <html lang="en"> <head> <meta charset="utf-8"> <title>Error</title> </head> <body> <pre>Cannot POST /admin/finance/reconcili; duration=269ms |
+| Finance dashboard | GET | /admin/finance/dashboard | FAIL | 404 | HTTP 404, body preview: <!DOCTYPE html> <html lang="en"> <head> <meta charset="utf-8"> <title>Error</title> </head> <body> <pre>Cannot GET /admin/finance/dashboard<; duration=288ms |
+| Revenue report | POST | /admin/finance/reports/revenue | FAIL | 404 | HTTP 404, body preview: <!DOCTYPE html> <html lang="en"> <head> <meta charset="utf-8"> <title>Error</title> </head> <body> <pre>Cannot POST /admin/finance/reports/r; duration=263ms |
+| Commission report | POST | /admin/finance/reports/commission | FAIL | 404 | HTTP 404, body preview: <!DOCTYPE html> <html lang="en"> <head> <meta charset="utf-8"> <title>Error</title> </head> <body> <pre>Cannot POST /admin/finance/reports/c; duration=272ms |
+| Tax report | POST | /admin/finance/reports/tax | FAIL | 404 | HTTP 404, body preview: <!DOCTYPE html> <html lang="en"> <head> <meta charset="utf-8"> <title>Error</title> </head> <body> <pre>Cannot POST /admin/finance/reports/t; duration=264ms |
+| Cashflow report | POST | /admin/finance/reports/cashflow | FAIL | 404 | HTTP 404, body preview: <!DOCTYPE html> <html lang="en"> <head> <meta charset="utf-8"> <title>Error</title> </head> <body> <pre>Cannot POST /admin/finance/reports/c; duration=264ms |
 | Host ledger by id | POST | /admin/finance/ledger/host/{hostId} | SKIP | - | Missing required test ID in environment variables |
 | Guest ledger by id | POST | /admin/finance/ledger/user/{userId} | SKIP | - | Missing required test ID in environment variables |
 | Ledger detail by id | GET | /admin/finance/ledger/{ledgerId} | SKIP | - | Missing required test ID in environment variables |

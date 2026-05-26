@@ -15,15 +15,38 @@ const ReportTabNav = () => {
   const activeIndex = REPORT_TABS.findIndex((t) => pathname.startsWith(t.path));
 
   return (
-    <Paper sx={{ borderRadius: "0.75rem", mb: 3 }}>
+    <Paper
+      sx={{
+        borderRadius: "0.85rem",
+        mb: 3,
+        p: 0.8,
+        border: "1px solid #ede9fe",
+        boxShadow: "0 8px 20px rgba(17,24,39,0.04)",
+      }}
+    >
       <Tabs
         value={activeIndex === -1 ? 0 : activeIndex}
         onChange={(_, v) => navigate(REPORT_TABS[v].path)}
+        variant="scrollable"
+        allowScrollButtonsMobile
         sx={{
-          px: 2,
-          "& .MuiTab-root": { textTransform: "none", fontWeight: 500 },
-          "& .Mui-selected": { color: "#881f9b" },
-          "& .MuiTabs-indicator": { backgroundColor: "#881f9b" },
+          minHeight: 40,
+          "& .MuiTabs-indicator": { display: "none" },
+          "& .MuiTab-root": {
+            textTransform: "none",
+            fontWeight: 600,
+            borderRadius: "0.65rem",
+            minHeight: 38,
+            px: 1.8,
+            py: 0.65,
+            color: "#6b7280",
+            transition: "all .2s ease",
+          },
+          "& .Mui-selected": {
+            color: "#6b21a8",
+            bgcolor: "#faf5ff",
+            border: "1px solid #d8b4fe",
+          },
         }}
       >
         {REPORT_TABS.map((tab) => (

@@ -16,12 +16,16 @@ interface FinanceEmptyStateProps {
   variant?: EmptyVariant;
   message?: string;
   minHeight?: number;
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
 const FinanceEmptyState = ({
   variant = "default",
   message,
   minHeight = 300,
+  actionLabel,
+  onAction,
 }: FinanceEmptyStateProps) => {
   const config = VARIANT_CONFIG[variant];
   const Icon = config.icon;
@@ -35,22 +39,28 @@ const FinanceEmptyState = ({
         justifyContent: "center",
         minHeight,
         py: 6,
-        gap: 2,
+        gap: 1.4,
       }}
     >
       <Box
         sx={{
-          width: 64,
-          height: 64,
+          width: 70,
+          height: 70,
           borderRadius: "50%",
-          bgcolor: "#f3e8ff",
+          background:
+            "radial-gradient(circle at 30% 20%, #f5d0fe 0%, #f3e8ff 55%, #ede9fe 100%)",
+          border: "1px solid #e9d5ff",
+          boxShadow: "0 10px 20px rgba(168,85,247,0.12)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <Icon size={28} color="#881f9b" />
+        <Icon size={30} color="#7e22ce" />
       </Box>
+      <Typography variant="subtitle1" fontWeight={700} color="#374151">
+        Nothing to show yet
+      </Typography>
       <Typography
         variant="body1"
         color="text.secondary"
@@ -59,6 +69,27 @@ const FinanceEmptyState = ({
       >
         {message || config.defaultMessage}
       </Typography>
+      {actionLabel && onAction && (
+        <Box
+          component="button"
+          onClick={onAction}
+          sx={{
+            mt: 1.1,
+            border: "1px solid #d8b4fe",
+            borderRadius: "0.65rem",
+            bgcolor: "#faf5ff",
+            color: "#6b21a8",
+            px: 2,
+            py: 0.9,
+            fontWeight: 600,
+            fontSize: "0.8rem",
+            cursor: "pointer",
+            "&:hover": { bgcolor: "#f3e8ff" },
+          }}
+        >
+          {actionLabel}
+        </Box>
+      )}
     </Box>
   );
 };

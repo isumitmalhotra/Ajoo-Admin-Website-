@@ -2,24 +2,56 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import api from "../../services/api";
 import { ADMINENDPOINTS } from "../../services/endpoints";
+import { extractApiData } from "../../services/apiContracts";
+import type { HostEarningsData, HostPayoutRow } from "../../pages/host/types";
 
-export interface HostPayoutRow {
-  payout_id?: number;
-  booking_id?: number;
-  amount?: number;
-  status?: string;
-  payout_date?: string;
-  reference_id?: string;
-}
+export type { HostEarningsData, HostPayoutRow };
 
-export interface HostEarningsData {
-  totalEarnings?: number;
-  pendingPayouts?: number;
-  settledPayouts?: number;
-  lastPayoutAmount?: number;
-  nextPayoutDate?: string;
-  payoutHistory?: HostPayoutRow[];
-}
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const toNumber = (value: unknown): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const toStringOrUndefined = (value: unknown): string | undefined =>
+  typeof value === "string" && value.trim().length > 0 ? value : undefined;
+
+const normalizePayoutRow = (value: unknown): HostPayoutRow | null => {
+  if (!isRecord(value)) return null;
+
+  return {
+    payout_id: toNumber(value.payout_id ?? value.payoutId ?? value.id),
+    booking_id: toNumber(value.booking_id ?? value.bookingId),
+    amount: toNumber(value.amount),
+    status: toStringOrUndefined(value.status ?? value.payout_status),
+    payout_date: toStringOrUndefined(value.payout_date ?? value.payoutDate ?? value.created_at),
+    reference_id: toStringOrUndefined(value.reference_id ?? value.referenceId ?? value.utr),
+  };
+};
+
+const normalizePayoutRows = (value: unknown): HostPayoutRow[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => normalizePayoutRow(item))
+    .filter((item): item is HostPayoutRow => item !== null);
+};
+
+const normalizeHostEarnings = (value: unknown): HostEarningsData => {
+  if (!isRecord(value)) return {};
+
+  return {
+    totalEarnings: toNumber(value.totalEarnings ?? value.total_earnings),
+    pendingPayouts: toNumber(value.pendingPayouts ?? value.pending_payouts),
+    settledPayouts: toNumber(value.settledPayouts ?? value.settled_payouts),
+    lastPayoutAmount: toNumber(value.lastPayoutAmount ?? value.last_payout_amount),
+    nextPayoutDate: toStringOrUndefined(value.nextPayoutDate ?? value.next_payout_date),
+    payoutHistory: normalizePayoutRows(
+      value.payoutHistory ?? value.payout_history ?? value.recentPayouts
+    ),
+  };
+};
 
 interface HostEarningsState {
   data: HostEarningsData | null;
@@ -40,7 +72,7 @@ export const fetchHostEarnings = createAsyncThunk<
 >("hostEarnings/fetch", async (_, { rejectWithValue }) => {
   try {
     const res = await api.get(ADMINENDPOINTS.HOST_PORTAL_EARNINGS);
-    return res.data?.data || {};
+    return normalizeHostEarnings(extractApiData<unknown>(res.data));
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {
       if (!err.response) {

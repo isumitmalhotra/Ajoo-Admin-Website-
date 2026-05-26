@@ -3,6 +3,14 @@ import axios from "axios";
 import api from "../../../services/api";
 import { ADMINENDPOINTS } from "../../../services/endpoints";
 import type { LedgerEntry } from "../../../pages/admin/finance/types";
+import {
+  getAmount,
+  getFinanceDataNode,
+  getPage,
+  getTotalPages,
+  getTotalRecords,
+  normalizeLedgerRows,
+} from "../../../services/financeContracts";
 
 interface GuestLedgerState {
   data: LedgerEntry[];
@@ -49,13 +57,14 @@ export const fetchGuestLedger = createAsyncThunk<
       `${ADMINENDPOINTS.FINANCE_LEDGER_USER}/${userId}`,
       body
     );
-    const d = res.data.data;
+    const d = getFinanceDataNode(res.data);
+    const ledgers = normalizeLedgerRows(d?.ledgers ?? d?.rows ?? []);
     return {
-      ledgers: d.ledgers,
-      totalSpent: d.totalSpent ?? 0,
-      totalRecords: d.totalRecords,
-      currentPage: d.currentPage,
-      totalPages: d.totalPages,
+      ledgers,
+      totalSpent: getAmount(d?.totalSpent),
+      totalRecords: getTotalRecords(d, ledgers.length),
+      currentPage: getPage(d, payload.page ?? 1),
+      totalPages: getTotalPages(d),
     };
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {

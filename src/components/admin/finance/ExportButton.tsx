@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { IconButton, Tooltip, CircularProgress } from "@mui/material";
+import { Button, Tooltip, CircularProgress } from "@mui/material";
 import { Download } from "lucide-react";
 
 interface ExportButtonProps {
@@ -9,9 +9,16 @@ interface ExportButtonProps {
   rows: (string | number)[][];
   /** File name for the downloaded CSV (without extension) */
   filename?: string;
+  /** Optional button text */
+  label?: string;
 }
 
-const ExportButton = ({ headers, rows, filename }: ExportButtonProps) => {
+const ExportButton = ({
+  headers,
+  rows,
+  filename,
+  label = "Export CSV",
+}: ExportButtonProps) => {
   const [exporting, setExporting] = useState(false);
 
   const handleExport = () => {
@@ -52,19 +59,43 @@ const ExportButton = ({ headers, rows, filename }: ExportButtonProps) => {
   };
 
   return (
-    <Tooltip title="Export CSV">
-      <IconButton
-        onClick={handleExport}
-        disabled={exporting || rows.length === 0}
-        sx={{
-          border: "1px solid #e5e7eb",
-          borderRadius: "0.5rem",
-          p: 1,
-          "&:hover": { borderColor: "#881f9b", color: "#881f9b" },
-        }}
-      >
-        {exporting ? <CircularProgress size={16} /> : <Download size={16} />}
-      </IconButton>
+    <Tooltip title="Download as CSV">
+      <span>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={
+            exporting ? (
+              <CircularProgress size={14} sx={{ color: "#881f9b" }} />
+            ) : (
+              <Download size={14} />
+            )
+          }
+          onClick={handleExport}
+          disabled={exporting || rows.length === 0}
+          sx={{
+            borderColor: "#d1d5db",
+            color: "#374151",
+            borderRadius: "0.65rem",
+            px: 1.4,
+            py: 0.6,
+            textTransform: "none",
+            fontWeight: 600,
+            fontSize: "0.78rem",
+            whiteSpace: "nowrap",
+            "&:hover": {
+              borderColor: "#881f9b",
+              color: "#881f9b",
+              bgcolor: "#faf5ff",
+            },
+            "&.Mui-disabled": {
+              borderColor: "#e5e7eb",
+            },
+          }}
+        >
+          {label}
+        </Button>
+      </span>
     </Tooltip>
   );
 };

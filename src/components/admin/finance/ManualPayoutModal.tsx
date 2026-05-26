@@ -8,8 +8,11 @@ import {
   TextField,
   MenuItem,
   Stack,
+  InputAdornment,
+  Typography,
 } from "@mui/material";
 import type { PayoutMethod } from "../../../pages/admin/finance/types";
+import { HandCoins } from "lucide-react";
 
 const METHOD_OPTIONS: { value: PayoutMethod; label: string }[] = [
   { value: "BANK_TRANSFER", label: "Bank Transfer" },
@@ -80,11 +83,36 @@ const ManualPayoutModal = ({ open, loading, onSubmit, onClose }: Props) => {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 600, color: "#374151" }}>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: "1rem",
+          border: "1px solid #ede9fe",
+          overflow: "hidden",
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          fontWeight: 700,
+          color: "#6b21a8",
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          bgcolor: "#faf5ff",
+        }}
+      >
+        <HandCoins size={18} />
         Initiate Manual Payout
       </DialogTitle>
       <DialogContent>
+        <Typography variant="body2" color="text.secondary" mt={1}>
+          Create an on-demand payout for a host outside normal payout schedules.
+        </Typography>
         <Stack spacing={3} mt={1}>
           <TextField
             label="Host ID"
@@ -109,6 +137,11 @@ const ManualPayoutModal = ({ open, loading, onSubmit, onClose }: Props) => {
             helperText={errors.amount}
             fullWidth
             placeholder="Enter amount"
+            slotProps={{
+              input: {
+                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+              },
+            }}
           />
 
           <TextField
@@ -153,7 +186,13 @@ const ManualPayoutModal = ({ open, loading, onSubmit, onClose }: Props) => {
           variant="contained"
           onClick={handleSubmit}
           disabled={loading}
-          sx={{ bgcolor: "#881f9b", "&:hover": { bgcolor: "#7115bd" } }}
+          sx={{
+            bgcolor: "#881f9b",
+            textTransform: "none",
+            fontWeight: 700,
+            px: 2,
+            "&:hover": { bgcolor: "#7115bd" },
+          }}
         >
           {loading ? "Processing..." : "Initiate Payout"}
         </Button>

@@ -2,16 +2,11 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import api from "../../services/api";
 import { ADMINENDPOINTS } from "../../services/endpoints";
-
-interface HostDashboardData {
-  monthEarnings?: number;
-  activeListings?: number;
-  upcomingBookings?: number;
-  occupancyRate?: number;
-}
+import { extractApiData } from "../../services/apiContracts";
+import type { HostDashboardSummary } from "../../pages/host/types";
 
 interface HostDashboardState {
-  data: HostDashboardData | null;
+  data: HostDashboardSummary | null;
   loading: boolean;
   error: string | null;
 }
@@ -23,13 +18,14 @@ const initialState: HostDashboardState = {
 };
 
 export const fetchHostDashboard = createAsyncThunk<
-  HostDashboardData,
+  HostDashboardSummary,
   void,
   { rejectValue: string }
 >("hostDashboard/fetch", async (_, { rejectWithValue }) => {
   try {
     const res = await api.get(ADMINENDPOINTS.HOST_PORTAL_DASHBOARD);
-    return res.data?.data || {};
+    const data = extractApiData<HostDashboardSummary>(res.data);
+    return data || {};
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {
       if (!err.response) {
