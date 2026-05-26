@@ -1,0 +1,5 @@
+module.exports = {
+  username: process.env.DB_USER || 'user',
+  password: process.env.DB_PASS || 'password',
+  database: process.env.DB_NAME || 'db'
+};

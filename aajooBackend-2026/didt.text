@@ -1,0 +1,128 @@
+Frontend / Client side
+
+When your user needs to submit identity docs, call your startVerification API.
+
+You get back a verification_link or iframe_url.
+
+Redirect user to that link or embed iframe/webview in your mobile/web app.
+
+After they complete, Didit will call your webhook, and you update your internal status.
+
+You can also poll Didit’s status to check if verification is done (optional).
+
+CREATE TABLE user_verifications (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  didit_session_id VARCHAR(255),
+  status ENUM('pending', 'approved', 'rejected', 'in_review') DEFAULT 'pending',
+  result JSON,         -- store full response from Didit
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+
+In your tbl_user or user table, add:
+
+is_verified (boolean)
+
+verified_at (datetime)
+
+verification_method (e.g. “didit”)
+
+
+
+
+7. Security & best practices
+
+Verify webhook signature (Didit may send a signature header so you can confirm authenticity).
+
+Store only necessary data (don’t store full document images if not needed).
+
+Encrypt sensitive fields.
+
+Set timeouts and retries when calling Didit’s APIs.
+
+Log events for audit.
+
+Handle edge cases: user abandons, retries, declines, etc.
+
+
+const axios = require('axios');
+const config = {
+  diditApiKey: process.env.DIDIT_API_KEY,
+  diditSecret: process.env.DIDIT_SECRET,
+  diditBaseUrl: process.env.DIDIT_BASE_URL, // sandbox or production
+};
+
+async function createDiditVerification(userId, docType, userInfo) {
+  // userInfo: name, dob, document type, etc
+  const url = `${config.diditBaseUrl}/v1/identity-verification`;
+  const body = {
+    user_id: userId,
+    document_type: docType,
+    // additional fields depending on Didit’s API spec
+    // e.g., country, proof of address, etc
+  };
+
+  const headers = {
+    'Authorization': `Bearer ${config.diditApiKey}`,
+    'Content-Type': 'application/json',
+  };
+
+  const resp = await axios.post(url, body, { headers });
+  return resp.data; // should include verification session id, link, etc
+}
+
+// Controller to start verification
+exports.startVerification = async (req, res) => {
+  const userId = req.user.userId;  // assuming user is logged in
+  const { docType, userInfo } = req.body;
+
+  try {
+    const diditResp = await createDiditVerification(userId, docType, userInfo);
+    // Save to your DB
+    await model.user_verifications.create({
+      user_id: userId,
+      didit_session_id: diditResp.session_id,
+      status: 'pending',
+    });
+
+    // Send back link or embed URL to frontend
+    return res.json({
+      success: true,
+      verification_link: diditResp.link,  // or iframe url
+      session_id: diditResp.session_id,
+    });
+  } catch (err) {
+    console.error("Error starting Didit verification:", err);
+    return res.status(500).json({ success: false, message: "Failed to start verification" });
+  }
+};
+
+// Webhook to receive verification result
+exports.diditWebhook = async (req, res) => {
+  // Didit will call your webhook URL with JSON payload
+  const { session_id, status, result } = req.body;
+
+  // Find your record
+  const record = await model.user_verifications.findOne({ where: { didit_session_id: session_id }});
+  if (!record) {
+    return res.sendStatus(404);
+  }
+
+  // Update status/result
+  record.status = status; // e.g. 'approved', 'rejected'
+  record.result = result; // JSON object from Didit
+  await record.save();
+
+  // If approved, update your user table
+  if (status === 'approved') {
+    await model.tbl_user.update(
+      { is_verified: 1, verified_at: new Date() },
+      { where: { user_id: record.user_id }}
+    );
+  }
+
+  // Respond to Didit (200 OK)
+  return res.sendStatus(200);
+};
