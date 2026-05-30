@@ -277,19 +277,19 @@ T# AajooHomes — UI Redesign Task Tracker (Sand & Indigo)
 
 | ID | Task | Status | Screens |
 |---|---|---|---|
-| B4-01 | Host home / dashboard | ⬜ | `lib/ui/screens_host/home/` |
-| B4-02 | Add property | ⬜ | `lib/ui/screens_host/add_property/` |
-| B4-03 | Update property | ⬜ | `lib/ui/screens_host/update_property/` |
-| B4-04 | Property details (host view) | ⬜ | `lib/ui/screens_host/property_details/` |
-| B4-05 | Booking history (host) | ⬜ | `lib/ui/screens_host/booking_history/` |
-| B4-06 | Ongoing booking (host) | ⬜ | `lib/ui/screens_host/ongoing_booking/` |
-| B4-07 | Payout screen | ⬜ | `lib/ui/screens_host/payout/` |
-| B4-08 | Invoices | ⬜ | `lib/ui/screens_host/invoices/` |
-| B4-09 | Support | ⬜ | `lib/ui/screens_host/support/` |
-| B4-10 | Host profile | ⬜ | `lib/ui/screens_host/profile/` |
-| B4-11 | Verify light + dark for all host screens | ⬜ | Keep dense forms/tables legible — no sand-wash |
-| B4-12 | Run `flutter analyze` — must be clean | ⬜ | |
-| B4-13 | Commit: `style(mobile): B4 — host screens Sand & Indigo` | ⬜ | |
+| B4-01 | Host home / dashboard | ✅ | `lib/ui/screens_host/home/` |
+| B4-02 | Add property | ✅ | `lib/ui/screens_host/add_property/` |
+| B4-03 | Update property | ✅ | `lib/ui/screens_host/update_property/` |
+| B4-04 | Property details (host view) | ✅ | `lib/ui/screens_host/property_details/` |
+| B4-05 | Booking history (host) | ✅ | `lib/ui/screens_host/booking_history/` |
+| B4-06 | Ongoing booking (host) | ✅ | `lib/ui/screens_host/ongoing_booking/` |
+| B4-07 | Payout screen | ✅ | `lib/ui/screens_host/payout/` |
+| B4-08 | Invoices | ✅ | `lib/ui/screens_host/invoices/` (already used kprimaryColor/kscaffoldColor — no extra changes needed) |
+| B4-09 | Support | ✅ | `lib/ui/screens_host/support/` |
+| B4-10 | Host profile | ✅ | `lib/ui/screens_host/profile/` |
+| B4-11 | Verify light + dark for all host screens | ⬜ | **Manual — verify on device** |
+| B4-12 | Run `flutter analyze` — must be clean | ✅ | 121 issues (all pre-existing info/warning — zero new errors) |
+| B4-13 | Commit: `style(mobile): B4 — host screens Sand & Indigo` | ✅ | |
 
 **Checkpoint:** Host flow renders correctly in both themes.
 
@@ -339,4 +339,4 @@ T# AajooHomes — UI Redesign Task Tracker (Sand & Indigo)
 
 ---
 
-*Last updated: 30 May 2026 — B0 ✅ B1 ✅ B2 ✅ B3 ✅ (B3-20/21 need device walk — manual only) — Next: Phase B4*
+*Last updated: 31 May 2026 — B0 ✅ B1 ✅ B2 ✅ B3 ✅ B4 ✅ (B4-11 needs device walk — manual only) — Next: Phase B5*

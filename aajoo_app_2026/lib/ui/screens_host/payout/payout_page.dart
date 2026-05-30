@@ -155,7 +155,7 @@ class PayoutPage extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 10),
       elevation: 3,
-      color: const Color(0xFFF6D1DC), // Same as Plan card
+      color: kCream,
       shadowColor: kIndigo600.withOpacity(0.25),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -224,7 +224,7 @@ class PayoutPage extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF4A2C35),
+                color: kInk,
               ),
             ),
           ],
@@ -341,7 +341,7 @@ class PayoutPage extends StatelessWidget {
                                     'Success',
                                     'Payout request created successfully',
                                     snackPosition: SnackPosition.BOTTOM,
-                                    backgroundColor: Colors.green,
+                                    backgroundColor: kSuccess,
                                     colorText: Colors.white,
                                   );
                                   payoutController
@@ -352,7 +352,7 @@ class PayoutPage extends StatelessWidget {
                                     'Error',
                                     'Failed to create payout request',
                                     snackPosition: SnackPosition.BOTTOM,
-                                    backgroundColor: Colors.red,
+                                    backgroundColor: kDanger,
                                     colorText: Colors.white,
                                   );
                                 }
@@ -361,7 +361,7 @@ class PayoutPage extends StatelessWidget {
                                   'Error',
                                   'Please enter a valid amount',
                                   snackPosition: SnackPosition.BOTTOM,
-                                  backgroundColor: Colors.red,
+                                  backgroundColor: kDanger,
                                   colorText: Colors.white,
                                 );
                               }

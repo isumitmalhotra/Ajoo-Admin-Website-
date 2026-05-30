@@ -12,9 +12,9 @@ class PlanOverviewCard extends StatelessWidget {
 
   final PayoutController payoutController;
 
-  static const Color _cardBgColor = Color(0xFFF6D1DC); // Dark Pink
-  static const Color _titleColor = kIndigo600; // Deep Pink
-  static const Color _textColor = Color(0xFF4A2C35);
+  static const Color _cardBgColor = kCream;
+  static const Color _titleColor = kIndigo600;
+  static const Color _textColor = kInk;
 
   @override
   Widget build(BuildContext context) {
