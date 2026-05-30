@@ -176,8 +176,8 @@ class _PreBookingHomeCarouselState extends State<PreBookingHomeCarousel> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(12),
+                      color: kClay,
+                      borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
                       "Guest Favorite",
@@ -420,8 +420,8 @@ class _PreBookingHomeCarouselState extends State<PreBookingHomeCarousel> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(12),
+                      color: kClay,
+                      borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
                       "Guest Favorite",

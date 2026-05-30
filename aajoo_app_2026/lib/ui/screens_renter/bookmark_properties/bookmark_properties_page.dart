@@ -220,9 +220,9 @@ class _BookmarkedPropertiesPageState extends State<BookmarkedPropertiesPage> {
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: Colors.black38,
+                                          color: kClay,
                                           borderRadius:
-                                              BorderRadius.circular(12),
+                                              BorderRadius.circular(999),
                                         ),
                                         child: Text("Guest Favorite",
                                             style: theme.textTheme.bodyMedium

@@ -187,8 +187,8 @@ class _PreBookingCardState extends State<PreBookingCard> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.black38,
-                            borderRadius: BorderRadius.circular(12),
+                            color: kClay,
+                            borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text("Guest Favorite",
                               style: theme.textTheme.bodyMedium?.copyWith(
@@ -205,13 +205,13 @@ class _PreBookingCardState extends State<PreBookingCard> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.amber,
-                            borderRadius: BorderRadius.circular(12),
+                            color: kClay,
+                            borderRadius: BorderRadius.circular(999),
                           ),
                           child: const Text(
                             "Luxury",
                             style: TextStyle(
-                              color: Colors.black87,
+                              color: kCream,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
                             ),
