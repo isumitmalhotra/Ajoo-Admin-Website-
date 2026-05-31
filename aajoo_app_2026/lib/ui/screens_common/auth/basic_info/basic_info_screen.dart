@@ -1,5 +1,6 @@
 import 'package:rent_home/constants.dart';
 import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import '../../../../utils/csc_picker/csc_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
@@ -570,7 +571,7 @@ class _InfoScreenState extends State<InfoScreen> {
       ),
       actions: [
         TextButton(
-          onPressed: _skipAll,
+          onPressed: () => _skipAll(),
           child: Text(
             'Skip',
             style: TextStyle(
@@ -584,8 +585,23 @@ class _InfoScreenState extends State<InfoScreen> {
     );
   }
 
-  void _skipAll() {
-    // Preserve whatever partial data the user already entered
+  // Minimal 1×1 white JPEG — sent as placeholder doc when user skips verification
+  static const List<int> _placeholderJpeg = [
+    0xFF,0xD8,0xFF,0xE0,0x00,0x10,0x4A,0x46,0x49,0x46,0x00,0x01,0x01,0x00,
+    0x00,0x01,0x00,0x01,0x00,0x00,0xFF,0xDB,0x00,0x43,0x00,0x08,0x06,0x06,
+    0x07,0x06,0x05,0x08,0x07,0x07,0x07,0x09,0x09,0x08,0x0A,0x0C,0x14,0x0D,
+    0x0C,0x0B,0x0B,0x0C,0x19,0x12,0x13,0x0F,0x14,0x1D,0x1A,0x1F,0x1E,0x1D,
+    0x1A,0x1C,0x1C,0x20,0x24,0x2E,0x27,0x20,0x22,0x2C,0x23,0x1C,0x1C,0x28,
+    0x37,0x29,0x2C,0x30,0x31,0x34,0x34,0x34,0x1F,0x27,0x39,0x3D,0x38,0x32,
+    0x3C,0x2E,0x33,0x34,0x32,0xFF,0xC0,0x00,0x0B,0x08,0x00,0x01,0x00,0x01,
+    0x01,0x01,0x11,0x00,0xFF,0xC4,0x00,0x1F,0x00,0x00,0x01,0x05,0x01,0x01,
+    0x01,0x01,0x01,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01,0x02,
+    0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0A,0x0B,0xFF,0xDA,0x00,0x08,0x01,
+    0x01,0x00,0x00,0x3F,0x00,0xFB,0xD4,0xFF,0xD9,
+  ];
+
+  Future<void> _skipAll() async {
+    // Preserve any partial data already entered or saved via per-step save
     if (fullNameController.text.isNotEmpty) {
       authController.signupData['user_fullName'] = fullNameController.text.trim();
     }
@@ -595,7 +611,11 @@ class _InfoScreenState extends State<InfoScreen> {
     if (dobController.text.isNotEmpty) {
       authController.signupData['user_dob'] = dobController.text.trim();
     }
-    // Ensure all required signupData keys have at least empty defaults
+    if (selectedGender.isNotEmpty) {
+      authController.signupData['user_gender'] = selectedGender;
+    }
+
+    // Defaults for any field that was never filled
     authController.signupData.putIfAbsent('user_fullName', () => '');
     authController.signupData.putIfAbsent('user_pnumber', () => '');
     authController.signupData.putIfAbsent('user_dob', () => '');
@@ -605,22 +625,39 @@ class _InfoScreenState extends State<InfoScreen> {
     authController.signupData.putIfAbsent('user_state', () => '');
     authController.signupData.putIfAbsent('user_pincode', () => '');
     authController.signupData.putIfAbsent('user_country', () => 'India');
-    authController.signupData.putIfAbsent('doc_type', () => '0');
-    authController.signupData.putIfAbsent('doc_number', () => '');
+    authController.signupData.putIfAbsent('user_countryCode', () => '+91');
 
-    final email = authController.signupData['user_email'] ?? '';
-    final password = authController.signupData['user_password'] ?? '';
-    final confirmPassword = authController.signupData['user_confirmPassword'] ?? '';
-    final isHost = authController.signupData['user_isHost'] ?? false;
+    // Doc fields: use whatever the user selected in step 2, or valid placeholders.
+    // doc_type must be a real ID (1 = Aadhaar). '0' is rejected by the backend.
+    final docType = selectedDocType.isNotEmpty ? selectedDocType : '1';
+    final docNum = documentNumberController.text.isNotEmpty
+        ? documentNumberController.text.trim().toUpperCase()
+        : '000000000000'; // 12-digit Aadhaar placeholder
+    authController.signupData['doc_type'] = docType;
+    authController.signupData['doc_number'] = docNum;
 
+    // The backend multipart endpoint requires user_id_doc.
+    // Write a tiny placeholder JPEG so the field is always present.
+    if (authController.governmentIdImage.value == null) {
+      try {
+        final tmp = await getTemporaryDirectory();
+        final placeholder = File('${tmp.path}/doc_placeholder.jpg');
+        await placeholder.writeAsBytes(_placeholderJpeg);
+        authController.governmentIdImage.value = placeholder;
+      } catch (_) {}
+    }
+
+    if (!mounted) return;
+
+    final data = authController.signupData;
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CreateAccountLoadingScreen(
-          email: email,
-          password: password,
-          confirmPassword: confirmPassword,
-          isHost: isHost,
+        builder: (_) => CreateAccountLoadingScreen(
+          email: data['user_email'] ?? '',
+          password: data['user_password'] ?? '',
+          confirmPassword: data['user_confirmPassword'] ?? '',
+          isHost: data['user_isHost'] ?? false,
           skipMode: true,
         ),
       ),
