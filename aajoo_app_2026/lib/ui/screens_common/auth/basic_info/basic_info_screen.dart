@@ -436,11 +436,27 @@ class _InfoScreenState extends State<InfoScreen> {
     switch (currentStep) {
       case 0:
         if (_step1FormKey.currentState!.validate()) {
+          // Save step 1 data immediately
+          authController.signupData.addAll({
+            'user_fullName': fullNameController.text.trim(),
+            'user_dob': dobController.text.trim(),
+            'user_gender': selectedGender,
+            'user_pnumber': phoneController.text.trim(),
+            'user_countryCode': selectedCountryCode,
+          });
           setState(() => currentStep = 1);
         }
         break;
       case 1:
         if (_validateStep2()) {
+          // Save step 2 data immediately
+          authController.signupData.addAll({
+            'user_address': addressController.text.trim(),
+            'user_country': selectedCountry,
+            'user_city': selectedCity,
+            'user_state': selectedState,
+            'user_pincode': pincodeController.text.trim(),
+          });
           setState(() => currentStep = 2);
         }
         break;
@@ -550,7 +566,63 @@ class _InfoScreenState extends State<InfoScreen> {
       ),
       leading: IconButton(
         icon: Icon(Iconsax.arrow_left_2, color: theme.primaryColor),
-        onPressed: () => Get.back(),
+        onPressed: () => Navigator.of(context).maybePop(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _skipAll,
+          child: Text(
+            'Skip',
+            style: TextStyle(
+              color: kMuted,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _skipAll() {
+    // Preserve whatever partial data the user already entered
+    if (fullNameController.text.isNotEmpty) {
+      authController.signupData['user_fullName'] = fullNameController.text.trim();
+    }
+    if (phoneController.text.isNotEmpty) {
+      authController.signupData['user_pnumber'] = phoneController.text.trim();
+    }
+    if (dobController.text.isNotEmpty) {
+      authController.signupData['user_dob'] = dobController.text.trim();
+    }
+    // Ensure all required signupData keys have at least empty defaults
+    authController.signupData.putIfAbsent('user_fullName', () => '');
+    authController.signupData.putIfAbsent('user_pnumber', () => '');
+    authController.signupData.putIfAbsent('user_dob', () => '');
+    authController.signupData.putIfAbsent('user_gender', () => '');
+    authController.signupData.putIfAbsent('user_address', () => '');
+    authController.signupData.putIfAbsent('user_city', () => '');
+    authController.signupData.putIfAbsent('user_state', () => '');
+    authController.signupData.putIfAbsent('user_pincode', () => '');
+    authController.signupData.putIfAbsent('user_country', () => 'India');
+    authController.signupData.putIfAbsent('doc_type', () => '0');
+    authController.signupData.putIfAbsent('doc_number', () => '');
+
+    final email = authController.signupData['user_email'] ?? '';
+    final password = authController.signupData['user_password'] ?? '';
+    final confirmPassword = authController.signupData['user_confirmPassword'] ?? '';
+    final isHost = authController.signupData['user_isHost'] ?? false;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CreateAccountLoadingScreen(
+          email: email,
+          password: password,
+          confirmPassword: confirmPassword,
+          isHost: isHost,
+          skipMode: true,
+        ),
       ),
     );
   }
@@ -750,7 +822,7 @@ class _InfoScreenState extends State<InfoScreen> {
               currentStep == 2 ? Iconsax.tick_circle : Iconsax.arrow_right_3,
               size: 18,
             ),
-            label: Text(currentStep == 2 ? 'Complete' : 'Next'),
+            label: Text(currentStep == 2 ? 'Save' : 'Save & Continue'),
             style: ElevatedButton.styleFrom(
               backgroundColor: theme.primaryColor,
               foregroundColor: Colors.white,
