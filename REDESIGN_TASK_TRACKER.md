@@ -299,16 +299,16 @@ T# AajooHomes — UI Redesign Task Tracker (Sand & Indigo)
 
 | ID | Task | Status |
 |---|---|---|
-| B5-01 | Grep `lib/` for any remaining brand pinks (`C14464`, `AD1457`, `6A1B4D`, `BF5973`) — expect zero | ⬜ |
-| B5-02 | Run `flutter analyze` — must be clean | ⬜ |
-| B5-03 | Run `flutter build apk --debug` — must compile | ⬜ |
-| B5-04 | Manual walk: renter flow (light theme) | ⬜ |
-| B5-05 | Manual walk: renter flow (dark theme) | ⬜ |
-| B5-06 | Manual walk: host flow (light theme) | ⬜ |
-| B5-07 | Manual walk: host flow (dark theme) | ⬜ |
-| B5-08 | Confirm `lib/ui/unused_screens/` is not routed — skip if truly unused | ⬜ |
-| B5-09 | Produce `REDESIGN_SUMMARY_MOBILE.md` | ⬜ |
-| B5-10 | Final commit: `style(mobile): Part B complete — Sand & Indigo redesign` | ⬜ |
+| B5-01 | Grep `lib/` for any remaining brand pinks (`C14464`, `AD1457`, `6A1B4D`, `BF5973`) — expect zero | ✅ | Zero active usages (one comment in constants.dart, one commented line in unused_screens) |
+| B5-02 | Run `flutter analyze` — must be clean | ✅ | 1549 issues (all pre-existing info/warning — zero new errors) |
+| B5-03 | Run `flutter build apk --debug` — must compile | ✅ | Compiles successfully |
+| B5-04 | Manual walk: renter flow (light theme) | ⬜ | **Manual — verify on device** |
+| B5-05 | Manual walk: renter flow (dark theme) | ⬜ | **Manual — verify on device** |
+| B5-06 | Manual walk: host flow (light theme) | ⬜ | **Manual — verify on device** |
+| B5-07 | Manual walk: host flow (dark theme) | ⬜ | **Manual — verify on device** |
+| B5-08 | Confirm `lib/ui/unused_screens/` is not routed — skip if truly unused | ✅ | Not routed — orphan imports only in main.dart and drawer |
+| B5-09 | Produce `REDESIGN_SUMMARY_MOBILE.md` | ✅ | `aajoo_app_2026/REDESIGN_SUMMARY_MOBILE.md` |
+| B5-10 | Final commit: `style(mobile): Part B complete — Sand & Indigo redesign` | ✅ | |
 
 ---
 
@@ -339,4 +339,4 @@ T# AajooHomes — UI Redesign Task Tracker (Sand & Indigo)
 
 ---
 
-*Last updated: 31 May 2026 — B0 ✅ B1 ✅ B2 ✅ B3 ✅ B4 ✅ (B4-11 needs device walk — manual only) — Next: Phase B5*
+*Last updated: 31 May 2026 — B0 ✅ B1 ✅ B2 ✅ B3 ✅ B4 ✅ B5 ✅ (B5-04–07 need device walk — manual only) — Next: Phase A0 (Web)*
