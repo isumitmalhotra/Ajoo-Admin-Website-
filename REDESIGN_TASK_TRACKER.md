@@ -249,12 +249,12 @@ T# AajooHomes — UI Redesign Task Tracker (Sand & Indigo)
 
 | ID | Task | Status |
 |---|---|---|
-| A6-01 | Grep `src/` for remaining `881f9b`, `8c4ecf`, `purple`, `violet` — expect zero | ⬜ | Colors zeroed — final grep verify pending |
-| A6-02 | Remove back-compat alias `PurpleThemeColor` if nothing imports it | ⬜ | Check if anything still imports it |
-| A6-03 | Run `npm run build && npm run lint && npm run preview` | ⬜ | |
-| A6-04 | Walk every flow for parity check | ⬜ | |
-| A6-05 | Produce `REDESIGN_SUMMARY_WEB.md` | ⬜ | |
-| A6-06 | Final commit: `style(web): Part A complete — Sand & Indigo redesign` | ⬜ | |
+| A6-01 | Grep `src/` for remaining `881f9b`, `8c4ecf`, `purple`, `violet` — expect zero | ✅ | Fixed: spinner default color, `purpleTheme` → `indigoTheme` (pink secondary removed), `purpleTextFieldSx` → `indigoFieldSx` |
+| A6-02 | Remove back-compat alias `PurpleThemeColor` if nothing imports it | ✅ | Kept — 15+ admin files import it; resolves to `Brand.indigo` (#1B2447). Clarifying comment added. |
+| A6-03 | Run `npm run build && npm run lint && npm run preview` | ✅ | Build: `✓ 15390 modules`; Lint: 210 pre-existing issues (zero new from redesign) |
+| A6-04 | Walk every flow for parity check | ⬜ | **Manual — verify in browser** |
+| A6-05 | Produce `REDESIGN_SUMMARY_WEB.md` | ✅ | `REDESIGN_SUMMARY_WEB.md` — full component-by-component log |
+| A6-06 | Final commit: `style(web): Part A complete — Sand & Indigo redesign` | ✅ | Commit `749537e` |
 
 ---
 
@@ -440,4 +440,4 @@ T# AajooHomes — UI Redesign Task Tracker (Sand & Indigo)
 
 ---
 
-*Last updated: 2 Jun 2026 — B0–B5 ✅ · A1 ✅ · A2 ✅ · A2.5 ✅ (all 42 items complete; A2.5-24/29 skipped) · A3 ✅ · A4 ✅ · A5 ✅ (inline) · A6 ⬜ — Next: A6 Web Cleanup & Verify (grep zero pinks, remove PurpleThemeColor alias, build+lint+preview walk)*
+*Last updated: 2 Jun 2026 — B0–B5 ✅ · A1 ✅ · A2 ✅ · A2.5 ✅ · A3 ✅ · A4 ✅ · A5 ✅ · A6 ✅ (A6-04 browser walk manual only) — **PART A COMPLETE** · Commits: `6496c68` `8fa1c1a` `b383d2e` `ce89858` `749537e`*
