@@ -194,7 +194,7 @@ const LedgerList = () => {
           <Box
             onClick={handleSearch}
             sx={{
-              bgcolor: "#881f9b",
+              bgcolor: "#1B2447",
               color: "#fff",
               px: 3,
               py: 1,
@@ -314,7 +314,7 @@ const LedgerList = () => {
                             component="span"
                             sx={{
                               fontSize: "0.85rem",
-                              color: "#881f9b",
+                              color: "#1B2447",
                               cursor: "pointer",
                               "&:hover": { textDecoration: "underline" },
                             }}

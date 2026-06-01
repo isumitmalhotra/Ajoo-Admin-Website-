@@ -187,15 +187,15 @@ const AdminLogin = () => {
                     borderColor: "#D1D5DB",
                   },
                   "&:hover fieldset": {
-                    borderColor: "#881f9b",
+                    borderColor: "#1B2447",
                   },
                   "&.Mui-focused fieldset": {
-                    borderColor: "#881f9b",
+                    borderColor: "#1B2447",
                     borderWidth: 2,
                   },
                 },
                 "& .MuiInputLabel-root.Mui-focused": {
-                  color: "#881f9b",
+                  color: "#1B2447",
                 },
               }}
               InputProps={{
@@ -221,15 +221,15 @@ const AdminLogin = () => {
                     borderColor: "#D1D5DB",
                   },
                   "&:hover fieldset": {
-                    borderColor: "#881f9b",
+                    borderColor: "#1B2447",
                   },
                   "&.Mui-focused fieldset": {
-                    borderColor: "#881f9b",
+                    borderColor: "#1B2447",
                     borderWidth: 2,
                   },
                 },
                 "& .MuiInputLabel-root.Mui-focused": {
-                  color: "#881f9b",
+                  color: "#1B2447",
                 },
               }}
               InputProps={{

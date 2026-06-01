@@ -66,7 +66,7 @@ const HostDetailsModal: React.FC<HostDetailsModalProps> = ({
                 position: "absolute",
                 top: 10,
                 right: 10,
-                color: "#c14365",
+                color: "#1B2447",
                 bgcolor: "#fff",
                 "&:hover": { bgcolor: "#f7f7f7" },
                 boxShadow: 1,
@@ -94,7 +94,7 @@ const HostDetailsModal: React.FC<HostDetailsModalProps> = ({
                     width: 100,
                     height: 100,
                     mx: "auto",
-                    border: "3px solid #c14365",
+                    border: "3px solid #1B2447",
                     mb: 1.5,
                   }}
                 />
@@ -107,7 +107,7 @@ const HostDetailsModal: React.FC<HostDetailsModalProps> = ({
               >
                 <Typography
                   variant="h6"
-                  sx={{ fontWeight: 600, color: "#c14365", mb: 0.5 }}
+                  sx={{ fontWeight: 600, color: "#1B2447", mb: 0.5 }}
                 >
                   {user.name}
                 </Typography>

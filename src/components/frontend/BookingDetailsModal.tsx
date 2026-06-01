@@ -17,7 +17,7 @@ interface BookingDetailsModalProps {
   bookingId: string | null;
 }
 
-const themeColor = "#c14365";
+const themeColor = "#1B2447";
 
 Modal.setAppElement("#root");
 
@@ -198,7 +198,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
               fontWeight: 700,
               mb: 2,
               fontSize: isMobile ? "1rem" : "1.1rem",
-              color: "#c14365",
+              color: "#1B2447",
               marginTop: "20px",
             }}
           >

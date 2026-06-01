@@ -146,7 +146,7 @@ const TermsAndConditions: React.FC = () => {
           variant="h4"
           align="center"
           fontWeight={700}
-          sx={{ color: "#C14365", mb: 2 }}
+          sx={{ color: "#1B2447", mb: 2 }}
         >
           📜 Aajoo – Terms & Conditions
         </Typography>
@@ -185,7 +185,7 @@ const TermsAndConditions: React.FC = () => {
               <Typography
                 variant="h6"
                 fontWeight={700}
-                sx={{ color: "#C14365", mb: 1.5 }}
+                sx={{ color: "#1B2447", mb: 1.5 }}
               >
                 {section.title}
               </Typography>

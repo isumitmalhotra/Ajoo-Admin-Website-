@@ -13,7 +13,7 @@ import FileUploadIcon from "@mui/icons-material/FileUpload";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import CloseIcon from "@mui/icons-material/Close";
 
-const PRIMARY = "#c14365";
+const PRIMARY = "#1B2447";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },

@@ -29,7 +29,7 @@ export const UserHeader = () => {
     };
 
     return (
-        <AppBar position="static" sx={{ backgroundColor: '#C14365 !important' }}>
+        <AppBar position="static" sx={{ backgroundColor: '#1B2447 !important' }}>
             <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Typography variant="h6" component="div">
                     User Dashboard

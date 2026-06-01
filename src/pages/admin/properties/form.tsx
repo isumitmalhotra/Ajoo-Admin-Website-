@@ -659,9 +659,9 @@ export default function PropertiesForm() {
                         <Checkbox
                           checked={formik.values.categories.includes(cat.id)}
                           sx={{
-                            color: "#881f9b",
+                            color: "#1B2447",
                             "&.Mui-checked": {
-                              color: "#881f9b",
+                              color: "#1B2447",
                             },
                           }}
                         />
@@ -698,9 +698,9 @@ export default function PropertiesForm() {
                             amenity.amn_id
                           )}
                           sx={{
-                            color: "#881f9b",
+                            color: "#1B2447",
                             "&.Mui-checked": {
-                              color: "#881f9b",
+                              color: "#1B2447",
                             },
                           }}
                         />
@@ -732,9 +732,9 @@ export default function PropertiesForm() {
                         <Checkbox
                           checked={formik.values.tags.includes(tag.tag_id)}
                           sx={{
-                            color: "#881f9b",
+                            color: "#1B2447",
                             "&.Mui-checked": {
-                              color: "#881f9b",
+                              color: "#1B2447",
                             },
                           }}
                         />
@@ -922,7 +922,7 @@ export default function PropertiesForm() {
                                   minWidth: 26,
                                   height: 26,
                                   borderRadius: "50%",
-                                  backgroundColor: "#881f9b",
+                                  backgroundColor: "#1B2447",
                                   color: "#fff",
                                   fontSize: 13,
                                   fontWeight: 600,

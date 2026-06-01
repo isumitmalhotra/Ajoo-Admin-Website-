@@ -3,62 +3,62 @@ import { PurpleThemeColor } from "../../../../theme/themeColor";
 export const fieldStyle = {
   "& .MuiOutlinedInput-root": {
     "& fieldset": {
-      borderColor: "#881f9b",
+      borderColor: "#1B2447",
     },
     "&:hover fieldset": {
-      borderColor: "#881f9b",
+      borderColor: "#1B2447",
     },
     "&.Mui-focused fieldset": {
-      borderColor: "#881f9b",
+      borderColor: "#1B2447",
     },
     "& input": {
-      color: "#881f9b",
+      color: "#1B2447",
     },
     /* SELECTED VALUE (dropdown text) */
     "& .MuiSelect-select": {
-      color: "#881f9b",
+      color: "#1B2447",
     },
   },
   "& .MuiInputLabel-root": {
-    color: "#881f9b",
+    color: "#1B2447",
   },
   "& .MuiInputLabel-root.Mui-focused": {
-    color: "#881f9b",
+    color: "#1B2447",
   },
   /* SELECTED VALUE (dropdown text) */
   "& .MuiSelect-select": {
-    color: "#881f9b",
+    color: "#1B2447",
   },
 
   /* DROPDOWN ARROW ICON */
   "& .MuiSvgIcon-root": {
-    color: "#881f9b",
+    color: "#1B2447",
   },
 };
 // styles.ts
 export const personalInfoFieldStyle = {
   "& .MuiOutlinedInput-root": {
-    color: "#881f9b", // ✅ input text color
+    color: "#1B2447", // ✅ input text color
     "& fieldset": {
-      borderColor: "#881f9b",
+      borderColor: "#1B2447",
     },
     "&:hover fieldset": {
-      borderColor: "#881f9b",
+      borderColor: "#1B2447",
     },
     "&.Mui-focused fieldset": {
-      borderColor: "#881f9b",
+      borderColor: "#1B2447",
     },
   },
 
   "& .MuiInputLabel-root": {
-    color: "#881f9b",
+    color: "#1B2447",
   },
   "& .MuiInputLabel-root.Mui-focused": {
-    color: "#881f9b",
+    color: "#1B2447",
   },
 
   "& .MuiFormHelperText-root": {
-    color: "#881f9b", // optional: helper text color
+    color: "#1B2447", // optional: helper text color
   },
 };
 

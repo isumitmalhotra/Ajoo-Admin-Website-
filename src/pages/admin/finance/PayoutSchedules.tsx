@@ -123,7 +123,7 @@ const PayoutSchedules = () => {
           startIcon={<Plus size={16} />}
           onClick={() => setModalState({ open: true, schedule: null })}
           sx={{
-            bgcolor: "#881f9b",
+            bgcolor: "#1B2447",
             textTransform: "none",
             "&:hover": { bgcolor: "#7115bd" },
           }}

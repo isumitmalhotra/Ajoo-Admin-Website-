@@ -1,25 +1,41 @@
-export const PurpleThemeColor = "#881f9b";
+// Sand & Indigo design tokens (client-approved Option 3)
+export const Brand = {
+  indigo:    "#1B2447",
+  indigo600: "#2A356B",
+  clay:      "#C16345",
+  clay600:   "#A8512F",
+  sand:      "#EFE7D6",
+  cream:     "#FFFAF0",
+  ink:       "#1B2447",
+  ink2:      "#3D4670",
+  muted:     "#6B7390",
+  line:      "#D9CFB8",
+  success:   "#3F6B4E",
+};
+
+// Back-compat — keep old names working while we migrate call sites
+export const PurpleThemeColor = Brand.indigo;
 
 export const ThemeColors = {
-  primary: PurpleThemeColor,
-  secondary: "#10b981",
-  background: "#f4f5f7",
+  primary:    Brand.indigo,
+  secondary:  Brand.success,
+  background: Brand.sand,
   text: {
-    primary: "#111827",
-    secondary: "#6b7280",
+    primary:   Brand.ink,
+    secondary: Brand.muted,
   },
 };
+
+export const FOCUS_COLOR = Brand.indigo;
 
 export const FieldLabelColor = {
   "& .MuiOutlinedInput-root.Mui-focused fieldset": {
-    borderColor: PurpleThemeColor,
+    borderColor: Brand.indigo,
   },
   "& .MuiInputLabel-root.Mui-focused": {
-    color: PurpleThemeColor,
+    color: Brand.indigo,
   },
 };
-
-export const FOCUS_COLOR = "#881f9b";
 
 export const commonFieldSx = {
   minWidth: 180,

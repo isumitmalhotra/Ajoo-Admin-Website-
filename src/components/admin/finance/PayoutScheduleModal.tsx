@@ -225,7 +225,7 @@ const PayoutScheduleModal = ({
           onClick={handleSubmit}
           disabled={loading}
           sx={{
-            bgcolor: "#881f9b",
+            bgcolor: "#1B2447",
             textTransform: "none",
             fontWeight: 700,
             px: 2,

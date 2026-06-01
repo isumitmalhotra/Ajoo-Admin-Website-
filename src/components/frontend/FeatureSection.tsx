@@ -6,19 +6,19 @@ import "../../styles/user/FeatureSection.css";
 
 const features = [
   {
-    icon: <AutorenewIcon sx={{ fontSize: 40, color: "#c14365" }} />,
+    icon: <AutorenewIcon sx={{ fontSize: 40, color: "#1B2447" }} />,
     title: "Keep it flexible",
     description:
       "Choose from flexible booking options and hassle-free cancellations.",
   },
   {
-    icon: <RoomServiceIcon sx={{ fontSize: 40, color: "#c14365" }} />,
+    icon: <RoomServiceIcon sx={{ fontSize: 40, color: "#1B2447" }} />,
     title: "Get the amenities you want",
     description:
       "Pick properties that match your lifestyle with the right facilities.",
   },
   {
-    icon: <RateReviewIcon sx={{ fontSize: 40, color: "#c14365" }} />,
+    icon: <RateReviewIcon sx={{ fontSize: 40, color: "#1B2447" }} />,
     title: "Read real reviews",
     description:
       "Make confident decisions with verified guest reviews you can trust.",

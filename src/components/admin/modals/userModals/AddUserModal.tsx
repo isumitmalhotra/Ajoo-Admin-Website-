@@ -279,10 +279,10 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
                             onClick={onClose}
                             variant="outlined"
                             sx={{
-                              borderColor: "#881f9b",
-                              color: "#881f9b",
+                              borderColor: "#1B2447",
+                              color: "#1B2447",
                               "&:hover": {
-                                borderColor: "#881f9b",
+                                borderColor: "#1B2447",
                                 backgroundColor: "#f3e8ff",
                               },
                             }}
@@ -293,7 +293,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
                             type="submit"
                             variant="contained"
                             sx={{
-                              backgroundColor: "#881f9b",
+                              backgroundColor: "#1B2447",
                               "&:hover": {
                                 backgroundColor: "#6e167d",
                               },

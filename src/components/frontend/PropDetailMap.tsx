@@ -55,7 +55,7 @@ const MarkerPulse = ({ coordinates }: { coordinates: [number, number] }) => {
           height: 20px;
           border-radius: 50%;
           transform: translate(-50%, -50%);
-          background: rgba(193, 67, 101, 0.6);
+          background: rgba(27,36,71, 0.6);
           opacity: 0.6;
         }
 
@@ -65,7 +65,7 @@ const MarkerPulse = ({ coordinates }: { coordinates: [number, number] }) => {
 
         .pulse-ring.inner {
           animation: pulseInner 2s infinite 0.5s;
-          background: rgba(193, 67, 101, 0.8);
+          background: rgba(27,36,71, 0.8);
         }
 
         @keyframes pulseOuter {
@@ -111,7 +111,7 @@ const PropDetailMap: React.FC<ResponsiveMapProps> = ({ coordinates }) => {
         },
         transition: "all 0.4s ease",
         "&:hover": {
-          boxShadow: "0 10px 30px rgba(193, 67, 101, 0.3)",
+          boxShadow: "0 10px 30px rgba(27,36,71, 0.3)",
           transform: "scale(1.01)",
         },
       }}

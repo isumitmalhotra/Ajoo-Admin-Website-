@@ -3,7 +3,7 @@ import { Box, Checkbox, FormControlLabel, Typography } from "@mui/material";
 import { useFormikContext } from "formik";
 import { sectionBox } from "./styles";
 
-const PURPLE = "#881f9b";
+const PURPLE = "#1B2447";
 
 const RoleSelector = ({ disabled }: { disabled: boolean }) => {
   const { values, setFieldValue } = useFormikContext<any>();

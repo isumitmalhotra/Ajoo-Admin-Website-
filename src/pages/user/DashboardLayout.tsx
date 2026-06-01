@@ -58,14 +58,14 @@ const DashboardLayout: React.FC = () => {
     >
       {/* Header with Close button for mobile */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Typography variant="h6" sx={{ color: "#c14365" }}>
+        <Typography variant="h6" sx={{ color: "#1B2447" }}>
           Dashboard
         </Typography>
         <IconButton
           onClick={handleDrawerToggle}
           sx={{ display: { md: "none" } }}
         >
-          <CloseIcon sx={{ color: "#c14365" }} />
+          <CloseIcon sx={{ color: "#1B2447" }} />
         </IconButton>
       </Box>
       <Divider sx={{ my: 2 }} />
@@ -76,10 +76,10 @@ const DashboardLayout: React.FC = () => {
         variant={activeSection === "profile" ? "contained" : "outlined"}
         sx={{
           mb: 1,
-          borderColor: "#c14365",
-          color: activeSection === "profile" ? "#fff" : "#c14365",
+          borderColor: "#1B2447",
+          color: activeSection === "profile" ? "#fff" : "#1B2447",
           backgroundColor:
-            activeSection === "profile" ? "#c14365" : "transparent",
+            activeSection === "profile" ? "#1B2447" : "transparent",
           "&:hover": {
             backgroundColor:
               activeSection === "profile" ? "#a0324f" : "#fbe6ec",
@@ -98,10 +98,10 @@ const DashboardLayout: React.FC = () => {
         variant={activeSection === "bookings" ? "contained" : "outlined"}
         sx={{
           mb: 1,
-          borderColor: "#c14365",
-          color: activeSection === "bookings" ? "#fff" : "#c14365",
+          borderColor: "#1B2447",
+          color: activeSection === "bookings" ? "#fff" : "#1B2447",
           backgroundColor:
-            activeSection === "bookings" ? "#c14365" : "transparent",
+            activeSection === "bookings" ? "#1B2447" : "transparent",
           "&:hover": {
             backgroundColor:
               activeSection === "bookings" ? "#a0324f" : "#fbe6ec",
@@ -120,10 +120,10 @@ const DashboardLayout: React.FC = () => {
         variant={activeSection === "ongoing" ? "contained" : "outlined"}
         sx={{
           mb: 1,
-          borderColor: "#c14365",
-          color: activeSection === "ongoing" ? "#fff" : "#c14365",
+          borderColor: "#1B2447",
+          color: activeSection === "ongoing" ? "#fff" : "#1B2447",
           backgroundColor:
-            activeSection === "ongoing" ? "#c14365" : "transparent",
+            activeSection === "ongoing" ? "#1B2447" : "transparent",
           "&:hover": {
             backgroundColor:
               activeSection === "ongoing" ? "#a0324f" : "#fbe6ec",
@@ -183,7 +183,7 @@ const DashboardLayout: React.FC = () => {
           sx={{
             display: { xs: "inline-flex", md: "none" },
             mb: 2,
-            color: "#c14365",
+            color: "#1B2447",
           }}
         >
           <ArrowForwardIosIcon />

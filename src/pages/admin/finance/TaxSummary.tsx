@@ -107,7 +107,7 @@ const TaxSummary = () => {
           <Box
             onClick={handleGenerate}
             sx={{
-              bgcolor: "#881f9b",
+              bgcolor: "#1B2447",
               color: "#fff",
               px: 3,
               py: 1,
@@ -143,7 +143,7 @@ const TaxSummary = () => {
             {
               label: "GST Collected",
               value: formatINR(data.totals.gstCollected),
-              color: "#881f9b",
+              color: "#1B2447",
             },
             {
               label: "GST Payable",
@@ -223,7 +223,7 @@ const TaxSummary = () => {
                         borderBottom: "1px solid #f3f4f6",
                         fontSize: "0.85rem",
                         fontWeight: 600,
-                        color: "#881f9b",
+                        color: "#1B2447",
                       }}
                     >
                       {formatINR(row.gstCollected)}
@@ -268,7 +268,7 @@ const TaxSummary = () => {
                       padding: "10px 12px",
                       fontWeight: 700,
                       fontSize: "0.85rem",
-                      color: "#881f9b",
+                      color: "#1B2447",
                     }}
                   >
                     {formatINR(data.totals.gstCollected)}

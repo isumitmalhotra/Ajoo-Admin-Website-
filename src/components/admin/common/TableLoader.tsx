@@ -23,7 +23,7 @@ export const TableLoader = ({
     >
       <RingLoader
         size={size}
-        color="#881f9b"
+        color="#1B2447"
         speedMultiplier={0.9} // slightly smoother
       />
 

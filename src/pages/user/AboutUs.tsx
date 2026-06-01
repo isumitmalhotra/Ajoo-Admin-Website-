@@ -24,7 +24,7 @@ const AboutUs = () => {
         <Typography
           variant="h2"
           sx={{
-            color: "#c14365",
+            color: "#1B2447",
             fontWeight: 700,
             fontSize: { xs: "1.8rem", sm: "2.4rem", md: "3rem" },
             mb: 2,
@@ -299,7 +299,7 @@ const AboutUs = () => {
           <Typography
             sx={{
               fontSize: { xs: "1.8rem", sm: "2rem", md: "2.5rem" },
-              color: "#c14365",
+              color: "#1B2447",
               fontWeight: 700,
               mb: 3,
               fontFamily: "Poppins, sans-serif",
@@ -318,7 +318,7 @@ const AboutUs = () => {
               fontSize: { xs: "0.95rem", sm: "1rem", md: "1.1rem" },
               lineHeight: 1.6,
               fontFamily: "Inter, sans-serif",
-              borderLeft: { xs: "none", md: "3px solid #c14365" },
+              borderLeft: { xs: "none", md: "3px solid #1B2447" },
               pl: { xs: 0, md: 3 },
               textAlign: { xs: "left", md: "left" },
             }}
@@ -356,7 +356,7 @@ const AboutUs = () => {
                     content: '"•"',
                     position: "absolute",
                     left: { xs: 0, md: -18 },
-                    color: "#c14365",
+                    color: "#1B2447",
                     fontSize: "26px",
                     lineHeight: "20px",
                   },
@@ -387,7 +387,7 @@ const AboutUs = () => {
           variant="h3"
           sx={{
             fontWeight: 700,
-            color: "#c14365",
+            color: "#1B2447",
             textAlign: "center",
             mb: 6,
             fontSize: { xs: "1.8rem", md: "2.5rem" },
@@ -427,7 +427,7 @@ const AboutUs = () => {
               variant="h5"
               sx={{
                 fontWeight: 600,
-                color: "#c14365",
+                color: "#1B2447",
                 mb: 2,
                 textAlign: "center",
               }}
@@ -469,7 +469,7 @@ const AboutUs = () => {
               variant="h5"
               sx={{
                 fontWeight: 600,
-                color: "#c14365",
+                color: "#1B2447",
                 mb: 2,
                 textAlign: "center",
               }}
@@ -514,7 +514,7 @@ const AboutUs = () => {
               mt: 3,
               fontSize: { xs: "1rem", md: "1.1rem" },
               fontWeight: 600,
-              color: "#c14365",
+              color: "#1B2447",
               fontFamily: "Poppins, sans-serif",
             }}
           >

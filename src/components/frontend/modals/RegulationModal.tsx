@@ -35,7 +35,7 @@ const RegulationModal: React.FC<RegulationModalProps> = ({
         }}
       >
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, color: "#c14365" }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: "#1B2447" }}>
             {title}
           </Typography>
           <IconButton onClick={onClose}>

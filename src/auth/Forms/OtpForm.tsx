@@ -129,7 +129,7 @@ export const VerifyOtpForm = () => {
                                             fullWidth
                                             variant="contained"
                                             sx={{
-                                                backgroundColor: "#C14365",
+                                                backgroundColor: "#1B2447",
                                                 color: "#fff",
                                                 fontWeight: 600,
                                                 "&:hover": {
@@ -161,13 +161,13 @@ export const VerifyOtpForm = () => {
                                 disabled={timer > 0 || resendLoading}
                                 sx={{
                                     mt: 1,
-                                    color: "#C14365",
+                                    color: "#1B2447",
                                     textTransform: "none",
                                     fontWeight: 500,
                                 }}
                             >
                                 {resendLoading ? (
-                                    <CircularProgress size={18} sx={{ color: "#C14365" }} />
+                                    <CircularProgress size={18} sx={{ color: "#1B2447" }} />
                                 ) : timer > 0 ? (
                                     `Resend OTP in ${timer}s`
                                 ) : (

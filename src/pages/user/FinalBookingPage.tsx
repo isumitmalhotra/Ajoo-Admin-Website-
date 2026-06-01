@@ -18,7 +18,7 @@ import {
 } from "@mui/icons-material";
 import securePay from "../../assets/UI/securePay.jpg";
 
-const themeColor = "#c14365";
+const themeColor = "#1B2447";
 
 const propertyData = {
   name: "Luxury Apartment in Chennai",

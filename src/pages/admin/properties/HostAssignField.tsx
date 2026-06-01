@@ -14,7 +14,7 @@ import {
 } from "../../../features/admin/userManagement/hostForProperty.slice";
 import { useDebounce } from "../../../hooks/useDebounce";
 
-const PURPLE = "#881f9b";
+const PURPLE = "#1B2447";
 
 interface Props {
   value: string; // hostName from Formik

@@ -66,7 +66,7 @@ const ExportButton = ({
           size="small"
           startIcon={
             exporting ? (
-              <CircularProgress size={14} sx={{ color: "#881f9b" }} />
+              <CircularProgress size={14} sx={{ color: "#1B2447" }} />
             ) : (
               <Download size={14} />
             )
@@ -84,8 +84,8 @@ const ExportButton = ({
             fontSize: "0.78rem",
             whiteSpace: "nowrap",
             "&:hover": {
-              borderColor: "#881f9b",
-              color: "#881f9b",
+              borderColor: "#1B2447",
+              color: "#1B2447",
               bgcolor: "#faf5ff",
             },
             "&.Mui-disabled": {

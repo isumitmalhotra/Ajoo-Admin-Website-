@@ -50,7 +50,7 @@ const CancelBookResult: React.FC = () => {
         <Button
           variant="contained"
           sx={{
-            bgcolor: "#c14365",
+            bgcolor: "#1B2447",
             "&:hover": { bgcolor: "#a83454" },
             textTransform: "none",
             px: 4,

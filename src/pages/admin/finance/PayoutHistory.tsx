@@ -84,7 +84,7 @@ const PayoutHistory = () => {
               "&:hover": { bgcolor: "#f3e8ff" },
             }}
           >
-            <ArrowLeft size={20} color="#881f9b" />
+            <ArrowLeft size={20} color="#1B2447" />
           </Box>
         </Tooltip>
         <Typography variant="h5" fontWeight={600} color="#374151">
@@ -135,7 +135,7 @@ const PayoutHistory = () => {
             textAlign: "center",
           }}
         >
-          <Typography variant="h5" fontWeight={700} color="#881f9b">
+          <Typography variant="h5" fontWeight={700} color="#1B2447">
             {completedCount}
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -168,8 +168,8 @@ const PayoutHistory = () => {
           sx={{
             px: 2,
             "& .MuiTab-root": { textTransform: "none", fontWeight: 500 },
-            "& .Mui-selected": { color: "#881f9b" },
-            "& .MuiTabs-indicator": { backgroundColor: "#881f9b" },
+            "& .Mui-selected": { color: "#1B2447" },
+            "& .MuiTabs-indicator": { backgroundColor: "#1B2447" },
           }}
         >
           {TAB_LABELS.map((label) => (

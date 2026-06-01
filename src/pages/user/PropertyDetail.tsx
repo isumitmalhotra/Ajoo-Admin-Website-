@@ -105,7 +105,7 @@ export const PropertyDetail: React.FC = () => {
           py: { xs: 2, sm: 3 },
           maxWidth: 1600,
           margin: "0 auto",
-          fontFamily: "Roboto, sans-serif",
+          fontFamily: "'Inter', system-ui, sans-serif",
         }}
       >
         {/* Breadcrumb */}
@@ -118,7 +118,7 @@ export const PropertyDetail: React.FC = () => {
             flexWrap: "wrap",
           }}
         >
-          <IconButton sx={{ color: "#c14365" }}>
+          <IconButton sx={{ color: "#1B2447" }}>
             <ArrowBackIcon />
           </IconButton>
 
@@ -147,10 +147,11 @@ export const PropertyDetail: React.FC = () => {
               flexDirection: "column",
               gap: { xs: 2, sm: 3 },
               overflowX: "hidden",
-              backgroundColor: "#f9f9f9",
+              backgroundColor: "#FFFAF0",
+              border: "1px solid #D9CFB8",
               p: { xs: 1.5, sm: 2 },
-              borderRadius: 2,
-              boxShadow: "0px 4px 15px rgba(0,0,0,0.1)",
+              borderRadius: "14px",
+              boxShadow: "0 1px 2px rgba(27,36,71,.04), 0 8px 24px rgba(27,36,71,.06)",
               mr: { md: 3 },
             }}
           >
@@ -213,17 +214,20 @@ export const PropertyDetail: React.FC = () => {
           sx={{
             mt: 5,
             p: { xs: 2, sm: 3 },
-            backgroundColor: "#fff",
-            borderRadius: 2,
-            boxShadow: "0px 4px 12px rgba(0,0,0,0.08)",
+            backgroundColor: "#FFFAF0",
+            border: "1px solid #D9CFB8",
+            borderRadius: "14px",
+            boxShadow: "0 1px 2px rgba(27,36,71,.04), 0 8px 24px rgba(27,36,71,.06)",
             maxWidth: { md: "65%" },
           }}
         >
           <Typography
             sx={{
-              fontSize: { xs: 20, sm: 22 },
-              fontWeight: 700,
-              color: "#c14365",
+              fontFamily: "'Fraunces', serif",
+              fontSize: { xs: 20, sm: 24 },
+              fontWeight: 400,
+              letterSpacing: "-0.02em",
+              color: "#1B2447",
               mb: 2,
             }}
           >
@@ -234,7 +238,7 @@ export const PropertyDetail: React.FC = () => {
             sx={{
               fontSize: { xs: 14, sm: 16 },
               lineHeight: 1.8,
-              color: "#555",
+              color: "#6B7390",
               mb: 3,
             }}
           >
@@ -247,14 +251,14 @@ export const PropertyDetail: React.FC = () => {
           <Button
             variant="outlined"
             sx={{
-              borderColor: "#c14365",
-              color: "#c14365",
+              borderColor: "#1B2447",
+              color: "#1B2447",
               borderRadius: "8px",
               px: 3,
               py: 1,
               fontWeight: 600,
               textTransform: "none",
-              "&:hover": { bgcolor: "#c14365", color: "#fff" },
+              "&:hover": { bgcolor: "#1B2447", color: "#fff" },
             }}
             onClick={() => setIsModalOpen(true)}
           >
@@ -267,9 +271,10 @@ export const PropertyDetail: React.FC = () => {
           sx={{
             mt: 3,
             p: { xs: 2, sm: 3 },
-            backgroundColor: "#fff",
-            borderRadius: 2,
-            boxShadow: "0px 4px 12px rgba(0,0,0,0.08)",
+            backgroundColor: "#FFFAF0",
+            border: "1px solid #D9CFB8",
+            borderRadius: "14px",
+            boxShadow: "0 1px 2px rgba(27,36,71,.04), 0 8px 24px rgba(27,36,71,.06)",
             maxWidth: { md: "65%" },
           }}
         >
@@ -277,7 +282,7 @@ export const PropertyDetail: React.FC = () => {
             sx={{
               fontSize: { xs: 20, sm: 22 },
               fontWeight: 700,
-              color: "#c14365",
+              color: "#1B2447",
               mb: 2,
             }}
           >
@@ -289,7 +294,7 @@ export const PropertyDetail: React.FC = () => {
               {rules.map((rule, index) => (
                 <Typography
                   key={index}
-                  sx={{ fontSize: { xs: 14, sm: 16 }, color: "#555" }}
+                  sx={{ fontSize: { xs: 14, sm: 16 }, color: "#6B7390" }}
                 >
                   • {rule}
                 </Typography>
@@ -330,7 +335,7 @@ export const PropertyDetail: React.FC = () => {
               Mr Joe Doe
             </Typography>
 
-            <Typography sx={{ fontSize: 14, color: "#666", mb: 2 }}>
+            <Typography sx={{ fontSize: 14, color: "#6B7390", mb: 2 }}>
               Lorem ipsum dolor sit amet consectetur adipisicing elit.
               Architecto alias, sapiente placeat facilis.
             </Typography>
@@ -342,13 +347,13 @@ export const PropertyDetail: React.FC = () => {
                 gap: 1,
                 px: 2,
                 py: 1,
-                border: "2px solid #c14365",
+                border: "2px solid #1B2447",
                 borderRadius: 1,
-                color: "#c14365",
+                color: "#1B2447",
                 fontWeight: 600,
                 cursor: "pointer",
                 width: "fit-content",
-                "&:hover": { backgroundColor: "#c14365", color: "#fff" },
+                "&:hover": { backgroundColor: "#1B2447", color: "#fff" },
               }}
               onClick={() => setOpen(true)}
             >
@@ -379,9 +384,10 @@ export const PropertyDetail: React.FC = () => {
           sx={{
             mt: 5,
             p: { xs: 2, sm: 3 },
-            backgroundColor: "#fff",
-            borderRadius: 2,
-            boxShadow: "0px 4px 12px rgba(0,0,0,0.08)",
+            backgroundColor: "#FFFAF0",
+            border: "1px solid #D9CFB8",
+            borderRadius: "14px",
+            boxShadow: "0 1px 2px rgba(27,36,71,.04), 0 8px 24px rgba(27,36,71,.06)",
             maxWidth: { md: "65%" },
           }}
         >
@@ -389,7 +395,7 @@ export const PropertyDetail: React.FC = () => {
             sx={{
               fontSize: { xs: 20, sm: 22 },
               fontWeight: 700,
-              color: "#c14365",
+              color: "#1B2447",
               mb: 3,
             }}
           >
@@ -407,11 +413,11 @@ export const PropertyDetail: React.FC = () => {
                   gap: 2,
                   p: 2,
                   borderRadius: 2,
-                  backgroundColor: "#fafafa",
-                  border: "1px solid #eee",
+                  backgroundColor: "#FFFAF0",
+                  border: "1px solid #D9CFB8",
                 }}
               >
-                <Avatar sx={{ bgcolor: "#c14365" }}>
+                <Avatar sx={{ bgcolor: "#1B2447" }}>
                   {review.name.charAt(0)}
                 </Avatar>
                 <Box>
@@ -423,9 +429,9 @@ export const PropertyDetail: React.FC = () => {
                     precision={0.5}
                     readOnly
                     size="small"
-                    sx={{ color: "#c14365", mb: 0.5 }}
+                    sx={{ color: "#1B2447", mb: 0.5 }}
                   />
-                  <Typography sx={{ fontSize: 14, color: "#555" }}>
+                  <Typography sx={{ fontSize: 14, color: "#6B7390" }}>
                     {review.comment}
                   </Typography>
                 </Box>

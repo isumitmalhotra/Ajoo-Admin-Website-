@@ -68,7 +68,7 @@ const HotelTooltip: React.FC<HotelTooltipProps> = ({
             position: "absolute",
             top: 6,
             right: 6,
-            bgcolor: "#c14365",
+            bgcolor: "#1B2447",
             color: "#fff",
             fontWeight: 600,
             fontSize: "0.6rem",
@@ -81,7 +81,7 @@ const HotelTooltip: React.FC<HotelTooltipProps> = ({
         {/* NAME */}
         <Typography
           variant="subtitle2"
-          sx={{ fontWeight: 700, color: "#c14365", mb: 0.3, fontSize: "0.8rem" }}
+          sx={{ fontWeight: 700, color: "#1B2447", mb: 0.3, fontSize: "0.8rem" }}
         >
           {name}
         </Typography>
@@ -123,7 +123,7 @@ const HotelTooltip: React.FC<HotelTooltipProps> = ({
           variant="subtitle2"
           sx={{
             fontWeight: 700,
-            color: "#c14365",
+            color: "#1B2447",
             mb: 0.6,
             fontSize: "0.8rem",
           }}
@@ -137,7 +137,7 @@ const HotelTooltip: React.FC<HotelTooltipProps> = ({
           onClick={handleClick}
           sx={{
             width: "100%",
-            background: "#c14365",
+            background: "#1B2447",
             fontSize: "0.7rem",
             padding: "3px 0",
             textTransform: "none",

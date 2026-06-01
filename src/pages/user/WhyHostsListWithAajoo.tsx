@@ -148,7 +148,7 @@ const WhyHostsListWithAajoo: React.FC = () => {
           sx={{
             fontWeight: 700,
             textAlign: "center",
-            color: "#C14365",
+            color: "#1B2447",
             mb: 2,
           }}
         >
@@ -196,7 +196,7 @@ const WhyHostsListWithAajoo: React.FC = () => {
               <Typography
                 sx={{
                   fontWeight: 700,
-                  color: "#C14365",
+                  color: "#1B2447",
                   mb: 1,
                   fontSize: "1rem",
                 }}
@@ -232,7 +232,7 @@ const WhyHostsListWithAajoo: React.FC = () => {
             sx={{
               fontWeight: 600,
               fontSize: isMobile ? "1rem" : "1.1rem",
-              color: "#C14365",
+              color: "#1B2447",
               mb: 2,
             }}
           >

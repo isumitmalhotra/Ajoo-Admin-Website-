@@ -113,7 +113,7 @@ const RevenueReport = () => {
           <Box
             onClick={handleGenerate}
             sx={{
-              bgcolor: "#881f9b",
+              bgcolor: "#1B2447",
               color: "#fff",
               px: 3,
               py: 1,
@@ -154,7 +154,7 @@ const RevenueReport = () => {
             {
               label: "Total Bookings",
               value: data.totals.bookings.toLocaleString(),
-              color: "#881f9b",
+              color: "#1B2447",
             },
             {
               label: "Avg. Booking Value",

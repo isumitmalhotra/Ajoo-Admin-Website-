@@ -1,11 +1,13 @@
+/* ── Become a Host section ── */
 .addHostSection {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 40px 60px;
   border-radius: 16px;
-  background-color: #fff;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
   margin: 60px auto;
   max-width: 1200px;
   gap: 30px;
@@ -31,45 +33,45 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  color: #333;
+  color: var(--ink);
 }
 
 .addHostSectionRight h2 {
   font-size: 40px;
-  color: #c14365;
-  font-weight: 700;
+  color: var(--indigo);
+  font-weight: 500;
   margin-bottom: 20px;
-  font-family: "Poppins", sans-serif;
+  font-family: 'Fraunces', serif;
+  letter-spacing: -0.025em;
 }
 
 .addHostDesc {
-  font-size: 18px;
+  font-size: 17px;
   line-height: 1.6;
-  color: #555;
+  color: var(--muted);
   margin-bottom: 30px;
-  font-family: "Inter", sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
 .addHostButton {
   display: inline-block;
-  background-color: #c14365;
-  color: #fff;
-  font-size: 18px;
+  background-color: var(--indigo);
+  color: var(--cream);
+  font-size: 15px;
   font-weight: 600;
   text-decoration: none;
   padding: 14px 32px;
-  border-radius: 30px;
-  transition: all 0.3s ease;
+  border-radius: 10px;
+  transition: all 0.2s ease;
   width: fit-content;
 }
 
 .addHostButton:hover {
-  background-color: #a93656;
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(193, 67, 101, 0.3);
+  background-color: var(--indigo-600);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
-/* 🌐 Responsive Design */
 @media (max-width: 992px) {
   .addHostSection {
     flex-direction: column;
@@ -110,67 +112,62 @@
   }
 
   .addHostButton {
-    font-size: 16px;
-    padding: 12px 28px;
+    font-size: 14px;
+    padding: 12px 24px;
   }
 }
 
-
-/* ///////////////////////////////////////////// */
-/* Section Wrapper */
+/* ── Featured Properties ── */
 .featured-properties {
-  padding: 40px 20px;
-  background-color: #fafafa;
-
-  /* 👇 Reduce width */
-  max-width: 1200px;
-  margin: 0 auto; /* center it */
-  border-radius: 12px; /* optional for nice look */
+  padding: 0 48px 64px;
+  background-color: var(--sand);
+  max-width: 1320px;
+  margin: 0 auto;
 }
 
-/* Section Title */
 .featured-properties h2 {
-  font-size: 2rem;
-  font-weight: bold;
-  margin-bottom: 30px;
-  color: #c14365;
-  text-align: center;
+  font-family: 'Fraunces', serif;
+  font-size: 36px;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  margin-bottom: 24px;
+  color: var(--indigo);
+  text-align: left;
 }
 
-/* Grid Layout */
 .properties-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 24px;
 }
 
-/* Responsive tweaks */
-@media (max-width: 1024px) {
-  .featured-properties {
-    max-width: 950px;
-  }
-  .featured-properties h2 {
-    font-size: 1.75rem;
+@media (max-width: 1200px) {
+  .properties-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .featured-properties {
-    max-width: 700px;
-    padding: 30px 15px;
+    padding: 0 20px 48px;
   }
+
+  .properties-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .featured-properties h2 {
-    font-size: 1.5rem;
+    font-size: 28px;
     margin-bottom: 20px;
   }
 }
 
 @media (max-width: 480px) {
-  .featured-properties {
-    max-width: 100%; /* mobile full width */
-    padding: 20px 10px;
+  .properties-grid {
+    grid-template-columns: 1fr;
   }
+
   .featured-properties h2 {
-    font-size: 1.25rem;
+    font-size: 24px;
   }
 }

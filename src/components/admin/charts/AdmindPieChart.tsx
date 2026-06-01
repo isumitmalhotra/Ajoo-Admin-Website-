@@ -29,7 +29,7 @@ const AdmindPieChart: React.FC<CustomPieChartProps> = ({
   width = 320,
   height = 320,
   colors = [
-    "#881f9b",
+    "#1B2447",
     "#6d1a82",
     "#a855f7",
     "#7c3aed",

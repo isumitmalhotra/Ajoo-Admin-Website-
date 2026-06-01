@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { BookingDetailsModal } from "../../components";
 
-const themeColor = "#c14365";
+const themeColor = "#1B2447";
 
 const bookings = [
   { id: "BKG001", propertyName: "Luxury Apartment in Chennai", price: 4500, status: "Confirmed", date: "2025-10-10" },

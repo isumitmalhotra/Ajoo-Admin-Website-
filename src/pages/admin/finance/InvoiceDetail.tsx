@@ -191,8 +191,8 @@ const InvoiceDetail = () => {
             onClick={handleDownload}
             disabled={downloading}
             sx={{
-              borderColor: "#881f9b",
-              color: "#881f9b",
+              borderColor: "#1B2447",
+              color: "#1B2447",
               "&:hover": { borderColor: "#7115bd", bgcolor: "#faf0fc" },
             }}
           >

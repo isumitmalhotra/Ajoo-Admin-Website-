@@ -46,8 +46,8 @@ export const UserSidebar = () => {
         "& .MuiDrawer-paper": {
           width: drawerWidth,
           boxSizing: "border-box",
-          backgroundColor: "#C14365 !important",
-          color: "#fff",
+          backgroundColor: "#1B2447 !important",
+          color: "#FFFAF0",
         },
       }}
     >

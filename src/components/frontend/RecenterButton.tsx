@@ -30,13 +30,13 @@ const RecenterButton: React.FC<{ location: { lat: number; lng: number } }> = ({
         cursor: "pointer",
         transition: "all 0.2s ease",
         "&:hover": {
-          backgroundColor: "#c14365",
+          backgroundColor: "#1B2447",
           "& svg": { color: "#fff" },
         },
       }}
       onClick={handleRecenter}
     >
-      <MyLocationIcon sx={{ color: "#c14365", fontSize: 26 }} />
+      <MyLocationIcon sx={{ color: "#1B2447", fontSize: 26 }} />
     </Box>
   );
 };

@@ -373,7 +373,7 @@ export default function HostProfile() {
                 variant="contained"
                 onClick={handleSave}
                 disabled={updateLoading || !isDirty}
-                sx={{ bgcolor: "#881f9b" }}
+                sx={{ bgcolor: "#1B2447" }}
               >
                 {updateLoading ? "Saving..." : "Save Changes"}
               </Button>

@@ -148,7 +148,7 @@ const HelpCenter = () => {
               sx={{
                 fontFamily: "Poppins",
                 fontWeight: 700,
-                color: "#c14365",
+                color: "#1B2447",
                 mb: 3,
                 textTransform: "uppercase",
                 letterSpacing: 0.5,
@@ -164,7 +164,7 @@ const HelpCenter = () => {
                   fontWeight={700}
                   sx={{
                     fontFamily: "Poppins",
-                    color: "#c14365",
+                    color: "#1B2447",
                     mb: 1,
                   }}
                 >
@@ -191,7 +191,7 @@ const HelpCenter = () => {
           py: 4,
           textAlign: "center",
           backgroundColor: "#ffe5ec",
-          color: "#C14365",
+          color: "#1B2447",
           fontWeight: 500,
           fontSize: "0.95rem",
         }}
@@ -213,7 +213,7 @@ const HelpCenter = () => {
           bottom: 20,
           right: 20,
           zIndex: 2000,
-          backgroundColor: "#c14365",
+          backgroundColor: "#1B2447",
           borderRadius: "50px",
           px: 3,
           py: 1.3,

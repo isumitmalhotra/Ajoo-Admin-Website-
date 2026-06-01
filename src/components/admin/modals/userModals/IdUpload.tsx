@@ -9,7 +9,7 @@ import { deleteUserImage } from "../../../../features/admin/userManagement/UserI
 import { getUserById } from "../../../../features/admin/userManagement/userDetails.slice";
 import CustomSnackbar from "../../snackbar/CustomSnackbar";
 
-const PURPLE = "#881f9b";
+const PURPLE = "#1B2447";
 
 const IdUpload = ({
   disabled,

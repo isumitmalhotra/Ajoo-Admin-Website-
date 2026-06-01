@@ -8,32 +8,32 @@ import {
 
 const features = [
   {
-    icon: <Security sx={{ fontSize: 40, color: "#C14365" }} />,
+    icon: <Security sx={{ fontSize: 40, color: "#1B2447" }} />,
     title: "Easy & Quick Bookings",
     description: "Search, book, and confirm stays in just a few clicks.",
     link: "#",
   },
   {
-    icon: <EventAvailable sx={{ fontSize: 40, color: "#C14365" }} />,
+    icon: <EventAvailable sx={{ fontSize: 40, color: "#1B2447" }} />,
     title: "Local & Unique Stays",
     description: "Live with families, experience culture, not just hotels.",
     link: "#",
   },
   {
-    icon: <LocalOffer sx={{ fontSize: 40, color: "#C14365" }} />,
+    icon: <LocalOffer sx={{ fontSize: 40, color: "#1B2447" }} />,
     title: "Safe & Verified",
     description: "Every property and host is checked with government rules.",
     link: "#",
   },
   // {
-  //   icon: <SupportAgent sx={{ fontSize: 40, color: "#C14365" }} />,
+  //   icon: <SupportAgent sx={{ fontSize: 40, color: "#1B2447" }} />,
   //   title: "Affordable Prices",
   //   description:
   //     "Transparent, budget-friendly stays with no hidden charges.",
   //   link: "#",
   // },
   {
-    icon: <SupportAgent sx={{ fontSize: 40, color: "#C14365" }} />,
+    icon: <SupportAgent sx={{ fontSize: 40, color: "#1B2447" }} />,
     title: "24x7 Support",
     description: "Instant help via WhatsApp, app, or call anytime.",
     link: "#",
@@ -47,7 +47,7 @@ const WhyChooseUs = () => {
       <Typography
         variant="h4"
         fontWeight="bold"
-        color="#C14365"
+        color="#1B2447"
         gutterBottom
         textAlign="center"
       >
@@ -68,7 +68,7 @@ const WhyChooseUs = () => {
         }}
       >
         At{" "}
-        <Box component="span" sx={{ color: "#C14365", fontWeight: "bold" }}>
+        <Box component="span" sx={{ color: "#1B2447", fontWeight: "bold" }}>
           AAJAO
         </Box>
         , we bring together travelers and local hosts on one trusted Indian
@@ -119,7 +119,7 @@ const WhyChooseUs = () => {
               {/* <Button
                 href={feature.link}
                 sx={{
-                  color: "#C14365",
+                  color: "#1B2447",
                   textTransform: "none",
                   fontWeight: "bold",
                   "&:hover": { textDecoration: "underline" },

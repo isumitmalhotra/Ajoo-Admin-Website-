@@ -10,12 +10,12 @@ export const AppBreadcrumbs: React.FC<Props> = ({ items }) => {
   return (
     <Box sx={{ py: 2 }}>
       <Breadcrumbs
-        separator={<NavigateNextIcon fontSize="small" sx={{ color: "#C14365" }} />}
+        separator={<NavigateNextIcon fontSize="small" sx={{ color: "#1B2447" }} />}
         aria-label="breadcrumb"
         sx={{
           "& a": {
             textDecoration: "none",
-            color: "#C14365",
+            color: "#1B2447",
             fontWeight: 500,
             fontSize: "0.95rem",
             fontFamily: "'Poppins', sans-serif",

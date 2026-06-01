@@ -42,7 +42,7 @@ const MarkerPulse = ({ coordinates }: { coordinates: [number, number] }) => {
         height: 20px;
         border-radius: 50%;
         transform: translate(-50%, -50%);
-        background: rgba(193, 67, 101, 0.6);
+        background: rgba(27,36,71, 0.6);
         opacity: 0.6;
       }
       .pulse-ring.outer {
@@ -50,7 +50,7 @@ const MarkerPulse = ({ coordinates }: { coordinates: [number, number] }) => {
       }
       .pulse-ring.inner {
         animation: pulseInner 2s infinite 0.5s;
-        background: rgba(193, 67, 101, 0.8);
+        background: rgba(27,36,71, 0.8);
       }
       @keyframes pulseOuter {
         0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0.8; }

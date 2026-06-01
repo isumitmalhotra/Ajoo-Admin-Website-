@@ -74,7 +74,7 @@ const UserCheckoutPage: React.FC = () => {
         variant="h5"
         sx={{
           fontWeight: 700,
-          color: "#c14365",
+          color: "#1B2447",
           mb: 3,
           fontFamily: "'Poppins', sans-serif",
           textAlign: "center",
@@ -257,7 +257,7 @@ const UserCheckoutPage: React.FC = () => {
             <Button
               variant="contained"
               sx={{
-                bgcolor: "#c14365",
+                bgcolor: "#1B2447",
                 "&:hover": { bgcolor: "#a83454" },
                 textTransform: "none",
                 px: 4,
@@ -273,8 +273,8 @@ const UserCheckoutPage: React.FC = () => {
             <Button
               variant="outlined"
               sx={{
-                borderColor: "#c14365",
-                color: "#c14365",
+                borderColor: "#1B2447",
+                color: "#1B2447",
                 "&:hover": { bgcolor: "#fce4ec" },
                 textTransform: "none",
                 px: 4,

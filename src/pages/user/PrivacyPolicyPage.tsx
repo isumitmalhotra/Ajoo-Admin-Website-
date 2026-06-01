@@ -163,7 +163,7 @@ const PrivacyPolicy: React.FC = () => {
             sx={{
               p: isMobile ? 2.2 : 3.5,
               borderRadius: "14px",
-              borderLeft: "4px solid #c14365",
+              borderLeft: "4px solid #1B2447",
               background: "#fff",
               transition: "transform 0.25s",
               "&:hover": { transform: "translateY(-3px)" },

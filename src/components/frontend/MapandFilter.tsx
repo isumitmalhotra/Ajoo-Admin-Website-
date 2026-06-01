@@ -56,13 +56,13 @@ const MapandFilter: React.FC = () => {
     }[]
   >([]);
 
-  // const markerColor = "#c14365";
+  // const markerColor = "#1B2447";
   const hotelIcon = new L.DivIcon({
     className: "custom-hotel-marker",
     html: `
     <div style="
-      background-color: #c14365;
-      color: white;
+      background-color: #1B2447;
+      color: #FFFAF0;
       border-radius: 50%;
       width: 36px;
       height: 36px;
@@ -191,9 +191,10 @@ const MapandFilter: React.FC = () => {
           justifyContent: "space-evenly",
           p: { xs: 1.5, sm: 2 },
 
-          borderRadius: "12px",
-          boxShadow: "0 4px 15px rgba(0, 0, 0, 0.15)",
-          backgroundColor: "#fff",
+          borderRadius: "14px",
+          boxShadow: "0 1px 2px rgba(27,36,71,.04), 0 8px 24px rgba(27,36,71,.06)",
+          backgroundColor: "#FFFAF0",
+          border: "1px solid #D9CFB8",
           mb: { xs: 2, sm: 3 },
         }}
       >
@@ -244,9 +245,9 @@ const MapandFilter: React.FC = () => {
               <Typography
                 variant="body2"
                 sx={{
-                  color: "#c14365",
-                  fontSize: { xs: "0.65rem", sm: "0.8rem" },
-                  fontWeight: 600,
+                  color: "#1B2447",
+                  fontSize: { xs: "0.65rem", sm: "0.75rem" },
+                  fontWeight: 500,
                   mt: 0.4, // 🔥 reduced top gap
                   whiteSpace: "nowrap",
                   textAlign: "center",
@@ -288,13 +289,13 @@ const MapandFilter: React.FC = () => {
             sx={{
               flex: "1",
               height: { xs: 42, sm: 50 },
-              backgroundColor: "#c14365",
+              backgroundColor: "#1B2447",
               textTransform: "none",
-              fontSize: { xs: "0.8rem", sm: "0.95rem" },
-              fontFamily: "Poppins, sans-serif",
+              fontSize: { xs: "0.8rem", sm: "0.9rem" },
+              fontFamily: "'Inter', system-ui, sans-serif",
               fontWeight: 600,
               borderRadius: "10px",
-              "&:hover": { backgroundColor: "#a83756" },
+              "&:hover": { backgroundColor: "#2A356B" },
             }}
           >
             {/* ⬇️ Replace title on mobile */}
@@ -319,16 +320,16 @@ const MapandFilter: React.FC = () => {
             sx={{
               flex: "1",
               height: { xs: 42, sm: 50 },
-              borderColor: "#c14365",
-              color: "#c14365",
+              borderColor: "#1B2447",
+              color: "#1B2447",
               textTransform: "none",
-              fontSize: { xs: "0.8rem", sm: "0.95rem" },
-              fontFamily: "Poppins, sans-serif",
+              fontSize: { xs: "0.8rem", sm: "0.9rem" },
+              fontFamily: "'Inter', system-ui, sans-serif",
               fontWeight: 600,
               borderRadius: "10px",
               "&:hover": {
-                backgroundColor: "#c1436510",
-                borderColor: "#c14365",
+                backgroundColor: "rgba(27,36,71,0.05)",
+                borderColor: "#1B2447",
               },
             }}
           >
@@ -425,7 +426,7 @@ const MapandFilter: React.FC = () => {
                       "&:hover": { bgcolor: "#f0f0f0" },
                     }}
                   >
-                    <FilterListIcon sx={{ color: "#c14365" }} />
+                    <FilterListIcon sx={{ color: "#1B2447" }} />
                   </IconButton>
 
                   {/* 🔹 Dropdown Component */}
@@ -458,7 +459,7 @@ const MapandFilter: React.FC = () => {
                     "&:hover": { bgcolor: "#f0f0f0" },
                   }}
                 >
-                  <MyLocationIcon sx={{ color: "#c14365" }} />
+                  <MyLocationIcon sx={{ color: "#1B2447" }} />
                 </IconButton>
               </Box>
             </>
@@ -470,8 +471,8 @@ const MapandFilter: React.FC = () => {
                 alignItems: "center",
                 justifyContent: "center",
                 flexDirection: "column",
-                color: "#c14365",
-                backgroundColor: "#f9f9f9",
+                color: "#1B2447",
+                backgroundColor: "#FFFAF0",
                 textAlign: "center",
                 p: 2,
               }}

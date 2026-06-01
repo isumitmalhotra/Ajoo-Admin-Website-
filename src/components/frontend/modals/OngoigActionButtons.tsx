@@ -66,7 +66,7 @@ const OngoigActionButtons: React.FC<OngoigActionButtonsProps> = ({
         boxShadow: "0 6px 18px rgba(193,67,101,0.06)",
       }}
     >
-      <Typography variant="h6" sx={{ fontWeight: 700, color: "#c14365", mb: 1 }}>
+      <Typography variant="h6" sx={{ fontWeight: 700, color: "#1B2447", mb: 1 }}>
         Actions
       </Typography>
 
@@ -81,7 +81,7 @@ const OngoigActionButtons: React.FC<OngoigActionButtonsProps> = ({
           onClick={handleCheckout}
           startIcon={<LogoutIcon />}
           variant="contained"
-          sx={{ bgcolor: "#c14365", px: 2.5, py: 0.7, minWidth: 140, textTransform: "none", fontWeight: 700 }}
+          sx={{ bgcolor: "#1B2447", px: 2.5, py: 0.7, minWidth: 140, textTransform: "none", fontWeight: 700 }}
         >
           Check Out
         </Button>
@@ -90,7 +90,7 @@ const OngoigActionButtons: React.FC<OngoigActionButtonsProps> = ({
           onClick={handlePayNow}
           startIcon={<PaymentIcon />}
           variant="contained"
-          sx={{ bgcolor: "#c14365", px: 2.5, py: 0.7, minWidth: 140, textTransform: "none", fontWeight: 700 }}
+          sx={{ bgcolor: "#1B2447", px: 2.5, py: 0.7, minWidth: 140, textTransform: "none", fontWeight: 700 }}
         >
           Pay Now
         </Button>

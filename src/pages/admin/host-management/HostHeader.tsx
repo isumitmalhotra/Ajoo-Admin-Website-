@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { FilterList as FilterListIcon } from "@mui/icons-material";
 
 const COLORS = {
-  primary: "#881f9b",
+  primary: "#1B2447",
 };
 
 interface HostHeaderProps {

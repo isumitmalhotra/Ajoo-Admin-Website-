@@ -85,7 +85,7 @@ const Arrow = ({
       zIndex: 10,
       width: 40,
       height: 40,
-      backgroundColor: "#c14365",
+      backgroundColor: "#1B2447",
       borderRadius: "50%",
       display: "flex",
       alignItems: "center",
@@ -94,7 +94,7 @@ const Arrow = ({
       cursor: "pointer",
       fontSize: 22,
       "&:hover": {
-        backgroundColor: "#ab3864",
+        backgroundColor: "#2A356B",
       },
     }}
   >
@@ -134,7 +134,7 @@ const ReviewSliderAdvanced: React.FC<ReviewSliderProps> = ({ propertyId }) => {
           fontSize: { xs: 28, sm: 36 },
           fontWeight: 600,
           mb: 3,
-          color: "#c14365",
+          color: "#1B2447",
           textAlign: "center",
         }}
       >
@@ -192,7 +192,7 @@ const ReviewSliderAdvanced: React.FC<ReviewSliderProps> = ({ propertyId }) => {
                     fontSize: 16,
                     fontWeight: 500,
                     mb: 1,
-                    color: "#c14365",
+                    color: "#1B2447",
                   }}
                 >
                   {review.title}

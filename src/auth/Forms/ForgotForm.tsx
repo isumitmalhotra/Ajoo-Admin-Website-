@@ -71,7 +71,7 @@ export const ForgetPasswordForm = () => {
       {/* Left: Form */}
       <Box className="forget-box">
         <img src={logo} alt="" className="topLogofrgtpas"/>
-        <Typography variant="h4" fontWeight={700} mb={1} color="#C14365">
+        <Typography variant="h4" fontWeight={700} mb={1} color="#1B2447">
           Forgot Password
         </Typography>
         <Typography variant="body1" color="text.secondary" mb={3}>
@@ -92,10 +92,10 @@ export const ForgetPasswordForm = () => {
           helperText={step === "email" ? error : ""}
           sx={{
             "& .MuiOutlinedInput-root.Mui-focused fieldset": {
-              borderColor: "#C14365",
+              borderColor: "#1B2447",
             },
             "& .MuiInputLabel-root.Mui-focused": {
-              color: "#C14365",
+              color: "#1B2447",
             },
           }}
         />
@@ -113,10 +113,10 @@ export const ForgetPasswordForm = () => {
             inputProps={{ maxLength: 4 }}
             sx={{
               "& .MuiOutlinedInput-root.Mui-focused fieldset": {
-                borderColor: "#C14365",
+                borderColor: "#1B2447",
               },
               "& .MuiInputLabel-root.Mui-focused": {
-                color: "#C14365",
+                color: "#1B2447",
               },
             }}
           />
@@ -132,7 +132,7 @@ export const ForgetPasswordForm = () => {
           <Button
             variant="text"
             onClick={handleResendOtp}
-            sx={{ color: "#C14365", fontWeight: 600 }}
+            sx={{ color: "#1B2447", fontWeight: 600 }}
           >
             Resend OTP
           </Button>
@@ -144,7 +144,7 @@ export const ForgetPasswordForm = () => {
           variant="contained"
           sx={{
             mt: 2,
-            backgroundColor: "#C14365",
+            backgroundColor: "#1B2447",
             color: "#fff",
             borderRadius: "8px",
             py: 1.5,

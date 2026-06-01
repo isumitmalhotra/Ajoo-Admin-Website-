@@ -625,7 +625,7 @@ export default function HostDetailDialog({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} variant="contained" sx={{ bgcolor: "#881f9b" }}>
+        <Button onClick={onClose} variant="contained" sx={{ bgcolor: "#1B2447" }}>
           Close
         </Button>
       </DialogActions>

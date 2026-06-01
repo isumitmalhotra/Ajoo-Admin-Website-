@@ -321,7 +321,7 @@ const ReconciliationList = () => {
                             setResolveModal({ open: true, record: rec })
                           }
                           sx={{
-                            bgcolor: "#881f9b",
+                            bgcolor: "#1B2447",
                             color: "#fff",
                             px: 2,
                             py: 0.5,

@@ -1,8 +1,40 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');@import url('https://fonts.googleapis.com/css2?family=Dosis:wght@200..800&family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Manrope:wght@200..800&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Quicksand:wght@300..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Sand & Indigo design tokens ── */
+:root {
+  --indigo:    #1B2447;
+  --indigo-600:#2A356B;
+  --clay:      #C16345;
+  --clay-600:  #A8512F;
+  --sand:      #EFE7D6;
+  --cream:     #FFFAF0;
+  --ink:       #1B2447;
+  --ink-2:     #3D4670;
+  --muted:     #6B7390;
+  --line:      #D9CFB8;
+  --success:   #3F6B4E;
+  --shadow:    0 1px 2px rgba(27,36,71,.04), 0 8px 24px rgba(27,36,71,.06);
+  --shadow-lg: 0 12px 40px rgba(27,36,71,.12);
+  --radius:    14px;
+}
+
+/* ── Tailwind v4 theme tokens ── */
+@theme {
+  --color-indigo:     #1B2447;
+  --color-indigo-600: #2A356B;
+  --color-clay:       #C16345;
+  --color-clay-600:   #A8512F;
+  --color-sand:       #EFE7D6;
+  --color-cream:      #FFFAF0;
+  --color-line:       #D9CFB8;
+  --color-success:    #3F6B4E;
+  --color-muted:      #6B7390;
+}
 
 *::after,
 *::before,
@@ -10,24 +42,34 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
- 
 }
 
 body {
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  background-color: var(--sand);
+  color: var(--ink);
 }
-/* General input styling */
+
+.serif {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+/* ── General input styling ── */
 .form-control {
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
   padding: 0.75rem 1rem;
   font-size: 15px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .form-control:focus {
-  border-color: #8c4ecf;
-  box-shadow: 0 0 0 0.2rem rgba(140, 78, 207, 0.25);
+  border-color: var(--indigo);
+  box-shadow: 0 0 0 0.2rem rgba(27, 36, 71, 0.15);
   outline: none;
 }
 
@@ -42,7 +84,7 @@ body {
   margin-top: 4px;
 }
 
-/* Floating label styles */
+/* ── Floating label styles ── */
 .form-floating {
   position: relative;
 }
@@ -67,10 +109,10 @@ body {
   top: 4px;
   left: 1rem;
   font-size: 12px;
-  color: #8c4ecf;
+  color: var(--indigo);
 }
 
-/* Password icon (eye) styling */
+/* ── Password icon (eye) styling ── */
 .passwordIcon {
   position: absolute;
   right: 14px;
@@ -85,28 +127,29 @@ body {
   top: 18px;
 }
 
-/* Error variant */
 .passwordIcon.errored {
   color: #dc3545;
 }
 
-/* Input group (with icon) styling */
+/* ── Input group ── */
 .input-group-text {
   background-color: #f1f1f1;
-  border: 1px solid #ccc;
+  border: 1px solid var(--line);
   border-right: none;
-  border-radius: 8px 0 0 8px;
+  border-radius: 10px 0 0 10px;
 }
 
 .input-group .form-control {
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 10px 10px 0;
 }
 
-/* Label color modifier */
+/* ── Label color modifier ── */
 .blue-label {
-  color: #4c6ef5;
+  color: var(--indigo);
   font-weight: 500;
 }
+
+/* ── Login layout ── */
 .login-layout {
   display: flex;
   width: 100%;
@@ -115,14 +158,14 @@ body {
 
 .login-left,
 .login-right {
-  flex: 1; /* both take 50% of the space */
+  flex: 1;
 }
 
 .login-left {
   display: flex;
   flex-direction: column;
   padding: 40px;
-  background-color: #fff; /* Optional: background for contrast */
+  background-color: var(--cream);
 }
 
 .lgn-left-col {
@@ -133,66 +176,63 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f5f5f5; /* Optional */
+  background-color: var(--sand);
 }
-/* Base button styles */
+
+/* ── Base button styles ── */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 500;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: 10px;
   padding: 0.375rem 0.75rem;
   font-size: 1rem;
   cursor: pointer;
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-/* Orange primary variant */
 .btn-primary {
-  background-color: #ff7a00;
-  border-color: #ff7a00;
-  color: #fff;
+  background-color: var(--indigo);
+  border-color: var(--indigo);
+  color: var(--cream);
 }
 
 .btn-primary:hover {
-  background-color: #e96b00;
-  border-color: #e96b00;
+  background-color: var(--indigo-600);
+  border-color: var(--indigo-600);
 }
 
 .btn-primary:disabled {
-  background-color: #ffb266;
-  border-color: #ffb266;
+  background-color: var(--muted);
+  border-color: var(--muted);
   color: #fff;
   cursor: not-allowed;
   opacity: 0.7;
 }
 
-/* Light variant for white */
 .btn-light {
-  background-color: #fff;
-  border-color: #ccc;
-  color: #333;
+  background-color: var(--cream);
+  border-color: var(--line);
+  color: var(--ink);
 }
 
 .btn-light:hover {
-  background-color: #f0f0f0;
+  background-color: var(--sand);
 }
 
-/* Outline variant */
 .btn-outline-dark {
   background-color: transparent;
-  border: 1px solid #333;
-  color: #333;
+  border: 1px solid var(--indigo);
+  color: var(--indigo);
 }
 
 .btn-outline-dark:hover {
-  background-color: #333;
-  color: #fff;
+  background-color: var(--indigo);
+  color: var(--cream);
 }
 
-/* Danger variant */
 .btn-danger {
   background-color: #dc3545;
   border-color: #dc3545;
@@ -203,18 +243,16 @@ body {
   background-color: #c82333;
 }
 
-/* Success variant */
 .btn-success {
-  background-color: #28a745;
-  border-color: #28a745;
+  background-color: var(--success);
+  border-color: var(--success);
   color: #fff;
 }
 
 .btn-success:hover {
-  background-color: #218838;
+  background-color: #346059;
 }
 
-/* Sizes */
 .btn-sm {
   padding: 0.25rem 0.5rem;
   font-size: 0.875rem;
@@ -224,6 +262,8 @@ body {
   padding: 0.5rem 1rem;
   font-size: 1.25rem;
 }
+
+/* ── Form field wrappers ── */
 .input-box {
   margin-bottom: 1rem;
 }
@@ -232,7 +272,7 @@ body {
   display: block;
   margin-bottom: 0.5rem;
   font-size: 1rem;
-  color: #333;
+  color: var(--ink);
 }
 
 .form-label .text-danger {
@@ -246,24 +286,22 @@ body {
   margin-top: 0.25rem;
 }
 
-/* Optional: animate transitions (Framer Motion handles the logic, this is for fallback or appearance) */
 .form-text {
   transition: all 0.3s ease-in-out;
 }
-/* Container for the login form */
+
+/* ── Login form ── */
 .login-form {
   max-width: 400px;
   margin: 0 auto;
   padding: 2rem 1rem;
-  background-color: transparent; /* no background */
+  background-color: transparent;
 }
 
-/* Spacing between form elements */
 .login-form .mb-3 {
   margin-bottom: 1.5rem;
 }
 
-/* Input fields stretch full width, no borders */
 .login-form input {
   width: 100%;
   padding: 0.75rem;
@@ -275,47 +313,43 @@ body {
   box-shadow: none;
 }
 
-/* On focus, keep no border or shadow */
 .login-form input:focus {
   outline: none;
   box-shadow: none;
   background-color: transparent;
 }
 
-/* Labels */
 .login-form label {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 600;
-  color: #333;
+  color: var(--ink);
 }
 
-/* Button full width, no border radius */
+/* ── Primary CTA button ── */
 .prime-btn {
   width: 100%;
   padding: 0.75rem;
   font-size: 1rem;
   font-weight: 600;
-  background-color: #ff7a00;
+  background-color: var(--indigo);
   border: none;
-  border-radius: 0;
-  color: #fff;
+  border-radius: 10px;
+  color: var(--cream);
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
 
 .prime-btn:hover {
-  background-color: #e96b00;
+  background-color: var(--indigo-600);
 }
 
-/* Error message styling */
 .form-text.text-danger.form-error {
   font-size: 0.875rem;
   color: #dc3545;
   margin-top: 0.25rem;
 }
 
-/* Responsive tweak */
 @media (max-width: 500px) {
   .login-form {
     padding: 1rem;
@@ -325,6 +359,8 @@ body {
     font-size: 0.95rem;
   }
 }
+
+/* ── Password toggle ── */
 .password-toggle-icon {
   position: absolute;
   top: 50%;
@@ -336,7 +372,7 @@ body {
 }
 
 .password-toggle-icon:hover {
-  color: #333;
+  color: var(--ink);
 }
 
 .input-with-icon {

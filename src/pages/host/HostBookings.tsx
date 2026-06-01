@@ -498,7 +498,7 @@ export default function HostBookings() {
           slotProps={{ inputLabel: { shrink: true } }}
         />
 
-        <Button variant="contained" onClick={handleFilter} sx={{ bgcolor: "#881f9b" }}>
+        <Button variant="contained" onClick={handleFilter} sx={{ bgcolor: "#1B2447" }}>
           Apply
         </Button>
         <Button variant="outlined" onClick={handleReset}>

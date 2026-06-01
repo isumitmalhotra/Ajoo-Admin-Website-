@@ -55,7 +55,7 @@ const SignupOtpVerification: React.FC = () => {
         <Typography
           variant="h5"
           fontWeight={700}
-          color="#C14365"
+          color="#1B2447"
           gutterBottom
         >
           OTP Verification
@@ -76,10 +76,10 @@ const SignupOtpVerification: React.FC = () => {
           inputProps={{ maxLength: 4, style: { textAlign: "center", fontSize: 20 } }}
           sx={{
             "& .MuiOutlinedInput-root.Mui-focused fieldset": {
-              borderColor: "#C14365",
+              borderColor: "#1B2447",
             },
             "& .MuiInputLabel-root.Mui-focused": {
-              color: "#C14365",
+              color: "#1B2447",
             },
           }}
         />
@@ -95,7 +95,7 @@ const SignupOtpVerification: React.FC = () => {
           {canResend ? (
             <Button
               onClick={handleResend}
-              sx={{ color: "#C14365", fontWeight: 600 }}
+              sx={{ color: "#1B2447", fontWeight: 600 }}
             >
               Resend OTP
             </Button>
@@ -112,7 +112,7 @@ const SignupOtpVerification: React.FC = () => {
           variant="contained"
           sx={{
             mt: 3,
-            backgroundColor: "#C14365",
+            backgroundColor: "#1B2447",
             "&:hover": { backgroundColor: "#a93250" },
             borderRadius: "8px",
             py: 1.5,

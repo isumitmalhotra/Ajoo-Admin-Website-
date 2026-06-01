@@ -25,7 +25,7 @@ const HomeCustomGrid: React.FC = () => {
   return (
     <>
       <Container sx={{ py: 2 }}>
-        <Typography variant="h4" fontWeight="bold" color="#C14365" gutterBottom>
+        <Typography variant="h4" fontWeight="bold" color="#1B2447" gutterBottom>
           For You
         </Typography>
       </Container>

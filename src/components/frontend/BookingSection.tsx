@@ -18,7 +18,7 @@ import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 
 type StayType = "Daily" | "Weekly" | "Monthly";
-const themeColor = "#c14365";
+const themeColor = "#1B2447";
 
 const BookingSection: React.FC = () => {
   const navigate = useNavigate();

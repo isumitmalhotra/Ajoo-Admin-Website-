@@ -107,15 +107,17 @@ const PropertyListing = () => {
         sx={{
           display: "grid",
           gridTemplateColumns: { xs: "1fr", md: "280px 1fr" },
-          gap: 2,
-          p: 2,
+          gap: "24px",
+          p: { xs: "16px 20px", md: "24px 48px 64px" },
+          bgcolor: "#EFE7D6",
+          minHeight: "100vh",
         }}
       >
         {/* Desktop Sidebar */}
         <Box
           sx={{
             display: { xs: "none", md: "block" },
-            borderRight: "1px solid #eee",
+            borderRight: "1px solid #D9CFB8",
             pr: 2,
           }}
         >

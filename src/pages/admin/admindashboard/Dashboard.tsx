@@ -102,7 +102,7 @@ const Dashboard = () => {
       <Paper
         sx={{
           background:
-            "linear-gradient(135deg, #881f9b 0%, #a855f7 50%, #9333ea 100%)",
+            "linear-gradient(135deg, #1B2447 0%, #a855f7 50%, #9333ea 100%)",
           height: "25rem",
           borderRadius: "1rem",
           p: 4,
@@ -134,7 +134,7 @@ const Dashboard = () => {
                 borderRadius: "1rem",
               }}
             >
-              <Typography variant="h4" color="#881f9b" fontWeight={700}>
+              <Typography variant="h4" color="#1B2447" fontWeight={700}>
                 {value.toLocaleString()}
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -154,7 +154,7 @@ const Dashboard = () => {
           justifyContent="space-between"
         >
           <Stack spacing={2}>
-            <Typography variant="h4" fontWeight={600} color="#881f9b">
+            <Typography variant="h4" fontWeight={600} color="#1B2447">
               “The only way to do great work is to love what you do”
             </Typography>
             <Typography fontStyle="italic" color="#7c3aed">

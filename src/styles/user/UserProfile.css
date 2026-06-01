@@ -1,4 +1,4 @@
-.profileChangeButton{
+.profileChangeButton {
   width: 100%;
   display: flex;
   justify-content: space-between;
@@ -7,9 +7,10 @@
 
 .userInforight {
   margin-bottom: 0.5rem;
-  font-weight: bold;
-  color: #c14365;
-  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif !important;
+  font-weight: 600;
+  color: var(--indigo);
+  font-family: 'Fraunces', serif;
+  letter-spacing: -0.01em;
 }
 
 .userInfoFormProfile {
@@ -28,9 +29,9 @@
 }
 
 .userProfileFormLabel {
-  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif !important;
-  font-weight: bold;
-  color: #c14365;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  color: var(--indigo);
 }
 
 .inputboxChilduserProfile {
@@ -44,10 +45,16 @@
 }
 
 .chooseFileBtn {
-  background-color: #c14365 !important;
-  color: white !important;
-  font-weight: bold;
+  background-color: var(--indigo) !important;
+  color: var(--cream) !important;
+  font-weight: 600;
   text-transform: none;
+  border-radius: 10px !important;
+  transition: background 0.2s !important;
+}
+
+.chooseFileBtn:hover {
+  background-color: var(--indigo-600) !important;
 }
 
 .imagePreview {
@@ -58,26 +65,32 @@
 .previewImg {
   width: 200px;
   height: auto;
-  border-radius: 8px;
-  border: 1px solid #ccc;
+  border-radius: 10px;
+  border: 1px solid var(--line);
 }
 
 .removeImgBtn {
   position: absolute !important;
   top: -8px;
   right: -8px;
-  background: #fff !important;
-  border: 1px solid #ccc;
+  background: var(--cream) !important;
+  border: 1px solid var(--line);
 }
 
 .submitBtn {
-  background-color: #c14365 !important;
+  background-color: var(--indigo) !important;
   padding: 0.7rem 2rem !important;
-  font-weight: bold !important;
+  font-weight: 600 !important;
   text-transform: none !important;
+  color: var(--cream) !important;
+  border-radius: 10px !important;
+  transition: background 0.2s !important;
 }
 
-/* Responsive Design */
+.submitBtn:hover {
+  background-color: var(--indigo-600) !important;
+}
+
 @media (max-width: 768px) {
   .inputboxChilduserProfile {
     width: 100%;
@@ -94,26 +107,27 @@
   }
 }
 
-
-
-/* ////////////////////////////// */
-
+/* ── Profile layout ── */
 .mainContaineruserProfile {
   display: flex;
   gap: 1rem;
   padding: 1rem;
+  background: var(--sand);
+  min-height: 100vh;
 }
 
-/* Left section */
 .leftContaineruserProfile {
-  border: 1px solid #ddd;
+  border: 1px solid var(--line);
+  background: var(--cream);
   width: 25%;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 1rem;
-  gap: 5rem;
+  gap: 3rem;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
 }
 
 .imageContainerUserProfile {
@@ -128,10 +142,9 @@
 .userDemoImg {
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #c14365;
+  border: 2px solid var(--indigo);
 }
 
-/* Change password section */
 .changePasswordContainer {
   width: 100%;
   display: flex;
@@ -140,19 +153,21 @@
 
 .changePasswordTitle {
   margin-bottom: 0.5rem;
-  font-weight: bold;
-  color: #c14365;
+  font-weight: 600;
+  color: var(--indigo);
+  font-family: 'Fraunces', serif;
 }
 
-/* Right section */
 .rightContaineruserProfile {
   flex: 1;
-  border: 1px solid #ddd;
+  border: 1px solid var(--line);
+  background: var(--cream);
   min-height: 100vh;
   padding: 1rem;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
 }
 
-/* Responsive */
 @media (max-width: 1024px) {
   .leftContaineruserProfile {
     width: 35%;

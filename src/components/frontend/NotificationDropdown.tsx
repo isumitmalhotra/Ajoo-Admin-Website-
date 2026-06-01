@@ -103,7 +103,7 @@ const NotificationDropdown: React.FC = () => {
                 : {}
             }
           >
-            <NotificationsIcon sx={{ color: "#c14365" }} />
+            <NotificationsIcon sx={{ color: "#1B2447" }} />
           </MotionBadge>
         </IconButton>
       </Tooltip>
@@ -157,7 +157,7 @@ const NotificationDropdown: React.FC = () => {
                   variant="subtitle1"
                   sx={{
                     fontWeight: 600,
-                    color: "#c14365",
+                    color: "#1B2447",
                   }}
                 >
                   Notifications
@@ -167,7 +167,7 @@ const NotificationDropdown: React.FC = () => {
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "#c14365",
+                      color: "#1B2447",
                       cursor: "pointer",
                       fontWeight: 500,
                       textDecoration: "underline",
@@ -233,7 +233,7 @@ const NotificationDropdown: React.FC = () => {
                             size="small"
                             variant="text"
                             sx={{
-                              color: "#c14365",
+                              color: "#1B2447",
                               textTransform: "none",
                               fontSize: "0.75rem",
                               minWidth: "auto",

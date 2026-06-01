@@ -127,7 +127,7 @@ const InvoiceList = () => {
           <Box
             onClick={handleSearch}
             sx={{
-              bgcolor: "#881f9b",
+              bgcolor: "#1B2447",
               color: "#fff",
               px: 3,
               py: 1,
@@ -214,7 +214,7 @@ const InvoiceList = () => {
                           fontSize: "0.85rem",
                           fontWeight: 600,
                           fontFamily: "monospace",
-                          color: "#881f9b",
+                          color: "#1B2447",
                           cursor: "pointer",
                         }}
                         onClick={() => navigate(`/admin/finance/invoices/${inv.invoice_id}`)}

@@ -31,7 +31,7 @@ const OngoingFloat: React.FC = () => {
         whileHover={{ scale: 1.05, y: -4 }}
         whileTap={{ scale: 0.95 }}
         sx={{
-          bgcolor: "#c14365",
+          bgcolor: "#1B2447",
           color: "#fff",
           borderRadius: "16px",
           boxShadow: "0px 4px 20px rgba(0,0,0,0.2)",

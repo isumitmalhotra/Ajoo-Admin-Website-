@@ -252,7 +252,7 @@ Hosting in Chandigarh means more than income — it’s about sharing the city�
           sx={{
             fontWeight: 600,
             mb: 2,
-            color: "#c14365",
+            color: "#1B2447",
             fontFamily: "'Poppins', sans-serif",
           }}
         >
@@ -275,7 +275,7 @@ Hosting in Chandigarh means more than income — it’s about sharing the city�
           variant="text"
           sx={{
             mt: 2,
-            color: "#c14365",
+            color: "#1B2447",
             textTransform: "none",
             fontWeight: 600,
             "&:hover": { backgroundColor: "#fce4ec" },
@@ -325,7 +325,7 @@ Hosting in Chandigarh means more than income — it’s about sharing the city�
         sx={{
           fontWeight: 700,
           mb: 4,
-          color: "#c14365",
+          color: "#1B2447",
           fontFamily: "'Poppins', sans-serif",
           textAlign: "center",
         }}

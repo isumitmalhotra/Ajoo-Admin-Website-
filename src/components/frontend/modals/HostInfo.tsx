@@ -44,14 +44,14 @@ const HostInfo: React.FC<HostInfoProps> = ({ host = {} }) => {
         p: 2.5,
         borderRadius: 3,
         background: "linear-gradient(135deg, #fff, #fff5f8)",
-        boxShadow: "0 6px 18px rgba(193, 67, 101, 0.06)",
+        boxShadow: "0 6px 18px rgba(27,36,71, 0.06)",
       }}
     >
       <Typography
         variant="h6"
         sx={{
           fontWeight: 700,
-          color: "#c14365",
+          color: "#1B2447",
           mb: 2,
           fontFamily: "'Poppins', sans-serif",
         }}
@@ -65,7 +65,7 @@ const HostInfo: React.FC<HostInfoProps> = ({ host = {} }) => {
           sx={{
             width: 72,
             height: 72,
-            border: "3px solid #c14365",
+            border: "3px solid #1B2447",
             boxShadow: "0 6px 18px rgba(0,0,0,0.12)",
           }}
         />
@@ -123,8 +123,8 @@ const HostInfo: React.FC<HostInfoProps> = ({ host = {} }) => {
         <Button
           variant="outlined"
           sx={{
-            borderColor: "#c14365",
-            color: "#c14365",
+            borderColor: "#1B2447",
+            color: "#1B2447",
             textTransform: "none",
             px: 2.5,
             py: 0.7,

@@ -4,30 +4,32 @@
   justify-content: center;
   align-items: center;
   padding: 60px 20px;
-  background: #f8f8f8; /* light background to separate section */
+  background: var(--sand);
 }
 
 .getintouchFaqChild {
   max-width: 800px;
   text-align: center;
   padding: 40px 30px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.08);
+  background: var(--cream);
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
 }
 
 .getintouchFaqTitle {
-  font-family: "Poppins", sans-serif !important;
+  font-family: 'Fraunces', serif !important;
   font-size: 2rem !important;
-  font-weight: 700 !important;
-  color: #c14365;
+  font-weight: 500 !important;
+  letter-spacing: -0.025em !important;
+  color: var(--indigo);
   margin-bottom: 16px !important;
 }
 
 .getintouchFaqText {
-  font-family: "Roboto", sans-serif !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
   font-size: 1.1rem !important;
-  color: #555;
+  color: var(--muted);
   margin-bottom: 24px !important;
   line-height: 1.6;
 }
@@ -35,23 +37,22 @@
 .getintouchFaqButton {
   display: inline-block;
   padding: 12px 28px;
-  background-color: #c14365;
-  color: #fff;
-  font-size: 1rem;
+  background-color: var(--indigo);
+  color: var(--cream);
+  font-size: 14px;
   font-weight: 600;
-  font-family: "Poppins", sans-serif;
-  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  border-radius: 10px;
   text-decoration: none;
-  transition: all 0.3s ease-in-out;
-  box-shadow: 0px 4px 10px rgba(193, 67, 101, 0.3);
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow);
 }
 
 .getintouchFaqButton:hover {
-  background-color: #a93250;
+  background-color: var(--indigo-600);
   transform: translateY(-2px);
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .getintouchFaqChild {
     padding: 30px 20px;
@@ -77,20 +78,20 @@
 }
 
 .TopContainerFaq h1 {
-  color: #c14365;
-  font-family: "Poppins", sans-serif;
+  color: var(--indigo);
+  font-family: 'Fraunces', serif;
   font-size: 2.2rem;
-  font-weight: bold;
+  font-weight: 500;
+  letter-spacing: -0.025em;
 }
 
 .TopContainerFaq p {
-  font-family: "Roboto", sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   font-size: 1.1rem;
-  color: #555;
+  color: var(--muted);
   margin-top: 10px;
 }
 
-/* FAQ Container -> flexbox with wrapping */
 .FaqContainer {
   display: flex;
   flex-wrap: wrap;
@@ -101,42 +102,39 @@
   padding: 20px;
 }
 
-/* Each FAQ Item -> takes 50% width */
 .FaqItem {
-  flex: 1 1 calc(50% - 20px); /* two per row with gap */
-  background: #fafafa;
-  border-radius: 12px;
+  flex: 1 1 calc(50% - 20px);
+  background: var(--cream);
+  border-radius: 14px;
+  border: 1px solid var(--line);
   padding: 20px;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
   min-width: 280px;
 }
 
-/* FAQ Title */
 .FaqTitle {
   display: flex;
   align-items: center;
-  font-family: "Poppins", sans-serif !important;
-  font-size: 1.2rem !important;
-  font-weight: 600 !important;
-  color: #c14365;
+  font-family: 'Fraunces', serif !important;
+  font-size: 1.1rem !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--indigo);
   margin-bottom: 10px !important;
 }
 
-/* FAQ Icon */
 .FaqIcon {
-  color: #c14365;
+  color: var(--clay);
   margin-right: 8px;
 }
 
-/* FAQ Answer */
 .FaqAnswer {
-  font-family: "Roboto", sans-serif !important;
-  font-size: 1rem !important;
-  color: #444;
-  line-height: 1.5;
+  font-family: 'Inter', system-ui, sans-serif !important;
+  font-size: 0.95rem !important;
+  color: var(--ink-2);
+  line-height: 1.6;
 }
 
-/* Responsive: stack into single column */
 @media (max-width: 768px) {
   .FaqItem {
     flex: 1 1 100%;

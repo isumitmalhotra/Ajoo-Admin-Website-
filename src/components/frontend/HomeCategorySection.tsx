@@ -12,7 +12,7 @@ const HomeCategorySection = () => {
   return (
     <>
       <Container sx={{ py: 6 }}>
-        <Typography variant="h4" fontWeight="bold" color="#C14365" gutterBottom>
+        <Typography variant="h4" fontWeight="bold" color="#1B2447" gutterBottom>
           Our Categories
         </Typography>
 

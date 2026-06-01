@@ -19,7 +19,7 @@ import {
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
 
-const themeColor = "#c14365";
+const themeColor = "#1B2447";
 
 // Dummy amenities
 const amenitiesList = [
@@ -58,12 +58,13 @@ const PropertyBookingBox: React.FC = () => {
   return (
     <Box
       sx={{
-        backgroundColor: "#fff",
-        borderRadius: "20px",
+        backgroundColor: "#FFFAF0",
+        borderRadius: "18px",
+        border: "1px solid #D9CFB8",
         padding: isMobile ? "1.3rem" : "2rem",
         width: "100%",
         margin: "2rem auto",
-        boxShadow: "0px 4px 16px rgba(0,0,0,0.06)",
+        boxShadow: "0 1px 2px rgba(27,36,71,.04), 0 8px 24px rgba(27,36,71,.06)",
       }}
     >
       {/* MAIN LAYOUT */}

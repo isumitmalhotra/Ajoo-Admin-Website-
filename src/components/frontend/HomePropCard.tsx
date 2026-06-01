@@ -6,9 +6,10 @@ import {
   Typography,
   Box,
   Button,
-  Chip,
 } from "@mui/material";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
+import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import StarIcon from "@mui/icons-material/Star";
 import { useNavigate } from "react-router-dom";
 
 interface HomePropCardProps {
@@ -23,9 +24,9 @@ interface HomePropCardProps {
 const HomePropCard: React.FC<HomePropCardProps> = ({
   image,
   name,
-  location = "india",
+  location = "India",
   price,
-  tag = "Featured", // 👈 default tag
+  tag = "Featured",
   rating = 4.3,
 }) => {
   const navigate = useNavigate();
@@ -34,55 +35,120 @@ const HomePropCard: React.FC<HomePropCardProps> = ({
     <Card
       sx={{
         width: "100%",
-        borderRadius: 2.5,
-        boxShadow: "0 4px 14px rgba(0, 0, 0, 0.1)",
-        transition: "0.25s",
-        "&:hover": { boxShadow: "0 8px 22px rgba(0, 0, 0, 0.20)" },
+        borderRadius: "14px",
+        border: "1px solid #D9CFB8",
+        boxShadow: "0 1px 2px rgba(27,36,71,.04), 0 8px 24px rgba(27,36,71,.06)",
+        bgcolor: "#FFFAF0",
+        transition: "transform 0.25s ease, box-shadow 0.25s ease",
+        cursor: "pointer",
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+        overflow: "hidden",
+        "&:hover": {
+          transform: "translateY(-3px)",
+          boxShadow: "0 12px 40px rgba(27,36,71,.12)",
+        },
+        "&:hover .card-img": { transform: "scale(1.05)" },
       }}
     >
-      {/* IMAGE */}
+      {/* Image */}
       <Box
         sx={{
-          height: 140,
+          aspectRatio: "1/1",
           position: "relative",
           overflow: "hidden",
-          borderTopLeftRadius: 2.5,
-          borderTopRightRadius: 2.5,
+          borderRadius: "14px 14px 0 0",
         }}
       >
         <CardMedia
           component="img"
           image={image}
           alt={name}
-          sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+          className="card-img"
+          sx={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            transition: "transform 0.4s ease",
+          }}
         />
 
-        {/* TAG ON TOP RIGHT */}
+        {/* Badge top-left */}
         {tag && (
-          <Chip
-            label={tag}
-            size="small"
+          <Box
             sx={{
               position: "absolute",
-              top: 8,
-              right: 8,
-              bgcolor: "#c14365",
-              color: "white",
+              top: 10,
+              left: 10,
+              bgcolor: "rgba(255,250,240,0.95)",
+              padding: "5px 10px",
+              borderRadius: "999px",
+              fontSize: 11,
               fontWeight: 600,
+              color: "#1B2447",
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              backdropFilter: "blur(8px)",
             }}
-          />
+          >
+            <Box
+              sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "#3F6B4E" }}
+            />
+            {tag}
+          </Box>
         )}
+
+        {/* Fav button top-right */}
+        <Box
+          sx={{
+            position: "absolute",
+            top: 10,
+            right: 10,
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
+            bgcolor: "rgba(255,250,240,0.85)",
+            display: "grid",
+            placeItems: "center",
+            backdropFilter: "blur(8px)",
+            cursor: "pointer",
+            transition: "0.2s",
+            "&:hover": { bgcolor: "#fff", transform: "scale(1.08)" },
+          }}
+        >
+          <FavoriteBorderIcon sx={{ fontSize: 16, color: "#3D4670" }} />
+        </Box>
       </Box>
 
-      {/* CONTENT */}
-      <CardContent sx={{ padding: "12px 14px" }}>
+      {/* Content */}
+      <CardContent sx={{ padding: "0 12px 12px", display: "flex", flexDirection: "column", gap: "4px" }}>
+        {/* Location overline */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <LocationOnIcon sx={{ fontSize: 12, color: "#6B7390" }} />
+          <Typography
+            sx={{
+              fontSize: 11,
+              color: "#6B7390",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              fontWeight: 600,
+            }}
+          >
+            {location}
+          </Typography>
+        </Box>
+
         {/* Title */}
         <Typography
-          variant="subtitle1"
           sx={{
-            fontWeight: 700,
-            color: "#c14365",
-            mb: 0.5,
+            fontFamily: "'Fraunces', serif",
+            fontWeight: 500,
+            fontSize: 17,
+            color: "#1B2447",
+            lineHeight: 1.25,
+            letterSpacing: "-0.01em",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -91,51 +157,61 @@ const HomePropCard: React.FC<HomePropCardProps> = ({
           {name}
         </Typography>
 
-        {/* Location */}
-        <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-          <LocationOnIcon sx={{ fontSize: 18, color: "#c14365" }} />
-          <Typography variant="body2" sx={{ ml: 0.5 }}>
-            {location}
+        {/* Meta row */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <StarIcon sx={{ fontSize: 13, color: "#C16345", fill: "#C16345" }} />
+          <Typography sx={{ fontSize: 13, color: "#1B2447", fontWeight: 500 }}>
+            {rating}
           </Typography>
         </Box>
-        {/* Rating */}
-        {rating && (
-          <Typography
-            variant="body2"
-            sx={{
-              fontWeight: 600,
-              color: "#333",
-              mb: 0.5,
-            }}
-          >
-            ⭐ {rating}
-          </Typography>
-        )}
 
-        {/* Price */}
-        <Typography
-          variant="body1"
-          sx={{ fontWeight: 700, color: "#c14365", mb: 1 }}
-        >
-          {price}
-        </Typography>
-
-        {/* FULL WIDTH BUTTON */}
-        <Button
-          variant="contained"
-          fullWidth
+        {/* Footer row — price + button */}
+        <Box
           sx={{
-            bgcolor: "#c14365",
-            textTransform: "none",
-            fontWeight: 600,
-            borderRadius: 2,
-            py: 0.8,
-            "&:hover": { bgcolor: "#ab3864" },
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mt: "4px",
           }}
-          onClick={() => navigate("/property/detail/1")}
         >
-          Book Now
-        </Button>
+          <Box>
+            <Typography
+              component="span"
+              sx={{
+                fontFamily: "'Fraunces', serif",
+                fontSize: 17,
+                fontWeight: 600,
+                color: "#1B2447",
+              }}
+            >
+              {price}
+            </Typography>
+            <Typography
+              component="span"
+              sx={{ fontSize: 12, color: "#6B7390", ml: "4px" }}
+            >
+              / night
+            </Typography>
+          </Box>
+
+          <Button
+            variant="contained"
+            size="small"
+            sx={{
+              bgcolor: "#1B2447",
+              textTransform: "none",
+              fontWeight: 600,
+              borderRadius: "10px",
+              fontSize: 12,
+              px: 1.5,
+              py: 0.6,
+              "&:hover": { bgcolor: "#2A356B" },
+            }}
+            onClick={() => navigate("/property/detail/1")}
+          >
+            Book
+          </Button>
+        </Box>
       </CardContent>
     </Card>
   );

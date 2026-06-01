@@ -35,7 +35,7 @@ const AdminBarChart = ({ dates, users }: AdminBarChartProps) => {
           series={[
             {
               data: users, // 🔥 from API
-              color: "#881f9b",
+              color: "#1B2447",
               valueFormatter: (value) => `${value} users`,
             },
           ]}

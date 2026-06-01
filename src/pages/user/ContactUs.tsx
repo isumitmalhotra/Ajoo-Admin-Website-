@@ -106,7 +106,7 @@ const ContactUs: React.FC = () => {
           <Typography
             variant="h4"
             sx={{
-              color: "#c14365",
+              color: "#1B2447",
               fontWeight: 700,
               mb: 2,
               fontSize: { xs: "1.3rem", md: "1.9rem" },
@@ -176,8 +176,8 @@ const ContactUs: React.FC = () => {
                         name="terms"
                         onChange={handleChange}
                         sx={{
-                          color: "#c14365",
-                          "&.Mui-checked": { color: "#c14365" },
+                          color: "#1B2447",
+                          "&.Mui-checked": { color: "#1B2447" },
                         }}
                       />
                     }
@@ -197,7 +197,7 @@ const ContactUs: React.FC = () => {
                     type="submit"
                     variant="contained"
                     sx={{
-                      backgroundColor: "#c14365",
+                      backgroundColor: "#1B2447",
                       color: "#fff",
                       py: 1.2,
                       borderRadius: "26px",
@@ -292,7 +292,7 @@ const ContactUs: React.FC = () => {
               <Typography
                 variant="h6"
                 sx={{
-                  color: "#c14365",
+                  color: "#1B2447",
                   fontWeight: 700,
                   display: "flex",
                   justifyContent: "center",
@@ -336,7 +336,7 @@ const ContactUs: React.FC = () => {
               <Typography
                 variant="h6"
                 sx={{
-                  color: "#c14365",
+                  color: "#1B2447",
                   fontWeight: 700,
                   display: "flex",
                   justifyContent: "center",
@@ -344,7 +344,7 @@ const ContactUs: React.FC = () => {
                   gap: 1,
                 }}
               >
-                <EmailIcon sx={{ fontSize: 26, color: "#c14365" }} />
+                <EmailIcon sx={{ fontSize: 26, color: "#1B2447" }} />
                 Contact Us
               </Typography>
 
@@ -372,7 +372,7 @@ const ContactUs: React.FC = () => {
             <CardContent sx={{ textAlign: "center" }}>
               <Typography
                 variant="h6"
-                sx={{ color: "#c14365", fontWeight: 700 }}
+                sx={{ color: "#1B2447", fontWeight: 700 }}
               >
                 🌐 Visit Website
               </Typography>

@@ -108,7 +108,7 @@ const BookingConfirmed: React.FC = () => {
               variant="contained"
               startIcon={<HomeIcon />}
               sx={{
-                backgroundColor: "#c14365",
+                backgroundColor: "#1B2447",
                 px: 4,
                 py: 1.3,
                 borderRadius: "12px",

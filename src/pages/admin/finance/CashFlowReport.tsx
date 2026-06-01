@@ -108,7 +108,7 @@ const CashFlowReport = () => {
           <Box
             onClick={handleGenerate}
             sx={{
-              bgcolor: "#881f9b",
+              bgcolor: "#1B2447",
               color: "#fff",
               px: 3,
               py: 1,

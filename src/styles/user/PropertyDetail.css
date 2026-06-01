@@ -4,8 +4,10 @@
     top: 150px;
     right: 2vw;
     width: 500px;
-    background-color: #fff;
-    border-radius: 12px;
+    background-color: var(--cream);
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-lg);
     z-index: 1000;
     transition: all 0.3s ease-in-out;
   }

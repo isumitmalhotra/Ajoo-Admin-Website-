@@ -4,7 +4,7 @@ import HomeIcon from "@mui/icons-material/Home";
 import LocationCityIcon from "@mui/icons-material/LocationCity";
 import PinIcon from "@mui/icons-material/Pin";
 
-const PRIMARY = "#c14365";
+const PRIMARY = "#1B2447";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },

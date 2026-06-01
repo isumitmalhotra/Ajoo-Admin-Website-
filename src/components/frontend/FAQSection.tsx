@@ -88,7 +88,7 @@ const FAQSection: React.FC<FAQSectionProps> = ({
         fontWeight="bold"
         mb={{ xs: 4, md: 5 }}
         sx={{
-          color: "#c14365",
+          color: "#1B2447",
           fontSize: { xs: "1.8rem", sm: "2rem", md: "2.4rem" },
         }}
       >
@@ -163,12 +163,12 @@ const FAQSection: React.FC<FAQSectionProps> = ({
             }}
           >
             <HelpOutlineIcon
-              sx={{ color: "#c14365", fontSize: { xs: 26, sm: 30 } }}
+              sx={{ color: "#1B2447", fontSize: { xs: 26, sm: 30 } }}
             />
             <Typography
               variant="h6"
               sx={{
-                color: "#c14365",
+                color: "#1B2447",
                 fontWeight: 600,
                 fontSize: { xs: "1rem", sm: "1.1rem", md: "1.2rem" },
               }}
@@ -190,7 +190,7 @@ const FAQSection: React.FC<FAQSectionProps> = ({
                 onChange={() => handleChange(idx)}
                 sx={{
                   mb: 2,
-                  border: "1px solid #c14365",
+                  border: "1px solid #1B2447",
                   borderRadius: 2,
                   boxShadow: "none",
                   "&:before": { display: "none" },
@@ -202,19 +202,19 @@ const FAQSection: React.FC<FAQSectionProps> = ({
                   expandIcon={
                     <ExpandMoreIcon
                       sx={{
-                        color: expanded === idx ? "#fff" : "#c14365",
+                        color: expanded === idx ? "#fff" : "#1B2447",
                         fontSize: 28,
                       }}
                     />
                   }
                   sx={{
-                    bgcolor: expanded === idx ? "#c14365" : "#fff",
-                    color: expanded === idx ? "#fff" : "#c14365",
+                    bgcolor: expanded === idx ? "#1B2447" : "#fff",
+                    color: expanded === idx ? "#fff" : "#1B2447",
                     fontWeight: 700,
                     fontSize: { xs: "1rem", sm: "1.1rem" },
                     transition: "0.3s",
                     "&:hover": {
-                      bgcolor: expanded === idx ? "#ab3864" : "#fce4ec",
+                      bgcolor: expanded === idx ? "#2A356B" : "#fce4ec",
                     },
                   }}
                 >

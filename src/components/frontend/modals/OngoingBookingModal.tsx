@@ -93,7 +93,7 @@ const OngoingBookingModal: React.FC<OngoingBookingModalProps> = ({
                 right: 10,
                 bgcolor: "#fff",
                 boxShadow: 1,
-                color: "#c14365",
+                color: "#1B2447",
                 "&:hover": { bgcolor: "#ffe4ed" },
               }}
             >
@@ -127,7 +127,7 @@ const OngoingBookingModal: React.FC<OngoingBookingModalProps> = ({
                 variant="h4"
                 sx={{
                   fontWeight: 700,
-                  color: "#c14365",
+                  color: "#1B2447",
                   fontFamily: "'Poppins', sans-serif",
                 }}
               >
@@ -193,7 +193,7 @@ const OngoingBookingModal: React.FC<OngoingBookingModalProps> = ({
                 onClick={onClose}
                 sx={{
                   bgcolor: "#fff",
-                  color: "#c14365",
+                  color: "#1B2447",
                   borderRadius: "50%",
                   width: 56,
                   height: 56,
@@ -211,7 +211,7 @@ const OngoingBookingModal: React.FC<OngoingBookingModalProps> = ({
 
       {/* CANCEL CONFIRMATION */}
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
-        <DialogTitle sx={{ fontWeight: 700, color: "#c14365" }}>
+        <DialogTitle sx={{ fontWeight: 700, color: "#1B2447" }}>
           Cancel Booking?
         </DialogTitle>
         <DialogContent>
@@ -225,7 +225,7 @@ const OngoingBookingModal: React.FC<OngoingBookingModalProps> = ({
           <Button
             onClick={confirmCancel}
             sx={{
-              bgcolor: "#c14365",
+              bgcolor: "#1B2447",
               color: "#fff",
               "&:hover": { bgcolor: "#a83454" },
             }}

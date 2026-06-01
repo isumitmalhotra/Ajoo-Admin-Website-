@@ -1,103 +1,103 @@
 .footer {
-    background-color: #fafafa;
-    padding: 40px 0;
+    background-color: #0E1A2E;
+    padding: 64px 48px 32px;
+    color: #A8B4C8;
   }
-  
+
   .footerBrand {
     font-size: 2rem;
     text-align: left;
-    color: #c14365;
-    font-family: "Playfair Display", serif;
-    font-weight: bold;
-    letter-spacing: 0.5px;
-    margin-left: 20px;
+    color: #FFFAF0;
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-left: 0;
   }
-  
+
   .footerContent {
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 30px;
-    margin-top: 30px;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+    gap: 48px;
+    max-width: 1320px;
+    margin: 0 auto;
   }
-  
+
   .footerCol {
-    flex: 1 1 250px;
-    min-width: 220px;
+    min-width: 0;
   }
-  
+
   .footerHeading {
-    color: #c14365;
-    margin-bottom: 12px;
-    font-weight: bold;
+    color: #F5F1EA;
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 15px;
+    margin-bottom: 18px;
+    letter-spacing: -0.005em;
   }
-  
+
   .footerLinks {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
   }
-  
+
   .footerLinks a {
-    color: #555;
+    color: #A8B4C8;
+    font-size: 13px;
     text-decoration: none;
-    transition: color 0.3s ease;
+    transition: color 0.2s ease;
   }
-  
+
   .footerLinks a:hover {
-    color: #c14365;
+    color: #F5F1EA;
   }
-  
+
   .subscribeBox {
     display: flex;
     gap: 10px;
     margin-bottom: 15px;
   }
-  
+
   .subscribeInput {
     flex: 1;
   }
-  
+
   .subscribeButton {
-    background-color: #c14365 !important;
-    color: #fff !important;
-    font-weight: bold;
+    background-color: var(--indigo) !important;
+    color: var(--cream) !important;
+    font-weight: 600;
+    border-radius: 10px !important;
   }
-  
+
   .socialIcons {
     display: flex;
     gap: 12px;
   }
-  
+
   .footerBottom {
     text-align: center;
-    color: #888;
+    color: #7A8099;
     margin-top: 20px;
+    font-size: 12px;
   }
-  
+
   .divider {
     margin: 30px 0;
+    border-color: rgba(255,255,255,0.08) !important;
   }
-  
-  /* 📱 Responsive Design */
-  @media (max-width: 768px) {
+
+  @media (max-width: 900px) {
+    .footer {
+      padding: 48px 20px 24px;
+    }
     .footerContent {
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-  
-    .footerCol {
-      min-width: 100%;
-    }
-  
-    .subscribeBox {
-      flex-direction: column;
-      width: 100%;
-    }
-  
-    .subscribeButton {
-      width: 100%;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
     }
   }
-  
+
+  @media (max-width: 576px) {
+    .footerContent {
+      grid-template-columns: 1fr;
+    }
+  }

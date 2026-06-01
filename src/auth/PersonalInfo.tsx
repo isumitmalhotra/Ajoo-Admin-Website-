@@ -19,7 +19,7 @@ import PhoneIphoneIcon from "@mui/icons-material/PhoneIphone";
 import EventIcon from "@mui/icons-material/Event";
 import { useState } from "react";
 
-const PRIMARY = "#c14365";
+const PRIMARY = "#1B2447";
 const ERROR_COLOR = "#333";
 
 const fadeUp = {

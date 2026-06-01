@@ -6,7 +6,7 @@ import { FilterList as FilterListIcon } from "@mui/icons-material";
 import { useDebounce } from "../../../hooks/useDebounce";
 
 const COLORS = {
-  primary: "#881f9b",
+  primary: "#1B2447",
 };
 
 interface UserHeaderProps {

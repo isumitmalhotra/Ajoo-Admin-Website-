@@ -24,7 +24,7 @@ interface BookingListTableProps {
   onDelete?: (row: BookingRow) => void;
 }
 
-const THEME_COLOR = "#881f9b";
+const THEME_COLOR = "#1B2447";
 const paymentChipColor = (status: BookingRow["paymentStatus"]) =>
   status === "paid" ? "success" : "error";
 

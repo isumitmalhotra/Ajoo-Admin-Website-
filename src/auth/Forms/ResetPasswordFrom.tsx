@@ -116,7 +116,7 @@ export const ResetPasswordForm = () => {
                       fullWidth
                       variant="contained"
                       sx={{
-                        backgroundColor: "#C14365",
+                        backgroundColor: "#1B2447",
                         color: "#fff",
                         fontWeight: 600,
                         "&:hover": {

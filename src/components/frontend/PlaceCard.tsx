@@ -33,7 +33,7 @@ const PlaceCard: React.FC<{ place: Place }> = ({ place }) => {
       />
       <Box sx={{ p: 2 }}>
         <Typography
-          sx={{ fontWeight: 700, fontSize: 16, color: "#c14365", mb: 0.5 }}
+          sx={{ fontWeight: 700, fontSize: 16, color: "#1B2447", mb: 0.5 }}
         >
           {place.name}
         </Typography>

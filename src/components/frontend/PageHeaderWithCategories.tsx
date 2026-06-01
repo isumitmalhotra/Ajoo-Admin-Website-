@@ -22,7 +22,7 @@ const PageHeaderWithCategories: React.FC<Props> = ({
         sx={{
           fontSize: { xs: "1.3rem", md: "1.8rem" },
           fontWeight: 700,
-          color: "#c14365",
+          color: "#1B2447",
           mb: 1,
         }}
       >
@@ -66,7 +66,7 @@ const PageHeaderWithCategories: React.FC<Props> = ({
                 fontSize: "0.78rem",
                 mt: 0.5,
                 fontWeight: 600,
-                color: "#c14365",
+                color: "#1B2447",
               }}
             >
               {cat.label}

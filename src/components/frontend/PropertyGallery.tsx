@@ -35,7 +35,7 @@ const PropertyGallery: React.FC<PropertyGalleryProps> = ({ Images = [] }) => {
         sx={{
           fontSize: { xs: 20, sm: 22 },
           fontWeight: 700,
-          color: "#c14365",
+          color: "#1B2447",
           mb: 3,
         }}
       >

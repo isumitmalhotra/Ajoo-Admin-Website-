@@ -159,7 +159,7 @@ const LedgerDetailDrawer = ({
                     navigate(`/admin/finance/ledgers/host/${entry.host_id}`);
                   }}
                 >
-                  <ExternalLink size={14} color="#881f9b" />
+                  <ExternalLink size={14} color="#1B2447" />
                 </IconButton>
               )}
             </Stack>
@@ -180,7 +180,7 @@ const LedgerDetailDrawer = ({
                     navigate(`/admin/finance/ledgers/guest/${entry.user_id}`);
                   }}
                 >
-                  <ExternalLink size={14} color="#881f9b" />
+                  <ExternalLink size={14} color="#1B2447" />
                 </IconButton>
               )}
             </Stack>
@@ -204,8 +204,8 @@ const LedgerDetailDrawer = ({
               }}
               sx={{
                 cursor: "pointer",
-                color: "#881f9b",
-                borderColor: "#881f9b",
+                color: "#1B2447",
+                borderColor: "#1B2447",
               }}
               variant="outlined"
             />

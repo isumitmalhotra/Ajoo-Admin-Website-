@@ -7,7 +7,7 @@ import {
 import { HostTableRow } from "./HostTable";
 
 const COLORS = {
-  primary: "#881f9b",
+  primary: "#1B2447",
   secondary: "#10b981",
 };
 

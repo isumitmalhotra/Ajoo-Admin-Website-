@@ -50,7 +50,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({ onApply }) => {
         </Typography>
         <Typography
           variant="body2"
-          sx={{ color: "#c14365", fontWeight: 600 }}
+          sx={{ color: "#1B2447", fontWeight: 600 }}
         >
           {price[0]} - {price[1]}
         </Typography>
@@ -62,7 +62,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({ onApply }) => {
         min={500}
         max={20000}
         step={500}
-        sx={{ color: "#c14365" }}
+        sx={{ color: "#1B2447" }}
       />
 
       {/* 📏 Radius */}
@@ -80,7 +80,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({ onApply }) => {
         </Typography>
         <Typography
           variant="body2"
-          sx={{ color: "#c14365", fontWeight: 600 }}
+          sx={{ color: "#1B2447", fontWeight: 600 }}
         >
           {radius} km
         </Typography>
@@ -92,7 +92,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({ onApply }) => {
         min={1}
         max={20}
         step={1}
-        sx={{ color: "#c14365" }}
+        sx={{ color: "#1B2447" }}
       />
 
       {/* ✅ Apply Button */}
@@ -110,7 +110,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({ onApply }) => {
           fullWidth
           sx={{
             textTransform: "none",
-            backgroundColor: "#c14365",
+            backgroundColor: "#1B2447",
             borderRadius: 2,
             "&:hover": { backgroundColor: "#a83c58" },
           }}

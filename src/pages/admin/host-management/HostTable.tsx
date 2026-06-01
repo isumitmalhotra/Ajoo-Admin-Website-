@@ -23,7 +23,7 @@ import CustomSnackbar from "../../../components/admin/snackbar/CustomSnackbar";
 
 const COLORS = {
   text: { secondary: "#6b7280" },
-  primary: "#881f9b",
+  primary: "#1B2447",
 };
 
 /* ================= TYPES ================= */

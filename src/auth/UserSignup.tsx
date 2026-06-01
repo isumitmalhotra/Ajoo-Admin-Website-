@@ -16,7 +16,7 @@ import PersonalInfo from "./PersonalInfo";
 import AddressInfo from "./AddressInfo";
 import IDInfo from "./IDInfo";
 
-const PRIMARY = "#c14365";
+const PRIMARY = "#1B2447";
 const steps = ["Personal Info", "Address", "ID Details"];
 
 const UserSignup = () => {

@@ -10,7 +10,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
-const FOCUS_COLOR = "#881f9b";
+const FOCUS_COLOR = "#1B2447";
 
 interface Props {
   ThemeColors: { primary: string };

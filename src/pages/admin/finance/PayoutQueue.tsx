@@ -154,8 +154,8 @@ const PayoutQueue = () => {
             startIcon={<History size={16} />}
             onClick={() => navigate("/admin/finance/payouts/history")}
             sx={{
-              borderColor: "#881f9b",
-              color: "#881f9b",
+              borderColor: "#1B2447",
+              color: "#1B2447",
               textTransform: "none",
               "&:hover": { borderColor: "#7115bd", bgcolor: "#faf5ff" },
             }}
@@ -167,7 +167,7 @@ const PayoutQueue = () => {
             startIcon={<Plus size={16} />}
             onClick={() => setManualPayoutOpen(true)}
             sx={{
-              bgcolor: "#881f9b",
+              bgcolor: "#1B2447",
               textTransform: "none",
               "&:hover": { bgcolor: "#7115bd" },
             }}
@@ -198,8 +198,8 @@ const PayoutQueue = () => {
           sx={{
             px: 2,
             "& .MuiTab-root": { textTransform: "none", fontWeight: 500 },
-            "& .Mui-selected": { color: "#881f9b" },
-            "& .MuiTabs-indicator": { backgroundColor: "#881f9b" },
+            "& .Mui-selected": { color: "#1B2447" },
+            "& .MuiTabs-indicator": { backgroundColor: "#1B2447" },
           }}
         >
           {TAB_LABELS.map((label) => (

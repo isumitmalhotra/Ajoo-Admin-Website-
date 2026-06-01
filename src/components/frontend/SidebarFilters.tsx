@@ -40,7 +40,7 @@ const SidebarFilters: React.FC<Props> = ({
   return (
     <Box sx={{ width: "100%" }}>
       {/* Search */}
-      <Typography sx={{ fontWeight: 600, mb: 1, color: "#c14365" }}>
+      <Typography sx={{ fontWeight: 600, mb: 1, color: "#1B2447" }}>
         Search
       </Typography>
 
@@ -52,18 +52,18 @@ const SidebarFilters: React.FC<Props> = ({
         InputProps={{
           endAdornment: locationName && (
             <IconButton onClick={() => setLocationName("")}>
-              <ClearIcon sx={{ color: "#c14365" }} />
+              <ClearIcon sx={{ color: "#1B2447" }} />
             </IconButton>
           ),
         }}
         sx={{
-          "& .MuiOutlinedInput-root fieldset": { borderColor: "#c14365" },
+          "& .MuiOutlinedInput-root fieldset": { borderColor: "#1B2447" },
           mb: 3,
         }}
       />
 
       {/* Distance */}
-      <Typography sx={{ fontWeight: 600, color: "#c14365" }}>
+      <Typography sx={{ fontWeight: 600, color: "#1B2447" }}>
         Distance: {distance} KM
       </Typography>
       <Slider
@@ -71,11 +71,11 @@ const SidebarFilters: React.FC<Props> = ({
         onChange={(_, v) => setDistance(v as number)}
         min={1}
         max={50}
-        sx={{ color: "#c14365", mb: 3 }}
+        sx={{ color: "#1B2447", mb: 3 }}
       />
 
       {/* Price */}
-      <Typography sx={{ fontWeight: 600, color: "#c14365", mb: 1 }}>
+      <Typography sx={{ fontWeight: 600, color: "#1B2447", mb: 1 }}>
         Price Range
       </Typography>
       {priceOptions.map((p) => (
@@ -86,8 +86,8 @@ const SidebarFilters: React.FC<Props> = ({
               checked={selectedPrices.includes(p)}
               onChange={() => togglePrice(p)}
               sx={{
-                color: "#c14365",
-                "&.Mui-checked": { color: "#c14365" },
+                color: "#1B2447",
+                "&.Mui-checked": { color: "#1B2447" },
               }}
             />
           }
@@ -96,7 +96,7 @@ const SidebarFilters: React.FC<Props> = ({
       ))}
 
       {/* Amenities */}
-      <Typography sx={{ fontWeight: 600, color: "#c14365", mt: 2, mb: 1 }}>
+      <Typography sx={{ fontWeight: 600, color: "#1B2447", mt: 2, mb: 1 }}>
         Amenities
       </Typography>
       {amenitiesOptions.map((a) => (
@@ -107,8 +107,8 @@ const SidebarFilters: React.FC<Props> = ({
               checked={selectedAmenities.includes(a)}
               onChange={() => toggleAmenity(a)}
               sx={{
-                color: "#c14365",
-                "&.Mui-checked": { color: "#c14365" },
+                color: "#1B2447",
+                "&.Mui-checked": { color: "#1B2447" },
               }}
             />
           }
@@ -120,7 +120,7 @@ const SidebarFilters: React.FC<Props> = ({
         fullWidth
         variant="contained"
         startIcon={<SearchIcon />}
-        sx={{ mt: 3, backgroundColor: "#c14365" }}
+        sx={{ mt: 3, backgroundColor: "#1B2447" }}
       >
         Search
       </Button>

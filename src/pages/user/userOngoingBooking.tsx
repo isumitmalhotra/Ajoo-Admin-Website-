@@ -79,7 +79,7 @@ const UserOngoingBooking: React.FC = () => {
         sx={{
           fontWeight: 700,
           mb: 2,
-          color: "#c14365",
+          color: "#1B2447",
           textAlign: isMobile ? "center" : "left",
           fontFamily: "'Poppins', sans-serif",
         }}
@@ -286,7 +286,7 @@ const UserOngoingBooking: React.FC = () => {
                     fontWeight: 600,
                     px: 2,
                     py: 1,
-                    background: "#c14365",
+                    background: "#1B2447",
                     "&:hover": { background: "#a83654" },
                     width: isMobile ? "100%" : "auto",
                   }}

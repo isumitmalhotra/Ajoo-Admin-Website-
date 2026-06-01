@@ -59,9 +59,12 @@ export default function FeaturedProperties({ hotels }: { hotels: any[] }) {
         <Typography
           variant="h4"
           sx={{
-            fontWeight: 700,
+            fontFamily: "'Fraunces', serif",
+            fontWeight: 400,
+            fontSize: "36px",
+            letterSpacing: "-0.025em",
             // color: "#222",
-            color: "#c14365",
+            color: "#1B2447",
             marginBottom: "0.5rem",
 
           }}
@@ -71,8 +74,8 @@ export default function FeaturedProperties({ hotels }: { hotels: any[] }) {
 
         <Typography
           sx={{
-            color: "#555",
-            fontSize: "1rem",
+            color: "#6B7390",
+            fontSize: "14px",
             maxWidth: "600px",
             lineHeight: 1.6,
           }}
@@ -120,13 +123,13 @@ export default function FeaturedProperties({ hotels }: { hotels: any[] }) {
             variant="contained"
             onClick={loadMore}
             sx={{
-              bgcolor: "#c14365",
+              bgcolor: "#1B2447",
               px: 4,
               py: 1.2,
-              borderRadius: 3,
+              borderRadius: "10px",
               textTransform: "none",
               fontWeight: 600,
-              "&:hover": { bgcolor: "#ab3864" },
+              "&:hover": { bgcolor: "#2A356B" },
             }}
           >
             Load More Properties

@@ -55,7 +55,7 @@ const CTAoneHome: React.FC<CTAoneHomeProps> = ({
           onClick={onButtonClick} // ✅ dynamic function
           sx={{
             bgcolor: "#fff",
-            color: "#C14365",
+            color: "#1B2447",
             fontWeight: "bold",
             fontFamily: "'Roboto', sans-serif",
             px: 4,

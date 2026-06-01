@@ -41,7 +41,7 @@ const ReviewSlider: React.FC = () => {
           textAlign: "center",
           fontWeight: "bold",
           mb: { xs: 3, md: 5 },
-          color: "#c14365",
+          color: "#1B2447",
           fontFamily: "'Playfair Display', serif",
           fontSize: { xs: "1.5rem", sm: "1.8rem", md: "2rem" },
         }}
@@ -68,12 +68,12 @@ const ReviewSlider: React.FC = () => {
                 height: "100%",
                 borderRadius: "16px",
                 background: "linear-gradient(135deg, #ffffff, #fdf2f6)",
-                boxShadow: "0 6px 20px rgba(193, 67, 101, 0.15)",
+                boxShadow: "0 6px 20px rgba(27,36,71, 0.15)",
                 transition: "transform 0.3s ease, box-shadow 0.3s ease",
                 p: { xs: 1.5, sm: 2 },
                 "&:hover": {
                   transform: { md: "translateY(-6px)" },
-                  boxShadow: "0 10px 25px rgba(193, 67, 101, 0.25)",
+                  boxShadow: "0 10px 25px rgba(27,36,71, 0.25)",
                 },
               }}
             >
@@ -94,7 +94,7 @@ const ReviewSlider: React.FC = () => {
                   variant="subtitle1"
                   sx={{
                     fontWeight: 700,
-                    color: "#c14365",
+                    color: "#1B2447",
                     mb: 0.5,
                     fontSize: { xs: "0.95rem", sm: "1rem" },
                   }}
@@ -120,23 +120,23 @@ const ReviewSlider: React.FC = () => {
         {`
           .swiper-button-next,
           .swiper-button-prev {
-            color: #c14365 !important;
+            color: #1B2447 !important;
             background: #fff;
-            border: 2px solid #c14365;
+            border: 2px solid #1B2447;
             width: 40px;
             height: 40px;
             border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 4px 12px rgba(193, 67, 101, 0.2);
+            box-shadow: 0 4px 12px rgba(27,36,71, 0.2);
             top: 45%;
             transition: all 0.3s ease;
           }
 
           .swiper-button-next:hover,
           .swiper-button-prev:hover {
-            background: #c14365;
+            background: #1B2447;
             color: #fff !important;
           }
 

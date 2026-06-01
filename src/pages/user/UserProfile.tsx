@@ -78,7 +78,7 @@ const UserProfile: React.FC = () => {
           <Button
             variant="contained"
             sx={{
-              backgroundColor: "#c14365",
+              backgroundColor: "#1B2447",
               "&:hover": { backgroundColor: "#a83252" },
             }}
             onClick={handleUploadClick}
@@ -142,7 +142,7 @@ const UserProfile: React.FC = () => {
             fullWidth
             sx={{
               mt: 2,
-              backgroundColor: "#c14365",
+              backgroundColor: "#1B2447",
               "&:hover": { backgroundColor: "#a83252" },
             }}
           >
@@ -154,7 +154,7 @@ const UserProfile: React.FC = () => {
             fullWidth
             sx={{
               mt: 2,
-              backgroundColor: "#c14365",
+              backgroundColor: "#1B2447",
               "&:hover": { backgroundColor: "#a83252" },
             }}
           >
@@ -166,7 +166,7 @@ const UserProfile: React.FC = () => {
             fullWidth
             sx={{
               mt: 2,
-              backgroundColor: "#c14365",
+              backgroundColor: "#1B2447",
               "&:hover": { backgroundColor: "#a83252" },
             }}
           >
@@ -193,7 +193,7 @@ const UserProfile: React.FC = () => {
               fontSize: "1.4rem",
               fontWeight: 700,
               fontFamily: "'Poppins', sans-serif",
-              color: "#c14365",
+              color: "#1B2447",
               mb: 0.5,
             }}
           >

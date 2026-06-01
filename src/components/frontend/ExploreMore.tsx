@@ -44,7 +44,7 @@ const ExploreMore: React.FC = () => {
         sx={{
           fontSize: { xs: 20, sm: 22 },
           fontWeight: 700,
-          color: "#c14365",
+          color: "#1B2447",
           mb: 3,
           textAlign: "left",
         }}
@@ -66,11 +66,11 @@ const ExploreMore: React.FC = () => {
             alignItems: "center",
           },
           ".slick-dots li button:before": {
-            color: "#c14365",
+            color: "#1B2447",
             fontSize: "10px",
           },
           ".slick-dots li.slick-active button:before": {
-            color: "#c14365",
+            color: "#1B2447",
           },
         }}
       >

@@ -19,7 +19,7 @@ import {
 import { FECustomSnackbar } from "../../components";
 import { axios } from "../../axios/axios";
 
-const PRIMARY = "#c14365";
+const PRIMARY = "#1B2447";
 const steps = ["Host details", "Property details", "Verification"];
 
 const PROPERTY_TYPES = [

@@ -24,7 +24,7 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import { BookingDetail } from "./types";
 
-const BRAND = "#881f9b";
+const BRAND = "#1B2447";
 
 interface Props {
   open: boolean;
@@ -264,7 +264,7 @@ const BookingDetailModal = ({
           backgroundColor: "#fafafa",
         }}
       >
-        {/* const BRAND = "#881f9b"; */}
+        {/* const BRAND = "#1B2447"; */}
         <FormControl
           fullWidth
           size="small"

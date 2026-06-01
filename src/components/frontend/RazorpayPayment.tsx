@@ -43,7 +43,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         booking_id: "BOOKING123",
       },
       theme: {
-        color: "#c14365",
+        color: "#1B2447",
       },
     };
 

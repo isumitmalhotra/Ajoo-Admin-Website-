@@ -40,7 +40,7 @@ const NotFound: React.FC<NotFoundProps> = ({ image }) => {
         variant="h3"
         sx={{
           fontWeight: 700,
-          color: "#c14365",
+          color: "#1B2447",
           mb: 2,
           fontSize: { xs: "2rem", sm: "2.5rem", md: "3rem" },
         }}
@@ -62,8 +62,8 @@ const NotFound: React.FC<NotFoundProps> = ({ image }) => {
       <Button
         variant="contained"
         sx={{
-          bgcolor: "#c14365",
-          "&:hover": { bgcolor: "#ab3864" },
+          bgcolor: "#1B2447",
+          "&:hover": { bgcolor: "#2A356B" },
           textTransform: "none",
           px: 4,
           py: 1.5,

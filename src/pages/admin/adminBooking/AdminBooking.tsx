@@ -108,7 +108,7 @@ const AdminBooking = () => {
   return (
     <Box>
       <AdminBookingHeader
-        ThemeColors={{ primary: "#881f9b" }}
+        ThemeColors={{ primary: "#1B2447" }}
         filterData={filters}
         handleFilterUpdate={handleFilterUpdate}
         handleFilter={handleSearch}

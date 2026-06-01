@@ -46,8 +46,8 @@ export const LoginForm = () => {;
                 textTransform: "capitalize",
                 px: 4,
                 py: 1.2,
-                border: "1px solid #C14365",
-                color: "#C14365",
+                border: "1px solid #1B2447",
+                color: "#1B2447",
                 fontWeight: 600,
                 borderRadius: 0,
                 transition: "all 0.25s ease-in-out",
@@ -64,16 +64,16 @@ export const LoginForm = () => {;
                 // 🔥 Hover effect on unselected items
                 "&:hover": {
                   backgroundColor: "#f8d6e2",
-                  color: "#C14365",
-                  borderColor: "#C14365",
+                  color: "#1B2447",
+                  borderColor: "#1B2447",
                 },
 
                 // 🔥 Selected Button
                 "&.Mui-selected": {
-                  backgroundColor: "#C14365",
+                  backgroundColor: "#1B2447",
                   color: "#ffffff",
-                  borderColor: "#C14365",
-                  boxShadow: "0 0 8px rgba(193, 67, 101, 0.6)",
+                  borderColor: "#1B2447",
+                  boxShadow: "0 0 8px rgba(27,36,71, 0.6)",
                 },
 
                 // 🔥 Hover on selected button (improved)
@@ -97,10 +97,10 @@ export const LoginForm = () => {;
             margin="normal"
             sx={{
               "& .MuiOutlinedInput-root.Mui-focused fieldset": {
-                borderColor: "#C14365",
+                borderColor: "#1B2447",
               },
               "& .MuiInputLabel-root.Mui-focused": {
-                color: "#C14365",
+                color: "#1B2447",
               },
             }}
           />
@@ -113,10 +113,10 @@ export const LoginForm = () => {;
             margin="normal"
             sx={{
               "& .MuiOutlinedInput-root.Mui-focused fieldset": {
-                borderColor: "#C14365",
+                borderColor: "#1B2447",
               },
               "& .MuiInputLabel-root.Mui-focused": {
-                color: "#C14365",
+                color: "#1B2447",
               },
             }}
           />
@@ -129,9 +129,9 @@ export const LoginForm = () => {;
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                   sx={{
-                    color: "#C14365",
+                    color: "#1B2447",
                     "&.Mui-checked": {
-                      color: "#C14365",
+                      color: "#1B2447",
                     },
                   }}
                 />
@@ -150,7 +150,7 @@ export const LoginForm = () => {;
             sx={{
               mt: 2,
               mb: 2,
-              backgroundColor: "#C14365",
+              backgroundColor: "#1B2447",
               color: "#fff",
               borderRadius: "8px",
               padding: "12px",
@@ -167,8 +167,8 @@ export const LoginForm = () => {;
             fullWidth
             startIcon={<GoogleIcon />}
             sx={{
-              borderColor: "#C14365",
-              color: "#C14365",
+              borderColor: "#1B2447",
+              color: "#1B2447",
               borderRadius: "8px",
               padding: "12px",
               fontWeight: 600,
