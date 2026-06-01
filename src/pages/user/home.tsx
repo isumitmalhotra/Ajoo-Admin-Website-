@@ -9,20 +9,32 @@ import {
   ReviewSlider,
   FeaturedProperties,
   OngoingFloat,
+  WhyChooseUs,
+  ExploreMore,
 } from "../../components";
+import HeroSection from "../../components/frontend/HeroSection";
 import JoinusNow from "../../assets/UI/joinusNow.jpg";
 import { hotels, faqs } from "../../styles/utils/reusableData";
 
 const Home = () => {
-  // 🔹 Hotels Array
-
   return (
-    <Box>
+    <Box sx={{ bgcolor: "#EFE7D6" }}>
+      {/* 1. Hero */}
+      <HeroSection />
+
+      {/* 2. Search bar + category chips */}
       <MapandFilter />
 
-      {/* 🔹 Hotel Cards Section */}
+      {/* 3. Featured properties */}
       <FeaturedProperties hotels={hotels} />
 
+      {/* 4. Trust strip */}
+      <WhyChooseUs />
+
+      {/* 5. Destinations / Explore */}
+      <ExploreMore />
+
+      {/* 6. Become a Host CTA */}
       <div className="addHostSection">
         <div className="addHostSectionLeft">
           <img src={JoinusNow} alt="Become a Host" />
@@ -43,14 +55,17 @@ const Home = () => {
         </div>
       </div>
 
+      {/* 7. FAQ */}
       <FAQSection
         image="/faq_vector.jpg"
         faqs={faqs}
-        description="Got questions? We’ve got answers for you!"
+        description="Got questions? We've got answers for you!"
       />
 
+      {/* 8. Reviews */}
       <ReviewSlider />
-      {/* ✅ Floating Component */}
+
+      {/* Floating ongoing booking */}
       <OngoingFloat />
     </Box>
   );

@@ -39,7 +39,7 @@ export default function CustomYAxis() {
         width: "100%",
         maxWidth: 720,
         margin: "auto",
-        fontFamily: "'Roboto', sans-serif",
+        fontFamily: "'Inter', system-ui, sans-serif",
         userSelect: "none",
       }}
       spacing={4}

@@ -215,7 +215,7 @@ const NotificationDropdown: React.FC = () => {
                           justifyContent: "space-between",
                           flexWrap: "wrap",
                           transition: "background 0.3s",
-                          "&:hover": { bgcolor: "#fce4ec" },
+                          "&:hover": { bgcolor: "rgba(27,36,71,.05)" },
                         }}
                       >
                         <ListItemText
@@ -238,7 +238,7 @@ const NotificationDropdown: React.FC = () => {
                               fontSize: "0.75rem",
                               minWidth: "auto",
                               p: 0.5,
-                              "&:hover": { bgcolor: "#fce4ec" },
+                              "&:hover": { bgcolor: "rgba(27,36,71,.05)" },
                             }}
                             startIcon={<DoneIcon fontSize="small" />}
                           >

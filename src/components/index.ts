@@ -20,6 +20,7 @@ export { default as FECustomSnackbar } from "./Element/FECustomSnackbar.tsx";
 
 
 // ------------------FRONTEND-COMPONENT---------------------->
+export { default as HeroSection } from "./frontend/HeroSection";
 
 export { default as WhyChooseUs } from "./frontend/WhyChooseUs";
 export { default as MapandFilter } from "./frontend/MapandFilter";

@@ -78,7 +78,7 @@ const FAQSection: React.FC<FAQSectionProps> = ({
       sx={{
         py: { xs: 6, md: 8 },
         px: { xs: 2, sm: 3, md: 6 },
-        bgcolor: "#fdfdfd",
+        bgcolor: "#EFE7D6",
       }}
     >
       {/* Section Title */}
@@ -214,7 +214,7 @@ const FAQSection: React.FC<FAQSectionProps> = ({
                     fontSize: { xs: "1rem", sm: "1.1rem" },
                     transition: "0.3s",
                     "&:hover": {
-                      bgcolor: expanded === idx ? "#2A356B" : "#fce4ec",
+                      bgcolor: expanded === idx ? "#2A356B" : "rgba(27,36,71,.04)",
                     },
                   }}
                 >

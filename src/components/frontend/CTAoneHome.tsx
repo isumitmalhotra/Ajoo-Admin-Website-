@@ -42,7 +42,7 @@ const CTAoneHome: React.FC<CTAoneHomeProps> = ({
           fontWeight="bold"
           mb={2}
           sx={{
-            fontFamily: "'Playfair Display', serif",
+            fontFamily: "'Fraunces', serif",
             fontSize: { xs: "1.8rem", md: "2.5rem" },
             letterSpacing: 1,
           }}
@@ -57,13 +57,13 @@ const CTAoneHome: React.FC<CTAoneHomeProps> = ({
             bgcolor: "#fff",
             color: "#1B2447",
             fontWeight: "bold",
-            fontFamily: "'Roboto', sans-serif",
+            fontFamily: "'Inter', system-ui, sans-serif",
             px: 4,
             py: 1.5,
             borderRadius: "30px",
             boxShadow: 3,
             "&:hover": {
-              bgcolor: "#f8e4ec",
+              bgcolor: "#EFE7D6",
             },
           }}
         >

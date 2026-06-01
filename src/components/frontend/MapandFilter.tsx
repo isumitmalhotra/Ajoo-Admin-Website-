@@ -180,77 +180,146 @@ const MapandFilter: React.FC = () => {
 
   return (
     <>
-      {/* ✅ Responsive Top Section */}
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          width: "100%",
-          minHeight: { xs: "auto", sm: 280, md: 300 },
-          alignItems: "center",
-          justifyContent: "space-evenly",
-          p: { xs: 1.5, sm: 2 },
-
-          borderRadius: "14px",
-          boxShadow: "0 1px 2px rgba(27,36,71,.04), 0 8px 24px rgba(27,36,71,.06)",
-          backgroundColor: "#FFFAF0",
-          border: "1px solid #D9CFB8",
-          mb: { xs: 2, sm: 3 },
-        }}
-      >
-        {/* ✅ Category Section (Aligned Left + Reduced Gap) */}
+      {/* ── Floating search bar ── */}
+      <Box sx={{ padding: { xs: "0 20px", md: "0 48px" }, mt: { xs: "-8px", md: "-12px" }, position: "relative", zIndex: 10 }}>
         <Box
           sx={{
-            width: "100%",
+            maxWidth: 1100,
+            margin: "0 auto",
+            bgcolor: "#FFFAF0",
+            borderRadius: "999px",
+            padding: "8px",
             display: "flex",
-            flexDirection: "row",
-            flexWrap: "nowrap",
-            alignItems: "center",
-            justifyContent: "center",
-            overflowX: "auto",
-            gap: { xs: 1, sm: 1.5, md: 2 },
+            alignItems: "stretch",
+            boxShadow: "0 12px 40px rgba(27,36,71,.12)",
+            border: "1px solid #D9CFB8",
+            flexWrap: { xs: "wrap", sm: "nowrap" },
+            gap: { xs: "4px", sm: 0 },
+          }}
+        >
+          {/* Where field */}
+          <Box
+            sx={{
+              flex: 1,
+              padding: "14px 24px",
+              borderRight: { xs: "none", sm: "1px solid #D9CFB8" },
+              cursor: "pointer",
+              transition: "0.2s",
+              borderRadius: "999px",
+              "&:hover": { bgcolor: "rgba(27,36,71,.03)" },
+            }}
+          >
+            <Typography sx={{ fontSize: 11, fontWeight: 600, color: "#1B2447", letterSpacing: "0.04em", textTransform: "uppercase", mb: "4px" }}>
+              Where
+            </Typography>
+            <Typography sx={{ fontSize: 14, color: "#6B7390" }}>
+              {address || "Search destinations…"}
+            </Typography>
+          </Box>
 
-            py: 1,
+          {/* Category field */}
+          <Box
+            sx={{
+              flex: 1,
+              padding: "14px 24px",
+              borderRight: { xs: "none", sm: "1px solid #D9CFB8" },
+              cursor: "pointer",
+              transition: "0.2s",
+              borderRadius: "999px",
+              "&:hover": { bgcolor: "rgba(27,36,71,.03)" },
+            }}
+          >
+            <Typography sx={{ fontSize: 11, fontWeight: 600, color: "#1B2447", letterSpacing: "0.04em", textTransform: "uppercase", mb: "4px" }}>
+              Type
+            </Typography>
+            <Typography sx={{ fontSize: 14, color: "#6B7390" }}>All categories</Typography>
+          </Box>
+
+          {/* Guests field */}
+          <Box
+            sx={{
+              flex: 1,
+              padding: "14px 24px",
+              cursor: "pointer",
+              transition: "0.2s",
+              borderRadius: "999px",
+              "&:hover": { bgcolor: "rgba(27,36,71,.03)" },
+            }}
+          >
+            <Typography sx={{ fontSize: 11, fontWeight: 600, color: "#1B2447", letterSpacing: "0.04em", textTransform: "uppercase", mb: "4px" }}>
+              Guests
+            </Typography>
+            <Typography sx={{ fontSize: 14, color: "#6B7390" }}>Add guests</Typography>
+          </Box>
+
+          {/* Search CTA */}
+          <Button
+            sx={{
+              bgcolor: "#C16345",
+              color: "#fff",
+              border: 0,
+              padding: "0 28px",
+              borderRadius: "999px",
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              transition: "0.2s",
+              textTransform: "none",
+              flexShrink: 0,
+              minWidth: 100,
+              "&:hover": { bgcolor: "#A8512F" },
+            }}
+          >
+            🔍 Search
+          </Button>
+        </Box>
+      </Box>
+
+      {/* ── Category chips ── */}
+      <Box sx={{ padding: { xs: "32px 20px 8px", md: "48px 48px 8px" }, maxWidth: 1320, margin: "0 auto" }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: "8px",
+            overflowX: "auto",
+            pb: "8px",
             scrollbarWidth: "none",
             "&::-webkit-scrollbar": { display: "none" },
-
-            px: { xs: 0.5, sm: 1 },
           }}
         >
           {categories.map((cat, index) => (
             <Box
               key={index}
               sx={{
+                flexShrink: 0,
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                justifyContent: "center",
+                gap: "8px",
+                padding: "14px 18px",
+                borderRadius: "14px",
                 cursor: "pointer",
-
-                flex: "0 0 auto",
-                minWidth: { xs: 60, sm: 75 },
+                border: "1px solid transparent",
+                minWidth: "96px",
+                transition: "0.2s",
+                "&:hover": { bgcolor: "#FFFAF0", borderColor: "#D9CFB8" },
               }}
             >
               <Box
                 component="img"
                 src={cat.img}
                 alt={cat.label}
-                sx={{
-                  width: { xs: 28, sm: 30 },  
-                  height: { xs: 28, sm: 30 },
-                  objectFit: "contain",
-                }}
+                sx={{ width: 32, height: 32, objectFit: "contain" }}
               />
-
               <Typography
-                variant="body2"
                 sx={{
-                  color: "#1B2447",
-                  fontSize: { xs: "0.65rem", sm: "0.75rem" },
+                  fontSize: 12,
                   fontWeight: 500,
-                  mt: 0.4, // 🔥 reduced top gap
+                  color: "#3D4670",
                   whiteSpace: "nowrap",
-                  textAlign: "center",
                 }}
               >
                 {cat.label}
@@ -258,99 +327,64 @@ const MapandFilter: React.FC = () => {
             </Box>
           ))}
         </Box>
-
-        {/* ✅ Action Buttons */}
-        <Box
-          sx={{
-            width: "100%",
-            maxWidth: 700,
-            mx: "auto",
-            display: "flex",
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: { xs: 1.5, sm: 3 },
-          }}
-        >
-          {/* 🔹 Prebooking Button → "Resv" on Mobile */}
-          <Button
-            variant="contained"
-            startIcon={
-              <Box
-                component="img"
-                src={prebooking}
-                alt="Prebooking"
-                sx={{
-                  width: { xs: 22, sm: 28, md: 35 },
-                  height: { xs: 22, sm: 28, md: 35 },
-                }}
-              />
-            }
-            sx={{
-              flex: "1",
-              height: { xs: 42, sm: 50 },
-              backgroundColor: "#1B2447",
-              textTransform: "none",
-              fontSize: { xs: "0.8rem", sm: "0.9rem" },
-              fontFamily: "'Inter', system-ui, sans-serif",
-              fontWeight: 600,
-              borderRadius: "10px",
-              "&:hover": { backgroundColor: "#2A356B" },
-            }}
-          >
-            {/* ⬇️ Replace title on mobile */}
-            <Box sx={{ display: { xs: "inline", sm: "none" } }}>Resv</Box>
-            <Box sx={{ display: { xs: "none", sm: "inline" } }}>Prebooking</Box>
-          </Button>
-
-          {/* 🔹 Luxury Homes Button → "Lux" on Mobile */}
-          <Button
-            variant="outlined"
-            startIcon={
-              <Box
-                component="img"
-                src={crown1}
-                alt="Luxury"
-                sx={{
-                  width: { xs: 22, sm: 28, md: 35 },
-                  height: { xs: 22, sm: 28, md: 35 },
-                }}
-              />
-            }
-            sx={{
-              flex: "1",
-              height: { xs: 42, sm: 50 },
-              borderColor: "#1B2447",
-              color: "#1B2447",
-              textTransform: "none",
-              fontSize: { xs: "0.8rem", sm: "0.9rem" },
-              fontFamily: "'Inter', system-ui, sans-serif",
-              fontWeight: 600,
-              borderRadius: "10px",
-              "&:hover": {
-                backgroundColor: "rgba(27,36,71,0.05)",
-                borderColor: "#1B2447",
-              },
-            }}
-          >
-            {/* ⬇️ Replace title on mobile */}
-            <Box sx={{ display: { xs: "inline", sm: "none" } }}>Lux</Box>
-            <Box sx={{ display: { xs: "none", sm: "inline" } }}>
-              Luxury Homes
-            </Box>
-          </Button>
-        </Box>
       </Box>
 
-      {/* ✅ Map Section */}
-      <Box sx={{ width: "100%", p: { xs: 1, sm: 2 }, position: "relative" }}>
+      {/* ── Action buttons row ── */}
+      <Box
+        sx={{
+          maxWidth: 1320,
+          margin: "0 auto",
+          padding: { xs: "0 20px 24px", md: "0 48px 24px" },
+          display: "flex",
+          gap: "12px",
+        }}
+      >
+        <Button
+          variant="contained"
+          startIcon={<Box component="img" src={prebooking} alt="Prebooking" sx={{ width: 22, height: 22 }} />}
+          sx={{
+            bgcolor: "#1B2447",
+            textTransform: "none",
+            fontSize: { xs: "0.8rem", sm: "0.9rem" },
+            fontWeight: 600,
+            borderRadius: "10px",
+            padding: "10px 20px",
+            "&:hover": { bgcolor: "#2A356B" },
+          }}
+        >
+          <Box sx={{ display: { xs: "none", sm: "inline" } }}>Prebooking</Box>
+          <Box sx={{ display: { xs: "inline", sm: "none" } }}>Resv</Box>
+        </Button>
+
+        <Button
+          variant="outlined"
+          startIcon={<Box component="img" src={crown1} alt="Luxury" sx={{ width: 22, height: 22 }} />}
+          sx={{
+            borderColor: "#1B2447",
+            color: "#1B2447",
+            textTransform: "none",
+            fontSize: { xs: "0.8rem", sm: "0.9rem" },
+            fontWeight: 600,
+            borderRadius: "10px",
+            padding: "10px 20px",
+            "&:hover": { bgcolor: "rgba(27,36,71,0.05)", borderColor: "#1B2447" },
+          }}
+        >
+          <Box sx={{ display: { xs: "none", sm: "inline" } }}>Luxury Homes</Box>
+          <Box sx={{ display: { xs: "inline", sm: "none" } }}>Lux</Box>
+        </Button>
+      </Box>
+
+      {/* ── Map section ── */}
+      <Box sx={{ width: "100%", padding: { xs: "0 20px 32px", md: "0 48px 48px" } }}>
         <Card
           sx={{
             width: "100%",
             height: { xs: 300, sm: 400, md: 500 },
-            borderRadius: "20px",
+            borderRadius: "18px",
             overflow: "hidden",
-            boxShadow: 4,
+            boxShadow: "0 12px 40px rgba(27,36,71,.12)",
+            border: "1px solid #D9CFB8",
             position: "relative",
           }}
         >
@@ -367,17 +401,14 @@ const MapandFilter: React.FC = () => {
                   attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-
-                {/* ✅ User’s location marker */}
                 <Marker position={location} icon={markerIcon}>
                   <Popup>Your Current Location</Popup>
                 </Marker>
-
                 <MarkerPulse coordinates={[location.lat, location.lng]} />
                 <HotelMarkers hotels={hotels} hotelIcon={hotelIcon} />
               </MapContainer>
 
-              {/* ✅ Top-right icons container */}
+              {/* Map chrome controls */}
               <Box
                 sx={{
                   position: "absolute",
@@ -385,108 +416,83 @@ const MapandFilter: React.FC = () => {
                   right: 10,
                   zIndex: 1000,
                   display: "flex",
-                  gap: 1.2,
+                  gap: "8px",
                   alignItems: "center",
                 }}
               >
-                {/* 🔍 Fake Search Bar */}
+                {/* Location display */}
                 <Box
                   sx={{
                     display: "flex",
                     alignItems: "center",
-                    bgcolor: "#fff",
-                    borderRadius: "30px",
-                    boxShadow: 2,
+                    bgcolor: "#FFFAF0",
+                    borderRadius: "999px",
+                    border: "1px solid #D9CFB8",
+                    boxShadow: "0 1px 2px rgba(27,36,71,.04), 0 8px 24px rgba(27,36,71,.06)",
                     px: 2,
-                    py: 0.5,
-                    minWidth: { xs: "140px", sm: "250px" },
-                    maxWidth: "300px",
-                    overflow: "hidden",
-                    whiteSpace: "nowrap",
+                    py: 0.6,
+                    minWidth: { xs: "120px", sm: "220px" },
+                    maxWidth: "280px",
                   }}
                 >
                   <InputBase
                     value={address}
                     disabled
-                    sx={{
-                      fontSize: { xs: "0.7rem", sm: "0.85rem" },
-                      color: "#555",
-                      width: "100%",
-                    }}
+                    sx={{ fontSize: { xs: "0.7rem", sm: "0.82rem" }, color: "#3D4670", width: "100%" }}
                   />
                 </Box>
 
-                {/* 🔹 Filter Icon */}
+                {/* Filter button */}
                 <Box sx={{ position: "relative" }}>
                   <IconButton
                     onClick={() => setShowFilter((prev) => !prev)}
                     sx={{
-                      bgcolor: "#fff",
-                      boxShadow: 2,
-                      "&:hover": { bgcolor: "#f0f0f0" },
+                      width: 38, height: 38,
+                      bgcolor: "#FFFAF0",
+                      border: "1px solid #D9CFB8",
+                      boxShadow: "0 1px 2px rgba(27,36,71,.04), 0 8px 24px rgba(27,36,71,.06)",
+                      borderRadius: "10px",
+                      "&:hover": { bgcolor: "#EFE7D6" },
                     }}
                   >
-                    <FilterListIcon sx={{ color: "#1B2447" }} />
+                    <FilterListIcon sx={{ color: "#1B2447", fontSize: 20 }} />
                   </IconButton>
-
-                  {/* 🔹 Dropdown Component */}
                   {showFilter && (
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        top: "110%",
-                        right: 0,
-                        zIndex: 1100,
-                        bgcolor: "#fff",
-                        borderRadius: "12px",
-                        boxShadow: 4,
-                        overflow: "hidden",
-                      }}
-                    >
+                    <Box sx={{ position: "absolute", top: "110%", right: 0, zIndex: 1100, bgcolor: "#FFFAF0", borderRadius: "12px", boxShadow: "0 12px 40px rgba(27,36,71,.12)", border: "1px solid #D9CFB8", overflow: "hidden" }}>
                       <FilterDropdown onApply={() => setShowFilter(false)} />
                     </Box>
                   )}
                 </Box>
 
-                {/* 🔹 Recenter Icon */}
+                {/* Recenter button */}
                 <IconButton
-                  onClick={() => {
-                    if (mapRef.current) mapRef.current.setView(location, 14);
-                  }}
+                  onClick={() => { if (mapRef.current) mapRef.current.setView(location, 14); }}
                   sx={{
-                    bgcolor: "#fff",
-                    boxShadow: 2,
-                    "&:hover": { bgcolor: "#f0f0f0" },
+                    width: 38, height: 38,
+                    bgcolor: "#FFFAF0",
+                    border: "1px solid #D9CFB8",
+                    boxShadow: "0 1px 2px rgba(27,36,71,.04), 0 8px 24px rgba(27,36,71,.06)",
+                    borderRadius: "10px",
+                    "&:hover": { bgcolor: "#EFE7D6" },
                   }}
                 >
-                  <MyLocationIcon sx={{ color: "#1B2447" }} />
+                  <MyLocationIcon sx={{ color: "#1B2447", fontSize: 20 }} />
                 </IconButton>
               </Box>
             </>
           ) : (
-            <Box
-              sx={{
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexDirection: "column",
-                color: "#1B2447",
-                backgroundColor: "#FFFAF0",
-                textAlign: "center",
-                p: 2,
-              }}
-            >
+            <Box sx={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", color: "#1B2447", backgroundColor: "#FFFAF0", textAlign: "center", p: 2 }}>
               <Typography variant="h6" sx={{ mb: 1 }}>
                 {error ? "Location Error" : "Fetching your location..."}
               </Typography>
-              <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              <Typography variant="body2" sx={{ color: "#6B7390" }}>
                 {error || "Please allow location access to view the map."}
               </Typography>
             </Box>
           )}
         </Card>
       </Box>
+
     </>
   );
 };

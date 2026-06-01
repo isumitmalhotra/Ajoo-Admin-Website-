@@ -43,7 +43,7 @@ const HostInfo: React.FC<HostInfoProps> = ({ host = {} }) => {
         minWidth: 280,
         p: 2.5,
         borderRadius: 3,
-        background: "linear-gradient(135deg, #fff, #fff5f8)",
+        background: "#FFFAF0",
         boxShadow: "0 6px 18px rgba(27,36,71, 0.06)",
       }}
     >

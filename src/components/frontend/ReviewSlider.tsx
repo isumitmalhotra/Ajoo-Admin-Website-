@@ -42,7 +42,7 @@ const ReviewSlider: React.FC = () => {
           fontWeight: "bold",
           mb: { xs: 3, md: 5 },
           color: "#1B2447",
-          fontFamily: "'Playfair Display', serif",
+          fontFamily: "'Fraunces', serif",
           fontSize: { xs: "1.5rem", sm: "1.8rem", md: "2rem" },
         }}
       >
@@ -67,7 +67,8 @@ const ReviewSlider: React.FC = () => {
               sx={{
                 height: "100%",
                 borderRadius: "16px",
-                background: "linear-gradient(135deg, #ffffff, #fdf2f6)",
+                background: "#FFFAF0",
+                border: "1px solid #D9CFB8",
                 boxShadow: "0 6px 20px rgba(27,36,71, 0.15)",
                 transition: "transform 0.3s ease, box-shadow 0.3s ease",
                 p: { xs: 1.5, sm: 2 },
@@ -104,7 +105,7 @@ const ReviewSlider: React.FC = () => {
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "#777",
+                    color: "#6B7390",
                     fontSize: { xs: "0.8rem", sm: "0.9rem" },
                   }}
                 >
