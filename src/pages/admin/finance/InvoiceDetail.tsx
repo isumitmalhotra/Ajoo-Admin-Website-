@@ -38,7 +38,7 @@ const USE_DEV_FINANCE_MOCKS =
 
 const typeColors: Record<string, { bg: string; color: string; label: string }> = {
   BOOKING_RECEIPT: { bg: "#dbeafe", color: "#1d4ed8", label: "Booking Receipt" },
-  HOST_COMMISSION: { bg: "#f3e8ff", color: "#7c3aed", label: "Host Commission" },
+  HOST_COMMISSION: { bg: "#f3e8ff", color: "#1B2447", label: "Host Commission" },
   PAYOUT_STATEMENT: { bg: "#dcfce7", color: "#16a34a", label: "Payout Statement" },
 };
 

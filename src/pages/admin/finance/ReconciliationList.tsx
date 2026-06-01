@@ -123,7 +123,7 @@ const ReconciliationList = () => {
     { label: "Matched", value: summaryFromRows.matched, icon: ShieldCheck, color: "#16a34a", bg: "#f0fdf4" },
     { label: "Variances", value: summaryFromRows.variance, icon: AlertTriangle, color: "#ea580c", bg: "#fff7ed" },
     { label: "Pending", value: summaryFromRows.pending, icon: Clock, color: "#2563eb", bg: "#eff6ff" },
-    { label: "Resolved", value: summaryFromRows.resolved, icon: CheckCircle, color: "#7c3aed", bg: "#f3e8ff" },
+    { label: "Resolved", value: summaryFromRows.resolved, icon: CheckCircle, color: "#1B2447", bg: "#f3e8ff" },
   ];
 
   return (

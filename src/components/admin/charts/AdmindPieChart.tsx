@@ -29,14 +29,14 @@ const AdmindPieChart: React.FC<CustomPieChartProps> = ({
   width = 320,
   height = 320,
   colors = [
-    "#1B2447",
-    "#6d1a82",
-    "#a855f7",
-    "#7c3aed",
-    "#9333ea",
-    "#581c87",
-    "#c084fc",
-    "#8b5cf6",
+    "#1B2447",  // indigo
+    "#C16345",  // clay
+    "#3F6B4E",  // success
+    "#2A356B",  // indigo-600
+    "#A8512F",  // clay-600
+    "#3D4670",  // ink-2
+    "#6B7390",  // muted
+    "#D9CFB8",  // line
   ],
   title = "User Overview",
 }) => {
@@ -67,7 +67,7 @@ const AdmindPieChart: React.FC<CustomPieChartProps> = ({
       <Typography
         variant="h6"
         sx={{
-          fontFamily: "Poppins, sans-serif",
+          fontFamily: "'Inter', system-ui, sans-serif",
           color: "#374151",
           mb: "1rem",
           fontWeight: 600,
@@ -127,7 +127,7 @@ const AdmindPieChart: React.FC<CustomPieChartProps> = ({
             sx={{
               backgroundColor: `${item.color}22`,
               color: item.color,
-              fontFamily: "Poppins, sans-serif",
+              fontFamily: "'Inter', system-ui, sans-serif",
               fontSize: "0.8rem",
               fontWeight: 500,
               px: "0.5rem",
@@ -157,7 +157,7 @@ const AdmindPieChart: React.FC<CustomPieChartProps> = ({
                 color: chartData[selectedSlice].color,
                 fontWeight: 600,
                 fontSize: "1rem",
-                fontFamily: "Poppins, sans-serif",
+                fontFamily: "'Inter', system-ui, sans-serif",
               }}
             >
               Selected: {chartData[selectedSlice].label} (
@@ -169,7 +169,7 @@ const AdmindPieChart: React.FC<CustomPieChartProps> = ({
               sx={{
                 color: "#6b7280",
                 mt: "0.5rem",
-                fontFamily: "Poppins, sans-serif",
+                fontFamily: "'Inter', system-ui, sans-serif",
               }}
             >
               Represents{" "}

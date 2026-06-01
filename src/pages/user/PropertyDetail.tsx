@@ -101,10 +101,12 @@ export const PropertyDetail: React.FC = () => {
     <>
       <Box
         sx={{
-          px: { xs: 1.5, sm: 2.5, md: 4 },
-          py: { xs: 2, sm: 3 },
+          px: { xs: "20px", md: "48px" },
+          pt: { xs: "24px", md: "32px" },
+          pb: 0,
           maxWidth: 1600,
           margin: "0 auto",
+          bgcolor: "#EFE7D6",
           fontFamily: "'Inter', system-ui, sans-serif",
         }}
       >
@@ -122,19 +124,94 @@ export const PropertyDetail: React.FC = () => {
             <ArrowBackIcon />
           </IconButton>
 
-          <Breadcrumbs aria-label="breadcrumb">
-            <Link underline="hover" color="inherit" href="/">
+          <Breadcrumbs
+            aria-label="breadcrumb"
+            sx={{ "& .MuiBreadcrumbs-separator": { color: "#6B7390" } }}
+          >
+            <Link
+              underline="hover"
+              href="/"
+              sx={{ fontSize: 13, color: "#6B7390", "&:hover": { color: "#1B2447" } }}
+            >
               Home
             </Link>
-            <Typography color="text.primary">Property Detail</Typography>
+            <Link
+              underline="hover"
+              href="/property/list"
+              sx={{ fontSize: 13, color: "#6B7390", "&:hover": { color: "#1B2447" } }}
+            >
+              Listings
+            </Link>
+            <Typography sx={{ fontSize: 13, color: "#1B2447", fontWeight: 500 }}>
+              Property Detail
+            </Typography>
           </Breadcrumbs>
+        </Box>
+
+        {/* Property title — POC: fs 42, lh 1.05, letter-spacing -0.025em */}
+        <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+          <Typography
+            component="h1"
+            sx={{
+              fontFamily: "'Fraunces', serif",
+              fontWeight: 400,
+              fontSize: { xs: 28, md: 42 },
+              lineHeight: 1.05,
+              letterSpacing: "-0.025em",
+              color: "#1B2447",
+              mb: "12px",
+            }}
+          >
+            Luxury Sea View Apartment
+          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            {/* Verified pill — POC: padding 4 10, fs 12, success green */}
+            <Box
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                bgcolor: "rgba(63,107,78,.1)",
+                color: "#3F6B4E",
+                padding: "4px 10px",
+                borderRadius: "999px",
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
+              <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "#3F6B4E" }} />
+              Verified
+            </Box>
+            {/* Action chips — POC: padding 8 12 */}
+            {["Share", "Save", "Map"].map((action) => (
+              <Box
+                key={action}
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "8px 12px",
+                  border: "1px solid #D9CFB8",
+                  borderRadius: "999px",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: "#3D4670",
+                  cursor: "pointer",
+                  bgcolor: "#FFFAF0",
+                  transition: "0.2s",
+                  "&:hover": { borderColor: "#1B2447", bgcolor: "rgba(27,36,71,.04)" },
+                }}
+              >
+                {action}
+              </Box>
+            ))}
+          </Box>
         </Box>
 
         {/* MAIN GRID */}
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "65% 32%" },
+            gridTemplateColumns: { xs: "1fr", md: "1.5fr 1fr" },
             gap: { xs: 3, md: 4 },
             alignItems: "flex-start",
             position: "relative",
@@ -228,7 +305,7 @@ export const PropertyDetail: React.FC = () => {
               fontWeight: 400,
               letterSpacing: "-0.02em",
               color: "#1B2447",
-              mb: 2,
+              mb: "16px",
             }}
           >
             Property Description
@@ -280,10 +357,12 @@ export const PropertyDetail: React.FC = () => {
         >
           <Typography
             sx={{
+              fontFamily: "'Fraunces', serif",
               fontSize: { xs: 20, sm: 22 },
-              fontWeight: 700,
+              fontWeight: 400,
+              letterSpacing: "-0.015em",
               color: "#1B2447",
-              mb: 2,
+              mb: "12px",
             }}
           >
             Property Rules
@@ -327,37 +406,66 @@ export const PropertyDetail: React.FC = () => {
               boxShadow: "0px 4px 15px rgba(0,0,0,0.1)",
             }}
           >
-            <Typography sx={{ fontWeight: "bold", fontSize: 20, mb: 1 }}>
-              Owner's Details
+            <Typography
+              sx={{
+                fontFamily: "'Fraunces', serif",
+                fontWeight: 400,
+                fontSize: 22,
+                letterSpacing: "-0.015em",
+                color: "#1B2447",
+                mb: "16px",
+              }}
+            >
+              Meet your host
             </Typography>
 
-            <Typography sx={{ fontWeight: 600, fontSize: 16, mb: 1 }}>
-              Mr Joe Doe
-            </Typography>
+            {/* Host card — POC: avatar 56, meta fs 13 */}
+            <Box sx={{ display: "flex", gap: "14px", alignItems: "center", mb: 2 }}>
+              <Avatar
+                sx={{
+                  width: 56,
+                  height: 56,
+                  bgcolor: "#1B2447",
+                  fontSize: 22,
+                  fontFamily: "'Fraunces', serif",
+                }}
+              >
+                J
+              </Avatar>
+              <Box>
+                <Typography sx={{ fontWeight: 600, fontSize: 16, color: "#1B2447", lineHeight: 1.2 }}>
+                  Mr Joe Doe
+                </Typography>
+                <Typography sx={{ fontSize: 13, color: "#6B7390", mt: "2px" }}>
+                  Host · 5 properties · Member since 2023
+                </Typography>
+              </Box>
+            </Box>
 
-            <Typography sx={{ fontSize: 14, color: "#6B7390", mb: 2 }}>
-              Lorem ipsum dolor sit amet consectetur adipisicing elit.
-              Architecto alias, sapiente placeat facilis.
+            <Typography sx={{ fontSize: 14, color: "#6B7390", mb: "16px", lineHeight: 1.6 }}>
+              Experienced host committed to providing comfortable, clean, and
+              memorable stays for every guest.
             </Typography>
 
             <Box
               sx={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: 1,
-                px: 2,
-                py: 1,
-                border: "2px solid #1B2447",
-                borderRadius: 1,
+                gap: "8px",
+                padding: "8px 16px",
+                border: "1px solid #D9CFB8",
+                borderRadius: "10px",
                 color: "#1B2447",
                 fontWeight: 600,
+                fontSize: 13,
                 cursor: "pointer",
-                width: "fit-content",
-                "&:hover": { backgroundColor: "#1B2447", color: "#fff" },
+                bgcolor: "#FFFAF0",
+                transition: "0.2s",
+                "&:hover": { bgcolor: "#1B2447", color: "#FFFAF0", borderColor: "#1B2447" },
               }}
               onClick={() => setOpen(true)}
             >
-              <PermIdentityIcon />
+              <PermIdentityIcon sx={{ fontSize: 16 }} />
               View Host Profile
             </Box>
           </Box>
@@ -393,10 +501,12 @@ export const PropertyDetail: React.FC = () => {
         >
           <Typography
             sx={{
+              fontFamily: "'Fraunces', serif",
               fontSize: { xs: 20, sm: 22 },
-              fontWeight: 700,
+              fontWeight: 400,
+              letterSpacing: "-0.015em",
               color: "#1B2447",
-              mb: 3,
+              mb: "16px",
             }}
           >
             Guest Reviews

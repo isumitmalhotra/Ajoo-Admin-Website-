@@ -141,6 +141,7 @@ const PropertyListing = () => {
             categories={categories}
             selectedCategory={selectedCategory}
             onSelect={(c) => setSelectedCategory(c)}
+            resultCount={properties.length}
           />
 
           <PropertyGrid properties={properties} />

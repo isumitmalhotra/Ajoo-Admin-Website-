@@ -208,7 +208,7 @@ const PayoutSchedules = () => {
                         size="small"
                         sx={{
                           bgcolor: "#f3e8ff",
-                          color: "#7c3aed",
+                          color: "#1B2447",
                           fontWeight: 500,
                           fontSize: "0.75rem",
                         }}

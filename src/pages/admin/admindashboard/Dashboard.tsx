@@ -102,7 +102,7 @@ const Dashboard = () => {
       <Paper
         sx={{
           background:
-            "linear-gradient(135deg, #1B2447 0%, #a855f7 50%, #9333ea 100%)",
+            "linear-gradient(135deg, #1B2447 0%, #C16345 50%, #3F6B4E 100%)",
           height: "25rem",
           borderRadius: "1rem",
           p: 4,
@@ -157,7 +157,7 @@ const Dashboard = () => {
             <Typography variant="h4" fontWeight={600} color="#1B2447">
               “The only way to do great work is to love what you do”
             </Typography>
-            <Typography fontStyle="italic" color="#7c3aed">
+            <Typography fontStyle="italic" color="#1B2447">
               — Steve Jobs
             </Typography>
           </Stack>
@@ -166,7 +166,7 @@ const Dashboard = () => {
             <Typography variant="caption" fontWeight={600}>
               Pending Properties
             </Typography>
-            <Typography variant="h4" color="#9333ea">
+            <Typography variant="h4" color="#3F6B4E">
               {dashboardData?.pendingPropCount ?? 0}
             </Typography>
           </Paper>

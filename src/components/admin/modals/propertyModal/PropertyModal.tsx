@@ -164,7 +164,7 @@ const PropertyModal = ({ open, onClose }: PropertyModalProps) => {
             variant="contained"
             size="large"
             sx={{
-              backgroundColor: "#7F55B1",
+              backgroundColor: "#3D4670",
               fontFamily: "Lato, sans-serif",
               textTransform: "Capitalize",
               color: "#fff",

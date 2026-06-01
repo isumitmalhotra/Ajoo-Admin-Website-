@@ -8,8 +8,8 @@ interface AdminBarChartProps {
 
 const AdminBarChart = ({ dates, users }: AdminBarChartProps) => {
   const axisLabelStyle = {
-    fontFamily: "Poppins, sans-serif",
-    color: "#547792",
+    fontFamily: "'Inter', system-ui, sans-serif",
+    color: "#6B7390",
     fontWeight: 500,
     fontSize: "0.875rem",
   };
@@ -44,8 +44,8 @@ const AdminBarChart = ({ dates, users }: AdminBarChartProps) => {
               scaleType: "band",
               data: dates, // 🔥 from API
               tickLabelStyle: {
-                fill: "#547792",
-                fontFamily: "Poppins, sans-serif",
+                fill: "#6B7390",
+                fontFamily: "'Inter', system-ui, sans-serif",
                 fontSize: "0.75rem",
               },
               disableLine: true,
@@ -62,8 +62,8 @@ const AdminBarChart = ({ dates, users }: AdminBarChartProps) => {
               min: 0,
               max: 100,
               tickLabelStyle: {
-                fill: "#547792",
-                fontFamily: "Poppins, sans-serif",
+                fill: "#6B7390",
+                fontFamily: "'Inter', system-ui, sans-serif",
                 fontSize: "0.75rem",
               },
               disableLine: true,

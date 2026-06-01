@@ -76,7 +76,7 @@ const AdminLogin = () => {
     },
   });
 
-  const PURPLE = "#7C3AED";
+  const PURPLE = "#1B2447";
 
   return (
     <Box
@@ -93,7 +93,7 @@ const AdminLogin = () => {
           display: { xs: "none", md: "flex" },
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #7C3AED, #A855F7)",
+          background: "linear-gradient(135deg, #1B2447, #C16345)",
           color: "#fff",
           px: 8,
         }}
@@ -152,7 +152,7 @@ const AdminLogin = () => {
               fontWeight={800}
               mb={1}
               sx={{
-                background: "linear-gradient(135deg, #7C3AED, #A855F7)",
+                background: "linear-gradient(135deg, #1B2447, #C16345)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
@@ -315,7 +315,7 @@ const AdminLogin = () => {
               sx={{
                 mt: 4,
                 py: 1.8,
-                background: "linear-gradient(135deg, #7C3AED, #A855F7)",
+                background: "linear-gradient(135deg, #1B2447, #C16345)",
                 color: "#fff",
                 fontWeight: 700,
                 borderRadius: 3,

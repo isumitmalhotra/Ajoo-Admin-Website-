@@ -107,26 +107,50 @@ const FinalBookingPage: React.FC = () => {
   return (
     <Box
       sx={{
-        maxWidth: 1200,
+        maxWidth: 1320,
         mx: "auto",
-        px: 2,
-        fontFamily: "Roboto, sans-serif",
+        px: { xs: "20px", md: "48px" },
+        py: { xs: "32px", md: "48px" },
+        bgcolor: "#EFE7D6",
+        minHeight: "100vh",
+        fontFamily: "'Inter', system-ui, sans-serif",
       }}
     >
-      {/* Checkout Section */}
+      {/* Page heading — POC: h1 36 Fraunces */}
+      <Typography
+        component="h1"
+        sx={{
+          fontFamily: "'Fraunces', serif",
+          fontWeight: 400,
+          fontSize: { xs: 26, md: 36 },
+          letterSpacing: "-0.025em",
+          color: "#1B2447",
+          mb: "32px",
+        }}
+      >
+        Complete your booking
+      </Typography>
+
+      {/* Checkout grid — POC: 1.4fr 1fr, gap 48 */}
       <Box
         sx={{
-          display: "flex",
-          flexDirection: isMobile ? "column" : "row",
-          gap: 4,
-          mt: 4,
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "1.4fr 1fr" },
+          gap: { xs: "32px", md: "48px" },
+          alignItems: "flex-start",
         }}
       >
         {/* Left Side: Property + Booking */}
-        <Box sx={{ flex: 2 }}>
+        <Box>
           <Typography
-            variant="h4"
-            sx={{ color: themeColor, fontWeight: 700, mb: 1 }}
+            sx={{
+              fontFamily: "'Fraunces', serif",
+              fontWeight: 400,
+              fontSize: { xs: 20, md: 24 },
+              letterSpacing: "-0.02em",
+              color: "#1B2447",
+              mb: "4px",
+            }}
           >
             {propertyData.name}
           </Typography>
@@ -142,40 +166,71 @@ const FinalBookingPage: React.FC = () => {
             alt={propertyData.name}
             sx={{
               width: "100%",
-              borderRadius: 2,
-              mb: 3,
-              boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
+              borderRadius: "14px",
+              mb: "24px",
+              boxShadow: "0 1px 2px rgba(27,36,71,.04), 0 8px 24px rgba(27,36,71,.06)",
               objectFit: "cover",
-              maxHeight: 350,
+              maxHeight: 320,
             }}
           />
+
+          {/* Trip cell — POC: padding 14, radius 10 */}
+          <Box
+            sx={{
+              bgcolor: "#FFFAF0",
+              border: "1px solid #D9CFB8",
+              borderRadius: "10px",
+              padding: "14px 16px",
+              mb: "24px",
+            }}
+          >
+            <Typography sx={{ fontSize: 11, fontWeight: 600, color: "#6B7390", letterSpacing: "0.04em", textTransform: "uppercase", mb: "8px" }}>
+              Trip details
+            </Typography>
+            <Box sx={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
+              {[
+                { label: "Check-in", value: "Oct 20, 2025" },
+                { label: "Check-out", value: "Oct 23, 2025" },
+                { label: "Guests", value: "2 adults" },
+              ].map((item) => (
+                <Box key={item.label}>
+                  <Typography sx={{ fontSize: 11, color: "#6B7390", letterSpacing: "0.04em", textTransform: "uppercase", mb: "2px" }}>
+                    {item.label}
+                  </Typography>
+                  <Typography sx={{ fontSize: 14, fontWeight: 600, color: "#1B2447" }}>
+                    {item.value}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </Box>
 
           <PropertyBookingBox />
         </Box>
 
-        {/* Right Side: Billing */}
+        {/* Right Side: Summary card — POC: radius 18, padding 24 */}
         <Box
           sx={{
-            flex: 1,
-            backgroundColor: "#fff",
-            borderRadius: 3,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-            p: { xs: 2, sm: 3 },
+            bgcolor: "#FFFAF0",
+            borderRadius: "18px",
+            border: "1px solid #D9CFB8",
+            boxShadow: "0 12px 40px rgba(27,36,71,.12)",
+            p: "24px",
             display: "flex",
             flexDirection: "column",
-            gap: 3,
-            minWidth: isMobile ? "100%" : "360px",
-            fontFamily: "Roboto, sans-serif",
+            gap: "20px",
+            position: { md: "sticky" },
+            top: { md: "80px" },
           }}
         >
           {/* Header */}
           <Typography
-            variant="h5"
             sx={{
-              color: themeColor,
-              fontWeight: 700,
+              fontFamily: "'Fraunces', serif",
+              fontWeight: 500,
               fontSize: { xs: 18, sm: 20 },
-              mb: 1,
+              letterSpacing: "-0.015em",
+              color: "#1B2447",
             }}
           >
             Billing Summary
@@ -183,8 +238,8 @@ const FinalBookingPage: React.FC = () => {
 
           <Divider />
 
-          {/* Price Breakdown */}
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+          {/* Price Breakdown — POC: gap 10, fs 14 */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
               <Typography sx={{ fontWeight: 500 }}>
                 Price ({stayType})
@@ -225,7 +280,7 @@ const FinalBookingPage: React.FC = () => {
                 variant="contained"
                 sx={{
                   bgcolor: themeColor,
-                  "&:hover": { bgcolor: "#a83454" },
+                  "&:hover": { bgcolor: "#2A356B" },
                   borderRadius: 2,
                   py: 1,
                   fontWeight: 600,
@@ -267,11 +322,12 @@ const FinalBookingPage: React.FC = () => {
               variant="contained"
               sx={{
                 bgcolor: themeColor,
-                "&:hover": { bgcolor: "#a83454" },
-                borderRadius: 2,
-                py: 1.5,
+                "&:hover": { bgcolor: "#2A356B" },
+                borderRadius: "12px",
+                padding: "16px",
                 fontWeight: 600,
-                fontSize: { xs: 14, sm: 16 },
+                fontSize: 15,
+                textTransform: "none",
               }}
               onClick={handlePayLater}
             >
@@ -281,13 +337,14 @@ const FinalBookingPage: React.FC = () => {
             <Button
               variant="outlined"
               sx={{
-                borderColor: themeColor,
+                borderColor: "#D9CFB8",
                 color: themeColor,
-                "&:hover": { bgcolor: "#fce4ec" },
-                borderRadius: 2,
-                py: 1.5,
+                "&:hover": { bgcolor: "rgba(27,36,71,.05)", borderColor: "#1B2447" },
+                borderRadius: "12px",
+                padding: "16px",
                 fontWeight: 600,
-                fontSize: { xs: 14, sm: 16 },
+                fontSize: 15,
+                textTransform: "none",
               }}
               onClick={() => navigate("/booking/confirmation")}
             >
@@ -311,8 +368,8 @@ const FinalBookingPage: React.FC = () => {
           alignItems: "center",
           gap: 3,
           mt: 6,
-          backgroundColor: "#fff",
-          borderRadius: 3,
+          backgroundColor: "#FFFAF0",
+          borderRadius: "14px",
           boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
           p: 3,
         }}
@@ -334,12 +391,12 @@ const FinalBookingPage: React.FC = () => {
           >
             Secure Online Payments with Razorpay
           </Typography>
-          <Typography sx={{ fontSize: "1rem", color: "#555", mb: 1.5 }}>
+          <Typography sx={{ fontSize: "1rem", color: "#6B7390", mb: 1.5 }}>
             Enjoy seamless and secure transactions powered by Razorpay. Your
             payments are protected with advanced encryption and trusted payment
             gateways, ensuring a smooth and worry-free checkout experience.
           </Typography>
-          <Typography sx={{ fontSize: "1rem", color: "#777" }}>
+          <Typography sx={{ fontSize: "1rem", color: "#6B7390" }}>
             We accept all major credit/debit cards, UPI, and wallets to make
             your booking experience fast, easy, and secure.
           </Typography>

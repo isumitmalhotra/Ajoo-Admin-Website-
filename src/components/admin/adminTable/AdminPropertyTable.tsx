@@ -83,7 +83,7 @@ import {
               width: "100%",
               borderCollapse: "separate",
               borderSpacing: "0 8px",
-              fontFamily: "Poppins, sans-serif",
+              fontFamily: "'Inter', system-ui, sans-serif",
             }}
           >
             {/* ===== HEADER ===== */}

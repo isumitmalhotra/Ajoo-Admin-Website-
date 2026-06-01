@@ -8,7 +8,7 @@ interface SearchBarProps {
   color?: string;
 }
 
-export default function SearchBar({ placeholder, value, onChange, color = "#7C3AED" }: SearchBarProps) {
+export default function SearchBar({ placeholder, value, onChange, color = "#1B2447" }: SearchBarProps) {
   return (
     <TextField
       fullWidth

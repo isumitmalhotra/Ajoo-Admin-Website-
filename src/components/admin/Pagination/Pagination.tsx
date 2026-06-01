@@ -35,7 +35,7 @@ const Pagination: React.FC<PaginationComponentProps> = ({
               fontFamily: "Lato",
               border: item.selected ? "2px solid #9B7EBD" : "1px solid #9B7EBD",
               backgroundColor: item.selected ? "#ede9fe" : "#fff",
-              color: item.selected ? "#7C4585" : "#7F55B1", // Deep purple vs gray-800
+              color: item.selected ? "#1B2447" : "#3D4670", // Deep purple vs gray-800
               fontWeight: item.selected ? 700 : 500,
               minWidth: "2.5rem", // 40px
               height: "2.5rem",
@@ -45,7 +45,7 @@ const Pagination: React.FC<PaginationComponentProps> = ({
                 : "none",
               "&:hover": {
                 backgroundColor: "#f3e8ff",
-                borderColor: "#a855f7",
+                borderColor: "#C16345",
                 color: "#6b21a8",
               },
               "&.MuiPaginationItem-previousNext": {

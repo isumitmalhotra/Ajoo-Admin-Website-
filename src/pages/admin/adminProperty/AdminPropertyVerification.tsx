@@ -3,8 +3,8 @@ import { Box, Typography } from "@mui/material"
 const AdminPropertyVerification = () => {
     const purpleTheme = {
   primary: {
-    main: "#7C3AED",
-    light: "#A855F7",
+    main: "#1B2447",
+    light: "#C16345",
     dark: "#5B21B6",
     contrastText: "#FFFFFF",
   },

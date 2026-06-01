@@ -68,10 +68,11 @@ const BookingSection: React.FC = () => {
   return (
     <Box
       sx={{
-        p: 3,
-        backgroundColor: "#fff",
-        borderRadius: 2,
-        boxShadow: "0px 4px 15px rgba(0,0,0,0.1)",
+        p: "24px",
+        backgroundColor: "#FFFAF0",
+        borderRadius: "18px",
+        border: "1px solid #D9CFB8",
+        boxShadow: "0 12px 40px rgba(27,36,71,.12)",
         display: "flex",
         flexDirection: "column",
         gap: 2,
@@ -82,7 +83,13 @@ const BookingSection: React.FC = () => {
       }}
     >
       <Typography
-        sx={{ fontWeight: 700, fontSize: "1.3rem", color: themeColor }}
+        sx={{
+          fontFamily: "'Fraunces', serif",
+          fontWeight: 500,
+          fontSize: "1.3rem",
+          letterSpacing: "-0.01em",
+          color: themeColor,
+        }}
       >
         Book This Property
       </Typography>
@@ -173,7 +180,7 @@ const BookingSection: React.FC = () => {
             sx={{
               bgcolor: themeColor,
               color: "#fff",
-              "&:hover": { bgcolor: "#a83454" },
+              "&:hover": { bgcolor: "#2A356B" },
             }}
           >
             <Remove fontSize="small" />
@@ -187,7 +194,7 @@ const BookingSection: React.FC = () => {
             sx={{
               bgcolor: themeColor,
               color: "#fff",
-              "&:hover": { bgcolor: "#a83454" },
+              "&:hover": { bgcolor: "#2A356B" },
             }}
           >
             <Add fontSize="small" />
@@ -217,7 +224,7 @@ const BookingSection: React.FC = () => {
             sx={{
               bgcolor: themeColor,
               color: "#fff",
-              "&:hover": { bgcolor: "#a83454" },
+              "&:hover": { bgcolor: "#2A356B" },
             }}
           >
             <Remove fontSize="small" />
@@ -231,7 +238,7 @@ const BookingSection: React.FC = () => {
             sx={{
               bgcolor: themeColor,
               color: "#fff",
-              "&:hover": { bgcolor: "#a83454" },
+              "&:hover": { bgcolor: "#2A356B" },
             }}
           >
             <Add fontSize="small" />
@@ -246,10 +253,11 @@ const BookingSection: React.FC = () => {
           bgcolor: themeColor,
           color: "#fff",
           fontWeight: 600,
-          py: 1.2,
+          padding: "14px",
+          fontSize: 15,
           borderRadius: "10px",
           textTransform: "none",
-          "&:hover": { bgcolor: "#a83454" },
+          "&:hover": { bgcolor: "#2A356B" },
           width: "100%",
         }}
         onClick={() => navigate("/property-booking/final")}

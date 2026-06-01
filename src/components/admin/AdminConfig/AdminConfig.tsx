@@ -21,7 +21,7 @@ export default function ConfirmDialog({
   onConfirm,
   confirmText = "Confirm",
   cancelText = "Cancel",
-  highlightColor = "#7C3AED",
+  highlightColor = "#1B2447",
 }: ConfirmDialogProps) {
   return (
     <Dialog open={open} onClose={onClose} PaperProps={{ sx: { borderRadius: 4, p: 1 } }}>

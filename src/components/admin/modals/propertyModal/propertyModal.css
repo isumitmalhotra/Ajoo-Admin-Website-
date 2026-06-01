@@ -109,7 +109,7 @@
 .inputGroup input:focus,
 .inputGroup select:focus {
   outline: none;
-  border-color: #7c3aed;
+  border-color: #1B2447;
   box-shadow: 0 0 0 0.3rem rgba(124, 58, 237, 0.1);
 }
 
@@ -146,7 +146,7 @@
 }
 
 .radioLabel:has(input:checked) {
-  border-color: #7c3aed;
+  border-color: #1B2447;
   color: #4c1d95;
   font-weight: 600;
 }

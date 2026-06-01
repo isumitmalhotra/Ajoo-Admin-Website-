@@ -74,7 +74,7 @@ const STATUS_CONFIG: Record<
     bg: "#f5f3ff",
     border: "#ddd6fe",
     color: "#6d28d9",
-    dot: "#7c3aed",
+    dot: "#1B2447",
   },
   VOIDED: { bg: "#f9fafb", border: "#e5e7eb", color: "#6b7280", dot: "#9ca3af" },
   VARIANCE: {

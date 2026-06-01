@@ -96,7 +96,7 @@ export default function HostDashboard() {
           borderRadius: "1.1rem",
           color: "#ffffff",
           border: "1px solid rgba(255,255,255,0.25)",
-          background: "linear-gradient(125deg, #5b21b6 0%, #7c3aed 45%, #9333ea 100%)",
+          background: "linear-gradient(125deg, #5b21b6 0%, #1B2447 45%, #3F6B4E 100%)",
           boxShadow: "0 18px 32px rgba(91,33,182,0.25)",
         }}
       >

@@ -345,7 +345,7 @@ const styles = {
     mb: 3,
     p: 2.5,
     borderRadius: 2,
-    background: `linear-gradient(135deg, ${PurpleThemeColor}, #a855f7)`,
+    background: `linear-gradient(135deg, ${PurpleThemeColor}, #C16345)`,
     color: "#fff",
   },
   title: {

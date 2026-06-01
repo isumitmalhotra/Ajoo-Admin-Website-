@@ -92,7 +92,7 @@ const InvoiceList = () => {
 
   const typeColors: Record<string, { bg: string; color: string }> = {
     BOOKING_RECEIPT: { bg: "#dbeafe", color: "#1d4ed8" },
-    HOST_COMMISSION: { bg: "#f3e8ff", color: "#7c3aed" },
+    HOST_COMMISSION: { bg: "#f3e8ff", color: "#1B2447" },
     PAYOUT_STATEMENT: { bg: "#dcfce7", color: "#16a34a" },
   };
 

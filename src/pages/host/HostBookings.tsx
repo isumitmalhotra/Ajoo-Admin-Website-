@@ -403,7 +403,7 @@ export default function HostBookings() {
           variant="outlined"
           onClick={handleExportCsv}
           disabled={exporting || (data.length === 0 && !filters.search && !filters.status && !filters.dateFrom && !filters.dateTo)}
-          sx={{ textTransform: "none", fontWeight: 700, borderColor: "#8b5cf6", color: "#6d28d9" }}
+          sx={{ textTransform: "none", fontWeight: 700, borderColor: "#3D4670", color: "#6d28d9" }}
         >
           {exporting ? "Exporting..." : "Export CSV"}
         </Button>

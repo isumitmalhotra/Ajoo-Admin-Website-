@@ -7,15 +7,12 @@ const PropertyGrid = ({ properties }: any) => {
     <Box
       sx={{
         display: "grid",
-        gap: 2,
+        gap: "24px",
         gridTemplateColumns: {
-          xs: "repeat(1, 1fr)",
+          xs: "1fr",
           sm: "repeat(2, 1fr)",
-          md: "repeat(3, 1fr)",
-          lg: "repeat(4, 1fr)",
-          xl: "repeat(5, 1fr)",
+          lg: "repeat(3, 1fr)",
         },
-        mt: 2,
       }}
     >
       {properties.map((p: any, i: number) => (
@@ -24,7 +21,16 @@ const PropertyGrid = ({ properties }: any) => {
           key={i}
           style={{ textDecoration: "none" }}
         >
-          <HomePropCard {...p} />
+          {/* Override image aspect-ratio to 4/3 for listing page */}
+          <Box
+            sx={{
+              "& .card-img-wrapper": {
+                aspectRatio: "4/3 !important",
+              },
+            }}
+          >
+            <HomePropCard {...p} />
+          </Box>
         </Link>
       ))}
     </Box>

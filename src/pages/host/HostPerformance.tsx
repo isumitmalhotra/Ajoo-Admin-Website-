@@ -171,7 +171,7 @@ export default function HostPerformance() {
             series={[
               {
                 data: snapshot.channelSplit,
-                color: "#7c3aed",
+                color: "#1B2447",
               },
             ]}
             height={260}

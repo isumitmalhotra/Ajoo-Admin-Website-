@@ -912,7 +912,7 @@ export default function PropertiesForm() {
                                 transition: "all 0.2s ease",
                                 "&:hover": {
                                   backgroundColor: "#f3e8ff",
-                                  borderColor: "#c084fc",
+                                  borderColor: "#D9CFB8",
                                 },
                               }}
                             >

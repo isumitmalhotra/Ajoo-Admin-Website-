@@ -38,7 +38,7 @@ import {
   }
   
   /* 🎨 COLORS */
-  const PURPLE = "#7C3AED";
+  const PURPLE = "#1B2447";
   const PURPLE_LIGHT = "#EDE9FE";
   const GREEN = "#16A34A";
   const RED = "#DC2626";
@@ -241,7 +241,7 @@ import {
               onClick={onApply}
               variant="contained"
               sx={{
-                background: "linear-gradient(135deg, #7C3AED, #A855F7)",
+                background: "linear-gradient(135deg, #1B2447, #C16345)",
                 px: 4,
                 py: 1.4,
                 fontWeight: 800,

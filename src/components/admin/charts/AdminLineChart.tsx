@@ -73,8 +73,8 @@ const AdminLineChart = ({
               disableLine: true,
               disableTicks: true,
               tickLabelStyle: {
-                fill: "#547792",
-                fontFamily: "Poppins, sans-serif",
+                fill: "#6B7390",
+                fontFamily: "'Inter', system-ui, sans-serif",
               },
             },
           ]}
@@ -85,8 +85,8 @@ const AdminLineChart = ({
               disableLine: true,
               disableTicks: true,
               tickLabelStyle: {
-                fill: "#547792",
-                fontFamily: "Poppins, sans-serif",
+                fill: "#6B7390",
+                fontFamily: "'Inter', system-ui, sans-serif",
               },
             },
           ]}

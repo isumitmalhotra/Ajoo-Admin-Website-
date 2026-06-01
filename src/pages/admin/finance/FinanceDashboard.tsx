@@ -218,7 +218,7 @@ const FinanceDashboard = () => {
 
       <Paper
         sx={{
-          background: "linear-gradient(135deg, #6d28d9 0%, #8b5cf6 42%, #a855f7 100%)",
+          background: "linear-gradient(135deg, #6d28d9 0%, #3D4670 42%, #C16345 100%)",
           borderRadius: "1.1rem",
           p: { xs: 2.5, md: 3.2 },
           mb: 4,
@@ -336,7 +336,7 @@ const FinanceDashboard = () => {
                   placeItems: "center",
                 }}
               >
-                <Icon size={16} color="#7c3aed" />
+                <Icon size={16} color="#1B2447" />
               </Box>
               <Typography variant="body2" fontWeight={600} color="#374151">
                 {item.label}
@@ -434,7 +434,7 @@ const FinanceDashboard = () => {
               borderRadius: "0.65rem",
               borderColor: "#d8b4fe",
               color: "#6b21a8",
-              "&:hover": { borderColor: "#a855f7", bgcolor: "#faf5ff" },
+              "&:hover": { borderColor: "#C16345", bgcolor: "#faf5ff" },
             }}
           >
             Open reconciliation records
@@ -456,7 +456,7 @@ const FinanceDashboard = () => {
               size="small"
               onClick={() => navigate("/admin/finance/ledgers")}
               endIcon={<ArrowRight size={14} />}
-              sx={{ textTransform: "none", color: "#7c3aed", fontWeight: 700 }}
+              sx={{ textTransform: "none", color: "#1B2447", fontWeight: 700 }}
             >
               View all
             </Button>
