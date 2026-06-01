@@ -1,21 +1,21 @@
 import { Box, Typography } from "@mui/material"
 
 const AdminPropertyVerification = () => {
-    const purpleTheme = {
+    const indigoTheme = {
   primary: {
     main: "#1B2447",
-    light: "#C16345",
-    dark: "#5B21B6",
-    contrastText: "#FFFFFF",
+    light: "#2A356B",
+    dark: "#0E1A2E",
+    contrastText: "#FFFAF0",
   },
   secondary: {
-    main: "#EC4899",
-    light: "#F472B6",
-    dark: "#BE185D",
+    main: "#C16345",
+    light: "#D9CFB8",
+    dark: "#A8512F",
   },
   background: {
-    default: "#F8FAFC",
-    paper: "#FFFFFF",
+    default: "#EFE7D6",
+    paper: "#FFFAF0",
   },
 };
   return (
@@ -25,7 +25,7 @@ const AdminPropertyVerification = () => {
           variant="h4"
           sx={{
             fontWeight: 700,
-            background: `linear-gradient(135deg, ${purpleTheme.primary.main}, ${purpleTheme.secondary.main})`,
+            background: `linear-gradient(135deg, ${indigoTheme.primary.main}, ${indigoTheme.secondary.main})`,
             backgroundClip: "text",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",

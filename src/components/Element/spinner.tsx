@@ -15,7 +15,7 @@ export type SpinnerProps = {
   className?: string;
 };
 
-export const Spinner = ({ size = 'md', color = 'purple', className = '' }: SpinnerProps) => {
+export const Spinner = ({ size = 'md', color = '#1B2447', className = '' }: SpinnerProps) => {
   return (
     <svg
       className={clsx('animate-spin', sizes[size], className)}

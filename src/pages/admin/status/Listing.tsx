@@ -17,7 +17,7 @@ import { Pagination } from "../../../components";
 import type { ListingProps, BookingStatusRow } from "./types";
 import { bookingStatusRowSchema } from "../../../validations/admin-validations";
 
-const purpleTextFieldSx = {
+const indigoFieldSx = {
   "& .MuiOutlinedInput-root": {
     "& fieldset": {
       borderColor: PurpleThemeColor,
@@ -102,7 +102,7 @@ export default function Listing({
                         helperText={
                           (formik.errors.rows?.[index] as any)?.bs_title
                         }
-                        sx={purpleTextFieldSx}
+                        sx={indigoFieldSx}
                       />
                     </TableCell>
 
@@ -118,7 +118,7 @@ export default function Listing({
                         helperText={
                           (formik.errors.rows?.[index] as any)?.bs_code
                         }
-                        sx={purpleTextFieldSx}
+                        sx={indigoFieldSx}
                       />
                     </TableCell>
 
