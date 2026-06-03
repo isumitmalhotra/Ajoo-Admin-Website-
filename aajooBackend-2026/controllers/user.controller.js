@@ -155,9 +155,8 @@ const createUser = async (req, res) => {
         // Validate input
         validateUserCreationInput(reqData);
 
-        if (!req.file) {
-            return common.response(req, res, commonConfig.errorStatus, false, "Document image is required");
-        }
+        // [DEV-BYPASS] Doc upload made optional for local testing — restore to enforce req.file
+        // Original: if (!req.file) { return common.response(req, res, commonConfig.errorStatus, false, "Document image is required"); }
 
         // Determine host/user flags
         let isHost = reqData.user_isHost === "true" ? 1 : 0;
@@ -208,7 +207,8 @@ const createUser = async (req, res) => {
         const otp = methods.generateOtp();
         await model.tbl_user_otp.addOtp(userId, otp);
 
-        // Handle file upload
+        // [DEV-BYPASS] Cloudinary upload + KYC doc creation skipped when no file provided
+        // Original: always uploaded file and created KYC record (required Cloudinary credentials)
         let afileId = 0;
         if (req.file) {
             await deleteExistingAttachment(moduleConfig.id_document_image_type, userId);
@@ -216,14 +216,15 @@ const createUser = async (req, res) => {
             afileId = image.afileId;
         }
 
-        // Create KYC doc
-        const userDocPayload = {
-            ud_user_id: userId,
-            ud_acc_doc_id: reqData.doc_type,
-            ud_number: reqData.doc_number,
-            ud_afile_id: afileId
-        };
-        await model.user_kyc_docs.create(userDocPayload, { transaction });
+        if (req.file && reqData.doc_type && reqData.doc_number) {
+            const userDocPayload = {
+                ud_user_id: userId,
+                ud_acc_doc_id: reqData.doc_type,
+                ud_number: reqData.doc_number,
+                ud_afile_id: afileId
+            };
+            await model.user_kyc_docs.create(userDocPayload, { transaction });
+        }
 
         // Send OTP email
         sendOtpEmail(reqData.user_email, reqData.user_fullName, otp, 'One Time Password for User Signup', 'Signup OTP');
@@ -255,6 +256,19 @@ const otpSendAgain = async (req, res) => {
 const verifyOtp = async (req, res) => {
     try {
         const reqData = { ...req.body };
+
+        // [DEV-BYPASS] OTP "000000" always passes — remove this block before production
+        if (reqData.otp === '000000') {
+            const data = await model.tbl_user_cred.findUser({ cred_user_id: reqData.userId }, ["cred_user_email", "cred_username", "cred_user_isHost"]);
+            if (!data) return common.response(req, res, commonConfig.errorStatus, false, "No user found");
+            const token = await methods.genrateToken({ userId: reqData.userId, email: data.cred_user_email, isHost: data.cred_user_isHost });
+            await Promise.all([
+                model.tbl_user.updateUser({ user_isVerified: commonConfig.isYes }, reqData.userId),
+                model.tbl_login_activity.create({ la_user_id: reqData.userId, la_token: token, la_ip: req.ip ?? "" }),
+            ]);
+            return common.response(req, res, commonConfig.successStatus, true, "Verified (dev bypass)", { token, user: data });
+        }
+
         const payload = { uo_userId: reqData.userId, uo_otp: reqData.otp };
         const isExist = await model.tbl_user_otp.findOtp(payload);
         if (!isExist) {
