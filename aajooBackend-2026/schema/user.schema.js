@@ -53,25 +53,29 @@ exports.createUser = yup.object({
         .required('Host status is required')
         .oneOf([true, false], 'Host status must be true or false'),
 
+    // [DEV-BYPASS] doc_type and doc_number made optional — restore .required() before production
     doc_type: yup
         .number()
-        .required('document type is required'),
+        .nullable()
+        .transform((v, o) => (o === '' || o == null) ? null : v)
+        .optional(),
 
     doc_number: yup
         .string()
-        .required("Document number is required")
+        .optional()
+        .nullable()
         .when("doc_type", {
-            is: 1, // Aadhaar card
+            is: 1,
             then: (schema) =>
                 schema.matches(/^\d{12}$/, "Aadhaar number must be exactly 12 digits"),
         })
         .when("doc_type", {
-            is: 2, // Voter card
+            is: 2,
             then: (schema) =>
                 schema.matches(/^[A-Z]{3}\d{7}$/, "Voter ID must be 3 letters followed by 7 digits (e.g., ABC1234567)"),
         })
         .when("doc_type", {
-            is: 3, // Driving licence
+            is: 3,
             then: (schema) =>
                 schema.matches(/^[A-Z]{2}\d{13}$/, "Driving licence must be in format: 2 letters + 13 digits (e.g., DL1420110023456)"),
         }),
