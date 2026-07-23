@@ -20,6 +20,8 @@ import 'package:rent_home/data/models/single_property_response.dart';
 import 'package:rent_home/ui/screens_renter/history/history_description/review/all_reviews_list/view_property_all_reviews_page.dart';
 import 'package:rent_home/service/bookmark_service.dart';
 import 'package:rent_home/service/property_service.dart';
+import 'package:rent_home/service/booking_service.dart';
+import 'package:rent_home/service/deals_service.dart';
 import 'package:rent_home/ui/screens_renter/property_details/components/booking_succes_dialog.dart';
 import 'package:rent_home/ui/screens_renter/bookmark_properties/bookmark_properties_page.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/negotitaion_page.dart';
@@ -138,6 +140,18 @@ class _PropertyPageState extends State<PropertyPage>
     // Opened from a negotiated deal → pre-fill the agreed stay so the renter can
     // book the exact sanctioned dates at the agreed price in one step.
     _applyDealDates();
+    if (hasDeal) {
+      _couponController.text = widget.dealCode!;
+      _appliedCoupon = widget.dealCode;
+      _couponPercent = widget.dealPercent ?? 0;
+      _couponOk = true;
+      _couponMsg = widget.dealPercent != null
+          ? 'Negotiated deal — ${widget.dealPercent}% off'
+          : 'Negotiated deal applied';
+    }
+
+    // Grey out already-booked nights in the date picker.
+    _loadAvailability();
 
     // Fetch full property details
     _fetchSingleProperty();
@@ -167,6 +181,79 @@ class _PropertyPageState extends State<PropertyPage>
   }
 
   bool get hasDeal => (widget.dealCode?.isNotEmpty ?? false);
+
+  // ── Availability (grey out already-booked nights) ──────────────────────────
+  final BookingService _bookingSvc = BookingService();
+  List<DateTimeRange> _bookedRanges = [];
+  // Booked ranges are inclusive of check-in, exclusive of check-out (a checkout
+  // day is re-bookable) — matches the backend overlap guard.
+  bool _isBookedDay(DateTime d) {
+    final day = DateTime(d.year, d.month, d.day);
+    for (final r in _bookedRanges) {
+      if (!day.isBefore(r.start) && day.isBefore(r.end)) return true;
+    }
+    return false;
+  }
+
+  Future<void> _loadAvailability() async {
+    final ranges = await _bookingSvc.getBookedRanges(widget.id);
+    if (mounted) setState(() => _bookedRanges = ranges);
+  }
+
+  // showDatePicker asserts the initialDate is selectable — nudge it off any
+  // booked/past day so opening the picker never throws.
+  DateTime _safeInitialDate(DateTime candidate, DateTime first) {
+    var d = candidate.isBefore(first) ? first : candidate;
+    var guard = 0;
+    while (_isBookedDay(d) && guard < 400) {
+      d = d.add(const Duration(days: 1));
+      guard++;
+    }
+    return d;
+  }
+
+  // ── Coupon at checkout (any code) ──────────────────────────────────────────
+  final TextEditingController _couponController = TextEditingController();
+  final DealsService _dealsSvc = DealsService();
+  String? _appliedCoupon; // code currently applied to the booking
+  double _couponDiscount = 0;
+  int _couponPercent = 0;
+  String _couponMsg = '';
+  bool _couponOk = false;
+  bool _couponBusy = false;
+
+  Future<void> _applyCoupon() async {
+    final code = _couponController.text.trim();
+    if (code.isEmpty) {
+      setState(() {
+        _appliedCoupon = null;
+        _couponOk = false;
+        _couponMsg = '';
+      });
+      return;
+    }
+    final base = double.tryParse(currentPriceString) ?? 0;
+    setState(() => _couponBusy = true);
+    final res = await _dealsSvc.validateCoupon(
+        code: code, propertyId: widget.id, amount: base);
+    if (!mounted) return;
+    setState(() {
+      _couponBusy = false;
+      if (res.valid) {
+        _appliedCoupon = res.code ?? code;
+        _couponDiscount = res.discount;
+        _couponPercent = res.percent;
+        _couponOk = true;
+        _couponMsg = res.percent > 0
+            ? 'Applied — ${res.percent}% off (₹${res.discount.toStringAsFixed(0)})'
+            : 'Applied — ₹${res.discount.toStringAsFixed(0)} off';
+      } else {
+        _appliedCoupon = null;
+        _couponOk = false;
+        _couponMsg = res.message;
+      }
+    });
+  }
 
   Future<void> _fetchSingleProperty() async {
     try {
@@ -403,9 +490,10 @@ class _PropertyPageState extends State<PropertyPage>
                 onTap: () async {
                   final DateTime? picked = await showDatePicker(
                     context: context,
-                    initialDate: selectedDate,
+                    initialDate: _safeInitialDate(selectedDate, DateTime.now()),
                     firstDate: DateTime.now(),
                     lastDate: DateTime.now().add(const Duration(days: 365)),
+                    selectableDayPredicate: (d) => !_isBookedDay(d),
                     builder: (context, child) {
                       return Theme(
                         data: Theme.of(context).copyWith(
@@ -446,9 +534,11 @@ class _PropertyPageState extends State<PropertyPage>
                 onTap: () async {
                   final DateTime? picked = await showDatePicker(
                     context: context,
-                    initialDate: selectedDate,
+                    initialDate: _safeInitialDate(
+                        selectedDateTo ?? selectedDate, selectedDate),
                     firstDate: selectedDate,
                     lastDate: DateTime.now().add(const Duration(days: 365)),
+                    selectableDayPredicate: (d) => !_isBookedDay(d),
                     builder: (context, child) {
                       return Theme(
                         data: Theme.of(context).copyWith(
@@ -873,42 +963,64 @@ class _PropertyPageState extends State<PropertyPage>
                 ),
 
               const SizedBox(height: 10),
-              if (hasDeal)
-                Container(
-                  margin: const EdgeInsets.only(bottom: 4),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: kCream,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: kSuccess),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.local_offer, size: 18, color: kSuccess),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Negotiated deal applied${widget.dealPercent != null ? " — ${widget.dealPercent}% off" : ""}',
-                              style: const TextStyle(
-                                  color: kInk,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700),
+              // Coupon at checkout — any code (personal deal or a global coupon).
+              // Pre-filled + applied when arriving from a negotiated deal.
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: kCream,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _couponOk ? kSuccess : kLine),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.local_offer, size: 18, color: kMuted),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _couponController,
+                            textCapitalization: TextCapitalization.characters,
+                            decoration: const InputDecoration(
+                              hintText: 'Have a coupon code?',
+                              border: InputBorder.none,
+                              isDense: true,
                             ),
-                            Text(
-                              'Code ${widget.dealCode} · dates pre-filled · discount applied at checkout',
-                              style: const TextStyle(
-                                  color: kMuted, fontSize: 11.5),
-                            ),
-                          ],
+                            style: const TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        _couponBusy
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2))
+                            : TextButton(
+                                onPressed: _applyCoupon,
+                                child: Text(_couponOk ? 'Change' : 'Apply',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: kIndigo)),
+                              ),
+                      ],
+                    ),
+                    if (_couponMsg.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 26, bottom: 6),
+                        child: Text(
+                          _couponMsg,
+                          style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: _couponOk ? kSuccess : kDanger),
                         ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
+              ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () async {
@@ -959,14 +1071,14 @@ class _PropertyPageState extends State<PropertyPage>
                       "totalAmount": finalAmount,
                       "advanceAmount": advanceAmount,
                     };
-                    // Negotiated deal: send the room subtotal (pre-GST) + the
-                    // coupon code so the backend applies the discount and adds
-                    // GST cleanly (exactly like web), and consumes the one-time
-                    // coupon. Only overrides the deal path — normal bookings are
+                    // Any applied coupon (a negotiated deal OR a code the renter
+                    // entered): send the room subtotal (pre-GST) + the code so the
+                    // backend applies the discount and adds GST cleanly (like web)
+                    // and consumes/validates the coupon. Non-coupon bookings are
                     // untouched.
-                    if (hasDeal) {
+                    if (_appliedCoupon != null && _appliedCoupon!.isNotEmpty) {
                       bookingData["price"] = basePrice;
-                      bookingData["couponCode"] = widget.dealCode!;
+                      bookingData["couponCode"] = _appliedCoupon!;
                     }
                     // KYC gate — renters are verified at registration; this
                     // catches anyone who skipped. An unverified guest must
@@ -1164,6 +1276,7 @@ class _PropertyPageState extends State<PropertyPage>
   void dispose() {
     _animationController.dispose();
     _priceController.dispose();
+    _couponController.dispose();
     razorpay.clear();
     super.dispose();
   }
