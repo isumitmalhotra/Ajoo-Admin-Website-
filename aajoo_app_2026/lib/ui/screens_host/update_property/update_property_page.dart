@@ -6,6 +6,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/data/models/host_properties_reponse.dart';
 import 'package:rent_home/ui/screens_host/add_property/new_property_controller_legacy.dart';
+import 'package:rent_home/controller/common_controller.dart';
+import 'package:rent_home/service/property_service.dart';
+import 'package:rent_home/widgets/app_ui.dart';
 
 class UpdatePropertyPage extends StatefulWidget {
   final Property property;
@@ -33,6 +36,38 @@ class _UpdatePropertyPageState extends State<UpdatePropertyPage> {
   late TextEditingController contactCtrl;
   late TextEditingController emailCtrl;
   late TextEditingController rulesCtrl;
+
+  // H1 parity controllers
+  late TextEditingController areaLocalityCtrl;
+  late TextEditingController landmarkCtrl;
+  late TextEditingController floorNoCtrl;
+  late TextEditingController bathroomsCtrl;
+  late TextEditingController securityDepositCtrl;
+  late TextEditingController weekendPriceCtrl;
+  late TextEditingController cleaningFeeCtrl;
+  late TextEditingController extraGuestChargeCtrl;
+  late TextEditingController minBookingAmountCtrl;
+  late TextEditingController videoUrlCtrl;
+  late TextEditingController quietHoursCtrl;
+  late TextEditingController propertyTypeCtrl;
+
+  // H1 toggles
+  String _bookingPref = 'request';
+  String? _ownershipType;
+  bool _coupleFriendly = false;
+  bool _localIdAllowed = false;
+
+  // Amenities + tags (admin-managed catalog) — pre-selected from the property's
+  // current values so editing doesn't wipe them. Only posted if the host
+  // actually changes them; untouched → empty → the controller preserves them.
+  final CommonController commonController = Get.isRegistered<CommonController>()
+      ? Get.find<CommonController>()
+      : Get.put(CommonController());
+  final Set<int> _selectedAmenityIds = {};
+  final Set<int> _selectedTagIds = {};
+  final List<String> _amenityLabels = [];
+  bool _amenitiesTouched = false;
+  bool _tagsTouched = false;
 
   List<XFile> pickedImages = [];
 
@@ -86,6 +121,26 @@ class _UpdatePropertyPageState extends State<UpdatePropertyPage> {
 
     controller.inTime.value = p.propDetailsPropDetailInTime?.toString() ?? '';
     controller.outTime.value = p.propDetailsPropDetailOutTime?.toString() ?? '';
+
+    // ---- H1 fields prefill (returned by /host/property-search) ----
+    propertyTypeCtrl = TextEditingController(text: p.propertyType);
+    areaLocalityCtrl = TextEditingController(text: p.areaLocality);
+    landmarkCtrl = TextEditingController(text: p.landmark);
+    floorNoCtrl = TextEditingController(text: p.floorNo);
+    bathroomsCtrl = TextEditingController(text: p.bathrooms);
+    securityDepositCtrl = TextEditingController(text: p.securityDeposit);
+    weekendPriceCtrl = TextEditingController(text: p.weekendPrice);
+    cleaningFeeCtrl = TextEditingController(text: p.cleaningFee);
+    extraGuestChargeCtrl = TextEditingController(text: p.extraGuestCharge);
+    minBookingAmountCtrl = TextEditingController(text: p.minBookingAmount);
+    videoUrlCtrl = TextEditingController(text: p.videoUrl);
+    quietHoursCtrl = TextEditingController(text: p.quietHours);
+    _bookingPref = p.bookingPref.isNotEmpty ? p.bookingPref : 'request';
+    _ownershipType = p.ownershipType.isNotEmpty ? p.ownershipType : null;
+    _coupleFriendly = p.coupleFriendly;
+    _localIdAllowed = p.localIdAllowed;
+
+    _loadAmenitiesTags();
   }
 
   Future<void> _pickImages() async {
@@ -124,9 +179,147 @@ class _UpdatePropertyPageState extends State<UpdatePropertyPage> {
       controller.propRule.value = '';
     }
 
+    // ---- H1 fields → controller ----
+    controller.propertyType.value = propertyTypeCtrl.text.trim();
+    controller.bookingPref.value = _bookingPref;
+    controller.ownershipType.value = _ownershipType ?? '';
+    controller.areaLocality.value = areaLocalityCtrl.text.trim();
+    controller.landmark.value = landmarkCtrl.text.trim();
+    controller.floorNo.value = floorNoCtrl.text.trim();
+    controller.bathrooms.value = bathroomsCtrl.text.trim();
+    controller.securityDeposit.value = securityDepositCtrl.text.trim();
+    controller.weekendPrice.value = weekendPriceCtrl.text.trim();
+    controller.cleaningFee.value = cleaningFeeCtrl.text.trim();
+    controller.extraGuestCharge.value = extraGuestChargeCtrl.text.trim();
+    controller.minBookingAmount.value = minBookingAmountCtrl.text.trim();
+    controller.videoUrl.value = videoUrlCtrl.text.trim();
+    controller.quietHours.value = quietHoursCtrl.text.trim();
+    controller.coupleFriendly.value = _coupleFriendly;
+    controller.localIdAllowed.value = _localIdAllowed;
+
+    // Amenities/tags: only send when the host actually edited them. Untouched →
+    // leave empty so updateProperty's strip-empty-arrays keeps the existing set
+    // (never wipe amenities the host didn't change).
+    if (_amenitiesTouched) {
+      controller.amenities.value = List<String>.from(_amenityLabels);
+      controller.amenityIds.value = _selectedAmenityIds.toList();
+    } else {
+      controller.amenities.value = [];
+      controller.amenityIds.value = [];
+    }
+    controller.tagIds.value = _tagsTouched ? _selectedTagIds.toList() : [];
+
     await controller.updateProperty(widget.property.propertyId);
     if (mounted) Navigator.pop(context);
   }
+
+  // Load the admin catalog + this property's current amenities/tags, and
+  // pre-select them (matched by label) so the pickers open reflecting reality.
+  Future<void> _loadAmenitiesTags() async {
+    if (commonController.amenities.value == null) {
+      await commonController.fetchAmenities();
+    }
+    if (commonController.tags.value == null) {
+      await commonController.fetchTags();
+    }
+    try {
+      final detail =
+          await PropertyService().getSingleProperty(widget.property.propertyId);
+      final curAmen = (detail.data?.amenities ?? [])
+          .map((e) => e.toString().trim().toLowerCase())
+          .toSet();
+      final curTags = (detail.data?.tags ?? [])
+          .map((e) => e.toString().trim().toLowerCase())
+          .toSet();
+      final amenList = commonController.amenities.value?.data ?? [];
+      for (final a in amenList) {
+        if (curAmen.contains(a.amnTitle.trim().toLowerCase())) {
+          _selectedAmenityIds.add(a.amnId);
+          if (!_amenityLabels.contains(a.amnTitle)) _amenityLabels.add(a.amnTitle);
+        }
+      }
+      final tagList = commonController.tags.value?.data.tags ?? [];
+      for (final t in tagList) {
+        if (curTags.contains(t.tagName.trim().toLowerCase())) {
+          _selectedTagIds.add(t.tagId);
+        }
+      }
+      if (mounted) setState(() {});
+    } catch (_) {
+      if (mounted) setState(() {});
+    }
+  }
+
+  Widget _buildAmenitiesSection() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionTitle('Amenities'),
+          Obx(() {
+            final list = commonController.amenities.value?.data ?? [];
+            if (list.isEmpty) {
+              return const Text('Loading amenities…',
+                  style: TextStyle(color: kInk2));
+            }
+            return Wrap(
+              spacing: 8.0,
+              runSpacing: 4,
+              children: list
+                  .map((a) => FilterChip(
+                        label: Text(a.amnTitle),
+                        selected: _selectedAmenityIds.contains(a.amnId),
+                        selectedColor: kprimaryColor.withOpacity(0.15),
+                        checkmarkColor: kprimaryColor,
+                        onSelected: (sel) => setState(() {
+                          _amenitiesTouched = true;
+                          if (sel) {
+                            _selectedAmenityIds.add(a.amnId);
+                            if (!_amenityLabels.contains(a.amnTitle)) {
+                              _amenityLabels.add(a.amnTitle);
+                            }
+                          } else {
+                            _selectedAmenityIds.remove(a.amnId);
+                            _amenityLabels.remove(a.amnTitle);
+                          }
+                        }),
+                      ))
+                  .toList(),
+            );
+          }),
+          const SizedBox(height: 16),
+        ],
+      );
+
+  Widget _buildTagsSection() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionTitle('Tags'),
+          Obx(() {
+            final list = commonController.tags.value?.data.tags ?? [];
+            if (list.isEmpty) {
+              return const Text('Loading tags…', style: TextStyle(color: kInk2));
+            }
+            return Wrap(
+              spacing: 8.0,
+              runSpacing: 4,
+              children: list
+                  .map((t) => FilterChip(
+                        label: Text(t.tagName),
+                        selected: _selectedTagIds.contains(t.tagId),
+                        selectedColor: kprimaryColor.withOpacity(0.15),
+                        checkmarkColor: kprimaryColor,
+                        onSelected: (sel) => setState(() {
+                          _tagsTouched = true;
+                          sel
+                              ? _selectedTagIds.add(t.tagId)
+                              : _selectedTagIds.remove(t.tagId);
+                        }),
+                      ))
+                  .toList(),
+            );
+          }),
+          const SizedBox(height: 16),
+        ],
+      );
 
   @override
   void dispose() {
@@ -142,6 +335,18 @@ class _UpdatePropertyPageState extends State<UpdatePropertyPage> {
     contactCtrl.dispose();
     emailCtrl.dispose();
     rulesCtrl.dispose();
+    propertyTypeCtrl.dispose();
+    areaLocalityCtrl.dispose();
+    landmarkCtrl.dispose();
+    floorNoCtrl.dispose();
+    bathroomsCtrl.dispose();
+    securityDepositCtrl.dispose();
+    weekendPriceCtrl.dispose();
+    cleaningFeeCtrl.dispose();
+    extraGuestChargeCtrl.dispose();
+    minBookingAmountCtrl.dispose();
+    videoUrlCtrl.dispose();
+    quietHoursCtrl.dispose();
     super.dispose();
   }
 
@@ -154,100 +359,237 @@ class _UpdatePropertyPageState extends State<UpdatePropertyPage> {
       ),
       body: Form(
         key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            _buildTextField(nameCtrl, 'Property Name'),
-            _buildTextField(descCtrl, 'Description', maxLines: 3),
-            _buildTextField(addressCtrl, 'Address', maxLines: 2),
-            Row(children: [
-              Expanded(
-                  child: _buildTextField(priceCtrl, 'Price', isNumeric: true)),
-              const SizedBox(width: 12),
-              Expanded(
-                  child: _buildTextField(minPriceCtrl, 'Min Price',
-                      isNumeric: true)),
-            ]),
-            Row(children: [
-              Expanded(child: _buildTextField(cityCtrl, 'City')),
-              const SizedBox(width: 12),
-              Expanded(child: _buildTextField(stateCtrl, 'State')),
-            ]),
-            Row(children: [
-              Expanded(child: _buildTextField(countryCtrl, 'Country')),
-              const SizedBox(width: 12),
-              Expanded(child: _buildTextField(zipCtrl, 'Zip')),
-            ]),
-            _buildTextField(contactCtrl, 'Contact'),
-            _buildTextField(emailCtrl, 'Email'),
-            _buildTextField(rulesCtrl, 'House Rules',
-                maxLines: 2, isRequired: false),
-            const SizedBox(height: 12),
-            Text('Images', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ...pickedImages.map((x) => Stack(
-                      alignment: Alignment.topRight,
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(File(x.path),
-                              width: 90, height: 90, fit: BoxFit.cover),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close,
-                              size: 18, color: kDanger),
-                          onPressed: () {
-                            setState(() {
-                              pickedImages.remove(x);
-                              controller.image.value = pickedImages
-                                  .map((e) => File(e.path))
-                                  .toList();
-                            });
-                          },
-                        )
-                      ],
-                    )),
-                GestureDetector(
-                  onTap: _pickImages,
-                  child: Container(
-                    width: 90,
-                    height: 90,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: kLine),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.add_a_photo),
-                  ),
-                )
-              ],
+            AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SectionTitle('Basic details'),
+                  const SizedBox(height: 12),
+                  _buildTextField(nameCtrl, 'Property Name'),
+                  _buildTextField(descCtrl, 'Description', maxLines: 3),
+                  _buildTextField(addressCtrl, 'Address', maxLines: 2),
+                  Row(children: [
+                    Expanded(
+                        child: _buildTextField(priceCtrl, 'Price',
+                            isNumeric: true)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: _buildTextField(minPriceCtrl, 'Min Price',
+                            isNumeric: true)),
+                  ]),
+                  Row(children: [
+                    Expanded(child: _buildTextField(cityCtrl, 'City')),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildTextField(stateCtrl, 'State')),
+                  ]),
+                  Row(children: [
+                    Expanded(child: _buildTextField(countryCtrl, 'Country')),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildTextField(zipCtrl, 'Zip')),
+                  ]),
+                ],
+              ),
             ),
-            const SizedBox(height: 24),
-            Obx(() => ElevatedButton(
-                  onPressed: controller.isLoading.value ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: kprimaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10))),
-                  child: controller.isLoading.value
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text('Update Property'),
+            const SizedBox(height: 14),
+            AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SectionTitle('Contact'),
+                  const SizedBox(height: 12),
+                  _buildTextField(contactCtrl, 'Contact'),
+                  _buildTextField(emailCtrl, 'Email'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SectionTitle('Listing details'),
+                  const SizedBox(height: 12),
+                  _buildTextField(propertyTypeCtrl, 'Property Type',
+                      isRequired: false),
+                  _buildTextField(areaLocalityCtrl, 'Area / Locality',
+                      isRequired: false),
+                  _buildTextField(landmarkCtrl, 'Landmark', isRequired: false),
+                  Row(children: [
+                    Expanded(
+                        child: _buildTextField(floorNoCtrl, 'Floor No.',
+                            isRequired: false)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: _buildTextField(bathroomsCtrl, 'Bathrooms',
+                            isNumeric: true, isRequired: false)),
+                  ]),
+                  _chipsLabel('Booking preference'),
+                  _singleSelectChips(const ['instant', 'request'], _bookingPref,
+                      (v) => setState(() => _bookingPref = v)),
+                  const SizedBox(height: 12),
+                  _chipsLabel('Ownership type'),
+                  _singleSelectChips(const ['owned', 'leased', 'managed'],
+                      _ownershipType, (v) => setState(() => _ownershipType = v)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SectionTitle('Additional charges'),
+                  const SizedBox(height: 12),
+                  _buildTextField(securityDepositCtrl, 'Security Deposit',
+                      isNumeric: true, isRequired: false),
+                  _buildTextField(weekendPriceCtrl, 'Weekend Price / Night',
+                      isNumeric: true, isRequired: false),
+                  _buildTextField(cleaningFeeCtrl, 'Cleaning Fee',
+                      isNumeric: true, isRequired: false),
+                  _buildTextField(extraGuestChargeCtrl, 'Extra Guest Charge',
+                      isNumeric: true, isRequired: false),
+                  _buildTextField(minBookingAmountCtrl, 'Minimum Booking Amount',
+                      isNumeric: true, isRequired: false),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SectionTitle('Stay preferences & rules'),
+                  const SizedBox(height: 6),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    activeColor: kprimaryColor,
+                    title: const Text('Couple friendly'),
+                    value: _coupleFriendly,
+                    onChanged: (v) => setState(() => _coupleFriendly = v),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    activeColor: kprimaryColor,
+                    title: const Text('Local ID allowed'),
+                    value: _localIdAllowed,
+                    onChanged: (v) => setState(() => _localIdAllowed = v),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildTextField(
+                      quietHoursCtrl, 'Quiet hours (e.g. 10 PM - 7 AM)',
+                      isRequired: false),
+                  _buildTextField(videoUrlCtrl, 'Video tour URL (optional)',
+                      isRequired: false),
+                  _buildTextField(rulesCtrl, 'House Rules',
+                      maxLines: 2, isRequired: false),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildAmenitiesSection(),
+                  _buildTagsSection(),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SectionTitle('Photos'),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ...pickedImages.map((x) => Stack(
+                            alignment: Alignment.topRight,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.file(File(x.path),
+                                    width: 90, height: 90, fit: BoxFit.cover),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close,
+                                    size: 18, color: kDanger),
+                                onPressed: () {
+                                  setState(() {
+                                    pickedImages.remove(x);
+                                    controller.image.value = pickedImages
+                                        .map((e) => File(e.path))
+                                        .toList();
+                                  });
+                                },
+                              )
+                            ],
+                          )),
+                      GestureDetector(
+                        onTap: _pickImages,
+                        child: Container(
+                          width: 90,
+                          height: 90,
+                          decoration: BoxDecoration(
+                            color: kSand,
+                            border: Border.all(color: kLine),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.add_a_photo, color: kMuted),
+                        ),
+                      )
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
+            Obx(() => PrimaryButton(
+                  label: 'Update Property',
+                  icon: Icons.check_circle_outline,
+                  loading: controller.isLoading.value,
+                  onPressed: _submit,
                 )),
           ],
         ),
       ),
     );
   }
+
+  Widget _chipsLabel(String t) => Padding(
+        padding: const EdgeInsets.only(bottom: 6, top: 2),
+        child: Text(t,
+            style:
+                const TextStyle(fontWeight: FontWeight.w600, color: kInk)),
+      );
+
+  Widget _singleSelectChips(
+    List<String> options,
+    String? selected,
+    ValueChanged<String> onSelect,
+  ) =>
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: options
+            .map((o) => ChoiceChip(
+                  label: Text(o.capitalizeFirst ?? o),
+                  selected: selected == o,
+                  selectedColor: kprimaryColor,
+                  backgroundColor: kSand,
+                  labelStyle:
+                      TextStyle(color: selected == o ? kCream : kInk),
+                  onSelected: (_) => onSelect(o),
+                ))
+            .toList(),
+      );
 
   Widget _buildTextField(TextEditingController c, String label,
       {int maxLines = 1, bool isNumeric = false, bool isRequired = true}) {
@@ -260,10 +602,21 @@ class _UpdatePropertyPageState extends State<UpdatePropertyPage> {
         decoration: InputDecoration(
           labelText: label,
           filled: true,
-          fillColor: kCream,
+          fillColor: kSand,
+          isDense: true,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
+            borderSide: const BorderSide(color: kLine),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: kLine),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: kIndigo, width: 1.5),
           ),
         ),
         validator: (v) {
