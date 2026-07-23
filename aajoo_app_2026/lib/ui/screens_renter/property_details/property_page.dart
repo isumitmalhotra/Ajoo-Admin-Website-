@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/cupertino.dart';
@@ -9,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/constants/payment_config.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/ui/screens_renter/booking_controller.dart';
 import 'package:rent_home/controller/common_controller.dart';
@@ -17,14 +17,16 @@ import 'package:rent_home/ui/screens_host/add_property/new_property_controller_l
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/data/models/single_property_response.dart';
-import 'package:rent_home/ui/screens_renter/home/homescreen.dart';
 import 'package:rent_home/ui/screens_renter/history/history_description/review/all_reviews_list/view_property_all_reviews_page.dart';
 import 'package:rent_home/service/bookmark_service.dart';
-import 'package:rent_home/service/device_service.dart';
 import 'package:rent_home/service/property_service.dart';
 import 'package:rent_home/ui/screens_renter/property_details/components/booking_succes_dialog.dart';
 import 'package:rent_home/ui/screens_renter/bookmark_properties/bookmark_properties_page.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/negotitaion_page.dart';
+import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/widgets/amenity_row.dart';
+import 'package:rent_home/widgets/host_card.dart';
+import 'package:rent_home/widgets/verified_pill.dart';
 import 'package:share_plus/share_plus.dart';
 
 class PropertyPage extends StatefulWidget {
@@ -42,6 +44,13 @@ class PropertyPage extends StatefulWidget {
   final String? outTime;
   final Property property;
   final bool showNegotiationButton;
+  // Optional negotiated-deal context — set when this page is opened from a
+  // "Book now" deal (dashboard/home banner). Pre-fills the agreed dates, shows a
+  // deal banner, and applies the coupon at checkout.
+  final String? dealCode;
+  final String? dealFrom; // DD-MM-YYYY
+  final String? dealTo; // DD-MM-YYYY
+  final int? dealPercent;
 
   const PropertyPage({
     super.key,
@@ -59,6 +68,10 @@ class PropertyPage extends StatefulWidget {
     this.outTime,
     this.showNegotiationButton = true,
     required this.property,
+    this.dealCode,
+    this.dealFrom,
+    this.dealTo,
+    this.dealPercent,
   });
 
   @override
@@ -122,9 +135,38 @@ class _PropertyPageState extends State<PropertyPage>
 
     _checkBookmarkStatus();
 
+    // Opened from a negotiated deal → pre-fill the agreed stay so the renter can
+    // book the exact sanctioned dates at the agreed price in one step.
+    _applyDealDates();
+
     // Fetch full property details
     _fetchSingleProperty();
   }
+
+  // Parse the deal's DD-MM-YYYY window into the date pickers + totals.
+  void _applyDealDates() {
+    DateTime? parse(String? s) {
+      if (s == null || s.isEmpty) return null;
+      final p = s.split('-');
+      if (p.length != 3) return null;
+      final d = int.tryParse(p[0]), m = int.tryParse(p[1]), y = int.tryParse(p[2]);
+      if (d == null || m == null || y == null) return null;
+      return DateTime(y, m, d);
+    }
+
+    final from = parse(widget.dealFrom);
+    final to = parse(widget.dealTo);
+    if (from != null && to != null && to.isAfter(from)) {
+      selectedDate = from;
+      selectedDateTo = to;
+      totalDays = to.difference(from).inDays;
+      if (totalDays < 1) totalDays = 1;
+      isButtonEnabled = true;
+      _updatePriceString();
+    }
+  }
+
+  bool get hasDeal => (widget.dealCode?.isNotEmpty ?? false);
 
   Future<void> _fetchSingleProperty() async {
     try {
@@ -149,16 +191,6 @@ class _PropertyPageState extends State<PropertyPage>
     _isBookmarked =
         await bookmarkService.isBookmarked(widget.property.propertyId);
     setState(() {});
-  }
-
-  void _adjustPrice(double amount) {
-    setState(() {
-      currentPrice += amount;
-      if (currentPrice < 0) {
-        currentPrice = 0;
-      }
-      _updatePriceString();
-    });
   }
 
   void _updatePriceString() {
@@ -189,54 +221,100 @@ class _PropertyPageState extends State<PropertyPage>
 
   Widget _buildBottomSheet() {
     if (!isExpanded) {
-      return GestureDetector(
-        onTap: _toggleExpanded,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          decoration: BoxDecoration(
-            color: kIndigo,
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              Text(
-                '₹$currentPriceString',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    const Icon(Icons.person_outline,
-                        color: Colors.white, size: 18),
-                    const SizedBox(width: 4),
-                    const Text('IN/2G', style: TextStyle(color: Colors.white)),
-                    const SizedBox(width: 12),
-                    Text(
-                      bookingType,
-                      style: const TextStyle(color: Colors.white),
+      // M8 — sticky bottom book bar
+      final perNight = currentPrice.toStringAsFixed(0);
+      final nights = totalDays == 1 ? '1 night' : '$totalDays nights';
+      return Container(
+        decoration: const BoxDecoration(
+          color: kCream,
+          border: Border(top: BorderSide(color: kLine, width: 1)),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x141B2447),
+              blurRadius: 16,
+              offset: Offset(0, -4),
+            ),
+          ],
+        ),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          14,
+          16,
+          14 + MediaQuery.of(context).padding.bottom,
+        ),
+        child: Row(
+          children: [
+            // Left — price + total
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RichText(
+                    overflow: TextOverflow.ellipsis,
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '₹$perNight',
+                          style: fraunces(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: kInk,
+                            height: 1.0,
+                          ),
+                        ),
+                        TextSpan(
+                          text: ' /night',
+                          style: inter(
+                            fontSize: 13,
+                            color: kMuted,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
+                  const SizedBox(height: 2),
+                  // POC adds a subtle underline on the total amount only.
+                  RichText(
+                    overflow: TextOverflow.ellipsis,
+                    text: TextSpan(
+                      style: inter(fontSize: 12, color: kMuted),
+                      children: [
+                        TextSpan(
+                          text: '₹$currentPriceString total',
+                          style: inter(
+                            fontSize: 12,
+                            color: kMuted,
+                          ).copyWith(decoration: TextDecoration.underline),
+                        ),
+                        TextSpan(text: ' · $nights'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Right — clay Reserve button
+            ElevatedButton(
+              onPressed: _toggleExpanded,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kClay,
+                foregroundColor: kCream,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                textStyle: inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              CircleAvatar(
-                backgroundColor: Colors.white.withOpacity(0.2),
-                child: const Icon(Icons.arrow_forward, color: Colors.white),
-              ),
-            ],
-          ),
+              child: const Text('Reserve'),
+            ),
+          ],
         ),
       );
     }
@@ -281,9 +359,9 @@ class _PropertyPageState extends State<PropertyPage>
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: const Color(0xFFFFEEBA)),
                   ),
-                  child: Row(
+                  child: const Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
-                    children: const [
+                    children: [
                       Icon(Icons.info_outline, color: Color(0xFF856404)),
                       SizedBox(width: 8),
                       Expanded(
@@ -495,8 +573,8 @@ class _PropertyPageState extends State<PropertyPage>
                                 final basePrice =
                                     double.parse(currentPriceString);
                                 // Dynamic GST calculation based on price
-                                // Below ₹7500 => 5%, ₹7500 and above => 12%
-                                final gstRate = basePrice < 7500 ? 0.05 : 0.12;
+                                // ≤₹7500 => 5%, >₹7500 => 18% (matches backend tariff GST)
+                                final gstRate = basePrice <= 7500 ? 0.05 : 0.18;
                                 final gstAmount = basePrice * gstRate;
                                 const platformFee = 10.0; // ₹10 platform fee
                                 final finalPrice =
@@ -534,8 +612,8 @@ class _PropertyPageState extends State<PropertyPage>
                           builder: (context) {
                             final basePrice = double.parse(currentPriceString);
                             // Dynamic GST calculation based on price
-                            // Below ₹7500 => 5%, ₹7500 and above => 12%
-                            final gstRate = basePrice < 7500 ? 0.05 : 0.12;
+                            // Below ₹7500 => 5%, >₹7500 => 18% (matches backend tariff GST)
+                            final gstRate = basePrice <= 7500 ? 0.05 : 0.18;
                             final gstAmount = basePrice * gstRate;
                             const platformFee = 10.0; // ₹10 platform fee
                             final finalPrice =
@@ -760,8 +838,8 @@ class _PropertyPageState extends State<PropertyPage>
                   ],
                 )
               else
-                Row(
-                  children: const [
+                const Row(
+                  children: [
                     Icon(Icons.lock_outline, color: kIndigo),
                     SizedBox(width: 8),
                     Expanded(
@@ -795,6 +873,42 @@ class _PropertyPageState extends State<PropertyPage>
                 ),
 
               const SizedBox(height: 10),
+              if (hasDeal)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: kCream,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: kSuccess),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.local_offer, size: 18, color: kSuccess),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Negotiated deal applied${widget.dealPercent != null ? " — ${widget.dealPercent}% off" : ""}',
+                              style: const TextStyle(
+                                  color: kInk,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700),
+                            ),
+                            Text(
+                              'Code ${widget.dealCode} · dates pre-filled · discount applied at checkout',
+                              style: const TextStyle(
+                                  color: kMuted, fontSize: 11.5),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () async {
@@ -809,8 +923,8 @@ class _PropertyPageState extends State<PropertyPage>
                         : "";
                     // Compute totals
                     final basePrice = double.parse(currentPriceString);
-                    // Below ₹7500 => 5%, ₹7500 and above => 12%
-                    final gstRate = basePrice < 7500 ? 0.05 : 0.12;
+                    // Below ₹7500 => 5%, >₹7500 => 18% (matches backend tariff GST)
+                    final gstRate = basePrice <= 7500 ? 0.05 : 0.18;
                     final gstAmount = basePrice * gstRate;
                     const platformFee = 10.0;
                     double finalAmount = basePrice + gstAmount + platformFee;
@@ -845,6 +959,34 @@ class _PropertyPageState extends State<PropertyPage>
                       "totalAmount": finalAmount,
                       "advanceAmount": advanceAmount,
                     };
+                    // Negotiated deal: send the room subtotal (pre-GST) + the
+                    // coupon code so the backend applies the discount and adds
+                    // GST cleanly (exactly like web), and consumes the one-time
+                    // coupon. Only overrides the deal path — normal bookings are
+                    // untouched.
+                    if (hasDeal) {
+                      bookingData["price"] = basePrice;
+                      bookingData["couponCode"] = widget.dealCode!;
+                    }
+                    // KYC gate — renters are verified at registration; this
+                    // catches anyone who skipped. An unverified guest must
+                    // complete DIDIT before booking, then returns here to retry.
+                    if (authController.userData.value?.isKycVerified != true) {
+                      final verified = await Get.toNamed('/kyc', arguments: {
+                        'context': 'renter_kyc',
+                        'isHost': false,
+                        'returnResult': true,
+                      });
+                      if (verified != true &&
+                          authController.userData.value?.isKycVerified != true) {
+                        bookingController.showSnackbar(
+                          'Verification required',
+                          'Please verify your identity to continue booking.',
+                          true,
+                        );
+                        return;
+                      }
+                    }
                     final bookingResponse =
                         await bookingController.createBooking(bookingData);
                     if (!isCod) {
@@ -858,11 +1000,14 @@ class _PropertyPageState extends State<PropertyPage>
                         );
                         return;
                       }
+                      // Razorpay prefill accepts empty strings — defensive
+                      // fallback for dev-skip / session-expired flows.
                       final contact =
-                          authController.userData.value!.phoneNumber;
-                      final email = authController.userData.value!.email;
+                          authController.userData.value?.phoneNumber ?? '';
+                      final email =
+                          authController.userData.value?.email ?? '';
                       final options = {
-                        "key": "rzp_test_XUTODhUdMAshi6",
+                        "key": PaymentConfig.razorpayKey,
                         // Charge either 100% (normal) or 10% (prebooking)
                         "amount": (amountToChargeNow * 100).toInt(),
                         "name": "Aajoo",
@@ -910,11 +1055,27 @@ class _PropertyPageState extends State<PropertyPage>
                   onPressed: () async {
                     final AuthController authController =
                         Get.find<AuthController>();
-                    final token =
-                        await FlutterSecureStorage().read(key: "user_token");
+                    final token = await const FlutterSecureStorage()
+                        .read(key: "user_token");
                     if (token == null) {
                       Fluttertoast.showToast(
                         msg: "Please login to negotiate price",
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.BOTTOM,
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                      );
+                      return;
+                    }
+                    // Guard against null userData (e.g. dev-skip flow) —
+                    // negotiation requires a real user id; surface a friendly
+                    // toast instead of crashing with a null check.
+                    final currentUserId =
+                        authController.userData.value?.userId;
+                    if (currentUserId == null) {
+                      Fluttertoast.showToast(
+                        msg:
+                            "Please login with a real account to negotiate price",
                         toastLength: Toast.LENGTH_SHORT,
                         gravity: ToastGravity.BOTTOM,
                         backgroundColor: Colors.red,
@@ -926,16 +1087,14 @@ class _PropertyPageState extends State<PropertyPage>
                       context,
                       CupertinoPageRoute(
                         builder: (context) => PriceNegotiationPage(
-                          userId:
-                              authController.userData.value!.userId.toString(),
+                          userId: currentUserId.toString(),
                           propertyId: widget.id.toString(),
                           serverUrl: Apiconstants
-                              .serverUrl, //"https://api.aajoohomes.com",
+                              .serverUrl, //"https://aajaodev.onrender.com",
                           receiverId: widget.property.propertyHostId.toString(),
                           token: token,
                           lat: widget.lat,
-                          senderId:
-                              authController.userData.value!.userId.toString(),
+                          senderId: currentUserId.toString(),
                           long: widget.long,
                           property: widget.property,
                           hostId: widget.property.propertyHostId.toString(),
@@ -960,47 +1119,6 @@ class _PropertyPageState extends State<PropertyPage>
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildCategories() {
-    // Prefer categories from single property API, otherwise fall back to list item
-    final List<String> catTitles = _single?.categories != null
-        ? _single!.categories!
-            .map((e) => e is Map
-                ? (e['cat_title']?.toString() ?? e.toString())
-                : e.toString())
-            .toList()
-        : [
-            ...widget.property.categoryTitles,
-            ...?widget.property.categories,
-          ];
-
-    if (catTitles.isEmpty) return const SizedBox.shrink();
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: catTitles.map((c) {
-          return Container(
-            margin: const EdgeInsets.only(right: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.blueGrey.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.blueGrey.withOpacity(0.3)),
-            ),
-            child: Text(
-              c,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-          );
-        }).toList(),
       ),
     );
   }
@@ -1042,42 +1160,6 @@ class _PropertyPageState extends State<PropertyPage>
     );
   }
 
-  Widget _buildPriceChip(double price) {
-    final bool isSelected = double.parse(currentPriceString) == price;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          currentPriceString = price.toStringAsFixed(0);
-          currentPrice = price /
-              (bookingType == 'Weekly'
-                  ? 7 * (totalDays / 7).ceil()
-                  : bookingType == 'Monthly'
-                      ? 30 * (totalDays / 30).ceil()
-                      : totalDays);
-          _priceController.text = currentPriceString;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? kIndigo : Colors.grey[100],
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? kIndigo : Colors.grey[300]!,
-            width: 1,
-          ),
-        ),
-        child: Text(
-          '₹$price',
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.black87,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   void dispose() {
     _animationController.dispose();
@@ -1096,14 +1178,31 @@ class _PropertyPageState extends State<PropertyPage>
             slivers: [
               SliverAppBar(
                 expandedHeight: 400,
+                automaticallyImplyLeading: false,
+                backgroundColor: kCream,
                 flexibleSpace: FlexibleSpaceBar(
-                  background: _higlightedPropertyImageHeaderSection(theme),
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      _higlightedPropertyImageHeaderSection(theme),
+                      // M6-01 — floating header overlay
+                      Positioned(
+                        top: MediaQuery.of(context).padding.top + 12,
+                        left: 16,
+                        right: 16,
+                        child: Row(
+                          children: [
+                            backFromScreen(context),
+                            const Spacer(),
+                            sharePropertyIcon(),
+                            const SizedBox(width: 8),
+                            savedIcon(context, theme),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                leading: backFromScreen(context),
-                actions: [
-                  sharePropertyIcon(),
-                  savedIcon(context, theme),
-                ],
               ),
               SliverToBoxAdapter(
                 child: Padding(
@@ -1111,85 +1210,64 @@ class _PropertyPageState extends State<PropertyPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // M6-02 — title (em-dash splits into italic subtitle)
+                      _buildPropertyTitle(widget.name),
+                      const SizedBox(height: 10),
+                      // Location row
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            widget.name,
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 35,
-                            ),
+                          const Icon(
+                            Icons.location_on_outlined,
+                            size: 18,
+                            color: kMuted,
                           ),
-                          IconButton(
-                            onPressed: () async {
-                              final bookmarkService = BookmarkService();
-                              try {
-                                if (_isBookmarked) {
-                                  await bookmarkService.removeBookmark(
-                                      widget.property.propertyId);
-                                  _showBookmarkSnackBar(
-                                      context: context,
-                                      theme: theme,
-                                      message:
-                                          '${widget.name} removed from bookmarks',
-                                      isAdded: false);
-                                } else {
-                                  await bookmarkService
-                                      .addBookmark(widget.property);
-                                  _showBookmarkSnackBar(
-                                      context: context,
-                                      theme: theme,
-                                      message:
-                                          '${widget.name} added to bookmarks',
-                                      isAdded: true);
-                                }
-
-                                // Update state only after success
-                                setState(() {
-                                  _isBookmarked = !_isBookmarked;
-                                });
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(e.toString()),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            },
-                            icon: Icon(
-                              _isBookmarked
-                                  ? Icons.bookmark
-                                  : Icons.bookmark_border,
-                              color: _isBookmarked
-                                  ? theme.primaryColor
-                                  : Colors.grey[400],
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              widget.location,
+                              style: inter(
+                                fontSize: 13,
+                                color: kMuted,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width,
-                        child: Wrap(
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              size: 20,
-                              color: Colors.deepOrangeAccent,
+                      const SizedBox(height: 14),
+                      // M6-02 — meta row: VerifiedPill + inline rating
+                      // (POC has no pill chrome around the rating — plain
+                      // "★ 4.92 · 164 reviews" sits beside the verified pill).
+                      Row(
+                        children: [
+                          const VerifiedPill(),
+                          const SizedBox(width: 12),
+                          const Icon(Icons.star, size: 14, color: kClay),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${widget.rating} · 164',
+                            style: inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: kInk,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              widget.location,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
+                      const SizedBox(height: 18),
+                      // M7-01 — host card under the meta row
+                      const HostCard(hostName: 'Aajoo Host'),
+                      const SizedBox(height: 16),
+                      // M7-02 — amenity preview row. Show REAL amenities only;
+                      // no fake defaults (the full Amenities section is below).
+                      if (widget.property.amenities != null &&
+                          widget.property.amenities!.isNotEmpty) ...[
+                        AmenityRow(
+                          amenities:
+                              widget.property.amenities!.take(4).toList(),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                      const Divider(color: kLine, height: 1),
                       const SizedBox(height: 16),
                       Text(
                         "Property Description",
@@ -1372,16 +1450,19 @@ class _PropertyPageState extends State<PropertyPage>
             ],
           ),
           Positioned(
-            bottom: 16,
-            left: 16,
-            right: 16,
+            // M8 — sticky book bar is flush to the bottom edge; expanded
+            // booking sheet still grows upward from here.
+            bottom: 0,
+            left: 0,
+            right: 0,
             child: Obx(() {
               if (bookingController.isLoading.value) {
-                return FloatingActionButton(
-                  onPressed: () {},
+                return Container(
+                  color: kCream,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
                   child: const Center(
                     child: CircularProgressIndicator(
-                      color: kcontentColor,
+                      color: kIndigo,
                     ),
                   ),
                 );
@@ -1406,16 +1487,90 @@ class _PropertyPageState extends State<PropertyPage>
     );
   }
 
-  IconButton backFromScreen(BuildContext context) {
-    return IconButton(
-      onPressed: () => Navigator.pop(context),
-      icon: const Icon(Icons.arrow_back_ios_new),
-      style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
+  // M6-01 — floating 40×40 cream-90% circle button used in the header overlay.
+  Widget _floatingHeaderButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    Color? iconColor,
+    String? tooltip,
+  }) {
+    final btn = Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: kCream.withOpacity(0.92),
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: kInk.withOpacity(0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          customBorder: const CircleBorder(),
+          child: Icon(icon, size: 20, color: iconColor ?? kInk),
+        ),
+      ),
+    );
+    if (tooltip != null) return Tooltip(message: tooltip, child: btn);
+    return btn;
+  }
+
+  // M6-02 — Fraunces title with em-dash subtitle split (italic em).
+  Widget _buildPropertyTitle(String name) {
+    final emDashIdx = name.indexOf('—');
+    final hyphenIdx = emDashIdx == -1 ? name.indexOf(' - ') : -1;
+    final splitIdx = emDashIdx != -1 ? emDashIdx : hyphenIdx;
+    final headStyle = fraunces(
+      fontSize: 30,
+      fontWeight: FontWeight.w500,
+      color: kInk,
+      height: 1.15,
+    );
+    if (splitIdx == -1) {
+      return Text(name, style: headStyle);
+    }
+    final head = name.substring(0, splitIdx).trim();
+    final tail = name
+        .substring(emDashIdx != -1 ? splitIdx + 1 : splitIdx + 3)
+        .trim();
+    return RichText(
+      text: TextSpan(
+        style: headStyle,
+        children: [
+          TextSpan(text: head),
+          TextSpan(
+            text: '  —  $tail',
+            style: fraunces(
+              fontSize: 30,
+              fontWeight: FontWeight.w400,
+              color: kInk2,
+              fontStyle: FontStyle.italic,
+              height: 1.15,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  IconButton sharePropertyIcon() {
-    return IconButton(
+  Widget backFromScreen(BuildContext context) {
+    return _floatingHeaderButton(
+      icon: Icons.arrow_back_ios_new,
+      onPressed: () => Navigator.pop(context),
+      tooltip: 'Back',
+    );
+  }
+
+  Widget sharePropertyIcon() {
+    return _floatingHeaderButton(
+      icon: Icons.ios_share,
+      tooltip: 'Share',
       onPressed: () {
         final shareText = '''
 Check out this amazing property on Aajoo!
@@ -1431,8 +1586,6 @@ Book now: https://aajoo.com/property/${widget.id}
           subject: 'Check out ${widget.name} on Aajoo!',
         );
       },
-      icon: const Icon(Icons.share),
-      style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
     );
   }
 
@@ -1552,48 +1705,45 @@ Book now: https://aajoo.com/property/${widget.id}
     );
   }
 
-  IconButton savedIcon(BuildContext context, ThemeData theme) {
-    return IconButton(
+  Widget savedIcon(BuildContext context, ThemeData theme) {
+    return _floatingHeaderButton(
+      icon: _isBookmarked ? Icons.favorite : Icons.favorite_outline,
+      iconColor: _isBookmarked ? kClay : kInk,
+      tooltip: _isBookmarked ? 'Remove bookmark' : 'Save',
       onPressed: () async {
         final bookmarkService = BookmarkService();
+        final wasBookmarked = _isBookmarked;
 
-        try {
-          if (_isBookmarked) {
-            await bookmarkService.removeBookmark(widget.property.propertyId);
-            _showBookmarkSnackBar(
-                context: context,
-                theme: theme,
-                message: '${widget.name} removed from bookmarks',
-                isAdded: false);
-          } else {
-            await bookmarkService.addBookmark(widget.property);
-            _showBookmarkSnackBar(
-                context: context,
-                theme: theme,
-                message: '${widget.name} added to bookmarks',
-                isAdded: true);
+        // Optimistic UI flip so the heart feels instant — revert on failure.
+        setState(() => _isBookmarked = !wasBookmarked);
+
+        final ok = await bookmarkService.toggleBookmark(widget.property);
+
+        if (!ok) {
+          // Server rejected → revert and tell the user.
+          if (mounted) setState(() => _isBookmarked = wasBookmarked);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Could not update bookmark. Please try again.'),
+                backgroundColor: Colors.red,
+              ),
+            );
           }
+          return;
+        }
 
-          // Update state only after success
-          setState(() {
-            _isBookmarked = !_isBookmarked;
-          });
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: Colors.red,
-            ),
+        if (context.mounted) {
+          _showBookmarkSnackBar(
+            context: context,
+            theme: theme,
+            message: wasBookmarked
+                ? '${widget.name} removed from bookmarks'
+                : '${widget.name} added to bookmarks',
+            isAdded: !wasBookmarked,
           );
         }
       },
-      icon: Icon(
-        _isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-        color: _isBookmarked ? theme.primaryColor : Colors.grey[400],
-      ),
-      style: IconButton.styleFrom(
-        backgroundColor: Colors.white,
-      ),
     );
   }
 
@@ -2194,9 +2344,8 @@ Book now: https://aajoo.com/property/${widget.id}
     );
     if (result) {
       Fluttertoast.showToast(msg: "Payment Successful: ${response.paymentId}");
-      final bookingId = bookingController.bookingResponse.value == null
-          ? null
-          : bookingController.bookingResponse.value!.data.booking.bookId;
+      final bookingId =
+          bookingController.bookingResponse.value?.data.booking.bookId;
       successDialog(response.paymentId!, bookingId.toString());
       final userController = Get.find<UserController>();
       userController.fetchOngoingBookings();

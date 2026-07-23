@@ -1,24 +1,36 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:iconsax/iconsax.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/controller/common_controller.dart';
+import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/ui/screens_renter/home/map/map_controller.dart';
 import 'package:rent_home/ui/screens_common/notifications/notication_controller.dart';
 import 'package:rent_home/controller/search_controller.dart';
 import 'package:rent_home/controller/user_controller.dart';
+import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/ui/screens_renter/home/components/branded_header.dart';
+import 'package:rent_home/ui/screens_renter/home/components/curated_card.dart';
+import 'package:rent_home/ui/screens_renter/home/components/curated_grid_shimmer.dart';
+import 'package:rent_home/ui/screens_renter/home/components/lux_toggle_button.dart';
 import 'package:rent_home/ui/screens_renter/home/components/filter_dialog_content.dart';
+import 'package:rent_home/ui/screens_renter/home/components/search_pill.dart';
+import 'package:rent_home/ui/screens_renter/home/components/search_sheet.dart';
+import 'package:rent_home/ui/screens_renter/home/components/section_header.dart';
+import 'package:rent_home/ui/screens_renter/home/components/text_category_pills.dart';
+import 'package:rent_home/ui/screens_renter/home/components/weekly_hero_card.dart';
+import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';
 import 'package:rent_home/ui/screens_renter/home/map/map_screen.dart';
 import 'package:rent_home/ui/screens_renter/home/ongoing_widget.dart';
 import 'package:rent_home/ui/screens_renter/nearby_bookings/pre_booking_screen.dart';
+import 'package:rent_home/ui/screens_renter/bookmark_properties/bookmark_properties_page.dart';
 import 'package:rent_home/ui/screens_common/notifications/notification_screen.dart';
 import 'package:rent_home/service/notification_service.dart';
 import 'package:rent_home/ui/screens_renter/home/components/custom_drawer.dart';
+import 'package:rent_home/ui/screens_renter/home/components/negotiated_deal_banner.dart';
+import 'package:rent_home/controller/deals_controller.dart';
 import 'package:rent_home/ui/screens_renter/home/pre_booking_home_carousel/prebooking_home_carousel.dart';
-import 'package:rent_home/widgets/slanted_container.dart';
 // Removed unused imports
 
 class Homescreen extends StatefulWidget {
@@ -30,6 +42,8 @@ class Homescreen extends StatefulWidget {
 
 class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
   int _selectedHotelIndex = -1;
+  // M4 — text category pills selection. V1 is purely visual.
+  int _propertyType = 0;
   late AnimationController _animationController;
   late Timer _timer;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -52,10 +66,16 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
     4: "Single",
   };
   final notificationController = Get.put(NotificationController());
+  final dealsController = Get.put(DealsController());
+  // Cached AuthController lookup so we can gate the API avalanche below on
+  // "is there actually a real logged-in user?". For dev-skip users (no
+  // userData), the user-scoped calls are skipped entirely — they'd all 401
+  // or 404 and just stall the UI on Dio's default timeout.
+  final _authController = Get.find<AuthController>();
+
   @override
   void initState() {
     super.initState();
-    notificationController.getNotificationData();
 
     _animationController = AnimationController(
       vsync: this,
@@ -65,11 +85,20 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
     _timer = Timer.periodic(const Duration(seconds: 15), (timer) {
       _playAnimation();
     });
-    NotificationService().init();
-    userController.fetchOngoingBookings();
-    userController.getUserReviews();
-    searchController.getPreBooking();
+
+    // Categories are public (used by the filter dialog + map) — always fetch.
     commonController.fetchCategories();
+
+    // User-scoped boot-up calls — only fire if we have a real user.
+    final hasRealUser = _authController.userData.value != null;
+    if (hasRealUser) {
+      notificationController.getNotificationData();
+      NotificationService().init();
+      userController.fetchOngoingBookings();
+      userController.getUserReviews();
+      searchController.getPreBooking();
+      dealsController.load();
+    }
   }
 
   void _showLuxuryModeDialog(
@@ -117,11 +146,9 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final size = MediaQuery.of(context).size;
-
     return Scaffold(
       key: _scaffoldKey,
-      appBar: _renterHomeAppBar(theme, context),
+      // POC mobile: no opaque AppBar — the branded header floats over the map.
       drawer: CustomDrawer(),
       body: SafeArea(
         child: Stack(
@@ -129,17 +156,55 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
             const Positioned.fill(
               child: MapScreen(),
             ),
-            // Top Bar
-            Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Obx(() => userController.isLoading.value ||
-                        userController.ongoingBookings.value == null
-                    ? const SizedBox.shrink()
-                    : OngoingBookingWidget(
-                        userController: userController,
-                      )),
-              ],
+
+            // ── Branded header + search pill (top, floating) ──
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    BrandedHeader(
+                      onMenuTap: () =>
+                          _scaffoldKey.currentState?.openDrawer(),
+                      onWishlistTap: () => Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                          builder: (_) => const BookmarkedPropertiesPage(),
+                        ),
+                      ),
+                      onProfileTap: () => Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                          builder: (_) => const NotificationsScreen(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SearchPill(
+                      location: 'Goa',
+                      details: 'Any week · 1 guest',
+                      // Airbnb-style search modal (Where / When / Who +
+                      // suggested destinations + advanced filters).
+                      onTap: () => showSearchSheet(context),
+                    ),
+                    const SizedBox(height: 8),
+                    Obx(() => userController.isLoading.value ||
+                            userController.ongoingBookings.value == null
+                        ? const SizedBox.shrink()
+                        : OngoingBookingWidget(
+                            userController: userController,
+                          )),
+                    // Negotiated-deal banner (24h coupon from an accepted offer)
+                    // — one tap opens the sanctioned property, dates + coupon
+                    // pre-filled. Hidden when there are no active deals.
+                    const NegotiatedDealBanner(),
+                  ],
+                ),
+              ),
             ),
 
             DraggableScrollableSheet(
@@ -185,8 +250,102 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                             ),
                           ),
 
+                          /// 🔹 M3 — Weekly hero card
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: WeeklyHeroCard(),
+                          ),
+
                           /// 🔹 Near by button
                           fetchNearByProperties(theme),
+
+                          const SizedBox(height: 16),
+
+                          /// 🔹 M4 — Text category pills
+                          TextCategoryPills(
+                            selectedIndex: _propertyType,
+                            onChanged: (i) =>
+                                setState(() => _propertyType = i),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          /// 🔹 M5 — Curated for you (2-col grid)
+                          Obx(() {
+                            if (mapController.isLoading.value) {
+                              return const CuratedGridShimmer();
+                            }
+                            final items = mapController.properties
+                                .take(4)
+                                .toList();
+                            if (items.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SectionHeader(
+                                  title: 'Curated for you',
+                                  onSeeAll: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const PreBookingScreen(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 12),
+                                GridView.builder(
+                                  shrinkWrap: true,
+                                  physics:
+                                      const NeverScrollableScrollPhysics(),
+                                  itemCount: items.length,
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                    childAspectRatio: 0.72,
+                                  ),
+                                  itemBuilder: (context, i) {
+                                    final p = items[i];
+                                    return CuratedCard(
+                                      property: p,
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => PropertyPage(
+                                              property: p,
+                                              price: p.propertyPrice,
+                                              name: p.propertyName,
+                                              location: p.propertyAddress,
+                                              image: p.coverImage ?? '',
+                                              id: p.propertyId,
+                                              rating: '4.5',
+                                              description: p.propertyDesc,
+                                              lat: p.propertyLatitude,
+                                              long: p.propertyLongitude,
+                                              galleryImages: p.images
+                                                  .map((e) => e.toString())
+                                                  .toList(),
+                                              inTime: p
+                                                  .propDetailsPropDetailInTime,
+                                              outTime: p
+                                                  .propDetailsPropDetailOutTime,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 24),
+                              ],
+                            );
+                          }),
 
                           /// 🔹 Find Your Stay
                           Obx(() {
@@ -198,9 +357,10 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                               children: [
                                 Text(
                                   "Find Your Stay",
-                                  style:
-                                      theme.textTheme.headlineSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
+                                  style: fraunces(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: kInk,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
@@ -219,9 +379,10 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                           /// Browse by Category
                           Text(
                             "Browse by Category",
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
+                            style: fraunces(
                               fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: kInk,
                             ),
                           ),
 
@@ -252,36 +413,65 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
 
                           const SizedBox(height: 30),
 
-                          /// 🔹 Action Buttons
+                          /// 🔹 Action Buttons — Pre-Booking + animated LUX
                           Row(
                             children: [
                               Expanded(
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: theme.primaryColor,
-                                    foregroundColor: kCream,
-                                    minimumSize:
-                                        const Size(double.infinity, 45),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(14),
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const PreBookingScreen(),
+                                        ),
+                                      );
+                                    },
+                                    child: Container(
+                                      height: 48,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [kIndigo600, kIndigo],
+                                        ),
+                                        borderRadius: BorderRadius.circular(14),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: kIndigo.withOpacity(0.28),
+                                            blurRadius: 14,
+                                            offset: const Offset(0, 6),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(Icons.event_available,
+                                              color: kCream, size: 19),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Pre-Booking',
+                                            style: inter(
+                                              fontSize: 15.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: kCream,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const PreBookingScreen(),
-                                      ),
-                                    );
-                                  },
-                                  child: const Text("Pre Booking",
-                                      style: TextStyle(
-                                          fontSize: 18, color: kCream)),
                                 ),
                               ),
-                              const SizedBox(width: 10),
-                              InkWell(
+                              const SizedBox(width: 12),
+                              LuxToggleButton(
+                                isLuxury: isLuxury,
                                 onTap: () {
                                   _showLuxuryModeDialog(
                                     context,
@@ -296,36 +486,6 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                                     },
                                   );
                                 },
-                                child: Container(
-                                  height: 45,
-                                  width: 100,
-                                  decoration: BoxDecoration(
-                                    color: isLuxury
-                                        ? theme.primaryColor.withOpacity(0.8)
-                                        : theme.primaryColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      Image.asset(
-                                        "assets/diamond .png",
-                                        height: 30,
-                                      ),
-                                      Text(
-                                        isLuxury ? "NOR" : "LUX",
-                                        style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          color: isLuxury
-                                              ? Colors.white
-                                              : theme.primaryColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
                               ),
                             ],
                           ),
@@ -386,122 +546,6 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
     );
   }
 
-  AppBar _renterHomeAppBar(ThemeData theme, BuildContext context) {
-    return AppBar(
-      toolbarHeight: 80,
-      backgroundColor: theme.canvasColor,
-      leading: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: InkWell(
-          onTap: () {
-            _scaffoldKey.currentState?.openDrawer();
-          },
-          child: Container(
-            height: 40,
-            width: 40,
-            decoration: BoxDecoration(
-              color: theme.canvasColor,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.menu,
-                color: Colors.black,
-              ),
-            ),
-          ),
-        ),
-      ),
-      centerTitle: true,
-      title: const SlantedContainerWithFilterIcon(),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                CupertinoPageRoute(
-                  builder: (BuildContext context) => NotificationsScreen(),
-                ),
-              );
-            },
-            child: Container(
-              height: 40,
-              width: 40,
-              decoration: BoxDecoration(
-                color: theme.canvasColor,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Center(
-                child: Obx(
-                  () => Badge(
-                    label: notificationController.notificationCount.value > 0
-                        ? Text(
-                            notificationController.notificationCount.value
-                                .toString(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                            ),
-                          )
-                        : null,
-                    child: const Icon(
-                      Iconsax.notification4,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        InkWell(
-          onTap: () {
-            showFilterDialog(
-              context: context,
-              onApply: (int selectedCategory, double selectedRadius,
-                  double? weeklyPrice, double? monthlyPrice) async {
-                // radius: send empty string by default; if user picked, send value
-                final radiusStr = (selectedRadius > 0)
-                    ? selectedRadius.round().toString()
-                    : "";
-
-                await mapController.fetchProperties(
-                  category: selectedCategory,
-                  radius: radiusStr,
-                );
-
-                // Frontend-only price filtering: weekly as min, monthly as max
-                mapController.applyPriceFilter(
-                  minPrice: weeklyPrice,
-                  maxPrice: monthlyPrice,
-                );
-              },
-            );
-          },
-          child: Container(
-            height: 50,
-            width: 50,
-            decoration: BoxDecoration(
-              color: theme.canvasColor,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8.0),
-              child: Center(
-                child: Icon(
-                  Iconsax.filter_add4,
-                  color: Colors.black,
-                  size: 25,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget buildReviewList() {
     return Obx(
       () => userController.isLoading.value
@@ -514,21 +558,39 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                   children: [
                     Image.asset(
                       "assets/noreview.png",
-                      height: 300,
+                      height: 200,
                       width: double.infinity,
                     ),
-                    const Text("No Reviews Yet"),
+                    const SizedBox(height: 4),
+                    Text(
+                      "No reviews yet",
+                      style: fraunces(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: kInk,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Guest reviews will appear here",
+                      style: inter(fontSize: 12.5, color: kMuted),
+                    ),
                   ],
                 )
               : Column(
                   children: [
-                    const Text(
-                      "Host Reviews",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        "Host Reviews",
+                        style: fraunces(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: kInk,
+                        ),
                       ),
                     ),
+                    const SizedBox(height: 8),
                     ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -544,33 +606,49 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
 
                         return Container(
                           decoration: BoxDecoration(
-                            color: kCream,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: kLine),
+                            color: kSurface,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: kCardShadow,
                           ),
-                          margin: const EdgeInsets.symmetric(
-                              vertical: 5, horizontal: 4),
+                          margin: const EdgeInsets.only(bottom: 12),
                           child: ListTile(
                             tileColor: Colors.transparent,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             title: Text(review.hruTitle,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold)),
-                            subtitle: Text(review.hruDescription),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  review.hruRating.toString(),
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.yellow[700],
-                                      fontSize: 20),
-                                ),
-                                Icon(Icons.star, color: Colors.yellow[700]),
-                              ],
+                                style: fraunces(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: kInk)),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(review.hruDescription,
+                                  style:
+                                      inter(fontSize: 12.5, color: kMuted)),
+                            ),
+                            trailing: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: kClay.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.star_rounded,
+                                      color: kClay, size: 16),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    review.hruRating.toString(),
+                                    style: inter(
+                                        fontWeight: FontWeight.w700,
+                                        color: kClay,
+                                        fontSize: 13),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         );
@@ -592,9 +670,7 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                             ),
                           ),
                           onPressed: () {
-                            // Navigate to a screen showing all reviews
-                            // Example: Get.to(() => AllReviewsScreen());
-                            print("View All Reviews Clicked");
+                            // TODO: navigate to a full reviews screen when built
                           },
                           child: const Text("View All"),
                         ),
@@ -605,8 +681,9 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
   }
 
   Widget _hotelTypeBlock(int index, String image, String type) {
-    final theme = Theme.of(context);
+    final selected = index == _selectedHotelIndex;
     return InkWell(
+      borderRadius: BorderRadius.circular(18),
       onTap: () {
         setState(() {
           if (_selectedHotelIndex == index) {
@@ -623,34 +700,35 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
       child: Column(
         children: [
           Container(
-            height: 60,
-            width: 60,
+            height: 64,
+            width: 64,
             decoration: BoxDecoration(
-              color: index == _selectedHotelIndex
-                  ? theme.primaryColor.withOpacity(0.15)
-                  : kCream,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: index == _selectedHotelIndex
-                    ? theme.primaryColor
-                    : kLine,
-                width: 1.5,
-              ),
+              color: kSurface,
+              borderRadius: BorderRadius.circular(18),
+              border: selected
+                  ? Border.all(color: kIndigo, width: 2)
+                  : null,
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: kIndigo.withOpacity(0.22),
+                        blurRadius: 12,
+                        offset: const Offset(0, 5),
+                      ),
+                    ]
+                  : kSoftShadow,
             ),
             child: Center(
-              child: Image.asset(image, height: 45, width: 45),
+              child: Image.asset(image, height: 42, width: 42),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             type,
-            style: TextStyle(
-              fontWeight: index == _selectedHotelIndex
-                  ? FontWeight.bold
-                  : FontWeight.normal,
-              color: index == _selectedHotelIndex
-                  ? theme.primaryColor
-                  : Colors.black87,
+            style: inter(
+              fontSize: 12.5,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              color: selected ? kIndigo : kInk2,
             ),
           ),
         ],
@@ -735,7 +813,7 @@ void showFilterDialog({
         content: SizedBox(
             width: MediaQuery.of(context).size.width * 0.9,
             child: FilterDialogContent(onApply: onApply)),
-        actions: [],
+        actions: const [],
       );
     },
   );
