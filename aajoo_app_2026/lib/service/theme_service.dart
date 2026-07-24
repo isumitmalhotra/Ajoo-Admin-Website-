@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/utils/fonts.dart';
 
 class ThemeService extends GetxController {
-  final FlutterSecureStorage _storage = FlutterSecureStorage();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final String _key = 'isDarkMode';
 
   // Observable variable to track the theme
   var isDarkMode = false.obs;
 
   // Constructor to initialize the theme mode
-  ThemeService() {
-    _loadTheme();
+  ThemeService({bool loadFromStorage = true}) {
+    if (loadFromStorage) {
+      _loadTheme();
+    }
   }
 
   // Load theme from secure storage
@@ -31,12 +33,12 @@ class ThemeService extends GetxController {
   }
 
   ThemeData lightTheme = ThemeData(
-    fontFamily: "Mon",
     colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF1B2447),
+      seedColor: kIndigo, // Ocean Teal — regenerates the M3 scheme around teal
     ),
     useMaterial3: true,
-    textTheme: GoogleFonts.latoTextTheme(),
+    // Poppins (display) + Manrope (body) — matches the web design system.
+    textTheme: interTextTheme(),
     primaryColor: kprimaryColor,
     scaffoldBackgroundColor: kscaffoldColor,
     cardColor: kCream,
@@ -44,22 +46,21 @@ class ThemeService extends GetxController {
   );
 
   ThemeData darkTheme = ThemeData(
-    fontFamily: "Mon",
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF1B2447),
-      brightness: Brightness.dark,
-    ),
-    useMaterial3: true,
-    textTheme: GoogleFonts.latoTextTheme(const TextTheme(
-      bodyLarge: TextStyle(color: Colors.white),
-      bodyMedium: TextStyle(color: Colors.white),
-      bodySmall: TextStyle(color: Colors.white),
-    )),
-    primaryColor: kprimaryColor,
-    scaffoldBackgroundColor: Colors.grey.shade900,
-    cardColor: Colors.grey.shade800,
-    drawerTheme: DrawerThemeData(
-      backgroundColor: Colors.grey.shade800,
-      scrimColor: Colors.white,
-    ));
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: kIndigo, // teal seed, dark brightness
+        brightness: Brightness.dark,
+      ),
+      useMaterial3: true,
+      textTheme: interTextTheme(const TextTheme(
+        bodyLarge: TextStyle(color: Colors.white),
+        bodyMedium: TextStyle(color: Colors.white),
+        bodySmall: TextStyle(color: Colors.white),
+      )),
+      primaryColor: kprimaryColor,
+      scaffoldBackgroundColor: const Color(0xFF0D1620), // deep navy
+      cardColor: const Color(0xFF152230),
+      drawerTheme: const DrawerThemeData(
+        backgroundColor: Color(0xFF152230),
+        scrimColor: Colors.black54,
+      ));
 }

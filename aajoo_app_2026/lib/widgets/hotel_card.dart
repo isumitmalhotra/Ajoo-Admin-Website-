@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:rent_home/constants.dart';
 
 class HotelCard extends StatelessWidget {
   final String imageUrl;
@@ -27,7 +26,7 @@ class HotelCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       elevation: 2,
-      shadowColor: const Color(0xFF1B2447).withOpacity(0.08),
+      shadowColor: const Color(0xFF0F172A).withOpacity(0.08),
       child: Container(
         padding: const EdgeInsets.all(8),
         width: 250,

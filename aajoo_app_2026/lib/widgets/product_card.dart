@@ -7,7 +7,7 @@ class TransactionCard extends StatelessWidget {
   final String amount;
   final bool isIncome;
 
-  TransactionCard({
+  const TransactionCard({super.key, 
     this.transactionName = "Unnamed Transaction",
     this.transactionDate = "Unknown Date",
     this.amount = "₹2,299",
@@ -20,13 +20,13 @@ class TransactionCard extends StatelessWidget {
       color: kCream,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.0),
-        side: BorderSide(color: kLine),
+        side: const BorderSide(color: kLine),
       ),
       elevation: 1,
-      shadowColor: const Color(0xFF1B2447).withOpacity(0.08),
-      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      shadowColor: const Color(0xFF0F172A).withOpacity(0.08),
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Row(
           children: [
             // Circular icon for transaction type
@@ -35,14 +35,14 @@ class TransactionCard extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: isIncome ? Colors.green[100] : Colors.red[100],
               ),
-              padding: EdgeInsets.all(10),
+              padding: const EdgeInsets.all(10),
               child: Icon(
                 isIncome ? Icons.arrow_downward : Icons.arrow_upward,
                 color: isIncome ? Colors.green : Colors.red,
                 size: 24,
               ),
             ),
-            SizedBox(width: 16),
+            const SizedBox(width: 16),
             // Transaction details
             Expanded(
               child: Column(
@@ -50,12 +50,12 @@ class TransactionCard extends StatelessWidget {
                 children: [
                   Text(
                     transactionName,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     transactionDate,
                     style: TextStyle(

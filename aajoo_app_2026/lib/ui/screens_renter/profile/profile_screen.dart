@@ -16,7 +16,7 @@ import '../../../controller/common_controller.dart';
 import '../../../data/models/update_user_model.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -162,7 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   void _showKycBottomSheet(BuildContext context) {
     XFile? selectedFile;
     final TextEditingController cardNumberController = TextEditingController();
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
     String? selectedDocType;
 
     showModalBottomSheet(
@@ -182,7 +182,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 top: 16,
               ),
               child: Form(
-                key: _formKey,
+                key: formKey,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,6 +205,35 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                       ],
                     ),
+                    // DIDIT identity status — once verified the manual upload
+                    // below is no longer required.
+                    Obx(() {
+                      final verified =
+                          authController.userData.value?.isKycVerified ?? false;
+                      if (!verified) return const SizedBox.shrink();
+                      return Container(
+                        margin: const EdgeInsets.only(top: 10),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF15803D).withOpacity(0.10),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.verified,
+                                size: 16, color: Color(0xFF15803D)),
+                            SizedBox(width: 6),
+                            Text('Identity verified',
+                                style: TextStyle(
+                                    color: Color(0xFF15803D),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13)),
+                          ],
+                        ),
+                      );
+                    }),
                     const SizedBox(height: 16),
 
                     // Document Type Dropdown
@@ -233,8 +262,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                             border: Border.all(color: Colors.red[200]!),
                           ),
                           child: Text(
-                            'Error loading document types. Please try again.',
-                            style: TextStyle(color: Colors.red[700]),
+                            'Document types unavailable',
+                            style: TextStyle(color: Colors.grey[700]),
                           ),
                         );
                       }
@@ -355,7 +384,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () async {
-                          if (_formKey.currentState!.validate() &&
+                          if (formKey.currentState!.validate() &&
                               selectedFile != null) {
                             try {
                               authController
@@ -565,8 +594,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                             color: kprimaryColor,
                             size: 24,
                           ),
-                          const SizedBox(width: 12),
-                          const Text(
+                          SizedBox(width: 12),
+                          Text(
                             'Document Information',
                             style: TextStyle(
                               fontSize: 16,
@@ -639,7 +668,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'Failed to load document',
+                                'Document preview unavailable',
                                 style: TextStyle(
                                   color: Colors.grey[600],
                                   fontSize: 16,
@@ -715,7 +744,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   void _showUpdateDocumentBottomSheet(BuildContext context) {
     XFile? selectedFile;
     final TextEditingController docNumberController = TextEditingController();
-    final _updateFormKey = GlobalKey<FormState>();
+    final updateFormKey = GlobalKey<FormState>();
     String? selectedDocTypeId; // use doc type ID as value
 
     // Ensure doc types are loaded
@@ -753,7 +782,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   top: 16,
                 ),
                 child: Form(
-                  key: _updateFormKey,
+                  key: updateFormKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
@@ -834,8 +863,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                               border: Border.all(color: Colors.red[200]!),
                             ),
                             child: Text(
-                              'Error loading document types. Please try again.',
-                              style: TextStyle(color: Colors.red[700]),
+                              'Document types unavailable',
+                              style: TextStyle(color: Colors.grey[700]),
                             ),
                           );
                         }
@@ -1008,7 +1037,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                               onPressed: authController.isLoading.value
                                   ? null
                                   : () async {
-                                      if (_updateFormKey.currentState!
+                                      if (updateFormKey.currentState!
                                               .validate() &&
                                           selectedDocTypeId != null) {
                                         if (selectedFile == null) {
@@ -1179,6 +1208,55 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
+  /// Tapping the avatar / camera badge entry point. If a photo already
+  /// exists, surface a Change / Remove / Cancel sheet so the user can drop
+  /// the picture. If there's no photo yet, jump straight into the picker.
+  Future<void> _onProfileImageTap() async {
+    final user = authController.userData.value;
+    final hasPhoto = user?.attachment != null && user!.attachment!.isNotEmpty;
+    if (!hasPhoto) {
+      await _pickAndUploadImage();
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: kCream,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined,
+                  color: kprimaryColor),
+              title: const Text('Change photo'),
+              onTap: () async {
+                Navigator.pop(sheetCtx);
+                await _pickAndUploadImage();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: kDanger),
+              title: const Text('Remove photo',
+                  style: TextStyle(color: kDanger)),
+              onTap: () async {
+                Navigator.pop(sheetCtx);
+                await _removeProfileImage();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.close, color: kMuted),
+              title: const Text('Cancel'),
+              onTap: () => Navigator.pop(sheetCtx),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _pickAndUploadImage() async {
     try {
       final picker = ImagePicker();
@@ -1195,11 +1273,42 @@ class _ProfileScreenState extends State<ProfileScreen>
       }
 
       final imageFile = File(pickedFile.path);
-      await userController.addProfileImage(imageFile);
+      final newImageUrl = await userController.addProfileImage(imageFile);
 
-      await authController.getUserDetails(); // Refresh user data
+      // Update the avatar immediately from the upload response. The Obx body
+      // rebuilds, so the new picture shows even if the /user/detail refresh
+      // below fails (e.g. for accounts the backend can't fully resolve).
+      if (newImageUrl != null && newImageUrl.isNotEmpty) {
+        final current = authController.userData.value;
+        if (current != null) {
+          authController.userData.value =
+              current.copyWith(attachment: newImageUrl);
+        }
+      }
+
+      // Best-effort refresh from server. Never log the user out if it fails —
+      // the upload already succeeded.
+      await authController.getUserDetails(skipLogoutOnError: true);
     } catch (e) {
       Get.snackbar('Error', 'Failed to upload image: $e',
+          snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  Future<void> _removeProfileImage() async {
+    try {
+      final ok = await userController.removeProfileImage();
+      if (ok) {
+        // Clear the avatar immediately, then best-effort refresh without
+        // risking a logout if /user/detail fails.
+        final current = authController.userData.value;
+        if (current != null) {
+          authController.userData.value = current.copyWith(attachment: '');
+        }
+        await authController.getUserDetails(skipLogoutOnError: true);
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to remove photo: $e',
           snackPosition: SnackPosition.BOTTOM);
     }
   }
@@ -1234,7 +1343,15 @@ class _ProfileScreenState extends State<ProfileScreen>
       body: Obx(() {
         final user = authController.userData.value;
 
-        if (user == null) return _buildShimmerLoading();
+        if (user == null) {
+          // Only show shimmer if we're actively fetching the user
+          // (i.e. a real login is in-flight). Otherwise show a clean
+          // sign-in CTA — covers dev-skip + network-drop / 401 cases.
+          if (authController.isLoading.value) {
+            return _buildShimmerLoading();
+          }
+          return _buildSignedOutState(context);
+        }
 
         return AnimationLimiter(
           child: CustomScrollView(
@@ -1263,7 +1380,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             tag: 'profile_picture',
                             child: GestureDetector(
                               onTap: () {
-                                _pickAndUploadImage();
+                                _onProfileImageTap();
                               },
                               child: Container(
                                 padding: const EdgeInsets.all(4),
@@ -1318,7 +1435,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       right: 0,
                                       child: GestureDetector(
                                         onTap: () {
-                                          _pickAndUploadImage();
+                                          _onProfileImageTap();
                                         },
                                         child: CircleAvatar(
                                           radius: 30,
@@ -1577,7 +1694,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     String label,
     TextEditingController controller, {
     TextInputType keyboardType = TextInputType.text,
-    int? maxlength = null,
+    int? maxlength,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -1622,7 +1739,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildUpdateButton() {
-    return Obx(() => Container(
+    return Obx(() => SizedBox(
           width: double.infinity,
           height: 50,
           child: ElevatedButton(
@@ -1640,12 +1757,63 @@ class _ProfileScreenState extends State<ProfileScreen>
                     'Update Profile',
                     style: TextStyle(
                       fontSize: 16,
-                      color: kCream,
+                      color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
           ),
         ));
+  }
+
+  // Friendly empty state when there's no user (signed-out or dev-skip).
+  // Tapping the CTA routes back to the auth screen so real users can sign in.
+  Widget _buildSignedOutState(BuildContext context) {
+    final theme = Theme.of(context);
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 64),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(
+              Iconsax.user,
+              size: 80,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Sign in to view your profile',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: Colors.grey[700],
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Manage bookings, KYC documents, and preferences once you’re signed in.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => Get.offAllNamed('/login'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 32, vertical: 14),
+                shape: const StadiumBorder(),
+              ),
+              child: const Text('Sign in'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildShimmerLoading() {
@@ -1656,7 +1824,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         children: [
           Container(
             height: 240,
-            color: kCream,
+            color: Colors.white,
           ),
           Padding(
             padding: const EdgeInsets.all(16),
@@ -1668,7 +1836,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   child: Container(
                     height: 60,
                     decoration: BoxDecoration(
-                      color: kCream,
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
@@ -1718,7 +1886,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       child: Material(
-        color: kCream,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: onTap,
