@@ -1368,6 +1368,26 @@ class _PropertyPageState extends State<PropertyPage>
                           ),
                         ],
                       ),
+                      // Specs row (real data from GET /properties/:id).
+                      if (_single != null &&
+                          (_single!.propDetails?.noOfGuests != null ||
+                              _single!.propDetails?.noOfBeds != null ||
+                              _single!.bathrooms != null)) ...[
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            if (_single!.propDetails?.noOfGuests != null)
+                              _SpecChip(Icons.group_outlined,
+                                  '${_single!.propDetails!.noOfGuests} Guests'),
+                            if (_single!.propDetails?.noOfBeds != null)
+                              _SpecChip(Icons.bed_outlined,
+                                  '${_single!.propDetails!.noOfBeds} ${_single!.propDetails!.noOfBeds == 1 ? "Bed" : "Beds"}'),
+                            if (_single!.bathrooms != null)
+                              _SpecChip(Icons.bathtub_outlined,
+                                  '${_single!.bathrooms} ${_single!.bathrooms == 1 ? "Bath" : "Baths"}'),
+                          ],
+                        ),
+                      ],
                       const SizedBox(height: 14),
                       // M6-02 — meta row: VerifiedPill + inline rating
                       // (POC has no pill chrome around the rating — plain
@@ -2527,5 +2547,28 @@ Book now: https://aajoo.com/property/${widget.id}
 
   void _handleExternalWallet(ExternalWalletResponse response) {
     Fluttertoast.showToast(msg: "External Wallet: ${response.walletName}");
+  }
+}
+
+/// Spec chip (guests/beds/baths) on Property Details — icon + label, equal width.
+class _SpecChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _SpecChip(this.icon, this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, size: 20, color: kIndigo600),
+          const SizedBox(height: 5),
+          Text(label,
+              textAlign: TextAlign.center,
+              style: inter(
+                  fontSize: 12, fontWeight: FontWeight.w600, color: kInk2)),
+        ],
+      ),
+    );
   }
 }
