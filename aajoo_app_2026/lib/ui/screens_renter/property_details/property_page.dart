@@ -317,7 +317,7 @@ class _PropertyPageState extends State<PropertyPage>
           border: Border(top: BorderSide(color: kLine, width: 1)),
           boxShadow: [
             BoxShadow(
-              color: Color(0x141B2447),
+              color: Color(0x140F172A),
               blurRadius: 16,
               offset: Offset(0, -4),
             ),
@@ -1387,6 +1387,34 @@ class _PropertyPageState extends State<PropertyPage>
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 16),
+                      // New-design "Aajoo Verified Home" trust card (scaffold).
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                            color: const Color(0xFFE6F5F3),
+                            borderRadius: BorderRadius.circular(14)),
+                        child: Row(children: [
+                          const Icon(Icons.verified_user_outlined,
+                              size: 24, color: kIndigo600),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Aajoo Verified Home',
+                                    style: fraunces(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: kInk)),
+                                Text('Verified for quality, safety and hygiene.',
+                                    style:
+                                        inter(fontSize: 11.5, color: kMuted)),
+                              ],
+                            ),
+                          ),
+                        ]),
                       ),
                       const SizedBox(height: 18),
                       // M7-01 — host card under the meta row
