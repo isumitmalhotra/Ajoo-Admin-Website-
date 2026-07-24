@@ -224,7 +224,7 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Color(0x0A1B2447),
+                        color: Color(0x0A0F172A),
                         blurRadius: 8,
                         offset: Offset(0, -4),
                       ),
@@ -261,11 +261,36 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
 
                           const SizedBox(height: 16),
 
-                          /// 🔹 M4 — Text category pills
+                          /// 🔹 M4 — Category circles
                           TextCategoryPills(
                             selectedIndex: _propertyType,
                             onChanged: (i) =>
                                 setState(() => _propertyType = i),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          /// 🔹 Trust bar (new design)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 14, horizontal: 6),
+                            decoration: BoxDecoration(
+                                color: kCream,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: kLine)),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: const [
+                                _TrustItem(Icons.verified_user_outlined,
+                                    'Verified\nProperties'),
+                                _TrustItem(
+                                    Icons.lock_outline, 'Secure\nPayments'),
+                                _TrustItem(
+                                    Icons.sell_outlined, 'Best Price\nGuarantee'),
+                                _TrustItem(Icons.headset_mic_outlined,
+                                    '24/7\nSupport'),
+                              ],
+                            ),
                           ),
 
                           const SizedBox(height: 16),
@@ -817,4 +842,28 @@ void showFilterDialog({
       );
     },
   );
+}
+
+/// Trust-bar item (new design) — icon + 2-line label.
+class _TrustItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _TrustItem(this.icon, this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 20, color: kIndigo600),
+        const SizedBox(height: 5),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: inter(
+              fontSize: 10.5, fontWeight: FontWeight.w600, height: 1.2, color: kInk2),
+        ),
+      ],
+    );
+  }
 }
