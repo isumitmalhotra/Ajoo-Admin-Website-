@@ -33,6 +33,7 @@ Until resolved it uses the fallback in "Interim".
 | ID | Where | What's missing | Interim | Owner |
 |----|-------|----------------|---------|-------|
 | G-1 | Onboarding / Login — "Continue with Google" | No Google/Firebase OAuth wired on mobile (BE-7 was superseded, never built). | Button routes to mobile/email login. Hide or wire Firebase later. | BE + Mobile |
+| G-2 | Property Details — specs row (guests/beds/baths/area) | `GET /properties/:id` (SinglePropertyResponse) doesn't return beds/baths/max-guests/area — the host DB has them (host add-property posts bedsNumber/bathrooms) but they're not in the renter detail payload. | Specs row omitted (not faked). Add the fields to the single-property response, then render the row. | BE |
 
 ---
 
