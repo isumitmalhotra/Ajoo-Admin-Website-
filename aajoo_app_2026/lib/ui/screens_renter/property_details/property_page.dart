@@ -1313,6 +1313,28 @@ class _PropertyPageState extends State<PropertyPage>
                           ],
                         ),
                       ),
+                      // New-design hero rating badge (bottom-left, deep teal).
+                      Positioned(
+                        left: 16,
+                        bottom: 16,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                              color: kIndigo600,
+                              borderRadius: BorderRadius.circular(10)),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            const Icon(Icons.star,
+                                size: 14, color: Colors.white),
+                            const SizedBox(width: 4),
+                            Text(widget.rating,
+                                style: inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white)),
+                          ]),
+                        ),
+                      ),
                     ],
                   ),
                 ),
