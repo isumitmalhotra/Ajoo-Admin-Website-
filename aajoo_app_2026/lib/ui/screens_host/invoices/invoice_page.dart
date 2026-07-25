@@ -1,114 +1,69 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:intl/intl.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'dart:io';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/data/models/transaction_model.dart';
+import 'package:rent_home/ui/screens_host/host_controller.dart';
 
-class InvoicePage extends StatelessWidget {
-  InvoicePage({super.key});
+/// Invoices — now wired to real host transactions (`getHostTransactions`).
+/// Each successful payment is an invoice; share / download build the PDF from
+/// the real transaction data. (Previously showed hardcoded sample invoices.)
+class InvoicePage extends StatefulWidget {
+  const InvoicePage({super.key});
 
-  // Sample list of invoices
-  final List<Map<String, dynamic>> invoices = [
-    {
-      'invoice_number': 'INV-2025-001',
-      'date': 'June 10, 2025',
-      'property_name': 'Cozy Villa Retreat',
-      'guest_name': 'John Doe',
-      'guest_email': 'john.doe@example.com',
-      'guest_phone': '+91 98765 43210',
-      'check_in': 'June 15, 2025',
-      'check_out': 'June 22, 2025',
-      'nightly_rate': 5000,
-      'weekly_rate': 30000,
-      'monthly_security': 10000,
-      'cleaning_fee': 1000,
-      'total': 36000,
-    },
-    {
-      'invoice_number': 'INV-2025-002',
-      'date': 'June 12, 2025',
-      'property_name': 'Seaside Cottage',
-      'guest_name': 'Jane Smith',
-      'guest_email': 'jane.smith@example.com',
-      'guest_phone': '+91 87654 32109',
-      'check_in': 'June 20, 2025',
-      'check_out': 'June 27, 2025',
-      'nightly_rate': 4500,
-      'weekly_rate': 28000,
-      'monthly_security': 8000,
-      'cleaning_fee': 800,
-      'total': 33600,
-    },
-    {
-      'invoice_number': 'INV-2025-003',
-      'date': 'June 15, 2025',
-      'property_name': 'Mountain Lodge',
-      'guest_name': 'Alice Brown',
-      'guest_email': 'alice.brown@example.com',
-      'guest_phone': '+91 76543 21098',
-      'check_in': 'June 25, 2025',
-      'check_out': 'July 2, 2025',
-      'nightly_rate': 6000,
-      'weekly_rate': 35000,
-      'monthly_security': 12000,
-      'cleaning_fee': 1200,
-      'total': 42200,
-    },
-  ];
+  @override
+  State<InvoicePage> createState() => _InvoicePageState();
+}
 
-  // Generate PDF for a specific invoice
-  Future<String> _generatePdf(Map<String, dynamic> invoiceData) async {
+class _InvoicePageState extends State<InvoicePage> {
+  late final HostController _hostController;
+
+  @override
+  void initState() {
+    super.initState();
+    _hostController = Get.isRegistered<HostController>()
+        ? Get.find<HostController>()
+        : Get.put(HostController());
+    _hostController.getTransactionHistory();
+  }
+
+  Future<String> _generatePdf(Transaction t) async {
     final pdf = pw.Document();
+    final date = DateFormat('MMM dd, yyyy').format(t.payAddedAt);
+    pw.Widget row(String label, String value) => pw.Padding(
+          padding: const pw.EdgeInsets.only(bottom: 4),
+          child: pw.Text('$label: $value',
+              style: const pw.TextStyle(fontSize: 14)),
+        );
 
     pdf.addPage(
       pw.Page(
         build: (pw.Context context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text(
-              'Invoice #${invoiceData['invoice_number']}',
-              style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
-            ),
+            pw.Text('Invoice #${t.payInvoice}',
+                style:
+                    pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 16),
-            pw.Text('Date: ${invoiceData['date']}',
-                style: const pw.TextStyle(fontSize: 16)),
-            pw.SizedBox(height: 16),
-            pw.Text('Property: ${invoiceData['property_name']}',
-                style: const pw.TextStyle(fontSize: 16)),
-            pw.Text('Guest: ${invoiceData['guest_name']}',
-                style: const pw.TextStyle(fontSize: 16)),
-            pw.Text('Email: ${invoiceData['guest_email']}',
-                style: const pw.TextStyle(fontSize: 16)),
-            pw.Text('Phone: ${invoiceData['guest_phone']}',
-                style: const pw.TextStyle(fontSize: 16)),
-            pw.SizedBox(height: 24),
-            pw.Text('Booking Details',
+            row('Date', date),
+            row('Property', t.paymentPropertyPropertyName),
+            row('Guest', t.userPaymentUserFullName),
+            pw.SizedBox(height: 20),
+            pw.Text('Payment',
                 style:
                     pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 8),
-            pw.Text('Check-in: ${invoiceData['check_in']}',
-                style: const pw.TextStyle(fontSize: 16)),
-            pw.Text('Check-out: ${invoiceData['check_out']}',
-                style: const pw.TextStyle(fontSize: 16)),
-            pw.SizedBox(height: 24),
-            pw.Text('Pricing',
-                style:
-                    pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-            pw.SizedBox(height: 8),
-            pw.Text('Nightly Rate: ₹${invoiceData['nightly_rate']}',
-                style: const pw.TextStyle(fontSize: 16)),
-            pw.Text('Weekly Rate: ₹${invoiceData['weekly_rate']}',
-                style: const pw.TextStyle(fontSize: 16)),
-            pw.Text('Monthly Security: ₹${invoiceData['monthly_security']}',
-                style: const pw.TextStyle(fontSize: 16)),
-            pw.Text('Cleaning Fee: ₹${invoiceData['cleaning_fee']}',
-                style: const pw.TextStyle(fontSize: 16)),
+            row('Reference', t.payRazId),
+            row('Status', t.paymentStatusBsTitle),
             pw.SizedBox(height: 16),
-            pw.Text('Total: ₹${invoiceData['total']}',
+            pw.Text('Total: ₹${t.payAmount}',
                 style:
                     pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
           ],
@@ -116,24 +71,20 @@ class InvoicePage extends StatelessWidget {
       ),
     );
 
-    // Save the PDF to a temporary file
     final directory = await getTemporaryDirectory();
-    final file =
-        File('${directory.path}/invoice_${invoiceData['invoice_number']}.pdf');
+    final file = File('${directory.path}/invoice_${t.payInvoice}.pdf');
     await file.writeAsBytes(await pdf.save());
     return file.path;
   }
 
-  // Share the PDF for a specific invoice
-  Future<void> _sharePdf(Map<String, dynamic> invoiceData) async {
-    final pdfPath = await _generatePdf(invoiceData);
+  Future<void> _sharePdf(Transaction t) async {
+    final pdfPath = await _generatePdf(t);
     await Share.shareXFiles([XFile(pdfPath)],
-        text: 'Invoice for ${invoiceData['property_name']}');
+        text: 'Invoice for ${t.paymentPropertyPropertyName}');
   }
 
-  // Download/Preview the PDF for a specific invoice
-  Future<void> _downloadPdf(Map<String, dynamic> invoiceData) async {
-    final pdfPath = await _generatePdf(invoiceData);
+  Future<void> _downloadPdf(Transaction t) async {
+    final pdfPath = await _generatePdf(t);
     await Printing.layoutPdf(
         onLayout: (format) async => File(pdfPath).readAsBytes());
   }
@@ -141,101 +92,145 @@ class InvoicePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: kscaffoldColor,
       appBar: AppBar(
         centerTitle: true,
-        title: const Text('Invoices'),
-        backgroundColor: kprimaryColor,
-        foregroundColor: kscaffoldColor,
-        elevation: 2,
-        //   leading: IconButton(
-        //     icon: const Icon(Iconsax.arrow_left_2),
-        //     onPressed: () => Get.back(),
-        //   ),
-        // ),
+        title: Text('Invoices',
+            style: fraunces(
+                fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white)),
+        backgroundColor: kIndigo,
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
-      body: invoices.isEmpty
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Iconsax.document_1, size: 48, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('No invoices available',
-                      style: TextStyle(fontSize: 18, color: Colors.grey)),
-                ],
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16.0),
-              itemCount: invoices.length,
-              itemBuilder: (context, index) {
-                final invoice = invoices[index];
-                return Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment
-                                    .start, // 👈 aligns nicely when multiline
-                                children: [
-                                  const Icon(Iconsax.document_text,
-                                      color: kprimaryColor, size: 20),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Invoice #${invoice['invoice_number']}',
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      softWrap: true, // 👈 allows wrapping
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text('Property: ${invoice['property_name']}',
-                                  style: const TextStyle(fontSize: 16)),
-                              Text('Guest: ${invoice['guest_name']}',
-                                  style: const TextStyle(fontSize: 16)),
-                              Text('Total: ₹${invoice['total']}',
-                                  style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600)),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Iconsax.share,
-                                  color: kprimaryColor, size: 24),
-                              onPressed: () => _sharePdf(invoice),
-                              tooltip: 'Share Invoice',
-                            ),
-                            IconButton(
-                              icon: const Icon(Iconsax.document_download,
-                                  color: kprimaryColor, size: 24),
-                              onPressed: () => _downloadPdf(invoice),
-                              tooltip: 'Download Invoice',
-                            ),
-                          ],
-                        ),
-                      ],
+      body: Obx(() {
+        final loading = _hostController.loading.value &&
+            _hostController.transactionHistoryResponse.value == null;
+        if (loading) {
+          return const Center(child: CircularProgressIndicator(color: kIndigo));
+        }
+        final txns = _hostController.transactionHistoryResponse.value?.data ??
+            const <Transaction>[];
+        return RefreshIndicator(
+          color: kIndigo,
+          onRefresh: () => _hostController.getTransactionHistory(),
+          child: txns.isEmpty
+              ? _empty()
+              : ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  itemCount: txns.length,
+                  itemBuilder: (context, index) => _invoiceCard(txns[index]),
+                ),
+        );
+      }),
+    );
+  }
+
+  Widget _empty() {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const SizedBox(height: 120),
+        const Icon(Iconsax.document_1, size: 60, color: kLine),
+        const SizedBox(height: 14),
+        Center(
+          child: Text('No invoices yet',
+              style: fraunces(
+                  fontSize: 18, fontWeight: FontWeight.w600, color: kInk)),
+        ),
+        const SizedBox(height: 6),
+        Center(
+          child: Text('Invoices appear here after guests pay for a stay.',
+              textAlign: TextAlign.center,
+              style: inter(fontSize: 13, color: kMuted)),
+        ),
+      ],
+    );
+  }
+
+  Widget _invoiceCard(Transaction t) {
+    final date = DateFormat('MMM dd, yyyy').format(t.payAddedAt);
+    final paid = t.paymentStatusBsTitle.toLowerCase().contains('paid') ||
+        t.paymentStatusBsTitle.toLowerCase().contains('success') ||
+        t.paymentStatusBsTitle.toLowerCase().contains('complet');
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: kLine),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Iconsax.document_text,
+                        color: kIndigo, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text('Invoice #${t.payInvoice}',
+                          style: fraunces(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: kInk)),
                     ),
-                  ),
-                );
-              },
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                          color: paid
+                              ? const Color(0xFFEAF6EE)
+                              : const Color(0xFFFFF1E6),
+                          borderRadius: BorderRadius.circular(20)),
+                      child: Text(t.paymentStatusBsTitle.trim(),
+                          style: inter(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              color: paid ? kSuccess : kClay)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(t.paymentPropertyPropertyName,
+                    style: inter(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: kInk2)),
+                Text('Guest · ${t.userPaymentUserFullName}',
+                    style: inter(fontSize: 12.5, color: kMuted)),
+                Text(date, style: inter(fontSize: 12, color: kMuted)),
+                const SizedBox(height: 6),
+                Text('₹${t.payAmount}',
+                    style: fraunces(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: kIndigo600)),
+              ],
             ),
+          ),
+          Column(
+            children: [
+              IconButton(
+                icon: const Icon(Iconsax.share, color: kIndigo, size: 22),
+                onPressed: () => _sharePdf(t),
+                tooltip: 'Share Invoice',
+              ),
+              IconButton(
+                icon: const Icon(Iconsax.document_download,
+                    color: kIndigo, size: 22),
+                onPressed: () => _downloadPdf(t),
+                tooltip: 'Download Invoice',
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
