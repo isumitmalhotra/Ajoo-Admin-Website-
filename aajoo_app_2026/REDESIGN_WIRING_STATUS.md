@@ -34,6 +34,9 @@ Legend: ✅ wired to live backend · 🟡 partial (some data mock/placeholder) �
 |---|--------|------|----------------|-------|
 | 8 | Bookings | `screens_renter/history/history_page.dart` | ✅ | Re-skinned to scaffold — teal app bar + **4 status tabs** (Upcoming/Ongoing/Completed/Cancelled) filtering the real `getUserHistory` data; BookingCard rows + refresh kept. |
 | 9 | Saved Stays | `screens_renter/bookmark_properties/bookmark_properties_page.dart` | ✅ | Re-skinned — big custom card replaced with the shared **CuratedCard** in a 2-col grid + teal app bar + new empty state. Bookmark load/remove (`BookmarkService`) + property navigation wiring unchanged. |
+| 10 | Dashboard | `screens_renter/dashboard/dashboard_screen.dart` | ✅ | Already built new-design (this session) — welcome banner, stat grid (Upcoming/Saved/Reviews/Total Spent), negotiated-deal banner, upcoming list, quick actions. Wired to UserController/DealsController/BookmarkService. |
+| 11 | Profile | `screens_renter/profile/profile_screen.dart` | 🟡 | Functional + teal (KYC status, doc upload, edit profile all wired). The working profile is a full account+KYC screen (1.9k lines); collapsing it to the scaffold's simple menu would lose KYC/edit, so kept — optional visual polish only. |
+| — | **Guest bottom-nav shell** | (new) | ⬜ | **Structural decision.** Renter app is map-first + **drawer**-based; scaffold is a 5-tab **bottom nav** (Home/Dashboard/Bookings/Saved/Profile). Building it changes the nav model. Deferred pending a call — the individual screens are all done + reachable via the drawer today. |
 
 ## Open API gaps (finish later)
 
