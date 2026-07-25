@@ -5,6 +5,9 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/widgets/app_ui.dart'
+    show AppCard, InfoRow, withDividers;
+import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/data/models/host_properties_reponse.dart';
 import 'package:rent_home/ui/screens_host/add_property/host_property_listing_screen.dart';
@@ -13,9 +16,10 @@ import 'package:rent_home/ui/screens_host/property_details/view_host_property_de
 import 'package:rent_home/ui/screens_host/update_property/update_property_page.dart';
 import 'package:rent_home/ui/screens_common/update_profile/update_profile_screen.dart';
 import 'package:shimmer/shimmer.dart';
-import '../add_property/legacy_new_property_screen.dart';
 
 class HostProfilePage extends StatefulWidget {
+  const HostProfilePage({super.key});
+
   @override
   _HostProfilePageState createState() => _HostProfilePageState();
 }
@@ -60,7 +64,7 @@ class _HostProfilePageState extends State<HostProfilePage> {
   void _showKycBottomSheet(BuildContext context) {
     XFile? selectedFile;
     final TextEditingController cardNumberController = TextEditingController();
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
 
     showModalBottomSheet(
       context: context,
@@ -79,7 +83,7 @@ class _HostProfilePageState extends State<HostProfilePage> {
                 top: 16,
               ),
               child: Form(
-                key: _formKey,
+                key: formKey,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,7 +172,7 @@ class _HostProfilePageState extends State<HostProfilePage> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          if (_formKey.currentState!.validate() &&
+                          if (formKey.currentState!.validate() &&
                               selectedFile != null) {
                             // Placeholder for upload action
                             print(
@@ -255,10 +259,43 @@ class _HostProfilePageState extends State<HostProfilePage> {
                           : const AssetImage('assets/boy.png') as ImageProvider,
                       backgroundColor: kSand,
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.camera_alt,
-                          color: Colors.blueAccent),
-                      onPressed: _pickProfileImage,
+                    Container(
+                      decoration: const BoxDecoration(
+                          color: kIndigo, shape: BoxShape.circle),
+                      child: IconButton(
+                        iconSize: 18,
+                        constraints:
+                            const BoxConstraints(minWidth: 36, minHeight: 36),
+                        padding: EdgeInsets.zero,
+                        icon: const Icon(Icons.camera_alt, color: Colors.white),
+                        onPressed: _pickProfileImage,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Name + role
+              Center(
+                child: Column(
+                  children: [
+                    Text(user?.fullName ?? 'Host',
+                        style: fraunces(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: kInk)),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                          color: const Color(0xFFE6F5F3),
+                          borderRadius: BorderRadius.circular(20)),
+                      child: Text('Host',
+                          style: inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: kIndigo600)),
                     ),
                   ],
                 ),
@@ -267,20 +304,66 @@ class _HostProfilePageState extends State<HostProfilePage> {
 
               // Basic Information section
               _buildSectionTitle("Basic Information"),
-              _buildInfoRow(
-                  "Name", authController.userData.value?.fullName ?? ""),
-              _buildInfoRow("Host Rating", "4.8 / 5"),
-              _buildInfoRow("DOB", user?.dob ?? ""),
+              const SizedBox(height: 8),
+              AppCard(
+                child: Column(
+                  children: withDividers([
+                    InfoRow(Icons.person_outline, "Name",
+                        authController.userData.value?.fullName ?? "—"),
+                    InfoRow(Icons.star_outline, "Host Rating", "4.8 / 5"),
+                    InfoRow(Icons.cake_outlined, "DOB",
+                        (user?.dob ?? "").isEmpty ? "—" : user!.dob),
+                  ]),
+                ),
+              ),
               const SizedBox(height: 20),
 
               // Contact Details section
               _buildSectionTitle("Contact Details"),
-              _buildInfoRow("Email", user?.email ?? ""),
-              _buildInfoRow("Phone", user?.phoneNumber ?? ""),
+              const SizedBox(height: 8),
+              AppCard(
+                child: Column(
+                  children: withDividers([
+                    InfoRow(Icons.email_outlined, "Email",
+                        (user?.email ?? "").isEmpty ? "—" : user!.email),
+                    InfoRow(Icons.phone_outlined, "Phone",
+                        (user?.phoneNumber ?? "").isEmpty
+                            ? "—"
+                            : user!.phoneNumber),
+                  ]),
+                ),
+              ),
               const SizedBox(height: 20),
 
               // KYC Verification section
               _buildSectionTitle("KYC Verification"),
+              const SizedBox(height: 8),
+              Obx(() {
+                final verified =
+                    authController.userData.value?.isKycVerified ?? false;
+                return AppCard(
+                  child: Row(
+                    children: [
+                      Icon(
+                          verified
+                              ? Icons.verified
+                              : Icons.gpp_maybe_outlined,
+                          color: verified ? kSuccess : const Color(0xFFB26A00)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          verified
+                              ? 'Identity verified'
+                              : 'Identity not verified yet',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600, color: kInk),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+              const SizedBox(height: 20),
               // Card(
               //   elevation: 0,
               //   shape: RoundedRectangleBorder(
@@ -331,16 +414,19 @@ class _HostProfilePageState extends State<HostProfilePage> {
                   context,
                   CupertinoPageRoute<void>(
                     builder: (BuildContext context) =>
-                        HostPropertyListingScreen(),
+                        const HostPropertyListingScreen(),
                   ),
                 );
               }),
               const SizedBox(height: 10),
 
               Obx(() {
-                // Check if data is loading
-                if (hostController.loading.value) {
-                  // Display shimmer effect without nested scrollables
+                final props = hostController
+                        .hostPropertiesResponse.value?.data?.properties ??
+                    const [];
+
+                // Initial shimmer only while the first fetch is in-flight.
+                if (hostController.loading.value && props.isEmpty) {
                   return Column(
                     children: List.generate(6, (index) {
                       return Shimmer.fromColors(
@@ -371,26 +457,73 @@ class _HostProfilePageState extends State<HostProfilePage> {
                       );
                     }),
                   );
-                } else if (hostController.hostPropertiesResponse.value?.data
-                        ?.properties.isNotEmpty ??
-                    false) {
-                  final props = hostController
-                          .hostPropertiesResponse.value?.data?.properties ??
-                      [];
+                }
+
+                if (props.isNotEmpty) {
                   return Column(
                     children: List.generate(props.length, (index) {
                       final property = props[index];
                       return _buildPropertyTile(property);
                     }),
                   );
-                } else if (hostController.error.value != "") {
-                  // Handle no data scenario
-                  return Center(
-                    child: Image.asset("assets/noProperty.png"),
-                  );
-                } else {
-                  return const Center();
                 }
+
+                // No properties yet (or fetch failed) — friendly CTA either way.
+                return Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: kCream,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: kLine),
+                  ),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.home_work_outlined,
+                          size: 44, color: kMuted),
+                      const SizedBox(height: 10),
+                      const Text(
+                        "No properties listed yet",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: kInk,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        "Add your first property to start receiving bookings.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13, color: kMuted),
+                      ),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text("Add Property"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: kprimaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.push<void>(
+                              context,
+                              CupertinoPageRoute<void>(
+                                builder: (_) =>
+                                    const HostPropertyListingScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                );
               }),
             ],
           ),
@@ -443,13 +576,25 @@ class _HostProfilePageState extends State<HostProfilePage> {
   Widget _buildPropertyTile(Property? property) {
     if (property == null) return const SizedBox.shrink();
 
-    final isVerified = property.isVerify;
     final isActive = property.isActive;
     final isLuxury = (property.isLuxury == 1);
 
+    // Admin-approval status (mirrors web): host submissions stay Pending until
+    // an admin approves; rejected listings show the rejected state.
+    final vs = property.verificationStatus.toLowerCase();
+    final bool approved =
+        (property.isActive && property.isVerify) || vs == 'verified' || vs == 'approved';
+    final bool rejected = vs == 'rejected' || vs == 'declined';
+    final String statusLabel =
+        approved ? 'Approved' : (rejected ? 'Rejected' : 'Pending review');
+    final Color statusColor =
+        approved ? Colors.green : (rejected ? Colors.red : Colors.orange);
+    final IconData statusIcon = approved
+        ? Icons.verified
+        : (rejected ? Icons.cancel : Icons.hourglass_bottom);
+
     final String? cover = property.coverImage?.toString();
     final bool hasCover = cover != null && cover.isNotEmpty && cover != 'null';
-    final List<String> imgs = property.images.cast<String>();
     final String checkIn =
         (property.propDetailsPropDetailInTime ?? '-').toString();
     final String checkOut =
@@ -457,170 +602,171 @@ class _HostProfilePageState extends State<HostProfilePage> {
 
     return GestureDetector(
       onTap: () => Get.to(() => HostPropertyDetails(property: property)),
-      child: Card(
-        color: kCream,
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: kLine)),
-        elevation: 0,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: kSurface,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: kCardShadow,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                          width: 72,
-                          height: 72,
-                          color: kSand,
-                          child: hasCover
-                              ? Image.network(cover, fit: BoxFit.cover)
-                              : Image.asset("assets/home_1.jpg",
-                                  fit: BoxFit.cover))),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              property.propertyName,
-                              style: const TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.w700),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Row(
-                              children: [
-                                IconButton(
-                                  tooltip: 'Edit',
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                  icon: const Icon(Iconsax.edit4,
-                                      size: 18, color: Colors.blueGrey),
-                                  onPressed: () {
-                                    Get.to(() =>
-                                        UpdatePropertyPage(property: property));
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          property.propertyAddress,
-                          style:
-                              TextStyle(fontSize: 12, color: kInk2),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 6),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 4,
-                          children: [
-                            if (isVerified)
-                              _buildChip(
-                                  label: 'Verified',
-                                  color: Colors.green,
-                                  icon: Icons.verified)
-                            else
-                              _buildChip(
-                                  label: 'Pending',
-                                  color: Colors.orange,
-                                  icon: Icons.hourglass_bottom),
-                            _buildChip(
-                                label: isActive ? 'Active' : 'Inactive',
-                                color: isActive ? Colors.blue : Colors.grey,
-                                icon: isActive
-                                    ? Icons.check_circle_outline
-                                    : Icons.pause_circle_outline),
-                            if (isLuxury)
-                              _buildChip(
-                                  label: 'Luxury',
-                                  color: Colors.purple,
-                                  icon: Icons.star),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.schedule,
-                                    size: 14, color: Colors.grey[700]),
-                                const SizedBox(width: 4),
-                                Text('In: $checkIn',
-                                    style: const TextStyle(fontSize: 12)),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(Icons.schedule,
-                                    size: 14, color: Colors.grey[700]),
-                                const SizedBox(width: 4),
-                                Text('Out: $checkOut',
-                                    style: const TextStyle(fontSize: 12)),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Price: ${property.propertyPrice} (min ${property.propertyMiniPrice})',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ],
+            // Hero cover with overlays
+            Stack(
+              children: [
+                AspectRatio(
+                  aspectRatio: 16 / 10,
+                  child: hasCover
+                      ? Image.network(cover!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                              color: kSand,
+                              child: const Icon(
+                                  Icons.image_not_supported_outlined,
+                                  color: kMuted)))
+                      : Image.asset("assets/home_1.jpg", fit: BoxFit.cover),
+                ),
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.center,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, kInk.withOpacity(0.42)],
+                      ),
                     ),
                   ),
+                ),
+                // status pill
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                    decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.94),
+                        borderRadius: BorderRadius.circular(999)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(statusIcon, size: 12, color: statusColor),
+                      const SizedBox(width: 5),
+                      Text(statusLabel,
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: statusColor)),
+                    ]),
+                  ),
+                ),
+                // luxury + edit (top-right)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Row(children: [
+                    if (isLuxury)
+                      Container(
+                        margin: const EdgeInsets.only(right: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 9, vertical: 5),
+                        decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.94),
+                            borderRadius: BorderRadius.circular(999)),
+                        child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.star,
+                                  size: 12, color: Color(0xFF7A5AF8)),
+                              SizedBox(width: 4),
+                              Text('Luxury',
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF7A5AF8))),
+                            ]),
+                      ),
+                    Material(
+                      color: Colors.white.withOpacity(0.94),
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => Get.to(
+                            () => UpdatePropertyPage(property: property)),
+                        child: const Padding(
+                          padding: EdgeInsets.all(7),
+                          child:
+                              Icon(Iconsax.edit4, size: 16, color: kIndigo),
+                        ),
+                      ),
+                    ),
+                  ]),
+                ),
+                // price pill
+                Positioned(
+                  left: 10,
+                  bottom: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(999)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Text('₹${property.propertyPrice}',
+                          style: fraunces(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: kInk)),
+                      const Text(' /night',
+                          style: TextStyle(fontSize: 10, color: kMuted)),
+                    ]),
+                  ),
+                ),
+              ],
+            ),
+            // details
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(property.propertyName,
+                      style: fraunces(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: kInk),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    const Icon(Icons.location_on, size: 15, color: kClay),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(property.propertyAddress,
+                          style:
+                              const TextStyle(fontSize: 12.5, color: kInk2),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                  ]),
+                  const SizedBox(height: 10),
+                  Wrap(spacing: 6, runSpacing: 4, children: [
+                    if (approved)
+                      _buildChip(
+                          label: isActive ? 'Active' : 'Paused',
+                          color: isActive ? Colors.blue : kMuted,
+                          icon: isActive
+                              ? Icons.check_circle_outline
+                              : Icons.pause_circle_outline),
+                    _buildChip(
+                        label: 'In $checkIn · Out $checkOut',
+                        color: kInk2,
+                        icon: Icons.schedule),
+                  ]),
                 ],
               ),
             ),
-            if (imgs.isNotEmpty) ...[
-              const Divider(height: 1),
-              SizedBox(
-                height: 90,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: Row(
-                    children: imgs.map((e) {
-                      final String url = e;
-                      final bool valid = url.isNotEmpty && url != 'null';
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            width: 120,
-                            height: 74,
-                            color: kSand,
-                            child: valid
-                                ? Image.network(url, fit: BoxFit.cover)
-                                : const Icon(Icons.image, color: Colors.grey),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
       ),
@@ -659,7 +805,7 @@ class _HostProfilePageState extends State<HostProfilePage> {
         children: [
           Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
               color: kMuted,
               fontWeight: FontWeight.w500,
