@@ -1,10 +1,9 @@
 import 'dart:io';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/service/device_service.dart';
-import 'package:rent_home/ui/screens_renter/home/homescreen.dart';
 
 /// Booking success — re-skinned to the new teal/orange design (scaffold
 /// booking_confirmed): green hero check, Booking ID card, Get Directions. Props
@@ -24,11 +23,9 @@ class BookingSuccessDialog extends StatelessWidget {
   });
 
   void _goHome(BuildContext context) {
-    Navigator.pushAndRemoveUntil(
-      context,
-      CupertinoPageRoute(builder: (_) => const Homescreen()),
-      (route) => false,
-    );
+    // Route through /home so we land on the guest bottom-nav shell (not a bare
+    // Homescreen), clearing the booking flow off the stack.
+    Get.offAllNamed('/home');
   }
 
   void _getDirections(BuildContext context) {
