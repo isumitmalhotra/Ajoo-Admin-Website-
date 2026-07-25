@@ -16,6 +16,7 @@ import 'package:rent_home/ui/screens_host/host_controller.dart';
 import 'package:rent_home/ui/screens_host/host_tab_provider.dart';
 
 import 'widgets/property_form_widgets.dart';
+import 'package:rent_home/widgets/app_ui.dart' show AppCard;
 
 import 'widgets/terms_bottom_sheet.dart';
 
@@ -52,6 +53,39 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
   final _numberOfBedsController = TextEditingController();
   final _numberOfGuestsController = TextEditingController();
 
+  // ── H1 parity controllers (new wizard fields) ──────────────────────────────
+  final _areaLocalityController = TextEditingController();
+  final _landmarkController = TextEditingController();
+  final _floorNoController = TextEditingController();
+  final _bathroomsController = TextEditingController();
+  final _videoUrlController = TextEditingController();
+  final _quietHoursController = TextEditingController();
+  final _securityDepositController = TextEditingController();
+  final _weekendPriceController = TextEditingController();
+  final _cleaningFeeController = TextEditingController();
+  final _extraGuestChargeController = TextEditingController();
+  final _minBookingAmountController = TextEditingController();
+  // PG sub-form
+  final _pgMonthlyRentController = TextEditingController();
+  final _pgDepositController = TextEditingController();
+  final _pgLockInController = TextEditingController();
+  final _pgCurfewController = TextEditingController();
+  final _pgVisitorPolicyController = TextEditingController();
+  // Party sub-form
+  final _partyMaxPeopleController = TextEditingController();
+  final _partyChargesController = TextEditingController();
+  final _partyEndTimeController = TextEditingController();
+
+  // H1 selections / toggles
+  String _bookingPref = 'request'; // instant | request
+  String? _ownershipType; // owned | leased | managed
+  String? _pgRoomType; // single | double | triple | dorm
+  String? _pgGenderPref; // male | female | any
+  bool _coupleFriendly = false;
+  bool _localIdAllowed = false;
+  bool _pgFoodIncluded = false;
+  bool _partyLoudMusic = false;
+
   // ── GetX ──────────────────────────────────────────────────────────────────
   final newPropertyController = Get.put(NewPropertyController());
   final authController = Get.find<AuthController>();
@@ -59,7 +93,9 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
 
   // ── State ─────────────────────────────────────────────────────────────────
   List<XFile> images = [];
-  List<String> amenities = [];
+  List<String> amenities = []; // selected amenity labels (for the JSON)
+  final Set<int> _selectedAmenityIds = {}; // admin amenity IDs
+  final Set<int> _selectedTagIds = {}; // admin tag IDs
   List<String> hotelTypes = [];
   List<String> tempSelected = [];
   TimeOfDay? checkInTime;
@@ -114,6 +150,25 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
   void dispose() {
     _houseRulesController.dispose();
     _stateController.dispose();
+    _areaLocalityController.dispose();
+    _landmarkController.dispose();
+    _floorNoController.dispose();
+    _bathroomsController.dispose();
+    _videoUrlController.dispose();
+    _quietHoursController.dispose();
+    _securityDepositController.dispose();
+    _weekendPriceController.dispose();
+    _cleaningFeeController.dispose();
+    _extraGuestChargeController.dispose();
+    _minBookingAmountController.dispose();
+    _pgMonthlyRentController.dispose();
+    _pgDepositController.dispose();
+    _pgLockInController.dispose();
+    _pgCurfewController.dispose();
+    _pgVisitorPolicyController.dispose();
+    _partyMaxPeopleController.dispose();
+    _partyChargesController.dispose();
+    _partyEndTimeController.dispose();
     super.dispose();
   }
 
@@ -201,6 +256,8 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
       ..country.value = _countryController.text
       ..pincode.value = _zipCodeController.text
       ..amenities.value = amenities
+      ..amenityIds.value = _selectedAmenityIds.toList()
+      ..tagIds.value = _selectedTagIds.toList()
       ..inTime.value = checkInTime?.format(context) ?? ''
       ..outTime.value = checkOutTime?.format(context) ?? ''
       ..contact.value = _contactController.text
@@ -220,18 +277,62 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
           _monthlySecurityAmountController.text.isEmpty
               ? '0'
               : _monthlySecurityAmountController.text
-      ..propRule.value = _parseHouseRules(_houseRulesController.text);
+      ..propRule.value = _parseHouseRules(_houseRulesController.text)
+      // ---- H1 parity fields ----
+      ..propertyType.value = tempSelected.join(', ')
+      // Map selected type chips (category titles) → category IDs for linking.
+      ..categoryIds.value = (commonController.cats.value?.data.categories ?? [])
+          .where((c) => tempSelected
+              .any((t) => t.toLowerCase() == c.catTitle.toLowerCase()))
+          .map((c) => c.catId)
+          .toList()
+      ..bookingPref.value = _bookingPref
+      ..ownershipType.value = _ownershipType ?? ''
+      ..areaLocality.value = _areaLocalityController.text
+      ..landmark.value = _landmarkController.text
+      ..floorNo.value = _floorNoController.text
+      ..bathrooms.value = _bathroomsController.text
+      ..videoUrl.value = _videoUrlController.text
+      ..quietHours.value = _quietHoursController.text
+      ..securityDeposit.value = _securityDepositController.text
+      ..weekendPrice.value = _weekendPriceController.text
+      ..cleaningFee.value = _cleaningFeeController.text
+      ..extraGuestCharge.value = _extraGuestChargeController.text
+      ..minBookingAmount.value = _minBookingAmountController.text
+      ..coupleFriendly.value = _coupleFriendly
+      ..localIdAllowed.value = _localIdAllowed
+      ..selfDeclaration.value = termsAccepted
+      // PG sub-form
+      ..isPgSelected.value = isSharingSelected
+      ..pgRoomType.value = _pgRoomType ?? ''
+      ..pgGenderPref.value = _pgGenderPref ?? ''
+      ..pgMonthlyRent.value = _pgMonthlyRentController.text
+      ..pgDeposit.value = _pgDepositController.text
+      ..pgLockInMonths.value = _pgLockInController.text
+      ..pgCurfew.value = _pgCurfewController.text
+      ..pgVisitorPolicy.value = _pgVisitorPolicyController.text
+      ..pgFoodIncluded.value = _pgFoodIncluded
+      // Party sub-form
+      ..isPartySelected.value = isPartySelected
+      ..partyMaxPeople.value = _partyMaxPeopleController.text
+      ..partyCharges.value = _partyChargesController.text
+      ..partyEndTime.value = _partyEndTimeController.text
+      ..partyLoudMusic.value = _partyLoudMusic;
 
-    if (fireAndSafetyNOC != null)
+    if (fireAndSafetyNOC != null) {
       newPropertyController.fireAndSafetyNOC.value =
           File(fireAndSafetyNOC!.path);
-    if (jamaBandhiDoc != null)
+    }
+    if (jamaBandhiDoc != null) {
       newPropertyController.jamaBandhiDoc.value = File(jamaBandhiDoc!.path);
-    if (nocDocument != null)
+    }
+    if (nocDocument != null) {
       newPropertyController.nocDocument.value = File(nocDocument!.path);
-    if (policeVerificationDoc != null)
+    }
+    if (policeVerificationDoc != null) {
       newPropertyController.policeVerificationDoc.value =
           File(policeVerificationDoc!.path);
+    }
 
     if (isPartySelected && partyLicenseDoc != null) {
       newPropertyController.partyLicenseDoc.value = File(partyLicenseDoc!.path);
@@ -320,23 +421,61 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildLuxurySection(),
-              _buildImagesSection(),
-              _buildBasicDetailsSection(),
-              _buildLocationButton(),
-              _buildAddressFields(),
-              _buildDescriptionSection(),
-              _buildPricingSection(),
-              _buildAmenitiesSection(),
-              _buildPoliciesSection(),
-              _buildHouseRulesSection(),
-              _buildDocumentsSection(),
-              _buildContactSection(),
-              _buildTermsSection(),
-              const SizedBox(height: 10),
+              AppCard(child: _buildImagesSection()),
+              const SizedBox(height: 14),
+              AppCard(child: _buildLuxurySection()),
+              const SizedBox(height: 14),
+              AppCard(child: _buildBasicDetailsSection()),
+              const SizedBox(height: 14),
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SectionTitle('Location'),
+                    const SizedBox(height: 10),
+                    _buildLocationButton(),
+                    const SizedBox(height: 12),
+                    _buildAddressFields(),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              AppCard(child: _buildDescriptionSection()),
+              const SizedBox(height: 14),
+              AppCard(child: _buildPricingSection()),
+              const SizedBox(height: 14),
+              AppCard(child: _buildAdditionalChargesSection()),
+              const SizedBox(height: 14),
+              AppCard(child: _buildListingDetailsSection()),
+              const SizedBox(height: 14),
+              AppCard(child: _buildStayPreferencesSection()),
+              const SizedBox(height: 14),
+              if (isSharingSelected) ...[
+                AppCard(child: _buildPgSection()),
+                const SizedBox(height: 14),
+              ],
+              if (isPartySelected) ...[
+                AppCard(child: _buildPartyExtrasSection()),
+                const SizedBox(height: 14),
+              ],
+              AppCard(child: _buildAmenitiesSection()),
+              const SizedBox(height: 14),
+              AppCard(child: _buildTagsSection()),
+              const SizedBox(height: 14),
+              AppCard(child: _buildPoliciesSection()),
+              const SizedBox(height: 14),
+              AppCard(child: _buildHouseRulesSection()),
+              const SizedBox(height: 14),
+              AppCard(child: _buildDocumentsSection()),
+              const SizedBox(height: 14),
+              AppCard(child: _buildContactSection()),
+              const SizedBox(height: 14),
+              AppCard(child: _buildTermsSection()),
+              const SizedBox(height: 18),
               _buildSubmitButton(theme),
             ],
           ),
@@ -609,35 +748,250 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
         ],
       );
 
-  Widget _buildAmenitiesSection() {
-    const options = [
-      'Wi-Fi',
-      'Pool',
-      'Gym',
-      'Kitchen',
-      'Air Conditioning',
-      'Parking'
-    ];
+  // ── H1 parity sections (new wizard fields) ──────────────────────────────────
+
+  Widget _singleSelectChips(
+    List<String> options,
+    String? selected,
+    ValueChanged<String> onSelect,
+  ) =>
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: options
+            .map((o) => ChoiceChip(
+                  label: Text(o.capitalizeFirst ?? o),
+                  selected: selected == o,
+                  selectedColor: kprimaryColor,
+                  backgroundColor: kSand,
+                  labelStyle: TextStyle(color: selected == o ? kCream : kInk),
+                  onSelected: (_) => setState(() => onSelect(o)),
+                ))
+            .toList(),
+      );
+
+  Widget _buildListingDetailsSection() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionTitle('Listing Details'),
+          PropertyTextField(
+              _areaLocalityController, 'Area / Locality', Icons.location_city,
+              isRequired: false),
+          PropertyTextField(
+              _landmarkController, 'Landmark', Icons.place_outlined,
+              isRequired: false),
+          Row(children: [
+            Expanded(
+                child: PropertyTextField(
+                    _floorNoController, 'Floor No.', Icons.stairs,
+                    isRequired: false)),
+            const SizedBox(width: 12),
+            Expanded(
+                child: PropertyTextField(_bathroomsController, 'Bathrooms',
+                    Icons.bathtub_outlined,
+                    isRequired: false, isNumeric: true)),
+          ]),
+          const SizedBox(height: 12),
+          const Text('Booking preference',
+              style: TextStyle(fontWeight: FontWeight.w600, color: kInk)),
+          const SizedBox(height: 8),
+          _singleSelectChips(const ['instant', 'request'], _bookingPref,
+              (v) => _bookingPref = v),
+          const SizedBox(height: 12),
+          const Text('Ownership type',
+              style: TextStyle(fontWeight: FontWeight.w600, color: kInk)),
+          const SizedBox(height: 8),
+          _singleSelectChips(const ['owned', 'leased', 'managed'],
+              _ownershipType, (v) => _ownershipType = v),
+          const SizedBox(height: 12),
+          PropertyTextField(_quietHoursController,
+              'Quiet hours (e.g. 10 PM - 7 AM)', Icons.nightlight_round,
+              isRequired: false),
+          PropertyTextField(_videoUrlController, 'Video tour URL (optional)',
+              Icons.videocam_outlined,
+              isRequired: false),
+          const SizedBox(height: 8),
+        ],
+      );
+
+  Widget _buildAdditionalChargesSection() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionTitle('Additional Charges (optional)'),
+          PriceTextField(_securityDepositController, 'Security Deposit',
+              isRequired: false),
+          PriceTextField(_weekendPriceController, 'Weekend Price / Night',
+              isRequired: false),
+          PriceTextField(_cleaningFeeController, 'Cleaning Fee',
+              isRequired: false),
+          PriceTextField(_extraGuestChargeController, 'Extra Guest Charge',
+              isRequired: false),
+          PriceTextField(
+              _minBookingAmountController, 'Minimum Booking Amount',
+              isRequired: false),
+        ],
+      );
+
+  Widget _buildStayPreferencesSection() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionTitle('Stay Preferences'),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            activeColor: kprimaryColor,
+            title: const Text('Couple friendly'),
+            value: _coupleFriendly,
+            onChanged: (v) => setState(() => _coupleFriendly = v),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            activeColor: kprimaryColor,
+            title: const Text('Local ID allowed'),
+            value: _localIdAllowed,
+            onChanged: (v) => setState(() => _localIdAllowed = v),
+          ),
+        ],
+      );
+
+  Widget _buildPgSection() {
+    if (!isSharingSelected) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionTitle('Amenities'),
-        Wrap(
-          spacing: 8.0,
-          children: options
-              .map((a) => FilterChip(
-                    label: Text(a),
-                    selected: amenities.contains(a),
-                    onSelected: (selected) => setState(() {
-                      selected ? amenities.add(a) : amenities.remove(a);
-                    }),
-                  ))
-              .toList(),
+        const SectionTitle('PG / Sharing Details'),
+        const Text('Room type',
+            style: TextStyle(fontWeight: FontWeight.w600, color: kInk)),
+        const SizedBox(height: 8),
+        _singleSelectChips(const ['single', 'double', 'triple', 'dorm'],
+            _pgRoomType, (v) => _pgRoomType = v),
+        const SizedBox(height: 12),
+        const Text('Gender preference',
+            style: TextStyle(fontWeight: FontWeight.w600, color: kInk)),
+        const SizedBox(height: 8),
+        _singleSelectChips(
+            const ['male', 'female', 'any'], _pgGenderPref, (v) => _pgGenderPref = v),
+        const SizedBox(height: 12),
+        PriceTextField(_pgMonthlyRentController, 'Monthly Rent',
+            isRequired: false),
+        PriceTextField(_pgDepositController, 'Deposit', isRequired: false),
+        PropertyTextField(
+            _pgLockInController, 'Lock-in (months)', Icons.lock_clock,
+            isRequired: false, isNumeric: true),
+        PropertyTextField(
+            _pgCurfewController, 'Curfew (e.g. 11 PM)', Icons.schedule,
+            isRequired: false),
+        PropertyTextField(_pgVisitorPolicyController, 'Visitor policy',
+            Icons.people_outline,
+            isRequired: false),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          activeColor: kprimaryColor,
+          title: const Text('Food included'),
+          value: _pgFoodIncluded,
+          onChanged: (v) => setState(() => _pgFoodIncluded = v),
         ),
-        const SizedBox(height: 16),
       ],
     );
   }
+
+  Widget _buildPartyExtrasSection() {
+    if (!isPartySelected) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionTitle('Party / Group Booking'),
+        PropertyTextField(
+            _partyMaxPeopleController, 'Max people', Icons.groups_outlined,
+            isRequired: false, isNumeric: true),
+        PriceTextField(_partyChargesController, 'Party charges',
+            isRequired: false),
+        PropertyTextField(
+            _partyEndTimeController, 'End time (e.g. 11 PM)',
+            Icons.timer_off_outlined,
+            isRequired: false),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          activeColor: kprimaryColor,
+          title: const Text('Loud music allowed'),
+          value: _partyLoudMusic,
+          onChanged: (v) => setState(() => _partyLoudMusic = v),
+        ),
+      ],
+    );
+  }
+
+  // Amenities come from the admin-managed list (/common/amenties) so whatever
+  // the admin publishes is what the host can pick (content sync).
+  Widget _buildAmenitiesSection() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionTitle('Amenities'),
+          Obx(() {
+            final list = commonController.amenities.value?.data ?? [];
+            if (list.isEmpty) {
+              return const Text('Loading amenities…',
+                  style: TextStyle(color: kInk2));
+            }
+            return Wrap(
+              spacing: 8.0,
+              runSpacing: 4,
+              children: list
+                  .map((a) => FilterChip(
+                        label: Text(a.amnTitle),
+                        selected: _selectedAmenityIds.contains(a.amnId),
+                        selectedColor: kprimaryColor.withOpacity(0.15),
+                        checkmarkColor: kprimaryColor,
+                        onSelected: (sel) => setState(() {
+                          if (sel) {
+                            _selectedAmenityIds.add(a.amnId);
+                            if (!amenities.contains(a.amnTitle)) {
+                              amenities.add(a.amnTitle);
+                            }
+                          } else {
+                            _selectedAmenityIds.remove(a.amnId);
+                            amenities.remove(a.amnTitle);
+                          }
+                        }),
+                      ))
+                  .toList(),
+            );
+          }),
+          const SizedBox(height: 16),
+        ],
+      );
+
+  // Tags come from the admin-managed list (/common/tags) → property_tag[].
+  Widget _buildTagsSection() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionTitle('Tags'),
+          Obx(() {
+            final list = commonController.tags.value?.data.tags ?? [];
+            if (list.isEmpty) {
+              return const Text('Loading tags…',
+                  style: TextStyle(color: kInk2));
+            }
+            return Wrap(
+              spacing: 8.0,
+              runSpacing: 4,
+              children: list
+                  .map((t) => FilterChip(
+                        label: Text(t.tagName),
+                        selected: _selectedTagIds.contains(t.tagId),
+                        selectedColor: kprimaryColor.withOpacity(0.15),
+                        checkmarkColor: kprimaryColor,
+                        onSelected: (sel) => setState(() {
+                          sel
+                              ? _selectedTagIds.add(t.tagId)
+                              : _selectedTagIds.remove(t.tagId);
+                        }),
+                      ))
+                  .toList(),
+            );
+          }),
+          const SizedBox(height: 16),
+        ],
+      );
 
   Widget _buildPoliciesSection() => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -699,20 +1053,20 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.05),
+              color: kprimaryColor.withOpacity(0.05),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.withOpacity(0.2)),
+              border: Border.all(color: kprimaryColor.withOpacity(0.2)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.info_outline, color: Colors.blue, size: 16),
+                const Icon(Icons.info_outline, color: kprimaryColor, size: 16),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Example: No smoking. No parties. Quiet hours 10 PM - 8 AM.',
-                    style: TextStyle(
+                    style: const TextStyle(
                         fontSize: 12,
-                        color: Colors.blue[800],
+                        color: kInk2,
                         fontStyle: FontStyle.italic),
                   ),
                 ),
@@ -768,9 +1122,9 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
                   value: termsAccepted,
                   onChanged: (v) => setState(() => termsAccepted = v!),
                 ),
-                Expanded(
+                const Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.only(top: 12.0),
+                    padding: EdgeInsets.only(top: 12.0),
                     child: Text(
                       'I agree to the terms and conditions for property listing',
                       style: TextStyle(fontSize: 14, color: kInk2),
