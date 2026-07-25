@@ -38,6 +38,16 @@ Legend: ✅ wired to live backend · 🟡 partial (some data mock/placeholder) �
 | 11 | Profile | `screens_renter/profile/profile_screen.dart` | 🟡 | Functional + teal (KYC status, doc upload, edit profile all wired). The working profile is a full account+KYC screen (1.9k lines); collapsing it to the scaffold's simple menu would lose KYC/edit, so kept — optional visual polish only. |
 | 12 | **Guest bottom-nav shell** | `screens_renter/guest_shell.dart` | ✅ | Built (option A). `GuestShell` = `IndexedStack` of the 5 wired screens (Home/Dashboard/Bookings/Saved/Profile) + a teal M3 `NavigationBar` (Poppins/Manrope labels, teal-50 indicator). Route `/home` now points here, so every post-login `Get.offAllNamed('/home')` lands on the shell. Home tab keeps its own Scaffold (drawer + floating header + draggable map sheet) nested inside — verified builds. Booking-Confirmed "Go Home" re-routed through `/home` so it lands on the shell too. Drawer still works (redundant with tabs). |
 
+---
+
+## Host portal (#3)
+
+| # | Screen | File | Backend wiring | Notes |
+|---|--------|------|----------------|-------|
+| H-shell | **Host bottom-nav shell** | `screens_host/home/main_screen.dart` | ✅ | Re-skinned `MainScreen` to the scaffold `host_shell` — `BottomAppBar` with a raised **center "Add Property" FAB** + 4 tabs (Dashboard/Bookings/Support/Profile). Kept `HostTabProvider` as the tab backbone (so drawer + add-property `resetToHome()` still drive it) and the drawer. Provider tab-ids→slots: 2=Dashboard, 3=Bookings, 6=Support, 5=Profile, 7=Invoices (drawer-only). FAB pushes the Add-Property flow. `/host/home` unchanged (still → MainScreen). |
+| H-1 | Host Dashboard | `screens_host/home/host_home_screen.dart` | ✅ | Re-skinned to scaffold `host_dashboard` — in-body header (menu→drawer, aajoo·Host wordmark, chat→support, bell→notifications), greeting + initials avatar, **Total Earnings card** (sum of real `payAmount` → taps to Payouts), **2×2 stat grid** (Total Bookings / Ongoing Stays / Properties / Transactions — all real counts), ongoing-stays list (real ongoing bookings → ViewOngoingBooking), "List a new property" banner, recent transactions (kept). Fetches ongoing+properties+booking-history+transactions on load. |
+| H-2..n | Bookings · Support · Profile · Add-Property · Payout · Invoices | (existing wired screens) | 🟡 | Reachable + wired (they power the shell tabs / drawer), but still on the **old skin** — teal palette applies globally (P0) but layouts not yet redesigned to the scaffold. Re-skin next, one per commit. |
+
 ## Open API gaps (finish later)
 
 Each row is a component whose design exists but whose data/endpoint isn't ready.
