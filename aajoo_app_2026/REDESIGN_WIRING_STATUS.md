@@ -33,6 +33,7 @@ Legend: ✅ wired to live backend · 🟡 partial (some data mock/placeholder) �
 | # | Screen | File | Backend wiring | Notes |
 |---|--------|------|----------------|-------|
 | 8 | Bookings | `screens_renter/history/history_page.dart` | ✅ | Re-skinned to scaffold — teal app bar + **4 status tabs** (Upcoming/Ongoing/Completed/Cancelled) filtering the real `getUserHistory` data; BookingCard rows + refresh kept. |
+| 9 | Saved Stays | `screens_renter/bookmark_properties/bookmark_properties_page.dart` | ✅ | Re-skinned — big custom card replaced with the shared **CuratedCard** in a 2-col grid + teal app bar + new empty state. Bookmark load/remove (`BookmarkService`) + property navigation wiring unchanged. |
 
 ## Open API gaps (finish later)
 
