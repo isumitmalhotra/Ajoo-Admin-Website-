@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/controller/common_controller.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/ui/screens_common/location_picker/pick_location_screen.dart';
@@ -105,6 +106,45 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
   bool isSharingSelected = false;
   bool isPartySelected = false;
   bool termsAccepted = false;
+
+  // ── Wizard ────────────────────────────────────────────────────────────────
+  // All steps stay mounted in an IndexedStack, so the single Form validates
+  // every field and all TextEditingControllers persist across steps.
+  int _step = 0;
+  static const List<String> _stepNames = [
+    'Property Type',
+    'Location',
+    'Photos',
+    'Pricing',
+    'Preferences',
+    'Publish',
+  ];
+
+  // First step (in order) whose required inputs are still missing — used to
+  // jump the user to the problem when publish-time validation fails.
+  int _firstInvalidStep() {
+    if (_propertyNameController.text.trim().isEmpty || tempSelected.isEmpty) {
+      return 0;
+    }
+    if (_addressController.text.trim().isEmpty ||
+        _cityController.text.trim().isEmpty ||
+        _stateController.text.trim().isEmpty ||
+        _countryController.text.trim().isEmpty ||
+        _zipCodeController.text.trim().isEmpty) {
+      return 1;
+    }
+    if (images.length < 2) return 2;
+    if (_descriptionController.text.trim().isEmpty ||
+        _exactPriceController.text.trim().isEmpty ||
+        _minPriceController.text.trim().isEmpty) {
+      return 3;
+    }
+    if (_contactController.text.trim().isEmpty ||
+        _emailController.text.trim().isEmpty) {
+      return 5;
+    }
+    return _step;
+  }
 
   // ── Documents ─────────────────────────────────────────────────────────────
   XFile? fireAndSafetyNOC;
@@ -224,16 +264,22 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
 
   Future<void> _saveProperty() async {
     final hostController = Get.put(HostController());
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      _showSnackBar('Please complete all required fields', isError: true);
+      setState(() => _step = _firstInvalidStep());
+      return;
+    }
 
     if (images.length < 2) {
       _showSnackBar('Please upload at least 2 photos of your property',
           isError: true);
+      setState(() => _step = 2);
       return;
     }
     if (_docsCount < 3) {
       _showSnackBar('Please upload at least 3 property documents',
           isError: true);
+      setState(() => _step = 5);
       return;
     }
 
@@ -410,76 +456,199 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
+      backgroundColor: kscaffoldColor,
       appBar: AppBar(
-        centerTitle: true,
-        title: const Text('Add Property'),
-        backgroundColor: kprimaryColor,
-        foregroundColor: Colors.white,
+        backgroundColor: kSurface,
+        foregroundColor: kInk,
         elevation: 0,
+        centerTitle: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () =>
+              _step == 0 ? Navigator.pop(context) : setState(() => _step--),
+        ),
+        title: Text('List Your Property',
+            style:
+                fraunces(fontSize: 17, fontWeight: FontWeight.w700, color: kInk)),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppCard(child: _buildImagesSection()),
-              const SizedBox(height: 14),
-              AppCard(child: _buildLuxurySection()),
-              const SizedBox(height: 14),
-              AppCard(child: _buildBasicDetailsSection()),
-              const SizedBox(height: 14),
-              AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SectionTitle('Location'),
-                    const SizedBox(height: 10),
-                    _buildLocationButton(),
-                    const SizedBox(height: 12),
-                    _buildAddressFields(),
-                  ],
-                ),
+      // One Form wraps every step; the IndexedStack keeps them all mounted so
+      // validation + controllers behave exactly like the old single-page form.
+      body: Form(
+        key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        child: Column(
+          children: [
+            _progressBar(),
+            Expanded(
+              child: IndexedStack(
+                index: _step,
+                sizing: StackFit.expand,
+                children:
+                    List.generate(_stepNames.length, (i) => _stepBody(i)),
               ),
-              const SizedBox(height: 14),
-              AppCard(child: _buildDescriptionSection()),
-              const SizedBox(height: 14),
-              AppCard(child: _buildPricingSection()),
-              const SizedBox(height: 14),
-              AppCard(child: _buildAdditionalChargesSection()),
-              const SizedBox(height: 14),
-              AppCard(child: _buildListingDetailsSection()),
-              const SizedBox(height: 14),
-              AppCard(child: _buildStayPreferencesSection()),
-              const SizedBox(height: 14),
-              if (isSharingSelected) ...[
-                AppCard(child: _buildPgSection()),
-                const SizedBox(height: 14),
+            ),
+            _footer(theme),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _progressBar() {
+    return Container(
+      color: kSurface,
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              for (int i = 0; i < _stepNames.length; i++) ...[
+                Expanded(
+                  child: Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: i <= _step ? kIndigo : kLine,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                if (i < _stepNames.length - 1) const SizedBox(width: 4),
               ],
-              if (isPartySelected) ...[
-                AppCard(child: _buildPartyExtrasSection()),
-                const SizedBox(height: 14),
-              ],
-              AppCard(child: _buildAmenitiesSection()),
-              const SizedBox(height: 14),
-              AppCard(child: _buildTagsSection()),
-              const SizedBox(height: 14),
-              AppCard(child: _buildPoliciesSection()),
-              const SizedBox(height: 14),
-              AppCard(child: _buildHouseRulesSection()),
-              const SizedBox(height: 14),
-              AppCard(child: _buildDocumentsSection()),
-              const SizedBox(height: 14),
-              AppCard(child: _buildContactSection()),
-              const SizedBox(height: 14),
-              AppCard(child: _buildTermsSection()),
-              const SizedBox(height: 18),
-              _buildSubmitButton(theme),
             ],
           ),
-        ),
+          const SizedBox(height: 8),
+          Text(
+              'Step ${_step + 1} of ${_stepNames.length} · ${_stepNames[_step]}',
+              style: inter(
+                  fontSize: 12, fontWeight: FontWeight.w600, color: kMuted)),
+        ],
+      ),
+    );
+  }
+
+  // Groups the (unchanged) section builders into wizard steps.
+  Widget _stepBody(int i) {
+    List<Widget> children;
+    switch (i) {
+      case 0:
+        children = [
+          AppCard(child: _buildBasicDetailsSection()),
+          const SizedBox(height: 14),
+          AppCard(child: _buildLuxurySection()),
+        ];
+        break;
+      case 1:
+        children = [
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SectionTitle('Location'),
+                const SizedBox(height: 10),
+                _buildLocationButton(),
+                const SizedBox(height: 12),
+                _buildAddressFields(),
+              ],
+            ),
+          ),
+        ];
+        break;
+      case 2:
+        children = [AppCard(child: _buildImagesSection())];
+        break;
+      case 3:
+        children = [
+          AppCard(child: _buildDescriptionSection()),
+          const SizedBox(height: 14),
+          AppCard(child: _buildPricingSection()),
+          const SizedBox(height: 14),
+          AppCard(child: _buildAdditionalChargesSection()),
+          const SizedBox(height: 14),
+          AppCard(child: _buildListingDetailsSection()),
+        ];
+        break;
+      case 4:
+        children = [
+          AppCard(child: _buildStayPreferencesSection()),
+          const SizedBox(height: 14),
+          if (isSharingSelected) ...[
+            AppCard(child: _buildPgSection()),
+            const SizedBox(height: 14),
+          ],
+          if (isPartySelected) ...[
+            AppCard(child: _buildPartyExtrasSection()),
+            const SizedBox(height: 14),
+          ],
+          AppCard(child: _buildAmenitiesSection()),
+          const SizedBox(height: 14),
+          AppCard(child: _buildTagsSection()),
+          const SizedBox(height: 14),
+          AppCard(child: _buildPoliciesSection()),
+          const SizedBox(height: 14),
+          AppCard(child: _buildHouseRulesSection()),
+        ];
+        break;
+      default:
+        children = [
+          AppCard(child: _buildDocumentsSection()),
+          const SizedBox(height: 14),
+          AppCard(child: _buildContactSection()),
+          const SizedBox(height: 14),
+          AppCard(child: _buildTermsSection()),
+        ];
+    }
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
+    );
+  }
+
+  Widget _footer(ThemeData theme) {
+    final isLast = _step == _stepNames.length - 1;
+    return Container(
+      decoration: BoxDecoration(
+        color: kSurface,
+        boxShadow: [
+          BoxShadow(
+              color: kInk.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, -4)),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: SafeArea(
+        top: false,
+        // On the last step reuse the existing submit button (Obx loading +
+        // terms check + _saveProperty) verbatim; otherwise a Continue button.
+        child: isLast
+            ? _buildSubmitButton(theme)
+            : SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => setState(() => _step++),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kIndigo,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: const StadiumBorder(),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('Continue',
+                          style: inter(
+                              fontSize: 16, fontWeight: FontWeight.w700)),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.arrow_forward, size: 18),
+                    ],
+                  ),
+                ),
+              ),
       ),
     );
   }
