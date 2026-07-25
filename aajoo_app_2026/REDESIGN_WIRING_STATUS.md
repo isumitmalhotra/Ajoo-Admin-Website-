@@ -28,6 +28,12 @@ Legend: ✅ wired to live backend · 🟡 partial (some data mock/placeholder) �
 
 ---
 
+## Guest account (#2)
+
+| # | Screen | File | Backend wiring | Notes |
+|---|--------|------|----------------|-------|
+| 8 | Bookings | `screens_renter/history/history_page.dart` | ✅ | Re-skinned to scaffold — teal app bar + **4 status tabs** (Upcoming/Ongoing/Completed/Cancelled) filtering the real `getUserHistory` data; BookingCard rows + refresh kept. |
+
 ## Open API gaps (finish later)
 
 Each row is a component whose design exists but whose data/endpoint isn't ready.
