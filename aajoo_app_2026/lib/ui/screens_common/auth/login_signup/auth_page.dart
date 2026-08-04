@@ -358,6 +358,59 @@ class _AuthPageState extends State<AuthPage> {
                                         color: Colors.white)),
                           )),
                     ),
+
+                    // "Continue with Google" — only on the login tab. Sign-up
+                    // collects KYC and other details Google cannot supply, so
+                    // offering it there would strand the user mid-flow.
+                    if (isLogin) ...[
+                      const SizedBox(height: 18),
+                      Row(children: [
+                        Expanded(child: Divider(color: kMuted.withOpacity(.3))),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text('or',
+                              style: inter(fontSize: 12.5, color: kMuted)),
+                        ),
+                        Expanded(child: Divider(color: kMuted.withOpacity(.3))),
+                      ]),
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        width: double.infinity,
+                        child: Obx(() => OutlinedButton.icon(
+                              onPressed: authController.isLoading.value
+                                  ? null
+                                  : () => authController
+                                          .loginWithGoogle(userType.value == 1)
+                                          .then((_) {
+                                        final user =
+                                            authController.userData.value;
+                                        if (authController.error.value.isEmpty &&
+                                            user != null) {
+                                          Get.offAllNamed(user.isHost
+                                              ? '/host/home'
+                                              : '/home');
+                                        }
+                                      }),
+                              icon: Image.asset('assets/images/google.png',
+                                  height: 18,
+                                  width: 18,
+                                  errorBuilder: (_, __, ___) =>
+                                      const Icon(Icons.login, size: 18)),
+                              label: Text('Continue with Google',
+                                  style: inter(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600)),
+                              style: OutlinedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                side: BorderSide(color: kMuted.withOpacity(.35)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
+                              ),
+                            )),
+                      ),
+                    ],
+
                     const SizedBox(height: 16),
                     Center(
                       child: TextButton(

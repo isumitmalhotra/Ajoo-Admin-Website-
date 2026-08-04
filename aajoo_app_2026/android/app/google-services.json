@@ -1,0 +1,98 @@
+{
+  "project_info": {
+    "project_number": "1006999733744",
+    "project_id": "aajoo-bdb20",
+    "storage_bucket": "aajoo-bdb20.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1006999733744:android:f7bc7af82334be5a050935",
+        "android_client_info": {
+          "package_name": "com.aajoo.aajoohomes"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1006999733744-pve4mrjbdbri1pfgqjvpg84gooks2dq2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aajoo.aajoohomes",
+            "certificate_hash": "a02fdc1a7140782488ba4d2a84cf8183f3d65858"
+          }
+        },
+        {
+          "client_id": "1006999733744-u5h1834cdbda7stfir2pfeo4okmaeh71.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aajoo.aajoohomes",
+            "certificate_hash": "1c5578f0f773eb4a7d337de7540311bfde80edfa"
+          }
+        },
+        {
+          "client_id": "1006999733744-9mhft1ke8c7cm6ut72bjkq30etnb5ora.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCs2kVt5P61l6E0KvnUGjP1vy2gviCk-WI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1006999733744-9mhft1ke8c7cm6ut72bjkq30etnb5ora.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1006999733744-3vg51fdtr137gklkodrdvd42v9fh4eq6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.aajoo.aajoohomes"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1006999733744:android:382c95bb73c35c25050935",
+        "android_client_info": {
+          "package_name": "com.example.rent_home"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1006999733744-9mhft1ke8c7cm6ut72bjkq30etnb5ora.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCs2kVt5P61l6E0KvnUGjP1vy2gviCk-WI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1006999733744-9mhft1ke8c7cm6ut72bjkq30etnb5ora.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1006999733744-3vg51fdtr137gklkodrdvd42v9fh4eq6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.aajoo.aajoohomes"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

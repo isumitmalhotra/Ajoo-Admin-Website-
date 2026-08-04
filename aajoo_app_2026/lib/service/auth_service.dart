@@ -9,7 +9,7 @@ import '../models/user_models.dart';
 
 class AuthService {
   final Dio _dio = Dio();
-  final String baseUrl = 'https://api.aajoohomes.com';
+  final String baseUrl = 'https://aajaodev.onrender.com';
   final String TOKEN_KEY = 'user_token';
   final String USER_DATA_KEY = 'user_data';
   final FlutterSecureStorage storage = const FlutterSecureStorage();
@@ -76,6 +76,26 @@ class AuthService {
     await storage.delete(key: USER_DATA_KEY);
   }
 
+  /// Best-effort server-side session invalidation. Backend deletes the row
+  /// in `tbl_user_login_auth` so the JWT can't be reused. Failure is
+  /// tolerated — caller still proceeds with local logout. The token must
+  /// still be available on the Dio instance when this is called.
+  Future<bool> serverLogout() async {
+    final token = _token ?? await storage.read(key: TOKEN_KEY);
+    if (token == null || token.isEmpty) return false;
+    try {
+      final response = await _dio.post(
+        '/user/logout',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return response.statusCode == 200 &&
+          response.data is Map &&
+          response.data['success'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<LoginResponse> login(
       String email, String password, bool isHost) async {
     try {
@@ -95,6 +115,32 @@ class AuthService {
         await saveUserData(loginResponse.data.user.toJson());
         await storage.write(key: "pass", value: password);
         await storage.write(key: "email", value: email);
+      }
+      return loginResponse;
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Exchange a Firebase ID token (obtained after a Google sign-in) for an
+  /// Aajoo session. The server verifies the token and returns exactly what
+  /// /user/login returns, so the caller can reuse the normal success path.
+  Future<LoginResponse> loginWithGoogle(String idToken, bool isHost) async {
+    try {
+      final response = await _dio.post('/user/auth/google', data: {
+        'idToken': idToken,
+        'isHost': isHost ? 1 : 0,
+      });
+
+      final loginResponse = LoginResponse.fromJson(response.data);
+
+      if (loginResponse.success) {
+        setToken(loginResponse.data.token);
+        await storage.write(key: TOKEN_KEY, value: loginResponse.data.token);
+        await saveUserData(loginResponse.data.user.toJson());
+        // No password is stored: there is not one for a Google account, and
+        // writing a placeholder would let the silent re-login path try it.
+        await storage.delete(key: 'pass');
       }
       return loginResponse;
     } catch (e) {
@@ -290,7 +336,9 @@ class AuthService {
             Uri.parse("$baseUrl/user/is-exist"),
             body: {"userEmail": email},
           )
-          .timeout(const Duration(seconds: 10));
+          // 30s tolerates a Render free-tier cold start (the first request
+          // after the service idles can take 20-40s); warm requests are ~1s.
+          .timeout(const Duration(seconds: 30));
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw Exception('Email check failed (${response.statusCode})');
       }

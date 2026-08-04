@@ -1,7 +1,4 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/controller/alert_dialog.dart';
 import 'package:rent_home/data/models/action_result.dart';
@@ -9,8 +6,11 @@ import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
 import 'dart:io';
 import '../../../data/models/update_user_model.dart';
 import '../../../service/auth_service.dart';
+import '../../../service/bookmark_service.dart';
 import '../../../service/notification_routing_service.dart';
 import '../../../data/models/user_models.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
 
 class AuthController extends GetxController {
   final AuthService authService = AuthService();
@@ -24,6 +24,14 @@ class AuthController extends GetxController {
 
   // Signup data management
   final RxMap<String, dynamic> signupData = <String, dynamic>{}.obs;
+  // Authoritative auth fields captured at the email/password step. Kept as
+  // dedicated fields (NOT only in signupData) so they can't be lost when the
+  // map is rebuilt across the multi-step profile flow. submitSignup prefers
+  // these over signupData/params.
+  final RxString authEmail = ''.obs;
+  final RxString authPassword = ''.obs;
+  final RxString authConfirmPassword = ''.obs;
+  final RxBool authIsHost = false.obs;
   final Rx<File?> profileImage = Rx<File?>(null);
   final Rx<File?> governmentIdImage = Rx<File?>(null);
   final Rx<File?> houseAgreement = Rx<File?>(null);
@@ -44,7 +52,7 @@ class AuthController extends GetxController {
       isLoggedIn.value = loggedInStatus;
       return loggedInStatus;
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -57,10 +65,84 @@ class AuthController extends GetxController {
           await authService.login(email, password, isHost);
       if (response.success) {
         await _handleSuccessfulLogin(response.data);
+      } else if (response.needsVerification && response.userId != null) {
+        // Account exists but isn't verified — route to the OTP screen so the
+        // user can verify and continue, instead of dead-ending on an error.
+        error.value = '';
+        showAlert('Verify your account',
+            'We sent a verification code. Please verify to continue.', false);
+        Get.toNamed('/verify',
+            arguments: {'userId': response.userId, 'email': email});
       } else {
         String message = response.message;
         showAlert('Error', message, true);
         error.value = message;
+      }
+    } catch (e) {
+      await handleApiError(e, onError: (message) async {
+        _showLoginError(message);
+      }, onUnauthorized: (message) async {
+        _showLoginError(message);
+      });
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Sign in with Google.
+  ///
+  /// google_sign_in proves who the user is to Google; firebase_auth turns that
+  /// into a Firebase ID token, which is what the backend verifies. Posting the
+  /// raw Google token instead would fail — it is issued by Google, not Firebase.
+  ///
+  /// serverClientId is the web client from google-services.json. Without it the
+  /// token audience does not match the project and verification is rejected.
+  Future<void> loginWithGoogle(bool isHost) async {
+    try {
+      isLoading.value = true;
+      error.value = '';
+
+      final googleSignIn = GoogleSignIn(
+        serverClientId:
+            '1006999733744-9mhft1ke8c7cm6ut72bjkq30etnb5ora.apps.googleusercontent.com',
+      );
+      // Sign out first so a shared handset can choose an account rather than
+      // silently reusing whoever signed in last.
+      await googleSignIn.signOut();
+
+      final account = await googleSignIn.signIn();
+      if (account == null) {
+        // The user backed out of the chooser — not an error.
+        isLoading.value = false;
+        return;
+      }
+
+      final googleAuth = await account.authentication;
+      final credential = fb.GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+        accessToken: googleAuth.accessToken,
+      );
+      final userCredential =
+          await fb.FirebaseAuth.instance.signInWithCredential(credential);
+      final firebaseIdToken = await userCredential.user?.getIdToken();
+
+      if (firebaseIdToken == null) {
+        _showLoginError('Could not complete Google sign-in. Please try again.');
+        return;
+      }
+
+      final response =
+          await authService.loginWithGoogle(firebaseIdToken, isHost);
+
+      // The Firebase session was only ever proof of identity; ours is the
+      // session from here, so do not leave a second one to go stale.
+      await fb.FirebaseAuth.instance.signOut();
+      await googleSignIn.signOut();
+
+      if (response.success) {
+        await _handleSuccessfulLogin(response.data);
+      } else {
+        _showLoginError(response.message);
       }
     } catch (e) {
       await handleApiError(e, onError: (message) async {
@@ -164,7 +246,7 @@ class AuthController extends GetxController {
     required String countryCode,
     required String phoneNumber,
   }) {
-    signupData['user_pnumber'] = '$phoneNumber';
+    signupData['user_pnumber'] = phoneNumber;
   }
 
   void updateHouseAgreement(File agreement) {
@@ -186,33 +268,65 @@ class AuthController extends GetxController {
     required String password,
     required String confirmPassword,
     required bool isHost,
-    bool skipMode = false,
   }) async {
     try {
       isLoading.value = true;
       error.value = '';
-      if (!skipMode && !_validateSignupData()) return Future.error('Invalid data');
+      if (!_validateSignupData()) return Future.error('Invalid data');
 
+      // Resolve auth fields from the most reliable source: dedicated fields →
+      // passed params → signupData. This prevents the email/password being lost
+      // when signupData is rebuilt across the multi-step profile flow.
+      final resolvedEmail = [
+        authEmail.value.trim(),
+        email.trim(),
+        (signupData['user_email'] ?? '').toString().trim(),
+      ].firstWhere((v) => v.isNotEmpty, orElse: () => '');
+      final resolvedPassword = [
+        authPassword.value,
+        password,
+        (signupData['user_password'] ?? '').toString(),
+      ].firstWhere((v) => v.isNotEmpty, orElse: () => '');
+      final resolvedConfirm = [
+        authConfirmPassword.value,
+        confirmPassword,
+        (signupData['user_confirmPassword'] ?? '').toString(),
+      ].firstWhere((v) => v.isNotEmpty, orElse: () => '');
+      // Host role: trust the dedicated field set at the role-selection step,
+      // OR the passed param — if either says host, register as host. Both
+      // derive from the same selection, so this only adds resilience.
+      final resolvedIsHost = authIsHost.value || isHost;
+
+      // Guard: never hit the backend with a missing email (it returns the
+      // confusing "Missing required fields"). Surface a clear client error.
+      if (resolvedEmail.isEmpty) {
+        error.value =
+            'Your email is missing. Please go back and re-enter your details.';
+        showAlert('Error', error.value, true);
+        return Future.error(error.value);
+      }
+
+      // Keep signupData consistent with the resolved values.
       signupData.addAll({
-        'user_email': email,
-        'user_password': password,
-        'user_confirmPassword': confirmPassword,
-        'user_isHost': isHost,
+        'user_email': resolvedEmail,
+        'user_password': resolvedPassword,
+        'user_confirmPassword': resolvedConfirm,
+        'user_isHost': resolvedIsHost,
       });
       final response = await authService.signup(
-        fullName: signupData['user_fullName'] ?? '',
-        dob: signupData['user_dob'] ?? '',
-        email: signupData['user_email'],
-        password: signupData['user_password'],
-        confirmPassword: signupData['user_confirmPassword'],
-        phone: signupData['user_pnumber'] ?? '',
-        address: signupData['user_address'] ?? '',
-        city: signupData['user_city'] ?? '',
-        zipcode: signupData['user_pincode'] ?? signupData['user_zipcode'] ?? '',
+        fullName: (signupData['user_fullName'] ?? '').toString(),
+        dob: (signupData['user_dob'] ?? '').toString(),
+        email: resolvedEmail,
+        password: resolvedPassword,
+        confirmPassword: resolvedConfirm,
+        phone: (signupData['user_pnumber'] ?? '').toString(),
+        address: (signupData['user_address'] ?? '').toString(),
+        city: (signupData['user_city'] ?? '').toString(),
+        zipcode: (signupData['user_pincode'] ?? '').toString(),
         idDoc: governmentIdImage.value,
-        docType: int.tryParse(signupData['doc_type']?.toString() ?? '0') ?? 0,
-        docNumber: signupData['doc_number'] ?? '',
-        isHost: signupData['user_isHost'],
+        docType: int.tryParse(signupData['doc_type']?.toString() ?? '') ?? 0,
+        docNumber: (signupData['doc_number'] ?? '').toString(),
+        isHost: resolvedIsHost,
         referralCode: "0000",
       );
       if (response.success) {
@@ -257,18 +371,9 @@ class AuthController extends GetxController {
         error.value = 'Email already exists';
       }
     } catch (e) {
-      if (kDebugMode) {
-        showAlert(
-          'Notice',
-          'Email verification unavailable. Continuing without validation.',
-          false,
-        );
-        error.value = '';
-      } else {
-        const message = 'Unable to verify email right now.';
-        showAlert('Error', message, true);
-        error.value = message;
-      }
+      const message = 'Something went wrong.'; //await handleApiError(e);
+      showAlert('Error', 'Something went wrong.', true);
+      error.value = message;
     } finally {
       isLoading.value = false;
     }
@@ -296,7 +401,7 @@ class AuthController extends GetxController {
         message: 'Profile updated successfully!',
       );
     } catch (e) {
-      final message = await handleApiError(e);
+      await handleApiError(e);
       error.value = 'Something went wrong.';
       return ActionResult(
         isSuccess: false,
@@ -372,6 +477,10 @@ class AuthController extends GetxController {
 
   void clearSignupData() {
     signupData.clear();
+    authEmail.value = '';
+    authPassword.value = '';
+    authConfirmPassword.value = '';
+    authIsHost.value = false;
     profileImage.value = null;
     governmentIdImage.value = null;
     houseAgreement.value = null;
@@ -380,10 +489,21 @@ class AuthController extends GetxController {
 
   Future<void> logout() async {
     try {
+      // Server-side session teardown BEFORE clearing the local token —
+      // otherwise the Authorization header is gone and the backend can't
+      // identify which session row to delete. Failure tolerated: we always
+      // proceed to local logout so the user is never stuck signed-in on
+      // their device because of a network hiccup.
+      await authService.serverLogout();
+
       isLoggedIn.value = false;
       userData.value = null;
       await authService.logout();
       await _firebaseMessaging.deleteToken();
+      // Clear per-user caches so the next account doesn't inherit previous
+      // user's bookmarks (was a real risk when bookmarks lived in
+      // FlutterSecureStorage under a shared key).
+      await BookmarkService().clearCache();
       showAlert('Success', 'Logged out successfully', false);
       Get.offAllNamed('/login');
     } catch (e) {
