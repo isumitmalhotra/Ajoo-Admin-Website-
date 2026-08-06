@@ -18,7 +18,7 @@
 | **A3** | **Icons — CHANGE** | Single library: **Lucide Icons**. Outline default, filled only for active/selected, rounded, uniform stroke, SVG only. No mixing libraries. | 🟡 redesign is Lucide-only (2026-08-06); 98 legacy MUI-icon files remain |
 | **A4** | **Logo** | Transparent SVG + PNG @1x/2x/3x + mono black/white + icon-only + horizontal/vertical. **Remove the white-background container** around the logo. Header supports light/dark logo. Swappable without code changes. *(final logo file pending from client)* | 🟡 (verify) |
 | **A5** | **Favicon + App icons** | Website favicon, PWA icons, Android adaptive+legacy, iOS icons, 512×512. Recognizable at small sizes, no text in icon. | ✅ shipped 2026-08-06 (generated from the header mark; regenerate when the client logo lands) |
-| **A6** | **Mission/Vision visuals** | Animated illustrations (Lottie / smooth SVG / 3D), activate on scroll-into-view, subtle. | ❌ |
+| **A6** | **Mission/Vision visuals** | Animated illustrations (Lottie / smooth SVG / 3D), activate on scroll-into-view, subtle. | ✅ shipped 2026-08-06 (inline SVG, swappable for Lottie) |
 | **A7** | **Content** | Replace ALL placeholder text with the professionally-written copy **provided in this spec** (SEO/GEO/AEO-friendly, conversational, no Lorem). Copy is captured per-page below. | ❌ |
 | **A8** | **CMS-driven content** | Every public page's content editable via Admin (per-page CMS field lists given in spec). No hardcoded marketing copy. | ❌ |
 | **A9** | **Auth model** | **Mobile OTP = default/primary**, Email+password secondary, Social (Google, Apple) — for both Guest & Host, single account, role-based routing + switching. | 🟡 (email + Google sign-in live; mobile OTP still pending a provider) |
@@ -42,7 +42,7 @@
 
 **REMOVE from this page:** floating tags · "12K+ Properties" stat · search bar · Find Your Stay · map · testimonials · FAQ · listings · promo banners · category grids · newsletter.
 
-**Hero images:** full-width slider, 4–6 lifestyle images @1920×1080, warm lighting; optional 8–12s bg video with image fallback.
+**Hero images:** full-width slider, 4–6 lifestyle images @1920×1080, warm lighting; optional 8–12s bg video with image fallback. — 🟡 **slider shipped 2026-08-06** (`HeroSlider.tsx`, 6 frames, scrim + solid fallback, reduced-motion aware). Still placeholder photography, not the client’s own 1920×1080 originals; bg video not built.
 
 ---
 
@@ -134,7 +134,7 @@ Build with scalability so these can be added without redesign: **CMS · SEO Mana
 | A3 | Lucide icons | 🟡 | Redesign now imports `lucide-react` through a generated map — react-icons is out of the bundle and the main chunk fell 3,311→2,701 kB. The 98 pre-redesign files still on `@mui/icons-material` go with the legacy screens. |
 | A4 | Logo (transparent, multi-format) | 🟡 | Uses `favicon.jpeg` with a white bg container. Needs the transparent SVG set (client asset pending). |
 | A5 | Favicon + app icons | ✅ | .ico/16/32/48 + SVG, 180 apple-touch, 192/512 and a maskable 512, wired by `site.webmanifest`. The old favicon was a JPEG of a *different* logo than the header renders. |
-| A6 | Animated Mission/Vision | ❌ | About page uses static content (no Lottie/animated illustrations). |
+| A6 | Animated Mission/Vision | ✅ | `MissionVisionArt.tsx` — strokes draw on scroll-into-view, nothing loops, reduced-motion shows the finished drawing. |
 | A7 | Professional page copy | ❌ | Current copy is generic/placeholder; the spec's provided copy is not applied anywhere. |
 | A8 | CMS-driven content | 🟡 | Backend has `adminCMSSection.controller` + `tbl_cms_section`/`tbl_cms_pages`, but **no admin CMS UI** and public pages are **hardcoded**. |
 | A9 | OTP-first + social auth | 🟡 | Email login + **forgot-password OTP** work. **No mobile-OTP login/signup, no Google/Apple** (no `firebase`/`react-otp-input` deps). |
