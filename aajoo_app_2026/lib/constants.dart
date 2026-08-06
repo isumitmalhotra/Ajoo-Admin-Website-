@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
 
-// --- Brand palette: Ocean Teal & Sunset Orange (matches the web design system:
-//     --primary #0D9488 / --accent #FF7A00 / cream #FDF7F0). Token NAMES are kept
-//     (kIndigo/kClay/kSand) for backwards-compat across ~88 files — only the
-//     VALUES changed from the old Sand & Indigo. kIndigo == teal, kClay == orange.
-const kprimaryColor  = Color(0xFF0D9488); // Ocean Teal (was indigo #1B2447)
-const kscaffoldColor = Color(0xFFFDF7F0); // warm ivory / cream surface
-const kcontentColor  = Color(0xFFF1ECE3); // soft warm content background
+// --- Brand palette: BR-4, matching the web design system.
+//     Evergreen Teal #0F766E / Golden Amber #E8A317 / Warm Ivory #FAF8F4 /
+//     Charcoal Navy #1F2937.
+//     Token NAMES are kept (kIndigo/kClay/kSand) for backwards-compat across
+//     ~88 files — only the VALUES change. kIndigo == teal, kClay == amber.
+//     Anything drawn ON kClay must use kAccentInk: white on Golden Amber is
+//     2.17:1 and unreadable, where the navy is 6.77:1.
+const kprimaryColor  = Color(0xFF0F766E); // Evergreen Teal
+const kscaffoldColor = Color(0xFFFAF8F4); // Warm Ivory
+const kcontentColor  = Color(0xFFF2EFE9); // soft warm content background
 
 // --- Teal & Orange brand tokens (names legacy, values current) ---
-const kIndigo    = Color(0xFF0D9488); // PRIMARY brand — Ocean Teal
-const kIndigo600 = Color(0xFF0A6E63); // hover / pressed — deep teal
-const kSand      = Color(0xFFF1ECE3); // warm background
-const kCream     = Color(0xFFFDF7F0); // card / sheet surface (cream)
-const kClay      = Color(0xFFFF7A00); // ACCENT — Sunset Orange, one pop-CTA / "New" badges
-const kClay600   = Color(0xFFE4670A); // orange pressed
-const kInk       = Color(0xFF0F172A); // primary text — Navy
+const kIndigo    = Color(0xFF0F766E); // PRIMARY brand — Evergreen Teal
+const kIndigo600 = Color(0xFF115E59); // hover / pressed — deep teal
+const kSand      = Color(0xFFFAF8F4); // Warm Ivory background
+const kCream     = Color(0xFFFAF8F4); // card / sheet surface (Warm Ivory)
+const kClay      = Color(0xFFE8A317); // ACCENT — Golden Amber, one pop-CTA / "New" badges
+const kClay600   = Color(0xFFD4930F); // amber pressed
+const kInk       = Color(0xFF1F2937); // primary text — Charcoal Navy
 const kInk2      = Color(0xFF334155); // secondary text — slate
 const kMuted     = Color(0xFF64748B); // captions, placeholders
 const kLine      = Color(0xFFEAE4DA); // warm borders / dividers

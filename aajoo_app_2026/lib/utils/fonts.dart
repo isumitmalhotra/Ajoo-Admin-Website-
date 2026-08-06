@@ -1,16 +1,17 @@
 // AajooHomes mobile — typography helpers.
 //
 // Design-system pairing (matches the web + the new mobile design):
-//   Poppins (display) → headings, hero copy, property titles, brand wordmark
+//   Plus Jakarta Sans (display) → headings, hero copy, property titles, wordmark
 //   Manrope (body)    → all body, UI text, captions, prices, meta
 //
 // The helper NAMES (fraunces/inter/interTextTheme) are kept for backwards-compat
-// across the app; only the underlying faces changed to Poppins/Manrope.
+// across the app; only the underlying faces changed. BR-2 pairs Plus Jakarta
+// Sans for display with Manrope for UI.
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Poppins — headings and brand text. (Helper kept named `fraunces` for compat.)
+/// Plus Jakarta Sans — headings and brand text. (Helper name kept for compat.)
 TextStyle fraunces({
   double? fontSize,
   FontWeight fontWeight = FontWeight.w600,
@@ -19,7 +20,7 @@ TextStyle fraunces({
   double? height,
   FontStyle? fontStyle,
 }) {
-  return GoogleFonts.poppins(
+  return GoogleFonts.plusJakartaSans(
     fontSize: fontSize,
     fontWeight: fontWeight,
     color: color,

@@ -26,7 +26,7 @@ class HotelCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       elevation: 2,
-      shadowColor: const Color(0xFF0F172A).withOpacity(0.08),
+      shadowColor: const Color(0xFF1F2937).withOpacity(0.08),
       child: Container(
         padding: const EdgeInsets.all(8),
         width: 250,
