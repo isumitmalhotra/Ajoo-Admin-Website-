@@ -148,7 +148,7 @@ Build with scalability so these can be added without redesign: **CMS · SEO Mana
 | Page | Status | Finding |
 |------|--------|---------|
 | **B1 Getting Started** | ❌ | **No page, no route, no intent-routing.** Index route goes straight to Home. This is a **net-new build** (dev priority #1). |
-| **B2 Home / Explore** | 🟡 | `home.tsx` has Hero → Announcement → Search(MapandFilter) → Featured → WhyChooseUs → ExploreMore → Become-a-Host → FAQ → Reviews. **Missing:** Trust strip, Trending Stays, Browse-by-Property-Type, Featured Collections, Travel Inspiration, Download App, Newsletter, Bottom CTA. Order + copy differ from spec. |
+| **B2 Home / Explore** | ✅ | Rebuilt 2026-08-07 to CNT-2: all **15 sections in spec order** with spec copy, on `/explore` (`redesign/pages/Explore.tsx`). SEO title/meta + separate OG copy wired. Newsletter posts to a real endpoint (`/newsletter/subscribe`); Guest Reviews reads `/public/reviews/recent` and shows an honest empty state — `tbl_reviews` has 0 rows. **Remaining:** section content is not yet CMS-editable (that’s A8), and the Play Store link is disabled until the Android app is published. |
 | **B3 About Us** | 🟡 | `AboutUs.tsx` exists; content + animated mission/vision not to spec. |
 | **B4 Contact Us** | 🟡 | `ContactUs.tsx` exists; needs the 6-field form + 9 categories + full sections + CMS. |
 | **B5 Login** | 🟡 | Email login only; no OTP-first, no Google/Apple, side-visual not to spec. |
