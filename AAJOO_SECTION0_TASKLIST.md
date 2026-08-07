@@ -26,7 +26,7 @@
 | **A11** | **Configurable services** | SMTP, SMS/OTP provider, email templates (welcome, booking confirmation, host verification, password reset, notifications) — configurable without code changes. | 🟡 |
 | **A12** | **Scalability** | DB/API/components ready for future categories (villas, farm stays, campsites, experiences, tour packages) + future modules without redesign. | 🟡 |
 | **A13** | **Mobile-first · Performance · Security** | Responsive-first, lazy loading + image optimization, input validation + RBAC + web-vuln protection. | 🟡 |
-| **A14** | **Property categories (new set)** | Homestays · Villas · Apartments · Cottages · Farm Stays · Heritage Homes · Boutique Stays · Luxury Stays · Pet-Friendly Stays. | ❌ (verify) |
+| **A14** | **Property categories (new set)** | Homestays · Villas · Apartments · Cottages · Farm Stays · Heritage Homes · Boutique Stays · Luxury Stays · Pet-Friendly Stays. | ✅ live 2026-08-07 — exactly these 9 are active |
 
 ---
 
@@ -142,7 +142,7 @@ Build with scalability so these can be added without redesign: **CMS · SEO Mana
 | A11 | Configurable services | 🟡 | SMTP works; **SMS/OTP provider not configured**; email templates partial. |
 | A12 | Scalability | 🟡 | DB is extensible; some hardcoded areas. |
 | A13 | Mobile-first / perf / security | 🟡 | Responsive + RBAC present; lazy-load/perf partial. |
-| A14 | New category set | ❌ | Live categories = **Villa, Resort, couple, party, Apartment + test junk**. Missing **Homestays, Cottages, Farm Stays, Heritage, Boutique, Luxury, Pet-Friendly**; needs a clean re-seed (this is the client's **category list** we were blocked on — now specified). |
+| A14 | New category set | ✅ | Re-seeded 2026-08-07 via `scripts/seedSpecCategories.js` (dry-run by default). Villa→Villas and Apartment→Apartments **renamed in place** so their 10 properties keep their links; the other 7 created; the 3 test rows deleted with their links. "Resort", "couple" and "party" are not in the spec set but had 10 properties, so they are **deactivated, not reassigned** — guessing that a Resort is a "Luxury Stay" would rewrite a host's own description. 4 properties now have no active category and need one chosen by a human: #10 Maple Retreat Homestay, #11 Grand Orchid Resort, #12 Riverside Cottage, #15 Sunset Party House. |
 
 ### Pages (Part B)
 | Page | Status | Finding |
@@ -153,7 +153,7 @@ Build with scalability so these can be added without redesign: **CMS · SEO Mana
 | **B4 Contact Us** | ✅ | Rebuilt 2026-08-07 to CNT-4 on `/contact`: all 10 sections, 6-field form, the **9 spec categories** (whitelisted server-side), SEO + separate OG copy. Form now POSTs `/contact/message` into `tbl_contact_messages` — it previously built a `mailto:` link and lost the message on any device without a mail client. **WhatsApp number + 5 social URLs are now CMS fields** — fill them in from the admin, no deploy needed. ✅ **CMS-editable** (A8) — including the WhatsApp number and social URLs. Admin inbox shipped at `/redesign/admin/contact-messages` (search, status, soft delete). |
 | **B5 Login** | 🟡 | Email login only; no OTP-first, no Google/Apple, side-visual not to spec. |
 | **B6 Sign Up** | 🟡 | Signup exists; no "choose journey first", no mobile-OTP default, no social. |
-| **B7 FAQ / Knowledge Center** | 🟡 | `FAQ.tsx` exists but not CMS-driven; missing 14 categories, search, feedback, Guest/Host FAQ sets. |
+| **B7 FAQ / Knowledge Center** | ✅ | Rebuilt 2026-08-07. **35 spec FAQs seeded** (15 guest / 15 host / 5 general) across 13 of the 14 named categories — "Travel Tips" is declared but empty, shown dimmed rather than hidden. Public Knowledge Center on `/faq` with all 10 required features (search, category filters, expand/collapse, related, popular, recently updated, helpful/not-helpful, rich text, internal links, and `/faq/<slug>` SEO URLs). Admin at `/redesign/admin/faqs` covers all 7 CMS requirements. Answers are linkified, **not** rendered as HTML — innerHTML on admin-entered content would be stored XSS. |
 | **B8 Admin modules** | 🟡 | **Present:** Property Verification, Category Mgmt, Amenities, Tags, Reviews, Users, Bookings, Finance (revenue/commission/tax/cashflow reports + reconciliation/refunds). **Missing:** CMS, SEO Mgmt, Coupon Mgmt (backend exists, no UI), Notification Mgmt, Blog, dedicated Analytics. **Added 2026-08-07:** Categories, Amenities, Contact Messages inbox. |
 | **B9 Host modules** | 🟡 | **Present:** Dashboard, Properties, Ongoing, Bookings, Earnings, Statements, Performance, Communication, Support, Payout. **Missing/partial:** Calendar Mgmt, Smart Pricing, Offers, Coupons, Occupancy Reports. |
 | **B10 Property / Booking / Blog** | 🟡 | Property + booking pages exist (redesign pending, dev priority #5). **Branded placeholder ❌.** **Blog ❌** (no FE; backend `tbl_blog` scaffolded). Negotiation/flexible pricing 🟡 (present). |
