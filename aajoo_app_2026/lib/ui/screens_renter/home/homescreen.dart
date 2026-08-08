@@ -57,14 +57,6 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
   final userController = Get.put<UserController>(UserController());
   final commonController = Get.put<CommonController>(CommonController());
 
-  // Category mapping for the UI buttons
-  final Map<int, String> categoryMap = {
-    1: "Family",
-    0: "Sharing",
-    2: "Couple",
-    3: "Party",
-    4: "Single",
-  };
   final notificationController = Get.put(NotificationController());
   final dealsController = Get.put(DealsController());
   // Cached AuthController lookup so we can gate the API avalanche below on
@@ -413,27 +405,34 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
 
                           const SizedBox(height: 20),
 
+                          // Categories come from the API, not a hardcoded
+                          // list. The previous row offered Family / Sharing /
+                          // Couple / Party / Single and resolved their ids by
+                          // NAME — none of those exist in tbl_categories any
+                          // more, and the lookup fell back to "first category"
+                          // rather than null, so every button silently
+                          // filtered by the wrong thing.
                           SizedBox(
                             height: 100,
-                            child: ListView(
-                              scrollDirection: Axis.horizontal,
-                              children: [
-                                const SizedBox(width: 10),
-                                _hotelTypeBlock(
-                                    1, "assets/family.png", "Family"),
-                                const SizedBox(width: 20),
-                                _hotelTypeBlock(
-                                    0, "assets/sharing.png", "Sharing"),
-                                const SizedBox(width: 20),
-                                _hotelTypeBlock(
-                                    2, "assets/couple.png", "Couple"),
-                                const SizedBox(width: 20),
-                                _hotelTypeBlock(3, "assets/girls.png", "Party"),
-                                const SizedBox(width: 20),
-                                _hotelTypeBlock(4, "assets/boy.png", "Single"),
-                                const SizedBox(width: 10),
-                              ],
-                            ),
+                            child: Obx(() {
+                              final cats = commonController
+                                      .cats.value?.data.categories ??
+                                  [];
+                              if (cats.isEmpty) return const SizedBox.shrink();
+                              return ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 10),
+                                itemCount: cats.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(width: 20),
+                                itemBuilder: (_, i) => _hotelTypeBlock(
+                                  cats[i].catId,
+                                  _iconForCategory(cats[i].catTitle),
+                                  cats[i].catTitle,
+                                ),
+                              );
+                            }),
                           ),
 
                           const SizedBox(height: 30),
@@ -705,20 +704,35 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _hotelTypeBlock(int index, String image, String type) {
-    final selected = index == _selectedHotelIndex;
+  /// An icon per spec category. The web uses photography; on a phone a glyph
+  /// stays legible at 64px and cannot go missing like an asset can.
+  IconData _iconForCategory(String title) {
+    final t = title.toLowerCase();
+    if (t.contains('villa')) return Icons.villa_outlined;
+    if (t.contains('apartment')) return Icons.apartment_outlined;
+    if (t.contains('cottage')) return Icons.cottage_outlined;
+    if (t.contains('farm')) return Icons.agriculture_outlined;
+    if (t.contains('heritage')) return Icons.account_balance_outlined;
+    if (t.contains('boutique')) return Icons.storefront_outlined;
+    if (t.contains('luxury')) return Icons.diamond_outlined;
+    if (t.contains('pet')) return Icons.pets_outlined;
+    return Icons.home_outlined; // Homestays, and anything added later
+  }
+
+  /// `catId` is the real tbl_categories id, so filtering needs no name lookup.
+  Widget _hotelTypeBlock(int catId, IconData icon, String type) {
+    final selected = catId == _selectedHotelIndex;
     return InkWell(
       borderRadius: BorderRadius.circular(18),
       onTap: () {
         setState(() {
-          if (_selectedHotelIndex == index) {
-            // If already selected, deselect and show all properties
+          if (_selectedHotelIndex == catId) {
+            // Tapping the selected one clears the filter.
             _selectedHotelIndex = -1;
-            mapController.fetchProperties(); // Reset to all properties
+            mapController.fetchProperties();
           } else {
-            // Select new category and filter properties
-            _selectedHotelIndex = index;
-            _searchByCategory(index);
+            _selectedHotelIndex = catId;
+            _filterByCategoryId(catId, type);
           }
         });
       },
@@ -744,7 +758,7 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                   : kSoftShadow,
             ),
             child: Center(
-              child: Image.asset(image, height: 42, width: 42),
+              child: Icon(icon, size: 30, color: selected ? kIndigo : kInk2),
             ),
           ),
           const SizedBox(height: 6),
@@ -761,66 +775,23 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
     );
   }
 
-  void _searchByCategory(int categoryIndex) {
-    // Map UI category index to actual category ID from API
-    int? categoryId = _getCategoryIdFromIndex(categoryIndex);
-
-    if (categoryId != null) {
-      // Fetch properties filtered by category
-      mapController.getProperties(
-        mapController.currentPosition.value.latitude,
-        mapController.currentPosition.value.longitude,
-        category: categoryId,
-      );
-
-      // Show feedback to user
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content:
-              Text('Searching ${categoryMap[categoryIndex]} properties...'),
-          duration: const Duration(seconds: 2),
-          backgroundColor: Theme.of(context).primaryColor,
-        ),
-      );
-    }
-  }
-
-  int? _getCategoryIdFromIndex(int uiIndex) {
-    // This maps the UI button index to actual category IDs
-    // You may need to adjust these IDs based on your API's category structure
-    switch (uiIndex) {
-      case 0: // Sharing
-        return _findCategoryIdByName("Sharing");
-      case 1: // Family
-        return _findCategoryIdByName("Family");
-      case 2: // Couple
-        return _findCategoryIdByName("Couple");
-      case 3: // Party
-        return _findCategoryIdByName("Party");
-      case 4: // Single
-        return _findCategoryIdByName("Single");
-      default:
-        return null;
-    }
-  }
-
-  int? _findCategoryIdByName(String categoryName) {
-    try {
-      if (commonController.cats.value?.data.categories != null) {
-        final category =
-            commonController.cats.value!.data.categories.firstWhere(
-          (cat) =>
-              cat.catTitle.toLowerCase().contains(categoryName.toLowerCase()),
-          orElse: () => commonController.cats.value!.data.categories.first,
-        );
-        return category.catId;
-      }
-    } catch (e) {
-      print('Error finding category ID for $categoryName: $e');
-    }
-
-    // Fallback to index-based mapping if category names don't match
-    return 1; // Default category ID
+  /// Filter by a real category id. The old path mapped a UI index to a name,
+  /// searched the API for it, and fell back to the FIRST category when the
+  /// name was not found — so a retired category quietly filtered by something
+  /// else entirely instead of failing.
+  void _filterByCategoryId(int categoryId, String title) {
+    mapController.getProperties(
+      mapController.currentPosition.value.latitude,
+      mapController.currentPosition.value.longitude,
+      category: categoryId,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Showing $title'),
+        duration: const Duration(seconds: 2),
+        backgroundColor: Theme.of(context).primaryColor,
+      ),
+    );
   }
 }
 
