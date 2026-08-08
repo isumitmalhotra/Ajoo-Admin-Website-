@@ -75,7 +75,15 @@ class _AuthPageState extends State<AuthPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kCream,
-      body: Stack(
+      // SizedBox.expand is load-bearing. A Stack sizes itself to its
+      // NON-positioned children, and every child here is Positioned, so
+      // without it the Stack collapses to nothing and `bottom: 0` on the form
+      // sheet anchors near the top of the screen — the card then extends
+      // upward off-screen and the only thing visible is its bottom edge.
+      // That was the "blank page after tapping Explore": the login form was
+      // rendering, just almost entirely above the top of the display.
+      body: SizedBox.expand(
+        child: Stack(
         children: [
           // Hero image
           Positioned(
@@ -121,7 +129,11 @@ class _AuthPageState extends State<AuthPage> {
             ),
           ),
           // Brand
-          SafeArea(
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Row(children: [
@@ -136,6 +148,7 @@ class _AuthPageState extends State<AuthPage> {
                         fontWeight: FontWeight.w700,
                         color: Colors.white)),
               ]),
+            ),
             ),
           ),
           // Form sheet
@@ -391,11 +404,17 @@ class _AuthPageState extends State<AuthPage> {
                                               : '/home');
                                         }
                                       }),
+                              // Google requires their own "G" mark on this
+                              // button. The asset is not in the repo yet, so
+                              // until it is dropped into assets/images/ the
+                              // button renders text-only — an arrow icon read
+                              // as "generic login" and drawing our own G would
+                              // be a poor imitation of someone's trademark.
                               icon: Image.asset('assets/images/google.png',
                                   height: 18,
                                   width: 18,
                                   errorBuilder: (_, __, ___) =>
-                                      const Icon(Icons.login, size: 18)),
+                                      const SizedBox.shrink()),
                               label: Text('Continue with Google',
                                   style: inter(
                                       fontSize: 15,
@@ -445,6 +464,7 @@ class _AuthPageState extends State<AuthPage> {
             ),
           ),
         ],
+        ),
       ),
     );
   }
