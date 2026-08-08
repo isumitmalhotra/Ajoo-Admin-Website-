@@ -33,7 +33,7 @@ class HostHomeScreen extends StatefulWidget {
 
 class _HostHomeScreenState extends State<HostHomeScreen> {
   final hostController = Get.find<HostController>();
-  static const Color _teal50 = Color(0xFFE6F5F3);
+  static const Color _teal50 = kIndigo50;
   static const Color _orange50 = Color(0xFFFFF1E6);
 
   @override

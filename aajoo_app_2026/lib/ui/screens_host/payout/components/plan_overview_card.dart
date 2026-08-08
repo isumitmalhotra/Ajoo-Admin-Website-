@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/screens_host/payout/payout_controller.dart';
 
-import 'package:flutter/material.dart';
-
 class PlanOverviewCard extends StatelessWidget {
   const PlanOverviewCard({
     super.key,
@@ -57,13 +55,22 @@ class PlanOverviewCard extends StatelessWidget {
             payoutController.isLoading.value
                 ? const Center(child: CircularProgressIndicator())
                 : payoutController.isError.value
-                    ? const Text(
-                        'Error loading data',
-                        style: TextStyle(
-                          color: Colors.red,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    // On error, render the same shape as the success state
+                    // with zero/blank values rather than a red error string.
+                    ? Column(
+                        children: [
+                          _infoRow(
+                            icon: Icons.bookmark_outline,
+                            label: 'Monthly Bookings',
+                            value: '0',
+                          ),
+                          const SizedBox(height: 14),
+                          _infoRow(
+                            icon: Icons.account_balance_wallet_outlined,
+                            label: 'Total Earnings',
+                            value: '₹0',
+                          ),
+                        ],
                       )
                     : Column(
                         children: [

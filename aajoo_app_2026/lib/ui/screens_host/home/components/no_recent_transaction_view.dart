@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:rent_home/constants.dart';
+import 'package:rent_home/utils/fonts.dart';
 
 class NoRecentTransactionView extends StatelessWidget {
   const NoRecentTransactionView({
@@ -8,14 +10,16 @@ class NoRecentTransactionView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
         child: SizedBox(
       height: 200,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Iconsax.empty_wallet4),
-          Text("No Recent Transactions"),
+          const Icon(Iconsax.empty_wallet4, color: kMuted),
+          const SizedBox(height: 10),
+          Text("No Recent Transactions",
+              style: inter(fontSize: 14, color: kMuted)),
         ],
       ),
     ));

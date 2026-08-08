@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/data/models/transaction_model.dart';
+import 'package:rent_home/utils/fonts.dart';
 
 class HostRecentTransactionItemView extends StatelessWidget {
   const HostRecentTransactionItemView({
@@ -16,13 +17,15 @@ class HostRecentTransactionItemView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 1,
+      elevation: 0,
+      color: kCream,
       margin: const EdgeInsets.symmetric(vertical: 5),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: kLine),
       ),
       child: ListTile(
-        tileColor: kcontentColor,
+        tileColor: kCream,
         leading: const CircleAvatar(
           backgroundColor: kSuccess,
           child: Icon(
@@ -32,26 +35,26 @@ class HostRecentTransactionItemView extends StatelessWidget {
         ),
         title: Text(
           transaction.payInvoice,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: inter(fontWeight: FontWeight.w600, color: kInk),
         ),
-        subtitle: Text("Amount: ₹${transaction.payAmount}"),
+        subtitle: Text("Amount: ₹${transaction.payAmount}",
+            style: inter(fontSize: 13, color: kMuted)),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               transaction.paymentStatusBsTitle,
-              style: TextStyle(
+              style: inter(
                 color: transaction.paymentStatusBsTitle == "Paid"
                     ? kSuccess
                     : kDanger,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
               ),
             ),
             Text(
               formatDate,
-              style: const TextStyle(fontSize: 12),
+              style: inter(fontSize: 12, color: kMuted),
             ),
           ],
         ),

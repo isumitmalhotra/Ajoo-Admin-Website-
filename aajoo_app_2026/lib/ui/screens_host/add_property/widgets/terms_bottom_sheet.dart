@@ -162,10 +162,10 @@ class TermsBottomSheet extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: kSuccess.withOpacity(0.3)),
         ),
-        child: Row(
+        child: const Row(
           children: [
-            const Icon(Icons.local_offer, color: kSuccess, size: 20),
-            const SizedBox(width: 8),
+            Icon(Icons.local_offer, color: kSuccess, size: 20),
+            SizedBox(width: 8),
             Expanded(
               child: Text(
                 'Special Offer: First 5 properties are commission-free!',
@@ -215,7 +215,7 @@ class TermsBottomSheet extends StatelessWidget {
                 children: [
                   const Icon(Icons.star, color: kSuccess, size: 16),
                   const SizedBox(width: 6),
-                  Text(
+                  const Text(
                     'First 5 properties: 0% commission',
                     style: TextStyle(
                         color: kSuccess,

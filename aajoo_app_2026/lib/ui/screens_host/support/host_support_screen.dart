@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/controller/static_page_controller.dart';
 import 'package:rent_home/service/device_service.dart';
-import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HostSupportScreen extends StatelessWidget {
@@ -14,24 +13,24 @@ class HostSupportScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: kcontentColor,
       appBar: AppBar(
-        title: Text('Host Support'),
+        title: const Text('Host Support'),
         backgroundColor: kprimaryColor,
         foregroundColor: kscaffoldColor,
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: const Padding(
+        padding: EdgeInsets.all(16.0),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const HostContactInfoSection(),
-              const SizedBox(height: 10),
+              HostContactInfoSection(),
+              SizedBox(height: 10),
               Divider(color: kLine),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
+                    EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
                 child: Text('Host Frequently Asked Questions',
                     style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -242,6 +241,7 @@ class ContactRow extends StatelessWidget {
   final String contactInfo;
 
   const ContactRow({
+    super.key,
     required this.icon,
     required this.label,
     required this.contactInfo,
@@ -293,6 +293,8 @@ class ContactRow extends StatelessWidget {
 }
 
 class HostFAQSection extends StatefulWidget {
+  const HostFAQSection({super.key});
+
   @override
   State<HostFAQSection> createState() => _HostFAQSectionState();
 }
@@ -359,11 +361,11 @@ class _HostFAQSectionState extends State<HostFAQSection> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: kLine),
           borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: kInk.withOpacity(0.04),
               spreadRadius: 1,
               blurRadius: 3,
               offset: const Offset(0, 3),
@@ -403,7 +405,7 @@ class _HostFAQTileState extends State<HostFAQTile> {
     return ExpansionTile(
       title: Text(
         widget.question,
-        style: TextStyle(
+        style: const TextStyle(
           fontWeight: FontWeight.bold,
           color: kInk,
         ),
@@ -423,7 +425,7 @@ class _HostFAQTileState extends State<HostFAQTile> {
           padding: const EdgeInsets.all(8.0),
           child: Text(
             widget.answer,
-            style: TextStyle(
+            style: const TextStyle(
               color: kMuted,
               height: 1.5,
             ),

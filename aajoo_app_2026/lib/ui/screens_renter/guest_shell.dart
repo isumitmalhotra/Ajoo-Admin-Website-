@@ -60,7 +60,7 @@ class _GuestShellState extends State<GuestShell> {
             backgroundColor: Colors.white,
             elevation: 0,
             height: 64,
-            indicatorColor: const Color(0xFFE6F5F3),
+            indicatorColor: kIndigo50,
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
             destinations: const [
               NavigationDestination(

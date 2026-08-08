@@ -3,9 +3,10 @@ import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/ui/screens_host/add_property/host_property_listing_screen.dart';
 import 'package:rent_home/ui/screens_host/host_tab_provider.dart';
-import 'package:rent_home/ui/unused_screens/chat/chat_page.dart';
 import 'package:rent_home/ui/screens_common/privacy_policy/privacy-policy_page.dart';
+import 'package:rent_home/ui/screens_common/terms_and_conditions/terms_condition_user_page.dart';
 import 'package:rent_home/ui/screens_host/booking_history/booking_history_screen.dart';
+import 'package:rent_home/ui/screens_host/payout/add_payout_account_page.dart';
 import 'package:rent_home/ui/screens_host/payout/payout_page.dart';
 import 'package:rent_home/ui/screens_host/support/host_support_screen.dart';
 import 'package:ionicons/ionicons.dart';
@@ -36,7 +37,7 @@ class HostHomeDrawer extends StatelessWidget {
                 const SizedBox(height: 10),
                 const Text("Welcome,",
                     style: TextStyle(color: Colors.white, fontSize: 20)),
-                Text(authController.userData.value!.fullName,
+                Text(authController.userData.value?.fullName ?? 'Host',
                     style: const TextStyle(color: Colors.white, fontSize: 28)),
               ],
             ),
@@ -89,6 +90,24 @@ class HostHomeDrawer extends StatelessWidget {
               Navigator.pop(context);
               hostTabProvider.resetToHome();
               Get.to(() => const PayoutPage());
+            },
+          ),
+          ListTile(
+            leading: const Icon(Iconsax.bank),
+            title: const Text("Bank Account"),
+            onTap: () {
+              Navigator.pop(context);
+              hostTabProvider.resetToHome();
+              Get.to(() => const AddPayoutAccountPage());
+            },
+          ),
+          ListTile(
+            leading: const Icon(Iconsax.document_text),
+            title: const Text("Host Terms & Conditions"),
+            onTap: () {
+              Navigator.pop(context);
+              hostTabProvider.resetToHome();
+              Get.to(() => const TermsPage(isHost: true));
             },
           ),
           ListTile(

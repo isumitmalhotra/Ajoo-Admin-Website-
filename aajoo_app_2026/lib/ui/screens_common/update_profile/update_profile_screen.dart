@@ -117,11 +117,11 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                      const Row(
                         children: [
-                          const Icon(Icons.description, color: kprimaryColor),
-                          const SizedBox(width: 8),
-                          const Text(
+                          Icon(Icons.description, color: kprimaryColor),
+                          SizedBox(width: 8),
+                          Text(
                             'Document Information',
                             style: TextStyle(
                               fontSize: 16,
@@ -676,6 +676,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
 
         return Form(
           key: _formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(

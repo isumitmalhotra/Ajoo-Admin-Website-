@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
-import 'package:rent_home/service/device_service.dart';
 
 class SupportAssistantWidget extends StatelessWidget {
   final VoidCallback? onTap;

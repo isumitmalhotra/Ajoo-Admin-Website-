@@ -255,7 +255,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                   width: 44,
                   height: 44,
                   decoration: const BoxDecoration(
-                      color: Color(0xFFE6F5F3), shape: BoxShape.circle),
+                      color: kIndigo50, shape: BoxShape.circle),
                   alignment: Alignment.center,
                   child: Text(
                     guest.isNotEmpty ? guest[0].toUpperCase() : '?',

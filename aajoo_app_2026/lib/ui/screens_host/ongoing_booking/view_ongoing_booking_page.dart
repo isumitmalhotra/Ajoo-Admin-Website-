@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/widgets/app_ui.dart' show withDividers;
 import 'package:rent_home/ui/screens_host/host_controller.dart';
 import 'package:rent_home/data/models/host_ongoing_response.dart';
 import 'package:rent_home/service/device_service.dart';
@@ -9,8 +10,7 @@ import 'package:rent_home/service/device_service.dart';
 class ViewOngoingBookingPage extends StatefulWidget {
   final Booking booking;
 
-  const ViewOngoingBookingPage({Key? key, required this.booking})
-      : super(key: key);
+  const ViewOngoingBookingPage({super.key, required this.booking});
 
   @override
   State<ViewOngoingBookingPage> createState() => _ViewOngoingBookingPageState();
@@ -137,7 +137,7 @@ class _ViewOngoingBookingPageState extends State<ViewOngoingBookingPage> {
                 ),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: kCream,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Padding(
@@ -154,36 +154,38 @@ class _ViewOngoingBookingPageState extends State<ViewOngoingBookingPage> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        _buildDetailRow(
-                          'Booking ID',
-                          widget.booking.bookId,
-                          Icons.confirmation_number,
-                        ),
-                        _buildDetailRow(
-                          'Status',
-                          widget.booking.bookingStatusBsTitle,
-                          Icons.info,
-                          statusColor: _getStatusColor(
-                              widget.booking.bookingStatusBsTitle),
-                        ),
-                        _buildDetailRow(
-                          'Check-in Date',
-                          _formatDate(widget.booking.bookDetailsBtBookFrom),
-                          Icons.login,
-                        ),
-                        _buildDetailRow(
-                          'Check-out Date',
-                          _formatDate(widget.booking.bookDetailsBtBookTo),
-                          Icons.logout,
-                        ),
-                        _buildDetailRow(
-                          'Duration',
-                          _calculateDuration(
-                            widget.booking.bookDetailsBtBookFrom,
-                            widget.booking.bookDetailsBtBookTo,
+                        ...withDividers([
+                          _buildDetailRow(
+                            'Booking ID',
+                            widget.booking.bookId,
+                            Icons.confirmation_number,
                           ),
-                          Icons.schedule,
-                        ),
+                          _buildDetailRow(
+                            'Status',
+                            widget.booking.bookingStatusBsTitle,
+                            Icons.info,
+                            statusColor: _getStatusColor(
+                                widget.booking.bookingStatusBsTitle),
+                          ),
+                          _buildDetailRow(
+                            'Check-in Date',
+                            _formatDate(widget.booking.bookDetailsBtBookFrom),
+                            Icons.login,
+                          ),
+                          _buildDetailRow(
+                            'Check-out Date',
+                            _formatDate(widget.booking.bookDetailsBtBookTo),
+                            Icons.logout,
+                          ),
+                          _buildDetailRow(
+                            'Duration',
+                            _calculateDuration(
+                              widget.booking.bookDetailsBtBookFrom,
+                              widget.booking.bookDetailsBtBookTo,
+                            ),
+                            Icons.schedule,
+                          ),
+                        ]),
                       ],
                     ),
                   ),
@@ -202,7 +204,7 @@ class _ViewOngoingBookingPageState extends State<ViewOngoingBookingPage> {
                 ),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: kCream,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Padding(
@@ -230,7 +232,7 @@ class _ViewOngoingBookingPageState extends State<ViewOngoingBookingPage> {
                           title: const Text('Phone Number'),
                           subtitle: Text(widget.booking.userDetailsUserPnumber),
                           trailing: IconButton(
-                            icon: Icon(Icons.call, color: kSuccess),
+                            icon: const Icon(Icons.call, color: kSuccess),
                             onPressed: () {
                               DeviceService().launchPhone(
                                   widget.booking.userDetailsUserPnumber);
@@ -377,10 +379,18 @@ class _ViewOngoingBookingPageState extends State<ViewOngoingBookingPage> {
   Widget _buildDetailRow(String label, String value, IconData icon,
       {Color? statusColor}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
-          Icon(icon, color: kprimaryColor.withOpacity(0.8), size: 20),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: kprimaryColor.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: kprimaryColor, size: 18),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -388,18 +398,15 @@ class _ViewOngoingBookingPageState extends State<ViewOngoingBookingPage> {
               children: [
                 Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: kMuted,
-                  ),
+                  style: const TextStyle(fontSize: 12.5, color: kMuted),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: statusColor ?? Colors.black87,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
+                    color: statusColor ?? kInk,
                   ),
                 ),
               ],

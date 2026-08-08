@@ -1,5 +1,3 @@
-import 'package:animate_do/animate_do.dart';
-import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:get/get.dart';
@@ -9,9 +7,7 @@ import 'package:rent_home/constants.dart';
 import 'package:rent_home/controller/common_controller.dart';
 import 'package:rent_home/ui/screens_renter/home/map/map_controller.dart';
 import 'package:rent_home/controller/search_controller.dart';
-import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/data/models/search_property_model.dart';
-import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';
 import 'package:rent_home/ui/screens_renter/nearby_bookings/pre_booking_card.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -466,7 +462,10 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
               return const Text("Loading...");
             }
             if (snapshot.hasError) {
-              return const Text("Error fetching address");
+              // Soft fallback — geocoding can fail for many reasons (offline,
+              // quota, etc.). Render an empty title rather than a scary
+              // "Error fetching address" string.
+              return const Text("Location unavailable");
             }
             return Container(
                 width: double.infinity,
@@ -542,7 +541,7 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                   );
                 }
                 if (searchController.preBookingResponse.value!.data.isEmpty) {
-                  return Container(
+                  return SizedBox(
                     height: MediaQuery.of(context).size.height * 0.8,
                     width: double.infinity,
                     child: const Column(
@@ -929,7 +928,7 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
 
                     // Properties list
                     if (_isSearching && _filteredProperties.isEmpty)
-                      Container(
+                      SizedBox(
                         height: 300,
                         width: double.infinity,
                         child: Column(

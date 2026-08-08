@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
 
@@ -93,10 +92,10 @@ class CartTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: kcontentColor,
                   border: Border.all(
-                    color: kLine,
-                    width: 1,
+                    color: Colors.grey.shade200,
+                    width: 2,
                   ),
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
                   children: [

@@ -1,3 +1,4 @@
+
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
@@ -8,16 +9,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:get/get.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:logger/logger.dart';
-import 'package:rent_home/ui/screens_common/notifications/notification_screen.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 import '../models/notification_response_model.dart';
 import 'notification_routing_service.dart';
-
-/// Top-level function required by Firebase — must NOT be a class method
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Background isolate: no access to app state — just log
-  Logger().w('⏳ Background Notification: ${message.notification?.title}');
-}
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -45,6 +39,11 @@ class NotificationService {
       headers: {
         'Accept': 'application/json',
       },
+      // Short timeouts — failed/missing endpoints bail quickly so the UI
+      // doesn't stall while waiting on a dead backend. Defaults are ~30s.
+      connectTimeout: const Duration(seconds: 5),
+      sendTimeout: const Duration(seconds: 8),
+      receiveTimeout: const Duration(seconds: 8),
     ),
   )..interceptors.add(PrettyDioLogger(
       requestHeader: true,
@@ -57,9 +56,12 @@ class NotificationService {
       enabled: true,
     ));
 
-  final String baseUrl = 'https://api.aajoohomes.com';
+  // Single source of truth: route through Apiconstants so the notification
+  // service follows the same base URL as the rest of the app. Was previously
+  // pinned to a different deploy (onrender) which 404s.
+  String get baseUrl => Apiconstants.baseUrl;
   Future<void> saveTokenToDatabase(String fcmToken) async {
-    final token = await FlutterSecureStorage().read(key: "user_token");
+    final token = await const FlutterSecureStorage().read(key: "user_token");
     _dio.options.baseUrl = baseUrl;
     _dio.options.headers["Authorization"] = 'Bearer $token';
     try {
@@ -81,7 +83,7 @@ class NotificationService {
   }
 
   Future<AppNotificationResponse> getNotification() async {
-    final token = await FlutterSecureStorage().read(key: "user_token");
+    final token = await const FlutterSecureStorage().read(key: "user_token");
     _dio.options.baseUrl = baseUrl;
     _dio.options.headers["Authorization"] = 'Bearer $token';
     try {
@@ -94,6 +96,32 @@ class NotificationService {
     } on DioException catch (e) {
       logger.w(e.response);
       throw Exception("Error fetching notifications: $e");
+    }
+  }
+
+  /// Marks a single notification as read on the backend. Returns true on
+  /// success, false on any failure — caller decides whether to update local
+  /// state optimistically. Backend expects: `{ notificationId: <int> }`.
+  Future<bool> markNotificationAsRead(int notificationId) async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.baseUrl = baseUrl;
+    _dio.options.headers["Authorization"] = 'Bearer $token';
+    try {
+      final response = await _dio.post(
+        "/user/notification/mark-read",
+        data: {"notificationId": notificationId},
+      );
+      final ok = response.statusCode == 200 && response.data?["success"] == true;
+      if (!ok) {
+        logger.w("markNotificationAsRead non-ok response: ${response.data}");
+      }
+      return ok;
+    } on DioException catch (e) {
+      logger.w("markNotificationAsRead error: ${e.message}");
+      return false;
+    } catch (e) {
+      logger.w("markNotificationAsRead unexpected: $e");
+      return false;
     }
   }
 
@@ -144,13 +172,6 @@ class NotificationService {
       logger.d("payload: ${response.payload}");
       final data = jsonDecode(response.payload!);
       print(data);
-      final route = data['route'];
-      final hostId = data['hostId'];
-      final type = data['type'];
-      final propertyId = data['propertyId'];
-      final lat = data['lat'];
-      final long = data['long'];
-      final userId = data['userId'];
       if (Get.isRegistered<NotificationRoutingService>()) {
         Get.find<NotificationRoutingService>().handleNotificationData(data);
       }
@@ -197,6 +218,14 @@ class NotificationService {
     });
 
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  }
+
+  /// **5️⃣ Handle Background Notifications**
+  Future<void> _firebaseMessagingBackgroundHandler(
+      RemoteMessage message) async {
+    logger.w(
+        "⏳ Background Notification Received: ${message.notification?.title}");
+    _showNotification(message);
   }
 
   /// **6️⃣ Show Notification**

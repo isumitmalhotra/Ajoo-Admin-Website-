@@ -289,7 +289,7 @@ class _HostProfilePageState extends State<HostProfilePage> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 4),
                       decoration: BoxDecoration(
-                          color: const Color(0xFFE6F5F3),
+                          color: kIndigo50,
                           borderRadius: BorderRadius.circular(20)),
                       child: Text('Host',
                           style: inter(
@@ -677,13 +677,13 @@ class _HostProfilePageState extends State<HostProfilePage> {
                             mainAxisSize: MainAxisSize.min,
                             children: const [
                               Icon(Icons.star,
-                                  size: 12, color: Color(0xFF7A5AF8)),
+                                  size: 12, color: kIndigo),
                               SizedBox(width: 4),
                               Text('Luxury',
                                   style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w700,
-                                      color: Color(0xFF7A5AF8))),
+                                      color: kIndigo)),
                             ]),
                       ),
                     Material(

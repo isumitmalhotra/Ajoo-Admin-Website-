@@ -1,8 +1,8 @@
-import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';
+import 'package:rent_home/utils/fonts.dart';
 import 'package:shimmer/shimmer.dart';
 
 class PreBookingHomeCarousel extends StatefulWidget {
@@ -557,18 +557,38 @@ class _PreBookingHomeCarouselState extends State<PreBookingHomeCarousel> {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: const EdgeInsets.symmetric(vertical: 36),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(16),
+        color: kSurface,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: kCardShadow,
       ),
-      child: const Column(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.home_outlined, size: 60, color: Colors.grey),
-          SizedBox(height: 16),
+          Container(
+            height: 60,
+            width: 60,
+            decoration: BoxDecoration(
+              color: kIndigo.withOpacity(0.07),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.villa_outlined, size: 28, color: kIndigo),
+          ),
+          const SizedBox(height: 14),
           Text(
-            "No Properties Available",
-            style: TextStyle(fontSize: 16, color: Colors.grey),
+            "No stays available yet",
+            style: fraunces(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: kInk,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "Check back soon for new places to stay",
+            style: inter(fontSize: 12.5, color: kMuted),
           ),
         ],
       ),

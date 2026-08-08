@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/controller/alert_dialog.dart';
@@ -17,6 +16,13 @@ class HostController extends GetxController {
   final storage = const FlutterSecureStorage();
   RxBool loading = false.obs;
   RxString error = ''.obs;
+
+  // Per-resource fetch flags. Lets each list UI distinguish "still loading"
+  // from "fetched but empty/error" without depending on the shared `loading`
+  // flag (which is reused across endpoints and causes flicker).
+  final RxBool propertiesFetched = false.obs;
+  final RxBool ongoingFetched = false.obs;
+  final RxBool transactionsFetched = false.obs;
   Rx<HostOnGoingBookingResponse?> HostOngoingResponse =
       Rx<HostOnGoingBookingResponse?>(null);
   Rx<HostPropertiesResponse?> hostPropertiesResponse =
@@ -62,38 +68,53 @@ class HostController extends GetxController {
       error.value = e.toString();
     } finally {
       loading.value = false;
+      transactionsFetched.value = true;
     }
   }
 
-  Future<void> updateCoverImage(int id) async {
+  Future<bool> updateCoverImage(int id) async {
+    final picked = coverImage.value;
+    if (picked == null) {
+      showSnackbar("No image selected", "Pick an image first", true);
+      return false;
+    }
     loading.value = true;
     try {
-      final response =
-          await propertyService.updatePropertyCoverImage(id, coverImage.value!);
-      if (response) {
+      final ok =
+          await propertyService.updatePropertyCoverImage(id, picked);
+      if (ok) {
         showSnackbar("Image Updated Successfully", "", false);
+        // Refresh so the new cover shows in the list immediately.
+        await getHostProperties();
       } else {
         showSnackbar("Something went Wrong", "error updating image", true);
       }
+      return ok;
     } catch (e) {
       error.value = e.toString();
       showSnackbar(e.toString(), "Error updating image", true);
+      return false;
+    } finally {
+      loading.value = false;
     }
   }
 
-  Future<void> updatePropertyStatus(int propId, int status) async {
+  Future<bool> updatePropertyStatus(int propId, int status) async {
     loading.value = true;
     try {
       final response = await hostService.updatePropertyStatus(propId, status);
       if (response) {
         showSnackbar("Property Status Updated Successfully", "", false);
+        await getHostProperties();
       } else {
         showSnackbar(
             "Something went Wrong", "error updating property status", true);
       }
+      return response;
     } catch (e) {
       error.value = e.toString();
       showSnackbar(e.toString(), "Error updating property status", true);
+      return false;
     } finally {
       loading.value = false;
     }
@@ -108,18 +129,28 @@ class HostController extends GetxController {
       error.value = e.toString();
     } finally {
       loading.value = false;
+      propertiesFetched.value = true;
     }
   }
 
-  Future<void> deleteProperty(int id) async {
-    loading.value = false;
-    final response = await propertyService.deleteProperty(id);
-    if (response) {
-      showSnackbar("Property Deleted Successfully", "", false);
-    } else {
-      showSnackbar("Something went Wrong", "error deleting property", true);
+  Future<bool> deleteProperty(int id) async {
+    loading.value = true;
+    try {
+      final response = await propertyService.deleteProperty(id);
+      if (response) {
+        showSnackbar("Property Deleted Successfully", "", false);
+        await getHostProperties();
+      } else {
+        showSnackbar("Something went Wrong", "error deleting property", true);
+      }
+      return response;
+    } catch (e) {
+      error.value = e.toString();
+      showSnackbar("Error deleting property", e.toString(), true);
+      return false;
+    } finally {
+      loading.value = false;
     }
-    loading.value = false;
   }
 
   Future<void> getHostOngoing(int hostId) async {
@@ -133,6 +164,7 @@ class HostController extends GetxController {
       error.value = e.toString();
     } finally {
       loading.value = false;
+      ongoingFetched.value = true;
     }
   }
 

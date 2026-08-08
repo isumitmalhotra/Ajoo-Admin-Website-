@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
-import 'package:rent_home/ui/screens_host/add_property/new_property_controller_legacy.dart';
 import 'package:rent_home/ui/screens_renter/history/history_description/property_review_controller.dart';
 
 class ViewPropertyAllReviewsPage extends StatefulWidget {
@@ -138,7 +137,7 @@ class _ViewPropertyAllReviewsPageState
 
                             // Date
                             Text(
-                              "${review.brAddedAt?.toString().substring(0, 10) ?? ""}",
+                              review.brAddedAt?.toString().substring(0, 10) ?? "",
                               style: const TextStyle(
                                   color: Colors.grey, fontSize: 12),
                             ),

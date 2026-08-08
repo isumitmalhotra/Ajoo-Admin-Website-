@@ -46,12 +46,23 @@ class PropertyTextField extends StatelessWidget {
           controller: controller,
           decoration: InputDecoration(
             labelText: label,
-            prefixIcon: prefixWidget ?? Icon(icon),
+            prefixIcon: prefixWidget ?? Icon(icon, color: kInk2, size: 20),
             filled: true,
-            fillColor: kCream,
+            fillColor: kSand,
+            isDense: true,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.0),
-              borderSide: BorderSide.none,
+              borderSide: const BorderSide(color: kLine),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: const BorderSide(color: kLine),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: const BorderSide(color: kIndigo, width: 1.5),
             ),
           ),
           maxLines: maxLines ?? 1,
@@ -191,11 +202,11 @@ class HostTapToAddPhotosView extends StatelessWidget {
   const HostTapToAddPhotosView({super.key});
 
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context) => const Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.add_a_photo, size: 40),
-          const SizedBox(height: 8),
+          Icon(Icons.add_a_photo, size: 40),
+          SizedBox(height: 8),
           Text(
             'Tap to add photos',
             style: TextStyle(color: kMuted, fontSize: 12),

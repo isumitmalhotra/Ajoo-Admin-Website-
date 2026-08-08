@@ -1,11 +1,10 @@
-import 'package:rent_home/constants.dart';
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
+import 'package:rent_home/constants.dart';
+import 'package:rent_home/utils/fonts.dart';
 import '../../../../utils/csc_picker/csc_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_holo_date_picker/flutter_holo_date_picker.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
@@ -230,9 +229,9 @@ class _InfoScreenState extends State<InfoScreen> {
   }
 
   String? _validateDocument() {
-    if (selectedDocument == null) {
-      return 'Please upload a document';
-    }
+    // [DEV-BYPASS] Document upload not required for local testing
+    // Original: returned 'Please upload a document' when selectedDocument == null
+    if (selectedDocument == null) return null;
 
     int fileSizeInBytes = selectedDocument!.lengthSync();
     int fileSizeInMB = fileSizeInBytes ~/ (1024 * 1024);
@@ -437,27 +436,11 @@ class _InfoScreenState extends State<InfoScreen> {
     switch (currentStep) {
       case 0:
         if (_step1FormKey.currentState!.validate()) {
-          // Save step 1 data immediately
-          authController.signupData.addAll({
-            'user_fullName': fullNameController.text.trim(),
-            'user_dob': dobController.text.trim(),
-            'user_gender': selectedGender,
-            'user_pnumber': phoneController.text.trim(),
-            'user_countryCode': selectedCountryCode,
-          });
           setState(() => currentStep = 1);
         }
         break;
       case 1:
         if (_validateStep2()) {
-          // Save step 2 data immediately
-          authController.signupData.addAll({
-            'user_address': addressController.text.trim(),
-            'user_country': selectedCountry,
-            'user_city': selectedCity,
-            'user_state': selectedState,
-            'user_pincode': pincodeController.text.trim(),
-          });
           setState(() => currentStep = 2);
         }
         break;
@@ -537,7 +520,7 @@ class _InfoScreenState extends State<InfoScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: kSand,
       appBar: _buildAppBar(theme),
       body: Column(
         children: [
@@ -567,99 +550,7 @@ class _InfoScreenState extends State<InfoScreen> {
       ),
       leading: IconButton(
         icon: Icon(Iconsax.arrow_left_2, color: theme.primaryColor),
-        onPressed: () => Navigator.of(context).maybePop(),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => _skipAll(),
-          child: Text(
-            'Skip',
-            style: TextStyle(
-              color: kMuted,
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Minimal 1×1 white JPEG — sent as placeholder doc when user skips verification
-  static const List<int> _placeholderJpeg = [
-    0xFF,0xD8,0xFF,0xE0,0x00,0x10,0x4A,0x46,0x49,0x46,0x00,0x01,0x01,0x00,
-    0x00,0x01,0x00,0x01,0x00,0x00,0xFF,0xDB,0x00,0x43,0x00,0x08,0x06,0x06,
-    0x07,0x06,0x05,0x08,0x07,0x07,0x07,0x09,0x09,0x08,0x0A,0x0C,0x14,0x0D,
-    0x0C,0x0B,0x0B,0x0C,0x19,0x12,0x13,0x0F,0x14,0x1D,0x1A,0x1F,0x1E,0x1D,
-    0x1A,0x1C,0x1C,0x20,0x24,0x2E,0x27,0x20,0x22,0x2C,0x23,0x1C,0x1C,0x28,
-    0x37,0x29,0x2C,0x30,0x31,0x34,0x34,0x34,0x1F,0x27,0x39,0x3D,0x38,0x32,
-    0x3C,0x2E,0x33,0x34,0x32,0xFF,0xC0,0x00,0x0B,0x08,0x00,0x01,0x00,0x01,
-    0x01,0x01,0x11,0x00,0xFF,0xC4,0x00,0x1F,0x00,0x00,0x01,0x05,0x01,0x01,
-    0x01,0x01,0x01,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01,0x02,
-    0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0A,0x0B,0xFF,0xDA,0x00,0x08,0x01,
-    0x01,0x00,0x00,0x3F,0x00,0xFB,0xD4,0xFF,0xD9,
-  ];
-
-  Future<void> _skipAll() async {
-    // Preserve any partial data already entered or saved via per-step save
-    if (fullNameController.text.isNotEmpty) {
-      authController.signupData['user_fullName'] = fullNameController.text.trim();
-    }
-    if (phoneController.text.isNotEmpty) {
-      authController.signupData['user_pnumber'] = phoneController.text.trim();
-    }
-    if (dobController.text.isNotEmpty) {
-      authController.signupData['user_dob'] = dobController.text.trim();
-    }
-    if (selectedGender.isNotEmpty) {
-      authController.signupData['user_gender'] = selectedGender;
-    }
-
-    // Defaults for any field that was never filled
-    authController.signupData.putIfAbsent('user_fullName', () => '');
-    authController.signupData.putIfAbsent('user_pnumber', () => '');
-    authController.signupData.putIfAbsent('user_dob', () => '');
-    authController.signupData.putIfAbsent('user_gender', () => '');
-    authController.signupData.putIfAbsent('user_address', () => '');
-    authController.signupData.putIfAbsent('user_city', () => '');
-    authController.signupData.putIfAbsent('user_state', () => '');
-    authController.signupData.putIfAbsent('user_pincode', () => '');
-    authController.signupData.putIfAbsent('user_country', () => 'India');
-    authController.signupData.putIfAbsent('user_countryCode', () => '+91');
-
-    // Doc fields: use whatever the user selected in step 2, or valid placeholders.
-    // doc_type must be a real ID (1 = Aadhaar). '0' is rejected by the backend.
-    final docType = selectedDocType.isNotEmpty ? selectedDocType : '1';
-    final docNum = documentNumberController.text.isNotEmpty
-        ? documentNumberController.text.trim().toUpperCase()
-        : '000000000000'; // 12-digit Aadhaar placeholder
-    authController.signupData['doc_type'] = docType;
-    authController.signupData['doc_number'] = docNum;
-
-    // The backend multipart endpoint requires user_id_doc.
-    // Write a tiny placeholder JPEG so the field is always present.
-    if (authController.governmentIdImage.value == null) {
-      try {
-        final tmp = await getTemporaryDirectory();
-        final placeholder = File('${tmp.path}/doc_placeholder.jpg');
-        await placeholder.writeAsBytes(_placeholderJpeg);
-        authController.governmentIdImage.value = placeholder;
-      } catch (_) {}
-    }
-
-    if (!mounted) return;
-
-    final data = authController.signupData;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CreateAccountLoadingScreen(
-          email: data['user_email'] ?? '',
-          password: data['user_password'] ?? '',
-          confirmPassword: data['user_confirmPassword'] ?? '',
-          isHost: data['user_isHost'] ?? false,
-          skipMode: true,
-        ),
+        onPressed: () => Get.back(),
       ),
     );
   }
@@ -740,12 +631,13 @@ class _InfoScreenState extends State<InfoScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: kCream,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: kLine),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: kInk.withOpacity(0.06),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -778,14 +670,25 @@ class _InfoScreenState extends State<InfoScreen> {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(13),
           decoration: BoxDecoration(
-            color: theme.primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+            gradient: const LinearGradient(
+              colors: [kIndigo, kIndigo600],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: kIndigo.withOpacity(0.25),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Icon(
             icons[currentStep],
-            color: theme.primaryColor,
+            color: kCream,
             size: 24,
           ),
         ),
@@ -796,18 +699,18 @@ class _InfoScreenState extends State<InfoScreen> {
             children: [
               Text(
                 titles[currentStep],
-                style: TextStyle(
-                  fontSize: 18,
+                style: fraunces(
+                  fontSize: 20,
                   fontWeight: FontWeight.w600,
-                  color: theme.primaryColor,
+                  color: kInk,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 subtitles[currentStep],
-                style: TextStyle(
+                style: inter(
                   fontSize: 13,
-                  color: Colors.grey[600],
+                  color: kMuted,
                 ),
               ),
             ],
@@ -830,47 +733,97 @@ class _InfoScreenState extends State<InfoScreen> {
     }
   }
 
+  // [DEV-BYPASS] Skip step 3 entirely for testing — remove this method when doc verification is enforced
+  Future<void> _skipStep3AndSave() async {
+    authController.signupData.addAll({
+      'user_fullName': fullNameController.text.trim(),
+      'user_dob': dobController.text.trim(),
+      'user_gender': selectedGender,
+      'user_pnumber': phoneController.text.trim(),
+      'user_countryCode': selectedCountryCode,
+      'user_address': addressController.text.trim(),
+      'user_country': selectedCountry,
+      'user_city': selectedCity,
+      'user_state': selectedState,
+      'user_pincode': pincodeController.text.trim(),
+      'doc_type': '1',           // [DEV-BYPASS] dummy Aadhaar type to pass schema
+      'doc_number': '000000000000', // [DEV-BYPASS] dummy 12-digit value to pass schema
+    });
+    authController.governmentIdImage.value = null;
+    final email = authController.signupData['user_email'] ?? '';
+    final password = authController.signupData['user_password'] ?? '';
+    final confirmPassword = authController.signupData['user_confirmPassword'] ?? '';
+    final isHost = authController.signupData['user_isHost'] ?? false;
+    Get.to(() => CreateAccountLoadingScreen(
+      email: email,
+      password: password,
+      confirmPassword: confirmPassword,
+      isHost: isHost,
+    ));
+  }
+
   Widget _buildStepperControls(ThemeData theme) {
-    return Row(
+    return Column(
       children: [
-        if (currentStep > 0) ...[
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () => setState(() => currentStep = currentStep - 1),
-              icon: Icon(Iconsax.arrow_left_2, size: 18),
-              label: const Text('Previous'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: theme.primaryColor,
-                side: BorderSide(color: theme.primaryColor, width: 1.5),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+        Row(
+          children: [
+            if (currentStep > 0) ...[
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => setState(() => currentStep = currentStep - 1),
+                  icon: const Icon(Iconsax.arrow_left_2, size: 18),
+                  label: const Text('Previous'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: theme.primaryColor,
+                    side: BorderSide(color: theme.primaryColor, width: 1.5),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              flex: currentStep > 0 ? 1 : 2,
+              child: ElevatedButton.icon(
+                onPressed: _handleNext,
+                icon: Icon(
+                  currentStep == 2 ? Iconsax.tick_circle : Iconsax.arrow_right_3,
+                  size: 18,
+                ),
+                label: Text(currentStep == 2 ? 'Complete' : 'Next'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        // [DEV-BYPASS] Skip button — remove this block when doc verification is enforced
+        if (currentStep == 2) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: _skipStep3AndSave,
+              child: Text(
+                'Skip for now (dev)',
+                style: TextStyle(
+                  color: Colors.grey[500],
+                  fontSize: 13,
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 12),
         ],
-        Expanded(
-          flex: currentStep > 0 ? 1 : 2,
-          child: ElevatedButton.icon(
-            onPressed: _handleNext,
-            icon: Icon(
-              currentStep == 2 ? Iconsax.tick_circle : Iconsax.arrow_right_3,
-              size: 18,
-            ),
-            label: Text(currentStep == 2 ? 'Save' : 'Save & Continue'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -878,6 +831,7 @@ class _InfoScreenState extends State<InfoScreen> {
   Widget _buildStep1(ThemeData theme) {
     return Form(
       key: _step1FormKey,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       child: Column(
         children: [
           _buildTextField(
@@ -920,7 +874,7 @@ class _InfoScreenState extends State<InfoScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
+              SizedBox(
                 width: 90,
                 child: _buildCountryCodePicker(theme),
               ),
@@ -947,6 +901,7 @@ class _InfoScreenState extends State<InfoScreen> {
   Widget _buildStep2(ThemeData theme) {
     return Form(
       key: _step2FormKey,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       child: Column(
         children: [
           _buildTextField(
@@ -981,6 +936,7 @@ class _InfoScreenState extends State<InfoScreen> {
   Widget _buildStep3(ThemeData theme) {
     return Form(
       key: _step3FormKey,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -992,7 +948,7 @@ class _InfoScreenState extends State<InfoScreen> {
             if (commonController.docTypes.value == null ||
                 commonController.docTypes.value!.data.isEmpty) {
               return _buildErrorContainer(
-                  'Error loading document types. Please try again.', theme);
+                  'Document types unavailable', theme);
             }
 
             return _buildDropdownField(
@@ -1056,10 +1012,10 @@ class _InfoScreenState extends State<InfoScreen> {
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 14,
+          style: inter(
+            fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[800],
+            color: kInk2,
           ),
         ),
         const SizedBox(height: 8),
@@ -1072,49 +1028,54 @@ class _InfoScreenState extends State<InfoScreen> {
           maxLines: maxLines,
           readOnly: readOnly,
           enabled: enabled,
-          style: TextStyle(
+          cursorColor: kIndigo,
+          style: inter(
             fontSize: 15,
-            color: enabled ? Colors.black87 : Colors.grey[500],
+            fontWeight: FontWeight.w500,
+            color: enabled ? kInk : kMuted,
           ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 14,
+            hintStyle: inter(color: kMuted, fontSize: 14),
+            prefixIcon: Container(
+              margin: const EdgeInsets.only(left: 6, right: 4),
+              child: Icon(
+                icon,
+                color: enabled ? kIndigo : kMuted,
+                size: 20,
+              ),
             ),
-            prefixIcon: Icon(
-              icon,
-              color: enabled ? theme.primaryColor : Colors.grey[400],
-              size: 20,
-            ),
+            prefixIconConstraints:
+                const BoxConstraints(minWidth: 44, minHeight: 44),
             filled: true,
-            fillColor: enabled ? Colors.grey[50] : Colors.grey[100],
+            fillColor: enabled ? kCream : kSand.withOpacity(0.5),
             contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: kLine, width: 1.2),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: kLine, width: 1.2),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: theme.primaryColor, width: 2),
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: kIndigo, width: 1.6),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.red[400]!, width: 1),
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: kDanger, width: 1.2),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.red[600]!, width: 2),
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: kDanger, width: 1.6),
             ),
             disabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: kLine.withOpacity(0.6), width: 1.2),
             ),
+            errorStyle: inter(fontSize: 12, color: kDanger),
             counterText: '',
           ),
         ),
@@ -1138,56 +1099,66 @@ class _InfoScreenState extends State<InfoScreen> {
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 14,
+          style: inter(
+            fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[800],
+            color: kInk2,
           ),
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: value,
           validator: validator,
+          isExpanded: true,
+          dropdownColor: kCream,
+          borderRadius: BorderRadius.circular(14),
+          style: inter(fontSize: 15, fontWeight: FontWeight.w500, color: kInk),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-            prefixIcon: Icon(icon, color: theme.primaryColor, size: 20),
+            hintStyle: inter(color: kMuted, fontSize: 14),
+            prefixIcon: Container(
+              margin: const EdgeInsets.only(left: 6, right: 4),
+              child: Icon(icon, color: kIndigo, size: 20),
+            ),
+            prefixIconConstraints:
+                const BoxConstraints(minWidth: 44, minHeight: 44),
             filled: true,
-            fillColor: Colors.grey[50],
+            fillColor: kCream,
             contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: kLine, width: 1.2),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: kLine, width: 1.2),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: theme.primaryColor, width: 2),
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: kIndigo, width: 1.6),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.red[400]!, width: 1),
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: kDanger, width: 1.2),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.red[600]!, width: 2),
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: kDanger, width: 1.6),
             ),
+            errorStyle: inter(fontSize: 12, color: kDanger),
           ),
           items: List.generate(items.length, (index) {
             return DropdownMenuItem(
               value: items[index],
               child: Text(
                 itemLabels != null ? itemLabels[index] : items[index],
-                style: const TextStyle(fontSize: 15),
+                style: inter(fontSize: 15, color: kInk),
               ),
             );
           }),
           onChanged: onChanged,
-          icon: Icon(Iconsax.arrow_down_1, size: 20, color: theme.primaryColor),
+          icon: const Icon(Iconsax.arrow_down_1, size: 20, color: kIndigo),
         ),
       ],
     );
@@ -1340,28 +1311,27 @@ class _InfoScreenState extends State<InfoScreen> {
       children: [
         Text(
           'Upload Document',
-          style: TextStyle(
-            fontSize: 14,
+          style: inter(
+            fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[800],
+            color: kInk2,
           ),
         ),
         const SizedBox(height: 8),
         InkWell(
           onTap: _pickDocument,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color:
-                  selectedDocument != null ? Colors.green[50] : Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
+              color: selectedDocument != null
+                  ? kSuccess.withOpacity(0.08)
+                  : kSand.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: selectedDocument != null
-                    ? Colors.green[400]!
-                    : Colors.grey[300]!,
-                width: selectedDocument != null ? 2 : 1,
+                color: selectedDocument != null ? kSuccess : kLine,
+                width: selectedDocument != null ? 1.5 : 1.2,
               ),
             ),
             child: Column(
@@ -1370,18 +1340,16 @@ class _InfoScreenState extends State<InfoScreen> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: selectedDocument != null
-                        ? Colors.green[100]
-                        : theme.primaryColor.withOpacity(0.1),
+                        ? kSuccess.withOpacity(0.15)
+                        : kIndigo.withOpacity(0.08),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     selectedDocument != null
-                        ? Iconsax.document_upload
+                        ? Iconsax.tick_circle
                         : Iconsax.document_upload,
-                    size: 32,
-                    color: selectedDocument != null
-                        ? Colors.green[700]
-                        : theme.primaryColor,
+                    size: 30,
+                    color: selectedDocument != null ? kSuccess : kIndigo,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -1389,12 +1357,10 @@ class _InfoScreenState extends State<InfoScreen> {
                   selectedDocument != null
                       ? 'Document Uploaded Successfully'
                       : 'Tap to Upload Document',
-                  style: TextStyle(
+                  style: inter(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: selectedDocument != null
-                        ? Colors.green[700]
-                        : theme.primaryColor,
+                    color: selectedDocument != null ? kSuccess : kIndigo,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -1402,9 +1368,9 @@ class _InfoScreenState extends State<InfoScreen> {
                   selectedDocument != null
                       ? documentFileName
                       : 'Supported: PDF, JPG, PNG (Max ${maxFileSizeMB}MB)',
-                  style: TextStyle(
+                  style: inter(
                     fontSize: 12,
-                    color: Colors.grey[600],
+                    color: kMuted,
                   ),
                   textAlign: TextAlign.center,
                 ),

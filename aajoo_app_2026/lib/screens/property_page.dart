@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/constants/payment_config.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/controller/booking_controller.dart';
 import 'package:rent_home/controller/common_controller.dart';
@@ -494,7 +495,7 @@ class _PropertyPageState extends State<PropertyPage>
                                     double.parse(currentPriceString);
                                 // Dynamic GST calculation based on price
                                 // Below ₹7500 => 5%, ₹7500 and above => 12%
-                                final gstRate = basePrice < 7500 ? 0.05 : 0.12;
+                                final gstRate = basePrice <= 7500 ? 0.05 : 0.18;
                                 final gstAmount = basePrice * gstRate;
                                 const platformFee = 10.0; // ₹10 platform fee
                                 final finalPrice =
@@ -533,7 +534,7 @@ class _PropertyPageState extends State<PropertyPage>
                             final basePrice = double.parse(currentPriceString);
                             // Dynamic GST calculation based on price
                             // Below ₹7500 => 5%, ₹7500 and above => 12%
-                            final gstRate = basePrice < 7500 ? 0.05 : 0.12;
+                            final gstRate = basePrice <= 7500 ? 0.05 : 0.18;
                             final gstAmount = basePrice * gstRate;
                             const platformFee = 10.0; // ₹10 platform fee
                             final finalPrice =
@@ -808,7 +809,7 @@ class _PropertyPageState extends State<PropertyPage>
                     // Compute totals
                     final basePrice = double.parse(currentPriceString);
                     // Below ₹7500 => 5%, ₹7500 and above => 12%
-                    final gstRate = basePrice < 7500 ? 0.05 : 0.12;
+                    final gstRate = basePrice <= 7500 ? 0.05 : 0.18;
                     final gstAmount = basePrice * gstRate;
                     const platformFee = 10.0;
                     double finalAmount = basePrice + gstAmount + platformFee;
@@ -860,7 +861,7 @@ class _PropertyPageState extends State<PropertyPage>
                           authController.userData.value!.phoneNumber;
                       final email = authController.userData.value!.email;
                       final options = {
-                        "key": "rzp_test_XUTODhUdMAshi6",
+                        "key": PaymentConfig.razorpayKey,
                         // Charge either 100% (normal) or 10% (prebooking)
                         "amount": (amountToChargeNow * 100).toInt(),
                         "name": "Aajoo",
@@ -927,7 +928,7 @@ class _PropertyPageState extends State<PropertyPage>
                           userId:
                               authController.userData.value!.userId.toString(),
                           propertyId: widget.id.toString(),
-                          serverUrl: "https://api.aajoohomes.com",
+                          serverUrl: "https://aajaodev.onrender.com",
                           receiverId: widget.property.propertyHostId.toString(),
                           token: token,
                           lat: widget.lat,

@@ -7,9 +7,9 @@ import 'package:rent_home/ui/screens_renter/history/history_description/history_
 
 class BookingCard extends StatelessWidget {
   const BookingCard({
-    Key? key,
+    super.key,
     required this.booking,
-  }) : super(key: key);
+  });
 
   final BookingHistoryData booking;
 

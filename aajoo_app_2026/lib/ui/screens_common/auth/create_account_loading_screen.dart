@@ -9,16 +9,14 @@ class CreateAccountLoadingScreen extends StatefulWidget {
   final String password;
   final String confirmPassword;
   final bool isHost;
-  final bool skipMode;
 
   const CreateAccountLoadingScreen({
-    Key? key,
+    super.key,
     required this.email,
     required this.password,
     required this.confirmPassword,
     required this.isHost,
-    this.skipMode = false,
-  }) : super(key: key);
+  });
 
   @override
   _CreateAccountLoadingScreenState createState() =>
@@ -77,7 +75,6 @@ class _CreateAccountLoadingScreenState
         password: widget.password,
         confirmPassword: widget.confirmPassword,
         isHost: widget.isHost,
-        skipMode: widget.skipMode,
       );
 
       if (!mounted || !_canNavigate) return;
@@ -87,14 +84,10 @@ class _CreateAccountLoadingScreenState
         await Future.delayed(const Duration(seconds: 1));
 
         if (mounted && _canNavigate) {
-          if (widget.skipMode) {
-            Get.offAllNamed(widget.isHost ? '/host/home' : '/home');
-          } else {
-            Get.offNamed(
-              '/verify',
-              arguments: {'userId': response.data.userId, 'email': widget.email},
-            );
-          }
+          Get.offNamed(
+            '/verify',
+            arguments: {'userId': response.data.userId, 'email': widget.email},
+          );
         }
       } else {
         // Error occurred

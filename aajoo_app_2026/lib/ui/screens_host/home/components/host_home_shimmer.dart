@@ -12,7 +12,7 @@ class HostHomeShimmer extends StatelessWidget {
     return Shimmer.fromColors(
       baseColor: kLine,
       highlightColor: kCream,
-      child: Container(
+      child: SizedBox(
         height: 150,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,

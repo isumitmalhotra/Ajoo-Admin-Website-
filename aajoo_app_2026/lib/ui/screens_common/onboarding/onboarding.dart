@@ -111,7 +111,7 @@ class OnboardingPage extends StatelessWidget {
                         desc: 'Find your perfect stay for your next trip.',
                         cta: 'Start Exploring',
                         color: kIndigo600,
-                        bg: const Color(0xFFE6F5F3),
+                        bg: kIndigo50,
                         accent: false,
                         onTap: _goLogin)),
                 const SizedBox(width: 14),

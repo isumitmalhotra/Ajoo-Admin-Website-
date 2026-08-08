@@ -14,6 +14,10 @@ const kcontentColor  = Color(0xFFF2EFE9); // soft warm content background
 // --- Teal & Orange brand tokens (names legacy, values current) ---
 const kIndigo    = Color(0xFF0F766E); // PRIMARY brand — Evergreen Teal
 const kIndigo600 = Color(0xFF115E59); // hover / pressed — deep teal
+// Lightest teal wash — chips, callouts, selected pills. This replaced the
+// pre-migration 0xFFE6F5F3, which was the OLD palette's tint and survived the
+// brand change hardcoded in eight screens.
+const kIndigo50  = Color(0xFFEFFAF8);
 const kSand      = Color(0xFFFAF8F4); // Warm Ivory background
 const kCream     = Color(0xFFFAF8F4); // card / sheet surface (Warm Ivory)
 const kClay      = Color(0xFFE8A317); // ACCENT — Golden Amber, one pop-CTA / "New" badges

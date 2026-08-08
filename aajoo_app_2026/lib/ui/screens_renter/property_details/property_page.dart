@@ -1413,7 +1413,7 @@ class _PropertyPageState extends State<PropertyPage>
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                            color: const Color(0xFFE6F5F3),
+                            color: kIndigo50,
                             borderRadius: BorderRadius.circular(14)),
                         child: Row(children: [
                           const Icon(Icons.verified_user_outlined,

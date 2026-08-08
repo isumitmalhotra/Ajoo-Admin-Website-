@@ -1,14 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:rent_home/constants.dart';
-import 'package:rent_home/ui/screens_host/add_property/new_property_controller_legacy.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/data/models/booking_history_response_model.dart';
-import 'package:rent_home/ui/screens_renter/history/history_description/review/all_reviews_list/view_property_all_reviews_page.dart';
 import 'package:rent_home/service/device_service.dart';
+import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/ui/screens_renter/history/history_description/components/property_description_section.dart';
 import 'package:rent_home/ui/screens_renter/history/history_description/components/property_details_map_section.dart';
 import 'package:rent_home/ui/screens_renter/history/history_description/property_review_controller.dart';
@@ -59,17 +57,6 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
     zoom: 14.4746,
   );
 
-  Future<void> _moveCameraToProperty() async {
-    if (!_controller.isCompleted) return;
-    final controller = await _controller.future;
-    final LatLng target = userController.propertyLocation.value;
-    if (target.latitude == 0.0 && target.longitude == 0.0) return;
-
-    await controller.animateCamera(
-      CameraUpdate.newLatLngZoom(target, 16),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -98,21 +85,27 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
                   child: Obx(
                     () => PropertyDescriptionSection(
                         isLoading: userController.isLoading,
+                        // Fall back to the property info stored on the booking
+                        // when the live property can't be fetched (e.g. the host
+                        // later removed the listing) — so history never goes blank.
                         propertyName:
-                            userController.property.value?.data?.propertyName,
+                            userController.property.value?.data?.propertyName ??
+                                widget.bookingData.bookingPropertyPropertyName,
                         propertyAddress: userController
-                            .property.value?.data?.propertyAddress,
+                                .property.value?.data?.propertyAddress ??
+                            widget.bookingData.bookingPropertyPropertyAddress,
                         bookingDataWidget:
                             _buildBookingData(widget.bookingData)),
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.all(8.0),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                   child: Text(
                     'Rating and Reviews',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
+                    style: fraunces(
+                      fontWeight: FontWeight.w700,
                       fontSize: 18,
+                      color: kInk,
                     ),
                   ),
                 ),
@@ -133,55 +126,74 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
                 child: Row(
                   children: [
                     InkWell(
+                      borderRadius: BorderRadius.circular(14),
                       onTap: () {
                         DeviceService.launchDialPad(userController
                                 .property.value?.data?.propertyContact ??
                             "");
                       },
                       child: Container(
-                        padding: const EdgeInsets.all(10),
+                        height: 52,
+                        width: 52,
                         decoration: BoxDecoration(
-                          color: kcontentColor,
-                          border: Border.all(color: kprimaryColor),
-                          borderRadius: BorderRadius.circular(12),
+                          color: kSurface,
+                          border: Border.all(color: kIndigo),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: kSoftShadow,
                         ),
                         child: const Icon(
                           Icons.phone,
-                          size: 35,
-                          color: kprimaryColor,
+                          size: 22,
+                          color: kIndigo,
                         ),
                       ),
                     ),
                     const SizedBox(width: 10),
-                    InkWell(
-                      onTap: () async {
-                        final LatLng location =
-                            userController.propertyLocation.value;
+                    Expanded(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(14),
+                        onTap: () async {
+                          final LatLng location =
+                              userController.propertyLocation.value;
 
-                        if (location == null) {
-                          return; // or show fallback UI
-                        }
+                          final lat = location.latitude;
+                          final lng = location.longitude;
 
-                        final lat = location.latitude;
-                        final lng = location.longitude;
-
-                        DeviceService.showMapOptions(context, lat, lng);
-                      },
-                      child: Container(
-                        width: MediaQuery.of(context).size.width - 100,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: kprimaryColor,
-                          border: Border.all(color: kprimaryColor),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          "Get Directions",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: kcontentColor,
-                            fontSize: 24,
-                            fontWeight: FontWeight.normal,
+                          DeviceService.showMapOptions(context, lat, lng);
+                        },
+                        child: Container(
+                          height: 52,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [kIndigo600, kIndigo],
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: kIndigo.withOpacity(0.3),
+                                blurRadius: 14,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.directions,
+                                  color: kCream, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                "Get Directions",
+                                style: inter(
+                                  color: kCream,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -205,75 +217,125 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new),
         onPressed: () {
-          Get.back();
+          // Pop this route directly via the local Navigator (reliable), with
+          // Get.back() as a fallback — Get.back() alone was leaving users stuck.
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          } else {
+            Get.back();
+          }
         },
       ),
     );
   }
 
   Widget _buildBookingData(BookingHistoryData booking) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10.0),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Booking ID: ${booking.bookId}',
+          style: fraunces(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: kInk,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _dateTile(
+                icon: Icons.login_rounded,
+                label: 'CHECK-IN',
+                value: booking.bookDetailsBtBookFrom ?? '—',
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _dateTile(
+                icon: Icons.logout_rounded,
+                label: 'CHECK-OUT',
+                value: booking.bookDetailsBtBookTo ?? '—',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        _statusBadge(booking.bookingStatusBsTitle ?? 'Unknown'),
+      ],
+    );
+  }
+
+  Widget _dateTile({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: kSand,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Booking ID: ${booking.bookId}',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-            ),
-          ),
-          const SizedBox(height: 10),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: kSand,
-                    borderRadius: BorderRadius.circular(7),
-                  ),
-                  child: Text(
-                    'From: ${booking.bookDetailsBtBookFrom}',
-                    softWrap: true,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.normal,
-                      fontSize: 15,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: kSand,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'To: ${booking.bookDetailsBtBookTo}',
-                    softWrap: true,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.normal,
-                      fontSize: 15,
-                    ),
-                  ),
+              Icon(icon, size: 14, color: kIndigo),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: inter(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: kMuted,
+                  letterSpacing: 0.8,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 4),
           Text(
-            'Booking status: ${booking.bookingStatusBsTitle}',
-            style: const TextStyle(
-              color: kprimaryColor,
-              fontWeight: FontWeight.normal,
-              fontSize: 18,
+            value,
+            softWrap: true,
+            style: inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: kInk,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusBadge(String status) {
+    final s = status.toLowerCase();
+    final bool positive = s.contains('paid') ||
+        s.contains('confirm') ||
+        s.contains('complete') ||
+        s.contains('success');
+    final bool pending = s.contains('pending') || s.contains('await');
+    final Color c = positive ? kSuccess : (pending ? kClay : kIndigo);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: c.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.circle, size: 8, color: c),
+          const SizedBox(width: 6),
+          Text(
+            status,
+            style: inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: c,
             ),
           ),
         ],

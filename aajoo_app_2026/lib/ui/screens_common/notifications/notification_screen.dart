@@ -1,4 +1,3 @@
-import 'dart:ffi';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -11,16 +10,14 @@ import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/data/models/notification_response_model.dart';
 import 'package:rent_home/ui/screens_common/notifications/components/notification_list_item.dart';
 import 'package:rent_home/ui/screens_common/notifications/notication_controller.dart';
-import 'package:rent_home/data/models/properties_response_model.dart';
-import 'package:rent_home/service/property_service.dart';
 import 'package:rent_home/widgets/common_back_button.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/negotitaion_page.dart';
-import 'package:timeago/timeago.dart' as timeago;
-import 'package:animate_do/animate_do.dart';
 import 'package:rent_home/constants.dart';
 // import 'package:rent_home/controller/notification_controller.dart';
 
 class NotificationsScreen extends StatefulWidget {
+  const NotificationsScreen({super.key});
+
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
@@ -72,20 +69,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Obx(() {
       final data = notificationController.notificationData.value;
       final list = data?.data.notifications ?? [];
+      // Treat fetch error the same as empty — both feel like "nothing here"
+      // to the user. Avoids the scary red "Unexpected error" string on a
+      // network drop / dev-skip (no auth) / 401.
+      final isEmptyOrError =
+          notificationController.error.value || list.isEmpty;
       return notificationController.isLoading.value
           ? const Center(
               child: CircularProgressIndicator(
                 color: kprimaryColor,
               ),
             )
-          : notificationController.error.value
-              ? Center(
-                  child: Text(
-                    notificationController.errorMsg.value,
-                    style: const TextStyle(color: Colors.red, fontSize: 16),
-                  ),
-                )
-              : (list.isEmpty)
+          : isEmptyOrError
                   ? Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -119,6 +114,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _onNotificationTap(AppNotification notification) async {
     if (_isProcessingTap) return;
     setState(() => _isProcessingTap = true);
+
+    // Fire mark-read (don't await — UI shouldn't block on this; the
+    // controller mutates local state optimistically + reverts on failure).
+    // Skipped if already read so we don't pile retries on flaky network.
+    if (notification.unIsRead != 1) {
+      // ignore: discarded_futures — fire-and-forget
+      notificationController.markAsRead(notification.unId);
+    }
+
     try {
       if (notification.payload != null) {
         final currentUserId = authController.userData.value?.userId;

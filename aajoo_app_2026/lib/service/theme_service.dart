@@ -57,10 +57,10 @@ class ThemeService extends GetxController {
         bodySmall: TextStyle(color: Colors.white),
       )),
       primaryColor: kprimaryColor,
-      scaffoldBackgroundColor: const Color(0xFF0D1620), // deep navy
-      cardColor: const Color(0xFF152230),
+      scaffoldBackgroundColor: const Color(0xFF111827), // brand navy, one step below the card
+      cardColor: kInk, // Charcoal Navy — the brand's dark surface
       drawerTheme: const DrawerThemeData(
-        backgroundColor: Color(0xFF152230),
+        backgroundColor: kInk,
         scrimColor: Colors.black54,
       ));
 }

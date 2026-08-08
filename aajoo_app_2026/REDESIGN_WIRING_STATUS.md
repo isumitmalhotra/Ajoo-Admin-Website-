@@ -61,7 +61,7 @@ Until resolved it uses the fallback in "Interim".
 
 | ID | Where | What's missing | Interim | Owner |
 |----|-------|----------------|---------|-------|
-| G-1 | Onboarding / Login — "Continue with Google" | No Google/Firebase OAuth wired on mobile (BE-7 was superseded, never built). | Button routes to mobile/email login. Hide or wire Firebase later. | BE + Mobile |
+| ~~G-1~~ RESOLVED | Onboarding / Login — "Continue with Google" | Was: no Google/Firebase OAuth on mobile. | ✅ **Wired 2026-08-05** (`42a85cf`): `auth_controller.loginWithGoogle()` uses google_sign_in + firebase_auth, exchanges the Firebase ID token via `authService.loginWithGoogle()`, and the button on `auth_page.dart:383` calls it. | — |
 | ~~G-2~~ RESOLVED | Property Details — specs row | **False alarm** — `GET /properties/:id` ALREADY returns `bathrooms`, `propDetails.propDetail_no_of_beds`, `propDetail_no_of_guests` (verified on prod: 3/3/6). The mobile model just wasn't parsing them. | ✅ Fixed on mobile: `SinglePropertyData`/`SinglePropertyDetails` now parse them + Property Details renders a real specs row. No BE change. | — |
 
 ---

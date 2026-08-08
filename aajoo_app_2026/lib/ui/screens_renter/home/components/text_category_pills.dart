@@ -95,7 +95,7 @@ class _CategoryCircle extends StatelessWidget {
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                color: isActive ? kIndigo : const Color(0xFFE6F5F3),
+                color: isActive ? kIndigo : kIndigo50,
                 shape: BoxShape.circle,
                 border: Border.all(
                     color: isActive ? kIndigo : kLine, width: 1),

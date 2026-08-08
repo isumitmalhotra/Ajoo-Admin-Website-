@@ -3,7 +3,6 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/controller/user_controller.dart';
-import 'package:rent_home/ui/screens_host/add_property/new_property_controller_legacy.dart';
 import 'package:rent_home/data/models/booking_history_response_model.dart';
 import 'package:rent_home/ui/screens_renter/history/history_description/property_review_controller.dart';
 
@@ -179,7 +178,44 @@ class MyReviewSection extends StatelessWidget {
               },
               icon: const Icon(Icons.edit),
               color: kprimaryColor,
-            )
+            ),
+            IconButton(
+              tooltip: 'Delete review',
+              icon: const Icon(Icons.delete_outline),
+              color: kDanger,
+              onPressed: () async {
+                final reviewId = review.brId;
+                if (reviewId == null) return;
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    backgroundColor: kCream,
+                    title: const Text('Delete review?'),
+                    content: const Text(
+                      'This will permanently remove your review for this property.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        style: TextButton.styleFrom(foregroundColor: kDanger),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed != true) return;
+
+                final ok = await userController.deleteUserReview(reviewId);
+                if (ok) {
+                  // Refresh the list so the deleted review disappears.
+                  await controller.getPropertyReviews(propertyId);
+                }
+              },
+            ),
           ],
         ),
         RatingBarIndicator(

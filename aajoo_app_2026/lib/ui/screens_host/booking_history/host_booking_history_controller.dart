@@ -1,15 +1,9 @@
-import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/controller/alert_dialog.dart';
 import 'package:rent_home/data/models/host_booking_history_model.dart';
-import 'package:rent_home/data/models/host_ongoing_response.dart';
-import 'package:rent_home/data/models/host_properties_reponse.dart';
-import 'package:rent_home/data/models/transaction_model.dart';
 import 'package:rent_home/service/host_service.dart';
-import 'package:rent_home/service/property_service.dart';
 
 class HostBookingHistoryController extends GetxController {
   final HostService hostService = HostService();
@@ -20,6 +14,8 @@ class HostBookingHistoryController extends GetxController {
   final isLoading = false.obs;
   final isSubmittingReview = false.obs;
   final errorMessage = RxnString();
+  final hasError = false.obs;
+  final hasFetched = false.obs;
 
   String TOKEN_KEY = 'user_token';
 
@@ -40,12 +36,18 @@ class HostBookingHistoryController extends GetxController {
   Future<void> getHostBookingHistory() async {
     try {
       loading.value = true;
+      hasError.value = false;
       final response = await hostService.getBookingHistory();
       hostBookingHistoryResponse.value = response;
     } catch (e) {
+      // Treat as "no records" instead of a hard error — common API shape
+      // (returns "No record found") looks like a failure to the client but is
+      // actually an empty list to the user.
       error.value = e.toString();
+      hasError.value = true;
     } finally {
       loading.value = false;
+      hasFetched.value = true;
     }
   }
 
