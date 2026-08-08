@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../motion/aajoo_motion.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
@@ -100,7 +101,10 @@ class _HistoryPageState extends State<HistoryPage> {
                 return ListView.builder(
                   padding: const EdgeInsets.only(top: 6, bottom: 20),
                   itemCount: items.length,
-                  itemBuilder: (context, i) => BookingCard(booking: items[i]),
+                  itemBuilder: (context, i) => Reveal(
+                    delay: Reveal.staggerDelay(i),
+                    child: BookingCard(booking: items[i]),
+                  ),
                 );
               }),
             );

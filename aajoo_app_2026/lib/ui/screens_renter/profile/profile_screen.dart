@@ -1702,23 +1702,39 @@ class _ProfileScreenState extends State<ProfileScreen>
         maxLength: maxlength,
         controller: controller,
         keyboardType: keyboardType,
+        // Matches the web's field treatment: a filled warm surface with a
+        // quiet border, and teal only on focus. A full-strength teal outline
+        // on every field at rest made the form read as eight things all
+        // demanding attention at once.
         decoration: InputDecoration(
           labelText: label,
+          filled: true,
+          fillColor: kCream,
+          // The "10/10" and "53/100" counters were pure noise on a profile
+          // form; the limit is still enforced.
+          counterText: '',
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: Theme.of(context).primaryColor,
-            ),
+            borderSide: const BorderSide(color: kLine),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: kLine),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: Theme.of(context).primaryColor,
-              width: 2,
-            ),
+            borderSide: const BorderSide(color: kIndigo, width: 1.6),
           ),
-          filled: true,
-          fillColor: Colors.grey[50],
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: kDanger),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: kDanger, width: 1.6),
+          ),
         ),
         validator: (value) {
           if (value == null || value.trim().isEmpty) {

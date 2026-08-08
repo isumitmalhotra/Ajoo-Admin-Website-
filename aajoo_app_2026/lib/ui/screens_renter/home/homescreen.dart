@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../motion/aajoo_motion.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -335,7 +336,11 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                                   ),
                                   itemBuilder: (context, i) {
                                     final p = items[i];
-                                    return CuratedCard(
+                                    // Short cascade, matching the web's
+                                    // results grid.
+                                    return Reveal(
+                                      delay: Reveal.staggerDelay(i),
+                                      child: CuratedCard(
                                       property: p,
                                       onTap: () {
                                         Navigator.push(
@@ -363,6 +368,7 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                                           ),
                                         );
                                       },
+                                      ),
                                     );
                                   },
                                 ),
@@ -433,10 +439,13 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                                 itemCount: cats.length,
                                 separatorBuilder: (_, __) =>
                                     const SizedBox(width: 20),
-                                itemBuilder: (_, i) => _hotelTypeBlock(
-                                  cats[i].catId,
-                                  _iconForCategory(cats[i].catTitle),
-                                  cats[i].catTitle,
+                                itemBuilder: (_, i) => Reveal(
+                                  delay: Reveal.staggerDelay(i, stepMs: 35),
+                                  child: _hotelTypeBlock(
+                                    cats[i].catId,
+                                    _iconForCategory(cats[i].catTitle),
+                                    cats[i].catTitle,
+                                  ),
                                 ),
                               );
                             }),

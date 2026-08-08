@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../motion/aajoo_motion.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:rent_home/constants.dart';
@@ -136,15 +137,31 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
                 childAspectRatio: 1.7,
+                // Tiles arrive in sequence rather than all at once — the same
+                // short cascade the web dashboard uses.
                 children: [
-                  _statCard('Upcoming Stays', '$upcoming', Icons.event_available,
-                      () => Get.toNamed('/history')),
-                  _statCard('Saved Stays', '$_savedCount', Icons.favorite_border,
-                      () => Get.toNamed('/bookmarkProperties')),
-                  _statCard('Reviews', '$reviews', Icons.star_border,
-                      () => Get.toNamed('/history')),
-                  _statCard('Total Spent', _fmt.format(spent), Icons.account_balance_wallet_outlined,
-                      () => Get.toNamed('/history')),
+                  Reveal(
+                    delay: Reveal.staggerDelay(0),
+                    child: _statCard('Upcoming Stays', '$upcoming',
+                        Icons.event_available, () => Get.toNamed('/history')),
+                  ),
+                  Reveal(
+                    delay: Reveal.staggerDelay(1),
+                    child: _statCard('Saved Stays', '$_savedCount',
+                        Icons.favorite_border,
+                        () => Get.toNamed('/bookmarkProperties')),
+                  ),
+                  Reveal(
+                    delay: Reveal.staggerDelay(2),
+                    child: _statCard('Reviews', '$reviews', Icons.star_border,
+                        () => Get.toNamed('/history')),
+                  ),
+                  Reveal(
+                    delay: Reveal.staggerDelay(3),
+                    child: _statCard('Total Spent', _fmt.format(spent),
+                        Icons.account_balance_wallet_outlined,
+                        () => Get.toNamed('/history')),
+                  ),
                 ],
               );
             }),

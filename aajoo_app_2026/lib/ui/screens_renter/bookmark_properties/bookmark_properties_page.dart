@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../motion/aajoo_motion.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
@@ -122,10 +123,15 @@ class _BookmarkedPropertiesPageState extends State<BookmarkedPropertiesPage> {
                     itemCount: _bookmarks.length,
                     itemBuilder: (context, index) {
                       final property = _bookmarks[index];
-                      return CuratedCard(
-                        property: property,
-                        onTap: () => _openProperty(property),
-                        onFavoriteTap: () => _removeBookmark(property),
+                      // Cards arrive in a short cascade, the same entrance the
+                      // web uses for a results grid.
+                      return Reveal(
+                        delay: Reveal.staggerDelay(index),
+                        child: CuratedCard(
+                          property: property,
+                          onTap: () => _openProperty(property),
+                          onFavoriteTap: () => _removeBookmark(property),
+                        ),
                       );
                     },
                   ),
