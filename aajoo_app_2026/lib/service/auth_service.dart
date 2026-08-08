@@ -74,6 +74,9 @@ class AuthService {
     _token = null;
     await storage.delete(key: TOKEN_KEY);
     await storage.delete(key: USER_DATA_KEY);
+    // Older installs persisted the password; clear it on the way out so an
+    // upgrade does not leave it sitting there indefinitely.
+    await purgeStoredPassword();
   }
 
   /// Best-effort server-side session invalidation. Backend deletes the row
@@ -113,7 +116,10 @@ class AuthService {
         setToken(loginResponse.data.token);
         await storage.write(key: TOKEN_KEY, value: loginResponse.data.token);
         await saveUserData(loginResponse.data.user.toJson());
-        await storage.write(key: "pass", value: password);
+        // The password is deliberately NOT stored. It used to be, so that
+        // switchUserMode() could silently log in again with the other isHost
+        // flag — /user/switch-mode does that with the session token now, so
+        // keeping a password on the device bought nothing and risked plenty.
         await storage.write(key: "email", value: email);
       }
       return loginResponse;
@@ -191,7 +197,7 @@ class AuthService {
       }
       final formData = FormData.fromMap(fields);
       final response = await _dio.post('/user/signup', data: formData);
-      await const FlutterSecureStorage().write(key: "pass", value: password);
+      // Email only — see the note in login() on why the password is not kept.
       await const FlutterSecureStorage().write(key: "email", value: email);
       return SignupResponse.fromJson(response.data);
     } catch (e) {
@@ -222,20 +228,44 @@ class AuthService {
     }
   }
 
-  Future<LoginResponse> switchUserMode(bool isHost) async {
+  /// Swap the session between guest and host.
+  ///
+  /// Trades the current token for one carrying the other role. This used to
+  /// re-run login() with a password read back off the device; the server can
+  /// do it from the token now, so nothing has to remember a password.
+  Future<bool> switchUserMode(bool isHost) async {
     try {
-      final email = await storage.read(key: "email");
-      final password = await storage.read(key: "pass");
-      if (email == null || password == null) {
-        throw Exception("User not logged in");
+      final response = await _dio.post('/user/switch-mode', data: {
+        'isHost': isHost ? 1 : 0,
+      });
+      final body = response.data;
+      final ok = body is Map && body['success'] == true;
+      if (!ok) {
+        // Refused for a reason worth showing — e.g. this account is not a host.
+        throw Exception(
+            (body is Map ? body['message'] : null) ?? 'Could not switch mode');
       }
-      final response = await login(email, password, isHost);
-      if (response.success) {
-        setToken(response.data.token);
+      final token = body['data']?['token'] as String?;
+      if (token == null || token.isEmpty) {
+        throw Exception('Could not switch mode');
       }
-      return response;
+      setToken(token);
+      await storage.write(key: TOKEN_KEY, value: token);
+      return true;
     } catch (e) {
       throw _handleError(e);
+    }
+  }
+
+  /// Clear the password this app used to persist.
+  ///
+  /// Existing installs still have it in secure storage from before the change
+  /// above; upgrading must not silently leave it there forever.
+  Future<void> purgeStoredPassword() async {
+    try {
+      await storage.delete(key: "pass");
+    } catch (_) {
+      /* nothing to remove */
     }
   }
 

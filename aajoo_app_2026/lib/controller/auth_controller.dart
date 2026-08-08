@@ -399,16 +399,15 @@ class AuthController extends GetxController {
       isLoading.value = true;
       error.value = '';
 
-      final response = await authService.switchUserMode(isHost);
-      if (response.success) {
+      // Throws with the server's reason when refused — see the note in
+      // AuthService.switchUserMode.
+      await authService.switchUserMode(isHost);
+      if (userData.value != null) {
         await storage.write(
             key: USER_DATA_KEY, value: json.encode(userData.value!.toJson()));
-        showSnackbar('Success', 'Mode switched successfully', false);
-        Get.offAllNamed("/");
-      } else {
-        showSnackbar('Error', response.message, true);
-        error.value = response.message;
       }
+      showSnackbar('Success', 'Mode switched successfully', false);
+      Get.offAllNamed("/");
     } catch (e) {
       showSnackbar('Error', 'Failed to switch mode: ${e.toString()}', true);
       error.value = e.toString();

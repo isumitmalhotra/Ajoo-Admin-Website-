@@ -458,15 +458,15 @@ class AuthController extends GetxController {
       isLoading.value = true;
       error.value = '';
 
-      final response = await authService.switchUserMode(isHost);
-      if (response.success) {
+      // switchUserMode throws with the server's reason when it refuses (for
+      // example, a guest account asking for host mode), so there is no
+      // failure branch to check here — the catch below reports it.
+      await authService.switchUserMode(isHost);
+      if (userData.value != null) {
         await authService.saveUserData(userData.value!.toJson());
-        showAlert('Success', 'Mode switched successfully', false);
-        Get.offAllNamed("/");
-      } else {
-        showAlert('Error', response.message, true);
-        error.value = response.message;
       }
+      showAlert('Success', 'Mode switched successfully', false);
+      Get.offAllNamed("/");
     } catch (e) {
       showAlert('Error', 'Failed to switch mode: ${e.toString()}', true);
       error.value = e.toString();
