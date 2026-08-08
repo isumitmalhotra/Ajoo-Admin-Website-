@@ -13,6 +13,25 @@ import 'package:rent_home/data/ApiConstants.dart';
 import '../models/notification_response_model.dart';
 import 'notification_routing_service.dart';
 
+/// Background FCM handler.
+///
+/// This MUST be a top-level (or static) function annotated with
+/// `@pragma('vm:entry-point')`. Firebase runs background messages in a
+/// separate isolate and reaches this code through a CallbackHandle, and
+/// `PluginUtilities.getCallbackHandle()` returns null for an instance method.
+/// The plugin then force-unwraps that null, which is exactly what threw
+/// "Null check operator used on a null value" during startup and left the
+/// app sitting on a blank, unresponsive screen.
+///
+/// Deliberately minimal: this isolate has none of the app's state, and
+/// Android already renders a message that carries a `notification` payload,
+/// so building another one here would show the user two.
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Intentionally empty. Registering a handler is what allows data-only
+  // messages to wake the app; the system draws the notification itself.
+}
+
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
@@ -25,12 +44,22 @@ class NotificationService {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   /// **Initialize Notification Service**
+  ///
+  /// Never allowed to take the app down with it. This runs during startup, so
+  /// anything that escapes here reaches the framework as an unhandled
+  /// exception and the user gets a blank, unresponsive screen — which is
+  /// exactly what happened when the background-handler registration threw.
+  /// Push is a convenience; being unable to open the app is not a reasonable
+  /// price for it.
   Future<void> init() async {
-    await _requestNotificationPermission();
-
-    await _initLocalNotifications();
-    await _setupFirebaseListeners();
-    logger.w("📲Notification Service Init");
+    try {
+      await _requestNotificationPermission();
+      await _initLocalNotifications();
+      await _setupFirebaseListeners();
+      logger.w("📲Notification Service Init");
+    } catch (e, st) {
+      logger.e("Notification init failed — continuing without push", error: e, stackTrace: st);
+    }
   }
 
   final Dio _dio = Dio(
@@ -217,15 +246,7 @@ class NotificationService {
       }
     });
 
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  }
-
-  /// **5️⃣ Handle Background Notifications**
-  Future<void> _firebaseMessagingBackgroundHandler(
-      RemoteMessage message) async {
-    logger.w(
-        "⏳ Background Notification Received: ${message.notification?.title}");
-    _showNotification(message);
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   }
 
   /// **6️⃣ Show Notification**
