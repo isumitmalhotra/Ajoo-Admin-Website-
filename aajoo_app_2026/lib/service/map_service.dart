@@ -17,9 +17,17 @@ class MapService {
     final Map<String, dynamic> data = {
       "latitude": lat,
       "longitude": long,
-      // Always include radius; default is empty string
-      "radius": radius, // "" by default
     };
+
+    // Radius goes over the wire as a NUMBER, and is omitted when blank.
+    // Sending the empty string made the API answer "no record found" for
+    // every search, and sending "20000" as a string failed the request
+    // outright — which is why the wide-radius retry never produced anything
+    // and the home screen stayed on "No stays available yet".
+    final parsedRadius = num.tryParse(radius.trim());
+    if (parsedRadius != null) {
+      data["radius"] = parsedRadius;
+    }
 
     // Add category filter if provided (>0)
     if (category > 0) {

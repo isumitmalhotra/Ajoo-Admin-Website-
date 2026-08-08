@@ -46,8 +46,22 @@ class MapController extends GetxController {
     int category = 0,
     String radius = "", // default to empty string
   }) async {
-    final PropertiesResponse? response = await mapService
+    PropertiesResponse? response = await mapService
         .getProperties(lat, long, category: category, radius: radius);
+
+    // Nothing within the default radius does not mean we have nothing. The
+    // search is location-based, so a guest in any city we do not cover yet —
+    // or an emulator still reporting Mountain View — gets an empty result and
+    // an app that looks broken rather than merely far away. Retry once, wide,
+    // exactly as the web client does.
+    if (response != null && response.data.property.isEmpty && radius.isEmpty) {
+      final PropertiesResponse? wider = await mapService
+          .getProperties(lat, long, category: category, radius: "20000");
+      if (wider != null && wider.data.property.isNotEmpty) {
+        response = wider;
+      }
+    }
+
     isLoading.value = false;
     if (response != null) {
       allProperties.assignAll(response.data.property);

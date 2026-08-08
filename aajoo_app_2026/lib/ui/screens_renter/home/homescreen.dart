@@ -81,6 +81,13 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
     // Categories are public (used by the filter dialog + map) — always fetch.
     commonController.fetchCategories();
 
+    // So are the listings. Nothing fetched them on load: mapController
+    // .properties only filled when someone tapped the locate button or a
+    // category, so a first-time visitor's home screen asked for stays exactly
+    // never and sat on "No stays available yet" while the website showed the
+    // same catalogue fine.
+    mapController.fetchProperties();
+
     // User-scoped boot-up calls — only fire if we have a real user.
     final hasRealUser = _authController.userData.value != null;
     if (hasRealUser) {
