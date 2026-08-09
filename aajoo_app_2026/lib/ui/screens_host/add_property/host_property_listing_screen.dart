@@ -452,10 +452,58 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
 
   // ── Build ─────────────────────────────────────────────────────────────────
 
+  /// The system back button, made to behave like the arrow in the app bar.
+  ///
+  /// There was no guard at all: a back press or edge swipe at any step popped
+  /// the whole six-step wizard and threw away everything typed, with no
+  /// warning. On step 2 of 6 that is a lot of a host's work gone to a gesture
+  /// they did not mean. Back now walks a step at a time, and leaving from the
+  /// first step asks first if anything has been entered.
+  Future<void> _handleSystemBack() async {
+    if (_step > 0) {
+      setState(() => _step--);
+      return;
+    }
+    if (!_hasAnyInput()) {
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Discard this listing?'),
+        content: const Text(
+            'What you have entered so far will be lost. This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Keep editing'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: kDanger),
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
+    );
+    if (leave == true && mounted) Navigator.pop(context);
+  }
+
+  /// Has the host actually put anything in? Used so an immediate back press on
+  /// an untouched form does not nag.
+  bool _hasAnyInput() =>
+      _propertyNameController.text.trim().isNotEmpty || tempSelected.isNotEmpty;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _handleSystemBack();
+      },
+      child: Scaffold(
       backgroundColor: kscaffoldColor,
       appBar: AppBar(
         backgroundColor: kSurface,
@@ -490,6 +538,7 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
             _footer(theme),
           ],
         ),
+      ),
       ),
     );
   }
