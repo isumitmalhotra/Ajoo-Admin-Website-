@@ -159,14 +159,27 @@ class CuratedCard extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(children: [
-                          const Icon(Icons.star_rounded,
-                              size: 14, color: kClay),
-                          const SizedBox(width: 3),
-                          Text(rating,
+                        // The real average, or "New" when nobody has reviewed
+                        // it. This showed a hardcoded 4.5 on every card.
+                        if (property.rating != null)
+                          Row(children: [
+                            const Icon(Icons.star_rounded,
+                                size: 14, color: kClay),
+                            const SizedBox(width: 3),
+                            Text(property.ratingLabel,
+                                style: inter(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w700)),
+                            const SizedBox(width: 3),
+                            Text('(${property.reviewCount})',
+                                style: inter(fontSize: 11, color: kMuted)),
+                          ])
+                        else
+                          Text('New',
                               style: inter(
-                                  fontSize: 12.5, fontWeight: FontWeight.w700)),
-                        ]),
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: kMuted)),
                         RichText(
                           text: TextSpan(children: [
                             TextSpan(

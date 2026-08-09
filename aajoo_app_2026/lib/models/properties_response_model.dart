@@ -78,6 +78,17 @@ class Property {
   List<String>? categories;
   List<String>? amenities;
 
+  /// Average guest rating, or null when nobody has reviewed this stay yet.
+  /// The backend deliberately sends null rather than 0.0 — a zero reads as a
+  /// terrible property rather than a new one. Callers show "New" for null.
+  final double? rating;
+
+  /// How many reviews the average is built from. 0 when unrated.
+  final int reviewCount;
+
+  /// One decimal, for display: "4.6". Empty when unrated.
+  String get ratingLabel => rating == null ? '' : rating!.toStringAsFixed(1);
+
   Property({
     required this.propertyId,
     required this.propertyName,
@@ -103,6 +114,8 @@ class Property {
     this.tags,
     this.categories,
     this.amenities,
+    this.rating,
+    this.reviewCount = 0,
   });
 
   factory Property.fromJson(Map<String, dynamic> json) => Property(
@@ -149,6 +162,10 @@ class Property {
             ? List<String>.from(
                 (json["amenities"] as List).map((x) => x.toString()))
             : null,
+        rating: json["rating"] == null
+            ? null
+            : double.tryParse(json["rating"].toString()),
+        reviewCount: int.tryParse('${json["review_count"] ?? 0}') ?? 0,
       );
 
   Map<String, dynamic> toJson() => {

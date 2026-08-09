@@ -49,6 +49,10 @@ class SinglePropertyData {
   /// Verified Home" trust card, which was unconditional — every listing, vetted
   /// or not, claimed to be verified for quality, safety and hygiene.
   final bool? isVerify;
+  /// Real average rating and review count from the backend aggregate; null
+  /// rating means nobody has reviewed this stay yet.
+  final double? rating;
+  final int reviewCount;
   final int? isLuxury;
   final int? bathrooms;
   final SinglePropertyDetails? propDetails;
@@ -75,6 +79,8 @@ class SinglePropertyData {
     this.propertyEmail,
     this.isActive,
     this.isVerify,
+    this.rating,
+    this.reviewCount = 0,
     this.isLuxury,
     this.bathrooms,
     this.propDetails,
@@ -130,6 +136,10 @@ class SinglePropertyData {
       propertyEmail: json['property_email'],
       isActive: json['is_active'],
       isVerify: json['is_verify'] == true || json['is_verify'] == 1,
+      rating: json['rating'] == null
+          ? null
+          : double.tryParse(json['rating'].toString()),
+      reviewCount: int.tryParse('${json['review_count'] ?? 0}') ?? 0,
       isLuxury: _parseIntSafely(json['is_luxury']),
       bathrooms: _parseIntSafely(json['bathrooms']),
       propDetails: details,

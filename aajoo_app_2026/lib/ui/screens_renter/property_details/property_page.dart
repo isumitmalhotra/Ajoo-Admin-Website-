@@ -113,6 +113,11 @@ class _PropertyPageState extends State<PropertyPage>
   SinglePropertyData? _single;
   HostProfile? _host;
 
+  /// Prefer the detail payload's aggregate; fall back to whatever the list
+  /// already gave us so the rating does not flicker in on load.
+  double? get _rating => _single?.rating ?? widget.property.rating;
+  int get _reviewCount => _single?.reviewCount ?? widget.property.reviewCount;
+
   @override
   void initState() {
     super.initState();
@@ -1407,20 +1412,37 @@ class _PropertyPageState extends State<PropertyPage>
                       // M6-02 — meta row: VerifiedPill + inline rating
                       // (POC has no pill chrome around the rating — plain
                       // "★ 4.92 · 164 reviews" sits beside the verified pill).
+                      // Real average and review count. This read
+                      // "${widget.rating} · 164" — a rating passed in as the
+                      // constant "4.5" and a review count that was literally
+                      // the number 164 typed into the layout.
                       Row(
                         children: [
-                          const VerifiedPill(),
-                          const SizedBox(width: 12),
-                          const Icon(Icons.star, size: 14, color: kClay),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${widget.rating} · 164',
-                            style: inter(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: kInk,
+                          if (_single?.isVerify == true) ...[
+                            const VerifiedPill(),
+                            const SizedBox(width: 12),
+                          ],
+                          if (_rating != null) ...[
+                            const Icon(Icons.star, size: 14, color: kClay),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${_rating!.toStringAsFixed(1)} · '
+                              '$_reviewCount review${_reviewCount == 1 ? '' : 's'}',
+                              style: inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: kInk,
+                              ),
                             ),
-                          ),
+                          ] else
+                            Text(
+                              'New listing',
+                              style: inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: kMuted,
+                              ),
+                            ),
                         ],
                       ),
                       const SizedBox(height: 16),

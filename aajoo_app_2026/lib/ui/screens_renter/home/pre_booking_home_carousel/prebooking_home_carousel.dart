@@ -270,13 +270,19 @@ class _PreBookingHomeCarouselState extends State<PreBookingHomeCarousel> {
                               ),
                             ),
                           ),
+                          // Real average, or "New" when unreviewed. This was
+                          // a hardcoded 4.5 on every card.
                           Row(
                             children: [
-                              Icon(Icons.star,
-                                  color: Colors.amber[700], size: 16),
-                              const SizedBox(width: 4),
+                              if (property.rating != null) ...[
+                                Icon(Icons.star,
+                                    color: Colors.amber[700], size: 16),
+                                const SizedBox(width: 4),
+                              ],
                               Text(
-                                "4.5",
+                                property.rating != null
+                                    ? '${property.ratingLabel} (${property.reviewCount})'
+                                    : 'New',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: Colors.grey[700],
                                   fontWeight: FontWeight.w500,
@@ -301,16 +307,10 @@ class _PreBookingHomeCarouselState extends State<PreBookingHomeCarousel> {
 
                       const SizedBox(height: 4),
 
-                      /// Free Cancellation
-                      Text(
-                        "Free Cancellation",
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.green[700],
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      // "Free Cancellation" was printed on every card
+                      // with no cancellation-policy field behind it. The
+                      // real policy is per-property and shown on the
+                      // detail page.
 
                       const SizedBox(height: 6),
 
@@ -515,14 +515,18 @@ class _PreBookingHomeCarouselState extends State<PreBookingHomeCarousel> {
                       ),
                       Row(
                         children: [
-                          Icon(
-                            Icons.star,
-                            color: Colors.amber[700],
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
+                          if (property.rating != null) ...[
+                            Icon(
+                              Icons.star,
+                              color: Colors.amber[700],
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                          ],
                           Text(
-                            "4.5",
+                            property.rating != null
+                                ? '${property.ratingLabel} (${property.reviewCount})'
+                                : 'New',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: Colors.grey[700],
                               fontWeight: FontWeight.w500,
@@ -543,14 +547,10 @@ class _PreBookingHomeCarouselState extends State<PreBookingHomeCarousel> {
                     overflow: TextOverflow.ellipsis,
                   ),
 
-                  // Free Cancellation
-                  Text(
-                    "Free Cancellation",
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.green[700],
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                      // "Free Cancellation" was printed on every card
+                      // with no cancellation-policy field behind it. The
+                      // real policy is per-property and shown on the
+                      // detail page.
 
                   // Price
                   Row(
