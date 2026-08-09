@@ -3,6 +3,11 @@ class SignupResponse {
   final String message;
   final SignupData data;
 
+  /// Set when the address is already registered but was never verified. The
+  /// backend answers success:false — but it has just emailed a fresh code and
+  /// returned the id to verify against, so this is a resume, not a dead end.
+  bool get needsVerification => data.needsVerification && data.userId > 0;
+
   SignupResponse({
     required this.success,
     required this.message,
@@ -20,12 +25,14 @@ class SignupResponse {
 
 class SignupData {
   final int userId;
+  final bool needsVerification;
 
-  SignupData({required this.userId});
+  SignupData({required this.userId, this.needsVerification = false});
 
   factory SignupData.fromJson(Map<String, dynamic> json) {
     return SignupData(
       userId: json['userId'] ?? 0,
+      needsVerification: json['needsVerification'] == true,
     );
   }
 }

@@ -1,9 +1,13 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controller/auth_controller.dart';
+// The controller registered in InitBinding — not lib/controller/auth_controller
+// .dart, which shares the class name. Get.find keys on the name, so importing
+// the wrong one type-casts the live instance to a class it is not.
+import '../ui/screens_common/auth/auth_controller.dart';
 import '../controller/user_controller.dart';
 import '../models/properties_response_model.dart';
+import '../utils/notification_link.dart';
 
 class NotificationRoutingService extends GetxService {
   static NotificationRoutingService get instance => Get.find();
@@ -34,13 +38,11 @@ class NotificationRoutingService extends GetxService {
   void handleNotificationData(Map<String, dynamic> data) async {
     print('📱 Handling notification data: $data');
 
-    final String? route = data['route'];
-    final String? type = data['type'];
-
-    if (route == null || type == null) {
-      print('❌ Invalid notification data: missing route or type');
-      return;
-    }
+    // A push used to be ignored outright unless it carried both `route` and
+    // `type`. Most carry neither, so tapping them did nothing at all. There is
+    // always a title and body — that is enough to work out where to go.
+    final String route = (data['route'] ?? '').toString();
+    final String type = (data['type'] ?? '').toString();
 
     // Check authentication
     final authController = Get.find<AuthController>();
@@ -52,29 +54,51 @@ class NotificationRoutingService extends GetxService {
       return;
     }
 
-    // Route based on notification type
     _routeToPage(route, type, data);
   }
 
   void _routeToPage(String route, String type, Map<String, dynamic> data) {
-    switch (type) {
-      case 'negotiation_request':
-        _navigateToNegotiation(data);
-        break;
-      case 'booking_confirmation':
-        _navigateToBookingDetails(data);
-        break;
-      case 'payment_update':
-        _navigateToPaymentHistory(data);
-        break;
-      case 'property_update':
-        _navigateToPropertyDetails(data);
-        break;
-      default:
-        _navigateToDefaultRoute(route, data);
-        break;
+    final title = (data['title'] ?? '').toString();
+    final body = (data['body'] ?? data['message'] ?? '').toString();
+    final propertyId = (data['propertyId'] ?? '').toString();
+
+    final kind = notificationKind(
+      title: title,
+      message: body,
+      payloadType: type,
+    );
+
+    // The negotiation thread needs a property, both party ids and a token, so
+    // it can only be opened when the push carried them. That path fetches the
+    // property and assembles the rest.
+    final canOpenThread = (kind == NotifKind.message || kind == NotifKind.offer) &&
+        propertyId.isNotEmpty &&
+        data['userId'] != null &&
+        data['receiverId'] != null &&
+        data['hostId'] != null;
+    if (canOpenThread) {
+      _navigateToNegotiation(data);
+      return;
     }
+
+    // Everything else: resolve from the wording, exactly as the in-app list
+    // does. Never follow the payload's own path blindly — those are the web's
+    // routes ("/messages", "/bookings") and this app has none of them.
+    final destination = notificationDestination(
+      title: title,
+      message: body,
+      payloadType: type,
+      payloadRoute: route,
+      isHost: Get.find<AuthController>().authIsHost.value,
+      propertyId: propertyId.isEmpty ? null : propertyId,
+    );
+    final target =
+        destination.route == '/negotiation' ? _homeRoute() : destination.route;
+    Get.toNamed(target, arguments: destination.arguments);
   }
+
+  String _homeRoute() =>
+      Get.find<AuthController>().authIsHost.value ? '/host/home' : '/home';
 
   void _navigateToNegotiation(Map<String, dynamic> data) {
     final String? propertyId = data['propertyId'];
@@ -198,27 +222,10 @@ class NotificationRoutingService extends GetxService {
     }
   }
 
-  void _navigateToBookingDetails(Map<String, dynamic> data) {
-    final String? bookingId = data['bookingId'];
-    if (bookingId != null) {
-      Get.toNamed('/booking/details', arguments: {'bookingId': bookingId});
-    }
-  }
-
-  void _navigateToPaymentHistory(Map<String, dynamic> data) {
-    Get.toNamed('/history', arguments: {'tab': 'payments'});
-  }
-
-  void _navigateToPropertyDetails(Map<String, dynamic> data) {
-    final String? propertyId = data['propertyId'];
-    if (propertyId != null) {
-      Get.toNamed('/property/details', arguments: {'propertyId': propertyId});
-    }
-  }
-
-  void _navigateToDefaultRoute(String route, Map<String, dynamic> data) {
-    Get.toNamed(route, arguments: data);
-  }
+  // Booking and property notifications used to be sent to '/booking/details'
+  // and '/property/details'. Neither is a route in this app, so both taps hit
+  // the unknown-route page. notificationDestination maps them to screens that
+  // exist instead.
 
   void _setPendingNavigation(String route, Map<String, dynamic> data) {
     _pendingRoute.value = route;

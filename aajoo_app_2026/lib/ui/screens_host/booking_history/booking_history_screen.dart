@@ -5,6 +5,7 @@ import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/data/models/host_booking_history_model.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:rent_home/ui/screens_host/booking_history/host_booking_history_controller.dart';
+import 'package:rent_home/ui/motion/aajoo_motion.dart';
 
 /// Host Bookings — re-skinned to the new design (scaffold host_bookings): teal
 /// app bar + 4 status tabs (Upcoming/Ongoing/Completed/Cancelled) filtering the
@@ -122,8 +123,10 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           itemCount: items.length,
-                          itemBuilder: (context, index) =>
-                              _buildCard(items[index], controller),
+                          itemBuilder: (context, index) => Reveal(
+                            delay: Reveal.staggerDelay(index),
+                            child: _buildCard(items[index], controller),
+                          ),
                         ),
                 );
               }),

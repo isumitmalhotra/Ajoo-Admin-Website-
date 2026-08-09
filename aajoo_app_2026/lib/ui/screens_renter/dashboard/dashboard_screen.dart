@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../utils/stay_clock.dart';
 import '../../motion/aajoo_motion.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -124,9 +125,15 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
 
             // Stats
             Obx(() {
-              final upcoming =
-                  userController.ongoingBookings.value?.data.bookings.length ??
-                      0;
+              // /user/ongoing/bookings returns anything not yet finished —
+              // both a stay in progress and one still to come — so the count
+              // has to split them. Calling the whole list "Upcoming" counted a
+              // guest's current stay as a future one.
+              final allActive =
+                  userController.ongoingBookings.value?.data.bookings ?? [];
+              final upcoming = allActive
+                  .where((b) => isUpcoming(b.bookDetails?.btBookFrom))
+                  .length;
               final reviews =
                   userController.userReviews.value?.data.review.length ?? 0;
               final spent = _totalSpent();

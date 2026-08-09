@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../utils/stay_clock.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/screens_renter/booking_controller.dart';
 import 'package:rent_home/controller/user_controller.dart';
@@ -30,8 +31,18 @@ class _OngoingBookingWidgetState extends State<OngoingBookingWidget> {
   @override
   Widget build(BuildContext context) {
     // final theme = Theme.of(context);
-    final bookings =
+    // The endpoint returns everything not yet finished, so a stay whose 11 AM
+    // checkout has passed still arrives in this list. Showing it as an active
+    // stay for the rest of the day is the bug that was reported on the web —
+    // filter to stays the guest is genuinely in right now.
+    final all =
         widget.userController.ongoingBookings.value?.data.bookings ?? [];
+    final bookings = all
+        .where((b) => isStaying(
+              b.bookDetails?.btBookFrom,
+              b.bookDetails?.btBookTo,
+            ))
+        .toList();
     final latestBooking = bookings.isNotEmpty ? bookings.first : null;
     final hasMultipleBookings = bookings.length > 1;
 
@@ -291,7 +302,12 @@ class _OngoingBookingWidgetState extends State<OngoingBookingWidget> {
       ),
       builder: (context) {
         final bookings =
-            widget.userController.ongoingBookings.value?.data.bookings ?? [];
+            (widget.userController.ongoingBookings.value?.data.bookings ?? [])
+                .where((b) => isStaying(
+                      b.bookDetails?.btBookFrom,
+                      b.bookDetails?.btBookTo,
+                    ))
+                .toList();
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
           child: Column(
@@ -357,17 +373,4 @@ class _OngoingBookingWidgetState extends State<OngoingBookingWidget> {
     );
   }
 
-  // Helper method to parse dates in format dd-MM-yyyy
-  DateTime _parseDate(String dateString) {
-    final parts = dateString.split('-');
-    if (parts.length != 3) {
-      return DateTime.now(); // Fallback to today if parse fails
-    }
-
-    final day = int.parse(parts[0]);
-    final month = int.parse(parts[1]);
-    final year = int.parse(parts[2]);
-
-    return DateTime(year, month, day);
-  }
 }

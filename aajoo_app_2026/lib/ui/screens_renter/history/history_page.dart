@@ -45,10 +45,28 @@ class _HistoryPageState extends State<HistoryPage> {
     return 0; // Upcoming (booked / paid / confirmed / pending)
   }
 
+  static const List<String> _tabNames = [
+    'Upcoming',
+    'Ongoing',
+    'Completed',
+    'Cancelled',
+  ];
+
+  /// A notification can ask for a specific tab — a cancellation should open on
+  /// Cancelled, not on Upcoming where the stay is no longer listed.
+  int get _initialTab {
+    final args = Get.arguments;
+    if (args is! Map) return 0;
+    final wanted = (args['tab'] ?? '').toString().toLowerCase();
+    final index = _tabNames.indexWhere((t) => t.toLowerCase() == wanted);
+    return index < 0 ? 0 : index;
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 4,
+      initialIndex: _initialTab,
       child: Scaffold(
         backgroundColor: kscaffoldColor,
         appBar: AppBar(
@@ -69,12 +87,7 @@ class _HistoryPageState extends State<HistoryPage> {
             unselectedLabelColor: Colors.white70,
             labelStyle: inter(fontSize: 13.5, fontWeight: FontWeight.w700),
             unselectedLabelStyle: inter(fontSize: 13.5),
-            tabs: const [
-              Tab(text: 'Upcoming'),
-              Tab(text: 'Ongoing'),
-              Tab(text: 'Completed'),
-              Tab(text: 'Cancelled'),
-            ],
+            tabs: [for (final name in _tabNames) Tab(text: name)],
           ),
         ),
         body: RefreshIndicator(

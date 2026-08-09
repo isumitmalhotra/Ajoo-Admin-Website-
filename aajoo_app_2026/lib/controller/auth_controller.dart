@@ -264,11 +264,13 @@ class AuthController extends GetxController {
         address: signupData['user_address'],
         city: signupData['user_city'],
         zipcode: signupData['user_pincode'],
-        idDoc: governmentIdImage.value, // [DEV-BYPASS] was .value! — restore when doc upload enforced
-        docType: int.tryParse(signupData['doc_type']?.toString() ?? '') ?? 0, // [DEV-BYPASS] was int.parse
-        docNumber: signupData['doc_number'] ?? '', // [DEV-BYPASS] was non-null
+        // The ID image is optional, same as the web signup, which only appends
+        // the file when one was picked. The type and number are not.
+        idDoc: governmentIdImage.value,
+        docType: int.tryParse(signupData['doc_type']?.toString() ?? '') ?? 0,
+        docNumber: signupData['doc_number'] ?? '',
         isHost: signupData['user_isHost'],
-        referralCode: "0000",
+        referralCode: (signupData['user_ref'] ?? '').toString(),
       );
 
       print(response);

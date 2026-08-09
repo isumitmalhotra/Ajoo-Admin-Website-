@@ -229,8 +229,9 @@ class _InfoScreenState extends State<InfoScreen> {
   }
 
   String? _validateDocument() {
-    // [DEV-BYPASS] Document upload not required for local testing
-    // Original: returned 'Please upload a document' when selectedDocument == null
+    // The scan itself is optional — the web signup also only uploads a file
+    // when one was picked. The document *type and number* above are required
+    // and format-checked, which is what the account record actually stores.
     if (selectedDocument == null) return null;
 
     int fileSizeInBytes = selectedDocument!.lengthSync();
@@ -733,35 +734,6 @@ class _InfoScreenState extends State<InfoScreen> {
     }
   }
 
-  // [DEV-BYPASS] Skip step 3 entirely for testing — remove this method when doc verification is enforced
-  Future<void> _skipStep3AndSave() async {
-    authController.signupData.addAll({
-      'user_fullName': fullNameController.text.trim(),
-      'user_dob': dobController.text.trim(),
-      'user_gender': selectedGender,
-      'user_pnumber': phoneController.text.trim(),
-      'user_countryCode': selectedCountryCode,
-      'user_address': addressController.text.trim(),
-      'user_country': selectedCountry,
-      'user_city': selectedCity,
-      'user_state': selectedState,
-      'user_pincode': pincodeController.text.trim(),
-      'doc_type': '1',           // [DEV-BYPASS] dummy Aadhaar type to pass schema
-      'doc_number': '000000000000', // [DEV-BYPASS] dummy 12-digit value to pass schema
-    });
-    authController.governmentIdImage.value = null;
-    final email = authController.signupData['user_email'] ?? '';
-    final password = authController.signupData['user_password'] ?? '';
-    final confirmPassword = authController.signupData['user_confirmPassword'] ?? '';
-    final isHost = authController.signupData['user_isHost'] ?? false;
-    Get.to(() => CreateAccountLoadingScreen(
-      email: email,
-      password: password,
-      confirmPassword: confirmPassword,
-      isHost: isHost,
-    ));
-  }
-
   Widget _buildStepperControls(ThemeData theme) {
     return Column(
       children: [
@@ -807,23 +779,6 @@ class _InfoScreenState extends State<InfoScreen> {
             ),
           ],
         ),
-        // [DEV-BYPASS] Skip button — remove this block when doc verification is enforced
-        if (currentStep == 2) ...[
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: TextButton(
-              onPressed: _skipStep3AndSave,
-              child: Text(
-                'Skip for now (dev)',
-                style: TextStyle(
-                  color: Colors.grey[500],
-                  fontSize: 13,
-                ),
-              ),
-            ),
-          ),
-        ],
       ],
     );
   }

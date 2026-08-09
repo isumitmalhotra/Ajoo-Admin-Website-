@@ -79,7 +79,10 @@ class _CreateAccountLoadingScreenState
 
       if (!mounted || !_canNavigate) return;
 
-      if (response.success) {
+      // needsVerification means the account already existed unverified and a
+      // fresh code has just been emailed — the same destination as a new
+      // signup, not an error screen.
+      if (response.success || response.needsVerification) {
         // Success - wait for animation then navigate
         await Future.delayed(const Duration(seconds: 1));
 

@@ -13,6 +13,7 @@ import 'package:rent_home/ui/screens_common/notifications/notication_controller.
 import 'package:rent_home/widgets/common_back_button.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/negotitaion_page.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/utils/notification_link.dart';
 // import 'package:rent_home/controller/notification_controller.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -124,12 +125,42 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
 
     try {
+      final payload = notification.payload;
+      final kind = notificationKind(
+        title: notification.unTitle,
+        message: notification.unMessage,
+        payloadType: payload?.type,
+      );
+      // The thread below needs a full argument set — property object, token,
+      // both party ids — so it can only open when we know the property. Any
+      // conversation notification qualifies, not just ones with "negotiation"
+      // in the title, which is what the old check required.
+      final isNegotiationThread =
+          (kind == NotifKind.message || kind == NotifKind.offer) &&
+              payload?.propertyId != null;
+
+      // Everything else used to stop here, marked read and going nowhere — you
+      // never found out what it was about. Resolve a destination from the
+      // wording, the same way the web does.
+      if (!isNegotiationThread) {
+        final destination = notificationDestination(
+          title: notification.unTitle,
+          message: notification.unMessage,
+          payloadType: payload?.type,
+          payloadRoute: payload?.route,
+          isHost: authController.authIsHost.value,
+          propertyId: payload?.propertyId,
+        );
+        Get.toNamed(destination.route, arguments: destination.arguments);
+        return;
+      }
+
       if (notification.payload != null) {
         final currentUserId = authController.userData.value?.userId;
         final payloadData = notification.payload!;
-        // Handle negotiation requests and offer acceptances
-        if ((notification.unTitle.contains("negotiation")) &&
-            payloadData.propertyId != null) {
+        // Handle negotiation requests and offer acceptances. The guard above
+        // already established this is a conversation with a known property.
+        if (payloadData.propertyId != null) {
           final property = await notificationController
               .getSingleProperty(int.parse(payloadData.propertyId!));
           final token =

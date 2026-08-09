@@ -187,8 +187,15 @@ class AuthService {
         'user_isHost': isHost,
         'doc_type': docType,
         'doc_number': docNumber,
-        'user_ref': referralCode ?? '',
       };
+      // Only send a referral when there actually is one. The backend attributes
+      // the reward off this field, and an unknown code is silently discarded —
+      // so a placeholder here reads as "referred by nobody" while still looking
+      // like a referral in the request.
+      final ref = (referralCode ?? '').trim();
+      if (ref.isNotEmpty) {
+        fields['user_ref'] = ref;
+      }
       if (idDoc != null) {
         fields['user_id_doc'] = await MultipartFile.fromFile(
           idDoc.path,

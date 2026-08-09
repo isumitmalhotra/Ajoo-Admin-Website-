@@ -34,11 +34,14 @@ bool motionSafe(BuildContext context) =>
 
 /// Fade + rise. The workhorse for list items and section content.
 ///
-/// Animates on first build rather than on a scroll intersection. Lists build
-/// their children as those children come into view, so in practice this
-/// arrives at the same moment — and unlike an intersection observer it can
-/// never leave content permanently invisible because the viewport skipped it.
-/// Unreadable content is a far worse outcome than a missed animation.
+/// Reveals when the widget actually reaches the viewport, by listening to the
+/// enclosing Scrollable. Animating on first build was not enough: a long page
+/// builds most of its children immediately, so every entrance fired at once
+/// before the reader had scrolled near them — indistinguishable from no
+/// animation.
+///
+/// With no Scrollable above it (a fixed screen), it reveals on first paint,
+/// so content is never left invisible waiting for a scroll that cannot happen.
 class Reveal extends StatefulWidget {
   const Reveal({
     super.key,
@@ -72,20 +75,52 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
     vsync: this,
     duration: widget.duration,
   );
-  bool _scheduled = false;
+
+  ScrollPosition? _position;
+  bool _shown = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_scheduled) return;
-    _scheduled = true;
 
-    final reduced = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
-    if (reduced) {
-      // Straight to the finished state — no fade, no travel.
+    if (_shown) return;
+
+    // Reduced motion: straight to the finished state, no listener at all.
+    if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) {
+      _shown = true;
       _c.value = 1;
       return;
     }
+
+    // Follow the enclosing scroll view so content animates when it actually
+    // reaches the viewport — animating on build instead meant a long page
+    // played every entrance at once, before the reader had scrolled anywhere
+    // near them, which looks identical to no animation at all.
+    _position?.removeListener(_maybeReveal);
+    _position = Scrollable.maybeOf(context)?.position;
+    _position?.addListener(_maybeReveal);
+
+    // Anything already on screen at first paint reveals right away.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeReveal());
+  }
+
+  void _maybeReveal() {
+    if (_shown || !mounted) return;
+
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+
+    final top = box.localToGlobal(Offset.zero).dy;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    // Trigger slightly before the top edge lands, so the entrance finishes as
+    // the row settles rather than starting after it is already being read.
+    // Mirrors the web's "0px 0px -80px" reveal margin.
+    if (top > screenHeight - 60) return;
+
+    _shown = true;
+    _position?.removeListener(_maybeReveal);
+
     if (widget.delay == Duration.zero) {
       _c.forward();
     } else {
@@ -97,6 +132,7 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
 
   @override
   void dispose() {
+    _position?.removeListener(_maybeReveal);
     _c.dispose();
     super.dispose();
   }

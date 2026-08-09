@@ -17,6 +17,7 @@ import 'package:rent_home/ui/screens_host/home/components/no_recent_transaction_
 import 'package:rent_home/models/host_ongoing_response.dart';
 import '../../../constants.dart';
 import '../../../utils/fonts.dart';
+import '../../motion/aajoo_motion.dart';
 
 /// Host Dashboard — re-skinned to the new teal/orange design (scaffold
 /// host_dashboard): in-body header, greeting, earnings card, stat grid,
@@ -85,24 +86,29 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            // Sections arrive as they reach the viewport — the same vocabulary
+            // the guest side and the web use. The header is left alone: it is
+            // on screen at first paint and fading it in only delays the page.
             children: [
               _header(),
               const SizedBox(height: 18),
-              _greeting(firstName),
+              Reveal(child: _greeting(firstName)),
               const SizedBox(height: 16),
-              _earningsCard(),
+              Reveal(delay: Reveal.staggerDelay(1), child: _earningsCard()),
               const SizedBox(height: 16),
               _statGrid(),
               const SizedBox(height: 22),
-              _sectionHeader('Ongoing Bookings',
-                  actionLabel: 'View all',
-                  onAction: () => Get.to(() => const BookingHistoryScreen())),
+              Reveal(
+                child: _sectionHeader('Ongoing Bookings',
+                    actionLabel: 'View all',
+                    onAction: () => Get.to(() => const BookingHistoryScreen())),
+              ),
               const SizedBox(height: 10),
               _ongoingList(),
               const SizedBox(height: 18),
-              _boostBanner(),
+              Reveal(child: _boostBanner()),
               const SizedBox(height: 22),
-              _sectionHeader('Recent Transactions'),
+              Reveal(child: _sectionHeader('Recent Transactions')),
               const SizedBox(height: 8),
               _transactionsList(),
             ],
@@ -242,29 +248,39 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
               .hostPropertiesResponse.value?.data?.properties.length ??
           0;
       final txns = hostController.transactionHistoryResponse.value?.data.length ?? 0;
+      // Tiles arrive in sequence rather than all at once, capped short so the
+      // last one never reads as lag.
       return Column(
         children: [
           Row(
             children: [
               Expanded(
-                  child: _statCard(Ionicons.calendar_outline, '$bookings',
-                      'Total Bookings', _teal50, kIndigo600)),
+                  child: Reveal(
+                      delay: Reveal.staggerDelay(0),
+                      child: _statCard(Ionicons.calendar_outline, '$bookings',
+                          'Total Bookings', _teal50, kIndigo600))),
               const SizedBox(width: 12),
               Expanded(
-                  child: _statCard(Icons.schedule, '$ongoing',
-                      'Ongoing Stays', _orange50, kClay)),
+                  child: Reveal(
+                      delay: Reveal.staggerDelay(1),
+                      child: _statCard(Icons.schedule, '$ongoing',
+                          'Ongoing Stays', _orange50, kClay))),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                  child: _statCard(Ionicons.home_outline, '$properties',
-                      'Properties', _teal50, kIndigo600)),
+                  child: Reveal(
+                      delay: Reveal.staggerDelay(2),
+                      child: _statCard(Ionicons.home_outline, '$properties',
+                          'Properties', _teal50, kIndigo600))),
               const SizedBox(width: 12),
               Expanded(
-                  child: _statCard(Icons.receipt_long_outlined, '$txns',
-                      'Transactions', _orange50, kClay)),
+                  child: Reveal(
+                      delay: Reveal.staggerDelay(3),
+                      child: _statCard(Icons.receipt_long_outlined, '$txns',
+                          'Transactions', _orange50, kClay))),
             ],
           ),
         ],
@@ -331,12 +347,16 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
           hostController.HostOngoingResponse.value?.data.bookings ?? [];
       if (bookings.isEmpty) return const NoOngoingBookingView();
       return Column(
-        children: bookings
-            .map((b) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _bookingCard(b),
-                ))
-            .toList(),
+        children: [
+          for (final entry in bookings.asMap().entries)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Reveal(
+                delay: Reveal.staggerDelay(entry.key),
+                child: _bookingCard(entry.value),
+              ),
+            ),
+        ],
       );
     });
   }

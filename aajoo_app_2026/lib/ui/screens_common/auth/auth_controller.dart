@@ -327,10 +327,20 @@ class AuthController extends GetxController {
         docType: int.tryParse(signupData['doc_type']?.toString() ?? '') ?? 0,
         docNumber: (signupData['doc_number'] ?? '').toString(),
         isHost: resolvedIsHost,
-        referralCode: "0000",
+        // The referral screen writes what the user typed into signupData; this
+        // used to be hardcoded to "0000", so every code anyone entered was
+        // thrown away and no mobile signup was ever attributed to a referrer.
+        referralCode: (signupData['user_ref'] ?? '').toString(),
       );
       if (response.success) {
         showAlert('Success', 'Signup successful', false);
+        clearSignupData();
+        return response;
+      } else if (response.needsVerification) {
+        // Registered before but never verified. The backend has already sent a
+        // new code, so carry on to the code screen instead of reporting a
+        // failure — this is the "User already exists" dead end people hit.
+        showAlert('Almost there', response.message, false);
         clearSignupData();
         return response;
       } else {
