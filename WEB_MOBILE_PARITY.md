@@ -97,20 +97,33 @@ Walking the app tapping every control, against the guide's verified web list.
 | Back arrow on the Profile root tab did nothing | ✅ only shown when it can pop |
 | Bookings tabs bucketed on status text, so finished stays stayed under Upcoming | ✅ uses the stay clock |
 
-**Not fixed — needs a decision:**
+**Ratings — fixed properly (backend + both clients).** `utils/propertyRatings.js`
+aggregates avg + count from `tbl_reviews` in one grouped query per page and
+attaches them to `/properties/search`, `/properties/:id` and the listing
+endpoint; `sort_by=rating` now actually sorts. Unrated returns `null`, not
+`0.0`, and both clients render **"New"**. The app's twelve hardcoded `"4.5"`s,
+its literal `· 164` review count, and "Free Cancellation" on every card are
+gone; the web's `|| 4.6` fallback is gone. **With real data flowing every
+listing reads "New" — there are zero reviews in the database.** The invented
+number was hiding that.
 
-- **The rating is invented on both platforms.** `"4.5"` is hardcoded in 12
-  places in the app plus a "· 164" review count, and "Free Cancellation" is on
-  every card. The list API returns no rating field (`property_rating` exists
-  only in an unused filter clause) and the web invents the same number. This is
-  one backend aggregate feeding both clients, not two client patches.
-- **Host portal untested.** Requires signing in as a host, which means entering
-  a password — not something to automate. Needs a human pass.
+**Data problems — fixed.** `scripts/fixPropertyData.js` (dry-run by default)
+normalised 8 stay-time rows: the column held `"14:00"`, `"12:00"`,
+`"05:05"/"05:58"` (nonsense, and what the app displayed), `"2:00 PM"` 12-hour
+text and nulls, all at once. Unreadable/implausible values now carry the
+platform policy 14:00 / 11:00; plausible host-set values are left alone. And
+property 4 ("Kasauli Homes") was taken offline — its owner had
+`user_isDelete = 1`. Root cause: admin delete flagged the user and touched
+nothing else, and unlike self-serve delete it did not even refuse hosts. It now
+deactivates the host's listings, and `withLiveHosts()` is the read-side
+backstop.
 
-**Data problems, not client bugs:** a property detail showed check-in/out of
-`05:05 · 05:58`, contradicting the 2 PM / 11 AM rule enforced everywhere else;
-and property 4 is owned by user 111, whom the host endpoint will not return
-because the account is not flagged as an active host.
+**Still open:** the stay clock enforces 2 PM / 11 AM from constants on both
+clients, so a per-property check-in time is displayed but never honoured —
+either the clock should read it or the page should stop showing it.
+
+**Host portal untested.** Requires signing in as a host, which means entering a
+password. Needs a human pass.
 
 ## Known open parity gaps
 
