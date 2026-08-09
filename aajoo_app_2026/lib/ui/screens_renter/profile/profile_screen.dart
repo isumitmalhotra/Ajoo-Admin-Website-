@@ -4,6 +4,7 @@ import 'package:animations/animations.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/screens_renter/guest_shell.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/ui/screens_renter/history/history_page.dart';
 import 'package:rent_home/ui/screens_common/update_profile/update_profile_screen.dart';
@@ -1338,7 +1339,14 @@ class _ProfileScreenState extends State<ProfileScreen>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: const BackButton(color: Colors.white),
+        // A back arrow only when there is something to go back to. As the
+        // shell's Profile tab this is a root route, so the arrow was drawn but
+        // maybePop had nothing to pop — a control that visibly did nothing.
+        automaticallyImplyLeading: false,
+        leading: (GuestShellScope.maybeOf(context) == null &&
+                Navigator.of(context).canPop())
+            ? const BackButton(color: Colors.white)
+            : null,
       ),
       body: Obx(() {
         final user = authController.userData.value;
@@ -1667,22 +1675,28 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ),
                 ),
               ),
-              // SliverList(
-              //   delegate: SliverChildListDelegate(
-              //     _buildSettingsItems().asMap().entries.map((entry) {
-              //       final index = entry.key;
-              //       final item = entry.value;
-              //       return AnimationConfiguration.staggeredList(
-              //         position: index,
-              //         duration: const Duration(milliseconds: 500),
-              //         child: SlideAnimation(
-              //           horizontalOffset: 50.0,
-              //           child: FadeInAnimation(child: item),
-              //         ),
-              //       );
-              //     }).toList(),
-              //   ),
-              // ),
+              // Account actions. This list was commented out during the
+              // redesign and never restored, which took Logout with it — and
+              // the bottom-nav shell dropped the drawer that used to hold the
+              // other copy. A signed-in renter had no way to sign out of the
+              // app at all.
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate(
+                    _buildSettingsItems().asMap().entries.map((entry) {
+                      return AnimationConfiguration.staggeredList(
+                        position: entry.key,
+                        duration: const Duration(milliseconds: 500),
+                        child: SlideAnimation(
+                          horizontalOffset: 50.0,
+                          child: FadeInAnimation(child: entry.value),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
             ],
           ),
         );
@@ -1873,11 +1887,11 @@ class _ProfileScreenState extends State<ProfileScreen>
       _buildSettingItem('Booking History', Icons.history, () {
         Get.to(() => const HistoryPage());
       }),
-      _buildSettingItem('Payment Methods', Icons.payment, () {
-        Get.snackbar('Info', 'Payment methods coming soon');
-      }),
+      // "Payment Methods" and "Notifications" lived here and only raised a
+      // "coming soon" snackbar. A row that answers nothing is worse than no
+      // row — they are out until there is a screen behind them.
       _buildSettingItem('Notifications', Icons.notifications, () {
-        Get.snackbar('Info', 'Notification settings coming soon');
+        Get.toNamed('/notifications');
       }),
       _buildSettingItem('Help & Support', Icons.help, () {
         try {
