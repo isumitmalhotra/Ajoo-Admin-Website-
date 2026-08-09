@@ -125,6 +125,47 @@ either the clock should read it or the page should stop showing it.
 **Host portal untested.** Requires signing in as a host, which means entering a
 password. Needs a human pass.
 
+## Pricing — the app was quoting one number and the backend charging another
+
+**The double-tax was a mobile bug, not a backend one.** `/booking/create` reads
+`price` as the **pre-tax room subtotal** and adds GST itself. Both web callers
+(`redesign/pages/guest/Payment.tsx`, `pages/user/FinalBookingPage.tsx`) send the
+subtotal and always have. The app sent the already-taxed total, so the backend
+taxed the tax: booking **B618787** was quoted and charged ₹23,020 while the row
+stored `book_total_amt` **₹24,171** — and pay-on-arrival collects
+`book_total_amt`, so that guest was in line to be billed ₹1,151 over the quote.
+The app's own coupon branch already sent the subtotal; every booking now does
+what that branch did.
+
+Three more faults in the same arithmetic, which lived inline **three times** in
+`property_page.dart` (header, breakdown, submit) and is now one shared
+`lib/utils/booking_pricing.dart` — the Dart counterpart of the web's
+`summarize()`, with **10 tests**:
+
+- **GST banded on the stay total, not the nightly tariff.** A ₹4,000/night room
+  booked two nights is ₹8,000 for the stay but still 5%. The backend bands on
+  `property_price` and the web on `perNight`; only the app banded on the total,
+  showing 18% where the guest was charged 5%.
+- **A ₹10 "Platform Fee" nothing collects.** Not in the backend, and dropped
+  deliberately on the web. It was a line item in the UI and nowhere else.
+- **The coupon discount was never shown.** `_couponDiscount`/`_couponPercent`
+  were written and never read, so the app said "Applied — 10% off" and then
+  quoted an undiscounted price while the backend applied the discount anyway.
+  The quote was wrong in the guest's favour, which is still wrong.
+
+**Razorpay amounts now come from the order** the backend just created, in both
+the property page and the negotiation page. With `order_id` set Razorpay charges
+the *order's* amount whatever the client passes, so a locally-computed figure
+could only ever disagree with what is really taken.
+
+**Left alone on purpose — prebooking.** It charges a 10% deposit, but the
+backend has no notion of one: it reads `price` as the room subtotal whatever it
+is given. Sending the subtotal would charge a deposit guest the full stay;
+sending the deposit records the room as costing 10% of its real price, which is
+what it does today. Choosing between those is not a bugfix — it needs an
+`advanceAmount` the backend understands. The path keeps its existing behaviour
+rather than silently changing what a guest is charged.
+
 ## Known open parity gaps
 
 1. **No messages inbox on mobile.** The only conversation surface is the

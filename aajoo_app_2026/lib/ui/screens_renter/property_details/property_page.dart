@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/constants/payment_config.dart';
+import 'package:rent_home/utils/booking_pricing.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/ui/screens_renter/booking_controller.dart';
 import 'package:rent_home/controller/common_controller.dart';
@@ -227,6 +228,22 @@ class _PropertyPageState extends State<PropertyPage>
   String _couponMsg = '';
   bool _couponOk = false;
   bool _couponBusy = false;
+
+  /// The reduction to show against the room total. Both fields were being
+  /// written and never read, so the app validated a coupon, said "Applied —
+  /// 10% off" in the coupon box, and then quoted a price with nothing taken
+  /// off — while the backend went ahead and applied it. The quote was wrong in
+  /// the guest's favour, which is still wrong.
+  ///
+  /// `_couponDiscount` is the amount the server itself computed, so it wins.
+  /// A deal arriving via `widget.dealPercent` only carries a percentage, hence
+  /// the fallback.
+  double get _discountOnRoom {
+    if (_appliedCoupon == null || _appliedCoupon!.isEmpty) return 0;
+    if (_couponDiscount > 0) return _couponDiscount;
+    final base = double.tryParse(currentPriceString) ?? 0;
+    return _couponPercent > 0 ? base * _couponPercent / 100 : 0;
+  }
 
   Future<void> _applyCoupon() async {
     final code = _couponController.text.trim();
@@ -680,18 +697,18 @@ class _PropertyPageState extends State<PropertyPage>
                             ),
                             child: Builder(
                               builder: (context) {
-                                final basePrice =
-                                    double.parse(currentPriceString);
-                                // Dynamic GST calculation based on price
-                                // ≤₹7500 => 5%, >₹7500 => 18% (matches backend tariff GST)
-                                final gstRate = basePrice <= 7500 ? 0.05 : 0.18;
-                                final gstAmount = basePrice * gstRate;
-                                const platformFee = 10.0; // ₹10 platform fee
-                                final finalPrice =
-                                    basePrice + gstAmount + platformFee;
+                                // One pricing rule, shared with the breakdown
+                                // below and the submit handler. The band comes
+                                // from the nightly tariff, not the stay total.
+                                final p = priceStay(
+                                  roomSubtotal:
+                                      double.parse(currentPriceString),
+                                  perNightTariff: currentPrice,
+                                  discount: _discountOnRoom,
+                                );
 
                                 return Text(
-                                  '₹${finalPrice.toStringAsFixed(0)}',
+                                  '₹${p.total.toStringAsFixed(0)}',
                                   style: const TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
@@ -720,14 +737,11 @@ class _PropertyPageState extends State<PropertyPage>
                         ),
                         child: Builder(
                           builder: (context) {
-                            final basePrice = double.parse(currentPriceString);
-                            // Dynamic GST calculation based on price
-                            // Below ₹7500 => 5%, >₹7500 => 18% (matches backend tariff GST)
-                            final gstRate = basePrice <= 7500 ? 0.05 : 0.18;
-                            final gstAmount = basePrice * gstRate;
-                            const platformFee = 10.0; // ₹10 platform fee
-                            final finalPrice =
-                                basePrice + gstAmount + platformFee;
+                            final p = priceStay(
+                              roomSubtotal: double.parse(currentPriceString),
+                              perNightTariff: currentPrice,
+                              discount: _discountOnRoom,
+                            );
 
                             return Column(
                               children: [
@@ -743,7 +757,7 @@ class _PropertyPageState extends State<PropertyPage>
                                       ),
                                     ),
                                     Text(
-                                      '₹${basePrice.toStringAsFixed(0)}',
+                                      '₹${p.roomSubtotal.toStringAsFixed(0)}',
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -752,20 +766,46 @@ class _PropertyPageState extends State<PropertyPage>
                                     ),
                                   ],
                                 ),
+                                if (p.discount > 0) ...[
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        _couponPercent > 0
+                                            ? 'Discount ($_couponPercent% — $_appliedCoupon)'
+                                            : 'Discount ($_appliedCoupon)',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.green,
+                                        ),
+                                      ),
+                                      Text(
+                                        '− ₹${p.discount.toStringAsFixed(0)}',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.green,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                                 const SizedBox(height: 8),
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      'GST (${(gstRate * 100).toStringAsFixed(0)}%)',
+                                      'GST (${p.taxPct}%)',
                                       style: TextStyle(
                                         fontSize: 14,
                                         color: Colors.grey[700],
                                       ),
                                     ),
                                     Text(
-                                      '₹${gstAmount.toStringAsFixed(0)}',
+                                      '₹${p.taxes.toStringAsFixed(0)}',
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -774,28 +814,10 @@ class _PropertyPageState extends State<PropertyPage>
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Platform Fee',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey[700],
-                                      ),
-                                    ),
-                                    Text(
-                                      '₹${platformFee.toStringAsFixed(0)}',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.grey[700],
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                // The "Platform Fee ₹10" row that used to sit
+                                // here was never charged by anything — not the
+                                // backend, not the web. Showing a fee nobody
+                                // collects is worse than showing no fee.
                                 Padding(
                                   padding:
                                       const EdgeInsets.symmetric(vertical: 8.0),
@@ -817,7 +839,7 @@ class _PropertyPageState extends State<PropertyPage>
                                       ),
                                     ),
                                     Text(
-                                      '₹${finalPrice.toStringAsFixed(0)}',
+                                      '₹${p.total.toStringAsFixed(0)}',
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
@@ -888,7 +910,7 @@ class _PropertyPageState extends State<PropertyPage>
                                         ),
                                       ),
                                       Text(
-                                        '₹${(finalPrice * 0.10).toStringAsFixed(0)}',
+                                        '₹${(p.total * 0.10).toStringAsFixed(0)}',
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
@@ -910,7 +932,7 @@ class _PropertyPageState extends State<PropertyPage>
                                         ),
                                       ),
                                       Text(
-                                        '₹${(finalPrice * 0.90).toStringAsFixed(0)}',
+                                        '₹${(p.total * 0.90).toStringAsFixed(0)}',
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
@@ -1054,33 +1076,43 @@ class _PropertyPageState extends State<PropertyPage>
                         ? DateFormat('dd-MM-yyyy').format(selectedDateTo!)
                         : "";
                     // Compute totals
-                    final basePrice = double.parse(currentPriceString);
-                    // Below ₹7500 => 5%, >₹7500 => 18% (matches backend tariff GST)
-                    final gstRate = basePrice <= 7500 ? 0.05 : 0.18;
-                    final gstAmount = basePrice * gstRate;
-                    const platformFee = 10.0;
-                    double finalAmount = basePrice + gstAmount + platformFee;
-                    double advanceAmount = (finalAmount * 0.10);
+                    final p = priceStay(
+                      roomSubtotal: double.parse(currentPriceString),
+                      perNightTariff: currentPrice,
+                      discount: _discountOnRoom,
+                    );
+                    final double finalAmount =
+                        double.parse(p.total.toStringAsFixed(0));
+                    final double advanceAmount =
+                        double.parse((p.total * 0.10).toStringAsFixed(0));
 
                     // If prebooking, disable COD and charge only 10% now
                     if (isPrebooking) {
                       isCod = false;
                     }
 
-                    var amountToChargeNow =
-                        isPrebooking ? advanceAmount : finalAmount;
-
-                    // trip the value to one decimal palce only
-                    amountToChargeNow =
-                        double.parse(amountToChargeNow.toStringAsFixed(0));
-                    finalAmount = double.parse(finalAmount.toStringAsFixed(0));
-                    advanceAmount =
-                        double.parse(advanceAmount.toStringAsFixed(0));
-
                     final bookingData = {
                       "propertyId": widget.id,
-                      // Send the amount we intend to charge now so backend creates matching order
-                      "price": amountToChargeNow,
+                      // `price` is the PRE-TAX room subtotal. The backend adds
+                      // GST itself (calculateBookingtax) and stores the result
+                      // as book_total_amt, so sending the taxed total made it
+                      // tax the tax — the guest on B618787 was quoted ₹23,020
+                      // and the row said ₹24,171. The coupon branch below has
+                      // always sent the subtotal; this makes every booking do
+                      // what that branch already did.
+                      //
+                      // Prebooking is left on its old footing on purpose. It
+                      // charges a 10% deposit, but the backend has no notion of
+                      // one: it reads `price` as the room subtotal whatever we
+                      // send. Sending the subtotal here would charge a deposit
+                      // guest the full stay; sending the deposit records the
+                      // room as costing 10% of its real price, which is what it
+                      // does today. Neither is right, and choosing between them
+                      // is not a bugfix — it needs an `advanceAmount` the
+                      // backend actually understands. Until then this path
+                      // keeps its existing behaviour rather than silently
+                      // changing what a guest is charged.
+                      "price": isPrebooking ? advanceAmount : p.roomSubtotal,
                       "bookFrom": formattedDate,
                       "bookTo": formattedDateTo,
                       "isCod": isCod,
@@ -1092,12 +1124,9 @@ class _PropertyPageState extends State<PropertyPage>
                       "advanceAmount": advanceAmount,
                     };
                     // Any applied coupon (a negotiated deal OR a code the renter
-                    // entered): send the room subtotal (pre-GST) + the code so the
-                    // backend applies the discount and adds GST cleanly (like web)
-                    // and consumes/validates the coupon. Non-coupon bookings are
-                    // untouched.
+                    // entered): the backend applies the discount to the subtotal
+                    // and adds GST, and consumes/validates the coupon.
                     if (_appliedCoupon != null && _appliedCoupon!.isNotEmpty) {
-                      bookingData["price"] = basePrice;
                       bookingData["couponCode"] = _appliedCoupon!;
                     }
                     // KYC gate — renters are verified at registration; this
@@ -1140,8 +1169,16 @@ class _PropertyPageState extends State<PropertyPage>
                           authController.userData.value?.email ?? '';
                       final options = {
                         "key": PaymentConfig.razorpayKey,
-                        // Charge either 100% (normal) or 10% (prebooking)
-                        "amount": (amountToChargeNow * 100).toInt(),
+                        // Take the amount from the order the backend just
+                        // created (paise, as Razorpay returns it) rather than
+                        // recomputing it here. When an order_id is supplied
+                        // Razorpay charges the ORDER's amount regardless of
+                        // what this field says, so a locally-computed figure
+                        // could only ever disagree with what is really taken —
+                        // which is how a guest came to be shown one number and
+                        // charged another.
+                        "amount": bookingResponse.data.booking.order?.amount ??
+                            (finalAmount * 100).toInt(),
                         "name": "Aajoo",
                         'description': isPrebooking
                             ? 'Prebooking advance (10%) for Property ID: ${widget.id}'

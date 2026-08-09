@@ -241,10 +241,12 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
     final bookTo =
         DateFormat('dd-MM-yyyy').format(now.add(const Duration(days: 1)));
 
-    // add gst
-
     final bookingData = {
       "propertyId": property.propertyId,
+      // The negotiated offer, pre-GST. The backend adds the tax — do not add
+      // it here as well. (The "add gst" note that used to sit above this was
+      // the start of exactly that mistake; the property page did make it, and
+      // it overbilled a real guest.)
       "price": price,
       "bookFrom": bookFrom,
       "bookTo": bookTo,
@@ -283,7 +285,12 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
         final email = authController.userData.value?.email ?? '';
         final options = {
           "key": PaymentConfig.razorpayKey,
-          "amount": price * 100,
+          // The order the backend just created is the authority: `price` here
+          // is the pre-GST negotiated offer, so the order is ~5–18% larger and
+          // that is what Razorpay actually collects once order_id is set.
+          // Passing the bare offer meant the sheet and the charge disagreed.
+          "amount": bookingResponse.data.booking.order?.amount ??
+              (price * 100).toInt(),
           "name": "Aajoo",
           'description': 'Payment for Order ID: ${property.propertyId}',
           'order_id': orderId,
