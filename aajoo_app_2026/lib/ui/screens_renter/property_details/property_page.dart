@@ -17,6 +17,7 @@ import 'package:rent_home/ui/screens_host/add_property/new_property_controller_l
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/data/models/single_property_response.dart';
+import 'package:rent_home/models/host_profile.dart';
 import 'package:rent_home/ui/screens_renter/history/history_description/review/all_reviews_list/view_property_all_reviews_page.dart';
 import 'package:rent_home/service/bookmark_service.dart';
 import 'package:rent_home/service/property_service.dart';
@@ -92,7 +93,6 @@ class _PropertyPageState extends State<PropertyPage>
   bool isExpanded = false;
   bool showDatePicke = false;
   bool isButtonEnabled = false;
-  bool priceConfirmed = false;
   late AnimationController _animationController;
   late Animation<double> _animation;
   late TextEditingController _priceController;
@@ -111,6 +111,7 @@ class _PropertyPageState extends State<PropertyPage>
   // Single property fetch
   final PropertyService _propertyService = PropertyService();
   SinglePropertyData? _single;
+  HostProfile? _host;
 
   @override
   void initState() {
@@ -154,7 +155,7 @@ class _PropertyPageState extends State<PropertyPage>
     _loadAvailability();
 
     // Fetch full property details
-    _fetchSingleProperty();
+    _fetchSingleProperty().then((_) => _fetchHost());
   }
 
   // Parse the deal's DD-MM-YYYY window into the date pickers + totals.
@@ -271,6 +272,20 @@ class _PropertyPageState extends State<PropertyPage>
     } catch (e) {
       // ignore error; fall back to widget data
     }
+  }
+
+  /// Who actually hosts this place.
+  ///
+  /// The property payload has no host name — only an id — so the page used to
+  /// print the literal string "Aajoo Host" for every listing, and below it the
+  /// property's phone number styled as if it were the host's name. This is the
+  /// same endpoint the web's property detail has always used.
+  Future<void> _fetchHost() async {
+    final hostId = _single?.propertyHostId ?? widget.property.propertyHostId;
+    if (hostId == 0) return;
+    final host = await _propertyService.getHostProfile(hostId);
+    if (!mounted || host == null) return;
+    setState(() => _host = host);
   }
 
   Future<void> _checkBookmarkStatus() async {
@@ -1409,7 +1424,11 @@ class _PropertyPageState extends State<PropertyPage>
                         ],
                       ),
                       const SizedBox(height: 16),
-                      // New-design "Aajoo Verified Home" trust card (scaffold).
+                      // "Aajoo Verified Home" trust card — only for listings
+                      // admin has actually verified. It used to render for
+                      // every property, so an unvetted listing advertised
+                      // itself as checked for quality, safety and hygiene.
+                      if (_single?.isVerify == true)
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
@@ -1438,7 +1457,11 @@ class _PropertyPageState extends State<PropertyPage>
                       ),
                       const SizedBox(height: 18),
                       // M7-01 — host card under the meta row
-                      const HostCard(hostName: 'Aajoo Host'),
+                      HostCard(
+                        hostName: _host?.name ?? 'your host',
+                        photoUrl: _host?.image,
+                        tagline: _host?.subtitle ?? 'Verified Aajoo host',
+                      ),
                       const SizedBox(height: 16),
                       // M7-02 — amenity preview row. Show REAL amenities only;
                       // no fake defaults (the full Amenities section is below).
@@ -1487,14 +1510,8 @@ class _PropertyPageState extends State<PropertyPage>
                         ],
                       ),
                       const SizedBox(height: 16),
-                      Text(
-                        "Amenities",
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
+                      // _buildAmenities prints its own "Amenities" heading, so
+                      // a second one here rendered the word twice, stacked.
                       _buildAmenities(),
                       const SizedBox(height: 16),
                       Text(
@@ -1505,6 +1522,11 @@ class _PropertyPageState extends State<PropertyPage>
                         ),
                       ),
                       const SizedBox(height: 8),
+                      // The host, and the listing's published contact — clearly
+                      // separated. This block used to print the property's
+                      // phone number in bold where a name belongs, under a
+                      // stock photo hotlinked from Google's image cache, with
+                      // the property email beneath it as "Not Available".
                       Container(
                         width: double.infinity,
                         margin: const EdgeInsets.only(bottom: 2),
@@ -1513,34 +1535,76 @@ class _PropertyPageState extends State<PropertyPage>
                           color: Colors.grey.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const CircleAvatar(
-                              radius: 30,
-                              backgroundImage: NetworkImage(
-                                'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ4YreOWfDX3kK-QLAbAL4ufCPc84ol2MA8Xg&s',
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            Row(
                               children: [
-                                Text(
-                                  widget.property.propertyContact ??
-                                      "Not Available",
-                                  style: context.textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                CircleAvatar(
+                                  radius: 26,
+                                  backgroundColor: kIndigo,
+                                  backgroundImage: (_host?.image != null)
+                                      ? CachedNetworkImageProvider(_host!.image!)
+                                      : null,
+                                  child: (_host?.image == null)
+                                      ? Text(
+                                          (_host?.name ?? 'H')
+                                              .trim()
+                                              .characters
+                                              .first
+                                              .toUpperCase(),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 20,
+                                          ),
+                                        )
+                                      : null,
                                 ),
-                                Text(
-                                  _single?.propertyEmail ?? "Not Available",
-                                  style: context.textTheme.bodyMedium?.copyWith(
-                                    color: Colors.grey[600],
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _host?.name ?? 'Your host',
+                                        style: context.textTheme.bodyMedium
+                                            ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text(
+                                        _host?.subtitle ??
+                                            'Verified Aajoo host',
+                                        style: context.textTheme.bodySmall
+                                            ?.copyWith(
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(width: 16),
+                            if ((_single?.propertyContact ??
+                                    widget.property.propertyContact) !=
+                                null) ...[
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Icon(Icons.call_outlined,
+                                      size: 16, color: Colors.grey[600]),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Listing contact: '
+                                    '${_single?.propertyContact ?? widget.property.propertyContact}',
+                                    style: context.textTheme.bodySmall
+                                        ?.copyWith(color: Colors.grey[700]),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -1656,17 +1720,11 @@ class _PropertyPageState extends State<PropertyPage>
           ),
         ],
       ),
-      floatingActionButton: priceConfirmed
-          ? Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              child: FloatingActionButton.extended(
-                onPressed: () {},
-                backgroundColor: Colors.blue,
-                label: const Text('Confirm Booking'),
-              ),
-            )
-          : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      // A "Confirm Booking" FAB used to live here, gated on `priceConfirmed` —
+      // a field set to false at declaration and never assigned anywhere. It
+      // could never appear, and its handler was empty, so the day someone set
+      // that flag it would have shipped a booking button that does nothing.
+      // Booking is confirmed from the bottom sheet below.
     );
   }
 
@@ -2155,8 +2213,11 @@ Book now: https://aajoo.com/property/${widget.id}
           child: Row(
             children: items.map<Widget>((item) {
               String displayName = '';
-              Color chipColor = Colors.blue.shade100;
-              Color textColor = Colors.blue.shade900;
+              // Brand palette. These were Material blue / green / purple —
+              // the pre-redesign theme leaking through, so amenity chips read
+              // blue and tag chips purple on an otherwise teal-and-clay page.
+              Color chipColor = kIndigo50;
+              Color textColor = kIndigo600;
 
               // Handle different data structures
               if (item is Map<String, dynamic>) {
@@ -2171,13 +2232,11 @@ Book now: https://aajoo.com/property/${widget.id}
                 displayName = item.toString();
               }
 
-              // Set different colors for different types
-              if (title == 'Categories') {
-                chipColor = Colors.green.shade100;
-                textColor = Colors.green.shade900;
-              } else if (title == 'Tags') {
-                chipColor = Colors.purple.shade100;
-                textColor = Colors.purple.shade900;
+              // Tags get the accent tint so the three groups stay separable
+              // without leaving the palette.
+              if (title == 'Tags') {
+                chipColor = kClay.withOpacity(0.14);
+                textColor = kClay600;
               }
 
               return Padding(

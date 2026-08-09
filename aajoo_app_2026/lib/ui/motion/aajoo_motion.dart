@@ -77,6 +77,7 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
   );
 
   ScrollPosition? _position;
+  ScrollNotificationObserverState? _observer;
   bool _shown = false;
 
   @override
@@ -87,21 +88,62 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
 
     // Reduced motion: straight to the finished state, no listener at all.
     if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) {
-      _shown = true;
-      _c.value = 1;
+      _reveal(animate: false);
       return;
     }
 
-    // Follow the enclosing scroll view so content animates when it actually
-    // reaches the viewport — animating on build instead meant a long page
-    // played every entrance at once, before the reader had scrolled anywhere
-    // near them, which looks identical to no animation at all.
-    _position?.removeListener(_maybeReveal);
+    _detach();
+
+    // Watch scrolling from ABOVE, not from the nearest Scrollable.
+    //
+    // Scrollable.maybeOf returns the closest one, and inside a shrink-wrapped
+    // GridView/ListView with NeverScrollableScrollPhysics that is the inner
+    // list — which never scrolls. Its position therefore never notifies, so a
+    // child starting below the fold never revealed and stayed at opacity 0
+    // permanently: real content, invisible, holding its full layout height. The
+    // observer sits above the Scaffold body and sees every scroll in the
+    // subtree, whatever the nesting.
+    _observer = ScrollNotificationObserver.maybeOf(context);
+    _observer?.addListener(_onScrollNotification);
+
+    // Belt and braces for anything outside a Scaffold.
     _position = Scrollable.maybeOf(context)?.position;
     _position?.addListener(_maybeReveal);
 
+    if (_observer == null && _position == null) {
+      // Nothing can ever tell us we scrolled — a fixed screen. Reveal on first
+      // paint rather than leave content invisible waiting for a signal that
+      // will not come.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _reveal();
+      });
+      return;
+    }
+
     // Anything already on screen at first paint reveals right away.
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeReveal());
+  }
+
+  void _onScrollNotification(ScrollNotification notification) => _maybeReveal();
+
+  void _detach() {
+    _position?.removeListener(_maybeReveal);
+    _position = null;
+    _observer?.removeListener(_onScrollNotification);
+    _observer = null;
+  }
+
+  void _reveal({bool animate = true}) {
+    if (_shown) return;
+    _shown = true;
+    _detach();
+    if (!animate || widget.delay == Duration.zero) {
+      animate ? _c.forward() : _c.value = 1;
+      return;
+    }
+    Future<void>.delayed(widget.delay, () {
+      if (mounted) _c.forward();
+    });
   }
 
   void _maybeReveal() {
@@ -118,21 +160,12 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
     // Mirrors the web's "0px 0px -80px" reveal margin.
     if (top > screenHeight - 60) return;
 
-    _shown = true;
-    _position?.removeListener(_maybeReveal);
-
-    if (widget.delay == Duration.zero) {
-      _c.forward();
-    } else {
-      Future<void>.delayed(widget.delay, () {
-        if (mounted) _c.forward();
-      });
-    }
+    _reveal();
   }
 
   @override
   void dispose() {
-    _position?.removeListener(_maybeReveal);
+    _detach();
     _c.dispose();
     super.dispose();
   }

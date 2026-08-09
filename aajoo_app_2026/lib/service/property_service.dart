@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:rent_home/models/property_review_response_model.dart';
 import 'package:rent_home/models/single_property_response.dart';
+import 'package:rent_home/models/host_profile.dart';
 
 class PropertyService {
   final Dio dio = Dio();
@@ -180,6 +181,30 @@ class PropertyService {
           success: false,
           message: "Failed to get property",
           data: SinglePropertyData());
+    }
+  }
+
+  /// The public host profile behind the property-detail host block.
+  ///
+  /// Returns null rather than throwing: the host block is decoration on a page
+  /// whose main job is the listing, so a failure here must not take the page
+  /// down. Callers fall back to a generic label.
+  Future<HostProfile?> getHostProfile(int hostId) async {
+    try {
+      final response = await dio.get("properties/host/$hostId");
+      final data = response.data;
+      if (data is! Map || data['success'] != true) return null;
+      // A host the endpoint will not vouch for answers success:true with
+      // "no record found" and data: [] — a LIST, not a map. Check the shape
+      // rather than casting, or an owner who is not a registered host throws.
+      final payload = data['data'];
+      if (payload is! Map) return null;
+      final host = payload['host'];
+      if (host is! Map) return null;
+      return HostProfile.fromJson(Map<String, dynamic>.from(host));
+    } catch (e) {
+      print('getHostProfile failed: $e');
+      return null;
     }
   }
 

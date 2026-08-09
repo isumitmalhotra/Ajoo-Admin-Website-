@@ -10,6 +10,12 @@ import 'package:rent_home/utils/fonts.dart';
 ///   └──────────────────────────────────────────────────┘
 ///
 /// Pure presentation widget — caller supplies name, photo, and tagline.
+///
+/// The tagline has no default any more. It used to read "Superhost · Replies in
+/// 1 hr" for anyone the caller did not describe, which is a claim about a real
+/// person's service that nothing in the data supports — and callers took it,
+/// so every listing advertised a superhost replying within the hour. Pass what
+/// is actually known (listing count, member-since, city).
 class HostCard extends StatelessWidget {
   final String hostName;
   final String? photoUrl;
@@ -20,7 +26,7 @@ class HostCard extends StatelessWidget {
     super.key,
     required this.hostName,
     this.photoUrl,
-    this.tagline = 'Superhost · Replies in 1 hr',
+    required this.tagline,
     this.isVerified = true,
   });
 

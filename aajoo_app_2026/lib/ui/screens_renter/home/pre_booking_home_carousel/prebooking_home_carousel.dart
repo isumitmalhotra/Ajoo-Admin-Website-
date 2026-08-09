@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
+import 'package:rent_home/service/bookmark_service.dart';
 import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:shimmer/shimmer.dart';
@@ -24,6 +25,50 @@ class PreBookingHomeCarousel extends StatefulWidget {
 }
 
 class _PreBookingHomeCarouselState extends State<PreBookingHomeCarousel> {
+  final BookmarkService _bookmarks = BookmarkService();
+  final Set<int> _saved = <int>{};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSaved();
+  }
+
+  Future<void> _loadSaved() async {
+    final list = await _bookmarks.getBookmarks();
+    if (!mounted) return;
+    setState(() {
+      _saved
+        ..clear()
+        ..addAll(list.map((p) => p.propertyId));
+    });
+  }
+
+  Future<void> _toggleSaved(Property property) async {
+    // Flip immediately so the tap feels answered, then reconcile with whatever
+    // the server actually did.
+    setState(() {
+      _saved.contains(property.propertyId)
+          ? _saved.remove(property.propertyId)
+          : _saved.add(property.propertyId);
+    });
+    await _bookmarks.toggleBookmark(property);
+    await _loadSaved();
+  }
+
+  /// The listing's own category, or null when it has none — so the badge is
+  /// absent rather than asserting something untrue.
+  String? _badge(Property property) {
+    for (final source in [property.categoryTitles, property.categories]) {
+      if (source == null) continue;
+      for (final value in source) {
+        final label = value.trim();
+        if (label.isNotEmpty) return label;
+      }
+    }
+    return null;
+  }
+
   static const List<String> defaultImageUrls = [
     'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8aG90ZWx8ZW58MHx8MHx8fDA%3D',
     'https://images.unsplash.com/photo-1455587734955-081b22074882?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8aG90ZWx8ZW58MHx8MHx8fDA%3D',
@@ -148,7 +193,9 @@ class _PreBookingHomeCarouselState extends State<PreBookingHomeCarousel> {
                   ),
                 ),
 
-                /// ❤️ Favorite Button
+                /// ❤️ Favorite Button — saves to the same list the Saved tab
+                /// and the property page read. It was an empty handler, so the
+                /// heart on every card was decoration.
                 Positioned(
                   right: 12,
                   top: 12,
@@ -158,36 +205,43 @@ class _PreBookingHomeCarouselState extends State<PreBookingHomeCarousel> {
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(
-                        Icons.favorite_border,
+                      icon: Icon(
+                        _saved.contains(property.propertyId)
+                            ? Icons.favorite
+                            : Icons.favorite_border,
                         color: Colors.red,
                         size: 20,
                       ),
-                      onPressed: () {},
+                      onPressed: () => _toggleSaved(property),
                     ),
                   ),
                 ),
 
-                /// 🏷 Guest Favorite Badge
-                Positioned(
-                  left: 12,
-                  top: 12,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: kClay,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      "Guest Favorite",
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: kCream,
-                        fontWeight: FontWeight.bold,
+                /// 🏷 Category badge — the property's own type.
+                ///
+                /// This said "Guest Favorite" on every card, unconditionally.
+                /// Nothing in the data backs that claim, so every listing on
+                /// the home screen was advertised as a guest favourite.
+                if (_badge(property) != null)
+                  Positioned(
+                    left: 12,
+                    top: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: kClay,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        _badge(property)!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: kCream,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
 

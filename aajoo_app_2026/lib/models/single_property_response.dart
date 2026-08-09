@@ -45,6 +45,10 @@ class SinglePropertyData {
   final String? propertyContact;
   final String? propertyEmail;
   final bool? isActive;
+  /// Whether admin has verified this listing. The detail page shows an "Aajoo
+  /// Verified Home" trust card, which was unconditional — every listing, vetted
+  /// or not, claimed to be verified for quality, safety and hygiene.
+  final bool? isVerify;
   final int? isLuxury;
   final int? bathrooms;
   final SinglePropertyDetails? propDetails;
@@ -70,6 +74,7 @@ class SinglePropertyData {
     this.propertyContact,
     this.propertyEmail,
     this.isActive,
+    this.isVerify,
     this.isLuxury,
     this.bathrooms,
     this.propDetails,
@@ -124,6 +129,7 @@ class SinglePropertyData {
       propertyContact: json['property_contact'],
       propertyEmail: json['property_email'],
       isActive: json['is_active'],
+      isVerify: json['is_verify'] == true || json['is_verify'] == 1,
       isLuxury: _parseIntSafely(json['is_luxury']),
       bathrooms: _parseIntSafely(json['bathrooms']),
       propDetails: details,
@@ -171,6 +177,7 @@ class SinglePropertyData {
       'property_contact': propertyContact,
       'property_email': propertyEmail,
       'is_active': isActive,
+      'is_verify': isVerify,
       'is_luxury': isLuxury,
       'images': images,
     };
