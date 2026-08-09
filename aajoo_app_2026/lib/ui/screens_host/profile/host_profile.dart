@@ -310,7 +310,10 @@ class _HostProfilePageState extends State<HostProfilePage> {
                   children: withDividers([
                     InfoRow(Icons.person_outline, "Name",
                         authController.userData.value?.fullName ?? "—"),
-                    InfoRow(Icons.star_outline, "Host Rating", "4.8 / 5"),
+                    // "4.8 / 5" was a literal shown to every host. There is no
+                    // host rating in the data — not even a column — so the row
+                    // is gone rather than made up. It comes back when hosts
+                    // are actually rated.
                     InfoRow(Icons.cake_outlined, "DOB",
                         (user?.dob ?? "").isEmpty ? "—" : user!.dob),
                   ]),

@@ -6,6 +6,7 @@ import 'package:rent_home/data/models/host_booking_history_model.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:rent_home/ui/screens_host/booking_history/host_booking_history_controller.dart';
 import 'package:rent_home/ui/motion/aajoo_motion.dart';
+import 'package:rent_home/utils/stay_clock.dart';
 
 /// Host Bookings — re-skinned to the new design (scaffold host_bookings): teal
 /// app bar + 4 status tabs (Upcoming/Ongoing/Completed/Cancelled) filtering the
@@ -48,10 +49,25 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
     super.dispose();
   }
 
-  // Bucket a booking by its status title into one of the four tabs.
-  int _bucket(String? title) {
+  /// Bucket a booking into one of the four tabs.
+  ///
+  /// The dates decide, not the status word — same rule and same 2 PM / 11 AM
+  /// window as the renter's Bookings screen and the web. A paid booking keeps
+  /// the status "Paid" for its whole life; nothing marks it finished at
+  /// checkout, so bucketing on the title alone left stays that ended weeks ago
+  /// sitting under Upcoming. #BPTEST02 (16-07 to 19-07) was showing there on
+  /// 09-08. The title still settles what dates cannot say (cancelled), and is
+  /// the fallback when they cannot be read.
+  int _bucket(String? title, {String? from, String? to}) {
     final s = (title ?? '').toLowerCase();
-    if (s.contains('cancel')) return 3; // Cancelled
+    if (s.contains('cancel')) return 3; // Cancelled — dates are irrelevant.
+
+    if (parseStayDate(from) != null && parseStayDate(to) != null) {
+      if (hasEnded(to)) return 2; // Completed
+      if (isStaying(from, to)) return 1; // Ongoing
+      return 0; // Upcoming
+    }
+
     if (s.contains('complet') ||
         s.contains('checkout') ||
         s.contains('check out') ||
@@ -113,7 +129,13 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
             content = TabBarView(
               children: List.generate(4, (bucket) {
                 final items =
-                    all.where((b) => _bucket(b.bookingStatusBsTitle) == bucket).toList();
+                    all
+                        .where((b) =>
+                            _bucket(b.bookingStatusBsTitle,
+                                from: b.bookDetailsBtBookFrom,
+                                to: b.bookDetailsBtBookTo) ==
+                            bucket)
+                        .toList();
                 return RefreshIndicator(
                   color: kIndigo,
                   onRefresh: controller.getHostBookingHistory,
@@ -300,7 +322,10 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                 "Booked ${booking.bookAddedAt?.day}/${booking.bookAddedAt?.month}/${booking.bookAddedAt?.year}",
                 style: inter(fontSize: 12, color: kMuted),
               ),
-              if (_bucket(booking.bookingStatusBsTitle) == 2)
+              if (_bucket(booking.bookingStatusBsTitle,
+                      from: booking.bookDetailsBtBookFrom,
+                      to: booking.bookDetailsBtBookTo) ==
+                  2)
                 ElevatedButton(
                   onPressed: () =>
                       _buildReviewDialog(Get.context!, booking, controller),

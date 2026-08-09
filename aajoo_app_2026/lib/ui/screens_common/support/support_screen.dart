@@ -7,6 +7,10 @@ import 'package:rent_home/widgets/social_row.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// One definition, so the mailto link and the address on screen cannot
+/// disagree again.
+const String _supportEmail = 'aajoolive@gmail.com';
+
 class SupportScreen extends StatelessWidget {
   const SupportScreen({super.key});
 
@@ -136,9 +140,11 @@ class ContactInfoSection extends StatelessWidget {
         const SizedBox(height: 10),
         GestureDetector(
           onTap: () {
-            // Handle tap on email
-            final Uri emailUri =
-                Uri(scheme: 'mailto', path: 'naaajoolive@gmail.com');
+            // The link said "naaajoolive@gmail.com" while the row below it
+            // displayed "aajoolive@gmail.com" — a typo, so every renter who
+            // tapped support email sent it to an address that does not exist
+            // and got a bounce. Kept in one place so they cannot drift again.
+            final Uri emailUri = Uri(scheme: 'mailto', path: _supportEmail);
             launchUrl(emailUri);
           },
           child: Container(
@@ -158,7 +164,7 @@ class ContactInfoSection extends StatelessWidget {
             child: const ContactRow(
               icon: Icons.email,
               label: 'Write us at',
-              contactInfo: 'aajoolive@gmail.com',
+              contactInfo: _supportEmail,
             ),
           ),
         ),
