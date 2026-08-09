@@ -1333,7 +1333,12 @@ class _PropertyPageState extends State<PropertyPage>
                           ],
                         ),
                       ),
-                      // New-design hero rating badge (bottom-left, deep teal).
+                      // Hero rating badge — only when the stay has a real
+                      // rating. It printed widget.rating, which callers pass
+                      // as the constant "4.5", so every listing wore a score
+                      // nobody had given it. The meta row below was fixed
+                      // earlier; this second copy was missed.
+                      if (_rating != null)
                       Positioned(
                         left: 16,
                         bottom: 16,
@@ -1347,7 +1352,7 @@ class _PropertyPageState extends State<PropertyPage>
                             const Icon(Icons.star,
                                 size: 14, color: Colors.white),
                             const SizedBox(width: 4),
-                            Text(widget.rating,
+                            Text(_rating!.toStringAsFixed(1),
                                 style: inter(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
