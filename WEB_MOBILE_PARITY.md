@@ -81,6 +81,37 @@ ledger is for.
 5. **Neither client read `needsVerification`.** Fixed on both — see above. The
    ledger previously claimed the web handled it; it did not.
 
+## Screen-by-screen pass, renter side (2026-08-09)
+
+Walking the app tapping every control, against the guide's verified web list.
+
+| Found | Status |
+|---|---|
+| **No way to log out.** The Profile tab's settings `SliverList` was commented out during the redesign, and the bottom-nav shell replaced the drawer that held the other copy | ✅ restored |
+| `Reveal` hid content below the fold inside shrink-wrapped lists — "Curated for you" was a screen-high blank gap | ✅ fixed (my regression) |
+| "Hosted by Aajoo Host" / "Superhost · Replies in 1 hr" were a literal and a default parameter; Host Details showed the phone as the name over a hotlinked stock photo | ✅ uses `/properties/host/:hostId` |
+| "Aajoo Verified Home" shown on every listing | ✅ gated on `is_verify` |
+| "Guest Favorite" on every card; heart button `onPressed: () {}` | ✅ real category; wired to `BookmarkService` |
+| Dead "Confirm Booking" FAB behind a flag never set true | ✅ removed |
+| Amenity chips Material blue, tag chips Material purple; "Amenities" printed twice | ✅ brand tokens, one heading |
+| Back arrow on the Profile root tab did nothing | ✅ only shown when it can pop |
+| Bookings tabs bucketed on status text, so finished stays stayed under Upcoming | ✅ uses the stay clock |
+
+**Not fixed — needs a decision:**
+
+- **The rating is invented on both platforms.** `"4.5"` is hardcoded in 12
+  places in the app plus a "· 164" review count, and "Free Cancellation" is on
+  every card. The list API returns no rating field (`property_rating` exists
+  only in an unused filter clause) and the web invents the same number. This is
+  one backend aggregate feeding both clients, not two client patches.
+- **Host portal untested.** Requires signing in as a host, which means entering
+  a password — not something to automate. Needs a human pass.
+
+**Data problems, not client bugs:** a property detail showed check-in/out of
+`05:05 · 05:58`, contradicting the 2 PM / 11 AM rule enforced everywhere else;
+and property 4 is owned by user 111, whom the host endpoint will not return
+because the account is not flagged as an active host.
+
 ## Known open parity gaps
 
 1. **No messages inbox on mobile.** The only conversation surface is the
