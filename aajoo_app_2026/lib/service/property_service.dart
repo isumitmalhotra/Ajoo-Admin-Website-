@@ -7,6 +7,14 @@ import 'package:rent_home/models/single_property_response.dart';
 import 'package:rent_home/models/host_profile.dart';
 
 class PropertyService {
+  /// Why the last addProperties call failed, straight from the server.
+  ///
+  /// It used to be printed to the console and dropped, so every failure
+  /// surfaced as the same "Failed to add property" with no reason — a host
+  /// could not tell a missing field from a rate limit from a server fault,
+  /// and neither could we.
+  String? lastAddError;
+
   final Dio dio = Dio();
   final String baseUrl = "https://aajaodev.onrender.com/";
   PropertyService() {
@@ -56,19 +64,23 @@ class PropertyService {
       print(response.data);
 
       if (response.statusCode == 200) {
-        print("Property added successfully");
-        if (response.data['success']) {
+        if (response.data['success'] == true) {
+          lastAddError = null;
           return true;
         }
-        return false;
-      } else {
+        lastAddError = _messageFrom(response.data);
         print("Failed to add property: ${response.data}");
         return false;
       }
+      lastAddError = _messageFrom(response.data);
+      print("Failed to add property: ${response.data}");
+      return false;
     } on DioException catch (e) {
-      print(e.message);
-
-      print("Error: ${e.response?.data}");
+      lastAddError = _messageFrom(e.response?.data) ??
+          (e.response?.statusCode == 429
+              ? 'Too many upload attempts. Wait a minute and try again.'
+              : 'Could not reach the server. Check your connection.');
+      print("Error: ${e.response?.data} ${e.message}");
       return false;
     }
   }
@@ -206,6 +218,18 @@ class PropertyService {
       print('getHostProfile failed: $e');
       return null;
     }
+  }
+
+  /// Pull a readable reason out of whatever the API returned. The validation
+  /// layer answers with a LIST of messages, the controllers with a string.
+  String? _messageFrom(dynamic data) {
+    if (data is! Map) return null;
+    final m = data['message'];
+    if (m is List && m.isNotEmpty) {
+      return m.map((e) => e.toString()).join(r'\n').replaceAll(r'\n', '\n');
+    }
+    if (m is String && m.trim().isNotEmpty) return m;
+    return null;
   }
 
   Exception _handleError(dynamic error) {

@@ -241,9 +241,12 @@ class NewPropertyController extends GetxController {
       );
 
       if (!res) {
+        // Show what the server actually said — a missing field, a rejected
+        // value, a rate limit. "Failed to add property" on its own told the
+        // host nothing and made this undiagnosable from a bug report.
         return ActionResult(
           isSuccess: false,
-          message: 'Failed to add property',
+          message: _propertyService.lastAddError ?? 'Failed to add property',
         );
       }
 
