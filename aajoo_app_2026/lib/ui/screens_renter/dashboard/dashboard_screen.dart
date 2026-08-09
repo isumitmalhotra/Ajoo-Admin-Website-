@@ -10,12 +10,15 @@ import 'package:rent_home/models/ongoing_reponse.dart';
 import 'package:rent_home/service/bookmark_service.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/ui/screens_renter/home/components/negotiated_deal_banner.dart';
+import 'package:rent_home/ui/screens_renter/guest_shell.dart';
 
 /// Renter account dashboard — the mobile mirror of the web GuestDashboard.
 /// Welcome header, negotiated-deal banner, at-a-glance stats (Upcoming / Saved /
-/// Reviews / Total Spent), an upcoming-stays list, and quick actions. Opened
-/// from the home drawer. All data comes from the same controllers/services the
-/// rest of the renter app already uses.
+/// Reviews / Total Spent), an upcoming-stays list, and quick actions. Reachable
+/// two ways: as the Dashboard tab of [GuestShell], and pushed on its own from
+/// the home drawer — which is why "go to Home" has to ask the shell rather than
+/// assume there is something to pop. All data comes from the same
+/// controllers/services the rest of the renter app already uses.
 class RenterDashboardScreen extends StatefulWidget {
   const RenterDashboardScreen({super.key});
 
@@ -39,6 +42,38 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
   void initState() {
     super.initState();
     _load();
+  }
+
+  /// Send the reader to Home to browse.
+  ///
+  /// As a shell tab there is nothing above this route, so popping used to take
+  /// the whole shell down and leave a black screen. Ask the shell to switch
+  /// tabs when we are inside one; only pop when this really was pushed on top
+  /// of something. `/home` is the last resort so this can never dead-end.
+  void _goBrowse() {
+    final shell = GuestShellScope.maybeOf(context);
+    if (shell != null) {
+      shell.goToTab(0);
+      return;
+    }
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+    Get.offAllNamed('/home');
+  }
+
+  /// Open a screen that is also a shell tab. Inside the shell, switch to it —
+  /// pushing it instead stacks a second copy over the shell and the bottom nav
+  /// disappears, which reads as having left the app.
+  void _openTabOrRoute(int tabIndex, String route) {
+    final shell = GuestShellScope.maybeOf(context);
+    if (shell != null) {
+      shell.goToTab(tabIndex);
+      return;
+    }
+    Get.toNamed(route);
   }
 
   Future<void> _load() async {
@@ -150,24 +185,24 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
                   Reveal(
                     delay: Reveal.staggerDelay(0),
                     child: _statCard('Upcoming Stays', '$upcoming',
-                        Icons.event_available, () => Get.toNamed('/history')),
+                        Icons.event_available, () => _openTabOrRoute(2, '/history')),
                   ),
                   Reveal(
                     delay: Reveal.staggerDelay(1),
                     child: _statCard('Saved Stays', '$_savedCount',
                         Icons.favorite_border,
-                        () => Get.toNamed('/bookmarkProperties')),
+                        () => _openTabOrRoute(3, '/bookmarkProperties')),
                   ),
                   Reveal(
                     delay: Reveal.staggerDelay(2),
                     child: _statCard('Reviews', '$reviews', Icons.star_border,
-                        () => Get.toNamed('/history')),
+                        () => _openTabOrRoute(2, '/history')),
                   ),
                   Reveal(
                     delay: Reveal.staggerDelay(3),
                     child: _statCard('Total Spent', _fmt.format(spent),
                         Icons.account_balance_wallet_outlined,
-                        () => Get.toNamed('/history')),
+                        () => _openTabOrRoute(2, '/history')),
                   ),
                 ],
               );
@@ -182,7 +217,7 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
                     style: TextStyle(
                         fontSize: 17, fontWeight: FontWeight.w700, color: kInk)),
                 TextButton(
-                    onPressed: () => Get.toNamed('/history'),
+                    onPressed: () => _openTabOrRoute(2, '/history'),
                     child: const Text('View all',
                         style: TextStyle(color: kIndigo))),
               ],
@@ -211,7 +246,7 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
                           child: Text('No upcoming stays yet.',
                               style: TextStyle(color: kMuted))),
                       TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
+                          onPressed: _goBrowse,
                           child: const Text('Find a stay',
                               style: TextStyle(color: kIndigo))),
                     ],
@@ -231,11 +266,12 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
                     fontSize: 17, fontWeight: FontWeight.w700, color: kInk)),
             const SizedBox(height: 10),
             _quickAction(Icons.search, 'Find a stay',
-                'Explore for your next trip', () => Navigator.of(context).pop()),
+                'Explore for your next trip', _goBrowse),
             _quickAction(Icons.favorite_border, 'Saved stays',
-                'Your saved properties', () => Get.toNamed('/bookmarkProperties')),
+                'Your saved properties',
+                () => _openTabOrRoute(3, '/bookmarkProperties')),
             _quickAction(Icons.receipt_long, 'Booking history',
-                'Past & current bookings', () => Get.toNamed('/history')),
+                'Past & current bookings', () => _openTabOrRoute(2, '/history')),
             _quickAction(Icons.support_agent, 'Help & Support',
                 'Get help, raise a ticket', () => Get.toNamed('/support')),
           ],
@@ -292,7 +328,7 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
     final to = _pretty(b.bookDetails?.btBookTo);
     final status = b.bookingStatusBsTitle;
     return GestureDetector(
-      onTap: () => Get.toNamed('/history'),
+      onTap: () => _openTabOrRoute(2, '/history'),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(10),

@@ -8,6 +8,8 @@ import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/models/booking_history_response_model.dart';
 import 'package:rent_home/ui/screens_renter/history/components/booking_cart.dart';
 import 'package:rent_home/ui/screens_renter/history/components/renter_history_list_shimmer.dart';
+import 'package:rent_home/ui/screens_renter/guest_shell.dart';
+import 'package:rent_home/utils/stay_clock.dart';
 
 /// My Bookings — re-skinned to the new design (scaffold bookings_screen): teal
 /// app bar + 4 status tabs (Upcoming / Ongoing / Completed / Cancelled). The
@@ -31,18 +33,34 @@ class _HistoryPageState extends State<HistoryPage> {
     });
   }
 
-  // Bucket a booking by its status title into one of the four tabs.
-  int _bucket(String? title) {
+  /// Bucket a booking into one of the four tabs.
+  ///
+  /// Status alone is not enough. A stay that has been paid for keeps the status
+  /// "Paid" for its whole life — nothing moves it on when the guest checks out —
+  /// so bucketing on the title left finished stays sitting under Upcoming
+  /// indefinitely, disagreeing with the dashboard count beside it. The dates
+  /// decide, using the same 2 PM / 11 AM window as the web and the rest of this
+  /// app; the title only settles what the dates cannot say (cancelled), and is
+  /// the fallback when they cannot be read.
+  int _bucket(String? title, {String? from, String? to}) {
     final s = (title ?? '').toLowerCase();
-    if (s.contains('cancel')) return 3; // Cancelled
+    if (s.contains('cancel')) return 3; // Cancelled — dates are irrelevant.
+
+    if (parseStayDate(from) != null && parseStayDate(to) != null) {
+      if (hasEnded(to)) return 2; // Completed
+      if (isStaying(from, to)) return 1; // Ongoing
+      return 0; // Upcoming
+    }
+
+    // No usable dates — fall back to whatever the status says.
     if (s.contains('complet') || s.contains('checkout') || s.contains('checked-out')) {
-      return 2; // Completed
+      return 2;
     }
     if (s.contains('running') || s.contains('checkin') ||
         s.contains('checked-in') || s.contains('ongoing') || s.contains('stay')) {
-      return 1; // Ongoing
+      return 1;
     }
-    return 0; // Upcoming (booked / paid / confirmed / pending)
+    return 0;
   }
 
   static const List<String> _tabNames = [
@@ -54,7 +72,12 @@ class _HistoryPageState extends State<HistoryPage> {
 
   /// A notification can ask for a specific tab — a cancellation should open on
   /// Cancelled, not on Upcoming where the stay is no longer listed.
-  int get _initialTab {
+  ///
+  /// Only when opened as its own route. As the shell's Bookings tab, Get
+  /// .arguments belongs to the shell's route, not to this screen, so reading it
+  /// here would let an unrelated argument choose the tab.
+  int _initialTab(BuildContext context) {
+    if (GuestShellScope.maybeOf(context) != null) return 0;
     final args = Get.arguments;
     if (args is! Map) return 0;
     final wanted = (args['tab'] ?? '').toString().toLowerCase();
@@ -66,7 +89,7 @@ class _HistoryPageState extends State<HistoryPage> {
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 4,
-      initialIndex: _initialTab,
+      initialIndex: _initialTab(context),
       child: Scaffold(
         backgroundColor: kscaffoldColor,
         appBar: AppBar(
@@ -109,7 +132,13 @@ class _HistoryPageState extends State<HistoryPage> {
             return TabBarView(
               children: List.generate(4, (bucket) {
                 final items =
-                    all.where((b) => _bucket(b.bookingStatusBsTitle) == bucket).toList();
+                    all
+                        .where((b) =>
+                            _bucket(b.bookingStatusBsTitle,
+                                from: b.bookDetailsBtBookFrom,
+                                to: b.bookDetailsBtBookTo) ==
+                            bucket)
+                        .toList();
                 if (items.isEmpty) return _empty(bucket);
                 return ListView.builder(
                   padding: const EdgeInsets.only(top: 6, bottom: 20),
