@@ -408,6 +408,29 @@ class _HostProfilePageState extends State<HostProfilePage> {
                   },
                 ),
               ),
+              const SizedBox(height: 12),
+
+              // Logout. The host Profile tab had none at all — the only copy
+              // was in the home drawer, which opens from the header on the
+              // Dashboard tab, so a host sitting on Profile had nowhere to
+              // sign out from. The renter Profile has it in the same place.
+              Card(
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.logout, color: kDanger),
+                  title: const Text(
+                    'Logout',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600, color: kDanger),
+                  ),
+                  subtitle: const Text('Sign out of this device'),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () => authController.logout(),
+                ),
+              ),
               const SizedBox(height: 20),
 
               // Managed Properties section

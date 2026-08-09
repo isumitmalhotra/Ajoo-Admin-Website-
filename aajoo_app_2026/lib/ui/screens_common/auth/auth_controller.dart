@@ -509,15 +509,44 @@ class AuthController extends GetxController {
       isLoggedIn.value = false;
       userData.value = null;
       await authService.logout();
-      await _firebaseMessaging.deleteToken();
-      // Clear per-user caches so the next account doesn't inherit previous
-      // user's bookmarks (was a real risk when bookmarks lived in
-      // FlutterSecureStorage under a shared key).
-      await BookmarkService().clearCache();
+
+      // Best-effort cleanup. Neither of these is allowed to decide whether the
+      // user gets signed out: deleteToken() throws when Firebase has no token
+      // or cannot reach the network, and it used to sit in the same try as the
+      // navigation below — so a push-token hiccup showed "Something went
+      // wrong", skipped Get.offAllNamed, and left the app sitting on the host
+      // screen with the session already cleared. That is what "the logout
+      // button does nothing" was.
+      try {
+        await _firebaseMessaging.deleteToken();
+      } catch (e) {
+        // ignore: avoid_print
+        print('logout: could not delete the push token: $e');
+      }
+      try {
+        // Clear per-user caches so the next account doesn't inherit previous
+        // user's bookmarks (was a real risk when bookmarks lived in
+        // FlutterSecureStorage under a shared key).
+        await BookmarkService().clearCache();
+      } catch (e) {
+        // ignore: avoid_print
+        print('logout: could not clear the bookmark cache: $e');
+      }
+
       showAlert('Success', 'Logged out successfully', false);
-      Get.offAllNamed('/login');
     } catch (e) {
-      showAlert('Error', 'Something went wrong.', true);
+      // Even a genuine failure must not strand someone signed in. Clear what
+      // we can and still leave.
+      isLoggedIn.value = false;
+      userData.value = null;
+      try {
+        await authService.logout();
+      } catch (_) {}
+      showAlert('Signed out', 'Signed out on this device.', false);
+    } finally {
+      // Always land on the login screen. Unconditional, because every path
+      // above has cleared the local session.
+      Get.offAllNamed('/login');
     }
   }
 

@@ -144,8 +144,11 @@ class HostHomeDrawer extends StatelessWidget {
                 leading: const Icon(Iconsax.logout),
                 title: const Text("Logout"),
                 onTap: () {
-                  authController.logout();
+                  // Close the drawer first, then sign out. It used to fire
+                  // logout and pop in the same frame, so the pop raced the
+                  // navigation that logout performs.
                   Navigator.pop(context);
+                  authController.logout();
                 },
               ),
             ),
