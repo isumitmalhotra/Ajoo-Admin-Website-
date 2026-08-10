@@ -85,7 +85,11 @@ class LoginResponse extends BaseResponse {
       message: json['message'] ?? '',
       data: LoginData.fromJson(dataMap),
       userId: parsedUserId,
-      needsVerification: dataMap['isVerified'] == false,
+      // The server sends `needsVerification: true` on this branch — the same
+      // flag the signup path already uses. `isVerified` was the older shape and
+      // is kept as a fallback so an app build in the wild keeps working.
+      needsVerification: dataMap['needsVerification'] == true ||
+          dataMap['isVerified'] == false,
     );
   }
 }
