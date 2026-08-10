@@ -27,6 +27,17 @@ class HostController extends GetxController {
       Rx<HostOnGoingBookingResponse?>(null);
   Rx<HostPropertiesResponse?> hostPropertiesResponse =
       Rx<HostPropertiesResponse?>(null);
+  /// Separate from `loading` so appending a page doesn't replace the list
+  /// already on screen with a shimmer.
+  final RxBool loadingMore = false.obs;
+  final RxString propertySearch = ''.obs;
+
+  /// How many listings the host owns, across all pages. `properties.length` is
+  /// one page — 20 where this is 29,230 for the test host.
+  int get hostPropertyCount =>
+      hostPropertiesResponse.value?.data?.totalCount ?? 0;
+  bool get hasMoreProperties =>
+      hostPropertiesResponse.value?.data?.hasMore ?? false;
 
   Rx<TransactionResponse?> transactionHistoryResponse =
       Rx<TransactionResponse?>(null);
@@ -120,16 +131,43 @@ class HostController extends GetxController {
     }
   }
 
-  Future<void> getHostProperties() async {
+  /// First page of the host's listings. /host/property-search is paginated —
+  /// it used to return all 29,230 rows (38 MB) for the test host.
+  Future<void> getHostProperties({String? q}) async {
     try {
       loading.value = true;
-      final response = await hostService.getHostProperties();
+      propertySearch.value = q ?? "";
+      final response = await hostService.getHostProperties(page: 1, q: q);
       hostPropertiesResponse.value = response;
     } catch (e) {
       error.value = e.toString();
     } finally {
       loading.value = false;
       propertiesFetched.value = true;
+    }
+  }
+
+  /// Append the next page. No-op while one is in flight or the list is complete.
+  Future<void> loadMoreHostProperties() async {
+    final current = hostPropertiesResponse.value?.data;
+    if (current == null || loadingMore.value || !current.hasMore) return;
+    try {
+      loadingMore.value = true;
+      final next = await hostService.getHostProperties(
+        page: current.page + 1,
+        q: propertySearch.value.isEmpty ? null : propertySearch.value,
+      );
+      final more = next.data;
+      if (more == null) return;
+      hostPropertiesResponse.value = next.copyWith(
+        data: more.copyWith(
+          properties: [...current.properties, ...more.properties],
+        ),
+      );
+    } catch (e) {
+      error.value = e.toString();
+    } finally {
+      loadingMore.value = false;
     }
   }
 

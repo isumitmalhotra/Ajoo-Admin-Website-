@@ -255,9 +255,9 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
       final bookings = hostController.hostBookingHistoryResponse.value?.data.length ?? 0;
       final ongoing =
           hostController.HostOngoingResponse.value?.data.bookings.length ?? 0;
-      final properties = hostController
-              .hostPropertiesResponse.value?.data?.properties.length ??
-          0;
+      // totalCount, not properties.length — the list is one page now, so
+      // length would report 20 for a host who owns 29,230.
+      final properties = hostController.hostPropertyCount;
       final txns = hostController.transactionHistoryResponse.value?.data.length ?? 0;
       // Tiles arrive in sequence rather than all at once, capped short so the
       // last one never reads as lag.

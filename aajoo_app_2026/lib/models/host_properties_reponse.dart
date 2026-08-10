@@ -44,32 +44,64 @@ class HostPropertiesResponse {
 class Data {
     Data({
         required this.properties,
+        this.totalCount = 0,
+        this.page = 1,
+        this.limit = 0,
     });
 
     final List<Property> properties;
+    /// How many listings the host owns in total. `properties` is one page of
+    /// them — /host/property-search used to return every row, which is 29,230
+    /// and 38 MB for the test host, so anything that wants a count must read
+    /// this rather than properties.length.
+    final int totalCount;
+    final int page;
+    final int limit;
+
+    bool get hasMore => properties.length < totalCount && limit > 0;
 
     Data copyWith({
         List<Property>? properties,
+        int? totalCount,
+        int? page,
+        int? limit,
     }) {
         return Data(
             properties: properties ?? this.properties,
+            totalCount: totalCount ?? this.totalCount,
+            page: page ?? this.page,
+            limit: limit ?? this.limit,
         );
     }
 
-    factory Data.fromJson(Map<String, dynamic> json){ 
+    factory Data.fromJson(Map<String, dynamic> json){
+        final props = json["Properties"] == null ? <Property>[] : List<Property>.from(json["Properties"]!.map((x) => Property.fromJson(x)));
         return Data(
-            properties: json["Properties"] == null ? [] : List<Property>.from(json["Properties"]!.map((x) => Property.fromJson(x))),
+            properties: props,
+            totalCount: _asInt(json["totalcount"]) ?? props.length,
+            page: _asInt(json["page"]) ?? 1,
+            limit: _asInt(json["limit"]) ?? props.length,
         );
     }
 
     Map<String, dynamic> toJson() => {
         "Properties": properties.map((x) => x.toJson()).toList(),
+        "totalcount": totalCount,
+        "page": page,
+        "limit": limit,
     };
 
     @override
     String toString(){
         return "$properties, ";
     }
+}
+
+int? _asInt(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse(v.toString());
 }
 
 // Renders a numeric JSON value as a clean string ("5000.0" → "5000"); '' for null.

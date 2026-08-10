@@ -486,11 +486,45 @@ class _HostProfilePageState extends State<HostProfilePage> {
                 }
 
                 if (props.isNotEmpty) {
+                  // The list is one page of a paginated endpoint now, so it has
+                  // to say how much of the account it is showing and offer the
+                  // rest. Rendering all of it is not an option — the test host
+                  // owns 29,230.
+                  final total = hostController.hostPropertyCount;
                   return Column(
-                    children: List.generate(props.length, (index) {
-                      final property = props[index];
-                      return _buildPropertyTile(property);
-                    }),
+                    children: [
+                      ...List.generate(props.length, (index) {
+                        final property = props[index];
+                        return _buildPropertyTile(property);
+                      }),
+                      if (hostController.hasMoreProperties) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          "Showing ${props.length} of $total listings",
+                          style: const TextStyle(fontSize: 12, color: kMuted),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: hostController.loadingMore.value
+                                ? null
+                                : hostController.loadMoreHostProperties,
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: kprimaryColor,
+                              side: const BorderSide(color: kLine),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: Text(hostController.loadingMore.value
+                                ? "Loading…"
+                                : "Load more"),
+                          ),
+                        ),
+                      ],
+                    ],
                   );
                 }
 

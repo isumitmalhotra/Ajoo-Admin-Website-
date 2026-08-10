@@ -25,6 +25,11 @@ Legend: ✅ done both sides · ⚠️ web only · — not applicable to mobile
 | ✅ Email via Brevo (OTP, welcome, booking, cancellation, invoice) | Transport-level, both clients. |
 | ✅ A14 category re-seed to the spec's 9 | Both read `tbl_categories`. |
 | ✅ `/user/switch-mode` | Added so mobile could stop storing the password. |
+| ✅ `/host/property-search` paginated | Returned every listing a host owns — 29,230 rows and 38.1 MB for test host 100, 18.7 s against the live DB. Now 20 a page (100 cap) with `minimal`, `q`, `status` and account-wide `counts`. **Both clients had to change**, because the default is now a page rather than everything — see the client rows below. |
+| ✅ `/host/properties/policy-pending` capped | 29,228 rows / 2.47 MB on every host page load. Returns a page plus `total`. Web only — mobile has no policy banner. |
+| ✅ Cancelling a booking never retracted the host payout | Guest refunded in full, host still queued to be paid. Live data had ₹19,752 queued against cancelled booking B182882. Full refund withdraws the payout, partial refund freezes it. |
+| ✅ `po_on_hold` was write-only | Admin hold set it; the finance dashboard, the host's "pending payout" and the per-host admin summary all ignored it and counted held money as payable. |
+| ✅ Guest cancellation wrote outside its transaction | `{transaction}` as the 3rd arg to `update()` again, this time in `cancelBooking`. |
 
 ## Client-side logic — must be ported deliberately
 
@@ -41,6 +46,16 @@ Legend: ✅ done both sides · ⚠️ web only · — not applicable to mobile
 | Resume an unverified signup instead of erroring | ✅ `signupUser` returns `resumed` | ✅ `SignupResponse.needsVerification` → the code screen |
 | Signup requires a real ID type + number | ✅ | ✅ the "Skip for now (dev)" button that wrote a fake Aadhaar is gone |
 | Referral code the user typed is actually sent | ✅ | ✅ was hardcoded to `"0000"`, discarding every real code |
+| Host property list paginated | ✅ 20 a page + status tabs + name search on My Properties; Performance paginated; Calendar/Boost use a searchable picker; Dashboard stopped fetching listings entirely | ✅ `getHostProperties(page:, limit:, q:)`, `loadMoreHostProperties()`, "Load more" on the host profile list |
+| Property **count** must read the total, not the list length | ✅ server `counts` feed the stat cards | ✅ `hostPropertyCount` → `data.totalCount`; the home stat tile would have read 20 for a host owning 29,230 |
+| No stock photo for a listing with no photo | ✅ My Properties + dashboard Top Performing now show "no photo uploaded" | ⚠️ **not checked on mobile** — worth a sweep for the same pattern |
+| List errors must not render as "you have nothing" | ✅ My Properties distinguishes failure from empty | ⚠️ mobile still uses `catch { error.value = ... }` without a retry surface |
+
+> Both `HostController` classes were updated. `lib/controller/host_controller.dart`
+> and `lib/ui/screens_host/host_controller.dart` share a class name, and `Get.find`
+> keys on the name — the screens all import the `screens_host` one. This is the
+> same trap already recorded for `AuthController` below, and it is still worth
+> deleting the dead tree rather than maintaining both.
 | Profile completion tracker | ✅ | ⚠️ not on mobile |
 | Search empty state names the place + suggests real cities | ✅ | ⚠️ mobile search has no equivalent |
 | Map recentres on the searched place | ✅ | ⚠️ mobile map not audited |

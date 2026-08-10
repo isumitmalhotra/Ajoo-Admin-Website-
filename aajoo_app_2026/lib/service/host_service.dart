@@ -56,19 +56,32 @@ class HostService {
     }
   }
 
-  Future<hostResponse.HostPropertiesResponse> getHostProperties() async {
+  /// One page of the host's listings.
+  ///
+  /// This used to post `{}` and take whatever came back, which was every
+  /// listing the host owned. That is 29,230 rows and 38 MB for the test host —
+  /// enough to stall or kill the app before it drew anything. The endpoint is
+  /// paginated now and the response carries `totalcount` for any figure that
+  /// needs to describe the whole account.
+  Future<hostResponse.HostPropertiesResponse> getHostProperties({
+    int page = 1,
+    int limit = 20,
+    String? q,
+  }) async {
     final url = '$baseUrl/host/property-search';
     final token = await const FlutterSecureStorage().read(key: "user_token");
     _dio.options.headers['Authorization'] = 'Bearer $token';
-    print("Getting Host Properties");
-    print("Token: $token");
-    print("Url: $url");
 
     try {
-      final response = await _dio.post(url, data: {});
-      print("Response: ${response.data}");
+      final response = await _dio.post(url, data: {
+        'page': page,
+        'limit': limit,
+        if (q != null && q.trim().isNotEmpty) 'q': q.trim(),
+      });
       final json = response.data;
-      print("Host Properties: ${json.toString()}");
+      // Was: print the whole response, twice. That is a page of listings dumped
+      // to the console on every load, and used to be the entire 38 MB.
+      print("Host properties: page $page, ${json['data']?['totalcount'] ?? '?'} total");
 
       if (json['message'] == "no record found") {
         return hostResponse.HostPropertiesResponse(
