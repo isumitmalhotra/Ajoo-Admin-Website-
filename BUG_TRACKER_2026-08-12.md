@@ -60,13 +60,13 @@ Where a cause is stated, it was verified, not guessed.
 | **W-1** | Host name not appearing on payout detail | ✅ **Confirmed.** `searchPayouts` returns raw `tbl_payouts` rows with no join, so `host_name` is absent and the UI falls back to `Host #100`. The host lookup exists and works in `getPayout` — verified against live data, returns "Aajoo Test Host". | **FIXED** |
 | **W-3** | Period shows invalid data | ✅ **Confirmed against live data.** `po_period_start`/`po_period_end` are NULL on 6 of 8 payouts, and `initiatePayout` — the admin "pay this host" path — never sets them at all. | **FIXED** |
 | **W-2** | Add a payout detail view (host, booking, user, host bank details) | ⚠️ **Not a bug — missing feature.** `payoutDetail.slice.ts` exists and is wired to a working endpoint, but **no screen consumes it**. Note: **the platform stores no host bank details anywhere** — there is no such table or column, so that part needs a schema addition and a host-facing form before an admin can be shown anything. | **Open** |
-| **W-6** | Finance exports must show the period they cover | ✅ Confirmed — exports are named by generation date, not by the filter applied. | **Open** |
+| **W-6** | Finance exports must show the period they cover | Exports opened straight onto column headers — nothing in the saved file said which filter produced it. Each now begins with report name, period and generation time. Verified against live data. | **FIXED** |
 
 ### User
 
 | ID | Item | Diagnosis | Status |
 |---|---|---|---|
-| **W-7** | Active/Inactive toggle not working properly | To reproduce | **Next** |
+| **W-7** | Active/Inactive toggle not working properly | 🔴 **ROOT-CAUSED.** `overrideStatus ?? status` — `null` means "no filter" here, but `??` treats it as "not supplied" and fell back to the *stale* `status`. Switching a filter ON worked; switching it OFF re-sent the filter already applied. | **FIXED** |
 | **W-8** | Document number validation should depend on document type | 🔴 **ROOT-CAUSED.** The server validates format by type (Aadhaar 12 digits, DL `MH0123456789012`, Passport `A1234567`); the client had a bare `required()`, so anything passed the form and the server rejected it. Client now mirrors the server. | **FIXED** |
 | **W-9** | Error messages should name the actual error | 🔴 **ROOT-CAUSED.** The 422 reply carries `message` as an **array** of field messages; the thunk passed the array through as a string and the modal read `.message` on it — undefined — so it always printed the generic fallback. New shared `apiErrorMessage()`, flattened at the thunk boundary. | **FIXED** |
 | **W-10** | Sent a negotiation message to a host — where can it be read? | Admin has a Negotiations screen; likely a discoverability/routing gap | Open |
@@ -87,14 +87,14 @@ Where a cause is stated, it was verified, not guessed.
 | **W-15** | Same for property document image upload | 🔴 **ROOT-CAUSED, different cause.** Documents are **written to `tbl_attachments`** and **read from `tbl_property_documents`** — two tables. 7 live docs the form could never show; the 6 it did return were in a shape the mapper can't read. | **FIXED** |
 | **W-16** | Pet-friendly / Smoking-free dropdowns unchanged after save | 🔴 Same cause as W-14 — `isPetFriendly` and `isSmoke` were never sent either, so both wrote 0 on every save. | **FIXED** |
 | **W-17** | After deleting a host, the property still shows their name — clear it and mark the listing inactive | ✅ **"Mark inactive" was already done** in an earlier session. The name now carries a *deleted* badge. **`property_host_id` deliberately kept** — booking and finance history reaches the host through it, so nulling it orphans real records. Flagging rather than blanking; say if you want it nulled anyway. | **FIXED (partial by design)** |
-| **W-18** | Logo does not appear in email | Templates reference an asset the mail client cannot fetch | Open |
+| **W-18** | Logo does not appear in email | 🔴 **ROOT-CAUSED.** Templates pointed at `https://yourcompanylogo.com/logo.png` — a placeholder domain that has never resolved. A second used via.placeholder.com. Now the real logo, from `public/` so the URL has no build hash and survives deploys. | **FIXED** |
 
 ### Host dashboard · Login
 
 | ID | Item | Diagnosis | Status |
 |---|---|---|---|
 | **W-19** | Host's full information (phone, city, address) missing from profile | Open |
-| **W-20** | Cannot log in as a user when the user is unverified | ⚠️ Touches auth. Note the platform *deliberately* lets an unverified signup resume — needs care not to reopen a security hole | Open |
+| **W-20** | Cannot log in as a user when the user is unverified | 🔴 **ROOT-CAUSED.** The login lookup required `user_isVerified = 1`, so an unverified account returned "No record found" — the same words as a non-existent one. Now sends a fresh code and returns `{needsVerification, userId}`; **no token issued**. Password is checked *before* any state is disclosed, so it can't be used as an account-existence oracle. Mobile parity: the branch existed but read the wrong key. | **FIXED** |
 
 ---
 
