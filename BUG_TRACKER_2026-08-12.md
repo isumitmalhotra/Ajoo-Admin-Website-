@@ -83,10 +83,10 @@ Where a cause is stated, it was verified, not guessed.
 
 | ID | Item | Diagnosis | Status |
 |---|---|---|---|
-| **W-14** | Description points vanish after save and reload | Persistence bug — high value | Open |
-| **W-15** | Same for property document image upload | Likely the same cause as W-14 | Open |
-| **W-16** | Pet-friendly / Smoking-free dropdowns unchanged after save | Same cluster; these live on `tbl_property_detail` | Open |
-| **W-17** | After deleting a host, the property still shows their name — clear it and mark the listing inactive | Data-integrity bug, real consequence | Open |
+| **W-14** | Description points vanish after save and reload | 🔴 **ROOT-CAUSED.** Not a persistence bug — the submit handler **never sends `extra`**. Thirty-odd FormData entries, and the field the points live in is omitted, so the server wrote `undefined` every save. | **FIXED** |
+| **W-15** | Same for property document image upload | 🔴 **ROOT-CAUSED, different cause.** Documents are **written to `tbl_attachments`** and **read from `tbl_property_documents`** — two tables. 7 live docs the form could never show; the 6 it did return were in a shape the mapper can't read. | **FIXED** |
+| **W-16** | Pet-friendly / Smoking-free dropdowns unchanged after save | 🔴 Same cause as W-14 — `isPetFriendly` and `isSmoke` were never sent either, so both wrote 0 on every save. | **FIXED** |
+| **W-17** | After deleting a host, the property still shows their name — clear it and mark the listing inactive | ✅ **"Mark inactive" was already done** in an earlier session. The name now carries a *deleted* badge. **`property_host_id` deliberately kept** — booking and finance history reaches the host through it, so nulling it orphans real records. Flagging rather than blanking; say if you want it nulled anyway. | **FIXED (partial by design)** |
 | **W-18** | Logo does not appear in email | Templates reference an asset the mail client cannot fetch | Open |
 
 ### Host dashboard · Login
