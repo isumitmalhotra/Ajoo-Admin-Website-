@@ -66,18 +66,18 @@ Where a cause is stated, it was verified, not guessed.
 
 | ID | Item | Diagnosis | Status |
 |---|---|---|---|
-| **W-7** | Active/Inactive toggle not working properly | To reproduce | Open |
-| **W-8** | Document number validation should depend on document type | Real — validation is type-agnostic today | Open |
-| **W-9** | Error messages should name the actual error ("image is required", not "failed to add user") | Same class as the 12 admin screens fixed on 2026-08-11 | Open |
+| **W-7** | Active/Inactive toggle not working properly | To reproduce | **Next** |
+| **W-8** | Document number validation should depend on document type | 🔴 **ROOT-CAUSED.** The server validates format by type (Aadhaar 12 digits, DL `MH0123456789012`, Passport `A1234567`); the client had a bare `required()`, so anything passed the form and the server rejected it. Client now mirrors the server. | **FIXED** |
+| **W-9** | Error messages should name the actual error | 🔴 **ROOT-CAUSED.** The 422 reply carries `message` as an **array** of field messages; the thunk passed the array through as a string and the modal read `.message` on it — undefined — so it always printed the generic fallback. New shared `apiErrorMessage()`, flattened at the thunk boundary. | **FIXED** |
 | **W-10** | Sent a negotiation message to a host — where can it be read? | Admin has a Negotiations screen; likely a discoverability/routing gap | Open |
 
 ### Host
 
 | ID | Item | Diagnosis | Status |
 |---|---|---|---|
-| **W-12** | Add host form is not working (see `Screenshot 2026-08-08 230857.png`) | Screenshot is embedded in the workbook; extracted for reference | Open |
-| **W-11** | Rename the form to "Add New Host" | Copy change | Open |
-| **W-13** | Fix the "Update / Host-update" form title | Copy change | Open |
+| **W-12** | Add host form is not working | 🔴 **ROOT-CAUSED.** The server requires `cred_user_password` when there is no `userId` (8+ chars, letter+digit+symbol). The client's rule was **commented out**, so the form posted a blank password and the server 422'd — while W-9 hid the reason. *(The referenced screenshot is not actually embedded in this sheet — `drawing2.xml` has no image refs.)* | **FIXED** |
+| **W-11** | Rename the form to "Add New Host" | The modal ignored its own `context` prop — adding a host opened a form headed "Add New User". | **FIXED** |
+| **W-13** | Fix the "Update / Host-update" form title | Same cause as W-11. Also: the host branch showed **no success message at all**. | **FIXED** |
 
 ### Property
 
