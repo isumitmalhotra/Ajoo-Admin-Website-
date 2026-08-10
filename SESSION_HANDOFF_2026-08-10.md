@@ -2,6 +2,28 @@
 
 Read this first. It is written for a fresh session with no memory of the work.
 
+> **Superseded in places — read this box first.** The session after this
+> handoff completed §2 (admin redesign + route restructure) and fixed §1a, and
+> found **two claims below to be wrong**:
+>
+> 1. **§1a blames the backend for the pricing double-tax. It is a MOBILE bug.**
+>    `/booking/create` reads `price` as the pre-tax subtotal and adds GST
+>    itself; both web callers always sent the subtotal. Only the app sent the
+>    taxed total. `bookingCreate` needed no change. Fixed in monorepo `9a1101c`.
+> 2. **§2a says `/host/*` is empty. It was not** — a full legacy host portal
+>    (HostLayout + 11 routes) lived there. The rename meant retiring it.
+>
+> Also found and fixed: **all 23 `/redesign/admin/*` routes had no guard** —
+> the same bypass as `/account/dashboard`, on the admin tree (web `5b78bf6`).
+>
+> **Done since:** Finance ported (all 15 screens), route restructure complete
+> (`/host/*` and `/admin/*` are the redesigned portals, live in production),
+> legacy portal deleted (12,020 lines), Tags gap closed.
+>
+> **Still open:** prebooking's 10% deposit needs a backend `advanceAmount`;
+> `/admin/properties/form` and `/admin/status` are the last two screens on the
+> old shell; none of the new admin screens has been opened in a browser.
+
 ---
 
 ## 0. The three repos and how they deploy
