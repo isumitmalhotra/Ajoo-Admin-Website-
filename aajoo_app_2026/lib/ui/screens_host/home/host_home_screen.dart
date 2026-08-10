@@ -187,8 +187,15 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
   Widget _earningsCard() {
     return Obx(() {
       final txns = hostController.transactionHistoryResponse.value?.data ?? [];
-      final total = txns.fold<double>(
-          0, (sum, t) => sum + (double.tryParse(t.payAmount) ?? 0));
+      // Count only money that was actually collected. This used to sum EVERY
+      // row the endpoint returns, and /host/transaction-history returns every
+      // payment record for the host — including "Not Verified Yet", which is a
+      // booking whose payment never completed, and rows against bookings that
+      // were later cancelled. On the live database that inflated the tile from
+      // ₹74,829 collected to ₹1,77,723, and it was labelled "Total Earnings".
+      final total = txns
+          .where((t) => t.payStatusText.toLowerCase().contains('paid'))
+          .fold<double>(0, (sum, t) => sum + (double.tryParse(t.payAmount) ?? 0));
       return InkWell(
         onTap: () => Get.to(() => const PayoutPage()),
         borderRadius: BorderRadius.circular(16),
@@ -201,7 +208,11 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Total Earnings',
+                  // Not "Total Earnings": this is the gross collected from
+                  // guests, before the 15% platform commission and the GST on
+                  // it. The host's net is lower, and lives in the payouts
+                  // screen this card opens.
+                  Text('Collected from guests',
                       style: inter(fontSize: 12.5, color: kMuted)),
                   const SizedBox(height: 4),
                   Text('₹${_formatAmount(total)}',
