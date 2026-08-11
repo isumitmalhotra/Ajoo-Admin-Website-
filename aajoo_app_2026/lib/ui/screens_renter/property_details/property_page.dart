@@ -1558,6 +1558,7 @@ class _PropertyPageState extends State<PropertyPage>
                         max: 3,
                         title: 'From the blog',
                         onSeeAll: () => Get.to(() => const BlogListScreen()),
+                        onOpen: (post) => Get.to(() => BlogPostScreen(post: post)),
                       ),
                       const SizedBox(height: 90),
                     ],
