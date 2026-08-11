@@ -1,0 +1,91 @@
+name: Keep backend awake
+
+# Render's free tier sleeps the backend after ~15 minutes of no inbound traffic.
+# Waking it takes 30–50 seconds, and a request made *while* it wakes can fail
+# outright — which is what produced "No route to host" on the mobile login
+# screen against a server that was healthy a minute later.
+#
+# WHY THIS LIVES IN THIS REPO
+# The ping only needs to reach a public URL; it does not need to be near the
+# backend code. The backend and frontend repos are PRIVATE, where Actions is
+# capped at 2,000 minutes/month — a job every 10 minutes bills 4,320 minutes
+# and would run past the free tier. This repo is PUBLIC, where Actions minutes
+# are unlimited, so the same job costs nothing.
+#
+# WHY NOT A SELF-PING FROM INSIDE THE BACKEND
+# Render sleeps the whole process, so a setInterval sleeps with it. Worse, a
+# sleeping container cannot wake itself. The pinger has to be external.
+
+on:
+  schedule:
+    # Every 10 minutes. GitHub's scheduler is best-effort and can run late
+    # under load, which is why each run also pings repeatedly below rather
+    # than once — see the loop.
+    - cron: '*/10 * * * *'
+  workflow_dispatch:      # so it can be triggered by hand from the Actions tab
+
+permissions:
+  contents: read
+
+concurrency:
+  # Never stack runs on top of each other if one is slow.
+  group: keep-alive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Ping /health repeatedly
+        shell: bash
+        run: |
+          URL="https://aajaodev.onrender.com/health"
+
+          # Five pings, 100s apart, covering ~8.3 minutes of the 10-minute
+          # window. A single ping per run would leave a gap whenever GitHub
+          # delays the next schedule — and a gap past 15 minutes is exactly
+          # what puts the service back to sleep.
+          ATTEMPTS=5
+          GAP=100
+          ok=0
+
+          for i in $(seq 1 $ATTEMPTS); do
+            # --max-time 60 is deliberate: if the container IS asleep this
+            # request is what wakes it, and that legitimately takes 30-50s.
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$URL" || echo "000")
+            ts=$(date -u +%H:%M:%S)
+            if [ "$code" = "200" ]; then
+              ok=$((ok + 1))
+              echo "$ts  ping $i/$ATTEMPTS -> $code"
+            else
+              echo "$ts  ping $i/$ATTEMPTS -> $code (no answer)"
+            fi
+            [ "$i" -lt "$ATTEMPTS" ] && sleep "$GAP"
+          done
+
+          echo "---"
+          echo "$ok/$ATTEMPTS pings answered"
+
+          # One failed ping is normal — it is usually the one doing the waking.
+          # Every ping failing means the backend is genuinely down, and that is
+          # worth a red run in the Actions tab.
+          if [ "$ok" -eq 0 ]; then
+            echo "::error::The backend did not answer any of $ATTEMPTS pings over ~8 minutes."
+            exit 1
+          fi
+
+      - name: Report uptime
+        if: success()
+        shell: bash
+        run: |
+          # Uptime is the tell for whether this is actually working: a number
+          # that keeps climbing past ~900s means the service stopped sleeping.
+          body=$(curl -s --max-time 60 https://aajaodev.onrender.com/health || echo '{}')
+          echo "$body"
+          up=$(echo "$body" | sed -n 's/.*"uptime":\([0-9.]*\).*/\1/p')
+          if [ -n "$up" ]; then
+            mins=$(awk -v s="$up" 'BEGIN { printf "%.0f", s/60 }')
+            echo "Backend has been up for ~${mins} minutes." >> "$GITHUB_STEP_SUMMARY"
+            awk -v s="$up" 'BEGIN { if (s < 900) print "Uptime is under 15 minutes — the service restarted recently, so it is still sleeping between pings. Give this a couple of hours to settle; if it persists, the schedule is not firing." }' >> "$GITHUB_STEP_SUMMARY"
+          fi
