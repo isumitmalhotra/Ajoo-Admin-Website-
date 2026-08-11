@@ -259,12 +259,11 @@ class NegotiationController extends GetxController {
       if (accepted.isNotEmpty) {
         _applyAccepted(accepted.last);
       }
-      isLoading.value = false;
+      _stopLoading();
     }, onError: (error) {
       if (_isDisposed) return;
-      print('Negotiation chat history stream error: $error');
       errorMessage.value = 'Failed to load chat history: $error';
-      isLoading.value = false;
+      _stopLoading();
     });
   }
 
@@ -274,9 +273,8 @@ class NegotiationController extends GetxController {
       errorMessage.value = '';
       await _negotiationService.initSocket(serverUrl, token: token);
     } catch (e) {
-      print('Negotiation socket connection error: $e');
       errorMessage.value = 'Socket connection error: $e';
-      isLoading.value = false;
+      _stopLoading();
     }
   }
 
@@ -379,19 +377,49 @@ class NegotiationController extends GetxController {
     try {
       isLoading.value = true;
       errorMessage.value = '';
+      _startLoadWatchdog();
       _negotiationService
           .loadNegotiationChat(senderId, receiverId, propertyId)
           .then((_) {
+        if (_isDisposed) return;
         currentPrice.value = messages
                 .lastWhereOrNull((msg) => msg.isOffer && msg.offerPrice != null)
                 ?.offerPrice ??
             0.0;
+        // The request is done. This never cleared the flag, so the screen
+        // stayed on the spinner until the chat-history socket event happened
+        // to arrive — and on a first-time negotiation, where there is no
+        // history to send, it never did. Tapping Negotiate showed a loader
+        // and a wall of caution text, forever.
+        _stopLoading();
+      }).catchError((e) {
+        if (_isDisposed) return;
+        errorMessage.value = 'Error loading negotiation chat: $e';
+        _stopLoading();
       });
     } catch (e) {
-      print('Error loading negotiation chat: $e');
       errorMessage.value = 'Error loading negotiation chat: $e';
-      isLoading.value = false;
+      _stopLoading();
     }
+  }
+
+  Timer? _loadWatchdog;
+
+  /// A socket that connects but never emits used to hang the screen with no
+  /// way out. An empty negotiation is a perfectly usable screen — you type an
+  /// offer into it — so after this the chat opens either way.
+  void _startLoadWatchdog() {
+    _loadWatchdog?.cancel();
+    _loadWatchdog = Timer(const Duration(seconds: 12), () {
+      if (_isDisposed || !isLoading.value) return;
+      isLoading.value = false;
+    });
+  }
+
+  void _stopLoading() {
+    _loadWatchdog?.cancel();
+    _loadWatchdog = null;
+    isLoading.value = false;
   }
 
   void disconnectSocket() {
@@ -495,6 +523,7 @@ class NegotiationController extends GetxController {
       _isDisposed = true;
       _negotiationService.dispose();
       _acceptOfferTimeout?.cancel();
+      _loadWatchdog?.cancel();
     }
     super.onClose();
   }

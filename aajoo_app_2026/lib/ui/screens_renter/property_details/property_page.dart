@@ -107,7 +107,10 @@ class _PropertyPageState extends State<PropertyPage>
   final commonController = Get.find<CommonController>();
   DateTime? selectedDateTo;
   bool _isBookmarked = false;
-  String bookingType = 'Daily'; // Default booking type
+  /// How the guest describes the stay. A label only — see _updatePriceString.
+  /// "Weekly" is gone; the spec asks for per-night and monthly.
+  String bookingType = 'Per night';
+  static const List<String> _stayTypes = ['Per night', 'Monthly'];
 
   // Prebooking mode: if negotiation button is hidden, this page is opened from prebooking
   bool get isPrebooking => !widget.showNegotiationButton;
@@ -323,17 +326,19 @@ class _PropertyPageState extends State<PropertyPage>
     setState(() {});
   }
 
+  /// The stay total: the host's nightly rate times the nights actually picked.
+  ///
+  /// This used to branch on the stay type, and it was charging people for
+  /// nights they had not booked. "Monthly" did `rate * 30 * ceil(days/30)`, so
+  /// a two-night stay priced at thirty nights; "Weekly" did the same at seven.
+  /// The figure fed `price` on the booking, so the guest was charged it.
+  ///
+  /// The stay type was never anything but a label: `bookingType` is not
+  /// declared in the backend's createBooking schema, and validation runs with
+  /// stripUnknown, so the server has never once received it. It now labels the
+  /// stay and nothing else — the dates and the host's rate set the price.
   void _updatePriceString() {
-    double totalPrice;
-    if (bookingType == 'Weekly') {
-      int totalWeeks = (totalDays / 7).ceil();
-      totalPrice = currentPrice * 7 * totalWeeks;
-    } else if (bookingType == 'Monthly') {
-      int totalMonths = (totalDays / 30).ceil();
-      totalPrice = currentPrice * 30 * totalMonths;
-    } else {
-      totalPrice = currentPrice * totalDays;
-    }
+    final totalPrice = currentPrice * totalDays;
     currentPriceString = totalPrice.toStringAsFixed(0);
     _priceController.text = currentPriceString;
   }
@@ -442,7 +447,11 @@ class _PropertyPageState extends State<PropertyPage>
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              child: const Text('Reserve'),
+              // "Negotiate & Reserve" — the sheet it opens offers both, and
+              // negotiating is the thing that makes this platform different.
+              child: Text(widget.showNegotiationButton
+                  ? 'Negotiate & Reserve'
+                  : 'Reserve'),
             ),
           ],
         ),
@@ -510,17 +519,17 @@ class _PropertyPageState extends State<PropertyPage>
                 title: DropdownButton<String>(
                   value: bookingType,
                   isExpanded: true,
-                  items: ['Daily', 'Weekly', 'Monthly']
+                  items: _stayTypes
                       .map((type) => DropdownMenuItem(
                             value: type,
                             child: Text(type),
                           ))
                       .toList(),
+                  // No _updatePriceString here on purpose: picking "Monthly"
+                  // must not move the price. The dates and the host's rate do
+                  // that, and this used to multiply the total by thirty.
                   onChanged: (String? newValue) {
-                    setState(() {
-                      bookingType = newValue!;
-                      _updatePriceString();
-                    });
+                    setState(() => bookingType = newValue!);
                   },
                 ),
               ),
@@ -551,8 +560,15 @@ class _PropertyPageState extends State<PropertyPage>
                     setState(() {
                       selectedDate = picked;
                       selectedDateTo ??= picked.add(const Duration(days: 1));
+                      // Nights, not calendar days. This was `.inDays + 1`,
+                      // which billed a 12th-to-13th stay as two nights — one
+                      // more than the guest is there. The negotiated-deal path
+                      // in this same file, and the website, have always used
+                      // the plain difference, so picking your own dates cost a
+                      // night more than arriving on the identical dates from
+                      // an accepted offer.
                       totalDays =
-                          selectedDateTo!.difference(selectedDate).inDays + 1;
+                          selectedDateTo!.difference(selectedDate).inDays;
                       if (totalDays < 1) {
                         totalDays = 1;
                         selectedDateTo =
@@ -596,8 +612,15 @@ class _PropertyPageState extends State<PropertyPage>
                     setState(() {
                       selectedDateTo = picked;
                       // selectedDate is non-null by design
+                      // Nights, not calendar days. This was `.inDays + 1`,
+                      // which billed a 12th-to-13th stay as two nights — one
+                      // more than the guest is there. The negotiated-deal path
+                      // in this same file, and the website, have always used
+                      // the plain difference, so picking your own dates cost a
+                      // night more than arriving on the identical dates from
+                      // an accepted offer.
                       totalDays =
-                          selectedDateTo!.difference(selectedDate).inDays + 1;
+                          selectedDateTo!.difference(selectedDate).inDays;
                       if (totalDays < 1) {
                         totalDays = 1;
                         selectedDateTo =
@@ -612,18 +635,20 @@ class _PropertyPageState extends State<PropertyPage>
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               ),
               const SizedBox(height: 16),
+              // Set by the host and not negotiable, so no chevron: the two
+              // rows above it use the same arrow to open a date picker, and
+              // this one opened nothing. It looked broken rather than fixed.
               ListTile(
                 leading: const Icon(Icons.access_time),
                 title: const Text('Check-in/Check-out Time'),
                 subtitle: Text(
-                  "${_single?.propDetails?.inTime ?? widget.inTime ?? "12:00PM"} / ${_single?.propDetails?.outTime ?? widget.outTime ?? "12:00PM"} ",
+                  "${_single?.propDetails?.inTime ?? widget.inTime ?? "12:00PM"} / ${_single?.propDetails?.outTime ?? widget.outTime ?? "12:00PM"} · set by the host",
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               ),
               const SizedBox(height: 16),
 
@@ -677,7 +702,7 @@ class _PropertyPageState extends State<PropertyPage>
                                     color: Colors.grey[600],
                                   ),
                                 ),
-                                Text("Total Days of stay: $totalDays",
+                                Text("Nights: $totalDays",
                                     style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
@@ -854,54 +879,16 @@ class _PropertyPageState extends State<PropertyPage>
                                     ),
                                   ],
                                 ),
-                                // Weekly price info if available from API
-                                if (_single?.propDetails?.weeklyMiniPrice !=
-                                        null &&
-                                    _single!.propDetails!.weeklyMiniPrice!
-                                        .isNotEmpty) ...[
-                                  const SizedBox(height: 8),
-                                  Divider(color: Colors.grey.shade300),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Weekly Min Price',
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey[700]),
-                                      ),
-                                      Text(
-                                        '₹${_single!.propDetails!.weeklyMiniPrice}',
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.grey[700]),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Weekly Max Price',
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey[700]),
-                                      ),
-                                      Text(
-                                        '₹${_single!.propDetails!.weeklyMaxPrice ?? "-"}',
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.grey[700]),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                // "Weekly Min Price" and "Weekly Max Price"
+                                // used to print below the total. Those are the
+                                // host's own pricing band — the floor and
+                                // ceiling they will negotiate between — and
+                                // showing a guest the minimum the host would
+                                // accept, right under what they are being
+                                // asked to pay, gives away the host's position
+                                // in a negotiation this platform is built on.
+                                // The guest sees the price for their dates and
+                                // nothing else.
                                 if (isPrebooking) ...[
                                   const SizedBox(height: 8),
                                   Row(
@@ -1305,7 +1292,7 @@ class _PropertyPageState extends State<PropertyPage>
                       borderRadius: BorderRadius.circular(25),
                     ),
                   ),
-                  child: const Text('Offer Your Price'),
+                  child: const Text('Negotiate'),
                 ),
               ),
             ],
