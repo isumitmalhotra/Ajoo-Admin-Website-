@@ -232,7 +232,7 @@ platforms is not done when one side ships.
 
 **Renter**
 
-- [ ] **A-13** Show Properties in maps as per current location
+- [x] **A-13** ✅ Show Properties in maps as per current location — *🔴 The map's fallback camera was `LatLng(37.427961, -122.085749)` — **Mountain View, California**, the emulator default — while properties were fetched around the controller's coordinates, so map and pins could differ by 12,000 km. Also found: declining location **returned early so no properties were fetched at all**, and `getCurrentPosition()` was neither time-boxed nor caught, hanging the loader forever. All three fixed. The booking-detail map was centred on California too — `_moveCameraToProperty()` had been deleted with its call sites left commented out.*
 - [x] **A-14** ✅ Show Current Location instead of Goa — *search pill hardcoded to "Goa" while listings were already fetched around real coordinates. Now resolved via the platform geocoder; "Nearby" until it answers.*
 - [x] **A-15** ✅ Add notification icon on the top right instead of profile icon — *was a person icon, tooltipped "Profile", on a callback named onProfileTap, that opened NotificationsScreen.*
 
