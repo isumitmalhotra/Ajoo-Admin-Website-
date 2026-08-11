@@ -269,6 +269,16 @@ platforms is not done when one side ships.
 - [x] **A-35** Show distance from / near airport/ near hospital/ near park/ bus stand — **same source; sub-km shows in metres. Added Park and Beach to the vocabulary**
 - [x] **A-36** show property blog pages — **blog strip on the property page, links to the blog**
 
+### Reserve sheet (Aug 08-26 App, batch of 2026-08-12) — mobile only; the web rail already did all of this
+- [x] **A-37** Booking shows Daily/Weekly/Monthly → **"Per night" / "Monthly"; Weekly removed**
+- [x] **A-38** Check-in/out is fixed by the host, remove the edit icon → **chevron gone; reads "set by the host"**
+- [x] **A-39** Below the Total Price show no price → **"Weekly Min/Max Price" removed. That is the host's negotiating band; a guest could see the least the host would accept, right under what they were being asked to pay**
+- [x] **A-40** Selecting Monthly must not change the price → **it multiplied the stay by 30. A one-night stay picked as Monthly quoted ₹96,000 for ₹3,200 of accommodation. The stay type is a label now; dates × the host's rate set the price**
+- [x] **A-41** Min/Ideal/Max/monthly/weekly are host-side only → **none of them reach the guest; the guest sees the price for their own dates**
+- [x] **A-42** "Reserve" → **"Negotiate & Reserve"** (and "Offer Your Price" → "Negotiate")
+- [x] **A-43** Negotiate button shows a loader that never clears → **`loadNegotiationChat` set `isLoading` and only a chat-history socket event cleared it, which never arrives on a first-time negotiation. Fixed + 12s watchdog**
+- [x] **A-44** *(found while fixing A-40)* **Hand-picked dates billed one night too many** — `.inDays + 1`, while the negotiated-deal path in the same file and the whole website used the plain difference. Same dates cost more if you picked them yourself than if you arrived from an accepted offer. Scanned the 24 live bookings: the only match is the synthetic BPTEST03 seed row, so no real guest paid it.
+
 **Reserve Page**
 
 - [ ] **A-37** View Details: Booking shows Daily weekly monthly/// Mention instead of daily, pernight and monthly remove weekly
