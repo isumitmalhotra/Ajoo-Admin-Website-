@@ -1,3 +1,5 @@
+import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/ui/screens_renter/property_details/components/stay_map.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -330,83 +332,42 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
                       ),
                     ]),
                     const SizedBox(height: 10),
-                    // Location Button
+                    // The map, in the app.
+                    //
+                    // This was a button that fetched the coordinates in a
+                    // second request and threw the guest out to the Google
+                    // Maps app — there was nowhere in Aajoo that showed them
+                    // where their stay actually was. The coordinates have
+                    // always been in this booking's payload; the model was
+                    // dropping them, which is why the extra request existed.
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: Obx(() => ElevatedButton.icon(
-                              onPressed: isLocationLoading.value
-                                  ? null
-                                  : () async {
-                                      try {
-                                        isLocationLoading.value = true;
-                                        final latLong = await bookingController
-                                            .getPropertyLatLong(widget.booking
-                                                .bookingPropertyPropertyId);
-                                        final latitude = double.tryParse(
-                                                latLong['latitude']) ??
-                                            0.0;
-                                        final longitude = double.tryParse(
-                                                latLong['longitude']) ??
-                                            0.0;
-
-                                        if (latitude != 0.0 &&
-                                            longitude != 0.0) {
-                                          DeviceService.launchGoogleMaps(
-                                              latitude, longitude);
-                                        } else {
-                                          bookingController.showSnackbar(
-                                              "Error",
-                                              "Location not available",
-                                              true);
-                                        }
-                                      } catch (e) {
-                                        bookingController.showSnackbar(
-                                            "Error",
-                                            "Failed to get location: ${e.toString()}",
-                                            true);
-                                      } finally {
-                                        isLocationLoading.value = false;
-                                      }
-                                    },
-                              icon: isLocationLoading.value
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                                Colors.white),
-                                      ),
-                                    )
-                                  : const Icon(
-                                      Icons.location_on,
-                                      color: Colors.white,
-                                    ),
-                              label: Text(isLocationLoading.value
-                                  ? 'Getting Location...'
-                                  : 'View Property Location'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: isLocationLoading.value
-                                    ? kprimaryColor.withOpacity(0.7)
-                                    : kprimaryColor,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 15),
-                                textStyle: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 2,
-                              ),
-                            )),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Where you're staying",
+                            style: fraunces(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: kInk),
+                          ),
+                          if (widget.booking.bookingPropertyAddress.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(widget.booking.bookingPropertyAddress,
+                                style: inter(fontSize: 12.5, color: kMuted)),
+                          ],
+                          const SizedBox(height: 10),
+                          StayMap(
+                            lat: widget.booking.bookingPropertyLatitude,
+                            lng: widget.booking.bookingPropertyLongitude,
+                            label: widget.booking.bookingPropertyPropertyName,
+                            height: 190,
+                          ),
+                        ],
                       ),
                     ),
+
                     const SizedBox(height: 20),
 
                     // Action Buttons

@@ -82,6 +82,10 @@ class Booking {
   bool bookIsPaid;
   bool bookIsCod;
   int bookStatus;
+
+  /// When the row was created. Distinguishes a live reservation from an
+  /// abandoned card checkout, which is created before Razorpay opens.
+  DateTime? bookAddedAt;
   BookDetails? bookDetails;
   BookingStatus? bookingStatus;
   BookingProperty? bookingProperty;
@@ -95,6 +99,7 @@ class Booking {
     required this.bookIsPaid,
     required this.bookIsCod,
     required this.bookStatus,
+    this.bookAddedAt,
     this.bookDetails,
     this.bookingStatus,
     this.bookingProperty,
@@ -112,6 +117,15 @@ class Booking {
       bookingProperty?.hostDetails?.userFullName ?? "";
   String get bookingPropertyHostDetailsUserPnumber =>
       bookingProperty?.hostDetails?.userPnumber ?? "";
+  double? get bookingPropertyLatitude => bookingProperty?.latitude;
+  double? get bookingPropertyLongitude => bookingProperty?.longitude;
+  String get bookingPropertyAddress {
+    final p = bookingProperty;
+    if (p == null) return "";
+    return [p.propertyAddress, p.propertyCity]
+        .where((e) => e.isNotEmpty)
+        .join(", ");
+  }
 
   factory Booking.fromJson(Map<String, dynamic> json) => Booking(
         bookPriId: (json["book_pri_id"] as num?)?.toInt() ?? 0,
@@ -121,6 +135,7 @@ class Booking {
         bookIsPaid: json["book_is_paid"] == true || json["book_is_paid"] == 1,
         bookIsCod: json["book_is_cod"] == true || json["book_is_cod"] == 1,
         bookStatus: (json["book_status"] as num?)?.toInt() ?? 0,
+        bookAddedAt: DateTime.tryParse(json["book_added_at"]?.toString() ?? ""),
         bookDetails: json["bookDetails"] != null
             ? BookDetails.fromJson(json["bookDetails"] as Map<String, dynamic>)
             : null,
@@ -143,6 +158,7 @@ class Booking {
         "book_is_paid": bookIsPaid,
         "book_is_cod": bookIsCod,
         "book_status": bookStatus,
+        "book_added_at": bookAddedAt?.toIso8601String(),
         "bookDetails": bookDetails?.toJson(),
         "bookingStatus": bookingStatus?.toJson(),
         "bookingProperty": bookingProperty?.toJson(),
@@ -190,20 +206,45 @@ class BookingProperty {
   int propertyId;
   String propertyName;
   int propertyHostId;
+
+  /// Address and coordinates.
+  ///
+  /// The ongoing-bookings endpoint has always sent these — property_city,
+  /// property_address, property_latitude, property_longitude are all in its
+  /// select list — and this model dropped them on the floor. So the screen
+  /// made a SECOND request just to find out where the property was, every
+  /// time the guest tapped the location button, to hand off to the Maps app.
+  String propertyCity;
+  String propertyAddress;
+  double? latitude;
+  double? longitude;
+
   HostDetails? hostDetails;
 
   BookingProperty({
     required this.propertyId,
     required this.propertyName,
     required this.propertyHostId,
+    this.propertyCity = "",
+    this.propertyAddress = "",
+    this.latitude,
+    this.longitude,
     this.hostDetails,
   });
+
+  // Sent as strings by the backend, so tryParse rather than a cast.
+  static double? _coord(dynamic v) =>
+      v == null ? null : double.tryParse(v.toString());
 
   factory BookingProperty.fromJson(Map<String, dynamic> json) =>
       BookingProperty(
         propertyId: (json["property_id"] as num?)?.toInt() ?? 0,
         propertyName: json["property_name"]?.toString() ?? "",
         propertyHostId: (json["property_host_id"] as num?)?.toInt() ?? 0,
+        propertyCity: json["property_city"]?.toString() ?? "",
+        propertyAddress: json["property_address"]?.toString() ?? "",
+        latitude: _coord(json["property_latitude"]),
+        longitude: _coord(json["property_longitude"]),
         hostDetails: json["HostDetails"] != null
             ? HostDetails.fromJson(json["HostDetails"] as Map<String, dynamic>)
             : null,
@@ -213,6 +254,10 @@ class BookingProperty {
         "property_id": propertyId,
         "property_name": propertyName,
         "property_host_id": propertyHostId,
+        "property_city": propertyCity,
+        "property_address": propertyAddress,
+        "property_latitude": latitude,
+        "property_longitude": longitude,
         "HostDetails": hostDetails?.toJson(),
       };
 }

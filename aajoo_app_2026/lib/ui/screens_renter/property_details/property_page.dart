@@ -1,3 +1,5 @@
+import 'package:rent_home/service/pending_booking.dart';
+import 'package:rent_home/ui/screens_renter/property_details/components/booking_confirmed_screen.dart';
 import 'package:rent_home/ui/screens_renter/property_details/components/property_tabs.dart';
 import 'package:rent_home/ui/screens_renter/blog/blog_screens.dart';
 import 'package:rent_home/ui/screens_renter/home/components/home_blog_strip.dart';
@@ -27,7 +29,6 @@ import 'package:rent_home/service/bookmark_service.dart';
 import 'package:rent_home/service/property_service.dart';
 import 'package:rent_home/service/booking_service.dart';
 import 'package:rent_home/service/deals_service.dart';
-import 'package:rent_home/ui/screens_renter/property_details/components/booking_succes_dialog.dart';
 import 'package:rent_home/ui/screens_renter/bookmark_properties/bookmark_properties_page.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/negotitaion_page.dart';
 import 'package:rent_home/utils/fonts.dart';
@@ -1126,6 +1127,21 @@ class _PropertyPageState extends State<PropertyPage>
                     // catches anyone who skipped. An unverified guest must
                     // complete DIDIT before booking, then returns here to retry.
                     if (authController.userData.value?.isKycVerified != true) {
+                      // Remember the booking before handing control away.
+                      // DIDIT opens in the system browser, and Android is free
+                      // to destroy this activity while the guest is over
+                      // there — they come back to a fresh app with an empty
+                      // navigation stack and their dates gone. The home screen
+                      // offers to resume from this.
+                      await PendingBookingStore.save(PendingBooking(
+                        propertyId: widget.id,
+                        propertyName: _single?.propertyName ?? widget.name,
+                        bookFrom: formattedDate,
+                        bookTo: formattedDateTo,
+                        couponCode: _appliedCoupon,
+                        isCod: isCod,
+                        savedAt: DateTime.now(),
+                      ));
                       final verified = await Get.toNamed('/kyc', arguments: {
                         'context': 'renter_kyc',
                         'isHost': false,
@@ -1160,6 +1176,8 @@ class _PropertyPageState extends State<PropertyPage>
                     }
                     final bookingResponse =
                         await bookingController.createBooking(bookingData);
+                    // The booking exists; nothing left to resume.
+                    await PendingBookingStore.clear();
                     if (!isCod) {
                       final String? orderId =
                           bookingResponse.data.booking.order?.id;
@@ -2488,71 +2506,33 @@ Book now: https://aajoo.com/property/${widget.id}
     });
   }
 
+  /// Booking confirmed.
+  ///
+  /// Pushes a route rather than showing a dialog. The dialog needed this
+  /// page's BuildContext to still be mounted when Razorpay handed control
+  /// back, which is why the confirmation could fail to appear on a card
+  /// payment — "booking confirm page is missing in real time booking". A route
+  /// does not depend on that, and it has room for the map.
   void successDialog(String paymentId, String bookingId) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => BookingSuccessDialog(
-        paymentId: paymentId,
-        bookingId: bookingId,
-        lat: widget.lat,
-        long: widget.long,
-      ),
-    );
-
-    //  showDialog(
-    //   context: context,
-    //   builder: (context) {
-    //     return AlertDialog(
-    //       title: Image.asset("assets/success.image.png", height: 200),
-    //       content: Column(
-    //         mainAxisSize: MainAxisSize.min,
-    //         children: [
-    //           const Text(
-    //             "Booking Successful",
-    //             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-    //           ),
-    //           const SizedBox(height: 16),
-    //           Text("Booking Id: $bookingId"),
-    //           const SizedBox(height: 16),
-    //           Text("Payment Id: $paymentId"),
-    //         ],
-    //       ),
-    //       actions: [
-    //         TextButton(
-    //           onPressed: () {
-    //             Navigator.pushAndRemoveUntil(
-    //               context,
-    //               CupertinoPageRoute(builder: (context) => const Homescreen()),
-    //               (route) => false,
-    //             );
-    //           },
-    //           child: const Text("Close"),
-    //         ),
-    //         ElevatedButton(
-    //           onPressed: () async {
-    //             final lat = double.parse(widget.lat);
-    //             final long = double.parse(widget.long);
-    //             if (Platform.isAndroid) {
-    //               DeviceService.launchGoogleMaps(lat, long);
-    //             }
-    //             DeviceService.showMapOptions(context, lat, long);
-    //           },
-    //           child: const Text("Get Directions"),
-    //           style: ElevatedButton.styleFrom(
-    //             backgroundColor: kprimaryColor,
-    //             minimumSize: const Size(100, 50),
-    //             foregroundColor: Colors.white,
-    //             shape: RoundedRectangleBorder(
-    //               borderRadius: BorderRadius.circular(12),
-    //             ),
-    //           ),
-    //         ),
-    //       ],
-    //     );
-    //   },
-    // );
+    Get.to(() => BookingConfirmedScreen(
+          bookingId: bookingId,
+          paymentId: paymentId,
+          propertyName: _single?.propertyName ?? widget.name,
+          address: _single?.propertyAddress ?? widget.location,
+          // Prefer the detail payload's coordinates: widget.lat/long are
+          // passed in as strings by every caller and are empty on some of
+          // them, which is how Get Directions ended up launching Maps at 0,0.
+          lat: double.tryParse(_single?.propertyLatitude ?? widget.lat),
+          lng: double.tryParse(_single?.propertyLongitude ?? widget.long),
+          checkIn: _fmtStayDate(selectedDate),
+          checkOut: selectedDateTo == null ? null : _fmtStayDate(selectedDateTo!),
+          amount: '₹$currentPriceString',
+          isPayOnArrival: isCod,
+        ));
   }
+
+  String _fmtStayDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}-${d.month.toString().padLeft(2, '0')}-${d.year}';
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {
     final result = await bookingController.verifyPayment(

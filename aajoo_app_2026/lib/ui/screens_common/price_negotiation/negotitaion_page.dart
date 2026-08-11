@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:rent_home/service/pending_booking.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -252,13 +253,24 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
       "bookTo": bookTo,
       "isCod": isCod,
       "category": 1,
-      "bookingType": "Daily",
+      "bookingType": "Per night",
     };
 
     try {
       // KYC gate — an unverified guest must complete DIDIT before booking
       // (renters verify at registration; this catches anyone who skipped).
       if (authController.userData.value?.isKycVerified != true) {
+        // Same reason as the property page: DIDIT runs in the system browser
+        // and Android may kill the app while the guest is there, so the
+        // accepted-offer booking is written down before we hand over.
+        await PendingBookingStore.save(PendingBooking(
+          propertyId: int.tryParse(widget.propertyId) ?? 0,
+          propertyName: widget.property.propertyName,
+          bookFrom: bookFrom,
+          bookTo: bookTo,
+          isCod: isCod,
+          savedAt: DateTime.now(),
+        ));
         final verified = await Get.toNamed('/kyc', arguments: {
           'context': 'renter_kyc',
           'isHost': false,
@@ -286,6 +298,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
       }
       final bookingResponse =
           await bookingController.createBooking(bookingData);
+      await PendingBookingStore.clear();
 
       if (!isCod) {
         final orderId = bookingResponse.data.booking.order?.id.toString() ?? '';

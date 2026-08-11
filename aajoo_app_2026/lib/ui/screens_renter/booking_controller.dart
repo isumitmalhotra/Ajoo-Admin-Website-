@@ -11,15 +11,53 @@ class BookingController extends GetxController {
   final BookingService _bookingService = BookingService();
   final UserController userController = Get.find<UserController>();
 
+  /*
+   * Booking limits, checked before the request so the guest gets an instant
+   * answer rather than a round trip.
+   *
+   * These used to decide what counts as "active" by comparing the status
+   * TITLE against "Cancelled" and "Completed". There is no Completed status:
+   * tbl_book_statuses has Payment Pending, Cancelled, Paid, Booked,
+   * "Check In ", "Check Out " (with the trailing spaces), Booking Confirmed,
+   * Payment Received and Running. So that comparison excluded exactly one
+   * status and everything else counted, forever.
+   *
+   * What it cost: the app creates the booking BEFORE opening Razorpay, so an
+   * abandoned card payment leaves a Payment Pending row behind. Three of those
+   * and the guest was locked out with "You cannot have more than 3 active
+   * bookings" — for three payments they never made.
+   *
+   * Statuses, not titles, now — and the same set the backend's own guard uses,
+   * which deliberately does not treat an unpaid pending booking as holding a
+   * slot beyond a short window.
+   */
+  // 2 Cancelled, 7 Check Out: finished either way, never blocking.
+  static const _finishedStatuses = {2, 7};
+  // 1 Payment Pending: created before Razorpay, so it may be an abandoned
+  // checkout rather than a real reservation. The backend holds these for 30
+  // minutes; past that they hold nothing.
+  static const _pendingStatus = 1;
+  static const _pendingHold = Duration(minutes: 30);
+
+  bool _countsAsActive(dynamic b) {
+    final status = b.bookStatus as int;
+    if (_finishedStatuses.contains(status)) return false;
+    if (status == _pendingStatus) {
+      final added = b.bookAddedAt as DateTime?;
+      // No timestamp — treat it as live rather than silently letting a real
+      // reservation through.
+      if (added == null) return true;
+      return DateTime.now().difference(added) < _pendingHold;
+    }
+    return true;
+  }
+
   Future<BookingResponse> createBooking(Map<String, dynamic> data) async {
     // 1. Check Booking Limits
     final ongoing = userController.ongoingBookings.value;
     if (ongoing != null && ongoing.data.bookings.isNotEmpty) {
-      // Filter for ACTIVE bookings (exclude Cancelled and Completed)
-      final activeBookings = ongoing.data.bookings.where((b) {
-        final status = b.bookingStatusBsTitle;
-        return status != "Cancelled" && status != "Completed";
-      }).toList();
+      final activeBookings =
+          ongoing.data.bookings.where(_countsAsActive).toList();
 
       // Rule 1: Max 3 active bookings total
       if (activeBookings.length >= 3) {
@@ -27,23 +65,20 @@ class BookingController extends GetxController {
             "Booking Limit Reached",
             "You cannot have more than 3 active bookings. Please complete or cancel an existing booking.",
             true);
-        // Return a dummy failed response or throw error to stop execution
-        // Since we need to return BookingResponse, we can throw an exception or return a failure object if possible.
-        // Throwing exception is safer to stop the flow immediately.
         throw Exception("Booking limit reached (Max 3 active bookings)");
       }
 
-      // Rule 2: Max 1 active Pay on Arrival (COD) booking
-      // Check if the NEW booking is COD
+      // Rule 2: Max 1 active Pay on Arrival (COD) booking.
+      // Only reached when the guest already HAS one and is starting another —
+      // it is not a policy notice shown on a first booking.
       final isNewBookingCod = data['isCod'] == true;
-
       if (isNewBookingCod) {
         final activeCodBookings =
             activeBookings.where((b) => b.bookIsCod).length;
         if (activeCodBookings >= 1) {
           showAlert(
               "Pay on Arrival Limit",
-              "You can only have 1 active 'Pay on Arrival' booking. Please choose online payment or complete your existing booking.",
+              "You can only have 1 active 'Pay on Arrival' booking. Please complete or cancel that one, or pay online for this stay.",
               true);
           throw Exception(
               "COD limit reached (Max 1 active Pay on Arrival booking)");

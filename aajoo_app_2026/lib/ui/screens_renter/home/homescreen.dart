@@ -19,6 +19,7 @@ import 'package:rent_home/ui/screens_renter/home/components/search_sheet.dart';
 import 'package:rent_home/ui/screens_renter/home/components/text_category_pills.dart';
 import 'package:rent_home/ui/screens_renter/home/components/home_faq_strip.dart';
 import 'package:rent_home/ui/screens_renter/blog/blog_screens.dart';
+import 'package:rent_home/ui/screens_renter/home/components/resume_booking_banner.dart';
 import 'package:rent_home/ui/screens_renter/home/components/home_blog_strip.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/ui/screens_renter/home/components/property_slider.dart';
@@ -211,6 +212,9 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                     // Negotiated-deal banner (24h coupon from an accepted offer)
                     // — one tap opens the sanctioned property, dates + coupon
                     // pre-filled. Hidden when there are no active deals.
+                    // Offers to reopen a booking that a KYC detour
+                    // interrupted; renders nothing when there isn't one.
+                    const ResumeBookingBanner(),
                     const NegotiatedDealBanner(),
                   ],
                 ),
