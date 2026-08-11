@@ -1,4 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/controller/alert_dialog.dart';
 import 'package:rent_home/data/models/action_result.dart';
@@ -144,6 +146,14 @@ class AuthController extends GetxController {
       } else {
         _showLoginError(response.message);
       }
+    } on PlatformException catch (e) {
+      // Google sign-in fails through PlatformException with codes that mean
+      // nothing to a user and were being shown to them verbatim. Each code has
+      // a specific cause and a specific fix, so name it: "Google sign-in
+      // doesn't work" is an unactionable report, and this turns it into one
+      // that says which of four different things went wrong.
+      _showLoginError(_googleSignInMessage(e));
+      debugPrint('Google sign-in failed: code=${e.code} message=${e.message}');
     } catch (e) {
       await handleApiError(e, onError: (message) async {
         _showLoginError(message);
@@ -153,6 +163,38 @@ class AuthController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  /// What a Google sign-in failure actually means.
+  ///
+  /// The project config was checked end to end on 2026-08-11 and all of it
+  /// lines up: package `com.aajoo.aajoohomes`, BOTH the release and debug
+  /// keystore SHA-1s registered in Firebase project `aajoo-bdb20`, and the
+  /// hardcoded serverClientId matching the web client in google-services.json.
+  /// The server verifies tokens correctly too — it rejects a bad one with a
+  /// proper message rather than a config error. So a failure in the field is a
+  /// runtime condition, and the message has to say which one.
+  String _googleSignInMessage(PlatformException e) {
+    final raw = '${e.code} ${e.message ?? ''}';
+
+    // DEVELOPER_ERROR (code 10): the signing certificate of the INSTALLED build
+    // is not registered in Firebase. The usual cause is a Play Store build —
+    // Play re-signs with its own App Signing key, whose SHA-1 has to be added
+    // separately from the upload key.
+    if (e.code == 'sign_in_failed' && raw.contains('10')) {
+      return "Google sign-in isn't set up for this build of the app. "
+          "Please use your email and password, or contact support.";
+    }
+    if (e.code == 'sign_in_canceled' || raw.contains('12501')) {
+      return "Google sign-in was cancelled.";
+    }
+    if (raw.toLowerCase().contains('network')) {
+      return "Couldn't reach Google. Check your internet connection and try again.";
+    }
+    if (raw.toLowerCase().contains('play') || raw.contains('SERVICE_')) {
+      return "Google Play services needs updating on this device before you can sign in with Google.";
+    }
+    return "Couldn't complete Google sign-in. Please try again, or use your email and password.";
   }
 
   void _showLoginError(String message) {

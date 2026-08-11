@@ -176,7 +176,7 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                           builder: (_) => const BookmarkedPropertiesPage(),
                         ),
                       ),
-                      onProfileTap: () => Navigator.push(
+                      onNotificationsTap: () => Navigator.push(
                         context,
                         CupertinoPageRoute(
                           builder: (_) => const NotificationsScreen(),

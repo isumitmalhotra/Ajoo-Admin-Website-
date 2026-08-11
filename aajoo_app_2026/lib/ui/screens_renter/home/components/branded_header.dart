@@ -5,19 +5,22 @@ import 'package:rent_home/utils/fonts.dart';
 /// AajooHomes branded header — matches the POC mobile header.
 ///
 /// Layout (left → right):
-///   [ 34×34 indigo-gradient logo mark "A" ]  [ "aajoo`homes`" wordmark ]   ...spacer...   [ 🤍 heart ]  [ 👤 profile ]
+///   [ 34×34 indigo-gradient logo mark "A" ]  [ "aajoo`homes`" wordmark ]   ...spacer...   [ 🤍 heart ]  [ 🔔 notifications ]
 ///
 /// All actions are exposed via callbacks; this widget owns no state.
 class BrandedHeader extends StatelessWidget {
   final VoidCallback? onMenuTap; // also doubles as logo tap (open drawer)
   final VoidCallback? onWishlistTap;
-  final VoidCallback? onProfileTap;
+  /// Opens notifications. Was named onProfileTap and paired with a person
+  /// icon, while the handler behind it pushed NotificationsScreen — the icon
+  /// said "profile", the tooltip said "Profile", and the tap did neither.
+  final VoidCallback? onNotificationsTap;
 
   const BrandedHeader({
     super.key,
     this.onMenuTap,
     this.onWishlistTap,
-    this.onProfileTap,
+    this.onNotificationsTap,
   });
 
   @override
@@ -71,9 +74,9 @@ class BrandedHeader extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           _HeaderIconButton(
-            icon: Icons.person_outline,
-            onTap: onProfileTap,
-            tooltip: 'Profile',
+            icon: Icons.notifications_none,
+            onTap: onNotificationsTap,
+            tooltip: 'Notifications',
           ),
         ],
       ),
