@@ -34,6 +34,17 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'tbl_coupons',
     timestamps: true,
+    indexes: [
+      {
+        unique: true,
+        fields: ['cpn_code', 'cpn_isDeleted'],
+        name: 'uq_tbl_coupons_code_deleted',
+      },
+      {
+        fields: ['cpn_status'],
+        name: 'idx_tbl_coupons_status',
+      },
+    ],
   });
   return tbl_coupons;
 };

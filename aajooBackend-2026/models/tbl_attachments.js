@@ -113,7 +113,17 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'tbl_attachments',
-    timestamps: false
+    timestamps: false,
+    indexes: [
+      {
+        fields: ['afile_type', 'afile_record_id'],
+        name: 'idx_tbl_attachments_type_record',
+      },
+      {
+        fields: ['afile_record_id'],
+        name: 'idx_tbl_attachments_record',
+      },
+    ]
   });
   return tbl_attachments;
 };

@@ -1,7 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Box,
   Chip,
+  CircularProgress,
   LinearProgress,
   MenuItem,
   Paper,
@@ -10,35 +12,25 @@ import {
   Typography,
 } from "@mui/material";
 import { BarChart, LineChart } from "@mui/x-charts";
-
-const PERIOD_DATA = {
-  "30D": {
-    occupancy: 76,
-    rating: 4.6,
-    cancellationRate: 3.8,
-    responseTimeHours: 1.9,
-    revenueTrend: [56000, 62000, 59000, 67000],
-    labels: ["W1", "W2", "W3", "W4"],
-    channelSplit: [44, 31, 25],
-  },
-  "90D": {
-    occupancy: 72,
-    rating: 4.5,
-    cancellationRate: 4.2,
-    responseTimeHours: 2.3,
-    revenueTrend: [168000, 182000, 194000],
-    labels: ["Jan", "Feb", "Mar"],
-    channelSplit: [41, 34, 25],
-  },
-};
-
-type PeriodKey = keyof typeof PERIOD_DATA;
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import {
+  fetchHostPerformance,
+  type PeriodKey,
+} from "../../features/host/hostPerformance.slice";
 
 export default function HostPerformance() {
+  const dispatch = useAppDispatch();
+  const { data, loading, error } = useAppSelector((state) => state.hostPerformance);
   const [period, setPeriod] = useState<PeriodKey>("30D");
-  const snapshot = PERIOD_DATA[period];
+
+  useEffect(() => {
+    dispatch(fetchHostPerformance());
+  }, [dispatch]);
+
+  const snapshot = data?.[period] ?? null;
 
   const score = useMemo(() => {
+    if (!snapshot) return 0;
     const occupancyScore = snapshot.occupancy;
     const ratingScore = (snapshot.rating / 5) * 100;
     const cancellationPenalty = Math.max(0, 100 - snapshot.cancellationRate * 8);
@@ -52,7 +44,7 @@ export default function HostPerformance() {
         sx={{
           p: 2.6,
           borderRadius: "1rem",
-          border: "1px solid #ede9fe",
+          border: "1px solid #FFFAF0",
           boxShadow: "0 12px 28px rgba(17,24,39,0.05)",
         }}
       >
@@ -84,6 +76,27 @@ export default function HostPerformance() {
         </Stack>
       </Paper>
 
+      {error && (
+        <Alert severity="error" sx={{ borderRadius: "0.8rem" }}>
+          {error}
+        </Alert>
+      )}
+
+      {loading ? (
+        <Paper
+          elevation={0}
+          sx={{ p: 6, borderRadius: "1rem", border: "1px solid #FFFAF0", display: "flex", justifyContent: "center" }}
+        >
+          <CircularProgress size={28} sx={{ color: "#2A356B" }} />
+        </Paper>
+      ) : !snapshot ? (
+        <Paper elevation={0} sx={{ p: 4, borderRadius: "1rem", border: "1px solid #FFFAF0" }}>
+          <Typography variant="body2" color="text.secondary" textAlign="center">
+            No performance data available yet. Metrics will appear once your listings start receiving bookings.
+          </Typography>
+        </Paper>
+      ) : (
+        <>
       <Box
         sx={{
           display: "grid",
@@ -91,7 +104,7 @@ export default function HostPerformance() {
           gap: 1.3,
         }}
       >
-        <Paper elevation={0} sx={{ p: 1.8, borderRadius: "0.9rem", border: "1px solid #ede9fe" }}>
+        <Paper elevation={0} sx={{ p: 1.8, borderRadius: "0.9rem", border: "1px solid #FFFAF0" }}>
           <Typography variant="caption" color="text.secondary">
             Occupancy
           </Typography>
@@ -99,7 +112,7 @@ export default function HostPerformance() {
             {snapshot.occupancy}%
           </Typography>
         </Paper>
-        <Paper elevation={0} sx={{ p: 1.8, borderRadius: "0.9rem", border: "1px solid #ede9fe" }}>
+        <Paper elevation={0} sx={{ p: 1.8, borderRadius: "0.9rem", border: "1px solid #FFFAF0" }}>
           <Typography variant="caption" color="text.secondary">
             Guest Rating
           </Typography>
@@ -107,7 +120,7 @@ export default function HostPerformance() {
             {snapshot.rating}/5
           </Typography>
         </Paper>
-        <Paper elevation={0} sx={{ p: 1.8, borderRadius: "0.9rem", border: "1px solid #ede9fe" }}>
+        <Paper elevation={0} sx={{ p: 1.8, borderRadius: "0.9rem", border: "1px solid #FFFAF0" }}>
           <Typography variant="caption" color="text.secondary">
             Cancellation Rate
           </Typography>
@@ -115,7 +128,7 @@ export default function HostPerformance() {
             {snapshot.cancellationRate}%
           </Typography>
         </Paper>
-        <Paper elevation={0} sx={{ p: 1.8, borderRadius: "0.9rem", border: "1px solid #ede9fe" }}>
+        <Paper elevation={0} sx={{ p: 1.8, borderRadius: "0.9rem", border: "1px solid #FFFAF0" }}>
           <Typography variant="caption" color="text.secondary">
             Avg Response Time
           </Typography>
@@ -125,12 +138,12 @@ export default function HostPerformance() {
         </Paper>
       </Box>
 
-      <Paper elevation={0} sx={{ p: 2, borderRadius: "1rem", border: "1px solid #ede9fe" }}>
+      <Paper elevation={0} sx={{ p: 2, borderRadius: "1rem", border: "1px solid #FFFAF0" }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
           <Typography variant="subtitle1" fontWeight={800}>
             Overall Health Score
           </Typography>
-          <Chip label={`${score}/100`} sx={{ bgcolor: "#ede9fe", color: "#5b21b6", fontWeight: 700 }} />
+          <Chip label={`${score}/100`} sx={{ bgcolor: "#FFFAF0", color: "#1B2447", fontWeight: 700 }} />
         </Stack>
         <LinearProgress
           variant="determinate"
@@ -138,26 +151,26 @@ export default function HostPerformance() {
           sx={{
             height: 10,
             borderRadius: 99,
-            bgcolor: "#ede9fe",
-            "& .MuiLinearProgress-bar": { bgcolor: "#6d28d9" },
+            bgcolor: "#FFFAF0",
+            "& .MuiLinearProgress-bar": { bgcolor: "#2A356B" },
           }}
         />
       </Paper>
 
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1.3fr 1fr" }, gap: 1.4 }}>
-        <Paper elevation={0} sx={{ p: 2, borderRadius: "1rem", border: "1px solid #ede9fe" }}>
+        <Paper elevation={0} sx={{ p: 2, borderRadius: "1rem", border: "1px solid #FFFAF0" }}>
           <Typography variant="subtitle1" fontWeight={800} mb={1}>
             Revenue Trend
           </Typography>
           <LineChart
             xAxis={[{ scaleType: "point", data: snapshot.labels }]}
-            series={[{ data: snapshot.revenueTrend, label: "Revenue", color: "#6d28d9" }]}
+            series={[{ data: snapshot.revenueTrend, label: "Revenue", color: "#2A356B" }]}
             height={260}
             margin={{ top: 12, right: 12, bottom: 30, left: 48 }}
           />
         </Paper>
 
-        <Paper elevation={0} sx={{ p: 2, borderRadius: "1rem", border: "1px solid #ede9fe" }}>
+        <Paper elevation={0} sx={{ p: 2, borderRadius: "1rem", border: "1px solid #FFFAF0" }}>
           <Typography variant="subtitle1" fontWeight={800} mb={1}>
             Booking Channel Mix
           </Typography>
@@ -179,6 +192,8 @@ export default function HostPerformance() {
           />
         </Paper>
       </Box>
+        </>
+      )}
     </Stack>
   );
 }

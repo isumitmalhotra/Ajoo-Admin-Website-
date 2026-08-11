@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import Modal from "react-modal";
 import {
   Box,
@@ -7,14 +7,20 @@ import {
   Button,
   IconButton,
   useMediaQuery,
+  CircularProgress,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import DownloadIcon from "@mui/icons-material/Download";
+import CancelIcon from "@mui/icons-material/Cancel";
+import toast from "react-hot-toast";
+import { cancelBooking } from "../../services/customerApi";
 
 interface BookingDetailsModalProps {
   open: boolean;
   onClose: () => void;
   bookingId: string | null;
+  /** Called after a successful cancellation so the parent can refresh its list. */
+  onCancelled?: () => void;
 }
 
 const themeColor = "#1B2447";
@@ -25,10 +31,31 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
   open,
   onClose,
   bookingId,
+  onCancelled,
 }) => {
+  const isMobile = useMediaQuery("(max-width: 600px)");
+  const [cancelling, setCancelling] = useState(false);
+
   if (!bookingId) return null;
 
-  const isMobile = useMediaQuery("(max-width: 600px)");
+  const handleCancel = async () => {
+    if (!bookingId) return;
+    setCancelling(true);
+    try {
+      await cancelBooking(bookingId);
+      toast.success("Booking cancelled successfully");
+      onCancelled?.();
+      onClose();
+    } catch (e: any) {
+      toast.error(
+        e?.response?.data?.message ||
+          e?.message ||
+          "Couldn't cancel this booking. Please try again."
+      );
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   const booking = {
     id: bookingId,
@@ -85,7 +112,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
           px: isMobile ? 2 : 3,
           py: isMobile ? 1.5 : 2,
           position: "relative",
-          fontFamily: "'Poppins', sans-serif",
+          fontFamily: "'Inter', sans-serif",
         }}
       >
         <Typography variant={isMobile ? "h6" : "h5"} sx={{ fontWeight: 700 }}>
@@ -282,7 +309,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
             width: "100%",
             textTransform: "none",
             fontWeight: 600,
-            fontFamily: "'Poppins', sans-serif",
+            fontFamily: "'Inter', sans-serif",
             fontSize: isMobile ? "0.9rem" : "1rem",
             mb: 2,
           }}
@@ -296,9 +323,38 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
         sx={{
           p: isMobile ? 1.5 : 2,
           borderTop: "1px solid #eee",
-          textAlign: "right",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 1.5,
         }}
       >
+        <Button
+          onClick={handleCancel}
+          disabled={cancelling}
+          startIcon={
+            cancelling ? (
+              <CircularProgress size={16} sx={{ color: "#b00020" }} />
+            ) : (
+              <CancelIcon />
+            )
+          }
+          sx={{
+            textTransform: "none",
+            px: isMobile ? 2 : 3,
+            py: 1.2,
+            borderRadius: "10px",
+            color: "#b00020",
+            border: "1px solid #f0c2c8",
+            bgcolor: "#fff5f6",
+            "&:hover": { bgcolor: "#ffe9ec" },
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: 600,
+          }}
+        >
+          {cancelling ? "Cancelling…" : "Cancel Booking"}
+        </Button>
+
         <Button
           onClick={onClose}
           sx={{
@@ -308,7 +364,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
             borderRadius: "10px",
             bgcolor: "#f2f2f2",
             "&:hover": { bgcolor: "#e6e6e6" },
-            fontFamily: "'Poppins', sans-serif",
+            fontFamily: "'Inter', sans-serif",
             fontWeight: 600,
           }}
         >

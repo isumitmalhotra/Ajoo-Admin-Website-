@@ -159,15 +159,15 @@ export const ForgetPasswordForm = () => {
 
         <Button
           fullWidth
-          variant="contained"
+          variant="outlined"
           sx={{
             mt: 2,
-            backgroundColor: "#522d37",
-            color: "#fff",
+            borderColor: "#1B2447",
+            color: "#1B2447",
             borderRadius: "8px",
             py: 1.5,
             fontWeight: 600,
-            "&:hover": { backgroundColor: "#a93250" },
+            "&:hover": { borderColor: "#2A356B", backgroundColor: "rgba(27,36,71,0.04)" },
           }}
           onClick={returnToLogin}
         >

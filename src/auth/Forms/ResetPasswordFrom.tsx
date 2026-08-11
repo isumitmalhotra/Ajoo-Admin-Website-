@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Box, Button, CircularProgress, Typography } from "@mui/material";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -34,9 +34,14 @@ export const ResetPasswordForm = () => {
   const { addNotification } = useNotificationStore();
   const [loading, setLoading] = useState(false);
 
-  const {
-    state: { token },
-  } = useLocation();
+  const location = useLocation();
+  const token = (location.state as { token?: string } | null)?.token;
+
+  useEffect(() => {
+    if (!token) {
+      navigate("/auth/forget", { replace: true });
+    }
+  }, [token, navigate]);
   const handleSubmit = async (values: ResetPasswordValues) => {
     try {
       setLoading(true);
@@ -120,7 +125,7 @@ export const ResetPasswordForm = () => {
                         color: "#fff",
                         fontWeight: 600,
                         "&:hover": {
-                          backgroundColor: "#a83956",
+                          backgroundColor: "#2A356B",
                         },
                         borderRadius: "8px",
                         py: 1.5,

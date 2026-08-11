@@ -148,7 +148,7 @@ export default function HostEarnings() {
         sx={{
           p: 3,
           borderRadius: "1rem",
-          border: "1px solid #ede9fe",
+          border: "1px solid #FFFAF0",
           boxShadow: "0 12px 28px rgba(17,24,39,0.05)",
         }}
         elevation={0}
@@ -239,7 +239,7 @@ export default function HostEarnings() {
         sx={{
           p: 3,
           borderRadius: "1rem",
-          border: "1px solid #ede9fe",
+          border: "1px solid #FFFAF0",
           boxShadow: "0 12px 28px rgba(17,24,39,0.05)",
         }}
         elevation={0}

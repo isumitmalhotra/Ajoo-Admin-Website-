@@ -24,8 +24,15 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
 
   // Function to open Razorpay checkout
   const openRazorpay = () => {
+    // Razorpay publishable key — single source of truth. Set
+    // VITE_RAZORPAY_KEY in your .env / Vercel env to switch to live (rzp_live_*).
+    // Falls back to the bundled TEST key so local dev works out of the box.
+    const razorpayKey =
+      (import.meta.env.VITE_RAZORPAY_KEY as string | undefined) ||
+      "rzp_test_XUTODhUdMAshi6";
+
     const options = {
-      key: "rzp_test_XUTODhUdMAshi6",
+      key: razorpayKey,
       amount: amount * 100, // Razorpay expects amount in paise
       currency: "INR",
       name: "Aajoo Homes",

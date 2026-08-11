@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.gstack/
+
+# Backend secrets — never commit (real Cloudinary/Razorpay/mail/DB/OAuth creds)
+aajooBackend-2026/.env
+aajooBackend-2026/config/db.config.js
+aajooBackend-2026/utils/serviceFirebase.json
+aajooBackend-2026/uploads/
+aajooBackend-2026/logs/

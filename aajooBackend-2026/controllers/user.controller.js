@@ -1,5 +1,6 @@
 const model = require("../models");
 const { sequelize } = require("../models");
+const { Op } = require("sequelize");
 const common = require("../utils/common");
 const commonConfig = require("../config/commonConfig");
 const methods = require("../utils/methods");
@@ -12,7 +13,7 @@ const emailManager = new EmailManager();
 const cloudinaryInstance = new CloudinaryManager();
 
 // Helper function to send OTP email
-const sendOtpEmail = async (email, name, otp, subject, mailType) => {
+const sendOtpEmail = async (email, name, otp, subject, mailType, userId) => {
     let contentPayload = { name, otp };
     let content = emailManager.signupOtp(contentPayload);
     let data = emailManager.makeContent(content);
@@ -20,6 +21,7 @@ const sendOtpEmail = async (email, name, otp, subject, mailType) => {
         to: email,
         subject,
         data,
+        userId,
         status: "email sent successfully",
         mailType,
     };
@@ -128,13 +130,16 @@ const validatePasswordUpdate = async (reqData, currentHashedPassword, checkCurre
 };
 
 // Helper function to send password update email
-const sendPasswordUpdateEmail = async (email, userName) => {
+const sendPasswordUpdateEmail = async (email, userName, userId) => {
     const content = emailManager.confirmUpdatePassword(userName || "user");
     const data = emailManager.makeContent(content);
     const option = {
         to: email,
         subject: 'Password Updated',
-        data: data
+        data: data,
+        userId: userId,
+        status: "Email sent successfully",
+        mailType: "Password updated"
     };
     emailManager.sendEmail(option);
 };
@@ -155,14 +160,19 @@ const createUser = async (req, res) => {
         // Validate input
         validateUserCreationInput(reqData);
 
-        // [DEV-BYPASS] Doc upload made optional for local testing — restore to enforce req.file
-        // Original: if (!req.file) { return common.response(req, res, commonConfig.errorStatus, false, "Document image is required"); }
+        // KYC policy: the ID-document IMAGE is optional at signup by design —
+        // identity is verified via DIDIT at checkout / host onboarding.
+        // To make it MANDATORY in production, re-enable the guard below AND
+        // confirm the signup form actually sends the file (else it 400s):
+        //   if (process.env.OTP_DEV_BYPASS !== 'true' && !req.file) {
+        //       return common.response(req, res, commonConfig.errorStatus, false, "Document image is required");
+        //   }
 
         // Determine host/user flags
         let isHost = reqData.user_isHost === "true" ? 1 : 0;
         let notHost = 1 - isHost;
 
-        // Check if user already exists
+        // Check if user already exists by email
         const existingUser = await model.tbl_user_cred.findUser({
             cred_user_email: reqData.user_email,
             [isHost ? 'cred_user_isHost' : 'cred_user_isUser']: isHost || notHost,
@@ -170,6 +180,24 @@ const createUser = async (req, res) => {
         });
         if (existingUser) {
             return common.response(req, res, commonConfig.errorStatus, false, "User already exists");
+        }
+
+        // Check for phone number: only one guest and one host allowed
+        const phoneUsers = await model.tbl_user.findAll({
+            where: {
+                user_pnumber: reqData.user_pnumber,
+                user_isDelete: commonConfig.isNo
+            },
+            attributes: ['user_id', 'user_isHost', 'user_isUser'],
+        });
+        if (phoneUsers.length >= 2) {
+            return common.response(req, res, commonConfig.errorStatus, false, "Only one guest and one host allowed for this phone number");
+        }
+        if (phoneUsers.length === 1) {
+            const existingRole = phoneUsers[0].user_isHost === 1 ? 'host' : 'guest';
+            if ((existingRole === 'host' && isHost === 1) || (existingRole === 'guest' && notHost === 1)) {
+                return common.response(req, res, commonConfig.errorStatus, false, `A ${existingRole} already exists for this phone number`);
+            }
         }
 
         // Hash password
@@ -207,16 +235,18 @@ const createUser = async (req, res) => {
         const otp = methods.generateOtp();
         await model.tbl_user_otp.addOtp(userId, otp);
 
-        // [DEV-BYPASS] Cloudinary upload + KYC doc creation skipped when no file provided
-        // Original: always uploaded file and created KYC record (required Cloudinary credentials)
+        // Handle ID-document upload (optional — see KYC policy note above)
         let afileId = 0;
         if (req.file) {
             await deleteExistingAttachment(moduleConfig.id_document_image_type, userId);
             const image = await handleAttachmentUpload(req.file.path, moduleConfig.id_document_image_type, userId);
-            afileId = image.afileId;
+            // image may be {afileId:0} when Cloudinary is unconfigured — null-safe.
+            afileId = image?.afileId ?? 0;
         }
 
-        if (req.file && reqData.doc_type && reqData.doc_number) {
+        // Create KYC doc only when an attachment + doc fields are present.
+        // (Cloudinary-less / skipped-doc signups still complete.)
+        if (afileId && reqData.doc_type && reqData.doc_number) {
             const userDocPayload = {
                 ud_user_id: userId,
                 ud_acc_doc_id: reqData.doc_type,
@@ -227,12 +257,12 @@ const createUser = async (req, res) => {
         }
 
         // Send OTP email
-        sendOtpEmail(reqData.user_email, reqData.user_fullName, otp, 'One Time Password for User Signup', 'Signup OTP');
+        sendOtpEmail(reqData.user_email, reqData.user_fullName, otp, 'One Time Password for User Signup', 'Signup OTP', userId);
 
         await transaction.commit();
         return common.response(req, res, 201, true, "Success", { userId });
     } catch (error) {
-        console.log(error,"iouytfrftyuio")
+        console.log(error);
         await transaction.rollback();
         return common.response(req, res, commonConfig.errorStatus, false, error.message);
     }
@@ -247,7 +277,7 @@ const otpSendAgain = async (req, res) => {
         let findUserDetails = await model.tbl_user.findUser({ user_id: isUser.cred_user_id }, ["user_fullName"]);
         const otp = methods.generateOtp();
         await model.tbl_user_otp.addOtp(reqData.userId, otp);
-        sendOtpEmail(isUser.cred_user_email, findUserDetails.user_fullName, otp, 'One Time Password for User Signup', 'Signup OTP');
+        sendOtpEmail(isUser.cred_user_email, findUserDetails.user_fullName, otp, 'One Time Password for User Signup', 'Signup OTP', reqData.userId);
         return common.response(req, res, commonConfig.successStatus, true, "success");
     } catch (error) {
         return common.response(req, res, commonConfig.errorStatus, false, error.message);
@@ -257,16 +287,19 @@ const verifyOtp = async (req, res) => {
     try {
         const reqData = { ...req.body };
 
-        // [DEV-BYPASS] OTP "000000" always passes — remove this block before production
-        if (reqData.otp === '000000') {
+        // DEV-ONLY OTP bypass, gated behind the OTP_DEV_BYPASS env flag so it can
+        // NEVER fire in production (leave the var unset/false on Render). When on
+        // locally, the fixed code "000000" verifies any account.
+        if (process.env.OTP_DEV_BYPASS === 'true' && reqData.otp === '000000') {
             const data = await model.tbl_user_cred.findUser({ cred_user_id: reqData.userId }, ["cred_user_email", "cred_username", "cred_user_isHost"]);
             if (!data) return common.response(req, res, commonConfig.errorStatus, false, "No user found");
             const token = await methods.genrateToken({ userId: reqData.userId, email: data.cred_user_email, isHost: data.cred_user_isHost });
             await Promise.all([
                 model.tbl_user.updateUser({ user_isVerified: commonConfig.isYes }, reqData.userId),
-                model.tbl_login_activity.create({ la_user_id: reqData.userId, la_token: token, la_ip: req.ip ?? "" }),
+                model.tbl_user_login_auth.createLoginAuth({ la_user_id: reqData.userId, la_token: token, la_ip: req.ip ?? "" }),
             ]);
-            return common.response(req, res, commonConfig.successStatus, true, "Verified (dev bypass)", { token, user: data });
+            const user = await getUserWithDetails(reqData.userId);
+            return common.response(req, res, commonConfig.successStatus, true, "Verification Successful (dev bypass)", { user, token });
         }
 
         const payload = { uo_userId: reqData.userId, uo_otp: reqData.otp };
@@ -498,24 +531,54 @@ const userHistory = async (req, res) => {
 };
 const UserSavedProperties = async (req, res) => {
     try {
+        // Auth comes from JWT — never trust a userId in the body.
+        const userId = req.user.userId;
         const reqData = { ...req.body };
-        let limit = reqData.limit ?? commonConfig.listLimit;
-        let page = reqData.page ?? commonConfig.listPage;
-        let offset = (page - 1) * limit;
-        let { rows, count } = await model.tbl_saved_liked_prop.findAndCountAll({
+        const limit = Number(reqData.limit) || commonConfig.listLimit || 20;
+        const page = Number(reqData.page) || commonConfig.listPage || 1;
+        const offset = (page - 1) * limit;
+
+        // 1) Find IDs of properties the user has actively saved.
+        const savedRows = await model.tbl_saved_liked_prop.findAll({
             raw: true,
             where: {
-                slp_user_id: reqData.userId,
-                slp_prop_id: reqData.propId,
+                slp_user_id: userId,
                 slp_isSave: commonConfig.isYes,
             },
-            attributes: [
-                "slp_prop_id"
-            ],
-            limit: limit,
-            offset: offset
+            attributes: ["slp_prop_id"],
+            order: [["slp_id", "DESC"]],
+            limit,
+            offset,
         });
 
+        const propIds = savedRows.map(r => r.slp_prop_id).filter(Boolean);
+        if (propIds.length === 0) {
+            return common.response(req, res, commonConfig.successStatus, true, "success", {
+                count: 0,
+                property: [],
+            });
+        }
+
+        // 2) Hydrate with full property data so the app can render the same
+        //    cards as /properties/list — include propDetails (check-in/out
+        //    times, amenities flags) which the mobile Property model expects.
+        const properties = await model.tbl_properties.findAll({
+            where: {
+                property_id: { [Op.in]: propIds },
+                is_deleted: 0,
+            },
+            include: [{
+                model: model.tbl_property_detail,
+                as: "propDetails",
+                required: false,
+            }],
+            order: [["property_id", "DESC"]],
+        });
+
+        return common.response(req, res, commonConfig.successStatus, true, "success", {
+            count: properties.length,
+            property: properties,
+        });
     } catch (error) {
         return common.response(req, res, commonConfig.errorStatus, false, error.message);
     }
@@ -672,7 +735,7 @@ const updateForgotPassByEmail = async (req, res) => {
         );
 
         const userName = await model.tbl_user.findUser({ user_id: req.user.userId }, ["user_fullName"]);
-        await sendPasswordUpdateEmail(isUser.cred_user_email, userName?.user_fullName);
+        await sendPasswordUpdateEmail(isUser.cred_user_email, userName?.user_fullName, req.user.userId);
 
         await model.tbl_user_pass_auths.destroy({
             where: { upa_userId: req.user.userId },
@@ -709,7 +772,7 @@ const userUpdatePasswordManual = async (req, res) => {
         delete isUser.cred_user_isHost;
         await model.tbl_user_cred.updateCred(isUser, reqData.userId);
 
-        await sendPasswordUpdateEmail(isUser.cred_user_email, "User");
+        await sendPasswordUpdateEmail(isUser.cred_user_email, "User", reqData.userId);
 
         return common.response(req, res, commonConfig.successStatus, true, "Password updated successfully");
     } catch (error) {

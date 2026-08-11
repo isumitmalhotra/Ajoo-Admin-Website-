@@ -14,7 +14,7 @@ const CancelBookResult: React.FC = () => {
     <Box
       sx={{
         minHeight: "100vh",
-        backgroundColor: "#f8f9fa",
+        backgroundColor: "#EFE7D6",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
@@ -51,7 +51,7 @@ const CancelBookResult: React.FC = () => {
           variant="contained"
           sx={{
             bgcolor: "#1B2447",
-            "&:hover": { bgcolor: "#a83454" },
+            "&:hover": { bgcolor: "#2A356B" },
             textTransform: "none",
             px: 4,
             py: 1.5,

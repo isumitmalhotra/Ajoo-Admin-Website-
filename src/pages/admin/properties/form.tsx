@@ -17,7 +17,7 @@ import {
   setError,
 } from "../../../features/ui/ui.slice";
 import {
-  PurpleThemeColor,
+  Brand,
   ThemeColors,
   FieldLabelColor,
 } from "../../../theme/themeColor";
@@ -985,8 +985,8 @@ export default function PropertiesForm() {
                   variant="outlined"
                   component="label"
                   sx={{
-                    color: PurpleThemeColor,
-                    borderColor: PurpleThemeColor,
+                    color: Brand.indigo,
+                    borderColor: Brand.indigo,
                     "&:hover": {
                       borderColor: "#6f137f",
                       backgroundColor: "rgba(111,19,127,0.05)",
@@ -1055,8 +1055,8 @@ export default function PropertiesForm() {
                   variant="outlined"
                   component="label"
                   sx={{
-                    color: PurpleThemeColor,
-                    borderColor: PurpleThemeColor,
+                    color: Brand.indigo,
+                    borderColor: Brand.indigo,
                   }}
                 >
                   Upload Images
@@ -1114,8 +1114,8 @@ export default function PropertiesForm() {
                   variant="outlined"
                   component="label"
                   sx={{
-                    color: PurpleThemeColor,
-                    borderColor: PurpleThemeColor,
+                    color: Brand.indigo,
+                    borderColor: Brand.indigo,
                   }}
                 >
                   Upload Images
@@ -1171,7 +1171,7 @@ export default function PropertiesForm() {
                   type="submit"
                   variant="contained"
                   sx={{
-                    bgcolor: PurpleThemeColor,
+                    bgcolor: Brand.indigo,
                     transition: "all 0.3s ease",
                     "&:hover": {
                       bgcolor: "#6f137f",

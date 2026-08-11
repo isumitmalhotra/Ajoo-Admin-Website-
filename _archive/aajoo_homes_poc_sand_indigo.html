@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AajooHomes — POC (Sand & Indigo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EFE7D6;            /* sand */
+    --surface:#FFFAF0;       /* cream */
+    --ink:#1B2447;           /* indigo (primary ink) */
+    --ink-2:#3D4670;         /* secondary ink */
+    --muted:#6B7390;         /* muted text */
+    --line:#D9CFB8;         /* warm line */
+    --brand:#1B2447;        /* indigo */
+    --brand-2:#2A356B;      /* indigo-600 */
+    --accent:#C16345;       /* clay */
+    --accent-2:#A8512F;     /* clay-600 */
+    --gold:#B8893D;
+    --success:#3F6B4E;
+    --shadow:0 1px 2px rgba(27,36,71,.04), 0 8px 24px rgba(27,36,71,.06);
+    --shadow-lg:0 12px 40px rgba(27,36,71,.12);
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  body{min-height:100vh}
+  a{color:inherit;text-decoration:none}
+  img{display:block;max-width:100%}
+  .serif{font-family:'Fraunces',serif;font-weight:500;letter-spacing:-0.02em}
+
+  /* Pitch bar */
+  .pitch-bar{position:sticky;top:0;z-index:50;background:var(--brand);color:var(--surface);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06)}
+  .pitch-bar .brand{display:flex;align-items:center;gap:10px;font-size:13px}
+  .pitch-bar .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .screen-tabs{display:flex;gap:4px;background:rgba(255,255,255,.06);padding:4px;border-radius:999px}
+  .screen-tabs button{background:transparent;border:0;color:var(--surface);opacity:.85;font:500 12px 'Inter',sans-serif;padding:7px 14px;border-radius:999px;cursor:pointer;transition:.2s}
+  .screen-tabs button.active{background:var(--accent);opacity:1;color:#fff}
+
+  /* header */
+  .nav{background:var(--surface);border-bottom:1px solid var(--line);padding:18px 48px;display:flex;align-items:center;justify-content:space-between}
+  .logo{display:flex;align-items:center;gap:10px}
+  .logo-mark{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--brand) 0%,var(--brand-2) 100%);display:grid;place-items:center;color:var(--surface);font-family:'Fraunces',serif;font-weight:700;font-size:18px}
+  .logo-text{font-family:'Fraunces',serif;font-weight:600;font-size:20px;letter-spacing:-0.02em}
+  .logo-text em{font-style:italic;font-weight:400;color:var(--accent)}
+  .nav-links{display:flex;gap:32px;font-size:14px;color:var(--ink-2);font-weight:500}
+  .nav-links a:hover{color:var(--brand)}
+  .nav-right{display:flex;align-items:center;gap:18px;font-size:14px}
+  .nav-cta{background:var(--brand);color:var(--surface);padding:10px 18px;border-radius:999px;font-weight:500;font-size:13px}
+  .lang-pill{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);border:1px solid var(--line);padding:6px 10px;border-radius:999px}
+
+  /* hero */
+  .hero{padding:56px 48px 24px}
+  .hero-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:48px;max-width:1320px;margin:0 auto}
+  .hero-tag{display:inline-flex;align-items:center;gap:8px;background:rgba(27,36,71,.06);color:var(--brand);padding:6px 12px;border-radius:999px;font-size:12px;font-weight:500;text-transform:uppercase;margin-bottom:20px}
+  .hero-tag .pulse{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 rgba(193,99,69,.6);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(193,99,69,.6)}50%{box-shadow:0 0 0 8px rgba(193,99,69,0)}}
+  h1.hero-title{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(44px,5vw,68px);line-height:1.02;letter-spacing:-.035em;color:var(--ink);margin-bottom:20px}
+  h1.hero-title em{font-style:italic;color:var(--brand);font-weight:500}
+  h1.hero-title .underline{position:relative;display:inline-block}
+  h1.hero-title .underline::after{content:"";position:absolute;left:0;right:0;bottom:.08em;height:.12em;background:var(--accent);opacity:.35;border-radius:2px}
+  .hero-sub{font-size:17px;line-height:1.55;color:var(--ink-2);max-width:520px;margin-bottom:32px}
+  .hero-trust{display:flex;gap:28px;margin-top:36px;padding-top:24px;border-top:1px solid var(--line)}
+  .trust-item .n{font-family:'Fraunces',serif;font-size:24px;font-weight:600;color:var(--brand)}
+
+  .hero-collage{position:relative;height:520px}
+  .h-card{position:absolute;border-radius:16px;overflow:hidden;box-shadow:var(--shadow-lg);background:#ddd}
+  .h-card img{width:100%;height:100%;object-fit:cover}
+  .h-1{top:0;left:0;width:62%;height:68%;transform:rotate(-1.5deg)}
+  .h-2{bottom:0;right:0;width:55%;height:55%;transform:rotate(2deg)}
+  .h-badge{position:absolute;background:var(--surface);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:12px}
+  .h-badge .ico{width:36px;height:36px;border-radius:10px;background:rgba(27,36,71,.08);display:grid;place-items:center;color:var(--brand)}
+
+  /* search */
+  .search-wrap{padding:0 48px;margin-top:-12px}
+  .search{max-width:1100px;margin:0 auto;background:var(--surface);border-radius:999px;padding:8px;display:flex;align-items:stretch;gap:0;box-shadow:var(--shadow-lg);border:1px solid var(--line)}
+  .search-field{flex:1;padding:14px 24px;border-right:1px solid var(--line);cursor:pointer;transition:.2s;border-radius:999px}
+  .search-field:hover{background:rgba(27,36,71,.03)}
+  .search-field .lbl{font-size:11px;font-weight:600;color:var(--ink);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+  .search-field .val{font-size:14px;color:var(--muted)}
+  .search-field .val.filled{color:var(--ink);font-weight:500}
+  .search-btn{background:var(--accent);color:#fff;border:0;padding:0 28px;border-radius:999px;font-weight:600;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:.2s}
+
+  /* categories */
+  .cats{padding:48px 48px 8px;max-width:1320px;margin:0 auto}
+  .cats-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px}
+  .cat{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 18px;border-radius:14px;cursor:pointer;border:1px solid transparent;min-width:96px;transition:.2s}
+  .cat:hover{background:var(--surface);border-color:var(--line)}
+  .cat.active{background:var(--surface);border-color:var(--ink);box-shadow:var(--shadow)}
+
+  /* sections */
+  .sec-head{display:flex;justify-content:space-between;align-items:flex-end;padding:48px 48px 24px;max-width:1320px;margin:0 auto}
+  .sec-head h2{font-family:'Fraunces',serif;font-weight:400;font-size:36px;letter-spacing:-.025em;color:var(--ink)}
+  .sec-head .link{color:var(--brand);font-size:14px;font-weight:600}
+
+  /* grid */
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;padding:0 48px 64px;max-width:1320px;margin:0 auto}
+  .card{cursor:pointer;display:flex;flex-direction:column;gap:12px;transition:.25s}
+  .card:hover{transform:translateY(-3px)}
+  .card-img{position:relative;border-radius:14px;overflow:hidden;aspect-ratio:1/1;background:#ddd}
+  .card-img img{width:100%;height:100%;object-fit:cover;transition:.4s}
+  .card:hover .card-img img{transform:scale(1.05)}
+  .card-badge{position:absolute;top:12px;left:12px;background:rgba(255,253,248,.95);padding:5px 10px;border-radius:999px;font-size:11px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:5px;backdrop-filter:blur(8px)}
+  .card-fav{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:rgba(255,253,248,.85);display:grid;place-items:center;cursor:pointer;backdrop-filter:blur(8px);transition:.2s}
+
+  /* trust strip */
+  .trust-strip{background:var(--brand);color:var(--surface);padding:64px 48px;margin:0}
+  .trust-inner{max-width:1320px;margin:0 auto;display:grid;grid-template-columns:1fr 2fr;gap:64px;align-items:center}
+
+  /* destinations */
+  .destinations{padding:64px 48px;max-width:1320px;margin:0 auto}
+  .dest-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:16px;height:520px}
+  .dest{position:relative;border-radius:18px;overflow:hidden;cursor:pointer;background:#ddd}
+  .dest-overlay{position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(27,36,71,.85) 100%);padding:24px;display:flex;flex-direction:column;justify-content:flex-end;color:var(--surface)}
+
+  /* footer */
+  footer{background:var(--brand);color:#A8B4AE;padding:64px 48px 32px}
+  .foot-grid{max-width:1320px;margin:0 auto;display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:48px}
+
+  @media (max-width:900px){
+    .hero-grid{grid-template-columns:1fr}
+    .hero-collage{height:340px}
+    .grid{grid-template-columns:repeat(2,1fr)}
+    .nav{padding:14px 20px}
+    .hero,.search-wrap,.cats,.sec-head,.grid,.trust-strip,.destinations,footer{padding-left:20px;padding-right:20px}
+  }
+</style>
+</head>
+<body>
+<div class="pitch-bar">
+  <div class="brand">
+    <span class="dot"></span>
+    <b>ZYPHEX TECH</b>
+    <span>· POC (Sand & Indigo)</span>
+  </div>
+  <div class="screen-tabs">
+    <button class="active" data-screen="home">Homepage</button>
+    <button data-screen="search">Search Results</button>
+    <button data-screen="detail">Property Detail</button>
+    <button data-screen="checkout">Checkout</button>
+  </div>
+  <div class="meta">V1 · INTERACTIVE</div>
+</div>
+
+<section class="screen active" id="screen-home">
+  <header class="nav">
+    <div class="logo">
+      <div class="logo-mark">A</div>
+      <div class="logo-text">aajoo<em>homes</em></div>
+    </div>
+    <nav class="nav-links">
+      <a class="live">Stays</a>
+      <a>Experiences</a>
+      <a>Long-term</a>
+      <a>Help Center</a>
+    </nav>
+    <div class="nav-right">
+      <div class="lang-pill">EN · INR</div>
+      <a class="nav-cta">Sign in</a>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div class="hero-grid">
+      <div>
+        <span class="hero-tag"><span class="pulse"></span> 100% Verified Stays · Zero Hidden Fees</span>
+        <h1 class="hero-title">Stay in homes <em>that feel like</em><br><span class="underline">your own.</span></h1>
+        <p class="hero-sub">Hand-picked villas, heritage homes and curated getaways across India. Every property visited. Every host verified. No commission games.</p>
+        <div class="hero-trust">
+          <div class="trust-item"><span class="n">1,240+</span><span class="l">Verified Homes</span></div>
+          <div class="trust-item"><span class="n">94</span><span class="l">Cities Covered</span></div>
+          <div class="trust-item"><span class="n">4.86</span><span class="l">Avg. Guest Rating</span></div>
+          <div class="trust-item"><span class="n">0%</span><span class="l">Booking Fee</span></div>
+        </div>
+      </div>
+
+      <div class="hero-collage">
+        <div class="h-card h-1"><img src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&q=80" alt="Heritage villa"></div>
+        <div class="h-card h-2"><img src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80" alt="Mountain cottage"></div>
+        <div class="h-badge b1"><div class="ico">✓</div><div><div class="t1">Site-visited & verified</div><div class="t2">Photos & amenities checked</div></div></div>
+        <div class="h-badge b2"><div class="ico">₹</div><div><div class="t1">Secure payments</div><div class="t2">Refund-protected booking</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="search-wrap">
+    <div class="search">
+      <div class="search-field"><div class="lbl">Where</div><div class="val filled">Goa, India</div></div>
+      <div class="search-field"><div class="lbl">Check in</div><div class="val filled">Fri, 22 May</div></div>
+      <div class="search-field"><div class="lbl">Check out</div><div class="val filled">Mon, 25 May</div></div>
+      <div class="search-field"><div class="lbl">Guests</div><div class="val">2 adults · 1 child</div></div>
+      <button class="search-btn">Search 1,240 stays</button>
+    </div>
+  </div>
+
+  <div class="cats">
+    <div class="cats-row">
+      <div class="cat active"><div class="cat-ico">🏠</div><div class="cat-lbl">All homes</div></div>
+      <div class="cat"><div class="cat-ico">🏛️</div><div class="cat-lbl">Heritage</div></div>
+      <div class="cat"><div class="cat-ico">🏝️</div><div class="cat-lbl">Villas</div></div>
+      <div class="cat"><div class="cat-ico">🏔️</div><div class="cat-lbl">Mountains</div></div>
+    </div>
+  </div>
+
+  <div class="sec-head"><div><h2>This week's <em>curation</em></h2><p>Hand-picked stays our team visited in the last 30 days</p></div><a class="link">See all 240 stays →</a></div>
+
+  <div class="grid">
+    <div class="card"><div class="card-img"><img src="https://images.unsplash.com/photo-1582610116397-edb318620f90?w=600&q=80"><div class="card-badge"><span class="v"></span> Visited · 12 May</div></div><div class="card-loc">North Goa · 4 km from Vagator</div><div class="card-title">Casa Branca — Portuguese heritage villa with private pool</div><div class="card-meta">4 bedrooms · Sleeps 8 · Pet friendly</div><div class="card-foot"><div class="card-price"><b>₹18,400</b> <span class="per">/ night</span></div></div></div>
+    <div class="card"><div class="card-img"><img src="https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600&q=80"><div class="card-badge">Verified host</div></div><div class="card-loc">Manali · Old Manali</div><div class="card-title">The Pinewood — wood-cabin retreat</div><div class="card-meta">3 bedrooms · Sleeps 6</div></div>
+    <div class="card"><div class="card-img"><img src="https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=600&q=80"><div class="card-badge">New · Featured</div></div><div class="card-loc">Udaipur · Lake Pichola</div><div class="card-title">Haveli 1907 — restored Rajasthani haveli</div></div>
+    <div class="card"><div class="card-img"><img src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&q=80"><div class="card-badge">Site-visited</div></div><div class="card-loc">Coorg · Madikeri</div><div class="card-title">Mistwood — coffee-estate bungalow</div></div>
+  </div>
+
+  <div class="trust-strip"><div class="trust-inner"><div><h3>Why book <em>through us</em>, not direct.</h3><p>We don't list everything. We list what we've seen. Four reasons that matter.</p></div><div class="trust-grid"><div class="trust-feature"><div class="icn">✔</div><div><h4>Every home is visited</h4><p>Our team has physically been at the property.</p></div></div><div class="trust-feature"><div class="icn">💬</div><div><h4>WhatsApp support</h4><p>Real humans on chat, not bots.</p></div></div></div></div></div>
+
+  <div class="sec-head"><div><h2>Travel by <em>destination</em></h2><p>The places our guests keep coming back to</p></div><a class="link">Browse all destinations →</a></div>
+  <div class="destinations"><div class="dest-grid"><div class="dest dest-1"><img src="https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800&q=80"><div class="dest-overlay"><h4>Goa</h4><div class="count">182 homes · from ₹3,400/night</div></div></div><div class="dest"><img src="https://images.unsplash.com/photo-1587474260584-136574528ed5?w=600&q=80"><div class="dest-overlay"><h4>Udaipur</h4><div class="count">64 homes</div></div></div><div class="dest"><img src="https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=600&q=80"><div class="dest-overlay"><h4>Manali</h4><div class="count">98 homes</div></div></div></div></div>
+
+  <footer><div class="foot-grid"><div class="foot-brand"><div class="logo"><div class="logo-mark">A</div><div class="logo-text">aajoo<em>homes</em></div></div><p>India's verified homestay platform. Hand-picked villas and heritage homes across 94 cities.</p></div><div class="foot-col"><h5>Discover</h5><ul><li><a>All stays</a></li><li><a>Heritage homes</a></li></ul></div><div class="foot-col"><h5>Hosting</h5><ul><li><a>List your home</a></li></ul></div><div class="foot-col"><h5>Support</h5><ul><li><a>Help Center</a></li></ul></div></div><div class="foot-bottom" style="margin-top:24px;padding-top:24px;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;font-size:12px;color:#A8B4AE">© 2026 AajooHomes · Built for travellers who care about details.<div>Privacy · Terms</div></div></footer>
+</section>
+
+<script>
+  document.querySelectorAll('.screen-tabs button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen-home').classList.add('active');
+    document.querySelectorAll('.screen-tabs button').forEach(x=>x.classList.toggle('active',x===b));
+  }));
+</script>
+</body>
+</html>

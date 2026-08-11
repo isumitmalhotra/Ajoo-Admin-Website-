@@ -18,7 +18,7 @@ export const AppBreadcrumbs: React.FC<Props> = ({ items }) => {
             color: "#1B2447",
             fontWeight: 500,
             fontSize: "0.95rem",
-            fontFamily: "'Poppins', sans-serif",
+            fontFamily: "'Inter', sans-serif",
             transition: "0.2s",
             "&:hover": { color: "#8A2C4A" },
           },
@@ -26,7 +26,7 @@ export const AppBreadcrumbs: React.FC<Props> = ({ items }) => {
             color: "#444",
             fontWeight: 600,
             fontSize: "0.95rem",
-            fontFamily: "'Poppins', sans-serif",
+            fontFamily: "'Inter', sans-serif",
           },
         }}
       >

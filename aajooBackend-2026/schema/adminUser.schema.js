@@ -1,6 +1,20 @@
 const yup = require("yup");
+const {
+    optionalChoice,
+    optionalInteger,
+    optionalNullableNumber,
+    optionalString,
+} = require("./yupHelpers");
 
 exports.createUserSchema = yup.object().shape({
+    userId: optionalNullableNumber("User ID must be a number")
+        .integer("User ID must be an integer")
+        .positive("User ID must be greater than zero"),
+
+    afileId: optionalNullableNumber("Attachment ID must be a number")
+        .integer("Attachment ID must be an integer")
+        .positive("Attachment ID must be greater than zero"),
+
     user_fullName: yup
         .string()
         .trim()
@@ -13,24 +27,13 @@ exports.createUserSchema = yup.object().shape({
         .matches(/^[0-9]{10}$/, "Phone number must be 10 digits")
         .required("Phone number is required"),
 
-    // user_dob: yup
-    //     .string()
-    //     .required("Date of birth is required")
-    //     .matches(
-    //         /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/(\d{2}|\d{4})$/,
-    //         "Date must be in DD/MM/YY or DD/MM/YYYY format"
-    //     )
-    //     .transform((value) => {
-    //         if (!value) return value; // 🔐 guard
-
-    //         const parts = value.split("/");
-    //         if (parts.length !== 3) return value;
-
-    //         const [day, month, year] = parts;
-    //         const fullYear = year.length === 2 ? `20${year}` : year;
-
-    //         return `${fullYear}-${month}-${day}`;
-    //     }),
+    user_dob: yup
+        .string()
+        .required("Date of birth is required")
+        .matches(
+            /^\d{4}-\d{2}-\d{2}$/,
+            "Date must be in YYYY-MM-DD format (e.g., 2026-04-14)"
+        ),
 
 
     user_address: yup
@@ -61,9 +64,9 @@ exports.createUserSchema = yup.object().shape({
         .number()
         .required("user_isActive is required"),
 
-    // user_isVerified: yup
-    //     .number()
-    //     .required("user_isVerified is required"),
+    user_isVerified: yup
+        .number()
+        .required("user_isVerified is required"),
 
     cred_username: yup
         .string()
@@ -76,14 +79,25 @@ exports.createUserSchema = yup.object().shape({
         .email("Invalid email address")
         .required("Email is required"),
 
-    // cred_user_password: yup
-    //     .string()
-    //     .min(8, "Password must be at least 8 characters")
-    //     .matches(
-    //         /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])/,
-    //         "Password must contain at least one letter, one number, and one special character"
-    //     ),
-        // .required("Password is required"),
+    cred_user_password: yup
+        .string()
+        .transform((value, originalValue) => {
+            if (typeof originalValue === "string" && originalValue.trim() === "") {
+                return undefined;
+            }
+            return value;
+        })
+        .trim()
+        .min(8, "Password must be at least 8 characters")
+        .matches(
+            /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])/,
+            "Password must contain at least one letter, one number, and one special character"
+        )
+        .when("userId", {
+            is: (userId) => !userId,
+            then: (schema) => schema.required("Password is required"),
+            otherwise: (schema) => schema.optional(),
+        }),
 
     cred_user_doc_type: yup
         .number()
@@ -154,6 +168,25 @@ exports.userId =  yup.object().shape({
     userId: yup
         .number()
         .required("User ID is required"),
+});
+
+exports.hostSearchSchema = yup.object().shape({
+    page: optionalInteger().min(1, "Page must be greater than 0").max(100000, "Page is too large"),
+    limit: optionalInteger().min(1, "Limit must be greater than 0").max(100, "Limit cannot exceed 100"),
+    search: optionalString({ max: 100 }).max(100, "Search cannot exceed 100 characters"),
+    status: optionalChoice(["0", "1", 0, 1], "Status must be 0 or 1"),
+    user_isVerified: optionalChoice(["0", "1", 0, 1], "Verified status must be 0 or 1"),
+});
+
+exports.hostAssignPropertySearchSchema = yup.object().shape({
+    search: optionalString({ max: 100 }).max(100, "Search cannot exceed 100 characters"),
+});
+
+exports.userSearchSchema = yup.object().shape({
+    page: optionalInteger().min(1, "Page must be greater than 0").max(100000, "Page is too large"),
+    limit: optionalInteger().min(1, "Limit must be greater than 0").max(100, "Limit cannot exceed 100"),
+    search: optionalString({ max: 100 }).max(100, "Search cannot exceed 100 characters"),
+    status: optionalChoice(["0", "1", 0, 1], "Status must be 0 or 1"),
 });
 
 

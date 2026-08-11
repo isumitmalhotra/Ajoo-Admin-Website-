@@ -7,7 +7,7 @@ import {
   TextField,
   MenuItem,
 } from "@mui/material";
-import { commonFieldSx, menuProps, PurpleThemeColor } from "../../../theme/themeColor";
+import { commonFieldSx, menuProps, Brand } from "../../../theme/themeColor";
 import type { SearchBarProps } from "./types";
 import { Link } from "react-router-dom";
 
@@ -83,10 +83,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
             sx={{
               minWidth: 220,
               "& .MuiOutlinedInput-root.Mui-focused fieldset": {
-                borderColor: PurpleThemeColor,
+                borderColor: Brand.indigo,
               },
               "& .MuiInputLabel-root.Mui-focused": {
-                color: PurpleThemeColor,
+                color: Brand.indigo,
               },
             }}
           />

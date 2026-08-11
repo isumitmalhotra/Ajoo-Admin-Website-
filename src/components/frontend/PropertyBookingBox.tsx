@@ -1,59 +1,32 @@
-import React, { useState } from "react";
-import {
-  Box,
-  Typography,
-  Chip,
-  useTheme,
-  useMediaQuery,
-} from "@mui/material";
-import {
-  Pool,
-  LocalParking,
-  Wifi,
-  Star,
-  LocationOn,
-  AcUnit,
-  Kitchen,
-  Tv,
-  Fireplace,
-} from "@mui/icons-material";
-import { motion } from "framer-motion";
+import React from "react";
+import { Box, Typography, Chip, Rating, useTheme, useMediaQuery } from "@mui/material";
+import { LocationOn } from "@mui/icons-material";
 
 const themeColor = "#1B2447";
 
-// Dummy amenities
-const amenitiesList = [
-  { icon: Pool, label: "Pool" },
-  { icon: LocalParking, label: "Parking" },
-  { icon: Wifi, label: "WiFi" },
-  { icon: AcUnit, label: "AC" },
-  { icon: Kitchen, label: "Kitchen" },
-  { icon: Tv, label: "TV" },
-  { icon: Fireplace, label: "Fireplace" },
-  { icon: Star, label: "5★ Rated" },
-  { icon: Pool, label: "Infinity Pool" },
-  { icon: Wifi, label: "High-Speed WiFi" },
-];
+interface PropertyBookingBoxProps {
+  price?: number;
+  title?: string;
+  location?: string;
+  categories?: string[];
+  rating?: number;
+}
 
-// Split for desktop 2 columns
-const splitAmenities = (items: any[]) => {
-  const half = Math.ceil(items.length / 2);
-  return [items.slice(0, half), items.slice(half)];
-};
-
-// Icon animation
-const iconAnim = {
-  initial: { opacity: 0, y: 10 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.25 } },
-  hover: { scale: 1.15 },
-};
-
-const PropertyBookingBox: React.FC = () => {
+/**
+ * Compact summary shown right below the property images: real title, location,
+ * category tags, rating and price. (Amenities live once in <AmenitiesGrid/> —
+ * "What this place offers" — so they're intentionally NOT repeated here.)
+ */
+const PropertyBookingBox: React.FC<PropertyBookingBoxProps> = ({
+  price: priceProp,
+  title,
+  location,
+  categories = [],
+  rating = 0,
+}) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const [price] = useState<number>(1500);
-
-  const [col1, col2] = splitAmenities(amenitiesList);
+  const price = priceProp && priceProp > 0 ? priceProp : 0;
 
   return (
     <Box
@@ -61,218 +34,88 @@ const PropertyBookingBox: React.FC = () => {
         backgroundColor: "#FFFAF0",
         borderRadius: "18px",
         border: "1px solid #D9CFB8",
-        padding: isMobile ? "1.3rem" : "2rem",
+        padding: isMobile ? "1.3rem" : "1.75rem",
         width: "100%",
-        margin: "2rem auto",
+        margin: "1rem auto 0",
         boxShadow: "0 1px 2px rgba(27,36,71,.04), 0 8px 24px rgba(27,36,71,.06)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 1.2,
       }}
     >
-      {/* MAIN LAYOUT */}
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: isMobile ? "column" : "row",
-          justifyContent: "space-between",
-          alignItems: isMobile ? "center" : "flex-start",
-          gap: isMobile ? 4 : 6,
-        }}
-      >
-        {/* ---------- LEFT SECTION ---------- */}
-        <Box sx={{ flex: 1, textAlign: isMobile ? "center" : "left" }}>
-          <Typography
-            variant="h5"
-            sx={{
-              color: "#222",
-              fontWeight: 700,
-              fontSize: isMobile ? "1.35rem" : "1.6rem",
-              mb: 1.5,
-            }}
-          >
-            Luxury Stay at Aajoo Villa
-          </Typography>
-
-          <Typography
-            variant="h4"
-            sx={{
-              color: themeColor,
-              fontWeight: 700,
-              fontSize: isMobile ? "1.6rem" : "2rem",
-              display: "flex",
-              justifyContent: isMobile ? "center" : "flex-start",
-              alignItems: "center",
-              gap: 0.5,
-              mb: 1,
-            }}
-          >
-            ₹{price.toLocaleString()}
-          </Typography>
-
-          <Typography
-            sx={{
-              display: "flex",
-              justifyContent: isMobile ? "center" : "flex-start",
-              alignItems: "center",
-              gap: 0.5,
-              color: "#555",
-              mt: 0.5,
-              fontSize: isMobile ? "0.9rem" : "1rem",
-            }}
-          >
-            <LocationOn sx={{ color: themeColor, fontSize: 20 }} /> 123 Ani Street,
-            Chennai, India
-          </Typography>
-
-          <Box
-            sx={{
-              mt: 2,
-              display: "flex",
-              flexWrap: "wrap",
-              justifyContent: isMobile ? "center" : "flex-start",
-              gap: 1,
-            }}
-          >
-            {["Apartment", "Luxury", "Family"].map((label) => (
-              <Chip
-                key={label}
-                label={label}
-                sx={{
-                  color: "#fff",
-                  bgcolor: themeColor,
-                  fontSize: isMobile ? "0.75rem" : "0.85rem",
-                }}
-              />
-            ))}
-          </Box>
-
-          {/* Rating */}
-          <Box
-            sx={{
-              mt: 2,
-              display: "flex",
-              justifyContent: isMobile ? "center" : "flex-start",
-              gap: 0.3,
-            }}
-          >
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} sx={{ color: "#FFD700", fontSize: 22 }} />
-            ))}
-          </Box>
-        </Box>
-
-        {/* ---------- RIGHT SECTION (Amenities) ---------- */}
-        <Box
+      {title && (
+        <Typography
           sx={{
-            display: "flex",
-            flexDirection: isMobile ? "column" : "row",
-            gap: isMobile ? 2 : 6,
-            minWidth: isMobile ? "100%" : "45%",
+            color: "#222",
+            fontWeight: 700,
+            fontSize: isMobile ? "1.25rem" : "1.5rem",
+            lineHeight: 1.25,
           }}
         >
-          {/* MOBILE VIEW — Multi Column Grid */}
-          {isMobile && (
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))",
-                gap: 2,
-                width: "100%",
-              }}
-            >
-              {amenitiesList.map((item, i) => {
-                const Icon = item.icon;
-                return (
-                  <motion.div
-                    key={i}
-                    variants={iconAnim}
-                    initial="initial"
-                    animate="animate"
-                    whileHover="hover"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      cursor: "pointer",
-                      padding: "4px 0",
-                    }}
-                  >
-                    <Icon sx={{ color: themeColor, fontSize: 22 }} />
-                    <Typography sx={{ color: "#444", fontSize: "0.9rem" }}>
-                      {item.label}
-                    </Typography>
-                  </motion.div>
-                );
-              })}
-            </Box>
-          )}
+          {title}
+        </Typography>
+      )}
 
-          {/* DESKTOP — 2 Columns */}
-          {!isMobile && (
-            <>
-              {/* Column 1 */}
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 2,
-                }}
-              >
-                {col1.map((item, i) => {
-                  const Icon = item.icon;
-                  return (
-                    <motion.div
-                      key={i}
-                      variants={iconAnim}
-                      initial="initial"
-                      animate="animate"
-                      whileHover="hover"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        cursor: "pointer",
-                      }}
-                    >
-                      <Icon sx={{ color: themeColor, fontSize: 22 }} />
-                      <Typography sx={{ color: "#444" }}>{item.label}</Typography>
-                    </motion.div>
-                  );
-                })}
-              </Box>
-
-              {/* Column 2 */}
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 2,
-                }}
-              >
-                {col2.map((item, i) => {
-                  const Icon = item.icon;
-                  return (
-                    <motion.div
-                      key={i}
-                      variants={iconAnim}
-                      initial="initial"
-                      animate="animate"
-                      whileHover="hover"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        cursor: "pointer",
-                      }}
-                    >
-                      <Icon sx={{ color: themeColor, fontSize: 22 }} />
-                      <Typography sx={{ color: "#444" }}>{item.label}</Typography>
-                    </motion.div>
-                  );
-                })}
-              </Box>
-            </>
-          )}
-        </Box>
+      {/* Rating (real). Falls back to a "New" tag when there are no reviews. */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        {rating > 0 ? (
+          <>
+            <Rating value={rating} precision={0.5} readOnly size="small" sx={{ color: "#C16345" }} />
+            <Typography sx={{ fontSize: "0.9rem", fontWeight: 700, color: themeColor }}>
+              {rating.toFixed(1)}
+            </Typography>
+          </>
+        ) : (
+          <Chip label="New listing" size="small" sx={{ bgcolor: "rgba(63,107,78,.1)", color: "#3F6B4E", fontWeight: 600 }} />
+        )}
       </Box>
+
+      {location && (
+        <Typography
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 0.5,
+            color: "#555",
+            fontSize: isMobile ? "0.9rem" : "1rem",
+          }}
+        >
+          <LocationOn sx={{ color: themeColor, fontSize: 20 }} /> {location}
+        </Typography>
+      )}
+
+      {categories.length > 0 && (
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 0.5 }}>
+          {categories.map((label) => (
+            <Chip
+              key={label}
+              label={label}
+              sx={{
+                color: "#fff",
+                bgcolor: themeColor,
+                fontSize: isMobile ? "0.75rem" : "0.85rem",
+                textTransform: "capitalize",
+              }}
+            />
+          ))}
+        </Box>
+      )}
+
+      {price > 0 && (
+        <Typography
+          sx={{
+            color: themeColor,
+            fontWeight: 700,
+            fontSize: isMobile ? "1.5rem" : "1.9rem",
+            mt: 0.5,
+          }}
+        >
+          ₹{price.toLocaleString("en-IN")}
+          <Typography component="span" sx={{ fontSize: "0.9rem", color: "#6B7390", fontWeight: 500, ml: 0.5 }}>
+            / night
+          </Typography>
+        </Typography>
+      )}
     </Box>
   );
 };

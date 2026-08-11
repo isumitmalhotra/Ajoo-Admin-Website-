@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Card,
   CardContent,
@@ -9,27 +9,61 @@ import {
 } from "@mui/material";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import FavoriteIcon from "@mui/icons-material/Favorite";
 import StarIcon from "@mui/icons-material/Star";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { saveProperty } from "../../services/customerApi";
 
 interface HomePropCardProps {
+  id?: number | string;
   image: string;
   name: string;
   location: string;
   price: string;
   tag?: string;
   rating?: number;
+  initialSaved?: boolean;
+  /** Fired after a successful save/unsave toggle (used by the Saved page to refresh). */
+  onToggleSaved?: (id: number | string, saved: boolean) => void;
 }
 
 const HomePropCard: React.FC<HomePropCardProps> = ({
+  id,
   image,
   name,
   location = "India",
   price,
   tag = "Featured",
   rating = 4.3,
+  initialSaved = false,
+  onToggleSaved,
 }) => {
   const navigate = useNavigate();
+  const [saved, setSaved] = useState(initialSaved);
+  const [savingFav, setSavingFav] = useState(false);
+
+  const handleToggleSave = async (e: React.MouseEvent) => {
+    // The card is usually wrapped in a <Link>; don't navigate on heart click.
+    e.preventDefault();
+    e.stopPropagation();
+    if (id == null || savingFav) return;
+    const next = !saved;
+    setSaved(next);
+    setSavingFav(true);
+    try {
+      await saveProperty(id);
+      onToggleSaved?.(id, next);
+    } catch (err: any) {
+      setSaved(!next); // revert
+      toast.error(
+        err?.response?.data?.message ||
+          "Please sign in to save properties."
+      );
+    } finally {
+      setSavingFav(false);
+    }
+  };
 
   return (
     <Card
@@ -102,6 +136,9 @@ const HomePropCard: React.FC<HomePropCardProps> = ({
 
         {/* Fav button top-right */}
         <Box
+          onClick={handleToggleSave}
+          role="button"
+          aria-label={saved ? "Remove from saved" : "Save property"}
           sx={{
             position: "absolute",
             top: 10,
@@ -115,10 +152,15 @@ const HomePropCard: React.FC<HomePropCardProps> = ({
             backdropFilter: "blur(8px)",
             cursor: "pointer",
             transition: "0.2s",
+            opacity: savingFav ? 0.6 : 1,
             "&:hover": { bgcolor: "#fff", transform: "scale(1.08)" },
           }}
         >
-          <FavoriteBorderIcon sx={{ fontSize: 16, color: "#3D4670" }} />
+          {saved ? (
+            <FavoriteIcon sx={{ fontSize: 16, color: "#C16345" }} />
+          ) : (
+            <FavoriteBorderIcon sx={{ fontSize: 16, color: "#3D4670" }} />
+          )}
         </Box>
       </Box>
 
@@ -207,7 +249,11 @@ const HomePropCard: React.FC<HomePropCardProps> = ({
               py: 0.6,
               "&:hover": { bgcolor: "#2A356B" },
             }}
-            onClick={() => navigate("/property/detail/1")}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate(id != null ? `/property/detail/${id}` : "/property/list");
+            }}
           >
             Book
           </Button>

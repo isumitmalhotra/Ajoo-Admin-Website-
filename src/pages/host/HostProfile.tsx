@@ -17,6 +17,8 @@ import {
   updateHostProfile,
 } from "../../features/host/hostProfile.slice";
 import { API_BASE_URL } from "../../configs/apiConfigs";
+import VerifyButton from "../../components/frontend/kyc/VerifyButton";
+import KycStatusBadge from "../../components/frontend/kyc/KycStatusBadge";
 
 const USE_DEV_HOST_MOCKS =
   import.meta.env.DEV && import.meta.env.VITE_USE_HOST_MOCKS === "true";
@@ -208,13 +210,43 @@ export default function HostProfile() {
     }
   };
 
+  const hostVerified = Number((data as { isVerified?: number } | null)?.isVerified ?? 0) === 1;
+
   return (
     <Stack spacing={2.5}>
+      {/* Host KYC — listings cannot go live until the host is identity-verified. */}
       <Paper
         sx={{
           p: 3,
           borderRadius: "1rem",
           border: "1px solid #ede9fe",
+          boxShadow: "0 12px 28px rgba(17,24,39,0.05)",
+        }}
+        elevation={0}
+      >
+        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} mb={1}>
+          <Typography variant="h6" fontWeight={700}>
+            Identity Verification
+          </Typography>
+          <KycStatusBadge status={hostVerified ? "verified" : "not_started"} />
+        </Stack>
+        <Typography variant="body2" color="text.secondary" mb={hostVerified ? 0 : 1.5}>
+          {hostVerified
+            ? "Your identity is verified — your listings can go live."
+            : "Verify your identity to publish listings and receive payouts."}
+        </Typography>
+        {!hostVerified && (
+          <Box sx={{ maxWidth: 320 }}>
+            <VerifyButton context="host_kyc" returnPath="/host/profile" fullWidth label="Verify your identity" />
+          </Box>
+        )}
+      </Paper>
+
+      <Paper
+        sx={{
+          p: 3,
+          borderRadius: "1rem",
+          border: "1px solid #FFFAF0",
           boxShadow: "0 12px 28px rgba(17,24,39,0.05)",
         }}
         elevation={0}

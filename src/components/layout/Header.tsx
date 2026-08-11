@@ -99,7 +99,7 @@ const Header: React.FC = () => {
                 "& em": { fontStyle: "italic", fontWeight: 400, color: "#C16345" },
               }}
             >
-              aajoo<em>Homes</em>
+              aajoo
             </Typography>
           </Link>
 

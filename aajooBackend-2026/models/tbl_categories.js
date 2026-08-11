@@ -53,7 +53,18 @@ module.exports = (sequelize, DataTypes) => {
     modelName: 'tbl_categories',
     timestamps: true,
     createdAt: "created_at",
-    updatedAt: "updated_at"
+    updatedAt: "updated_at",
+    indexes: [
+      {
+        unique: true,
+        fields: ['cat_slug', 'cat_isDelete'],
+        name: 'uq_tbl_categories_slug_deleted',
+      },
+      {
+        fields: ['cat_isActive', 'cat_isDelete'],
+        name: 'idx_tbl_categories_status_deleted',
+      },
+    ]
   });
   return tbl_categories;
 };

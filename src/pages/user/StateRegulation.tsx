@@ -7,7 +7,16 @@ import {
   useMediaQuery,
   Button,
 } from "@mui/material";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { RegulationModal } from "../../components";
+import Reveal from "../../components/frontend/Reveal";
+
+const INDIGO = "#1B2447";
+const TERRA = "#C16345";
+const CREAM = "#FFFAF0";
+const BG = "#EFE7D6";
+const BORDER = "#D9CFB8";
+const MUTED = "#6B7390";
 // import Img1 from "../../assets/UI/chandigarh.jpeg";
 import shimlahimachal from "../../assets/provided asset/shimlahimachal.jpg";
 import punjab from "../../assets/provided asset/punjab.jpg";
@@ -230,109 +239,99 @@ Hosting in Chandigarh means more than income — it’s about sharing the city�
     reverse?: boolean;
     content: string;
   }) => (
-    <Box
-      sx={{
-        width: "80%",
-        backgroundColor: "#fff",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-        borderRadius: "16px",
-        display: "flex",
-        flexDirection: isMobile ? "column" : reverse ? "row-reverse" : "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        p: { xs: 3, md: 5 },
-        gap: 3,
-        mb: 5,
-      }}
-    >
-      {/* Text Side */}
-      <Box sx={{ flex: 1 }}>
-        <Typography
-          variant="h5"
-          sx={{
-            fontWeight: 600,
-            mb: 2,
-            color: "#1B2447",
-            fontFamily: "'Poppins', sans-serif",
-          }}
-        >
-          {title}
-        </Typography>
-
-        <Typography
-          variant="body1"
-          sx={{
-            fontSize: "1rem",
-            color: "#555",
-            lineHeight: 1.7,
-            fontFamily: "'Poppins', sans-serif",
-          }}
-        >
-          {description}
-        </Typography>
-
-        <Button
-          variant="text"
-          sx={{
-            mt: 2,
-            color: "#1B2447",
-            textTransform: "none",
-            fontWeight: 600,
-            "&:hover": { backgroundColor: "#fce4ec" },
-          }}
-          onClick={() => handleOpenModal(title, content)}
-        >
-          Read More →
-        </Button>
-      </Box>
-
-      {/* Image Side */}
+    <Reveal>
       <Box
         sx={{
-          flex: 1,
+          width: "100%",
+          maxWidth: 1080,
+          backgroundColor: CREAM,
+          border: `1px solid ${BORDER}`,
+          boxShadow: "0 1px 2px rgba(27,36,71,.04), 0 8px 24px rgba(27,36,71,.06)",
+          borderRadius: "20px",
           display: "flex",
-          justifyContent: "center",
+          flexDirection: isMobile ? "column" : reverse ? "row-reverse" : "row",
           alignItems: "center",
+          justifyContent: "space-between",
+          p: { xs: 3, md: 5 },
+          gap: { xs: 3, md: 5 },
+          mb: 4,
         }}
       >
-        <Box
-          component="img"
-          src={image}
-          alt={title}
-          sx={{
-            width: "100%",
-            maxWidth: 400,
-            borderRadius: "12px",
-            boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
-          }}
-        />
+        {/* Text Side */}
+        <Box sx={{ flex: 1 }}>
+          <Typography
+            sx={{
+              fontFamily: "'Fraunces', serif",
+              fontWeight: 400,
+              letterSpacing: "-0.01em",
+              mb: 2,
+              fontSize: { xs: 22, md: 26 },
+              color: INDIGO,
+            }}
+          >
+            {title}
+          </Typography>
+
+          <Typography sx={{ fontSize: "1rem", color: MUTED, lineHeight: 1.75 }}>
+            {description}
+          </Typography>
+
+          <Button
+            variant="contained"
+            endIcon={<ArrowForwardIcon />}
+            sx={{
+              mt: 3,
+              bgcolor: INDIGO,
+              color: "#fff",
+              textTransform: "none",
+              fontWeight: 600,
+              borderRadius: "10px",
+              px: 2.5,
+              "&:hover": { bgcolor: "#2A356B" },
+            }}
+            onClick={() => handleOpenModal(title, content)}
+          >
+            Read more
+          </Button>
+        </Box>
+
+        {/* Image Side */}
+        <Box sx={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", width: "100%" }}>
+          <Box
+            component="img"
+            src={image}
+            alt={title}
+            sx={{
+              width: "100%",
+              maxWidth: 440,
+              height: { xs: 220, md: 280 },
+              objectFit: "cover",
+              borderRadius: "16px",
+              border: `1px solid ${BORDER}`,
+              boxShadow: "0 10px 30px rgba(27,36,71,.10)",
+            }}
+          />
+        </Box>
       </Box>
-    </Box>
+    </Reveal>
   );
 
   return (
-    <Container
-      maxWidth="lg"
-      sx={{
-        py: 6,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-      }}
-    >
-      <Typography
-        variant="h4"
-        sx={{
-          fontWeight: 700,
-          mb: 4,
-          color: "#1B2447",
-          fontFamily: "'Poppins', sans-serif",
-          textAlign: "center",
-        }}
-      >
-        State Regulation For Aajoo
-      </Typography>
+    <Box sx={{ bgcolor: BG }}>
+      {/* Hero */}
+      <Box sx={{ py: { xs: 6, md: 8 }, px: 3, textAlign: "center", background: "linear-gradient(180deg, #FFFAF0 0%, #EFE7D6 100%)", borderBottom: `1px solid ${BORDER}` }}>
+        <Typography sx={{ fontFamily: "'Fraunces', serif", fontWeight: 400, letterSpacing: "-0.02em", color: INDIGO, fontSize: { xs: "2rem", md: "3rem" }, mb: 1 }}>
+          State <Box component="span" sx={{ fontStyle: "italic", color: TERRA }}>regulations</Box>
+        </Typography>
+        <Typography sx={{ maxWidth: 720, mx: "auto", color: MUTED, lineHeight: 1.7 }}>
+          Everything you need to host legally across Himachal, Punjab and Chandigarh — aajoo guides you step by step.
+        </Typography>
+      </Box>
 
+      <Container
+        maxWidth="lg"
+        sx={{ py: { xs: 5, md: 7 }, display: "flex", flexDirection: "column", alignItems: "center" }}
+      >
       {/* 🏔️ Himachal Section */}
       <Section
         title="🏔️ Hosting with Aajoo in Himachal Pradesh"
@@ -365,7 +364,8 @@ Hosting in Chandigarh means more than income — it’s about sharing the city�
         title={modalData.title}
         content={modalData.content}
       />
-    </Container>
+      </Container>
+    </Box>
   );
 };
 

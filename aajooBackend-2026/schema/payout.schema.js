@@ -15,10 +15,3 @@ exports.createPayoutRequest = yup.object({
         .moreThan(0, "Amount must be greater than 0")
         .required("Amount is required"),
 });
-
-exports.payoutHistoryList = yup.object({
-    page: yup.number().integer().min(1),
-    limit: yup.number().integer().min(1).max(100),
-    fromDate: yup.string(),
-    toDate: yup.string(),
-});

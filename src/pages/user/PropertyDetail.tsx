@@ -11,10 +11,17 @@ import {
   Button,
   Rating,
   Avatar,
+  CircularProgress,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 // import PhoneIcon from "@mui/icons-material/Phone";
 import PermIdentityIcon from "@mui/icons-material/PermIdentity";
+import VerifiedIcon from "@mui/icons-material/Verified";
+import LocalCafeIcon from "@mui/icons-material/LocalCafe";
+import RestaurantIcon from "@mui/icons-material/Restaurant";
+import HikingIcon from "@mui/icons-material/Hiking";
+import LocalMallIcon from "@mui/icons-material/LocalMall";
+import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import "leaflet/dist/leaflet.css";
 import "../../styles/user/PropertyDetail.css";
 import Slider from "react-slick";
@@ -27,24 +34,168 @@ import {
   ExploreMore,
   PropertyGallery,
   HostDetailsModal,
+  AmenitiesGrid,
 } from "../../components";
-import { reviews, sliderSettings } from "../../styles/utils/reusableData";
+import { sliderSettings } from "../../styles/utils/reusableData";
+import { useParams } from "react-router-dom";
+import {
+  getProperty,
+  getPropertyReviews,
+  getHostProfile,
+  type ApiProperty,
+} from "../../services/customerApi";
+import storage from "../../styles/utils/storage";
+
+interface ReviewItem {
+  name: string;
+  rating: number;
+  comment: string;
+}
+
+interface HostProfile {
+  name: string;
+  image: string | null;
+  city: string | null;
+  propertyCount: number;
+  memberSince: number | null;
+}
 
 export const PropertyDetail: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [open, setOpen] = useState(false);
+
+  // Real property — GET /properties/:propId
+  const { id } = useParams();
+  const [property, setProperty] = useState<ApiProperty | null>(null);
+  const [loadingProperty, setLoadingProperty] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
+  // Real guest reviews — POST /properties/reviews/list (auth required).
+  const [reviewsList, setReviewsList] = useState<ReviewItem[]>([]);
+  // Real host profile — GET /properties/host/:hostId (auth required).
+  const [host, setHost] = useState<HostProfile | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoadingProperty(true);
+      setNotFound(false);
+      try {
+        const p = await getProperty(id || "");
+        if (cancelled) return;
+        if (!p) setNotFound(true);
+        else setProperty(p);
+      } catch {
+        if (!cancelled) setNotFound(true);
+      } finally {
+        if (!cancelled) setLoadingProperty(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  // Reviews require authentication; only fetch when a token exists so anonymous
+  // visitors don't trip the global 401 → redirect interceptor.
+  useEffect(() => {
+    if (!id || !storage.getToken()) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await getPropertyReviews(id);
+        if (cancelled) return;
+        setReviewsList(
+          rows.map((r: any) => ({
+            name:
+              r["userReview.user_fullName"] ||
+              r.userReview?.user_fullName ||
+              "Guest",
+            rating: Number(r.br_rating) || 0,
+            comment: r.br_desc || "",
+          }))
+        );
+      } catch {
+        // leave reviews empty on failure
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  // Host profile — fetched once the property (and its host id) is known.
+  const hostId = property?.property_host_id;
+  useEffect(() => {
+    if (!hostId || !storage.getToken()) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const h = await getHostProfile(hostId);
+        if (cancelled || !h) return;
+        setHost({
+          name: h.name || "Host",
+          image: h.image ?? null,
+          city: h.city ?? null,
+          propertyCount: Number(h.propertyCount) || 0,
+          memberSince: h.memberSince ?? null,
+        });
+      } catch {
+        // leave host null → falls back to neutral display
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hostId]);
+
+  // Derived view values (real data with safe fallbacks)
+  const title = property?.property_name || "Property";
+  const heroImage =
+    property?.coverImage ||
+    (property?.images && property.images.length > 0 ? property.images[0] : "") ||
+    "/room1.jpg";
+  const galleryImages =
+    property?.images && property.images.length > 0 ? property.images : Roomimages;
+  const description =
+    property?.property_desc || "No description provided for this property.";
+  const amenitiesList = (property?.amenities as string[] | undefined) || [];
+  const detailPrice = Number(property?.property_price) || 0;
+  const detailLat = Number(property?.property_latitude) || 31.1048;
+  const detailLng = Number(property?.property_longitude) || 77.1734;
   const [rules] = useState<string[]>([
     "No smoking inside the property.",
     "Pets are not allowed.",
     "Please respect quiet hours after 10 PM.",
   ]);
+  // Host identity now comes from GET /properties/host/:hostId. Phone/contact
+  // stays from the property record (the public host profile omits it by design).
+  const hostContact =
+    (property?.property_contact as string) ||
+    (property?.property_phone as string) ||
+    "";
+  const hostName = host?.name || "Your Host";
+  const hostImage = host?.image || "";
+  const hostPropertyCount = host?.propertyCount ?? 0;
+  const hostMemberSince = host?.memberSince ?? null;
+  const hostSubtitle = [
+    "Verified Aajoo Host",
+    hostPropertyCount > 0
+      ? `${hostPropertyCount} ${hostPropertyCount === 1 ? "property" : "properties"}`
+      : null,
+    hostMemberSince ? `Member since ${hostMemberSince}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   const user = {
-    name: "Rahul Sharma",
-    image:
-      "https://images.unsplash.com/photo-1603415526960-f7e0328f2b1a?auto=format&fit=crop&w=500&q=80",
-    contact: "+91 98765 43210",
-    address: "Shimla, Himachal Pradesh, India",
-    propertyCount: 5,
+    name: hostName,
+    image: hostImage,
+    contact: hostContact,
+    address: host?.city || (property?.property_address as string) || "",
+    propertyCount: hostPropertyCount,
+    // Host profile API doesn't expose a rating yet — use the property's rating
+    // as a stand-in so the host card can show one.
+    rating: Number(property?.property_rating) || 4.8,
   };
 
   const bookingBoxRef = useRef<HTMLDivElement | null>(null);
@@ -96,6 +247,27 @@ export const PropertyDetail: React.FC = () => {
       window.removeEventListener("resize", handleScrollOrResize);
     };
   }, []);
+
+  if (loadingProperty) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh", bgcolor: "#EFE7D6" }}>
+        <CircularProgress sx={{ color: "#1B2447" }} />
+      </Box>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <Box sx={{ textAlign: "center", py: "120px", bgcolor: "#EFE7D6", minHeight: "60vh" }}>
+        <Typography sx={{ fontFamily: "'Fraunces', serif", fontSize: 28, color: "#1B2447", mb: 1 }}>
+          Property not found
+        </Typography>
+        <Typography sx={{ fontSize: 14, color: "#6B7390" }}>
+          This stay may have been removed. Browse other properties from the listings.
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <>
@@ -162,7 +334,7 @@ export const PropertyDetail: React.FC = () => {
               mb: "12px",
             }}
           >
-            Luxury Sea View Apartment
+            {title}
           </Typography>
           <Box sx={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
             {/* Verified pill — POC: padding 4 10, fs 12, success green */}
@@ -232,57 +404,102 @@ export const PropertyDetail: React.FC = () => {
               mr: { md: 3 },
             }}
           >
-            {/* Main Image */}
-            <Box
-              component="img"
-              src="/room1.jpg"
-              alt="cover"
-              sx={{
-                width: "100%",
-                height: { xs: 220, sm: 300, md: 400 },
-                objectFit: "cover",
-                borderRadius: 2,
-              }}
-            />
-
-            {/* Slick Slider */}
+            {/* Mobile: single swipeable image slider */}
             <Box
               sx={{
+                display: { xs: "block", sm: "none" },
                 width: "100%",
-                overflow: "hidden", // prevent horizontal scroll
-                ".slick-slider": { width: "100%" },
-                ".slick-slide": { px: 0.5 },
-                ".slick-track": { display: "flex", alignItems: "center" },
-                mb: 1,
+                "& .slick-dots": { bottom: 8 },
+                "& .slick-dots li button:before": { color: "#FFFAF0", opacity: 0.6, fontSize: 9 },
+                "& .slick-dots li.slick-active button:before": { color: "#C16345", opacity: 1 },
               }}
             >
-              <Slider {...sliderSettings}>
-                {Roomimages.map((img, i) => (
+              <Slider dots arrows={false} infinite speed={400} slidesToShow={1} slidesToScroll={1}>
+                {galleryImages.map((img, i) => (
                   <Box
                     key={i}
                     component="img"
                     src={img}
-                    alt={`room${i}`}
-                    sx={{
-                      width: "100%",
-                      height: { xs: 100, sm: 120, md: 140 },
-                      objectFit: "cover",
-                      borderRadius: 2,
-                      cursor: "pointer",
-                      transition: "transform 0.3s",
-                      "&:hover": { transform: "scale(1.05)" },
-                    }}
+                    alt={`${title} ${i + 1}`}
+                    sx={{ width: "100%", height: 260, objectFit: "cover", borderRadius: 2 }}
                   />
                 ))}
               </Slider>
             </Box>
 
-            <PropertyBookingBox />
+            {/* Desktop: hero image + thumbnail strip */}
+            <Box sx={{ display: { xs: "none", sm: "block" } }}>
+              <Box
+                component="img"
+                src={heroImage}
+                alt={title}
+                sx={{
+                  width: "100%",
+                  height: { sm: 300, md: 400 },
+                  objectFit: "cover",
+                  borderRadius: 2,
+                  mb: 2,
+                }}
+              />
+              <Box
+                sx={{
+                  width: "100%",
+                  overflow: "hidden",
+                  ".slick-slider": { width: "100%" },
+                  ".slick-slide": { px: 0.5 },
+                  ".slick-track": { display: "flex", alignItems: "center" },
+                  mb: 1,
+                }}
+              >
+                <Slider {...sliderSettings}>
+                  {galleryImages.map((img, i) => (
+                    <Box
+                      key={i}
+                      component="img"
+                      src={img}
+                      alt={`room${i}`}
+                      sx={{
+                        width: "100%",
+                        height: { sm: 120, md: 140 },
+                        objectFit: "cover",
+                        borderRadius: 2,
+                        cursor: "pointer",
+                        transition: "transform 0.3s",
+                        "&:hover": { transform: "scale(1.05)" },
+                      }}
+                    />
+                  ))}
+                </Slider>
+              </Box>
+            </Box>
+
+            <PropertyBookingBox
+              price={detailPrice}
+              title={title}
+              location={
+                (property?.property_address as string) ||
+                (property?.property_city as string) ||
+                ""
+              }
+              categories={(property?.category_titles as string[]) || []}
+              rating={Number(property?.property_rating) || 0}
+            />
           </Box>
 
           {/* RIGHT SECTION (Sticky) */}
           <Box ref={bookingBoxRef} className="sticky-booking-box">
-            <BookingSection />
+            <BookingSection
+              price={detailPrice}
+              propertyId={property?.property_id}
+              propertyName={title}
+              propertyAddress={
+                (property?.property_address as string) ||
+                (property?.property_city as string) ||
+                ""
+              }
+              propertyImage={heroImage}
+              propertyImages={galleryImages}
+            />
           </Box>
         </Box>
 
@@ -319,10 +536,7 @@ export const PropertyDetail: React.FC = () => {
               mb: 3,
             }}
           >
-            This luxury apartment offers a perfect blend of comfort and
-            elegance. Located in the heart of Chennai, it features spacious
-            rooms, modern interiors, and access to premium amenities such as a
-            swimming pool, parking facilities, and high-speed WiFi.
+            {description}
           </Typography>
 
           <Button
@@ -341,6 +555,11 @@ export const PropertyDetail: React.FC = () => {
           >
             Cancellation Policy
           </Button>
+        </Box>
+
+        {/* What this place offers (Amenities) */}
+        <Box sx={{ mt: 3 }}>
+          <AmenitiesGrid amenities={amenitiesList} />
         </Box>
 
         {/* Property Rules */}
@@ -422,6 +641,7 @@ export const PropertyDetail: React.FC = () => {
             {/* Host card — POC: avatar 56, meta fs 13 */}
             <Box sx={{ display: "flex", gap: "14px", alignItems: "center", mb: 2 }}>
               <Avatar
+                src={hostImage || undefined}
                 sx={{
                   width: 56,
                   height: 56,
@@ -430,14 +650,14 @@ export const PropertyDetail: React.FC = () => {
                   fontFamily: "'Fraunces', serif",
                 }}
               >
-                J
+                {hostName.charAt(0).toUpperCase()}
               </Avatar>
               <Box>
                 <Typography sx={{ fontWeight: 600, fontSize: 16, color: "#1B2447", lineHeight: 1.2 }}>
-                  Mr Joe Doe
+                  {hostName}
                 </Typography>
                 <Typography sx={{ fontSize: 13, color: "#6B7390", mt: "2px" }}>
-                  Host · 5 properties · Member since 2023
+                  {hostSubtitle}
                 </Typography>
               </Box>
             </Box>
@@ -478,16 +698,114 @@ export const PropertyDetail: React.FC = () => {
               boxShadow: "0px 4px 15px rgba(0,0,0,0.1)",
             }}
           >
-            <PropDetailMap
-              // coordinates={[30.7333, 76.7794]}
-              coordinates={[31.1048, 77.1734]}
-              // popupText="Property located in Chandigarh"
-            />
+            <PropDetailMap coordinates={[detailLat, detailLng]} />
+          </Box>
+        </Box>
+
+        {/* Explore places near this property — recommended by host */}
+        <Box
+          sx={{
+            mt: 4,
+            p: { xs: 2, sm: 3 },
+            backgroundColor: "#FFFAF0",
+            border: "1px solid #D9CFB8",
+            borderRadius: "14px",
+            boxShadow: "0 1px 2px rgba(27,36,71,.04), 0 8px 24px rgba(27,36,71,.06)",
+            maxWidth: { md: "65%" },
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1, mb: "6px" }}>
+            <Typography
+              sx={{
+                fontFamily: "'Fraunces', serif",
+                fontSize: { xs: 20, sm: 22 },
+                fontWeight: 400,
+                letterSpacing: "-0.015em",
+                color: "#1B2447",
+              }}
+            >
+              Explore places nearby
+            </Typography>
+            <Box
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+                bgcolor: "rgba(63,107,78,.1)",
+                color: "#3F6B4E",
+                padding: "3px 10px",
+                borderRadius: "999px",
+                fontSize: 11,
+                fontWeight: 600,
+              }}
+            >
+              <VerifiedIcon sx={{ fontSize: 14 }} />
+              Recommended by host
+            </Box>
+          </Box>
+          <Typography sx={{ fontSize: 14, color: "#6B7390", mb: "18px" }}>
+            Cafés, food, shopping and treks the host loves around this stay
+          </Typography>
+
+          <Box
+            sx={{
+              display: "flex",
+              gap: { xs: "12px", md: "16px" },
+              overflowX: "auto",
+              pb: "6px",
+              scrollbarWidth: "none",
+              "&::-webkit-scrollbar": { display: "none" },
+            }}
+          >
+            {[
+              { label: "Cafés", icon: <LocalCafeIcon /> },
+              { label: "Restaurants", icon: <RestaurantIcon /> },
+              { label: "Treks", icon: <HikingIcon /> },
+              { label: "Shopping", icon: <LocalMallIcon /> },
+              { label: "Sightseeing", icon: <CameraAltIcon /> },
+            ].map((p) => (
+              <Box
+                key={p.label}
+                sx={{
+                  flexShrink: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "10px",
+                  minWidth: { xs: "92px", md: "110px" },
+                  padding: { xs: "14px 12px", md: "18px 16px" },
+                  borderRadius: "16px",
+                  bgcolor: "#fff",
+                  border: "1px solid #D9CFB8",
+                  transition: "0.2s",
+                  "&:hover": { transform: "translateY(-3px)", borderColor: "#1B2447" },
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 46,
+                    height: 46,
+                    borderRadius: "14px",
+                    display: "grid",
+                    placeItems: "center",
+                    bgcolor: "rgba(27,36,71,.06)",
+                    color: "#1B2447",
+                    "& svg": { fontSize: 24 },
+                  }}
+                >
+                  {p.icon}
+                </Box>
+                <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#3D4670", whiteSpace: "nowrap" }}>
+                  {p.label}
+                </Typography>
+              </Box>
+            ))}
           </Box>
         </Box>
 
         {/* <PropertyGallery /> */}
-        <PropertyGallery Images={Roomimages || []} />
+        <PropertyGallery Images={galleryImages} />
         <Box
           sx={{
             mt: 5,
@@ -513,40 +831,46 @@ export const PropertyDetail: React.FC = () => {
           </Typography>
 
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {reviews.map((review, idx) => (
-              <Box
-                key={idx}
-                sx={{
-                  display: "flex",
-                  flexDirection: { xs: "column", sm: "row" },
-                  alignItems: { xs: "flex-start", sm: "center" },
-                  gap: 2,
-                  p: 2,
-                  borderRadius: 2,
-                  backgroundColor: "#FFFAF0",
-                  border: "1px solid #D9CFB8",
-                }}
-              >
-                <Avatar sx={{ bgcolor: "#1B2447" }}>
-                  {review.name.charAt(0)}
-                </Avatar>
-                <Box>
-                  <Typography sx={{ fontWeight: 600 }}>
-                    {review.name}
-                  </Typography>
-                  <Rating
-                    value={review.rating}
-                    precision={0.5}
-                    readOnly
-                    size="small"
-                    sx={{ color: "#1B2447", mb: 0.5 }}
-                  />
-                  <Typography sx={{ fontSize: 14, color: "#6B7390" }}>
-                    {review.comment}
-                  </Typography>
+            {reviewsList.length === 0 ? (
+              <Typography sx={{ fontSize: 14, color: "#6B7390", fontStyle: "italic" }}>
+                No reviews yet. Be the first to share your experience after your stay.
+              </Typography>
+            ) : (
+              reviewsList.map((review, idx) => (
+                <Box
+                  key={idx}
+                  sx={{
+                    display: "flex",
+                    flexDirection: { xs: "column", sm: "row" },
+                    alignItems: { xs: "flex-start", sm: "center" },
+                    gap: 2,
+                    p: 2,
+                    borderRadius: 2,
+                    backgroundColor: "#FFFAF0",
+                    border: "1px solid #D9CFB8",
+                  }}
+                >
+                  <Avatar sx={{ bgcolor: "#1B2447" }}>
+                    {review.name.charAt(0)}
+                  </Avatar>
+                  <Box>
+                    <Typography sx={{ fontWeight: 600 }}>
+                      {review.name}
+                    </Typography>
+                    <Rating
+                      value={review.rating}
+                      precision={0.5}
+                      readOnly
+                      size="small"
+                      sx={{ color: "#1B2447", mb: 0.5 }}
+                    />
+                    <Typography sx={{ fontSize: 14, color: "#6B7390" }}>
+                      {review.comment}
+                    </Typography>
+                  </Box>
                 </Box>
-              </Box>
-            ))}
+              ))
+            )}
           </Box>
         </Box>
 

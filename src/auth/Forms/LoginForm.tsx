@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import {
   ToggleButton,
   ToggleButtonGroup,
@@ -6,21 +6,101 @@ import {
   FormControlLabel,
   TextField,
   Button,
+  CircularProgress,
 } from "@mui/material";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import GoogleIcon from "@mui/icons-material/Google";
+import toast from "react-hot-toast";
 import loginPage from "../../assets/UI/loginpagesvg.svg";
 import "../../styles/LoginForm.css";
+import api from "../../services/api";
+import storage from "../../styles/utils/storage";
+import { parseAdminAuthPayload } from "../../services/apiContracts";
+import {
+  setAdminToken,
+  setAdminUser,
+  setAdminClaims,
+  setAdminRoles,
+  setAdminPermissions,
+} from "../../services/adminSession";
 
-export const LoginForm = () => {;
+export const LoginForm = () => {
+  const navigate = useNavigate();
   const [userType, setUserType] = useState<"renter" | "host">("renter");
   const [rememberMe, setRememberMe] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e: FormEvent) => {
+    e.preventDefault();
+    if (loading) return;
+
+    if (!email.trim() || !password) {
+      toast.error("Please enter your email and password.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const isHost = userType === "host" ? 1 : 0;
+      // Backend `/user/login` filters by the isHost flag, so the Renter/Host
+      // toggle decides which credential set is matched.
+      const res = await api.post("/user/login", {
+        user_email: email.trim(),
+        user_password: password,
+        isHost,
+      });
+
+      // The backend returns HTTP 200 even for "No record found" / "Incorrect
+      // password" (success:false), so we must inspect the envelope.
+      const body = res.data;
+      if (!body?.success) {
+        toast.error(
+          body?.message || "Login failed. Please check your credentials."
+        );
+        return;
+      }
+
+      const parsed = parseAdminAuthPayload(body);
+      const token = parsed?.token || body?.data?.token;
+      if (!token) {
+        toast.error("Login succeeded but no session token was returned.");
+        return;
+      }
+
+      // Customer portal API stack (src/axios/axios.ts) reads from `storage`.
+      storage.setToken(token);
+
+      // Host portal pages (services/api) + route guards (authGaurd) read from
+      // adminSession, so a host login must populate it too.
+      if (userType === "host") {
+        setAdminToken(token);
+        if (parsed?.admin) setAdminUser(parsed.admin);
+        setAdminClaims(parsed?.claims ?? null);
+        setAdminRoles(parsed?.roles ?? []);
+        setAdminPermissions(parsed?.permissions ?? []);
+      }
+
+      toast.success(body?.message || "Logged in successfully.");
+      navigate(userType === "host" ? "/host/dashboard" : "/", {
+        replace: true,
+      });
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Login failed. Please try again.";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="login-container">
       {/* Left Side Form */}
       <div className="login-form-section">
-        <div className="login-box">
+        <form className="login-box" onSubmit={handleLogin}>
           {/* Heading & Description */}
           <h2 className="login-title">Login to Your Account</h2>
           <p className="login-description">
@@ -35,7 +115,7 @@ export const LoginForm = () => {;
             onChange={(_, value) => {
               if (value !== null) setUserType(value);
             }}
-            sx={{ 
+            sx={{
               display: "flex",
               justifyContent: "center",
               mb: 3,
@@ -61,27 +141,24 @@ export const LoginForm = () => {;
                   borderBottomRightRadius: "30px",
                 },
 
-                // 🔥 Hover effect on unselected items
                 "&:hover": {
-                  backgroundColor: "#f8d6e2",
+                  backgroundColor: "rgba(27,36,71,0.05)",
                   color: "#1B2447",
                   borderColor: "#1B2447",
                 },
 
-                // 🔥 Selected Button
                 "&.Mui-selected": {
                   backgroundColor: "#1B2447",
-                  color: "#ffffff",
+                  color: "#FFFAF0",
                   borderColor: "#1B2447",
-                  boxShadow: "0 0 8px rgba(27,36,71, 0.6)",
+                  boxShadow: "0 0 8px rgba(27,36,71,0.35)",
                 },
 
-                // 🔥 Hover on selected button (improved)
                 "&.Mui-selected:hover": {
-                  backgroundColor: "#a93250",
-                  borderColor: "#a93250",
-                  color: "#fff",
-                  boxShadow: "0 0 10px rgba(169, 50, 80, 0.7)",
+                  backgroundColor: "#2A356B",
+                  borderColor: "#2A356B",
+                  color: "#FFFAF0",
+                  boxShadow: "0 0 10px rgba(27,36,71,0.45)",
                 },
               },
             }}
@@ -93,8 +170,12 @@ export const LoginForm = () => {;
           {/* Email Field */}
           <TextField
             label="Email"
+            type="email"
             fullWidth
             margin="normal"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
             sx={{
               "& .MuiOutlinedInput-root.Mui-focused fieldset": {
                 borderColor: "#1B2447",
@@ -111,6 +192,9 @@ export const LoginForm = () => {;
             type="password"
             fullWidth
             margin="normal"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
             sx={{
               "& .MuiOutlinedInput-root.Mui-focused fieldset": {
                 borderColor: "#1B2447",
@@ -145,8 +229,10 @@ export const LoginForm = () => {;
 
           {/* Login Button */}
           <Button
+            type="submit"
             variant="contained"
             fullWidth
+            disabled={loading}
             sx={{
               mt: 2,
               mb: 2,
@@ -155,17 +241,25 @@ export const LoginForm = () => {;
               borderRadius: "8px",
               padding: "12px",
               fontWeight: 600,
-              "&:hover": { backgroundColor: "#a93250" },
+              "&:hover": { backgroundColor: "#2A356B" },
             }}
           >
-            Login
+            {loading ? (
+              <CircularProgress size={22} sx={{ color: "#fff" }} />
+            ) : (
+              "Login"
+            )}
           </Button>
 
           {/* Google Button */}
           <Button
+            type="button"
             variant="outlined"
             fullWidth
             startIcon={<GoogleIcon />}
+            onClick={() =>
+              toast("Google sign-in is coming soon.", { icon: "ℹ️" })
+            }
             sx={{
               borderColor: "#1B2447",
               color: "#1B2447",
@@ -173,8 +267,8 @@ export const LoginForm = () => {;
               padding: "12px",
               fontWeight: 600,
               "&:hover": {
-                borderColor: "#a93250",
-                backgroundColor: "#ffe4ec",
+                borderColor: "#1B2447",
+                backgroundColor: "rgba(27,36,71,0.05)",
               },
             }}
           >
@@ -185,7 +279,7 @@ export const LoginForm = () => {;
               Don't Have Account? Sign-up
             </Link>
           </div>
-        </div>
+        </form>
       </div>
 
       {/* Right Side Image */}

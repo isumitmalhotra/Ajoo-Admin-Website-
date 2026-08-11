@@ -15,7 +15,7 @@ import {
 
 import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { Pagination } from "../../../components";
-import { PurpleThemeColor } from "../../../theme/themeColor";
+import { Brand } from "../../../theme/themeColor";
 import AppSnackbarContainer from "../../../components/admin/common/AppSnackbarContainer";
 
 import type { CategoryRecord, ListingProps } from './types';
@@ -104,10 +104,10 @@ export default function Listing({
                         onChange={() => handleToggleActive(Number(cat.cat_id))}
                         sx={{
                           "& .MuiSwitch-switchBase.Mui-checked": {
-                            color: PurpleThemeColor,
+                            color: Brand.indigo,
                           },
                           "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                            backgroundColor: PurpleThemeColor,
+                            backgroundColor: Brand.indigo,
                           },
                           transition: "all 0.3s ease",
                         }}

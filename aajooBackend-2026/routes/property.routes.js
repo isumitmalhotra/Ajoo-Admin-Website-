@@ -13,6 +13,7 @@ router.post("/properties/add", uploadLimiter, upload.fields([
 ]), [validation(schema.createProperty), hostAuthentication], controller.addProperty);
 
 router.post("/properties/search", generalLimiter, [validation(schema.getLongLatProperty)], controller.getProperties);
+router.get("/properties/host/:hostId", generalLimiter, [validation(schema.getHostProfile), authenticateJWT], controller.getHostProfile);
 router.get("/properties/:propId", generalLimiter, [validation(schema.getSingleProperty), authenticateJWT], controller.getProperty);
 router.post("/properties/add/cover-pic", uploadLimiter, upload.single("property_img"), [validation(schema.propCoverPic), hostAuthentication], controller.setPropCoverImg);
 router.post("/properties/delete", generalLimiter, [validation(schema.getSingleProperty), hostAuthentication], controller.deleteProperty);

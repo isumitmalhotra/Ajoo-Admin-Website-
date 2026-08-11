@@ -1,14 +1,18 @@
 const yup = require("yup");
+const {
+    optionalBoolean,
+    optionalChoice,
+    optionalDate,
+    optionalInteger,
+    optionalNullableNumber,
+    optionalString,
+} = require("./yupHelpers");
 
 //----------------AMENETIES SCHEMA----------------//
 exports.createOrUpdateAmenitySchema = yup.object({
-    amenetiesId: yup
-        .number()
-        .typeError("Amenity ID must be a number")
+    amenetiesId: optionalNullableNumber("Amenity ID must be a number")
         .integer("Amenity ID must be an integer")
-        .positive("Amenity ID must be greater than zero")
-        .nullable()
-        .optional(),
+        .positive("Amenity ID must be greater than zero"),
 
     amn_title: yup
         .string()
@@ -46,6 +50,13 @@ exports.amenityStatus = yup.object({
         .required("Amenity status is required"),
 });
 
+exports.amenityListingSchema = yup.object({
+    page: optionalInteger().min(1, "Page must be greater than 0").max(100000, "Page is too large"),
+    limit: optionalInteger().min(1, "Limit must be greater than 0").max(100, "Limit cannot exceed 100"),
+    search: optionalString({ max: 100 }).max(100, "Search cannot exceed 100 characters"),
+    status: optionalChoice(["0", "1", 0, 1], "Amenity status must be 0 or 1"),
+});
+
 
 //----------------PROPERTIES SCHEMA----------------//
 
@@ -70,9 +81,29 @@ exports.propertyIdSchema = yup.object({
         .required("Property ID is required"),
 });
 
+exports.propertySearchSchema = yup.object({
+    page: optionalInteger().min(1, "Page must be greater than 0").max(100000, "Page is too large"),
+    limit: optionalInteger().min(1, "Limit must be greater than 0").max(100, "Limit cannot exceed 100"),
+    search: optionalString({ max: 100 }).max(100, "Search cannot exceed 100 characters"),
+    status: optionalChoice(["0", "1", 0, 1], "Status must be 0 or 1"),
+    forVerification: optionalBoolean(),
+});
+
+exports.propertyAnalyticsSearchSchema = yup.object({
+    page: optionalInteger().min(1, "Page must be greater than 0").max(100000, "Page is too large"),
+    limit: optionalInteger().min(1, "Limit must be greater than 0").max(100, "Limit cannot exceed 100"),
+    search: optionalString({ max: 100 }).max(100, "Search cannot exceed 100 characters"),
+    status: optionalChoice(["0", "1", 0, 1], "Status must be 0 or 1"),
+    isLuxury: optionalChoice(["0", "1", 0, 1], "Luxury status must be 0 or 1"),
+});
+
 // import * as yup from "yup";
 
 exports.propertySchema = yup.object().shape({
+    propertyId: optionalNullableNumber("Property ID must be a number")
+        .integer("Property ID must be an integer")
+        .positive("Property ID must be greater than zero"),
+
     propertyName: yup
         .string()
         .trim()

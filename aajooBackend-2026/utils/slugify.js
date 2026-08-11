@@ -1,4 +1,5 @@
 const slugify = require("slugify");
+const { Op } = require("sequelize");
 const model = require("../models");
 
 /**
@@ -20,7 +21,7 @@ const generateUniqueCategorySlug = async (title, ignoreId = null) => {
     const whereClause = { cat_slug: slug };
 
     if (ignoreId) {
-      whereClause.cat_id = { $ne: ignoreId };
+      whereClause.cat_id = { [Op.ne]: ignoreId };
     }
 
     const existing = await model.tbl_categories.findOne({

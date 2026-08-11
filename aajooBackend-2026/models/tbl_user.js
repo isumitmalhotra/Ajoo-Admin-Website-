@@ -4,10 +4,10 @@ module.exports = (sequelize, DataTypes) => {
   class tbl_user extends Model {
 
     static associate(models) {
-      tbl_user.belongsTo(models.tbl_user_cred, { foreignKey: "user_id", targetKey: "cred_user_id", as: "userCred" })
-      tbl_user.belongsTo(models.tbl_attachments, { foreignKey: "user_id", targetKey: "afile_record_id", as: "UserAttachements" })
-      tbl_user.belongsTo(models.user_kyc_docs, { foreignKey: "user_id", targetKey: "ud_user_id", as: "userKycDocs" })
-      tbl_user.belongsTo(models.tbl_properties, { foreignKey: "user_id", targetKey: "property_host_id", as: "hostProperty" })
+      tbl_user.hasOne(models.tbl_user_cred, { foreignKey: "cred_user_id", sourceKey: "user_id", as: "userCred" })
+      tbl_user.hasMany(models.tbl_attachments, { foreignKey: "afile_record_id", sourceKey: "user_id", as: "UserAttachements" })
+      tbl_user.hasOne(models.user_kyc_docs, { foreignKey: "ud_user_id", sourceKey: "user_id", as: "userKycDocs" })
+      tbl_user.hasMany(models.tbl_properties, { foreignKey: "property_host_id", sourceKey: "user_id", as: "hostProperty" })
       tbl_user.hasMany(models.tbl_messages, {
         foreignKey: 'sender_id',
         as: 'sentMessages',
@@ -66,12 +66,27 @@ module.exports = (sequelize, DataTypes) => {
     user_isActive: DataTypes.TINYINT(1),
     user_isVerified: DataTypes.TINYINT(1),
     user_isDelete: DataTypes.TINYINT(1),
+    // KYC (A-11)
+    didit_session_id: DataTypes.STRING(64),
+    verification_status: DataTypes.ENUM('unverified', 'pending', 'verified', 'declined', 'in_review'),
+    verified_at: DataTypes.DATE,
+    verification_expires_at: DataTypes.DATE,
   }, {
     sequelize,
     modelName: 'tbl_user',
     timestamps: true,
     createdAt: "added_at",
     updatedAt: "updated_at",
+    indexes: [
+      {
+        fields: ['user_isDelete', 'user_isActive'],
+        name: 'idx_tbl_user_status_deleted',
+      },
+      {
+        fields: ['user_isHost', 'user_isDelete'],
+        name: 'idx_tbl_user_host_deleted',
+      },
+    ]
   });
 
   return tbl_user;

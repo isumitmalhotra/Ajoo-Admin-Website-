@@ -18,7 +18,7 @@ const NotFound: React.FC<NotFoundProps> = ({ image }) => {
         alignItems: "center",
         justifyContent: "center",
         textAlign: "center",
-        bgcolor: "#f5f5f5",
+        bgcolor: "#EFE7D6",
         px: 2,
       }}
     >

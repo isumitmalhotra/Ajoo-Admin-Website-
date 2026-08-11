@@ -48,6 +48,21 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'tbl_prop_to_cat',
     timestamps: false,
+    indexes: [
+      {
+        unique: true,
+        fields: ['pt_cat_prop_id', 'pt_cat_cat_id'],
+        name: 'uq_tbl_prop_to_cat_prop_cat',
+      },
+      {
+        fields: ['pt_cat_prop_id'],
+        name: 'idx_tbl_prop_to_cat_prop',
+      },
+      {
+        fields: ['pt_cat_cat_id'],
+        name: 'idx_tbl_prop_to_cat_cat',
+      },
+    ]
   });
   return tbl_prop_to_cat;
 };

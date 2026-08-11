@@ -16,7 +16,7 @@ import {
 
 import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { Pagination } from "../../../components";
-import { PurpleThemeColor } from "../../../theme/themeColor";
+import { Brand } from "../../../theme/themeColor";
 import type { ListingProps, PropertyRecord } from "../properties/types";
 import { Link } from "react-router-dom";
 import { TableLoader } from "../../../components/admin/common/TableLoader";
@@ -122,11 +122,11 @@ export default function VerificationListing({
                       }
                       sx={{
                         "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: PurpleThemeColor,
+                          color: Brand.indigo,
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
                           {
-                            backgroundColor: PurpleThemeColor,
+                            backgroundColor: Brand.indigo,
                           },
                         transition: "all 0.3s ease",
                       }}

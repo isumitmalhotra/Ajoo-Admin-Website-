@@ -46,7 +46,22 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'tbl_prop_to_amenities',
-    timestamps: false
+    timestamps: false,
+    indexes: [
+      {
+        unique: true,
+        fields: ['pa_prop_id', 'pa_amn_id'],
+        name: 'uq_tbl_prop_to_amenities_prop_amenity',
+      },
+      {
+        fields: ['pa_prop_id'],
+        name: 'idx_tbl_prop_to_amenities_prop',
+      },
+      {
+        fields: ['pa_amn_id'],
+        name: 'idx_tbl_prop_to_amenities_amenity',
+      },
+    ]
   });
   return tbl_prop_to_amenities;
 };

@@ -1,6 +1,14 @@
-exports.JWT_SECRET = "a1a2j3o4o@123";
+Object.defineProperty(exports, "JWT_SECRET", {
+    enumerable: true,
+    get: () => process.env.JWT_SECRET || null,
+});
 exports.successStatus = 200;
+exports.createdStatus = 201;
+exports.badRequestStatus = 400;
 exports.notFoundStatus = 404;
+exports.conflictStatus = 409;
+exports.unprocessableStatus = 422;
+exports.serverErrorStatus = 500;
 exports.errorStatus = 400;
 exports.isYes = 1;
 exports.isNo = 0;

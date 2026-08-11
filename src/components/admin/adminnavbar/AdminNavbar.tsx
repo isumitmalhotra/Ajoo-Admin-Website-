@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   AppBar,
   Toolbar,
@@ -9,16 +9,48 @@ import {
   Button,
   Menu,
   MenuItem,
+  Badge,
 } from "@mui/material";
-import { MenuSquareIcon, ChevronDown } from "lucide-react";
+import { MenuSquareIcon, ChevronDown, Bell } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useSidebar } from "../../../context/AdminContext";
 import userImg from "../../../assets/user.jpg";
+import AdminNotifySidebar from "../adminNotification/AdminNotifySidebar";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { fetchAdminNotifications } from "../../../features/admin/notifications/notifications.slice";
+import { logout } from "../../../features/admin/adminAuth/adminAuth.slice";
 
 const AdminNavbar = () => {
   const { toggleSidebar } = useSidebar();
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const unreadCount = useAppSelector((state) =>
+    state.adminNotifications.items.filter((n) => !n.read).length
+  );
+  const admin = useAppSelector(
+    (state) => state.adminAuth.admin
+  ) as Record<string, unknown> | null;
+
+  const adminName =
+    (admin?.name as string) ||
+    (admin?.admin_name as string) ||
+    (admin?.fullName as string) ||
+    "Admin User";
+  const adminEmail = (admin?.email as string) || "Administrator";
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const isMenuOpen = Boolean(anchorEl);
+  const [notifyOpen, setNotifyOpen] = useState(false);
+
+  // Seed the unread badge on mount + poll every 30s (B-09) so the badge stays
+  // live against A-14's /admin/notifications/search.
+  useEffect(() => {
+    dispatch(fetchAdminNotifications());
+    const interval = setInterval(() => {
+      dispatch(fetchAdminNotifications());
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [dispatch]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -26,6 +58,17 @@ const AdminNavbar = () => {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleProfile = () => {
+    handleMenuClose();
+    navigate("/admin/settings");
+  };
+
+  const handleLogout = () => {
+    handleMenuClose();
+    dispatch(logout()); // clears adminSession (token/claims/roles) via the reducer
+    navigate("/admin/login", { replace: true });
   };
 
   return (
@@ -75,7 +118,27 @@ const AdminNavbar = () => {
         </Box>
 
         {/* RIGHT SECTION */}
-        <Box display="flex" alignItems="center">
+        <Box display="flex" alignItems="center" gap={1.5}>
+          {/* NOTIFICATIONS */}
+          <IconButton
+            onClick={() => setNotifyOpen(true)}
+            aria-label="Open notifications"
+            sx={{
+              color: "#6b7280",
+              borderRadius: "8px",
+              "&:hover": { bgcolor: "#f3f4f6", color: "#4b5563" },
+            }}
+          >
+            <Badge
+              badgeContent={unreadCount}
+              color="error"
+              overlap="circular"
+              sx={{ "& .MuiBadge-badge": { fontSize: "0.65rem", height: 16, minWidth: 16 } }}
+            >
+              <Bell size={20} />
+            </Badge>
+          </IconButton>
+
           <Box
             display="flex"
             alignItems="center"
@@ -114,7 +177,7 @@ const AdminNavbar = () => {
                   lineHeight: 1.2,
                 }}
               >
-                Username
+                {adminName}
               </Typography>
               <Typography
                 sx={{
@@ -123,7 +186,7 @@ const AdminNavbar = () => {
                   lineHeight: 1.2,
                 }}
               >
-                Admin
+                {adminEmail}
               </Typography>
             </Box>
 
@@ -155,13 +218,15 @@ const AdminNavbar = () => {
                 },
               }}
             >
-              <MenuItem onClick={handleMenuClose}>Profile</MenuItem>
-              <MenuItem onClick={handleMenuClose}>My Account</MenuItem>
-              <MenuItem onClick={handleMenuClose}>Logout</MenuItem>
+              <MenuItem onClick={handleProfile}>Profile</MenuItem>
+              <MenuItem onClick={handleProfile}>My Account</MenuItem>
+              <MenuItem onClick={handleLogout}>Logout</MenuItem>
             </Menu>
           </Box>
         </Box>
       </Toolbar>
+
+      <AdminNotifySidebar open={notifyOpen} toggle={setNotifyOpen} />
     </AppBar>
   );
 };

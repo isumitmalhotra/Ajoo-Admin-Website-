@@ -9,7 +9,7 @@ import { deleteUserImage } from "../../../../features/admin/userManagement/UserI
 import { getUserById } from "../../../../features/admin/userManagement/userDetails.slice";
 import CustomSnackbar from "../../snackbar/CustomSnackbar";
 
-const PURPLE = "#1B2447";
+const INDIGO = "#1B2447";
 
 const ProfileUpload = ({
   disabled,
@@ -106,7 +106,7 @@ const ProfileUpload = ({
                     top: 6,
                     right: 6,
                     bgcolor: "#fff",
-                    color: PURPLE,
+                    color: INDIGO,
                     boxShadow: 1,
                     "&:hover": { bgcolor: "#f3e8ff" },
                   }}
@@ -119,15 +119,15 @@ const ProfileUpload = ({
 
           {!disabled && (
             <Button
-              startIcon={<UploadFileIcon sx={{ color: PURPLE }} />}
+              startIcon={<UploadFileIcon sx={{ color: INDIGO }} />}
               component="label"
               variant="outlined"
               sx={{
-                borderColor: PURPLE,
-                color: PURPLE,
+                borderColor: INDIGO,
+                color: INDIGO,
                 mt: 0.5,
                 "&:hover": {
-                  borderColor: PURPLE,
+                  borderColor: INDIGO,
                   bgcolor: "#f3e8ff",
                 },
               }}

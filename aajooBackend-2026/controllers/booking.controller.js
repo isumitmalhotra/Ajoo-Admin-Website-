@@ -3,6 +3,7 @@ const common = require("../utils/common");
 const methods = require("../utils/methods");
 const commonConfig = require("../config/commonConfig");
 const moduleConfig = require("../config/moduleConfigs");
+const { razorpay: razorpayConfig } = require("../config/payments.config");
 const { sequelize } = require('../models');
 const { Op, literal } = require('sequelize');
 const { createOrder, verifyPayment } = require("../utils/razorpay");
@@ -17,13 +18,16 @@ const
         notificationBookingTitleForHost,
         notificationBookingTitle
     } = require("../utils/data");
+const bookingNotificationService = require("../utils/bookingNotificationService");
 const logger = require("../utils/logger");
-const watiService = require("../utils/watiService");
-const watiTemplates = require("../utils/watiTemplates");
+
+// Razorpay credentials come from config/payments.config.js (single source of
+// truth — reads RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET env vars in production,
+// falls back to bundled TEST key in dev).
 const razorpay = new Razorpay(
     {
-        key_id: moduleConfig.razor_pay_key_id,
-        key_secret: moduleConfig.razor_pay_key_sec,
+        key_id: razorpayConfig.keyId,
+        key_secret: razorpayConfig.keySecret,
     });
 const emailManager = new EmailManager();
 const cloudinaryInstance = new CloudinaryManager();
@@ -133,7 +137,7 @@ const bookingCreate = async (req, res) => {
             is_active: commonConfig.isYes,
             is_deleted: commonConfig.isNo
         };
-        const propertyData = await model.tbl_properties.getSingleProperty(propWhereClause, ["property_host_id", "property_name", "property_longitude", "property_latitude"])
+        const propertyData = await model.tbl_properties.getSingleProperty(propWhereClause, ["property_host_id", "property_name", "property_longitude", "property_latitude", "property_city"])
         if (!propertyData) {
             await transaction.rollback();
             return common.response(req, res, commonConfig.errorStatus, false, "no property found");
@@ -186,7 +190,7 @@ const bookingCreate = async (req, res) => {
             bt_book_id: `B${bookingId}`,
             bt_book_from: reqData.bookFrom,
             bt_book_to: reqData.bookTo,
-            
+
             bt_book_status: bookStatus,
         };
         await model.tbl_book_details.create(detailPayload, { transaction });
@@ -219,8 +223,45 @@ const bookingCreate = async (req, res) => {
             await model.tbl_payment.create(paymentPayload, { transaction });
         }
         await transaction.commit();
+        try {
+            await bookingNotificationService.sendBookingConfirmationMessage({
+                bookingId: `B${bookingId}`,
+                userId: userId,
+                bookingPrice: reqData.price,
+                totalBookingAmount: totalBookingAmt,
+                propertyId: reqData.propertyId,
+                propertyName: propertyData.property_name,
+                checkInDate: reqData.bookFrom,
+                checkOutDate: reqData.bookTo,
+                isPaid: !reqData.isCod,
+                isCod: reqData.isCod,
+                city: reqData.city || propertyData.property_city || null,
+            });
+        } catch (whatsappErr) {
+            logger.warn(`WhatsApp notification failed for booking ${bookingId}: ${whatsappErr.message}`);
+            // Don't fail the booking if WhatsApp fails - it's a notification, not critical
+        }
         if (isCod) {
             sendBookingNotifications(userId, propertyData.property_host_id, `B${bookingId}`, propertyData, reqData, totalBookingAmt, req.user.email);
+        }
+        // In-app notifications (A-14) — fire-and-forget, never breaks the booking flow.
+        try {
+            if (model.tbl_notifications) {
+                await model.tbl_notifications.notify({
+                    role: "ADMIN", recipientId: null, category: "BOOKING",
+                    title: "New booking created",
+                    body: `Booking B${bookingId} for "${propertyData.property_name}" (₹${reqData.price}).`,
+                    linkPath: "/admin/bookings",
+                });
+                await model.tbl_notifications.notify({
+                    role: "HOST", recipientId: propertyData.property_host_id, category: "BOOKING",
+                    title: "You have a new booking",
+                    body: `Booking B${bookingId} for "${propertyData.property_name}".`,
+                    linkPath: "/host/bookings",
+                });
+            }
+        } catch (notifyErr) {
+            logger.warn(`In-app notification failed for booking ${bookingId}: ${notifyErr.message}`);
         }
         return common.response(req, res, commonConfig.successStatus, true, "success", {
             booking: {
@@ -313,6 +354,43 @@ const verifyUserPayment = async (req, res) => {
             let notifyMessage = `Payment for ${findPayment.pay_invoice} is successful`;
             await methods.sendNotification(userId, notifyTitle, notifyMessage, findPayment.pay_propId, {}, null, findPayment.pay_book_pri_id);
             await transaction.commit();
+            try {
+                // Get booking details
+                const booking = await model.tbl_bookings.findOne({
+                    where: { book_pri_id: findPayment.pay_book_pri_id },
+                    include: [
+                        {
+                            model: model.tbl_properties,
+                            as: 'bookingProperty',
+                            attributes: ['property_name', 'property_city', 'property_address'],
+                        },
+                        {
+                            model: model.tbl_book_details,
+                            as: 'bookDetails',
+                            attributes: ['bt_book_from', 'bt_book_to'],
+                        }
+                    ],
+                });
+
+                if (booking) {
+                    await bookingNotificationService.sendBookingConfirmationMessage({
+                        bookingId: booking.book_id,
+                        userId: booking.book_user_id,
+                        bookingPrice: booking.book_price,
+                        totalBookingAmount: booking.book_total_amt,
+                        propertyId: booking.book_prop_id,
+                        propertyName: booking.bookingProperty?.property_name || 'Your Property',
+                        checkInDate: booking.bookDetails?.[0]?.bt_book_from,
+                        checkOutDate: booking.bookDetails?.[0]?.bt_book_to,
+                        isPaid: true,
+                        isCod: false,
+                        city: booking.bookingProperty?.property_city || null,
+                    });
+                }
+            } catch (whatsappErr) {
+                logger.warn(`WhatsApp notification failed after payment: ${whatsappErr.message}`);
+                // Don't fail payment verification if WhatsApp fails
+            }
             return common.response(req, res, commonConfig.successStatus, true, "payment verified",);
         }
         else {

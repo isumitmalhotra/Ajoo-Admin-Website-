@@ -350,7 +350,7 @@ export default function HostBookings() {
       sx={{
         p: 3,
         borderRadius: "1rem",
-        border: "1px solid #ede9fe",
+        border: "1px solid #FFFAF0",
         boxShadow: "0 12px 28px rgba(17,24,39,0.05)",
       }}
       elevation={0}
@@ -359,7 +359,7 @@ export default function HostBookings() {
         sx={{
           p: 1.5,
           borderRadius: "0.85rem",
-          border: "1px solid #ddd6fe",
+          border: "1px solid #FFFAF0",
           bgcolor: "#faf5ff",
           mb: 2,
         }}
@@ -371,7 +371,7 @@ export default function HostBookings() {
           justifyContent="space-between"
         >
           <Box>
-            <Typography variant="subtitle1" fontWeight={800} color="#4c1d95">
+            <Typography variant="subtitle1" fontWeight={800} color="#1B2447">
               Booking Operations Console
             </Typography>
             <Typography variant="caption" color="text.secondary">
@@ -379,7 +379,7 @@ export default function HostBookings() {
             </Typography>
           </Box>
           <Stack direction="row" spacing={0.8}>
-            <Chip label={`${totalRecords} records`} size="small" sx={{ bgcolor: "#ede9fe", color: "#5b21b6" }} />
+            <Chip label={`${totalRecords} records`} size="small" sx={{ bgcolor: "#FFFAF0", color: "#1B2447" }} />
             <Chip label={`Page ${currentPage}`} size="small" sx={{ bgcolor: "#e0e7ff", color: "#3730a3" }} />
           </Stack>
         </Stack>
@@ -403,7 +403,7 @@ export default function HostBookings() {
           variant="outlined"
           onClick={handleExportCsv}
           disabled={exporting || (data.length === 0 && !filters.search && !filters.status && !filters.dateFrom && !filters.dateTo)}
-          sx={{ textTransform: "none", fontWeight: 700, borderColor: "#3D4670", color: "#6d28d9" }}
+          sx={{ textTransform: "none", fontWeight: 700, borderColor: "#3D4670", color: "#2A356B" }}
         >
           {exporting ? "Exporting..." : "Export CSV"}
         </Button>

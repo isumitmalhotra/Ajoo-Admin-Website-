@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "aajo-backend",
   "version": "1.0.0",
   "main": "index.js",
@@ -6,10 +6,10 @@
     "start": "node app.js",
     "dev": "nodemon app.js",
     "ngrok": "ngrok http --url=eminent-mutt-newly.ngrok-free.app 8000",
-    "db:migrate": "sequelize-cli db:migrate",
-    "db:migrate:undo": "sequelize-cli db:migrate:undo",
-    "db:seed:local": "node scripts\\seedLocal.js",
-    "db:setup": "npm run db:migrate && npm run db:seed:local"
+    "lint": "node scripts/check-syntax.js",
+    "contract:test": "node scripts/check-admin-contracts.js",
+    "test:admin": "node tests/admin/index.test.js",
+    "test": "npm run lint && npm run contract:test && npm run test:admin"
   },
   "author": "",
   "license": "ISC",
@@ -33,6 +33,7 @@
     "otp-generator": "^4.0.1",
     "passport": "^0.7.0",
     "passport-google-oauth2": "^0.2.0",
+    "pdfkit": "^0.18.0",
     "pg": "^8.13.1",
     "razorpay": "^2.9.5",
     "sequelize": "^6.37.4",
@@ -48,3 +49,6 @@
     "node": "20.x"
   }
 }
+
+
+

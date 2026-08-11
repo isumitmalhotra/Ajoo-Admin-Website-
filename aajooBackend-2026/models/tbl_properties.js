@@ -4,7 +4,7 @@ module.exports = (sequelize, DataTypes) => {
   class tbl_properties extends Model {
 
     static associate(models) {
-      tbl_properties.belongsTo(models.tbl_property_detail, { foreignKey: 'property_id', targetKey: "propDetail_propId", as: "propDetails" });
+      tbl_properties.hasOne(models.tbl_property_detail, { foreignKey: 'propDetail_propId', sourceKey: "property_id", as: "propDetails" });
       tbl_properties.belongsTo(models.tbl_user, { foreignKey: 'property_host_id', targetKey: "user_id", as: "HostDetails" });
       tbl_properties.hasMany(models.tbl_negotiation_offers, {
         foreignKey: 'property_id',
@@ -138,7 +138,15 @@ module.exports = (sequelize, DataTypes) => {
     indexes: [
       {
         fields: ['property_longitude', 'property_latitude'], // Indexing for faster geolocation queries
-      }
+      },
+      {
+        fields: ['property_host_id'],
+        name: 'idx_tbl_properties_host',
+      },
+      {
+        fields: ['is_deleted', 'is_active', 'is_verify'],
+        name: 'idx_tbl_properties_status_flags',
+      },
     ]
   });
   tbl_properties.addHook('afterFind', (results) => {

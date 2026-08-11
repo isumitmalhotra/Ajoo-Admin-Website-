@@ -61,6 +61,9 @@ module.exports = (sequelize, DataTypes) => {
     book_no_of_guests: DataTypes.INTEGER(11),
     book_no_of_beds: DataTypes.INTEGER(11),
     book_is_delete: DataTypes.TINYINT(1),
+    // Guest KYC (A-11)
+    guest_verification_status: DataTypes.ENUM('unverified', 'pending', 'verified', 'declined', 'in_review'),
+    guest_didit_session_id: DataTypes.STRING(64),
   }, {
     sequelize,
     modelName: 'tbl_bookings',

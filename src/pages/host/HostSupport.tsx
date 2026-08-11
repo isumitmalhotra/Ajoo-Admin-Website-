@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Box,
   Button,
   Chip,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -14,49 +16,15 @@ import {
   Typography,
 } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
-
-type TicketPriority = "LOW" | "MEDIUM" | "HIGH";
-type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED";
-
-type Ticket = {
-  id: string;
-  subject: string;
-  category: string;
-  priority: TicketPriority;
-  status: TicketStatus;
-  updatedAt: string;
-  lastMessage: string;
-};
-
-const INITIAL_TICKETS: Ticket[] = [
-  {
-    id: "TCK-2191",
-    subject: "Payout not reflecting in dashboard",
-    category: "Payout",
-    priority: "HIGH",
-    status: "IN_PROGRESS",
-    updatedAt: "2026-05-15T10:20:00.000Z",
-    lastMessage: "Support asked for booking references.",
-  },
-  {
-    id: "TCK-2178",
-    subject: "Need invoice correction for Apr payout",
-    category: "Invoice",
-    priority: "MEDIUM",
-    status: "OPEN",
-    updatedAt: "2026-05-14T08:42:00.000Z",
-    lastMessage: "Ticket created and assigned to finance queue.",
-  },
-  {
-    id: "TCK-2101",
-    subject: "Guest cancellation policy clarification",
-    category: "Booking",
-    priority: "LOW",
-    status: "RESOLVED",
-    updatedAt: "2026-05-09T12:16:00.000Z",
-    lastMessage: "Policy explanation shared and acknowledged.",
-  },
-];
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import {
+  fetchHostTickets,
+  addTicket,
+  createHostTicket,
+  type Ticket,
+  type TicketPriority,
+  type TicketStatus,
+} from "../../features/host/hostSupport.slice";
 
 const statusColorMap: Record<TicketStatus, { bg: string; color: string }> = {
   OPEN: { bg: "#fef3c7", color: "#92400e" },
@@ -71,13 +39,18 @@ const priorityColorMap: Record<TicketPriority, { bg: string; color: string }> = 
 };
 
 export default function HostSupport() {
-  const [tickets, setTickets] = useState<Ticket[]>(INITIAL_TICKETS);
+  const dispatch = useAppDispatch();
+  const { tickets, loading, error } = useAppSelector((state) => state.hostSupport);
   const [statusFilter, setStatusFilter] = useState<"ALL" | TicketStatus>("ALL");
   const [createOpen, setCreateOpen] = useState(false);
   const [subject, setSubject] = useState("");
   const [category, setCategory] = useState("General");
   const [priority, setPriority] = useState<TicketPriority>("MEDIUM");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    dispatch(fetchHostTickets());
+  }, [dispatch]);
 
   const filteredTickets = useMemo(() => {
     if (statusFilter === "ALL") return tickets;
@@ -95,7 +68,10 @@ export default function HostSupport() {
       updatedAt: new Date().toISOString(),
       lastMessage: message.trim(),
     };
-    setTickets((prev) => [nextTicket, ...prev]);
+    // Optimistic local insert (instant feedback / mock mode); real create posts
+    // to the backend and refetches, replacing the optimistic row with the server list.
+    dispatch(addTicket(nextTicket));
+    dispatch(createHostTicket({ subject: nextTicket.subject, category, message: message.trim() }));
     setSubject("");
     setCategory("General");
     setPriority("MEDIUM");
@@ -110,7 +86,7 @@ export default function HostSupport() {
         sx={{
           p: 2.5,
           borderRadius: "1rem",
-          border: "1px solid #ede9fe",
+          border: "1px solid #FFFAF0",
           boxShadow: "0 12px 28px rgba(17,24,39,0.05)",
         }}
       >
@@ -146,7 +122,7 @@ export default function HostSupport() {
               variant="contained"
               startIcon={<AddRoundedIcon />}
               onClick={() => setCreateOpen(true)}
-              sx={{ textTransform: "none", fontWeight: 700, bgcolor: "#6d28d9" }}
+              sx={{ textTransform: "none", fontWeight: 700, bgcolor: "#2A356B" }}
             >
               New Ticket
             </Button>
@@ -154,10 +130,22 @@ export default function HostSupport() {
         </Stack>
       </Paper>
 
-      <Paper elevation={0} sx={{ p: 2, borderRadius: "1rem", border: "1px solid #ede9fe" }}>
-        {filteredTickets.length === 0 ? (
+      {error && (
+        <Alert severity="error" sx={{ borderRadius: "0.8rem" }}>
+          {error}
+        </Alert>
+      )}
+
+      <Paper elevation={0} sx={{ p: 2, borderRadius: "1rem", border: "1px solid #FFFAF0" }}>
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+            <CircularProgress size={26} sx={{ color: "#2A356B" }} />
+          </Box>
+        ) : filteredTickets.length === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ p: 1 }}>
-            No support tickets found for the selected status.
+            {tickets.length === 0
+              ? "No support tickets yet. Raise a ticket and it will show up here."
+              : "No support tickets found for the selected status."}
           </Typography>
         ) : (
           <Stack spacing={1.15}>
@@ -263,7 +251,7 @@ export default function HostSupport() {
             variant="contained"
             onClick={handleCreate}
             disabled={!subject.trim() || !message.trim()}
-            sx={{ bgcolor: "#6d28d9" }}
+            sx={{ bgcolor: "#2A356B" }}
           >
             Submit Ticket
           </Button>

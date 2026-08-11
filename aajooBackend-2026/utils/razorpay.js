@@ -1,15 +1,15 @@
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
-const config = require("../config/db.config");
+const { razorpay: razorpayConfig } = require("../config/payments.config");
 
 const razorpay = new Razorpay({
-    key_id: config.razorPayKey,
-    key_secret: config.razorPaySecret,
+    key_id: razorpayConfig.keyId,
+    key_secret: razorpayConfig.keySecret,
 });
 
 const verifyPayment = async (paymentId, orderId, signature) => {
     try {
-        const hmac = crypto.createHmac('sha256', config.razorPaySecret); // Replace with your Razorpay key_secret
+        const hmac = crypto.createHmac('sha256', razorpayConfig.keySecret); // single source: config/payments.config.js
         hmac.update(orderId + '|' + paymentId);
         const generatedSignature = hmac.digest('hex');
         if (generatedSignature === signature) {

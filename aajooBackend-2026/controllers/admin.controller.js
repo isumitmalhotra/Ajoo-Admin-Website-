@@ -1,9 +1,86 @@
-const model = require("../models");
+﻿const model = require("../models");
 const common = require("../utils/common");
 const commonConfig = require("../config/commonConfig");
 const methods = require("../utils/methods");
 const { Op, fn, col, literal } = require('sequelize');
+const { use } = require("passport");
 // const moduleConfig = require("../config/moduleConfigs");
+
+const normalizeAdminString = (value) => {
+    if (typeof value !== "string") {
+        return null;
+    }
+
+    const trimmedValue = value.trim();
+    return trimmedValue ? trimmedValue : null;
+};
+
+const createAdmin = async (req, res) => {
+    try {
+        const adminCount = await model.tbl_admins.count();
+
+        if (adminCount > 0 && !req.admin) {
+            return common.response(req, res, 401, false, "Authorization token is required");
+        }
+
+        if (adminCount > 0 && Number(req.admin?.isAdmin) !== commonConfig.isYes) {
+            return common.response(req, res, 403, false, "Only super admins can create admin accounts");
+        }
+
+        const adminName = normalizeAdminString(req.body.admin_name);
+        const adminEmail = normalizeAdminString(req.body.admin_email)?.toLowerCase();
+        const requestedUsername = normalizeAdminString(req.body.admin_username);
+        const adminUsername = requestedUsername || adminEmail?.split("@")[0] || adminName;
+
+        const [existingEmailAdmin, existingUsernameAdmin] = await Promise.all([
+            model.tbl_admins.findOne({
+                raw: true,
+                where: {
+                    admin_email: adminEmail,
+                },
+            }),
+            model.tbl_admins.findOne({
+                raw: true,
+                where: {
+                    admin_username: adminUsername,
+                },
+            }),
+        ]);
+
+        if (existingEmailAdmin) {
+            return common.response(req, res, commonConfig.conflictStatus, false, "Admin email already exists");
+        }
+
+        if (existingUsernameAdmin) {
+            return common.response(req, res, commonConfig.conflictStatus, false, "Admin username already exists");
+        }
+
+        const hashedPassword = await methods.hashPassword(req.body.admin_password);
+
+        const createdAdmin = await model.tbl_admins.create({
+            admin_name: adminName,
+            admin_username: adminUsername,
+            admin_email: adminEmail,
+            admin_password: hashedPassword,
+            admin_isAdmin: req.body.admin_isAdmin ?? commonConfig.isYes,
+            admin_isActive: req.body.admin_isActive ?? commonConfig.isYes,
+        });
+
+        const safeAdmin = createdAdmin.get({ plain: true });
+        delete safeAdmin.admin_password;
+
+        return common.response(
+            req,
+            res,
+            commonConfig.createdStatus,
+            true,
+            "Admin created successfully",
+            safeAdmin
+        );
+    } catch (error) {
+        return common.response(req, res, commonConfig.serverErrorStatus, false, error.message);
+    }
+};
 
 
 const adminLogin = async (req, res) => {
@@ -82,20 +159,20 @@ const adminLogout = async (req, res) => {
         return common.response(req, res, commonConfig.errorStatus, false, "Something went wrong. Please try again.");
     }
 };
-const addCreate = async (req, res) => {
-    try {
-        const password = await methods.hashPassword(req.body.password);
-        return common.response(req, res, commonConfig.successStatus, true, "success", password);
-    } catch (error) {
-        return common.response(req, res, commonConfig.errorStatus, false, error.message);
-    }
-};
+// const addCreate = async (req, res) => {
+//     try {
+//         const password = await methods.hashPassword(req.body.password);
+//         return common.response(req, res, commonConfig.successStatus, true, "success", password);
+//     } catch (error) {
+//         return common.response(req, res, commonConfig.errorStatus, false, error.message);
+//     }
+// };
 
 const SUCCESS_STATUS = 13;
 const CANCELLED_STATUS = 2;
 
 
-const getMonthlyBookings = async (req, res) => {
+const getMonthlyBookings = async () => {
     try {
         const year = new Date().getFullYear();
         const bookings = await model.tbl_bookings.findAll({
@@ -131,11 +208,6 @@ const getMonthlyBookings = async (req, res) => {
             }
         });
 
-        monthlyData.forEach((m) => {
-            if (m.successful === 0) m.successful = Math.floor(Math.random() * 20) + 5;
-            if (m.cancelled === 0) m.cancelled = Math.floor(Math.random() * 10) + 2;
-        });
-
         const response = {
             months: [
                 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -159,7 +231,7 @@ const getLastNDays = (n = 10) => {
     }
     return days;
 };
-const getDailyUsers = async (req, res) => {
+const getDailyUsers = async () => {
     try {
       const DAYS = 10; // past 10 days
       const today = new Date();
@@ -211,7 +283,7 @@ const getDailyUsers = async (req, res) => {
   
       return data;
     } catch (error) {
-      return error;
+      throw error;
     }
   };
 // const getDailyUsers = async (req, res) => {
@@ -253,7 +325,7 @@ const getDailyUsers = async (req, res) => {
 //         return error;
 //     }
 // };
-const getUserStats = async (req, res) => {
+const getUserStats = async () => {
     try {
         const totalUsers = await model.tbl_user.count({
             where: {
@@ -287,15 +359,13 @@ const getUserStats = async (req, res) => {
         });
 
         const other = totalUsers - (active + inactive + verified);
-        // console.log(data, "data")
-        return data = { active, inactive, verified, other }
+        return { active, inactive, verified, other };
 
     } catch (error) {
-        console.log(error, "error")
-        return error
+        throw error;
     }
 };
-const getHostStats = async (req, res) => {
+const getHostStats = async () => {
     try {
         const totalHosts = await model.tbl_user.count({
             where: {
@@ -326,12 +396,12 @@ const getHostStats = async (req, res) => {
             },
         });
         const other = totalHosts - (active + inactive + verified);
-        return data = { active, inactive, verified, other }
+        return { active, inactive, verified, other };
     } catch (error) {
-        return error
+        throw error;
     }
 };
-const getPropStats = async (req, res) => {
+const getPropStats = async () => {
     try {
         const totalproperty = await model.tbl_properties.count({
             where: {
@@ -358,97 +428,110 @@ const getPropStats = async (req, res) => {
             },
         });
         const other = totalproperty - (active + inactive + verified);
-        return data = { active, inactive, verified, other }
+        return { active, inactive, verified, other };
     } catch (error) {
-        return error
+        throw error;
     }
 };
 
 const adminDashboard = async (req, res) => {
     try {
-        const getMonthlyBookingsData = await getMonthlyBookings()
-        const getDailyUsersData = await getDailyUsers()
-        const getUserStatsData = await getUserStats()
-        const getHostStatsData = await getHostStats()
-        const getPropStatsData = await getPropStats()
-        const userCount = await model.tbl_user.count({
-            where: {
-                user_isDelete: commonConfig.isNo,
-                user_isUser: commonConfig.isYes,
-                user_isActive: commonConfig.isYes,
-            }
-        });
-        const hostCount = await model.tbl_user.count({
-            where: {
-                user_isDelete: commonConfig.isNo,
-                user_isHost: commonConfig.isYes,
-                user_isActive: commonConfig.isYes,
-            }
-        });
-        const propCount = await model.tbl_properties.count({
-            where: {
-                is_deleted: commonConfig.isNo,
-                is_verify: commonConfig.isYes,
-                is_active: commonConfig.isYes,
-            }
-        });
-        const BookingCount = await model.tbl_bookings.count({
-            where: {
-                book_is_delete: commonConfig.isNo,
-                book_status: { [Op.ne]: 2 }
-            }
-        });
-        const pendingPropCount = await model.tbl_properties.count({
-            where: {
-                is_deleted: commonConfig.isNo,
-                is_verify: commonConfig.isNo,
-                // is_active: commonConfig.isYes,
-            }
-        });
-
-        const getLatestUser = await model.tbl_user.findAll({
-            raw: true,
-            where: {
-                user_isDelete: commonConfig.isNo,
-                user_isUser: commonConfig.isYes,
-                // user_isActive: commonConfig.isYes,
-            },
-            include: {
-                model: model.tbl_user_cred,
-                as: "userCred",
-                required: true,
-                attributes: ["cred_user_email"]
-            },
-            order: [['added_at', 'DESC']],
-            attributes: ["user_fullName", "user_isVerified", "user_isActive"],
-            limit: 5
-        })
-        const getLatestBooking = await model.tbl_bookings.findAll({
-            raw: true,
-            where: {
-                book_is_delete: commonConfig.isNo,
-            },
-            order: [["book_added_at", "DESC"]],
-            attributes: ["book_id", "book_total_amt", "book_is_paid", "book_status"],
-            include: [
-                {
-                    model: model.tbl_book_status,
-                    as: "bookingStatus",
-                    required: true,
-                    attributes: ["bs_title", "bs_code"],
+        const [
+            getMonthlyBookingsData,
+            getDailyUsersData,
+            getUserStatsData,
+            getHostStatsData,
+            getPropStatsData,
+            userCount,
+            hostCount,
+            propCount,
+            BookingCount,
+            pendingPropCount,
+            getLatestUser,
+            getLatestBooking,
+            getLatestProperties,
+        ] = await Promise.all([
+            getMonthlyBookings(),
+            getDailyUsers(),
+            getUserStats(),
+            getHostStats(),
+            getPropStats(),
+            model.tbl_user.count({
+                where: {
+                    user_isDelete: commonConfig.isNo,
+                    user_isUser: commonConfig.isYes,
+                    user_isActive: commonConfig.isYes,
+                }
+            }),
+            model.tbl_user.count({
+                where: {
+                    user_isDelete: commonConfig.isNo,
+                    user_isHost: commonConfig.isYes,
+                    user_isActive: commonConfig.isYes,
+                }
+            }),
+            model.tbl_properties.count({
+                where: {
+                    is_deleted: commonConfig.isNo,
+                    is_verify: commonConfig.isYes,
+                    is_active: commonConfig.isYes,
+                }
+            }),
+            model.tbl_bookings.count({
+                where: {
+                    book_is_delete: commonConfig.isNo,
+                    book_status: { [Op.ne]: 2 }
+                }
+            }),
+            model.tbl_properties.count({
+                where: {
+                    is_deleted: commonConfig.isNo,
+                    is_verify: commonConfig.isNo,
+                }
+            }),
+            model.tbl_user.findAll({
+                raw: true,
+                where: {
+                    user_isDelete: commonConfig.isNo,
+                    user_isUser: commonConfig.isYes,
                 },
-            ],
-            limit: 5
-        })
-        const getLatestProperties = await model.tbl_properties.findAll({
-            raw: true,
-            where: {
-                is_deleted: commonConfig.isNo,
-            },
-            order: [["created_at", "DESC"]],
-            limit: 5,
-            attributes: ["property_name", "property_price", "is_verify", "is_active"]
-        })
+                include: {
+                    model: model.tbl_user_cred,
+                    as: "userCred",
+                    required: true,
+                    attributes: ["cred_user_email"]
+                },
+                order: [['added_at', 'DESC']],
+                attributes: ["user_fullName", "user_isVerified", "user_isActive"],
+                limit: 5
+            }),
+            model.tbl_bookings.findAll({
+                raw: true,
+                where: {
+                    book_is_delete: commonConfig.isNo,
+                },
+                order: [["book_added_at", "DESC"]],
+                attributes: ["book_id", "book_total_amt", "book_is_paid", "book_status"],
+                include: [
+                    {
+                        model: model.tbl_book_status,
+                        as: "bookingStatus",
+                        required: true,
+                        attributes: ["bs_title", "bs_code"],
+                    },
+                ],
+                limit: 5
+            }),
+            model.tbl_properties.findAll({
+                raw: true,
+                where: {
+                    is_deleted: commonConfig.isNo,
+                },
+                order: [["created_at", "DESC"]],
+                limit: 5,
+                attributes: ["property_name", "property_price", "is_verify", "is_active"]
+            })
+        ]);
         return common.response(req, res, commonConfig.successStatus, true, "Dashboard data fetched successfully", {
             userCount,
             hostCount,
@@ -472,9 +555,27 @@ const adminDashboard = async (req, res) => {
 
 
 
+// GET /admin/verify-token (INT-02) — the admin FE auth guard calls this on boot
+// to confirm the stored token is still valid. adminAuth middleware validates the
+// JWT first; reaching this handler means the token is valid (invalid/expired → 401).
+const verifyToken = async (req, res) => {
+    try {
+        return common.response(req, res, commonConfig.successStatus, true, "Token valid", {
+            adminId: req.admin?.adminId ?? null,
+            isAdmin: req.admin?.isAdmin ?? null,
+            role: req.admin?.role ?? "admin",
+            isValid: true,
+        });
+    } catch (error) {
+        return common.response(req, res, commonConfig.errorStatus, false, error.message);
+    }
+};
+
 module.exports = {
+    createAdmin,
     adminLogin,
-    addCreate,
     adminLogout,
-    adminDashboard
+    adminDashboard,
+    verifyToken
 }
+

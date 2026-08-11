@@ -7,10 +7,13 @@ import {
   Step,
   StepLabel,
   LinearProgress,
+  CircularProgress,
   useMediaQuery,
 } from "@mui/material";
 import GoogleIcon from "@mui/icons-material/Google";
+import { useNavigate } from "react-router-dom";
 import { FECustomSnackbar } from "../components";
+import { signupUser } from "../services/customerApi";
 
 import PersonalInfo from "./PersonalInfo";
 import AddressInfo from "./AddressInfo";
@@ -20,7 +23,9 @@ const PRIMARY = "#1B2447";
 const steps = ["Personal Info", "Address", "ID Details"];
 
 const UserSignup = () => {
+  const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
   const isMobile = useMediaQuery("(max-width:768px)");
 
   const [snackbar, setSnackbar] = useState({
@@ -57,16 +62,61 @@ const UserSignup = () => {
 
   const handleChange = (name: string, value: any) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear the field's validation error as soon as the user edits it.
+    setErrors((prev: any) => (prev[name] ? { ...prev, [name]: undefined } : prev));
   };
 
-  const handleSubmit = () => {
-    console.log(formData);
+  const handleSubmit = async () => {
+    if (!validateStep()) return;
+    setSubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.append("user_fullName", formData.fullName);
+      fd.append("user_email", formData.email);
+      fd.append("user_password", formData.password);
+      fd.append("user_confirmPassword", formData.confirmPassword);
+      fd.append("user_dob", formData.dob);
+      fd.append("user_pnumber", formData.contact);
+      fd.append("user_address", formData.address);
+      fd.append("user_city", formData.city);
+      fd.append("user_zipcode", formData.pincode);
+      fd.append("user_isHost", String(formData.isHost));
+      fd.append("user_isUser", String(formData.isUser));
+      fd.append("doc_type", String(formData.docType));
+      fd.append("doc_number", formData.docNumber);
+      if (formData.file) fd.append("user_id_doc", formData.file);
+
+      const env: any = await signupUser(fd);
+      const userId = env?.data?.userId ?? env?.userId;
+
+      setSnackbar({
+        open: true,
+        message: "Account created! Verify the OTP sent to your email.",
+        type: "success",
+      });
+      navigate("/auth/signup-verication", {
+        state: { userId, email: formData.email },
+      });
+    } catch (e: any) {
+      setSnackbar({
+        open: true,
+        message:
+          e?.response?.data?.message ||
+          e?.message ||
+          "Signup failed. Please check your details and try again.",
+        type: "error",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGoogleSignup = () =>
     setSnackbar({
       open: true,
-      message: "Signup Successful!",
-      type: "success",
+      message: "Google sign-up is coming soon.",
+      type: "info",
     });
-  };
 
   const validateStep = () => {
     let newErr: any = {};
@@ -167,7 +217,7 @@ const UserSignup = () => {
                 fullWidth
                 variant="contained"
                 startIcon={<GoogleIcon sx={{ color: "#DB4437" }} />}
-                onClick={handleSubmit}
+                onClick={handleGoogleSignup}
                 sx={{
                   mb: 2,
                   backgroundColor: "#fff",
@@ -259,12 +309,22 @@ const UserSignup = () => {
 
                 <Button
                   variant="contained"
+                  disabled={submitting}
+                  startIcon={
+                    submitting && activeStep === steps.length - 1 ? (
+                      <CircularProgress size={16} sx={{ color: "#fff" }} />
+                    ) : undefined
+                  }
                   onClick={
                     activeStep === steps.length - 1 ? handleSubmit : handleNext
                   }
                   sx={{ backgroundColor: PRIMARY }}
                 >
-                  {activeStep === steps.length - 1 ? "Submit" : "Next"}
+                  {activeStep === steps.length - 1
+                    ? submitting
+                      ? "Creating…"
+                      : "Submit"
+                    : "Next"}
                 </Button>
               </Box>
             </Paper>

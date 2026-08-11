@@ -13,10 +13,6 @@ export const Brand = {
   success:   "#3F6B4E",
 };
 
-// Back-compat alias — resolves to Brand.indigo (#1B2447). Still imported by ~15 admin
-// files. Keep until those are migrated; never points to a purple value.
-export const PurpleThemeColor = Brand.indigo;
-
 export const ThemeColors = {
   primary:    Brand.indigo,
   secondary:  Brand.success,

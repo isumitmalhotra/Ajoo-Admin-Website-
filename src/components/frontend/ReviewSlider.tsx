@@ -3,25 +3,26 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Autoplay } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
-import { Box, Typography, Card, CardContent } from "@mui/material";
+import { Box, Typography, Card, CardContent, Rating } from "@mui/material";
 
 interface Review {
   name: string;
   review: string;
   location: string;
+  rating: number;
 }
 
 const reviews: Review[] = [
-  { name: "Amit Sharma", review: "The property was excellent, service was top-notch. Highly recommend!", location: "Delhi, India" },
-  { name: "Priya Verma", review: "Amazing location and very clean rooms. Would stay again.", location: "Mumbai, India" },
-  { name: "Rahul Kumar", review: "Loved the amenities. Everything was perfect for our vacation.", location: "Bangalore, India" },
-  { name: "Sneha Gupta", review: "Peaceful environment, friendly staff, and great food.", location: "Jaipur, India" },
-  { name: "Karan Singh", review: "Affordable and luxurious at the same time. Great experience!", location: "Chandigarh, India" },
-  { name: "Neha Kapoor", review: "The pool and spa facilities were amazing. Highly recommend.", location: "Goa, India" },
-  { name: "Ravi Patel", review: "Modern interiors and very comfortable rooms.", location: "Ahmedabad, India" },
-  { name: "Meera Iyer", review: "Had the best holiday with my family. Will come back again!", location: "Chennai, India" },
-  { name: "Vikas Yadav", review: "Best hospitality experience. Staff was very polite and helpful.", location: "Lucknow, India" },
-  { name: "Ananya Das", review: "The resort is surrounded by nature. Very refreshing stay!", location: "Kolkata, India" },
+  { name: "Amit Sharma", review: "The property was excellent, service was top-notch. Highly recommend!", location: "Delhi, India", rating: 5 },
+  { name: "Priya Verma", review: "Amazing location and very clean rooms. Would stay again.", location: "Mumbai, India", rating: 4.5 },
+  { name: "Rahul Kumar", review: "Loved the amenities. Everything was perfect for our vacation.", location: "Bangalore, India", rating: 5 },
+  { name: "Sneha Gupta", review: "Peaceful environment, friendly staff, and great food.", location: "Jaipur, India", rating: 4.5 },
+  { name: "Karan Singh", review: "Affordable and luxurious at the same time. Great experience!", location: "Chandigarh, India", rating: 5 },
+  { name: "Neha Kapoor", review: "The pool and spa facilities were amazing. Highly recommend.", location: "Goa, India", rating: 4 },
+  { name: "Ravi Patel", review: "Modern interiors and very comfortable rooms.", location: "Ahmedabad, India", rating: 4.5 },
+  { name: "Meera Iyer", review: "Had the best holiday with my family. Will come back again!", location: "Chennai, India", rating: 5 },
+  { name: "Vikas Yadav", review: "Best hospitality experience. Staff was very polite and helpful.", location: "Lucknow, India", rating: 4.5 },
+  { name: "Ananya Das", review: "The resort is surrounded by nature. Very refreshing stay!", location: "Kolkata, India", rating: 5 },
 ];
 
 const ReviewSlider: React.FC = () => {
@@ -79,6 +80,18 @@ const ReviewSlider: React.FC = () => {
               }}
             >
               <CardContent sx={{ textAlign: "left" }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 1.5 }}>
+                  <Rating
+                    value={rev.rating}
+                    precision={0.5}
+                    readOnly
+                    size="small"
+                    sx={{ color: "#C16345" }}
+                  />
+                  <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "#1B2447" }}>
+                    {rev.rating.toFixed(1)}
+                  </Typography>
+                </Box>
                 <Typography
                   variant="body1"
                   sx={{

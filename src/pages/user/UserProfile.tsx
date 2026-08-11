@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -9,32 +9,97 @@ import {
   MenuItem,
   IconButton,
   InputAdornment,
+  CircularProgress,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
-// import DeleteIcon from "@mui/icons-material/Delete";
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 import userImg from "../../assets/UI/userDemo.jpg";
+import storage from "../../styles/utils/storage";
+import { getUserDetail, updateUser } from "../../services/customerApi";
+import ThemedDatePicker from "../../components/frontend/ThemedDatePicker";
 import "../../styles/user/UserProfile.css";
 
+interface ProfileForm {
+  user_fullName: string;
+  user_email: string; // read-only (credential)
+  user_dob: string; // read-only display
+  user_gender: string;
+  user_address: string;
+  user_pnumber: string;
+  user_country: string;
+  user_city: string;
+  user_zipcode: string;
+}
+
+const emptyForm: ProfileForm = {
+  user_fullName: "",
+  user_email: "",
+  user_dob: "",
+  user_gender: "",
+  user_address: "",
+  user_pnumber: "",
+  user_country: "",
+  user_city: "",
+  user_zipcode: "",
+};
+
 const UserProfile: React.FC = () => {
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [preview, setPreview] = useState(userImg);
-  console.log(setPreview);
   const [image, setImage] = useState<string | null>(null);
 
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
+  const [form, setForm] = useState<ProfileForm>(emptyForm);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // Prefill from GET /user/detail
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const user = await getUserDetail();
+        if (cancelled || !user) return;
+        setForm({
+          user_fullName: user.user_fullName ?? "",
+          user_email: user.cred_user_email ?? user.user_email ?? "",
+          user_dob: user.user_dob ?? "",
+          user_gender: user.user_gender ?? "",
+          user_address: user.user_address ?? "",
+          user_pnumber: user.user_pnumber ?? "",
+          user_country: user.user_country ?? "",
+          user_city: user.user_city ?? "",
+          user_zipcode: user.user_zipcode ?? "",
+        });
+        if (user.attachment) setPreview(user.attachment);
+      } catch {
+        // keep empty form; submit still works for a fresh profile
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleToggleOldPassword = () => setShowOldPassword((prev) => !prev);
   const handleToggleNewPassword = () => setShowNewPassword((prev) => !prev);
 
-  const [uploadedFile, setUploadedFile] = useState<string | null>(null);
-  console.log("Uploaded File URL:", uploadedFile);
+  const handleField =
+    (key: keyof ProfileForm) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setForm((prev) => ({ ...prev, [key]: e.target.value }));
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const fileUrl = URL.createObjectURL(e.target.files[0]);
-      setUploadedFile(fileUrl);
+      setPreview(URL.createObjectURL(e.target.files[0]));
     }
   };
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,15 +112,54 @@ const UserProfile: React.FC = () => {
     setImage(null);
   };
 
-  // const handleRemoveFile = () => {
-  //   setUploadedFile(null);
-  // };
-
   const handleUploadClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
+
+  const handleLogout = () => {
+    storage.clearToken();
+    toast.success("Logged out");
+    navigate("/");
+  };
+
+  // Submit only the fields the backend persists (POST /user/update).
+  const handleSubmit = async () => {
+    if (!form.user_fullName.trim()) {
+      toast.error("Full name is required");
+      return;
+    }
+    setSaving(true);
+    try {
+      await updateUser({
+        user_fullName: form.user_fullName,
+        user_pnumber: form.user_pnumber,
+        user_address: form.user_address,
+        user_city: form.user_city,
+        user_zipcode: form.user_zipcode,
+      });
+      toast.success("Profile updated successfully");
+    } catch (e: any) {
+      toast.error(
+        e?.response?.data?.message ||
+          e?.message ||
+          "Couldn't update your profile. Please try again."
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const firstName = form.user_fullName.trim().split(" ")[0] || "there";
+
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
+        <CircularProgress sx={{ color: "#1B2447" }} />
+      </Box>
+    );
+  }
 
   return (
     <Box className="mainContaineruserProfile">
@@ -79,7 +183,7 @@ const UserProfile: React.FC = () => {
             variant="contained"
             sx={{
               backgroundColor: "#1B2447",
-              "&:hover": { backgroundColor: "#a83252" },
+              "&:hover": { backgroundColor: "#2A356B" },
             }}
             onClick={handleUploadClick}
           >
@@ -95,7 +199,7 @@ const UserProfile: React.FC = () => {
           <Typography
             variant="h6"
             className="changePasswordTitle"
-            sx={{ fontWeight: 700, mb: 2, fontFamily: "'Poppins', sans-serif" }}
+            sx={{ fontWeight: 700, mb: 2, fontFamily: "'Inter', sans-serif" }}
           >
             Change Password
           </Typography>
@@ -143,7 +247,7 @@ const UserProfile: React.FC = () => {
             sx={{
               mt: 2,
               backgroundColor: "#1B2447",
-              "&:hover": { backgroundColor: "#a83252" },
+              "&:hover": { backgroundColor: "#2A356B" },
             }}
           >
             Change Password
@@ -155,7 +259,7 @@ const UserProfile: React.FC = () => {
             sx={{
               mt: 2,
               backgroundColor: "#1B2447",
-              "&:hover": { backgroundColor: "#a83252" },
+              "&:hover": { backgroundColor: "#2A356B" },
             }}
           >
             Delete Account
@@ -164,10 +268,11 @@ const UserProfile: React.FC = () => {
           <Button
             variant="contained"
             fullWidth
+            onClick={handleLogout}
             sx={{
               mt: 2,
               backgroundColor: "#1B2447",
-              "&:hover": { backgroundColor: "#a83252" },
+              "&:hover": { backgroundColor: "#2A356B" },
             }}
           >
             Logout
@@ -183,8 +288,8 @@ const UserProfile: React.FC = () => {
             mb: 3,
             p: 2,
             borderRadius: "12px",
-            background: "linear-gradient(135deg, #ffe6ee, #fff0f5)",
-            border: "1px solid #f8c9d6",
+            background: "#FFFAF0",
+            border: "1px solid #D9CFB8",
             textAlign: "center",
           }}
         >
@@ -192,12 +297,15 @@ const UserProfile: React.FC = () => {
             sx={{
               fontSize: "1.4rem",
               fontWeight: 700,
-              fontFamily: "'Poppins', sans-serif",
+              fontFamily: "'Fraunces', serif",
               color: "#1B2447",
               mb: 0.5,
             }}
           >
-            Welcome Back, <span style={{ color: "#a83252" }}>Jhon!</span>
+            Welcome Back,{" "}
+            <span style={{ color: "#C16345", fontStyle: "italic" }}>
+              {firstName}!
+            </span>
           </Typography>
 
           <Typography
@@ -225,6 +333,9 @@ const UserProfile: React.FC = () => {
                 fullWidth
                 label="Email"
                 margin="normal"
+                value={form.user_email}
+                InputProps={{ readOnly: true }}
+                helperText="Email can't be changed here"
               />
             </Box>
             <Box className="inputboxChilduserProfile">
@@ -237,6 +348,8 @@ const UserProfile: React.FC = () => {
                 variant="outlined"
                 fullWidth
                 margin="normal"
+                value={form.user_fullName}
+                onChange={handleField("user_fullName")}
               />
             </Box>
           </Box>
@@ -245,13 +358,14 @@ const UserProfile: React.FC = () => {
           <Box className="inputsUserinfoProfile">
             <Box className="inputboxChilduserProfile">
               <Typography className="userProfileFormLabel">DOB</Typography>
-              <TextField
-                type="date"
-                variant="outlined"
-                fullWidth
-                margin="normal"
-                InputLabelProps={{ shrink: true }}
-              />
+              <Box sx={{ mt: 2 }}>
+                <ThemedDatePicker
+                  label="Date of Birth"
+                  value={form.user_dob}
+                  onChange={(v) => setForm((prev) => ({ ...prev, user_dob: v }))}
+                  disableFuture
+                />
+              </Box>
             </Box>
             <Box className="inputboxChilduserProfile">
               <Typography className="userProfileFormLabel">Gender</Typography>
@@ -261,6 +375,8 @@ const UserProfile: React.FC = () => {
                 fullWidth
                 margin="normal"
                 label="Gender"
+                value={form.user_gender}
+                onChange={handleField("user_gender")}
               >
                 <MenuItem value="male">Male</MenuItem>
                 <MenuItem value="female">Female</MenuItem>
@@ -280,6 +396,8 @@ const UserProfile: React.FC = () => {
                 margin="normal"
                 multiline
                 rows={3}
+                value={form.user_address}
+                onChange={handleField("user_address")}
               />
             </Box>
           </Box>
@@ -296,6 +414,8 @@ const UserProfile: React.FC = () => {
                 variant="outlined"
                 fullWidth
                 margin="normal"
+                value={form.user_pnumber}
+                onChange={handleField("user_pnumber")}
               />
             </Box>
             <Box className="inputboxChilduserProfile">
@@ -306,29 +426,26 @@ const UserProfile: React.FC = () => {
                 label="Country"
                 fullWidth
                 margin="normal"
+                value={form.user_country}
+                onChange={handleField("user_country")}
               />
             </Box>
           </Box>
 
-          {/* State + City */}
+          {/* City + Pincode */}
           <Box className="inputsUserinfoProfile">
             <Box className="inputboxChilduserProfile">
-              <Typography className="userProfileFormLabel">State</Typography>
+              <Typography className="userProfileFormLabel">City</Typography>
               <TextField
-                select
+                type="text"
                 variant="outlined"
+                label="City"
                 fullWidth
                 margin="normal"
-                label="State"
-              >
-                <MenuItem value="state1">State 1</MenuItem>
-                <MenuItem value="state2">State 2</MenuItem>
-              </TextField>
+                value={form.user_city}
+                onChange={handleField("user_city")}
+              />
             </Box>
-          </Box>
-
-          {/* Pincode + ID Type */}
-          <Box className="inputsUserinfoProfile">
             <Box className="inputboxChilduserProfile">
               <Typography className="userProfileFormLabel">Pincode</Typography>
               <TextField
@@ -337,36 +454,8 @@ const UserProfile: React.FC = () => {
                 label="Pincode"
                 fullWidth
                 margin="normal"
-              />
-            </Box>
-            <Box className="inputboxChilduserProfile">
-              <Typography className="userProfileFormLabel">ID Type</Typography>
-              <TextField
-                select
-                variant="outlined"
-                fullWidth
-                margin="normal"
-                label="Document Type"
-              >
-                <MenuItem value="aadhar">Aadhar</MenuItem>
-                <MenuItem value="passport">Passport</MenuItem>
-                <MenuItem value="license">Driving License</MenuItem>
-              </TextField>
-            </Box>
-          </Box>
-
-          {/* ID Number */}
-          <Box className="inputsUserinfoProfile">
-            <Box className="inputboxChilduserProfile">
-              <Typography className="userProfileFormLabel">
-                ID Number
-              </Typography>
-              <TextField
-                type="text"
-                variant="outlined"
-                fullWidth
-                label="ID Number"
-                margin="normal"
+                value={form.user_zipcode}
+                onChange={handleField("user_zipcode")}
               />
             </Box>
           </Box>
@@ -411,8 +500,15 @@ const UserProfile: React.FC = () => {
             className="inputsUserinfoProfile"
             style={{ justifyContent: "center" }}
           >
-            <Button variant="contained" color="primary" className="submitBtn">
-              Submit
+            <Button
+              variant="contained"
+              color="primary"
+              className="submitBtn"
+              onClick={handleSubmit}
+              disabled={saving}
+              startIcon={saving ? <CircularProgress size={18} sx={{ color: "#fff" }} /> : undefined}
+            >
+              {saving ? "Saving…" : "Submit"}
             </Button>
           </Box>
         </Box>

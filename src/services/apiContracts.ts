@@ -128,19 +128,25 @@ export const parseAdminAuthPayload = (payload: unknown): AdminAuthPayload | null
   const dataNode = extractApiData<Record<string, unknown>>(payload);
   const node = dataNode && isRecord(dataNode) ? dataNode : root;
 
-  const token =
-    asString(node.token) ||
-    asString(node.accessToken) ||
-    asString(node.jwt) ||
-    asString(node.authToken);
-
-  if (!token) return null;
-
+  // Resolve the admin/user node FIRST — the backend nests the token INSIDE it
+  // (response shape: { data: { admin: { ...fields, token } } }), so the token
+  // lookup below must check adminNode as well as the top level.
   const adminNode = isRecord(node.admin)
     ? node.admin
     : isRecord(node.user)
     ? node.user
     : {};
+
+  const token =
+    asString(node.token) ||
+    asString(node.accessToken) ||
+    asString(node.jwt) ||
+    asString(node.authToken) ||
+    asString(adminNode.token) ||
+    asString(adminNode.accessToken) ||
+    asString(adminNode.jwt);
+
+  if (!token) return null;
 
   const explicitClaims = normalizeRbacClaims(node.claims ?? node.rbacClaims ?? node.jwtClaims);
   const tokenClaims = normalizeRbacClaims(decodeJwtPayload(token));

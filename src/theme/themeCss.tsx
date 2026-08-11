@@ -1,4 +1,4 @@
-import { PurpleThemeColor } from "./themeColor";
+import { Brand } from "./themeColor";
 
 export const themeCss = {
   modalFormContainer: {
@@ -19,7 +19,7 @@ export const themeCss = {
     justifyContent: "space-between",
     px: 3,
     py: 2,
-    bgcolor: PurpleThemeColor,
+    bgcolor: Brand.indigo,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
   },

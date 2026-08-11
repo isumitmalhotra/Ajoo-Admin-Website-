@@ -1,5 +1,7 @@
 import React from "react";
 import { Box, Typography, Button } from "@mui/material";
+import StarIcon from "@mui/icons-material/Star";
+import HomeIcon from "@mui/icons-material/Home";
 import { useNavigate } from "react-router-dom";
 const trust = [
   { n: "12K+", l: "Properties" },
@@ -13,7 +15,7 @@ const HeroSection: React.FC = () => {
   return (
     <Box
       sx={{
-        padding: { xs: "40px 20px 24px", md: "56px 48px 24px" },
+        padding: { xs: "32px 20px 16px", md: "40px 48px 16px" },
         background: "linear-gradient(180deg, #EFE7D6 0%, #EFE7D6 100%)",
       }}
     >
@@ -197,7 +199,7 @@ const HeroSection: React.FC = () => {
         <Box
           sx={{
             position: "relative",
-            height: { xs: 280, md: 520 },
+            height: { xs: 280, md: 420 },
             display: { xs: "none", md: "block" },
           }}
         >
@@ -251,11 +253,11 @@ const HeroSection: React.FC = () => {
           <Box
             sx={{
               position: "absolute",
-              top: "42%",
-              right: "-10px",
+              top: "40%",
+              right: 8,
               bgcolor: "#FFFAF0",
               borderRadius: "14px",
-              padding: "14px 16px",
+              padding: "12px 14px",
               boxShadow: "0 12px 40px rgba(27,36,71,.12)",
               display: "flex",
               alignItems: "center",
@@ -268,14 +270,13 @@ const HeroSection: React.FC = () => {
                 width: 36,
                 height: 36,
                 borderRadius: "10px",
-                bgcolor: "rgba(27,36,71,0.08)",
+                bgcolor: "rgba(193,99,69,0.12)",
                 display: "grid",
                 placeItems: "center",
-                color: "#1B2447",
-                fontSize: 18,
+                color: "#C16345",
               }}
             >
-              ⭐
+              <StarIcon sx={{ fontSize: 20 }} />
             </Box>
             <Box>
               <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#1B2447", lineHeight: 1.1 }}>
@@ -291,11 +292,11 @@ const HeroSection: React.FC = () => {
           <Box
             sx={{
               position: "absolute",
-              bottom: "-12px",
-              left: "8%",
+              bottom: 10,
+              left: "6%",
               bgcolor: "#FFFAF0",
               borderRadius: "14px",
-              padding: "14px 16px",
+              padding: "12px 14px",
               boxShadow: "0 12px 40px rgba(27,36,71,.12)",
               display: "flex",
               alignItems: "center",
@@ -312,10 +313,9 @@ const HeroSection: React.FC = () => {
                 display: "grid",
                 placeItems: "center",
                 color: "#1B2447",
-                fontSize: 18,
               }}
             >
-              🏠
+              <HomeIcon sx={{ fontSize: 20 }} />
             </Box>
             <Box>
               <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#1B2447", lineHeight: 1.1 }}>

@@ -87,7 +87,7 @@ export const HostSidebar = () => {
           border: "none",
           color: "#fff",
           background:
-            "linear-gradient(176deg, #4c1d95 0%, #6d28d9 36%, #7c3aed 100%)",
+            "linear-gradient(176deg, #1B2447 0%, #2A356B 60%, #3D4670 100%)",
         },
       }}
     >

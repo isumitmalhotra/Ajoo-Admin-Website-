@@ -36,7 +36,7 @@ router.post("/user/history", generalLimiter, [validation(schema.userId), authent
 
 router.post("/user/update-password", generalLimiter, [validation(schema.updatePassword), authenticateJWT], controller.userUpdatePasswordManual);
 
-router.post("/user/saved-properties", generalLimiter, [validation(schema.savedPropList)], controller.UserSavedProperties);
+router.post("/user/saved-properties", generalLimiter, [authenticateJWT, validation(schema.savedPropList)], controller.UserSavedProperties);
 router.get("/user/booking-history", generalLimiter, [authenticateJWT], controller.userBookingList);
 
 

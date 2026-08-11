@@ -4,14 +4,10 @@ const controller = require("../controllers/adminPropertyReviews.controller");
 const schema = require("../schema/adminPropertyReviews.schema");
 const validation = require("../middleware/validation");
 const { adminAuthToken } = require("../middleware/authorization");
-const { upload } = require("../utils/fileHandler");
-const { adminApiLimiter } = require("../middleware/adminRateLimiter");
+const { adminApiLimiter } = require("../middleware/rateLimiter");
 
-
-router.post("/admin/propety/review/search", [validation(schema.reviewSearchSchema), adminAuthToken], controller.reviewListing);
-router.post("/admin/propety/review/update", [validation(schema.updateBookingStatusSchema), adminApiLimiter, adminAuthToken,], controller.updateReview);
-router.post("/admin/property/review/detail", [adminAuthToken], controller.detailedReview);
-
-
+router.post("/admin/property/review/search", adminApiLimiter, [validation(schema.reviewSearchSchema), adminAuthToken], controller.reviewListing);
+router.post("/admin/property/review/update", adminApiLimiter, [validation(schema.updateBookingStatusSchema), adminAuthToken], controller.updateReview);
+router.post("/admin/property/review/detail", adminApiLimiter, [validation(schema.reviewIdSchema), adminAuthToken], controller.detailedReview);
 
 module.exports = router;

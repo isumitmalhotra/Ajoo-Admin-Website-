@@ -3,7 +3,7 @@ import { Box, Typography } from "@mui/material";
 
 interface Props {
   title?: string;
-  categories: { img: string; label: string }[];
+  categories: { img?: string; label: string }[];
   selectedCategory: string | null;
   onSelect: (label: string) => void;
   resultCount?: number;
@@ -95,6 +95,7 @@ const PageHeaderWithCategories: React.FC<Props> = ({
                 cursor: "pointer",
                 flexShrink: 0,
                 transition: "0.2s",
+                textTransform: "capitalize",
                 boxShadow: isActive
                   ? "0 1px 2px rgba(27,36,71,.04), 0 8px 24px rgba(27,36,71,.06)"
                   : "none",
@@ -104,12 +105,14 @@ const PageHeaderWithCategories: React.FC<Props> = ({
                 },
               }}
             >
-              <Box
-                component="img"
-                src={cat.img}
-                alt={cat.label}
-                sx={{ width: 18, height: 18, objectFit: "contain" }}
-              />
+              {cat.img && (
+                <Box
+                  component="img"
+                  src={cat.img}
+                  alt={cat.label}
+                  sx={{ width: 18, height: 18, objectFit: "contain" }}
+                />
+              )}
               {cat.label}
             </Box>
           );

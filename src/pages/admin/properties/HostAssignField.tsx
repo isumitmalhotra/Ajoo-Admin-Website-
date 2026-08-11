@@ -14,7 +14,7 @@ import {
 } from "../../../features/admin/userManagement/hostForProperty.slice";
 import { useDebounce } from "../../../hooks/useDebounce";
 
-const PURPLE = "#1B2447";
+const INDIGO = "#1B2447";
 
 interface Props {
   value: string; // hostName from Formik
@@ -111,12 +111,12 @@ export default function HostAssignField({
         sx={{
           "& .MuiOutlinedInput-root": {
             "&.Mui-focused fieldset": {
-              borderColor: PURPLE,
+              borderColor: INDIGO,
               borderWidth: 2,
             },
           },
           "& .MuiInputLabel-root.Mui-focused": {
-            color: PURPLE,
+            color: INDIGO,
           },
         }}
       />

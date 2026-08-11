@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { useFormik } from "formik";
-import { PurpleThemeColor } from "../../../theme/themeColor";
+import { Brand } from "../../../theme/themeColor";
 import { reviewSchema } from "../../../validations/admin-validations";
 import type { FormValues, UpdateFormProps } from "./types";
 import { themeCss } from "../../../theme/themeCss";
@@ -132,7 +132,7 @@ export default function UpdateForm({
                         ? "error.main"
                         : undefined,
                     "&.Mui-focused": {
-                      color: PurpleThemeColor,
+                      color: Brand.indigo,
                     },
                     transition: "color 0.3s ease",
                   }}
@@ -150,7 +150,7 @@ export default function UpdateForm({
                   input={<OutlinedInput label="Status" />}
                   sx={{
                     "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: PurpleThemeColor,
+                      borderColor: Brand.indigo,
                     },
                     transition: "all 0.3s ease",
                   }}
@@ -186,7 +186,7 @@ export default function UpdateForm({
                 type="submit"
                 variant="contained"
                 sx={{
-                  bgcolor: PurpleThemeColor,
+                  bgcolor: Brand.indigo,
                   transition: "all 0.3s ease",
                   "&:hover": {
                     bgcolor: "#6f137f",

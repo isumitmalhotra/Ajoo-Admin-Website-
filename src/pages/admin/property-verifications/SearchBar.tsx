@@ -8,7 +8,7 @@ import {
   MenuItem,
 } from "@mui/material";
 import {
-  PurpleThemeColor,
+  Brand,
   menuProps,
   commonFieldSx,
 } from "../../../theme/themeColor";
@@ -67,10 +67,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
             sx={{
               minWidth: 220,
               "& .MuiOutlinedInput-root.Mui-focused fieldset": {
-                borderColor: PurpleThemeColor,
+                borderColor: Brand.indigo,
               },
               "& .MuiInputLabel-root.Mui-focused": {
-                color: PurpleThemeColor,
+                color: Brand.indigo,
               },
             }}
           />

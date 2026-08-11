@@ -82,7 +82,7 @@ const Footer: React.FC = () => {
                 color: "#F5F1EA",
               }}
             >
-              aajooHomes
+              aajoo
             </Typography>
           </Box>
           <Typography
@@ -177,7 +177,7 @@ const Footer: React.FC = () => {
         }}
       >
         <Typography sx={{ fontSize: 12, color: "#7A8099" }}>
-          © 2025 aajooHomes. All rights reserved.
+          © 2025 aajoo. All rights reserved.
         </Typography>
         <Box sx={{ display: "flex", gap: "24px" }}>
           <Link component={RouterLink} to="/privacy-policy" sx={{ fontSize: 12, color: "#7A8099", textDecoration: "none", "&:hover": { color: "#F5F1EA" } }}>

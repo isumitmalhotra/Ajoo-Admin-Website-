@@ -1,27 +1,72 @@
 const { v2: cloudinary } = require('cloudinary');
+const path = require('path');
 const config = require("../config/db.config");
 const model = require("../models");
 
+const RAW_FILE_EXTENSIONS = new Set([
+    '.pdf',
+    '.csv',
+    '.txt',
+    '.zip',
+    '.doc',
+    '.docx',
+    '.xls',
+    '.xlsx',
+]);
+
 class CloudinaryManager {
     constructor() {
-        cloudinary.config({
-            cloud_name: config.cloundinaryCloud,
-            api_key: config.cloundinaryKey,
-            api_secret: config.cloundinarySecrete,
-        });
+        // Only configured when all three credentials are present. Missing creds
+        // (e.g. local dev) must NOT crash uploads — uploadImage degrades below.
+        this.isConfigured = Boolean(
+            config.cloundinaryCloud &&
+            config.cloundinaryKey &&
+            config.cloundinarySecrete
+        );
+        if (this.isConfigured) {
+            cloudinary.config({
+                cloud_name: config.cloundinaryCloud,
+                api_key: config.cloundinaryKey,
+                api_secret: config.cloundinarySecrete,
+            });
+        } else {
+            console.warn(
+                "[Cloudinary] Credentials not set — image uploads will be " +
+                "skipped (files remain on local disk)."
+            );
+        }
         this.cloudinary = cloudinary;
     };
-    async uploadImage(imageUrl, fileType, recordId) {
+    async uploadImage(imageUrl, fileType, recordId, options = {}) {
         try {
-            const uploadResult = await cloudinary.uploader.upload(imageUrl);
+            // Graceful degradation: no creds → skip cloud upload so callers
+            // (e.g. signup) still complete. afileId 0 = "no attachment stored".
+            if (!this.isConfigured) {
+                console.warn(`[Cloudinary] Skipping upload (not configured): ${imageUrl}`);
+                return { afileId: 0, skipped: true };
+            }
+            const extension = path.extname(imageUrl || '').toLowerCase();
+            const inferredResourceType = RAW_FILE_EXTENSIONS.has(extension) ? 'raw' : 'image';
+            const {
+                resourceType = inferredResourceType,
+                attachmentPath = imageUrl,
+                originalName = path.basename(imageUrl || ''),
+                ...uploadOptions
+            } = options;
+
+            const uploadResult = await cloudinary.uploader.upload(imageUrl, {
+                resource_type: resourceType,
+                ...uploadOptions,
+            });
             if (!uploadResult) {
                 return false;
             }
             let attachmentPayload = {
                 afile_type: fileType,
                 afile_record_id: recordId,
-                afile_path: imageUrl,
+                afile_path: attachmentPath,
                 afile_cldId: uploadResult["public_id"],
+                afile_name: originalName,
             };
             const data = await model.tbl_attachments.addCloudAttachment(attachmentPayload);
 

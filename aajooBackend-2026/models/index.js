@@ -12,7 +12,7 @@ const config = require(__dirname + '/../config/config.json')[env];
 const db = {};
 let sequelize;
 
-// ------------------ Live Database -------------------
+// // ------------------ Live Database -------------------
 // sequelize = new Sequelize({
 //   username: dbConfig.username,
 //   password: dbConfig.password,
@@ -36,14 +36,14 @@ let sequelize;
 //   }
 // });
 
-// ------------------ Local Database (optional) -------------------
+// // ------------------ Local Database (optional) -------------------
 if (config.use_env_variable) {
   sequelize = new Sequelize(process.env[config.use_env_variable], config);
 } else {
   sequelize = new Sequelize(config.database, config.username, config.password, config);
 }
 
-// ------------------ Test Connection -------------------
+// // ------------------ Test Connection -------------------
 // sequelize.authenticate()
 //   .then(() => {
 //     console.log('✅ Database connection established successfully.');

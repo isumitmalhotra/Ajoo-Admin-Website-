@@ -14,10 +14,15 @@ exports.createUser = yup.object({
         .string()
         .required("date of birth is required"),
 
-    // user_email: yup
-    //     .string()
-    //     .email('Must be a valid email')
-    //     .required('Email is required'),
+    // NOTE: user_email MUST be declared here. The validation middleware
+    // sanitizes req.body to only schema-known keys (stripUnknown), so any
+    // field omitted here is removed before the controller runs — which caused
+    // signup to fail with "Missing required fields" even though the client
+    // sent the email.
+    user_email: yup
+        .string()
+        .email('Must be a valid email')
+        .required('Email is required'),
 
     user_password: yup
         .string()
@@ -53,32 +58,34 @@ exports.createUser = yup.object({
         .required('Host status is required')
         .oneOf([true, false], 'Host status must be true or false'),
 
-    // [DEV-BYPASS] doc_type and doc_number made optional — restore .required() before production
     doc_type: yup
         .number()
-        .nullable()
-        .transform((v, o) => (o === '' || o == null) ? null : v)
-        .optional(),
+        .required('document type is required'),
 
     doc_number: yup
         .string()
-        .optional()
-        .nullable()
+        .required("Document number is required")
         .when("doc_type", {
-            is: 1,
+            is: 1, // Aadhaar card
             then: (schema) =>
                 schema.matches(/^\d{12}$/, "Aadhaar number must be exactly 12 digits"),
         })
         .when("doc_type", {
-            is: 2,
+            is: 2, // Voter card
             then: (schema) =>
                 schema.matches(/^[A-Z]{3}\d{7}$/, "Voter ID must be 3 letters followed by 7 digits (e.g., ABC1234567)"),
         })
         .when("doc_type", {
-            is: 3,
+            is: 3, // Driving licence
             then: (schema) =>
                 schema.matches(/^[A-Z]{2}\d{13}$/, "Driving licence must be in format: 2 letters + 13 digits (e.g., DL1420110023456)"),
         }),
+
+    // Optional referral code. Declared so stripUnknown keeps it in req.body.
+    user_ref: yup
+        .string()
+        .nullable()
+        .optional(),
 });
 
 exports.updateUser = yup.object({
@@ -180,12 +187,12 @@ exports.updateForgetPassword = yup.object({
         .oneOf([yup.ref('newPassword'), null], 'Passwords must match'),
 });
 exports.savedPropList = yup.object({
-    userId: yup
-        .number()
-        .required("user id is required"),
-    propId: yup
-        .number()
-        .required("property id is required"),
+    // userId comes from the JWT (req.user.userId) — never trusted from body.
+    // propId removed because this endpoint lists ALL of a user's saved
+    // properties; filtering to one prop was a leftover design bug.
+    // Pagination is optional.
+    limit: yup.number().integer().min(1).max(100).notRequired(),
+    page: yup.number().integer().min(1).notRequired(),
 });
 exports.verifyOptForgetPass = yup.object({
     otp: yup

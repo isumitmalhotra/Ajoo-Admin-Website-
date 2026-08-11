@@ -10,15 +10,25 @@ import {
   Button,
   Snackbar,
   Alert,
+  Stack,
   useTheme,
   useMediaQuery,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import VerifyButton from "../../components/frontend/kyc/VerifyButton";
+import KycStatusBadge from "../../components/frontend/kyc/KycStatusBadge";
 
 const UserCheckoutPage: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // bookingId is passed through router state by the real booking flow; the guest
+  // KYC gate is enforced only when we have a booking to verify against.
+  const bookingId = (location.state as { bookingId?: number | string } | null)?.bookingId;
+  const kycRequired = bookingId != null;
+  const [kycApproved, setKycApproved] = useState(false);
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -76,7 +86,7 @@ const UserCheckoutPage: React.FC = () => {
           fontWeight: 700,
           color: "#1B2447",
           mb: 3,
-          fontFamily: "'Poppins', sans-serif",
+          fontFamily: "'Inter', sans-serif",
           textAlign: "center",
         }}
       >
@@ -100,7 +110,7 @@ const UserCheckoutPage: React.FC = () => {
               color: "#1A237E",
               fontWeight: 700,
               mb: 1,
-              fontFamily: "'Poppins', sans-serif",
+              fontFamily: "'Inter', sans-serif",
             }}
           >
             Property Information
@@ -130,7 +140,7 @@ const UserCheckoutPage: React.FC = () => {
               fontWeight: 700,
               mt: 3,
               mb: 1,
-              fontFamily: "'Poppins', sans-serif",
+              fontFamily: "'Inter', sans-serif",
             }}
           >
             Host Information
@@ -154,7 +164,7 @@ const UserCheckoutPage: React.FC = () => {
               fontWeight: 700,
               mt: 3,
               mb: 2,
-              fontFamily: "'Poppins', sans-serif",
+              fontFamily: "'Inter', sans-serif",
             }}
           >
             Submit Your Reviews
@@ -244,6 +254,38 @@ const UserCheckoutPage: React.FC = () => {
             />
           </Box>
 
+          {/* Guest KYC gate — booking can't be confirmed until the guest is
+              verified (or skipped within the 90-day validity window). */}
+          {kycRequired && !kycApproved && (
+            <Box
+              sx={{
+                mt: 1,
+                mb: 2,
+                p: 2,
+                borderRadius: 2,
+                border: "1px solid #ede9fe",
+                bgcolor: "#faf5ff",
+              }}
+            >
+              <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} mb={1}>
+                <Typography variant="subtitle1" fontWeight={700} color="#1B2447">
+                  Identity verification required
+                </Typography>
+                <KycStatusBadge status="not_started" />
+              </Stack>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                For your security, please verify your identity before completing this booking.
+              </Typography>
+              <VerifyButton
+                context="guest_kyc"
+                bookingId={bookingId}
+                returnPath={location.pathname}
+                onVerified={() => setKycApproved(true)}
+                label="Verify identity to continue"
+              />
+            </Box>
+          )}
+
           {/* Buttons */}
           <Box
             sx={{
@@ -256,6 +298,7 @@ const UserCheckoutPage: React.FC = () => {
           >
             <Button
               variant="contained"
+              disabled={kycRequired && !kycApproved}
               sx={{
                 bgcolor: "#1B2447",
                 "&:hover": { bgcolor: "#a83454" },
@@ -264,6 +307,7 @@ const UserCheckoutPage: React.FC = () => {
                 py: 1.5,
                 borderRadius: 2,
                 fontWeight: 600,
+                "&.Mui-disabled": { bgcolor: "#e5e7eb", color: "#9ca3af" },
               }}
               onClick={handleSubmit}
             >

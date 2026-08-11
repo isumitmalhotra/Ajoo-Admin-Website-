@@ -17,39 +17,24 @@ import {
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import DoneIcon from "@mui/icons-material/Done";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  getUserNotifications,
+  markUserNotificationRead,
+} from "../../services/customerApi";
+import storage from "../../styles/utils/storage";
 
-const MotionBadge = motion(Badge);
+const MotionBadge = motion.create(Badge);
+
+interface NotificationItem {
+  id: number;
+  message: string;
+  read: boolean;
+}
 
 const NotificationDropdown: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [notifications, setNotifications] = useState(
-    Array.from({ length: 20 }, (_, i) => ({
-      id: i + 1,
-      message: [
-        "Your booking at Aajoo Homestay is confirmed!",
-        "New offers available near your area.",
-        "Host responded to your inquiry.",
-        "Your payment has been successfully processed.",
-        "Aajoo added new homestays in Manali — explore now!",
-        "Check-in reminder: Your stay begins tomorrow at 2 PM.",
-        "New message from your host.",
-        "Your review was posted successfully.",
-        "Special discount: 15% off on weekend stays!",
-        "Your profile has been verified successfully.",
-        "Your booking request has been declined by the host.",
-        "Aajoo rewards: You earned ₹250 travel credits!",
-        "Your stay at Hillside Cottage has ended — rate your experience.",
-        "New homestay listings added in Shimla!",
-        "Host 'The Cozy Den' updated their prices recently.",
-        "You have unread messages in your inbox.",
-        "Security alert: New login detected from a different device.",
-        "Aajoo newsletter: Discover top-rated stays this month!",
-        "Your refund has been initiated for canceled booking.",
-        "Reminder: Complete your profile to get personalized offers.",
-      ][i],
-      read: i < 18, // simulate last two as unread initially
-    }))
-  );
+  // Real notifications — GET /user/notification/Listing (returns unread only).
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -57,6 +42,29 @@ const NotificationDropdown: React.FC = () => {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const open = Boolean(anchorEl);
+
+  const loadNotifications = async () => {
+    // Authenticated endpoint — skip when logged out, otherwise the 401 handler
+    // redirects to "/" and the header remounts → infinite refresh loop.
+    if (!storage.getToken()) return;
+    try {
+      const rows = await getUserNotifications();
+      setNotifications(
+        rows.map((n: any) => ({
+          id: Number(n.un_id),
+          message: n.un_message || n.un_title || "Notification",
+          read: n.un_is_read === 1 || n.un_is_read === true,
+        }))
+      );
+    } catch {
+      // leave list as-is on failure
+    }
+  };
+
+  // Fetch on mount so the unread badge is correct before opening.
+  useEffect(() => {
+    loadNotifications();
+  }, []);
 
   // Shake animation when new unread notifications appear
   useEffect(() => {
@@ -69,21 +77,36 @@ const NotificationDropdown: React.FC = () => {
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
+    loadNotifications();
   };
 
   const handleClose = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     setAnchorEl(null);
   };
 
-  const markAsRead = (id: number) => {
+  const markAsRead = async (id: number) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
+    try {
+      await markUserNotificationRead(id);
+    } catch {
+      // revert on failure
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: false } : n))
+      );
+    }
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    const ids = notifications.filter((n) => !n.read).map((n) => n.id);
+    if (ids.length === 0) return;
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await markUserNotificationRead(ids);
+    } catch {
+      // ignore — next fetch will reconcile
+    }
   };
 
   return (

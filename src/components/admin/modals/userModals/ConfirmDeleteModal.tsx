@@ -13,7 +13,7 @@ interface ConfirmDeleteModalProps {
   description?: string;
 }
 
-const MotionPaper = motion(Paper);
+const MotionPaper = motion.create(Paper);
 
 const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
   open,

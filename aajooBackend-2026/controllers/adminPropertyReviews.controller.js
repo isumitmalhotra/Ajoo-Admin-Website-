@@ -2,6 +2,7 @@ const model = require("../models");
 const common = require("../utils/common");
 const commonConfig = require("../config/commonConfig");
 const { Op, where } = require("sequelize");
+const { normalizeOptionalString, normalizeOptionalValue } = require("../utils/requestFilters");
 
 const reviewListing = async (req, res) => {
     try {
@@ -9,7 +10,7 @@ const reviewListing = async (req, res) => {
         const page = Number(reqData.page) > 0 ? Number(reqData.page) : 1;
         const limit = Number(reqData.limit) > 0 ? Number(reqData.limit) : 10;
         const offset = (page - 1) * limit;
-        const search = reqData.keyword?.trim() || "";
+        const search = normalizeOptionalString(reqData.keyword);
         let whereCodn = {
             br_isDelete: commonConfig.isNo,
         };
@@ -21,16 +22,18 @@ const reviewListing = async (req, res) => {
                 }
             };
         }
-        if (reqData.status) {
+        const reviewStatus = normalizeOptionalValue(reqData.status);
+        if (reviewStatus !== null) {
             whereCodn = {
                 ...whereCodn,
-                br_isActive: reqData.status
+                br_isActive: reviewStatus
             }
         }
-        if (reqData.rating) {
+        const rating = normalizeOptionalValue(reqData.rating);
+        if (rating !== null) {
             whereCodn = {
                 ...whereCodn,
-                br_rating: reqData.rating
+                br_rating: rating
             }
 
         }

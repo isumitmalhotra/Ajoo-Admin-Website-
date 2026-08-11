@@ -2,7 +2,6 @@ const model = require("../models");
 const common = require("../utils/common");
 const commonConfig = require("../config/commonConfig");
 const { Op } = require('sequelize');
-const xlsx = require("xlsx");
 
 const addHostAccountDetails = async (req, res) => {
     try {
@@ -16,12 +15,35 @@ const addHostAccountDetails = async (req, res) => {
         };
         if (reqData.accountId) {
             delete payload.had_host_id;
-            model.tbl_host_acc_details.update(payload, { where: { had_id: reqData.accountId } });
+            await model.tbl_host_acc_details.update(payload, { where: { had_id: reqData.accountId } });
             return common.response(req, res, commonConfig.successStatus, true, "Account Details Updated successfully",);
         } else {
+            const existing = await model.tbl_host_acc_details.findOne({
+                where: { had_host_id: hostId, had_isDelete: commonConfig.isNo }
+            });
+            if (existing) {
+                await model.tbl_host_acc_details.update(payload, { where: { had_id: existing.had_id } });
+                return common.response(req, res, commonConfig.successStatus, true, "Account Details Updated successfully",);
+            }
             await model.tbl_host_acc_details.create(payload);
-            return common.response(req, res, commonConfig.successStatus, true, "Account Details Addedd successfully",);
+            return common.response(req, res, commonConfig.successStatus, true, "Account Details Added successfully",);
         }
+    } catch (error) {
+        return common.response(req, res, commonConfig.errorStatus, false, error.message);
+    }
+};
+
+const getHostAccountDetails = async (req, res) => {
+    try {
+        const hostId = req.user.userId;
+        const accountDetails = await model.tbl_host_acc_details.findOne({
+            where: {
+                had_host_id: hostId,
+                had_isDelete: commonConfig.isNo
+            },
+            attributes: ["had_id", "had_acc_no", "had_ifsc", "had_status", "had_isVerified"]
+        });
+        return common.response(req, res, commonConfig.successStatus, true, "success", accountDetails ?? null);
     } catch (error) {
         return common.response(req, res, commonConfig.errorStatus, false, error.message);
     }
@@ -83,102 +105,10 @@ const getPayoutRequests = async (req, res) => {
     }
 };
 
-const getHostAccountDetails = async (req, res) => {
-    try {
-        const hostId = req.user.userId;
-        const account = await model.tbl_host_acc_details.findOne({
-            raw: true,
-            where: {
-                had_host_id: hostId,
-                had_isDelete: commonConfig.isNo,
-            },
-            attributes: ["had_id", "had_acc_no", "had_ifsc", "had_status", "had_isVerified", "createdAt", "updatedAt"]
-        });
-        return common.response(req, res, commonConfig.successStatus, true, "success", { account: account ?? null });
-    } catch (error) {
-        return common.response(req, res, commonConfig.errorStatus, false, error.message);
-    }
-};
-
-const buildDateFilter = (fromDate, toDate) => {
-    if (!fromDate && !toDate) return null;
-    const filter = {};
-    if (fromDate && toDate) {
-        filter[Op.between] = [new Date(fromDate), new Date(toDate)];
-        return filter;
-    }
-    if (fromDate) {
-        filter[Op.gte] = new Date(fromDate);
-        return filter;
-    }
-    filter[Op.lte] = new Date(toDate);
-    return filter;
-};
-
-const getPayoutHistory = async (req, res) => {
-    try {
-        const reqData = { ...req.body };
-        const hostId = req.user.userId;
-        const page = Number(reqData.page) > 0 ? Number(reqData.page) : 1;
-        const limit = Number(reqData.limit) > 0 ? Number(reqData.limit) : commonConfig.listLimit;
-        const offset = (page - 1) * limit;
-        const whereClause = { poh_host_id: hostId };
-        const dateFilter = buildDateFilter(reqData.fromDate, reqData.toDate);
-        if (dateFilter) {
-            whereClause.createdAt = dateFilter;
-        }
-        const { rows, count } = await model.tbl_payout_history.findAndCountAll({
-            raw: true,
-            where: whereClause,
-            order: [["poh_id", "DESC"]],
-            limit,
-            offset,
-        });
-        return common.response(req, res, commonConfig.successStatus, true, "success", {
-            totalRecords: count,
-            currentPage: page,
-            totalPages: Math.ceil(count / limit),
-            page,
-            limit,
-            payouts: rows ?? [],
-        });
-    } catch (error) {
-        return common.response(req, res, commonConfig.errorStatus, false, error.message);
-    }
-};
-
-const downloadPayoutHistory = async (req, res) => {
-    try {
-        const reqData = { ...req.body };
-        const hostId = req.user.userId;
-        const whereClause = { poh_host_id: hostId };
-        const dateFilter = buildDateFilter(reqData.fromDate, reqData.toDate);
-        if (dateFilter) {
-            whereClause.createdAt = dateFilter;
-        }
-        const rows = await model.tbl_payout_history.findAll({
-            raw: true,
-            where: whereClause,
-            order: [["poh_id", "DESC"]],
-            attributes: ["poh_id", "poh_invoice", "poh_amount", "poh_status", "createdAt"],
-        });
-        const worksheet = xlsx.utils.json_to_sheet(rows ?? []);
-        const workbook = xlsx.utils.book_new();
-        xlsx.utils.book_append_sheet(workbook, worksheet, "PayoutHistory");
-        const buffer = xlsx.write(workbook, { type: "buffer", bookType: "xlsx" });
-        res.setHeader("Content-Disposition", "attachment; filename=payout-history.xlsx");
-        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        return res.send(buffer);
-    } catch (error) {
-        return common.response(req, res, commonConfig.errorStatus, false, error.message);
-    }
-};
 
 module.exports = {
     addHostAccountDetails,
-    cretePayoutRequest,
-    getPayoutRequests,
     getHostAccountDetails,
-    getPayoutHistory,
-    downloadPayoutHistory
+    cretePayoutRequest,
+    getPayoutRequests
 }

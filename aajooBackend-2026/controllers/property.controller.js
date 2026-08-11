@@ -812,11 +812,69 @@ const loadPropertiesUsingFile = async (req, res) => {
     }
 }
 
+// Public host profile for the property-detail "Meet your host" block.
+// Returns only non-sensitive, display-safe fields (name, avatar, city,
+// active-listing count, member-since year) — no email/phone/KYC.
+const getHostProfile = async (req, res) => {
+    try {
+        const hostId = req.params.hostId;
+        const host = await model.tbl_user.findOne({
+            raw: true,
+            where: {
+                user_id: hostId,
+                user_isHost: commonConfig.isYes,
+                user_isActive: commonConfig.isYes,
+                user_isDelete: commonConfig.isNo,
+            },
+            attributes: ["user_fullName", "user_city", "added_at"],
+        });
+        if (!host) {
+            return common.response(req, res, commonConfig.successStatus, true, "no record found");
+        }
+
+        // Optional avatar (Cloudinary-optimized) — host may not have uploaded one.
+        let image = null;
+        const attachment = await model.tbl_attachments.getSingleAttachment({
+            afile_type: moduleConfig.user_image_type,
+            afile_record_id: hostId,
+        });
+        if (attachment && attachment.afile_cldId) {
+            const cloudinaryInstance = new CloudinaryManager();
+            image = await cloudinaryInstance.getOptimizedUrl(attachment.afile_cldId);
+        }
+
+        // Count of this host's active, non-deleted listings.
+        const propertyCount = await model.tbl_properties.count({
+            where: {
+                property_host_id: hostId,
+                is_active: commonConfig.isYes,
+                is_deleted: commonConfig.isNo,
+            },
+        });
+
+        const memberSince = host.added_at ? new Date(host.added_at).getFullYear() : null;
+
+        return common.response(req, res, commonConfig.successStatus, true, "success", {
+            host: {
+                hostId: Number(hostId),
+                name: host.user_fullName || "Host",
+                city: host.user_city || null,
+                image,
+                propertyCount,
+                memberSince,
+            },
+        });
+    } catch (error) {
+        return common.response(req, res, commonConfig.errorStatus, false, error.message);
+    }
+};
+
 module.exports = {
     addProperty,
     propertyReviews,
     getProperties,
     getProperty,
+    getHostProfile,
     countries,
     loadPropertiesUsingFile,
     states,

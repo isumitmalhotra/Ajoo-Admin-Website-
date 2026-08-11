@@ -1,25 +1,49 @@
 // OngoigActionButtons.tsx
 import React, { useEffect, useState } from "react";
-import { Box, Typography, Divider, Button } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import SupportAgentIcon from "@mui/icons-material/SupportAgent";
+import { Box, Typography, Divider, Button, CircularProgress } from "@mui/material";
+import toast from "react-hot-toast";
 import PaymentIcon from "@mui/icons-material/Payment";
 import DirectionsIcon from "@mui/icons-material/Directions";
 import CancelIcon from "@mui/icons-material/Cancel";
 import LogoutIcon from "@mui/icons-material/Logout";
-// import RateReviewIcon from "@mui/icons-material/RateReview";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
+import DirectionsModal from "./DirectionsModal";
+import {
+  createOngoingPaymentOrder,
+  verifyBookingPayment,
+} from "../../../services/customerApi";
+
+// TODO: replace with the real Aajoo support contacts.
+const SUPPORT_WHATSAPP = "919999999999";
+const RZP_KEY =
+  (import.meta.env.VITE_RAZORPAY_KEY as string | undefined) || "rzp_test_XUTODhUdMAshi6";
+
+const loadRazorpay = () =>
+  new Promise<boolean>((resolve) => {
+    if ((window as any).Razorpay) return resolve(true);
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
 
 interface OngoigActionButtonsProps {
   booking: any;
   onCancel?: () => void;
+  onPaid?: () => void;
 }
 
 const OngoigActionButtons: React.FC<OngoigActionButtonsProps> = ({
   booking,
   onCancel,
+  onPaid,
 }) => {
-  const navigate = useNavigate();
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [directionsOpen, setDirectionsOpen] = useState(false);
+  const [paying, setPaying] = useState(false);
+
+  const isPaid = booking?.isPaid === true;
 
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -30,33 +54,67 @@ const OngoigActionButtons: React.FC<OngoigActionButtonsProps> = ({
     }
   }, []);
 
-  const handleSupport = () => navigate("/support");
+  // Customer support — one tap to WhatsApp (easy to reach).
+  const handleSupport = () =>
+    window.open(
+      `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(
+        `Hi Aajoo support, I need help with booking ${booking?.id ?? ""}.`
+      )}`,
+      "_blank"
+    );
 
-  const handleGetDirections = () => {
-    // If booking has coordinates prefer them
-    const destLat = booking?.lat;
-    const destLng = booking?.lng;
-    if (destLat && destLng && userLocation) {
-      window.open(`https://www.google.com/maps/dir/${userLocation.lat},${userLocation.lng}/${destLat},${destLng}`, "_blank");
-      return;
-    }
+  // Directions are shown in-app via an embedded map (no external tab).
+  const handleGetDirections = () => setDirectionsOpen(true);
 
-    const destination = encodeURIComponent(booking.location || booking.propertyName || "Aajoo Property");
-    if (userLocation) {
-      window.open(`https://www.google.com/maps/dir/${userLocation.lat},${userLocation.lng}/${destination}`, "_blank");
-    } else {
-      window.open(`https://www.google.com/maps/search/?api=1&query=${destination}`, "_blank");
+  // Check-out only applies once a stay is paid; managed at the property.
+  const handleCheckout = () =>
+    toast("Check-out is completed at the property at the end of your stay.", { icon: "🏨" });
+
+  // Pay Now → real Razorpay gateway for pay-on-arrival (COD) bookings.
+  const handlePayNow = async () => {
+    setPaying(true);
+    try {
+      const order = await createOngoingPaymentOrder(booking.id);
+      const ready = await loadRazorpay();
+      if (!ready || !order?.id) {
+        toast.error("Couldn't start payment. Please try again.");
+        return;
+      }
+      const rzp = new (window as any).Razorpay({
+        key: RZP_KEY,
+        amount: order.amount,
+        currency: order.currency || "INR",
+        order_id: order.id,
+        name: "Aajoo Homes",
+        description: booking.propertyName || "Booking payment",
+        theme: { color: "#1B2447" },
+        handler: async (resp: any) => {
+          try {
+            await verifyBookingPayment({
+              paymentId: resp.razorpay_payment_id,
+              orderId: resp.razorpay_order_id,
+              signature: resp.razorpay_signature,
+            });
+            toast.success("Payment successful!");
+            onPaid?.();
+          } catch {
+            toast.error("Payment received — verification pending. We'll confirm shortly.");
+          }
+        },
+      });
+      rzp.on("payment.failed", () => toast.error("Payment failed. Please try again."));
+      rzp.open();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || "Couldn't start payment.");
+    } finally {
+      setPaying(false);
     }
   };
 
-  const handleCheckout = () => navigate(`/user/checkout/${booking.id}`, { state: { booking } });
-  const handlePayNow = () => navigate(`/user/payment/${booking.id}`, { state: { booking } });
-  const handleCancel = () => {
-    if (onCancel) onCancel();
-    else navigate(`/booking/cancel-result/${booking.id}`, { state: { booking } });
-  };
+  const handleCancel = () => onCancel?.();
 
   return (
+    <>
     <Box
       sx={{
         mt: 3,
@@ -77,23 +135,27 @@ const OngoigActionButtons: React.FC<OngoigActionButtonsProps> = ({
       <Divider sx={{ mb: 2 }} />
 
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.25, justifyContent: "center" }}>
-        <Button
-          onClick={handleCheckout}
-          startIcon={<LogoutIcon />}
-          variant="contained"
-          sx={{ bgcolor: "#1B2447", px: 2.5, py: 0.7, minWidth: 140, textTransform: "none", fontWeight: 700 }}
-        >
-          Check Out
-        </Button>
-
-        <Button
-          onClick={handlePayNow}
-          startIcon={<PaymentIcon />}
-          variant="contained"
-          sx={{ bgcolor: "#1B2447", px: 2.5, py: 0.7, minWidth: 140, textTransform: "none", fontWeight: 700 }}
-        >
-          Pay Now
-        </Button>
+        {/* Pay-on-arrival (unpaid) → Pay Now; once paid → Check Out */}
+        {isPaid ? (
+          <Button
+            onClick={handleCheckout}
+            startIcon={<LogoutIcon />}
+            variant="contained"
+            sx={{ bgcolor: "#1B2447", px: 2.5, py: 0.7, minWidth: 150, textTransform: "none", fontWeight: 700 }}
+          >
+            Check Out
+          </Button>
+        ) : (
+          <Button
+            onClick={handlePayNow}
+            disabled={paying}
+            startIcon={paying ? <CircularProgress size={16} sx={{ color: "#fff" }} /> : <PaymentIcon />}
+            variant="contained"
+            sx={{ bgcolor: "#1B2447", px: 2.5, py: 0.7, minWidth: 150, textTransform: "none", fontWeight: 700 }}
+          >
+            {paying ? "Starting…" : "Pay Now"}
+          </Button>
+        )}
 
         <Button
           onClick={handleGetDirections}
@@ -112,26 +174,40 @@ const OngoigActionButtons: React.FC<OngoigActionButtonsProps> = ({
         >
           Cancel Booking
         </Button>
-
-        <Button
-          onClick={handleSupport}
-          startIcon={<SupportAgentIcon />}
-          variant="contained"
-          sx={{ bgcolor: "#1976d2", px: 2.5, py: 0.7, minWidth: 160, textTransform: "none", fontWeight: 700 }}
-        >
-          Customer Support
-        </Button>
-
-        {/* <Button
-          startIcon={<RateReviewIcon />}
-          variant="contained"
-          sx={{ bgcolor: "#ff9800", px: 2.5, py: 0.7, minWidth: 150, textTransform: "none", fontWeight: 700 }}
-          onClick={() => navigate(`/user/review/${booking.id}`)}
-        >
-          Rate Stay
-        </Button> */}
       </Box>
+
+      {/* Support — prominent & one-tap (was easy to miss) */}
+      <Button
+        onClick={handleSupport}
+        startIcon={<WhatsAppIcon />}
+        fullWidth
+        variant="outlined"
+        sx={{
+          mt: 1.75,
+          borderColor: "#25D366",
+          color: "#1B7a3e",
+          py: 1,
+          borderRadius: 2,
+          textTransform: "none",
+          fontWeight: 700,
+          "&:hover": { bgcolor: "rgba(37,211,102,0.08)", borderColor: "#25D366" },
+        }}
+      >
+        Chat with Aajoo Support
+      </Button>
     </Box>
+
+    <DirectionsModal
+      open={directionsOpen}
+      onClose={() => setDirectionsOpen(false)}
+      destination={{
+        lat: booking?.lat,
+        lng: booking?.lng,
+        label: booking?.location || booking?.propertyName,
+      }}
+      userLocation={userLocation}
+    />
+    </>
   );
 };
 

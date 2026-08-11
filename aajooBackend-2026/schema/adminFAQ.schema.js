@@ -1,4 +1,5 @@
 const yup = require("yup");
+const { optionalInteger, optionalString } = require("./yupHelpers");
 
 exports.faqId = yup
     .object({
@@ -46,4 +47,8 @@ exports.faqSchema = yup.object().shape({
         .required("FAQ status is required"),
 });
 
-// module.exports = faqSchema;
+exports.faqListingSchema = yup.object().shape({
+    page: optionalInteger().min(1, "Page must be greater than 0").max(100000, "Page is too large"),
+    limit: optionalInteger().min(1, "Limit must be greater than 0").max(100, "Limit cannot exceed 100"),
+    search: optionalString({ max: 100 }).max(100, "Search cannot exceed 100 characters"),
+});

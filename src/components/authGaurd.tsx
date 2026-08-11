@@ -14,9 +14,13 @@ const DISABLE_ADMIN_AUTH =
   import.meta.env.VITE_DISABLE_ADMIN_AUTH === "true";
 
 const ADMIN_ALLOWED_ROLES: AppRole[] = ["admin", "finance", "support"];
+const HOST_ALLOWED_ROLES: AppRole[] = ["host", "admin"];
 
 const AdminProtectedRoute = () => {
   const [isAuth, setIsAuth] = useState<boolean | null>(null);
+  // A signed-in host hitting /admin/* should bounce to their own dashboard
+  // rather than have their session cleared (B-12).
+  const [hostRedirect, setHostRedirect] = useState(false);
 
   if (DISABLE_ADMIN_AUTH) {
     return <Outlet />;
@@ -37,6 +41,12 @@ const AdminProtectedRoute = () => {
     }
 
     const claims = getAdminClaims();
+    if (claims && claims.role === "host") {
+      // Authenticated host on an admin route → send to host dashboard, keep session.
+      setHostRedirect(true);
+      setIsAuth(false);
+      return;
+    }
     if (claims && !hasAnyRole(claims, ADMIN_ALLOWED_ROLES)) {
       clearAdminSession();
       setIsAuth(false);
@@ -78,6 +88,7 @@ const AdminProtectedRoute = () => {
   // Loader while verifying
   if (isAuth === null) return null;
 
+  if (hostRedirect) return <Navigate to="/host/dashboard" replace />;
   return isAuth ? <Outlet /> : <Navigate to="/admin/login" replace />;
 };
 
@@ -85,6 +96,31 @@ export const GuestRoute = () => {
   const token = getAdminToken();
   if (token) {
     return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  return <Outlet />;
+};
+
+/**
+ * Host portal guard (B-12). Allows role `host` (and `admin` as superuser).
+ * - No session → /auth/login (a guest trying /host/*).
+ * - Signed-in non-host (e.g. finance/support/guest) → /auth/login.
+ */
+export const HostRoute = () => {
+  if (DISABLE_ADMIN_AUTH || DEV_BYPASS_ENABLED) {
+    return <Outlet />;
+  }
+
+  const token = getAdminToken();
+  if (!token) {
+    return <Navigate to="/auth/login" replace />;
+  }
+
+  const claims = getAdminClaims();
+  // If the token carries no decodable role claim (legacy), allow through —
+  // back-compat with pre-RBAC sessions; A-13 embeds role for new logins.
+  if (claims && !hasAnyRole(claims, HOST_ALLOWED_ROLES)) {
+    return <Navigate to="/auth/login" replace />;
   }
 
   return <Outlet />;

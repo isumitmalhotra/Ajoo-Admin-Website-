@@ -7,7 +7,7 @@ import { TableLoader } from "../../common/TableLoader";
 import { useAppDispatch, useAppSelector } from "../../../../app/hooks";
 // import { useAppDispatch } from "../../../../app/hooks";
 import { validationSchemaAddUserHostModal } from "../../../../validations/admin-validations";
-import { PurpleThemeColor } from "../../../../theme/themeColor";
+import { Brand } from "../../../../theme/themeColor";
 import { getUserById } from "../../../../features/admin/userManagement/userDetails.slice";
 import { fetchUsers } from "../../../../features/admin/userManagement/user.slice";
 import { fetchHosts } from "../../../../features/admin/userManagement/host.slice";
@@ -345,7 +345,7 @@ const styles = {
     mb: 3,
     p: 2.5,
     borderRadius: 2,
-    background: `linear-gradient(135deg, ${PurpleThemeColor}, #C16345)`,
+    background: `linear-gradient(135deg, ${Brand.indigo}, #C16345)`,
     color: "#fff",
   },
   title: {

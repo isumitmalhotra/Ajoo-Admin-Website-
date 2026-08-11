@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AajooHomes — Premium Palette Refinements</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;background:#0E1A14}
+  a{color:inherit;text-decoration:none}
+  img{display:block;max-width:100%}
+
+  /* ============== Pitch shell ============== */
+  .pitch-bar{
+    position:sticky;top:0;z-index:50;
+    background:#050B17;color:#F5F1EA;padding:14px 32px;
+    display:flex;justify-content:space-between;align-items:center;
+    border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .pitch-bar .brand{display:flex;align-items:center;gap:10px;font-size:13px}
+  .pitch-bar .brand b{font-weight:700;letter-spacing:.04em}
+  .pitch-bar .brand span{opacity:.55;font-weight:400}
+  .pitch-bar .dot{width:8px;height:8px;border-radius:50%;background:#C8552A}
+  .nav-pills{display:flex;gap:6px;background:rgba(255,255,255,.05);padding:4px;border-radius:999px}
+  .nav-pills a{
+    font-size:12px;font-weight:600;color:rgba(245,241,234,.7);
+    padding:7px 14px;border-radius:999px;cursor:pointer;transition:.2s;
+  }
+  .nav-pills a:hover{color:#F5F1EA;background:rgba(255,255,255,.06)}
+
+  /* ============== Intro ============== */
+  .intro{
+    background:#0E1A14;color:#F5F1EA;padding:80px 48px 60px;
+    background-image:
+      radial-gradient(ellipse 800px 400px at 80% 0%, rgba(200,85,42,.1), transparent),
+      radial-gradient(ellipse 600px 400px at 10% 100%, rgba(31,61,50,.4), transparent);
+  }
+  .intro-inner{max-width:1280px;margin:0 auto}
+  .intro .label{font-family:'Inter';font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:#E07A47;margin-bottom:18px}
+  .intro h1{
+    font-family:'Fraunces',serif;font-weight:400;font-size:54px;letter-spacing:-.025em;
+    line-height:1.05;margin-bottom:18px;max-width:780px;
+  }
+  .intro h1 em{font-style:italic;color:#E07A47}
+  .intro p{font-size:16px;line-height:1.65;color:rgba(245,241,234,.65);max-width:680px;font-weight:400}
+  .intro p b{color:#F5F1EA;font-weight:600}
+
+  .principle{
+    margin-top:40px;padding:24px 28px;background:rgba(255,255,255,.04);
+    border-left:3px solid #E07A47;border-radius:0 12px 12px 0;max-width:780px;
+  }
+  .principle h3{font-family:'Fraunces',serif;font-weight:500;font-size:18px;margin-bottom:8px;letter-spacing:-.01em}
+  .principle p{font-size:13px;color:rgba(245,241,234,.7);line-height:1.6;margin:0;max-width:none}
+
+  /* ============== Section wrapper ============== */
+  .section{padding:0}
+  .section-head{
+    padding:60px 48px 28px;display:flex;justify-content:space-between;align-items:flex-end;gap:48px;
+  }
+  .section-head .left{flex:1}
+  .section-head .num{
+    font-family:'Fraunces',serif;font-style:italic;font-weight:400;font-size:14px;opacity:.55;margin-bottom:10px;
+  }
+  .section-head h2{
+    font-family:'Fraunces',serif;font-weight:400;font-size:42px;letter-spacing:-.025em;line-height:1;margin-bottom:14px;
+  }
+  .section-head h2 em{font-style:italic}
+  .section-head .desc{font-size:14px;line-height:1.6;max-width:560px;font-weight:400}
+
+  .palette-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .sw{
+    display:flex;flex-direction:column;align-items:flex-start;gap:6px;
+    font-family:'Inter';font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  }
+  .sw-box{width:48px;height:48px;border-radius:10px;border:1px solid rgba(0,0,0,.08)}
+  .sw small{font-weight:500;opacity:.5;text-transform:none;letter-spacing:0;font-size:11px}
+
+  .pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:560px;margin-top:18px}
+  .pc{padding:14px 16px;border-radius:10px;font-size:12px;line-height:1.5}
+  .pc b{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px;opacity:.7}
+
+  /* ============== Card section (re-used) ============== */
+  .demo{padding:0 48px 80px;max-width:1320px;margin:0 auto}
+  .hero{
+    border-radius:24px;overflow:hidden;
+    display:grid;grid-template-columns:1.05fr 1fr;gap:48px;align-items:center;
+    padding:64px;margin-bottom:24px;position:relative;
+  }
+  .hero .htag{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:6px 12px;border-radius:999px;font-size:11px;font-weight:600;
+    letter-spacing:.06em;text-transform:uppercase;margin-bottom:20px;
+  }
+  .hero .htag .p{width:6px;height:6px;border-radius:50%;}
+  .hero h2.htitle{
+    font-family:'Fraunces',serif;font-weight:400;
+    font-size:54px;line-height:1.02;letter-spacing:-.035em;margin-bottom:18px;
+  }
+  .hero h2.htitle em{font-style:italic;font-weight:500}
+  .hero .hsub{font-size:15px;line-height:1.55;max-width:480px;margin-bottom:28px}
+  .htrust{display:flex;gap:32px;padding-top:22px;border-top:1px solid;margin-top:8px}
+  .htrust .ti{display:flex;flex-direction:column;gap:3px}
+  .htrust .ti .n{font-family:'Fraunces',serif;font-size:24px;font-weight:600;letter-spacing:-.02em}
+  .htrust .ti .l{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+  .himg{position:relative;aspect-ratio:1/1;border-radius:18px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.18)}
+  .himg img{width:100%;height:100%;object-fit:cover}
+  .hbadge{
+    position:absolute;bottom:18px;left:18px;padding:12px 14px;border-radius:12px;
+    display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px);
+  }
+  .hbadge .ic{width:32px;height:32px;border-radius:8px;display:grid;place-items:center}
+  .hbadge .ic svg{width:16px;height:16px}
+  .hbadge .t{font-size:12px;font-weight:600;line-height:1.1}
+  .hbadge .t2{font-size:10px;opacity:.7;margin-top:2px}
+
+  /* cards row */
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  .card{cursor:pointer;display:flex;flex-direction:column;gap:10px;transition:.25s}
+  .card:hover{transform:translateY(-3px)}
+  .card-img{position:relative;border-radius:14px;overflow:hidden;aspect-ratio:1/1}
+  .card-img img{width:100%;height:100%;object-fit:cover;transition:.5s}
+  .card:hover .card-img img{transform:scale(1.06)}
+  .cbadge{
+    position:absolute;top:12px;left:12px;padding:5px 10px;border-radius:999px;
+    font-size:10px;font-weight:700;display:flex;align-items:center;gap:5px;
+    letter-spacing:.04em;text-transform:uppercase;backdrop-filter:blur(8px);
+  }
+  .cbadge .v{width:5px;height:5px;border-radius:50%}
+  .cloc{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+  .ctitle{font-family:'Fraunces',serif;font-weight:500;font-size:17px;line-height:1.2;letter-spacing:-.01em;min-height:42px}
+  .cmeta{font-size:12px;font-weight:500}
+  .cfoot{display:flex;justify-content:space-between;align-items:flex-end;padding-top:8px;margin-top:auto}
+  .cprice b{font-family:'Fraunces',serif;font-size:18px;font-weight:600;letter-spacing:-.01em}
+  .cprice .per{font-size:11px;opacity:.55}
+  .crate{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600}
+  .crate svg{width:11px;height:11px;fill:currentColor}
+
+  /* ============== PALETTE 1 — ONYX & CHAMPAGNE ============== */
+  .v1{background:#F4EFE6}
+  .v1 .section-head{color:#0F0E0B}
+  .v1 .section-head .num{color:#0F0E0B}
+  .v1 .section-head .desc{color:#3F3B33}
+  .v1 .pc.good{background:#0F0E0B;color:#F4EFE6}
+  .v1 .pc.bad{background:#FFF;color:#3F3B33;border:1px solid #E0D9C8}
+  .v1 .hero{background:#0F0E0B;color:#F4EFE6}
+  .v1 .hero .htag{background:rgba(212,177,107,.16);color:#D4B16B}
+  .v1 .hero .htag .p{background:#D4B16B;box-shadow:0 0 0 0 rgba(212,177,107,.6);animation:p 2s infinite}
+  @keyframes p{0%,100%{box-shadow:0 0 0 0 rgba(212,177,107,.6)}50%{box-shadow:0 0 0 8px rgba(212,177,107,0)}}
+  .v1 .hero h2.htitle em{color:#D4B16B}
+  .v1 .hero .hsub{color:rgba(244,239,230,.7)}
+  .v1 .htrust{border-color:rgba(244,239,230,.12)}
+  .v1 .htrust .n{color:#D4B16B}
+  .v1 .htrust .l{color:rgba(244,239,230,.55)}
+  .v1 .hbadge{background:rgba(244,239,230,.95);color:#0F0E0B}
+  .v1 .hbadge .ic{background:#0F0E0B;color:#D4B16B}
+  .v1 .hbadge .t2{color:#3F3B33}
+  .v1 .cards{padding:0 64px}
+  .v1 .card{color:#0F0E0B}
+  .v1 .cbadge{background:rgba(15,14,11,.92);color:#F4EFE6}
+  .v1 .cbadge .v{background:#A8C18C}
+  .v1 .cloc{color:#3F3B33}
+  .v1 .ctitle{color:#0F0E0B}
+  .v1 .cmeta{color:#5C5749}
+  .v1 .cfoot{border-top:1px solid #E0D9C8}
+  .v1 .crate{color:#0F0E0B}
+  .v1 .crate svg{color:#0F0E0B}
+
+  /* ============== PALETTE 2 — FOREST & BONE (refined current) ============== */
+  .v2{background:#F8F5EE}
+  .v2 .section-head{color:#0E2018}
+  .v2 .section-head .num{color:#0E2018}
+  .v2 .section-head .desc{color:#3A4940}
+  .v2 .pc.good{background:#0E2018;color:#F8F5EE}
+  .v2 .pc.bad{background:#FFF;color:#3A4940;border:1px solid #E5DECF}
+  .v2 .hero{background:#FFFCF5;color:#0E2018;border:1px solid #E5DECF}
+  .v2 .hero .htag{background:rgba(14,32,24,.06);color:#0E2018}
+  .v2 .hero .htag .p{background:#B25530;box-shadow:0 0 0 0 rgba(178,85,48,.5);animation:p 2s infinite}
+  .v2 .hero h2.htitle em{color:#0E2018}
+  .v2 .hero h2.htitle .uline{position:relative}
+  .v2 .hero h2.htitle .uline::after{
+    content:"";position:absolute;left:0;right:0;bottom:6px;height:8px;
+    background:#B25530;opacity:.25;z-index:-1;
+  }
+  .v2 .hero .hsub{color:#3A4940}
+  .v2 .htrust{border-color:#E5DECF}
+  .v2 .htrust .n{color:#0E2018}
+  .v2 .htrust .l{color:#7A8079}
+  .v2 .hbadge{background:#FFFCF5;color:#0E2018;border:1px solid #E5DECF}
+  .v2 .hbadge .ic{background:rgba(14,32,24,.08);color:#0E2018}
+  .v2 .hbadge .t2{color:#7A8079}
+  .v2 .cards{padding:0 64px}
+  .v2 .card{color:#0E2018}
+  .v2 .cbadge{background:rgba(255,252,245,.95);color:#0E2018}
+  .v2 .cbadge .v{background:#3F6B4E}
+  .v2 .cloc{color:#7A8079}
+  .v2 .ctitle{color:#0E2018}
+  .v2 .cmeta{color:#3A4940}
+  .v2 .cfoot{border-top:1px solid #E5DECF}
+  .v2 .crate{color:#0E2018}
+  .v2 .crate svg{color:#B25530}
+
+  /* ============== PALETTE 3 — SAND & INDIGO ============== */
+  .v3{background:#EFE7D6}
+  .v3 .section-head{color:#1B2447}
+  .v3 .section-head .num{color:#1B2447}
+  .v3 .section-head .desc{color:#3D4670}
+  .v3 .pc.good{background:#1B2447;color:#EFE7D6}
+  .v3 .pc.bad{background:#FFFAF0;color:#3D4670;border:1px solid #D9CFB8}
+  .v3 .hero{background:#FFFAF0;color:#1B2447;border:1px solid #D9CFB8}
+  .v3 .hero .htag{background:rgba(193,99,69,.12);color:#C16345}
+  .v3 .hero .htag .p{background:#C16345;box-shadow:0 0 0 0 rgba(193,99,69,.5);animation:p 2s infinite}
+  .v3 .hero h2.htitle em{color:#1B2447}
+  .v3 .hero h2.htitle .uline{position:relative}
+  .v3 .hero h2.htitle .uline::after{
+    content:"";position:absolute;left:0;right:0;bottom:6px;height:8px;
+    background:#C16345;opacity:.3;z-index:-1;
+  }
+  .v3 .hero .hsub{color:#3D4670}
+  .v3 .htrust{border-color:#D9CFB8}
+  .v3 .htrust .n{color:#1B2447}
+  .v3 .htrust .l{color:#6B7390}
+  .v3 .hbadge{background:#FFFAF0;color:#1B2447;border:1px solid #D9CFB8}
+  .v3 .hbadge .ic{background:rgba(27,36,71,.08);color:#1B2447}
+  .v3 .hbadge .t2{color:#6B7390}
+  .v3 .cards{padding:0 64px}
+  .v3 .card{color:#1B2447}
+  .v3 .cbadge{background:rgba(255,250,240,.95);color:#1B2447}
+  .v3 .cbadge .v{background:#3F6B4E}
+  .v3 .cloc{color:#6B7390}
+  .v3 .ctitle{color:#1B2447}
+  .v3 .cmeta{color:#3D4670}
+  .v3 .cfoot{border-top:1px solid #D9CFB8}
+  .v3 .crate{color:#1B2447}
+  .v3 .crate svg{color:#C16345}
+
+  /* ============== PALETTE 4 — CHARCOAL MINIMAL ============== */
+  .v4{background:#F2EFE9}
+  .v4 .section-head{color:#1C1B19}
+  .v4 .section-head .num{color:#1C1B19}
+  .v4 .section-head .desc{color:#52504B}
+  .v4 .pc.good{background:#1C1B19;color:#F2EFE9}
+  .v4 .pc.bad{background:#FFF;color:#52504B;border:1px solid #DDD8CC}
+  .v4 .hero{background:#FFF;color:#1C1B19;border:1px solid #DDD8CC}
+  .v4 .hero .htag{background:rgba(28,27,25,.06);color:#1C1B19}
+  .v4 .hero .htag .p{background:#FF5A36;box-shadow:0 0 0 0 rgba(255,90,54,.5);animation:p 2s infinite}
+  .v4 .hero h2.htitle em{color:#1C1B19}
+  .v4 .hero h2.htitle .accent-w{color:#FF5A36;font-weight:500}
+  .v4 .hero .hsub{color:#52504B}
+  .v4 .htrust{border-color:#DDD8CC}
+  .v4 .htrust .n{color:#1C1B19}
+  .v4 .htrust .l{color:#7C7A75}
+  .v4 .hbadge{background:#FFF;color:#1C1B19;border:1px solid #DDD8CC}
+  .v4 .hbadge .ic{background:#1C1B19;color:#FF5A36}
+  .v4 .hbadge .t2{color:#7C7A75}
+  .v4 .cards{padding:0 64px}
+  .v4 .card{color:#1C1B19}
+  .v4 .cbadge{background:#1C1B19;color:#F2EFE9}
+  .v4 .cbadge .v{background:#FF5A36}
+  .v4 .cloc{color:#7C7A75}
+  .v4 .ctitle{color:#1C1B19}
+  .v4 .cmeta{color:#52504B}
+  .v4 .cfoot{border-top:1px solid #DDD8CC}
+  .v4 .crate{color:#1C1B19}
+  .v4 .crate svg{color:#1C1B19}
+
+  /* ============== Closing recommendation ============== */
+  .recap{background:#0E1A14;color:#F5F1EA;padding:80px 48px;
+    background-image:
+      radial-gradient(ellipse 600px 400px at 20% 0%, rgba(200,85,42,.1), transparent),
+      radial-gradient(ellipse 800px 600px at 90% 100%, rgba(31,61,50,.5), transparent);
+  }
+  .recap-inner{max-width:1280px;margin:0 auto}
+  .recap .label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:#E07A47;margin-bottom:18px}
+  .recap h2{font-family:'Fraunces',serif;font-weight:400;font-size:42px;letter-spacing:-.025em;line-height:1.05;margin-bottom:24px;max-width:680px}
+  .recap h2 em{font-style:italic;color:#E07A47}
+  .recap p{font-size:15px;line-height:1.7;color:rgba(245,241,234,.7);max-width:680px;margin-bottom:16px}
+  .recap p b{color:#F5F1EA;font-weight:600}
+  .rank{margin-top:40px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .rank-item{padding:24px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:18px}
+  .rank-item .pos{font-family:'Fraunces',serif;font-style:italic;font-weight:400;font-size:14px;color:#E07A47;margin-bottom:10px}
+  .rank-item .name{font-family:'Fraunces',serif;font-weight:500;font-size:18px;letter-spacing:-.01em;margin-bottom:6px}
+  .rank-item .for{font-size:12px;color:rgba(245,241,234,.55);line-height:1.5}
+
+  @media (max-width:900px){
+    .hero{grid-template-columns:1fr;padding:32px;gap:24px}
+    .demo{padding:0 20px 60px}
+    .cards{grid-template-columns:repeat(2,1fr);padding:0 20px !important}
+    .section-head{padding:48px 20px 20px;flex-direction:column;align-items:flex-start;gap:20px}
+    .intro{padding:60px 20px 40px}
+    .intro h1{font-size:38px}
+    .rank{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<div class="pitch-bar">
+  <div class="brand">
+    <span class="dot"></span>
+    <b>ZYPHEX TECH</b>
+    <span>· Palette refinements for AajooHomes</span>
+  </div>
+  <div class="nav-pills">
+    <a href="#v1">Onyx & Champagne</a>
+    <a href="#v2">Forest & Bone</a>
+    <a href="#v3">Sand & Indigo</a>
+    <a href="#v4">Charcoal Minimal</a>
+  </div>
+</div>
+
+<!-- ============== Intro ============== -->
+<div class="intro">
+  <div class="intro-inner">
+    <div class="label">Round 2 · Palette exploration</div>
+    <h1>Same design. Four refinements <em>for premium feel.</em></h1>
+    <p>You picked Direction A — warm editorial. This document explores four palette shifts on top of that same design system. Same layout, same typography, same product strategy. Only color and a few finishing details change. <b>Scroll through each. Don't pick the one that's prettiest. Pick the one that's most "AajooHomes."</b></p>
+
+    <div class="principle">
+      <h3>One thing to know before you scroll</h3>
+      <p>Premium brands restrict color. Aman Resorts uses 2. Hermès uses 2. Loro Piana uses 1 + black. The instinct to "add more colors to look premium" is wrong — the move is to restrict harder. Every palette below removes more than it adds.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============== V1: ONYX & CHAMPAGNE ============== -->
+<section class="section v1" id="v1">
+  <div class="section-head">
+    <div class="left">
+      <div class="num">— Option 01</div>
+      <h2>Onyx & <em>Champagne</em></h2>
+      <div class="desc">Near-black hero against cream page. Muted gold accent replaces terracotta. The "luxury hotel" move — Aman, Soho House, Six Senses live here. Furthest from Airbnb.</div>
+    </div>
+    <div>
+      <div class="palette-row">
+        <div class="sw"><div class="sw-box" style="background:#0F0E0B"></div>Onyx<small>#0F0E0B</small></div>
+        <div class="sw"><div class="sw-box" style="background:#F4EFE6"></div>Champagne<small>#F4EFE6</small></div>
+        <div class="sw"><div class="sw-box" style="background:#D4B16B"></div>Gold<small>#D4B16B</small></div>
+        <div class="sw"><div class="sw-box" style="background:#FFF;border-color:#E0D9C8"></div>Bone<small>#FFFFFF</small></div>
+      </div>
+      <div class="pros-cons">
+        <div class="pc good"><b>+ Why it works</b>Signals premium fastest. Dark surfaces photograph well. Gold reads as restrained luxury.</div>
+        <div class="pc bad"><b>− Risk</b>Can feel cold if guests expect warmth from a homestay brand. Best if you go all-in on premium curation.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo">
+    <div class="hero">
+      <div>
+        <span class="htag"><span class="p"></span> 100% Verified · Zero Booking Fees</span>
+        <h2 class="htitle">Stay in homes <em>that feel like</em><br>your own.</h2>
+        <p class="hsub">Hand-picked villas and heritage homes across India. Every property visited. Every host verified.</p>
+        <div class="htrust">
+          <div class="ti"><span class="n">1,240+</span><span class="l">Verified Homes</span></div>
+          <div class="ti"><span class="n">94</span><span class="l">Cities</span></div>
+          <div class="ti"><span class="n">4.86</span><span class="l">Avg Rating</span></div>
+        </div>
+      </div>
+      <div class="himg">
+        <img src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=900&q=80" alt="">
+        <div class="hbadge">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+          <div><div class="t">Site-visited & verified</div><div class="t2">Photos & amenities checked</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-img">
+          <img src="https://images.unsplash.com/photo-1582610116397-edb318620f90?w=600&q=80">
+          <div class="cbadge"><span class="v"></span> Visited 12 May</div>
+        </div>
+        <div class="cloc">North Goa · Vagator</div>
+        <div class="ctitle">Casa Branca — Portuguese heritage villa</div>
+        <div class="cmeta">4 BR · Sleeps 8</div>
+        <div class="cfoot">
+          <div class="cprice"><b>₹18,400</b> <span class="per">/ night</span></div>
+          <div class="crate"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg> 4.92</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-img">
+          <img src="https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600&q=80">
+          <div class="cbadge"><span class="v"></span> Verified host</div>
+        </div>
+        <div class="cloc">Manali · Old Manali</div>
+        <div class="ctitle">The Pinewood — wood-cabin retreat</div>
+        <div class="cmeta">3 BR · Sleeps 6</div>
+        <div class="cfoot">
+          <div class="cprice"><b>₹9,200</b> <span class="per">/ night</span></div>
+          <div class="crate"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg> 4.88</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-img">
+          <img src="https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=600&q=80">
+          <div class="cbadge"><span class="v"></span> New · Featured</div>
+        </div>
+        <div class="cloc">Udaipur · Lake Pichola</div>
+        <div class="ctitle">Haveli 1907 — restored haveli, lake-facing</div>
+        <div class="cmeta">5 BR · Sleeps 10</div>
+        <div class="cfoot">
+          <div class="cprice"><b>₹26,800</b> <span class="per">/ night</span></div>
+          <div class="crate"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg> 5.0</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-img">
+          <img src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&q=80">
+          <div class="cbadge"><span class="v"></span> Site-visited</div>
+        </div>
+        <div class="cloc">Coorg · Madikeri</div>
+        <div class="ctitle">Mistwood — coffee-estate bungalow</div>
+        <div class="cmeta">2 BR · Sleeps 4</div>
+        <div class="cfoot">
+          <div class="cprice"><b>₹11,500</b> <span class="per">/ night</span></div>
+          <div class="crate"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg> 4.95</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== V2: FOREST & BONE (refined current) ============== -->
+<section class="section v2" id="v2">
+  <div class="section-head">
+    <div class="left">
+      <div class="num">— Option 02 · Refinement of current</div>
+      <h2>Forest & <em>Bone</em></h2>
+      <div class="desc">Your current direction, refined. Deeper green, softer cream, terracotta dialed back to a quiet accent (just the underline, just the star). Same DNA as the design you picked — but with more restraint, which reads as more confidence.</div>
+    </div>
+    <div>
+      <div class="palette-row">
+        <div class="sw"><div class="sw-box" style="background:#0E2018"></div>Deep forest<small>#0E2018</small></div>
+        <div class="sw"><div class="sw-box" style="background:#F8F5EE"></div>Bone<small>#F8F5EE</small></div>
+        <div class="sw"><div class="sw-box" style="background:#FFFCF5;border-color:#E5DECF"></div>Ivory<small>#FFFCF5</small></div>
+        <div class="sw"><div class="sw-box" style="background:#B25530"></div>Sienna<small>#B25530</small></div>
+      </div>
+      <div class="pros-cons">
+        <div class="pc good"><b>+ Why it works</b>Same brand DNA, just better executed. Easiest to ship from current design. Lower risk.</div>
+        <div class="pc bad"><b>− Risk</b>Incremental, not transformational. Won't feel as "different" from competitors as Options 1 or 3.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo">
+    <div class="hero">
+      <div>
+        <span class="htag"><span class="p"></span> 100% Verified · Zero Booking Fees</span>
+        <h2 class="htitle">Stay in homes <em>that feel like</em><br><span class="uline">your own.</span></h2>
+        <p class="hsub">Hand-picked villas and heritage homes across India. Every property visited. Every host verified.</p>
+        <div class="htrust">
+          <div class="ti"><span class="n">1,240+</span><span class="l">Verified Homes</span></div>
+          <div class="ti"><span class="n">94</span><span class="l">Cities</span></div>
+          <div class="ti"><span class="n">4.86</span><span class="l">Avg Rating</span></div>
+        </div>
+      </div>
+      <div class="himg">
+        <img src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=900&q=80" alt="">
+        <div class="hbadge">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+          <div><div class="t">Site-visited & verified</div><div class="t2">Photos & amenities checked</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-img">
+          <img src="https://images.unsplash.com/photo-1582610116397-edb318620f90?w=600&q=80">
+          <div class="cbadge"><span class="v"></span> Visited 12 May</div>
+        </div>
+        <div class="cloc">North Goa · Vagator</div>
+        <div class="ctitle">Casa Branca — Portuguese heritage villa</div>
+        <div class="cmeta">4 BR · Sleeps 8</div>
+        <div class="cfoot">
+          <div class="cprice"><b>₹18,400</b> <span class="per">/ night</span></div>
+          <div class="crate"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg> 4.92</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-img">
+          <img src="https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600&q=80">
+          <div class="cbadge"><span class="v"></span> Verified host</div>
+        </div>
+        <div class="cloc">Manali · Old Manali</div>
+        <div class="ctitle">The Pinewood — wood-cabin retreat</div>
+        <div class="cmeta">3 BR · Sleeps 6</div>
+        <div class="cfoot">
+          <div class="cprice"><b>₹9,200</b> <span class="per">/ night</span></div>
+          <div class="crate"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg> 4.88</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-img">
+          <img src="https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=600&q=80">
+          <div class="cbadge"><span class="v"></span> New · Featured</div>
+        </div>
+        <div class="cloc">Udaipur · Lake Pichola</div>
+        <div class="ctitle">Haveli 1907 — restored haveli, lake-facing</div>
+        <div class="cmeta">5 BR · Sleeps 10</div>
+        <div class="cfoot">
+          <div class="cprice"><b>₹26,800</b> <span class="per">/ night</span></div>
+          <div class="crate"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg> 5.0</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-img">
+          <img src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&q=80">
+          <div class="cbadge"><span class="v"></span> Site-visited</div>
+        </div>
+        <div class="cloc">Coorg · Madikeri</div>
+        <div class="ctitle">Mistwood — coffee-estate bungalow</div>
+        <div class="cmeta">2 BR · Sleeps 4</div>
+        <div class="cfoot">
+          <div class="cprice"><b>₹11,500</b> <span class="per">/ night</span></div>
+          <div class="crate"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg> 4.95</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== V3: SAND & INDIGO ============== -->
+<section class="section v3" id="v3">
+  <div class="section-head">
+    <div class="left">
+      <div class="num">— Option 03</div>
+      <h2>Sand & <em>Indigo</em></h2>
+      <div class="desc">Warm sand background, deep indigo as anchor, muted clay accent. Reads "Goa-coastal premium" but works equally for Rajasthan and Coorg. The most India-specific palette — least likely to be mistaken for a US-built product.</div>
+    </div>
+    <div>
+      <div class="palette-row">
+        <div class="sw"><div class="sw-box" style="background:#1B2447"></div>Indigo<small>#1B2447</small></div>
+        <div class="sw"><div class="sw-box" style="background:#EFE7D6"></div>Sand<small>#EFE7D6</small></div>
+        <div class="sw"><div class="sw-box" style="background:#FFFAF0;border-color:#D9CFB8"></div>Cream<small>#FFFAF0</small></div>
+        <div class="sw"><div class="sw-box" style="background:#C16345"></div>Clay<small>#C16345</small></div>
+      </div>
+      <div class="pros-cons">
+        <div class="pc good"><b>+ Why it works</b>Feels regionally rooted. Different enough from Airbnb to remember. Premium without being cold.</div>
+        <div class="pc bad"><b>− Risk</b>Sand-toned backgrounds can feel "vintage" if photography isn't strong. Demands high-quality property photos.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo">
+    <div class="hero">
+      <div>
+        <span class="htag"><span class="p"></span> 100% Verified · Zero Booking Fees</span>
+        <h2 class="htitle">Stay in homes <em>that feel like</em><br><span class="uline">your own.</span></h2>
+        <p class="hsub">Hand-picked villas and heritage homes across India. Every property visited. Every host verified.</p>
+        <div class="htrust">
+          <div class="ti"><span class="n">1,240+</span><span class="l">Verified Homes</span></div>
+          <div class="ti"><span class="n">94</span><span class="l">Cities</span></div>
+          <div class="ti"><span class="n">4.86</span><span class="l">Avg Rating</span></div>
+        </div>
+      </div>
+      <div class="himg">
+        <img src="https://images.unsplash.com/photo-1587474260584-136574528ed5?w=900&q=80" alt="">
+        <div class="hbadge">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+          <div><div class="t">Site-visited & verified</div><div class="t2">Photos & amenities checked</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-img">
+          <img src="https://images.unsplash.com/photo-1582610116397-edb318620f90?w=600&q=80">
+          <div class="cbadge"><span class="v"></span> Visited 12 May</div>
+        </div>
+        <div class="cloc">North Goa · Vagator</div>
+        <div class="ctitle">Casa Branca — Portuguese heritage villa</div>
+        <div class="cmeta">4 BR · Sleeps 8</div>
+        <div class="cfoot">
+          <div class="cprice"><b>₹18,400</b> <span class="per">/ night</span></div>
+          <div class="crate"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg> 4.92</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-img">
+          <img src="https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600&q=80">
+          <div class="cbadge"><span class="v"></span> Verified host</div>
+        </div>
+        <div class="cloc">Manali · Old Manali</div>
+        <div class="ctitle">The Pinewood — wood-cabin retreat</div>
+        <div class="cmeta">3 BR · Sleeps 6</div>
+        <div class="cfoot">
+          <div class="cprice"><b>₹9,200</b> <span class="per">/ night</span></div>
+          <div class="crate"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg> 4.88</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-img">
+          <img src="https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=600&q=80">
+          <div class="cbadge"><span class="v"></span> New · Featured</div>
+        </div>
+        <div class="cloc">Udaipur · Lake Pichola</div>
+        <div class="ctitle">Haveli 1907 — restored haveli, lake-facing</div>
+        <div class="cmeta">5 BR · Sleeps 10</div>
+        <div class="cfoot">
+          <div class="cprice"><b>₹26,800</b> <span class="per">/ night</span></div>
+          <div class="crate"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg> 5.0</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-img">
+          <img src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&q=80">
+          <div class="cbadge"><span class="v"></span> Site-visited</div>
+        </div>
+        <div class="cloc">Coorg · Madikeri</div>
+        <div class="ctitle">Mistwood — coffee-estate bungalow</div>
+        <div class="cmeta">2 BR · Sleeps 4</div>
+        <div class="cfoot">
+          <div class="cprice"><b>₹11,500</b> <span class="per">/ night</span></div>
+          <div class="crate"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg> 4.95</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== V4: CHARCOAL MINIMAL ============== -->
+<section class="section v4" id="v4">
+  <div class="section-head">
+    <div class="left">
+      <div class="num">— Option 04</div>
+      <h2>Charcoal <em>Minimal</em></h2>
+      <div class="desc">Near-monochrome. Off-white background, charcoal text, one tiny coral spark. The "Mr & Mrs Smith editorial" move — fashion-magazine restraint. Property photography becomes the entire visual identity. The most demanding palette to ship; the most rewarding if you can.</div>
+    </div>
+    <div>
+      <div class="palette-row">
+        <div class="sw"><div class="sw-box" style="background:#1C1B19"></div>Charcoal<small>#1C1B19</small></div>
+        <div class="sw"><div class="sw-box" style="background:#F2EFE9"></div>Off-white<small>#F2EFE9</small></div>
+        <div class="sw"><div class="sw-box" style="background:#FFF;border-color:#DDD8CC"></div>Paper<small>#FFFFFF</small></div>
+        <div class="sw"><div class="sw-box" style="background:#FF5A36"></div>Spark<small>#FF5A36</small></div>
+      </div>
+      <div class="pros-cons">
+        <div class="pc good"><b>+ Why it works</b>Cleanest, most "designed" feel. Forces investment in photography, which lifts the whole brand.</div>
+        <div class="pc bad"><b>− Risk</b>Bad property photos break this palette completely. Needs photography budget and editorial discipline.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo">
+    <div class="hero">
+      <div>
+        <span class="htag"><span class="p"></span> 100% Verified · Zero Booking Fees</span>
+        <h2 class="htitle">Stay in homes <em>that feel like</em><br><span class="accent-w">your own.</span></h2>
+        <p class="hsub">Hand-picked villas and heritage homes across India. Every property visited. Every host verified.</p>
+        <div class="htrust">
+          <div class="ti"><span class="n">1,240+</span><span class="l">Verified Homes</span></div>
+          <div class="ti"><span class="n">94</span><span class="l">Cities</span></div>
+          <div class="ti"><span class="n">4.86</span><span class="l">Avg Rating</span></div>
+        </div>
+      </div>
+      <div class="himg">
+        <img src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=900&q=80" alt="">
+        <div class="hbadge">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+          <div><div class="t">Site-visited & verified</div><div class="t2">Photos & amenities checked</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-img">
+          <img src="https://images.unsplash.com/photo-1582610116397-edb318620f90?w=600&q=80">
+          <div class="cbadge"><span class="v"></span> Visited 12 May</div>
+        </div>
+        <div class="cloc">North Goa · Vagator</div>
+        <div class="ctitle">Casa Branca — Portuguese heritage villa</div>
+        <div class="cmeta">4 BR · Sleeps 8</div>
+        <div class="cfoot">
+          <div class="cprice"><b>₹18,400</b> <span class="per">/ night</span></div>
+          <div class="crate"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg> 4.92</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-img">
+          <img src="https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600&q=80">
+          <div class="cbadge"><span class="v"></span> Verified host</div>
+        </div>
+        <div class="cloc">Manali · Old Manali</div>
+        <div class="ctitle">The Pinewood — wood-cabin retreat</div>
+        <div class="cmeta">3 BR · Sleeps 6</div>
+        <div class="cfoot">
+          <div class="cprice"><b>₹9,200</b> <span class="per">/ night</span></div>
+          <div class="crate"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg> 4.88</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-img">
+          <img src="https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=600&q=80">
+          <div class="cbadge"><span class="v"></span> New · Featured</div>
+        </div>
+        <div class="cloc">Udaipur · Lake Pichola</div>
+        <div class="ctitle">Haveli 1907 — restored haveli, lake-facing</div>
+        <div class="cmeta">5 BR · Sleeps 10</div>
+        <div class="cfoot">
+          <div class="cprice"><b>₹26,800</b> <span class="per">/ night</span></div>
+          <div class="crate"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg> 5.0</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-img">
+          <img src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&q=80">
+          <div class="cbadge"><span class="v"></span> Site-visited</div>
+        </div>
+        <div class="cloc">Coorg · Madikeri</div>
+        <div class="ctitle">Mistwood — coffee-estate bungalow</div>
+        <div class="cmeta">2 BR · Sleeps 4</div>
+        <div class="cfoot">
+          <div class="cprice"><b>₹11,500</b> <span class="per">/ night</span></div>
+          <div class="crate"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg> 4.95</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== Recap / Recommendation ============== -->
+<section class="recap">
+  <div class="recap-inner">
+    <div class="label">— My recommendation</div>
+    <h2>If forced to pick one, <em>Option 02.</em></h2>
+    <p>The original Forest & Terracotta direction was already in the right zone — the refinements in <b>Option 02 (Forest & Bone)</b> push it where it needs to go without rebuilding what's working. Deeper green for confidence. Terracotta dialed back so it's a finishing touch, not a constant interruption. Same brand promise, more restraint.</p>
+    <p><b>If the client wants to be bolder, go Option 03 (Sand & Indigo).</b> It's the most India-specific palette and the hardest for Airbnb to copy. Best long-term differentiation, slightly higher execution risk.</p>
+    <p>Avoid Option 01 (Onyx) unless the client commits to a luxury-only inventory strategy — it's wrong for ₹3K–8K listings. Avoid Option 04 (Charcoal Minimal) unless they're funding a photography refresh — bad photos kill it.</p>
+
+    <div class="rank">
+      <div class="rank-item"><div class="pos">— Recommended</div><div class="name">Forest & Bone</div><div class="for">Same DNA, more restraint. Lowest risk path.</div></div>
+      <div class="rank-item"><div class="pos">— Bold pick</div><div class="name">Sand & Indigo</div><div class="for">Most India-specific. Hardest to copy.</div></div>
+      <div class="rank-item"><div class="pos">— If going luxury-only</div><div class="name">Onyx & Champagne</div><div class="for">Premium fastest. Cold for ₹3K listings.</div></div>
+      <div class="rank-item"><div class="pos">— If funding photography</div><div class="name">Charcoal Minimal</div><div class="for">Editorial. Needs strong photos to work.</div></div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // smooth scroll for nav pills
+  document.querySelectorAll('.nav-pills a').forEach(a=>{
+    a.addEventListener('click',e=>{
+      e.preventDefault();
+      const id=a.getAttribute('href').slice(1);
+      document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'});
+    });
+  });
+</script>
+</body>
+</html>

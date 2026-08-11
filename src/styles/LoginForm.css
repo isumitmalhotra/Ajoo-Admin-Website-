@@ -59,12 +59,20 @@
 .login-image-section {
   flex: 1;
   height: 100vh;
+  background-color: var(--sand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .login-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* Recolor the pink SVG illustration to Sand & Indigo palette:
+     sepia converts to warm brown, hue-rotate shifts to indigo-blue range */
+  filter: sepia(0.6) hue-rotate(195deg) saturate(0.75) brightness(1.05);
 }
 
 .login-container {

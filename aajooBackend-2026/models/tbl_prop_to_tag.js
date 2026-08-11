@@ -46,7 +46,22 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'tbl_prop_to_tag',
-    timestamps: false
+    timestamps: false,
+    indexes: [
+      {
+        unique: true,
+        fields: ['pt_tag_prop_id', 'pt_tag_tag_id'],
+        name: 'uq_tbl_prop_to_tag_prop_tag',
+      },
+      {
+        fields: ['pt_tag_prop_id'],
+        name: 'idx_tbl_prop_to_tag_prop',
+      },
+      {
+        fields: ['pt_tag_tag_id'],
+        name: 'idx_tbl_prop_to_tag_tag',
+      },
+    ]
   });
   return tbl_prop_to_tag;
 };

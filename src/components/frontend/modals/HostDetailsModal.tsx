@@ -6,6 +6,7 @@ import {
   Modal,
   Avatar,
   Divider,
+  Rating,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,10 +20,11 @@ interface HostDetailsModalProps {
     contact: string;
     address: string;
     propertyCount: number;
+    rating?: number;
   };
 }
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 const HostDetailsModal: React.FC<HostDetailsModalProps> = ({
   open,
@@ -113,10 +115,32 @@ const HostDetailsModal: React.FC<HostDetailsModalProps> = ({
                 </Typography>
                 <Typography
                   variant="body2"
-                  sx={{ color: "text.secondary", mb: 2 }}
+                  sx={{ color: "text.secondary", mb: 1 }}
                 >
                   Aajoo Verified User
                 </Typography>
+                {user.rating && user.rating > 0 ? (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 0.75,
+                      mb: 2,
+                    }}
+                  >
+                    <Rating
+                      value={user.rating}
+                      precision={0.5}
+                      readOnly
+                      size="small"
+                      sx={{ color: "#C16345" }}
+                    />
+                    <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "#1B2447" }}>
+                      {user.rating.toFixed(1)}
+                    </Typography>
+                  </Box>
+                ) : null}
               </motion.div>
             </MotionBox>
 

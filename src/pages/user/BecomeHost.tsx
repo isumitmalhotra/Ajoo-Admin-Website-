@@ -14,10 +14,14 @@ import {
   TextField,
   Typography,
   Checkbox,
-  useMediaQuery,
+  CircularProgress,
 } from "@mui/material";
+import MyLocationIcon from "@mui/icons-material/MyLocation";
+import toast from "react-hot-toast";
 import { FECustomSnackbar } from "../../components";
 import { axios } from "../../axios/axios";
+import { detectAddress, INDIAN_STATES } from "../../styles/utils/locationUtils";
+import { citiesForState } from "../../styles/utils/indiaCities";
 
 const PRIMARY = "#1B2447";
 const steps = ["Host details", "Property details", "Verification"];
@@ -110,7 +114,6 @@ const mockSubmit = (payload: HostForm) =>
   });
 
 const BecomeHost = () => {
-  const isMobile = useMediaQuery("(max-width:900px)");
   const [activeStep, setActiveStep] = useState(0);
   const [form, setForm] = useState<HostForm>({
     fullName: "",
@@ -225,6 +228,23 @@ const BecomeHost = () => {
     return Object.keys(nextErrors).length === 0;
   };
 
+  const [locating, setLocating] = useState(false);
+  const handleUseLocation = async () => {
+    setLocating(true);
+    try {
+      const addr = await detectAddress();
+      if (addr.address) updateField("address", addr.address);
+      if (addr.city) updateField("propertyCity", addr.city);
+      if (addr.state) updateField("propertyState", addr.state);
+      if (addr.pincode) updateField("pincode", addr.pincode);
+      toast.success("Address filled from your location");
+    } catch {
+      toast.error("Couldn't get your location. Please allow location access.");
+    } finally {
+      setLocating(false);
+    }
+  };
+
   const handleNext = () => {
     if (validateStep(activeStep)) {
       setActiveStep((prev) => prev + 1);
@@ -312,21 +332,27 @@ const BecomeHost = () => {
   };
 
   return (
-    <Box sx={{ py: { xs: 4, md: 6 }, backgroundColor: "#fff7f9" }}>
+    <Box sx={{ py: { xs: 4, md: 6 }, backgroundColor: "#EFE7D6" }}>
       <Container maxWidth="md">
         <Box sx={{ textAlign: "center", mb: 4 }}>
           <Typography
-            variant={isMobile ? "h4" : "h3"}
-            sx={{ fontWeight: 700, color: PRIMARY, mb: 1 }}
+            sx={{
+              fontFamily: "'Fraunces', serif",
+              fontWeight: 400,
+              letterSpacing: "-0.02em",
+              color: PRIMARY,
+              mb: 1,
+              fontSize: { xs: "2rem", md: "2.8rem" },
+            }}
           >
-            Become a Host
+            Become a <Box component="span" sx={{ fontStyle: "italic", color: "#C16345" }}>host</Box>
           </Typography>
-          <Typography sx={{ color: "#555" }}>
-            Tell us about your property and we will onboard you within 48 hours.
+          <Typography sx={{ color: "#6B7390" }}>
+            Tell us about your property and we'll onboard you within 48 hours.
           </Typography>
         </Box>
 
-        <Paper sx={{ p: { xs: 2.5, md: 4 }, borderRadius: 3, boxShadow: 3 }}>
+        <Paper sx={{ p: { xs: 2.5, md: 4 }, borderRadius: "20px", bgcolor: "#FFFAF0", border: "1px solid #D9CFB8", boxShadow: "0 1px 2px rgba(27,36,71,.04), 0 12px 40px rgba(27,36,71,.08)" }}>
           <LinearProgress
             variant="determinate"
             value={progressValue}
@@ -468,6 +494,17 @@ const BecomeHost = () => {
                     gap: 2,
                   }}
                 >
+                  <Box sx={{ gridColumn: "1 / -1" }}>
+                    <Button
+                      onClick={handleUseLocation}
+                      disabled={locating}
+                      startIcon={locating ? <CircularProgress size={16} /> : <MyLocationIcon />}
+                      variant="outlined"
+                      sx={{ borderColor: PRIMARY, color: PRIMARY, textTransform: "none", fontWeight: 600, borderRadius: "10px", "&:hover": { borderColor: PRIMARY, bgcolor: "rgba(27,36,71,.05)" } }}
+                    >
+                      {locating ? "Detecting…" : "Use my current location"}
+                    </Button>
+                  </Box>
                   <TextField
                     label="Property name"
                     value={form.propertyName}
@@ -501,23 +538,47 @@ const BecomeHost = () => {
                     helperText={errors.address || " "}
                   />
                   <TextField
+                    select
+                    label="State"
+                    value={form.propertyState}
+                    onChange={(e) => {
+                      updateField("propertyState", e.target.value);
+                      updateField("propertyCity", ""); // reset city on state change
+                    }}
+                    error={Boolean(errors.propertyState)}
+                    helperText={errors.propertyState || " "}
+                  >
+                    {INDIAN_STATES.map((s) => (
+                      <MenuItem key={s} value={s}>
+                        {s}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    select
                     label="City"
                     value={form.propertyCity}
+                    disabled={!form.propertyState}
                     onChange={(e) =>
                       updateField("propertyCity", e.target.value)
                     }
                     error={Boolean(errors.propertyCity)}
-                    helperText={errors.propertyCity || " "}
-                  />
-                  <TextField
-                    label="State"
-                    value={form.propertyState}
-                    onChange={(e) =>
-                      updateField("propertyState", e.target.value)
+                    helperText={
+                      errors.propertyCity ||
+                      (!form.propertyState ? "Select a state first" : " ")
                     }
-                    error={Boolean(errors.propertyState)}
-                    helperText={errors.propertyState || " "}
-                  />
+                  >
+                    {Array.from(
+                      new Set([
+                        ...(form.propertyCity ? [form.propertyCity] : []),
+                        ...citiesForState(form.propertyState),
+                      ])
+                    ).map((c) => (
+                      <MenuItem key={c} value={c}>
+                        {c}
+                      </MenuItem>
+                    ))}
+                  </TextField>
                   <TextField
                     label="Pincode"
                     value={form.pincode}

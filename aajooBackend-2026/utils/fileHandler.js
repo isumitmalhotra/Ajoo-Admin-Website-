@@ -4,8 +4,7 @@ const path = require("path");
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        // console.log(file, "file in storage destination");
-        const folderName = file.fieldname; // dynamic folder
+        const folderName = file.fieldname;
         const dir = path.join("uploads", folderName);
 
         if (!fs.existsSync(dir)) {
@@ -27,7 +26,17 @@ const storage = multer.diskStorage({
 
 // ✅ IMAGES ONLY (NO SIZE LIMIT)
 const imageOnlyFilter = (req, file, cb) => {
+    // Check MIME type
     if (file.mimetype.startsWith("image/")) {
+        cb(null, true);
+        return;
+    }
+
+    // Fallback: Check file extension for common image formats
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+    const fileExtension = path.extname(file.originalname).toLowerCase();
+    
+    if (allowedExtensions.includes(fileExtension)) {
         cb(null, true);
     } else {
         cb(new Error("Only image files are allowed"), false);

@@ -1,7 +1,9 @@
 const bcrypt = require('bcrypt');
+const { createPrivateKey } = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const logger = require("./logger");
 const jwt = require('jsonwebtoken');
-const commonConfig = require("../config/commonConfig");
 // const methods = require("./");
 
 // const otpGenerator = require('otp-generator')
@@ -15,10 +17,25 @@ const hashPassword = async (password) => {
         return error;
     }
 };
-const genrateToken = async (data, epx = "24h") => {
+/**
+ * Derive the RBAC role claim from a token payload's existing flags.
+ * Taxonomy: admin / finance / host / support / guest (A-13).
+ * An explicit `role` on the payload always wins (lets us mint finance/support
+ * tokens without new flags). Otherwise derive from isAdmin / isHost.
+ */
+const deriveRole = (data = {}) => {
+    if (data.role) return data.role;
+    if (Number(data.isAdmin) === 1 || data.admin_isAdmin === 1) return "admin";
+    if (Number(data.isHost) === 1 || Number(data.user_isHost) === 1) return "host";
+    return "guest";
+};
+
+const genrateToken = async (data, epx = "30d") => {
     try {
-        const secret = process.env.JWT_SECRET || commonConfig.JWT_SECRET;
-        const token = jwt.sign(data, secret, { expiresIn: epx });
+        // RBAC (A-13): always embed a `role` claim. Back-compat — existing fields
+        // (userId, isHost, isAdmin, email) are preserved; we only ADD `role`.
+        const payload = { ...data, role: deriveRole(data) };
+        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: epx });
         return token;
     } catch (error) {
         return error;
@@ -156,14 +173,136 @@ const verifyPassword = async (password, hashedPassword) => {
     try {
         const isMatch = await bcrypt.compare(password, hashedPassword);
         return isMatch;
-        return isMatch;
     } catch (error) {
         return error;
     }
 };
+let firebaseAppInstance = null;
+let firebaseInitError = null;
+
+const getFirebaseServiceAccount = () => {
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY
+        ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+        : null;
+
+    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && privateKey) {
+        return {
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey,
+        };
+    }
+
+    const serviceAccountPath = path.join(__dirname, "serviceFirebase.json");
+    if (!fs.existsSync(serviceAccountPath)) {
+        throw new Error("Firebase service account is not configured. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY or add utils/serviceFirebase.json.");
+    }
+
+    const serviceAccount = require("./serviceFirebase.json");
+    if (serviceAccount.private_key) {
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+    }
+    return serviceAccount;
+};
+
+const getFirebaseAdminApp = () => {
+    const admin = require("firebase-admin");
+
+    if (firebaseAppInstance) {
+        return { admin, app: firebaseAppInstance };
+    }
+
+    if (admin.apps.length) {
+        firebaseAppInstance = admin.apps[0];
+        return { admin, app: firebaseAppInstance };
+    }
+
+    try {
+        const serviceAccount = getFirebaseServiceAccount();
+        firebaseAppInstance = admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+        });
+        firebaseInitError = null;
+        return { admin, app: firebaseAppInstance };
+    } catch (error) {
+        firebaseInitError = error;
+        throw error;
+    }
+};
+
+const validateFirebaseCredentials = async () => {
+    try {
+        const serviceAccount = getFirebaseServiceAccount();
+        const normalizedServiceAccount = {
+            project_id: serviceAccount.project_id || serviceAccount.projectId || null,
+            client_email: serviceAccount.client_email || serviceAccount.clientEmail || null,
+            private_key: serviceAccount.private_key || serviceAccount.privateKey || null,
+        };
+
+        const requiredFields = ['project_id', 'client_email', 'private_key'];
+        const missingFields = requiredFields.filter((field) => !normalizedServiceAccount[field]);
+
+        if (missingFields.length) {
+            return {
+                isValid: false,
+                message: `Missing Firebase credential field(s): ${missingFields.join(', ')}`,
+                missingFields,
+                tokenVerified: false,
+            };
+        }
+
+        if (
+            !normalizedServiceAccount.private_key.includes('-----BEGIN PRIVATE KEY-----') ||
+            !normalizedServiceAccount.private_key.includes('-----END PRIVATE KEY-----')
+        ) {
+            return {
+                isValid: false,
+                message: 'Firebase private key is not in a valid PEM format.',
+                missingFields: [],
+                tokenVerified: false,
+            };
+        }
+
+        createPrivateKey({
+            key: normalizedServiceAccount.private_key,
+            format: 'pem',
+        });
+
+        const admin = require("firebase-admin");
+        const credential = admin.credential.cert({
+            projectId: normalizedServiceAccount.project_id,
+            clientEmail: normalizedServiceAccount.client_email,
+            privateKey: normalizedServiceAccount.private_key,
+        });
+
+        const accessToken = await credential.getAccessToken();
+        firebaseInitError = null;
+
+        return {
+            isValid: true,
+            message: 'Firebase credentials are valid and Google token fetch succeeded.',
+            projectId: normalizedServiceAccount.project_id,
+            clientEmail: normalizedServiceAccount.client_email,
+            source: process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY
+                ? 'env'
+                : 'utils/serviceFirebase.json',
+            tokenVerified: true,
+            accessTokenExpiresAt: accessToken?.expirationTime || null,
+        };
+    } catch (error) {
+        firebaseInitError = error;
+        return {
+            isValid: false,
+            message: error?.message || 'Firebase credentials are invalid.',
+            missingFields: [],
+            tokenVerified: false,
+            errorCode: error?.errorInfo?.code || error?.code || null,
+        };
+    }
+};
+
 const sendNotification = async (userId, title, message, propId, payloadData = {}, bookingId = null, bookPriId = null) => {
     const model = require("../models");
-    const admin = require("firebase-admin");
     try {
         logger.info(`sendNotification called with userId: ${userId}, title: ${title}, message: ${message}, propId: ${propId}, payloadData: ${JSON.stringify(payloadData)}`);
         const findDeviceToken = await model.tbl_notify_device.findOne({
@@ -174,12 +313,7 @@ const sendNotification = async (userId, title, message, propId, payloadData = {}
         if (!findDeviceToken) {
             return false
         }
-        if (!admin.apps.length) {
-            const serviceAccount = require("./serviceFirebase.json");
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount),
-            });
-        }
+        const { admin } = getFirebaseAdminApp();
         const payload = {
             notification: {
                 title,
@@ -202,9 +336,31 @@ const sendNotification = async (userId, title, message, propId, payloadData = {}
         await model.tbl_user_notification.create(notificationPayload);
         return response;
     } catch (error) {
-        logger.info(`error from notification: ${JSON.stringify(error)}`);
-        logger.error("Error sending notification:", error);
-        console.error("Error sending notification:", error);
+        const isFirebaseCredentialError =
+            error?.errorInfo?.code === "app/invalid-credential" ||
+            error?.code === "app/invalid-credential" ||
+            error?.message?.includes("Invalid JWT Signature");
+
+        if (isFirebaseCredentialError) {
+            logger.error("Firebase notification credential error. Verify server time and rotate the Firebase Admin SDK key if it was revoked.", {
+                firebaseConfiguredFromEnv: Boolean(
+                    process.env.FIREBASE_PROJECT_ID &&
+                    process.env.FIREBASE_CLIENT_EMAIL &&
+                    process.env.FIREBASE_PRIVATE_KEY
+                ),
+                cachedInitError: firebaseInitError ? firebaseInitError.message : null,
+                errorCode: error?.errorInfo?.code || error?.code || null,
+                errorMessage: error?.errorInfo?.message || error?.message || null,
+            });
+            return false;
+        }
+
+        logger.error("Error sending notification", {
+            errorCode: error?.errorInfo?.code || error?.code || null,
+            errorMessage: error?.errorInfo?.message || error?.message || null,
+            stack: error?.stack || null,
+        });
+        return false;
     }
 };
 const calculateBookingtax = (price) => {
@@ -223,7 +379,8 @@ const calculateBookingtax = (price) => {
 function parseCustomDate(dateStr) {
     const [day, month, year] = dateStr.split("-").map(Number);
     return new Date(year, month - 1, day); // month is 0-based
-};
+}
+
 function validateBookingDates(fromDateStr, toDateStr) {
     if (!fromDateStr || !toDateStr) {
         return { success: false, message: "Both booking dates are required." };
@@ -260,7 +417,7 @@ function validateBookingDates(fromDateStr, toDateStr) {
 
     // ✅ All checks passed
     return { success: true, message: "Valid booking dates." };
-};
+}
 
 
 
@@ -275,5 +432,6 @@ module.exports = {
     verifyPassword,
     returnIshostObj,
     sendNotification,
-    getAttachedPropertyImages
+    getAttachedPropertyImages,
+    validateFirebaseCredentials
 }

@@ -12,7 +12,7 @@ import {
   Button,
   CircularProgress,
 } from "@mui/material";
-import { PurpleThemeColor } from "../../../theme/themeColor";
+import { Brand } from "../../../theme/themeColor";
 import { Pagination } from "../../../components";
 import type { ListingProps, BookingStatusRow } from "./types";
 import { bookingStatusRowSchema } from "../../../validations/admin-validations";
@@ -20,20 +20,20 @@ import { bookingStatusRowSchema } from "../../../validations/admin-validations";
 const indigoFieldSx = {
   "& .MuiOutlinedInput-root": {
     "& fieldset": {
-      borderColor: PurpleThemeColor,
+      borderColor: Brand.indigo,
     },
     "&:hover fieldset": {
-      borderColor: PurpleThemeColor,
+      borderColor: Brand.indigo,
     },
     "&.Mui-focused fieldset": {
-      borderColor: PurpleThemeColor,
+      borderColor: Brand.indigo,
     },
     "&.Mui-error fieldset": {
-      borderColor: PurpleThemeColor,
+      borderColor: Brand.indigo,
     },
   },
   "& .MuiFormHelperText-root": {
-    color: PurpleThemeColor,
+    color: Brand.indigo,
   },
 };
 
@@ -126,9 +126,9 @@ export default function Listing({
                       <Button
                         size="small"
                         sx={{
-                          backgroundColor: PurpleThemeColor,
+                          backgroundColor: Brand.indigo,
                           "&:hover": {
-                            backgroundColor: PurpleThemeColor,
+                            backgroundColor: Brand.indigo,
                           },
                         }}
                         variant="contained"

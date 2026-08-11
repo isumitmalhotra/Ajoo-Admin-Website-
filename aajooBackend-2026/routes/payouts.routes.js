@@ -11,7 +11,5 @@ router.post("/payout/account/details-add", [validation(schema.createHostAccDetai
 router.get("/payout/account/details", [hostAuthentication], controller.getHostAccountDetails);
 router.post("/payout/request/create", [validation(schema.createPayoutRequest), hostAuthentication], controller.cretePayoutRequest);
 router.get("/payout/request/list", [hostAuthentication], controller.getPayoutRequests);
-router.post("/payout/history", [validation(schema.payoutHistoryList), hostAuthentication], controller.getPayoutHistory);
-router.post("/payout/history/download", [validation(schema.payoutHistoryList), hostAuthentication], controller.downloadPayoutHistory);
 
 module.exports = router;

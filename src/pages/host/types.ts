@@ -1,8 +1,16 @@
+export interface HostRecentActivity {
+  id: string;
+  title: string;
+  when: string;
+  status: string;
+}
+
 export interface HostDashboardSummary {
   monthEarnings?: number;
   activeListings?: number;
   upcomingBookings?: number;
   occupancyRate?: number;
+  recentActivity?: HostRecentActivity[];
 }
 
 export interface HostBooking {

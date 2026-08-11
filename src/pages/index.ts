@@ -39,3 +39,4 @@ export { default as HelpCenter } from "./user/HelpCenter";
 export { default as TermsAndConditions } from "./user/TermsAndConditions";
 export { default as WhyHostsListWithAajoo } from "./user/WhyHostsListWithAajoo";
 export { default as PrivacyPolicyPage } from "./user/PrivacyPolicyPage";
+export { default as BecomeHost } from "./user/BecomeHost";

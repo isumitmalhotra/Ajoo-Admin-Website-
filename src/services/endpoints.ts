@@ -13,7 +13,17 @@ export const ADMINENDPOINTS = {
   HOST_SEARCH_ASSIGN_PROPERTY: "/admin/host/search/assign-property",
   HOST_KYC_APPROVE: "/admin/host/kyc/approve",
   HOST_KYC_REJECT: "/admin/host/kyc/reject",
-  
+  // ADMIN HOST — performance + payout panes (A-08; wired real in B-07 flip)
+  ADMIN_HOST_PERFORMANCE_SUMMARY: "/admin/host/performance/summary",
+  ADMIN_HOST_PAYOUT_HISTORY: "/admin/host/payout/history",
+  ADMIN_HOST_PAYOUT_HOLD: "/admin/host/payout/hold",
+  ADMIN_HOST_PAYOUT_RELEASE: "/admin/host/payout/release",
+  // NOTIFICATIONS (A-14) — :id appended for read
+  ADMIN_NOTIFICATIONS_SEARCH: "/admin/notifications/search",
+  ADMIN_NOTIFICATIONS_READ: "/admin/notifications", // + /:id/read
+  HOST_NOTIFICATIONS_SEARCH: "/host/notifications/search",
+  HOST_NOTIFICATIONS_READ: "/host/notifications", // + /:id/read
+
   // PROPERTY-CATEGORY
   PROPERTY_CATEGORIES: "admin/categories",
   PROPERTY_CATEGORY_BY_ID: "admin/category",

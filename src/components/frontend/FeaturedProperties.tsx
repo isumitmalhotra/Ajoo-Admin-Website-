@@ -44,7 +44,7 @@ export default function FeaturedProperties({ hotels }: { hotels: any[] }) {
     ? 3
     : isMobile
     ? 2
-    : 1;
+    : 2; // mobile (incl. small phones) shows two columns
 
   return (
     <section className="featured-properties" style={{ marginTop: "3rem" }}>
@@ -85,6 +85,78 @@ export default function FeaturedProperties({ hotels }: { hotels: any[] }) {
         </Typography>
       </Box>
 
+      {/* Empty state */}
+      {(!hotels || hotels.length === 0) && (
+        <Box
+          sx={{
+            mx: "1rem",
+            my: "1rem",
+            p: { xs: "32px 24px", md: "48px 32px" },
+            borderRadius: "16px",
+            border: "1px solid #D9CFB8",
+            bgcolor: "#FFFAF0",
+            textAlign: "center",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "12px",
+          }}
+        >
+          <Box
+            sx={{
+              width: 56,
+              height: 56,
+              borderRadius: "14px",
+              bgcolor: "rgba(27,36,71,0.06)",
+              display: "grid",
+              placeItems: "center",
+              fontSize: 26,
+            }}
+          >
+            🏡
+          </Box>
+          <Typography
+            sx={{
+              fontFamily: "'Fraunces', serif",
+              fontSize: 22,
+              fontWeight: 500,
+              letterSpacing: "-0.02em",
+              color: "#1B2447",
+            }}
+          >
+            No featured stays just yet
+          </Typography>
+          <Typography
+            sx={{
+              fontSize: 14,
+              color: "#6B7390",
+              maxWidth: 420,
+              lineHeight: 1.6,
+            }}
+          >
+            We're curating the next round of handpicked stays. Check back soon, or browse all properties to find your perfect getaway.
+          </Typography>
+          <Link to="/property/list" style={{ textDecoration: "none" }}>
+            <Button
+              variant="contained"
+              sx={{
+                mt: 1,
+                bgcolor: "#1B2447",
+                color: "#FFFAF0",
+                px: 3,
+                py: 1,
+                borderRadius: "10px",
+                textTransform: "none",
+                fontWeight: 600,
+                "&:hover": { bgcolor: "#2A356B" },
+              }}
+            >
+              Browse all properties
+            </Button>
+          </Link>
+        </Box>
+      )}
+
       {/* 🔥 PROPERTIES GRID */}
       <motion.div
         className="properties-grid"
@@ -99,7 +171,7 @@ export default function FeaturedProperties({ hotels }: { hotels: any[] }) {
           padding: "1rem",
         }}
       >
-        {hotels.slice(0, visibleCount).map((hotel, idx) => (
+        {hotels?.slice(0, visibleCount).map((hotel, idx) => (
           <motion.div
             key={idx}
             // variants={cardVariants}

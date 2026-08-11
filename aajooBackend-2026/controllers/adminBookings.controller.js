@@ -5,6 +5,9 @@ const { Op, where } = require("sequelize");
 const { CloudinaryManager } = require("../utils/cloudinary");
 const moduleConfig = require("../config/moduleConfigs");
 const methods = require("../utils/methods");
+const { ensureRecord, AdminServiceError } = require("../services/admin/adminCrud.service");
+const { logAdminMutation } = require("../services/admin/adminAudit.service");
+const { normalizeOptionalString, normalizeOptionalValue } = require("../utils/requestFilters");
 
 const getBookingList = async (req, res) => {
     try {
@@ -12,9 +15,10 @@ const getBookingList = async (req, res) => {
         const page = Number(reqData.page) > 0 ? Number(reqData.page) : 1;
         const limit = Number(reqData.limit) > 0 ? Number(reqData.limit) : 10;
         const offset = (page - 1) * limit;
-        const search = reqData.search?.trim() || "";
-        const statusId = reqData.status ? Number(reqData.status) : null;
-        let paymentStatus = reqData.paymentStatus;
+        const search = normalizeOptionalString(reqData.search);
+        const normalizedStatus = normalizeOptionalValue(reqData.status);
+        const statusId = normalizedStatus !== null ? Number(normalizedStatus) : null;
+        const paymentStatus = normalizeOptionalValue(reqData.paymentStatus);
         const fromDate = reqData.fromDate ? new Date(reqData.fromDate) : null;
         const toDate = reqData.toDate ? new Date(reqData.toDate) : null;
         let whereClause = {
@@ -25,10 +29,10 @@ const getBookingList = async (req, res) => {
                 [Op.like]: `%${search}%`,
             };
         }
-        if (statusId) {
+        if (statusId !== null) {
             whereClause.book_status = statusId;
         }
-        if (paymentStatus !== undefined) {
+        if (paymentStatus !== null) {
             whereClause.book_is_paid = paymentStatus;
         }
         if (fromDate && toDate) {
@@ -44,6 +48,7 @@ const getBookingList = async (req, res) => {
                 [Op.lte]: toDate,
             };
         }
+
         const { rows, count } = await model.tbl_bookings.findAndCountAll({
             where: whereClause,
             limit,
@@ -173,11 +178,7 @@ const updateBookingStatusforBookings = async (req, res) => {
             attributes: ["book_pri_id", "book_id", "book_status"],
             transaction
         });
-
-        if (!findBooking) {
-            await transaction.rollback();
-            return common.response(req, res, commonConfig.notFoundStatus, false, "Booking not found");
-        }
+        ensureRecord(findBooking, "Booking not found", commonConfig.notFoundStatus);
 
         await model.tbl_bookings.update(
             { book_status: reqData.statusId },
@@ -194,10 +195,20 @@ const updateBookingStatusforBookings = async (req, res) => {
         );
 
         await transaction.commit();
+        await logAdminMutation(req, {
+            action: "status_update",
+            entity: "booking",
+            entityId: findBooking.book_pri_id,
+            before: { book_status: findBooking.book_status },
+            after: { book_status: reqData.statusId },
+        });
         return common.response(req, res, commonConfig.successStatus, true, "Booking status updated successfully");
     } catch (error) {
-        await transaction.rollback();
-        return common.response(req, res, commonConfig.errorStatus, false, error.message);
+        if (transaction && !transaction.finished) {
+            await transaction.rollback();
+        }
+        const status = error instanceof AdminServiceError ? error.status : commonConfig.serverErrorStatus;
+        return common.response(req, res, status, false, error.message);
     }
 };
 const bookingStatusListing = async (req, res) => {
@@ -224,14 +235,30 @@ const updateBookingStatus = async (req, res) => {
     try {
         const reqData = { ...req.body };
         const statusId = reqData.bs_id;
+        const existingStatus = await model.tbl_book_status.findOne({
+            where: {
+                bs_id: statusId,
+                bs_isDelete: commonConfig.isNo
+            },
+            raw: true
+        });
+        ensureRecord(existingStatus, "Booking status not found", commonConfig.notFoundStatus);
         const payload = {
             bs_title: reqData.bs_title,
             bs_code: reqData.bs_code,
         };
         await model.tbl_book_status.update(payload, { where: { bs_id: statusId } });
+        await logAdminMutation(req, {
+            action: "update",
+            entity: "booking_status",
+            entityId: statusId,
+            before: existingStatus,
+            after: payload,
+        });
         return common.response(req, res, commonConfig.successStatus, true, "Booking status updated successfully");
     } catch (error) {
-        return common.response(req, res, commonConfig.errorStatus, false, error.message);
+        const status = error instanceof AdminServiceError ? error.status : commonConfig.serverErrorStatus;
+        return common.response(req, res, status, false, error.message);
     }
 };
 const bookingStatusListingforAdminPage = async (req, res) => {
@@ -244,7 +271,7 @@ const bookingStatusListingforAdminPage = async (req, res) => {
             where: { bs_isDelete: commonConfig.isNo },
             attributes: ["bs_id", "bs_title", "bs_code"],
             raw: true,
-            limit: 10,
+            limit,
             offset: offset,
             order: [["bs_id", "DESC"]],
             raw: true

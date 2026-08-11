@@ -23,7 +23,7 @@ import { useNotificationStore } from "../../../components/toast";
 import { closeSnackbar } from "../../../features/admin/adminAuth/adminAuth.slice";
 
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -76,7 +76,7 @@ const AdminLogin = () => {
     },
   });
 
-  const PURPLE = "#1B2447";
+  const INDIGO = "#1B2447";
 
   return (
     <Box
@@ -93,7 +93,7 @@ const AdminLogin = () => {
           display: { xs: "none", md: "flex" },
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #1B2447, #C16345)",
+          background: "#1B2447",
           color: "#fff",
           px: 8,
         }}
@@ -152,7 +152,7 @@ const AdminLogin = () => {
               fontWeight={800}
               mb={1}
               sx={{
-                background: "linear-gradient(135deg, #1B2447, #C16345)",
+                background: "#1B2447",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
@@ -268,9 +268,9 @@ const AdminLogin = () => {
                     checked={formik.values.rememberMe}
                     onChange={formik.handleChange}
                     sx={{
-                      color: PURPLE,
+                      color: INDIGO,
                       "&.Mui-checked": {
-                        color: PURPLE,
+                        color: INDIGO,
                       },
                     }}
                   />
@@ -284,7 +284,7 @@ const AdminLogin = () => {
                 sx={{
                   fontSize: 14,
                   fontWeight: 500,
-                  color: PURPLE,
+                  color: INDIGO,
                   background: "none",
                   border: "none",
                   padding: 0,
@@ -315,7 +315,7 @@ const AdminLogin = () => {
               sx={{
                 mt: 4,
                 py: 1.8,
-                background: "linear-gradient(135deg, #1B2447, #C16345)",
+                background: "#1B2447",
                 color: "#fff",
                 fontWeight: 700,
                 borderRadius: 3,

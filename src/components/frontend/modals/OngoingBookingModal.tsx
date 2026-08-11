@@ -17,31 +17,48 @@ import {
 
 import CloseIcon from "@mui/icons-material/Close";
 import { motion } from "framer-motion";
+import toast from "react-hot-toast";
 
 import BookingDetails from "./BookingDetails";
 import HostInfo from "./HostInfo";
 import OngoigActionButtons from "./OngoigActionButtons";
+import { cancelBooking } from "../../../services/customerApi";
 
 interface OngoingBookingModalProps {
   open: boolean;
   onClose: () => void;
   booking: any;
+  /** Called after a cancel/payment so the parent can refresh the list. */
+  onChanged?: () => void;
 }
 
 const OngoingBookingModal: React.FC<OngoingBookingModalProps> = ({
   open,
   onClose,
   booking,
+  onChanged,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   if (!booking) return null;
 
-  const confirmCancel = () => {
-    setConfirmOpen(false);
-    window.location.href = `/booking/cancel-result/${booking.id}`;
+  const confirmCancel = async () => {
+    setCancelling(true);
+    try {
+      await cancelBooking(booking.id);
+      toast.success("Booking cancelled");
+      setConfirmOpen(false);
+      onChanged?.();
+    } catch (e: any) {
+      toast.error(
+        e?.response?.data?.message || e?.message || "Couldn't cancel this booking."
+      );
+    } finally {
+      setCancelling(false);
+    }
   };
 
   return (
@@ -128,7 +145,7 @@ const OngoingBookingModal: React.FC<OngoingBookingModalProps> = ({
                 sx={{
                   fontWeight: 700,
                   color: "#1B2447",
-                  fontFamily: "'Poppins', sans-serif",
+                  fontFamily: "'Inter', sans-serif",
                 }}
               >
                 {booking.propertyName || "Aajoo Premium Homestay"}
@@ -153,6 +170,30 @@ const OngoingBookingModal: React.FC<OngoingBookingModalProps> = ({
               >
                 Status: {booking.status || "Ongoing"}
               </Typography>
+
+              {/* Amount — prominent */}
+              {booking.totalPrice != null && (
+                <Box
+                  sx={{
+                    mt: 1.5,
+                    display: "inline-flex",
+                    alignItems: "baseline",
+                    gap: 0.75,
+                    bgcolor: "rgba(27,36,71,.05)",
+                    border: "1px solid #D9CFB8",
+                    borderRadius: "999px",
+                    px: 2,
+                    py: 0.75,
+                  }}
+                >
+                  <Typography sx={{ fontSize: "0.8rem", color: "#6B7390" }}>
+                    {booking.isPaid ? "Paid" : "Amount due"}
+                  </Typography>
+                  <Typography sx={{ fontWeight: 800, color: "#1B2447", fontSize: "1.2rem" }}>
+                    ₹{Number(booking.totalPrice).toLocaleString("en-IN")}
+                  </Typography>
+                </Box>
+              )}
             </Box>
 
             <Divider sx={{ my: 2 }} />
@@ -184,6 +225,7 @@ const OngoingBookingModal: React.FC<OngoingBookingModalProps> = ({
               <OngoigActionButtons
                 booking={booking}
                 onCancel={() => setConfirmOpen(true)}
+                onPaid={onChanged}
               />
             </Box>
 
@@ -221,16 +263,19 @@ const OngoingBookingModal: React.FC<OngoingBookingModalProps> = ({
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)}>No, keep it</Button>
+          <Button onClick={() => setConfirmOpen(false)} disabled={cancelling}>
+            No, keep it
+          </Button>
           <Button
             onClick={confirmCancel}
+            disabled={cancelling}
             sx={{
               bgcolor: "#1B2447",
               color: "#fff",
               "&:hover": { bgcolor: "#a83454" },
             }}
           >
-            Yes, cancel
+            {cancelling ? "Cancelling…" : "Yes, cancel"}
           </Button>
         </DialogActions>
       </Dialog>

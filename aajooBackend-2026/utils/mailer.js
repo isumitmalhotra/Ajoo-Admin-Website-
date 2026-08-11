@@ -1,98 +1,146 @@
 const nodemailer = require('nodemailer');
+const axios = require('axios');
 const mailConfig = require("../config/db.config");
+const mailProviderConfig = require("../config/mail.config");
 const model = require("../models");
 const { sequelize } = require('../models');
 const logger = require('./logger');
 
 class EmailManager {
-    constructor() {
-        this.transporter = nodemailer.createTransport({
-            // host: mailConfig.etherealHost, // e.g., smtp.gmail.com
-            host: 'smtp.gmail.com',
-            port: 465,
-            secure: true,
-            auth: {
-                user: mailConfig.mailEmail,
-                pass: mailConfig.mailPassword,
-            },
-            connectionTimeout: 5000, // Increase timeout to 5 seconds
-            greetingTimeout: 5000,  // Increase greeting timeout
-            socketTimeout: 5000,    // Increase socket timeout
-            // logger: true,  // Enable detailed logs
-            // debug: true, 
-        });
-    }
+  constructor() {
+    // Legacy SMTP transport — used as the fallback when Brevo HTTP is not configured.
+    // NOTE: Render blocks outbound SMTP (25/465/587); this only works locally or on
+    // SMTP-capable hosts. Brevo HTTP API (port 443) is the production path — see
+    // config/mail.config.js + sendViaBrevo() below.
+    this.transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: mailConfig.mailEmail,
+        pass: mailConfig.mailPassword,
+      },
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 5000,
+    });
 
-    /**
-     * Adds attachments to the email if provided
-     * @param {Array} attachments - List of attachments
-     * @returns {Array|undefined} - Returns the attachments array or undefined
-     */
-    addAttachments(attachments) {
-        if (attachments && attachments.length > 0) {
-            return attachments.map((attachment) => ({
-                filename: attachment.filename,
-                path: attachment.path,
-            }));
-        }
-        return undefined; // No attachments
-    }
+    // Resolve the "from" address: explicit MAIL_FROM env wins, else legacy SMTP user.
+    this.fromEmail = mailProviderConfig.from.email || mailConfig.mailEmail;
+    this.fromName = mailProviderConfig.from.name || "Aajoo Homes";
+    this.useBrevoHttp = mailProviderConfig.useBrevoHttp;
 
-    /**
-     * Sends an email
-     * @param {Object} options - Email options
-     * @param {string} options.to - Receiver's email address
-     * @param {string} options.subject - Subject of the email
-     * @param {string} [options.cc] - CC email addresses
-     * @param {string} [options.bcc] - BCC email addresses
-     * @param {string} [options.text] - Plain text body
-     * @param {string} [options.html] - HTML body
-     * @param {Array} [options.attachments] - Attachments for the email
-     * @returns {Promise<void>}
-     */
+    logger.info(`Mail transport: ${mailProviderConfig.transportLabel}`, {
+      from: this.fromEmail,
+      brevoConfigured: this.useBrevoHttp,
+    });
+  }
 
-    makeContent(content) {
-        return `${this.header()}${content}${this.footer()}`;
+  /**
+   * Send via Brevo HTTP API (https://api.brevo.com/v3/smtp/email).
+   * Port 443 — works on Render where SMTP is blocked.
+   * @returns {Promise<{messageId:string}>}
+   */
+  async sendViaBrevo(mailOptions) {
+    const payload = {
+      sender: { email: this.fromEmail, name: this.fromName },
+      to: [{ email: mailOptions.to }],
+      subject: mailOptions.subject,
+      htmlContent: mailOptions.html,
     };
+    if (mailOptions.cc) payload.cc = [].concat(mailOptions.cc).map((email) => ({ email }));
+    if (mailOptions.bcc) payload.bcc = [].concat(mailOptions.bcc).map((email) => ({ email }));
 
-    async sendEmail(options) {
-        const transaction = await sequelize.transaction();
-        let sendEmailId
-        try {
-            const mailOptions = {
-                from: mailConfig.mailEmail,
-                to: options.to,
-                subject: options.subject,
-                html: options.data,
-                cc: options.cc ?? undefined,
-                bcc: options.bcc ?? undefined
-            };
-            const payload = {
-                se_user_id: options.userId,
-                se_recipient_email: options.to,
-                se_subject: options.subject,
-                se_body: options.data,
-                se_status: options.status,
-                se_cc: options.cc ?? undefined,
-                se_bcc: options.bcc ?? undefined,
-                se_mail_type: options.mailType,
-            }
-            const info = await this.transporter.sendMail(mailOptions);
+    const resp = await axios.post(mailProviderConfig.brevo.endpoint, payload, {
+      headers: {
+        "api-key": mailProviderConfig.brevo.apiKey,
+        "Content-Type": "application/json",
+        accept: "application/json",
+      },
+      timeout: 10000,
+    });
+    return { messageId: resp?.data?.messageId || "brevo-sent" };
+  }
 
-            const sendEmail = await model.tbl_send_email.create(payload, { transaction: transaction });
-            sendEmailId = sendEmail.dataValues.se_id;
-            await transaction.commit()
-            logger.info(`Email sent: ${info.messageId}`);
-            return info; // Return the info object on success
-        } catch (error) {
-            await transaction.rollback();
-            logger.error('Error sending email:', error);
-            return false;
-        }
+  /**
+   * Adds attachments to the email if provided
+   * @param {Array} attachments - List of attachments
+   * @returns {Array|undefined} - Returns the attachments array or undefined
+   */
+  addAttachments(attachments) {
+    if (attachments && attachments.length > 0) {
+      return attachments.map((attachment) => ({
+        filename: attachment.filename,
+        path: attachment.path,
+      }));
     }
+    return undefined; // No attachments
+  }
 
-    header() {
-        return (`
+  /**
+   * Sends an email
+   * @param {Object} options - Email options
+   * @param {string} options.to - Receiver's email address
+   * @param {string} options.subject - Subject of the email
+   * @param {string} [options.cc] - CC email addresses
+   * @param {string} [options.bcc] - BCC email addresses
+   * @param {string} [options.text] - Plain text body
+   * @param {string} [options.html] - HTML body
+   * @param {Array} [options.attachments] - Attachments for the email
+   * @returns {Promise<void>}
+   */
+
+  makeContent(content) {
+    return `${this.header()}${content}${this.footer()}`;
+  };
+
+  async sendEmail(options) {
+    const transaction = await sequelize.transaction();
+    let sendEmailId
+    try {
+      const parsedUserId = Number(options.userId);
+      const emailUserId = Number.isInteger(parsedUserId) && parsedUserId > 0 ? parsedUserId : 0;
+      const mailOptions = {
+        from: this.fromEmail,
+        to: options.to,
+        subject: options.subject,
+        html: options.data,
+        cc: options.cc ?? undefined,
+        bcc: options.bcc ?? undefined
+      };
+      const payload = {
+        se_user_id: options.userId,
+        se_recipient_email: options.to,
+        se_subject: options.subject,
+        se_body: options.data,
+        se_status: options.status,
+        se_cc: options.cc ?? undefined,
+        se_bcc: options.bcc ?? undefined,
+        se_mail_type: options.mailType,
+      }
+
+      // Provider switch: Brevo HTTP API (production, Render-friendly) vs SMTP fallback.
+      let info;
+      if (this.useBrevoHttp) {
+        info = await this.sendViaBrevo(mailOptions);
+      } else {
+        info = await this.transporter.sendMail(mailOptions);
+      }
+
+      const sendEmail = await model.tbl_send_email.create(payload, { transaction: transaction });
+      sendEmailId = sendEmail.dataValues.se_id;
+      await transaction.commit()
+      logger.info(`Email sent: ${info.messageId}`);
+      return info; // Return the info object on success
+    } catch (error) {
+      await transaction.rollback();
+      logger.error('Error sending email:', error);
+      return false;
+    }
+  }
+
+  header() {
+    return (`
             <!DOCTYPE html>
             <html lang="en">
             <head>
@@ -113,9 +161,9 @@ class EmailManager {
                     </div>
         `);
 
-    };
-    footer() {
-        return (`
+  };
+  footer() {
+    return (`
          <!-- Footer Section -->
         <div style="background-color: #f4f4f7; color: #444; padding: 20px; text-align: center; font-size: 13px; border-top: 1px solid #ddd;">
             <p style="margin: 5px 0;">This email was sent to notify you of a change in your account security.</p>
@@ -129,9 +177,9 @@ class EmailManager {
 </html>
 
         `);
-    };
-    signupOtp(data) {
-        return (`
+  };
+  signupOtp(data) {
+    return (`
             <main style="padding: 20px; max-width: 600px; margin: 0 auto; background: #ffffff;
                          font-family: Arial, sans-serif;">
                 
@@ -167,10 +215,49 @@ class EmailManager {
                 </p>
             </main>
         `);
-    }
+  }
 
-    forgetPassword(data) {
-        return (`
+  chatbotOtp(data) {
+    return (`
+            <main style="padding: 20px; max-width: 600px; margin: 0 auto; background: #ffffff;
+                         font-family: Arial, sans-serif;">
+                
+                <!-- Heading -->
+                <h2 style="color: #1E3A8A; text-align: center; font-size: 24px; font-weight: bold; margin-bottom: 10px;">
+                    Verify Your Identity
+                </h2>
+                
+                <!-- Greeting -->
+                <p style="color: #4B5563; font-size: 16px; line-height: 1.6; text-align: center; margin: 10px 0;">
+                    Hi ${data.name},
+                </p>
+                
+                <!-- Info -->
+                <p style="color: #4B5563; font-size: 16px; line-height: 1.6; text-align: center; margin: 10px 0;">
+                    Use the OTP below to verify your session in the Aajoo chatbot.
+                </p>
+                
+                <!-- OTP Code -->
+                <div style="text-align: center; margin: 20px 0;">
+                    <span style="font-size: 26px; font-weight: bold; color: #AB0241; background: #F3F4F6; 
+                                 padding: 12px 24px; border-radius: 8px; display: inline-block;">
+                        ${data.otp}
+                    </span>
+                </div>
+                
+                <!-- Extra Info -->
+                <p style="color: #6B7280; font-size: 14px; text-align: center;">
+                    This OTP is valid for 10 minutes. Please do not share it with anyone.
+                </p>
+                <p style="color: #6B7280; font-size: 14px; text-align: center;">
+                    If you did not request this verification, you can safely ignore this email.
+                </p>
+            </main>
+        `);
+  }
+
+  forgetPassword(data) {
+    return (`
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6; padding:0px;">
   <tr>
     <td align="center">
@@ -236,9 +323,9 @@ class EmailManager {
   </tr>
 </table>
         `);
-    };
-    confirmUpdatePassword(userName) {
-        return (`
+  };
+  confirmUpdatePassword(userName) {
+    return (`
             <div style="padding: 20px; color: #333333; line-height: 1.6;">
             <p>Dear ${userName}</p>
             <p>We wanted to let you know that your password has been successfully updated.</p>
@@ -247,9 +334,9 @@ class EmailManager {
             <p>Best regards,<br>Your Company Name</p>
         </div>
         `)
-    };
-    bookingMail(data) {
-        return (`
+  };
+  bookingMail(data) {
+    return (`
           <div style="padding: 20px; color: #444;">
             <p>Dear <strong>${data.username}</strong>,</p>
             <p>We are pleased to confirm your booking. Here are the details:</p>
@@ -280,9 +367,9 @@ class EmailManager {
             <p style="margin-top: 15px;">If you have any questions, feel free to contact us.</p>
         </div>
         `)
-    };
-    bookingCancellforUser(data) {
-        return (`
+  };
+  bookingCancellforUser(data) {
+    return (`
            <main style="padding: 20px; background: #ffffff;">
       <h2 style="color: #AB0241; text-align: center; font-size: 22px; margin-bottom: 10px;">
         Your Booking Has Been Cancelled
@@ -301,9 +388,9 @@ class EmailManager {
       </p>
     </main>
         `)
-    };
-    bookingCancellforHost(data) {
-        return (`
+  };
+  bookingCancellforHost(data) {
+    return (`
       <main style="padding: 20px; background: #ffffff;">
       <h2 style="color: #AB0241; text-align: center; font-size: 22px; margin-bottom: 10px;">
         Booking Cancelled by User
@@ -322,7 +409,7 @@ class EmailManager {
       </p>
     </main>
         `)
-    };
+  };
 
 
 };

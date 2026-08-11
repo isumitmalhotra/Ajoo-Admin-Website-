@@ -12,7 +12,7 @@ import {
 import PhoneIcon from "@mui/icons-material/Phone";
 import EmailIcon from "@mui/icons-material/Email";
 import HomeIcon from "@mui/icons-material/Home";
-import ChatIcon from "@mui/icons-material/Chat";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 
 interface HostInfoProps {
   host?: {
@@ -28,13 +28,17 @@ const HostInfo: React.FC<HostInfoProps> = ({ host = {} }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
+  // Real host data only — no fabricated fallbacks.
   const {
-    name = "Rohit Sharma",
-    phone = "+91 98765 43210",
-    email = "rohit.sharma@aajoo.com",
-    address = "Old Manali, Himachal Pradesh",
-    image = "https://randomuser.me/api/portraits/men/42.jpg",
+    name = "Your Host",
+    phone = "",
+    email = "",
+    address = "",
+    image = "",
   } = host;
+
+  // wa.me needs digits only (with country code).
+  const waNumber = phone.replace(/[^\d]/g, "");
 
   return (
     <Box
@@ -53,7 +57,7 @@ const HostInfo: React.FC<HostInfoProps> = ({ host = {} }) => {
           fontWeight: 700,
           color: "#1B2447",
           mb: 2,
-          fontFamily: "'Poppins', sans-serif",
+          fontFamily: "'Inter', sans-serif",
         }}
       >
         Meet your host
@@ -72,26 +76,32 @@ const HostInfo: React.FC<HostInfoProps> = ({ host = {} }) => {
         <Box>
           <Typography sx={{ fontWeight: 700 }}>{name}</Typography>
           <Typography sx={{ color: "text.secondary", fontSize: "0.85rem" }}>
-            Superhost • 4 yrs on Aajoo
+            Verified Aajoo Host
           </Typography>
         </Box>
       </Box>
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-          <PhoneIcon sx={{ color: "#4caf50", fontSize: 20 }} />
-          <Typography sx={{ fontWeight: 600 }}>{phone}</Typography>
-        </Box>
+        {phone && (
+          <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+            <PhoneIcon sx={{ color: "#4caf50", fontSize: 20 }} />
+            <Typography sx={{ fontWeight: 600 }}>{phone}</Typography>
+          </Box>
+        )}
 
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-          <EmailIcon sx={{ color: "#1976d2", fontSize: 20 }} />
-          <Typography sx={{ fontWeight: 600 }}>{email}</Typography>
-        </Box>
+        {email && (
+          <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+            <EmailIcon sx={{ color: "#1976d2", fontSize: 20 }} />
+            <Typography sx={{ fontWeight: 600 }}>{email}</Typography>
+          </Box>
+        )}
 
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-          <HomeIcon sx={{ color: "#ff9800", fontSize: 20 }} />
-          <Typography sx={{ fontWeight: 600 }}>{address}</Typography>
-        </Box>
+        {address && (
+          <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+            <HomeIcon sx={{ color: "#ff9800", fontSize: 20 }} />
+            <Typography sx={{ fontWeight: 600 }}>{address}</Typography>
+          </Box>
+        )}
       </Box>
 
       <Box
@@ -104,7 +114,8 @@ const HostInfo: React.FC<HostInfoProps> = ({ host = {} }) => {
       >
         <Button
           variant="contained"
-          href={`tel:${phone}`}
+          href={phone ? `tel:${phone}` : undefined}
+          disabled={!phone}
           sx={{
             bgcolor: "#4caf50",
             "&:hover": { bgcolor: "#3b9c43" },
@@ -120,11 +131,14 @@ const HostInfo: React.FC<HostInfoProps> = ({ host = {} }) => {
           Call
         </Button>
 
+        {/* Chat directly with the host on WhatsApp */}
         <Button
-          variant="outlined"
+          variant="contained"
+          disabled={!waNumber}
           sx={{
-            borderColor: "#1B2447",
-            color: "#1B2447",
+            bgcolor: "#25D366",
+            "&:hover": { bgcolor: "#1ebe5d" },
+            color: "#fff",
             textTransform: "none",
             px: 2.5,
             py: 0.7,
@@ -132,13 +146,17 @@ const HostInfo: React.FC<HostInfoProps> = ({ host = {} }) => {
             borderRadius: 2,
             minWidth: 130,
           }}
-          startIcon={<ChatIcon />}
-          onClick={() => {
-            // placeholder action
-            window.alert("Open chat with host (implement chat flow).");
-          }}
+          startIcon={<WhatsAppIcon />}
+          onClick={() =>
+            window.open(
+              `https://wa.me/${waNumber}?text=${encodeURIComponent(
+                "Hi! I have a booking with you on Aajoo Homes."
+              )}`,
+              "_blank"
+            )
+          }
         >
-          Message
+          WhatsApp
         </Button>
       </Box>
     </Box>

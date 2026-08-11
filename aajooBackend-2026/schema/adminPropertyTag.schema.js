@@ -1,13 +1,10 @@
 const yup = require("yup");
+const { optionalChoice, optionalInteger, optionalNullableNumber, optionalString } = require("./yupHelpers");
 
 exports.createOrUpdateTagSchema = yup.object({
-  tagId: yup
-    .number()
-    .typeError("Tag ID must be a number")
+  tagId: optionalNullableNumber("Tag ID must be a number")
     .integer("Tag ID must be an integer")
-    .positive("Tag ID must be greater than zero")
-    .nullable()
-    .optional(),
+    .positive("Tag ID must be greater than zero"),
 
   tag_name: yup
     .string()
@@ -32,29 +29,10 @@ exports.deteletTagSchema = yup.object({
 
 
 exports.tagListingSchema = yup.object({
-  page: yup
-    .number()
-    .integer("Page must be an integer")
-    .min(1, "Page must be greater than 0")
-    .optional(),
-
-  limit: yup
-    .number()
-    .integer("Limit must be an integer")
-    .min(1, "Limit must be greater than 0")
-    .max(100, "Limit cannot exceed 100")
-    .optional(),
-
-  search: yup
-    .string()
-    .trim()
-    .min(1, "Search must not be empty")
-    .optional(),
-
-  status: yup
-    .mixed()
-    .oneOf(["0", "1", 0, 1], "Status must be 0 or 1")
-    .optional(),
+  page: optionalInteger().min(1, "Page must be greater than 0"),
+  limit: optionalInteger().min(1, "Limit must be greater than 0").max(100, "Limit cannot exceed 100"),
+  search: optionalString({ min: 1 }),
+  status: optionalChoice(["0", "1", 0, 1], "Status must be 0 or 1"),
 });
 
 exports.updateTagStatusSchema = yup.object({

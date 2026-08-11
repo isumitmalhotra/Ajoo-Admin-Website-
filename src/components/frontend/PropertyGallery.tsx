@@ -2,14 +2,15 @@ import React, { useState } from "react";
 import { Box, Typography, Button, Modal, IconButton } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import GridViewIcon from "@mui/icons-material/GridView";
-import { motion, AnimatePresence } from "framer-motion";
+import Slider from "react-slick";
 
 interface PropertyGalleryProps {
   Images?: string[];
 }
 
 const PropertyGallery: React.FC<PropertyGalleryProps> = ({ Images = [] }) => {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  // null = closed; otherwise the index the lightbox slider opens on.
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
 
   if (!Array.isArray(Images) || Images.length === 0) return null;
@@ -61,10 +62,33 @@ const PropertyGallery: React.FC<PropertyGalleryProps> = ({ Images = [] }) => {
         )}
       </Box>
 
-      {/* Gallery grid — POC: 2fr 1fr 1fr, height 480, gap 8, radius 18 */}
+      {/* Mobile: swipeable gallery slider */}
       <Box
         sx={{
-          display: "grid",
+          display: { xs: "block", sm: "none" },
+          "& .slick-dots": { bottom: 8 },
+          "& .slick-dots li button:before": { color: "#FFFAF0", opacity: 0.6, fontSize: 9 },
+          "& .slick-dots li.slick-active button:before": { color: "#C16345", opacity: 1 },
+        }}
+      >
+        <Slider dots arrows={false} infinite={Images.length > 1} speed={350} slidesToShow={1} slidesToScroll={1}>
+          {Images.map((img, i) => (
+            <Box
+              key={i}
+              component="img"
+              src={img}
+              alt={`gallery-${i}`}
+              onClick={() => setLightboxIndex(i)}
+              sx={{ width: "100%", height: 240, objectFit: "cover", borderRadius: 2, cursor: "pointer" }}
+            />
+          ))}
+        </Slider>
+      </Box>
+
+      {/* Desktop: gallery grid — POC: 2fr 1fr 1fr, height 480, gap 8, radius 18 */}
+      <Box
+        sx={{
+          display: { xs: "none", sm: "grid" },
           gridTemplateColumns: showAll
             ? { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)" }
             : { xs: "repeat(2, 1fr)", md: "2fr 1fr 1fr" },
@@ -78,7 +102,7 @@ const PropertyGallery: React.FC<PropertyGalleryProps> = ({ Images = [] }) => {
         {displayed.map((img, i) => (
           <Box
             key={i}
-            onClick={() => setSelectedImage(img)}
+            onClick={() => setLightboxIndex(i)}
             sx={{
               position: "relative",
               overflow: "hidden",
@@ -122,47 +146,75 @@ const PropertyGallery: React.FC<PropertyGalleryProps> = ({ Images = [] }) => {
         ))}
       </Box>
 
-      {/* Lightbox modal */}
-      <AnimatePresence>
-        {selectedImage && (
-          <Modal
-            open={true}
-            onClose={() => setSelectedImage(null)}
+      {/* Lightbox — ALL images in a swipeable slider, opening on the clicked one */}
+      <Modal
+        open={lightboxIndex !== null}
+        onClose={() => setLightboxIndex(null)}
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          bgcolor: "rgba(0,0,0,0.92)",
+        }}
+      >
+        <Box
+          sx={{
+            position: "relative",
+            width: "94vw",
+            maxWidth: 920,
+            outline: "none",
+            "& .slick-prev, & .slick-next": { zIndex: 2, width: 40, height: 40 },
+            "& .slick-prev": { left: 8 },
+            "& .slick-next": { right: 8 },
+            "& .slick-prev:before, & .slick-next:before": { fontSize: 34, opacity: 0.9 },
+            "& .slick-dots li button:before": { color: "#fff", opacity: 0.5 },
+            "& .slick-dots li.slick-active button:before": { color: "#C16345", opacity: 1 },
+          }}
+        >
+          <IconButton
+            onClick={() => setLightboxIndex(null)}
             sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              bgcolor: "rgba(0,0,0,0.88)",
+              position: "absolute",
+              top: -48,
+              right: 0,
+              zIndex: 3,
+              bgcolor: "rgba(255,255,255,0.15)",
+              color: "#fff",
+              "&:hover": { bgcolor: "rgba(255,255,255,0.3)" },
             }}
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.85 }}
-              style={{ position: "relative", outline: "none", maxWidth: "90vw", maxHeight: "90vh" }}
+            <CloseIcon />
+          </IconButton>
+
+          {lightboxIndex !== null && (
+            <Slider
+              initialSlide={lightboxIndex}
+              dots
+              infinite={Images.length > 1}
+              arrows={Images.length > 1}
+              speed={350}
+              slidesToShow={1}
+              slidesToScroll={1}
             >
-              <IconButton
-                onClick={() => setSelectedImage(null)}
-                sx={{
-                  position: "absolute",
-                  top: 8,
-                  right: 8,
-                  bgcolor: "rgba(0,0,0,0.6)",
-                  color: "#fff",
-                  "&:hover": { bgcolor: "rgba(0,0,0,0.8)" },
-                }}
-              >
-                <CloseIcon />
-              </IconButton>
-              <img
-                src={selectedImage}
-                alt="enlarged"
-                style={{ width: "100%", height: "auto", borderRadius: "12px", objectFit: "contain", maxHeight: "90vh" }}
-              />
-            </motion.div>
-          </Modal>
-        )}
-      </AnimatePresence>
+              {Images.map((img, i) => (
+                <Box key={i} sx={{ outline: "none" }}>
+                  <Box
+                    component="img"
+                    src={img}
+                    alt={`gallery-${i}`}
+                    sx={{
+                      width: "100%",
+                      maxHeight: "82vh",
+                      objectFit: "contain",
+                      borderRadius: "12px",
+                    }}
+                  />
+                </Box>
+              ))}
+            </Slider>
+          )}
+        </Box>
+      </Modal>
     </Box>
   );
 };

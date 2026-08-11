@@ -1,9 +1,14 @@
 /node_modules
 /uploads
     
+/tests
+/scripts
 # /logs
+/docs
 TODO.md
 OPTIMIZATION_TODO.md
+BACKEND_OPTIMIZATION_REPORT.md
+OPTIMIZATION_REPORT.md
 Aajoo_API_Collection.json
 optimization_summary.md
 Aajoo_API_Testing_Progress.md

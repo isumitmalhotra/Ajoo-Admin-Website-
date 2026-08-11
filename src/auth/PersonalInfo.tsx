@@ -16,8 +16,8 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import WcIcon from "@mui/icons-material/Wc";
 import PhoneIphoneIcon from "@mui/icons-material/PhoneIphone";
-import EventIcon from "@mui/icons-material/Event";
 import { useState } from "react";
+import ThemedDatePicker from "../components/frontend/ThemedDatePicker";
 
 const PRIMARY = "#1B2447";
 const ERROR_COLOR = "#333";
@@ -50,7 +50,8 @@ const PersonalInfo = ({ data, errors, onChange }: any) => {
     error: string,
     icon: any,
     type = "text",
-    extraEndAdornment: any = null
+    extraEndAdornment: any = null,
+    numeric = false
   ) => (
     <TextField
       fullWidth
@@ -59,11 +60,17 @@ const PersonalInfo = ({ data, errors, onChange }: any) => {
       label={label}
       value={value}
       error={!!error}
-      onChange={(e) => onChange(name, e.target.value)}
+      onChange={(e) =>
+        onChange(
+          name,
+          numeric ? e.target.value.replace(/\D/g, "").slice(0, 10) : e.target.value
+        )
+      }
       helperText={error}
       FormHelperTextProps={{
         sx: { color: ERROR_COLOR, fontWeight: 600 },
       }}
+      inputProps={numeric ? { inputMode: "numeric", maxLength: 10 } : undefined}
       InputProps={{
         startAdornment: (
           <InputAdornment position="start">{icon}</InputAdornment>
@@ -166,34 +173,15 @@ const PersonalInfo = ({ data, errors, onChange }: any) => {
           )}
         </Box>
 
-        {/* DOB */}
-        <TextField
-          fullWidth
-          type="date"
-          label="Date of Birth *"
+        {/* DOB — themed calendar */}
+        <ThemedDatePicker
+          label="Date of Birth"
           value={data.dob}
+          onChange={(v) => onChange("dob", v)}
           error={!!errors.dob}
           helperText={errors.dob}
-          FormHelperTextProps={{ sx: { color: ERROR_COLOR, fontWeight: 600 } }}
-          onChange={(e) => onChange("dob", e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <EventIcon sx={{ color: PRIMARY }} />
-              </InputAdornment>
-            ),
-          }}
-          InputLabelProps={{ shrink: true }}
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              borderRadius: "12px",
-              "&:hover fieldset": { borderColor: PRIMARY },
-              "&.Mui-focused fieldset": { borderColor: PRIMARY },
-            },
-            "& label": { color: PRIMARY, fontWeight: 600 },
-            "& .MuiInputLabel-root.Mui-focused": { color: PRIMARY },
-            "& .MuiFormLabel-asterisk": { color: PRIMARY },
-          }}
+          required
+          disableFuture
         />
 
         {/* Gender */}
@@ -229,20 +217,26 @@ const PersonalInfo = ({ data, errors, onChange }: any) => {
           <MenuItem value="Other">Other</MenuItem>
         </TextField>
 
-        {/* Phones */}
+        {/* Phones — digits only */}
         {renderInput(
           "Primary Phone",
           "contact",
           data.contact,
           errors.contact,
-          <PhoneIphoneIcon sx={{ color: PRIMARY }} />
+          <PhoneIphoneIcon sx={{ color: PRIMARY }} />,
+          "tel",
+          null,
+          true
         )}
         {renderInput(
           "Alternate Phone",
           "alternatePhone",
           data.alternatePhone,
           "",
-          <PhoneIphoneIcon sx={{ color: PRIMARY }} />
+          <PhoneIphoneIcon sx={{ color: PRIMARY }} />,
+          "tel",
+          null,
+          true
         )}
 
         {/* User Type Radio-like Checkboxes */}

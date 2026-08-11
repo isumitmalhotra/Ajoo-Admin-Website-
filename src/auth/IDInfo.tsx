@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Box,
   TextField,
@@ -12,6 +13,7 @@ import BadgeIcon from "@mui/icons-material/Badge";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import CloseIcon from "@mui/icons-material/Close";
+import { getDocumentTypes } from "../services/customerApi";
 
 const PRIMARY = "#1B2447";
 
@@ -21,7 +23,13 @@ const fadeUp = {
 };
 
 const IDInfo = ({ data, errors, onChange }: any) => {
-  const idTypes = ["Aadhaar", "PAN", "Passport", "Driver's License"];
+  // Real KYC document types (id + title) from the backend.
+  const [docTypes, setDocTypes] = useState<{ id: number; title: string }[]>([]);
+  useEffect(() => {
+    getDocumentTypes()
+      .then(setDocTypes)
+      .catch(() => setDocTypes([]));
+  }, []);
 
   const isImage = (file: File) => file.type.startsWith("image/");
 
@@ -81,8 +89,39 @@ const IDInfo = ({ data, errors, onChange }: any) => {
       </Typography>
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        {/* Document Type */}
-        {renderInput("Document Type", "docType", data.docType, errors.docType, undefined, "text", idTypes)}
+        {/* Document Type — real backend doc types (numeric id) */}
+        <TextField
+          fullWidth
+          required
+          select
+          label="Document Type *"
+          value={data.docType || ""}
+          error={!!errors.docType}
+          helperText={errors.docType}
+          onChange={(e) => onChange("docType", Number(e.target.value))}
+          sx={{
+            mb: 2,
+            "& .MuiOutlinedInput-root": {
+              borderRadius: "12px",
+              "& fieldset": { borderColor: PRIMARY },
+              "&.Mui-focused fieldset": { borderColor: PRIMARY },
+            },
+            "& label": { color: PRIMARY, fontWeight: 600 },
+            "& .MuiInputLabel-root.Mui-focused": { color: PRIMARY },
+          }}
+        >
+          {docTypes.length === 0 ? (
+            <MenuItem value="" disabled>
+              Loading document types…
+            </MenuItem>
+          ) : (
+            docTypes.map((d) => (
+              <MenuItem key={d.id} value={d.id}>
+                {d.title}
+              </MenuItem>
+            ))
+          )}
+        </TextField>
 
         {/* Document Number */}
         {renderInput("Document Number", "docNumber", data.docNumber, errors.docNumber, <BadgeIcon sx={{ color: PRIMARY }} />)}

@@ -1,4 +1,4 @@
-import { PurpleThemeColor } from "../../../../theme/themeColor";
+import { Brand } from "../../../../theme/themeColor";
 
 export const fieldStyle = {
   "& .MuiOutlinedInput-root": {
@@ -81,5 +81,5 @@ export const uploadPreview = {
   height: 120,
   borderRadius: 2,
   objectFit: "cover",
-  border: `1px solid ${PurpleThemeColor}`,
+  border: `1px solid ${Brand.indigo}`,
 };

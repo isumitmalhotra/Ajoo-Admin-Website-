@@ -17,6 +17,11 @@ exports.getSingleProperty = yup.object({
         .number()
         .required("property id is required"),
 });
+exports.getHostProfile = yup.object({
+    hostId: yup
+        .number()
+        .required("host id is required"),
+});
 exports.createProperty = yup.object({
     property_name: yup
         .string()

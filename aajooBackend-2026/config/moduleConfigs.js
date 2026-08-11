@@ -27,11 +27,17 @@ exports.TCHeaderSection = 7;
 exports.TCPageLabelSection = 8;
 
 //---------------RAZORPAY----------------------------------
-exports.razor_pay_key_id = 'rzp_test_XUTODhUdMAshi6';
-exports.razor_pay_key_sec = 'pquKHeZnpWnSJgMGiqF6EuOy';
+// Razorpay credentials moved to config/payments.config.js (single source of
+// truth). Require `{ razorpay } = require('./payments.config')` and read
+// `razorpay.keyId / razorpay.keySecret` if you need them in a new module.
 //---------------DEVICE TOKEN------------------------------
 // exports.device_token = 'fCDX0lRwTqqHeM1PeQdxXG:APA91bF9LB87EkVPt60mkgeZdm0xdhoadt2k6SpN_raAZCUyLH4bmZzn0Bs3eN9hw1lILdcvRF8nmzphdXleuFrXgXGH6c_9iN6lGwLkAIU_i9pnLWE9vTw';
-exports.whats_app_verify_token = 'fCDX0lRwTqqHeM1PeQdxXG231H4bmZzn0Bs3eN9hw1lILdcvRF8nmzphdXleuFrXgXGH6c_9iN6lGwLkAIU_i9pnLW2312E9vTw';
+
+// WhatsApp / BotPenguin webhook verify token. Vestigial — no consumers in
+// code as of 2026-06-08. Env-gated so production can rotate without a code
+// push if/when chatbot webhooks are wired up. Set WHATSAPP_VERIFY_TOKEN in
+// Render env to override.
+exports.whats_app_verify_token = process.env.WHATSAPP_VERIFY_TOKEN || 'fCDX0lRwTqqHeM1PeQdxXG231H4bmZzn0Bs3eN9hw1lILdcvRF8nmzphdXleuFrXgXGH6c_9iN6lGwLkAIU_i9pnLW2312E9vTw';
 
 exports.documnetTypes = [
     {

@@ -42,6 +42,9 @@ import deletePropertyImageReducer from "../features/admin/properties/deletePrope
 import bookingStatusListingForAdminPageReducer from "../features/admin/BookingStatus/bookingStatusListingForAdminPage.slice";
 import updateBookingStatusAdminPageReducer from "../features/admin/BookingStatus/bookingStatusUpdateSlice";
 import adminDashboardSliceReducer from "../features/admin/Dashboard/dashboard.slice";
+import adminNotificationsReducer from "../features/admin/notifications/notifications.slice";
+import adminHostPerformanceReducer from "../features/admin/hostManagement/adminHostPerformance.slice";
+import adminHostPayoutReducer from "../features/admin/hostManagement/adminHostPayout.slice";
 
 // ================= FINANCE MANAGEMENT SYSTEM =================
 import financeDashboardReducer from "../features/admin/finance/financeDashboard.slice";
@@ -67,6 +70,11 @@ import hostDashboardReducer from "../features/host/hostDashboard.slice";
 import hostBookingsReducer from "../features/host/hostBookings.slice";
 import hostEarningsReducer from "../features/host/hostEarnings.slice";
 import hostProfileReducer from "../features/host/hostProfile.slice";
+import hostStatementsReducer from "../features/host/hostStatements.slice";
+import hostSupportReducer from "../features/host/hostSupport.slice";
+import hostCommunicationReducer from "../features/host/hostCommunication.slice";
+import hostPerformanceReducer from "../features/host/hostPerformance.slice";
+import hostNotificationsReducer from "../features/host/hostNotifications.slice";
 
 export const store = configureStore({
   reducer: {
@@ -114,6 +122,9 @@ export const store = configureStore({
     bookingStatusListingForAdminPage: bookingStatusListingForAdminPageReducer,
     updateBookingStatusAdminPage: updateBookingStatusAdminPageReducer,
     adminDashboardSlice: adminDashboardSliceReducer,
+    adminNotifications: adminNotificationsReducer,
+    adminHostPerformance: adminHostPerformanceReducer,
+    adminHostPayout: adminHostPayoutReducer,
 
     // ================= FINANCE MANAGEMENT SYSTEM =================
     financeDashboard: financeDashboardReducer,
@@ -139,6 +150,11 @@ export const store = configureStore({
     hostBookings: hostBookingsReducer,
     hostEarnings: hostEarningsReducer,
     hostProfile: hostProfileReducer,
+    hostStatements: hostStatementsReducer,
+    hostSupport: hostSupportReducer,
+    hostCommunication: hostCommunicationReducer,
+    hostPerformance: hostPerformanceReducer,
+    hostNotifications: hostNotificationsReducer,
   },
 });
 

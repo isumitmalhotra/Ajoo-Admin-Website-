@@ -1,8 +1,13 @@
-import { TextField, InputAdornment, Typography, MenuItem } from "@mui/material";
+import { useState } from "react";
+import { TextField, InputAdornment, Typography, MenuItem, Button, Box, CircularProgress } from "@mui/material";
 import { motion } from "framer-motion";
 import HomeIcon from "@mui/icons-material/Home";
 import LocationCityIcon from "@mui/icons-material/LocationCity";
 import PinIcon from "@mui/icons-material/Pin";
+import MyLocationIcon from "@mui/icons-material/MyLocation";
+import toast from "react-hot-toast";
+import { detectAddress, INDIAN_STATES } from "../styles/utils/locationUtils";
+import { citiesForState } from "../styles/utils/indiaCities";
 
 const PRIMARY = "#1B2447";
 
@@ -12,6 +17,25 @@ const fadeUp = {
 };
 
 const AddressInfo = ({ data, errors, onChange }: any) => {
+  const [locating, setLocating] = useState(false);
+
+  const handleUseLocation = async () => {
+    setLocating(true);
+    try {
+      const addr = await detectAddress();
+      if (addr.address) onChange("address", addr.address);
+      if (addr.city) onChange("city", addr.city);
+      if (addr.state) onChange("state", addr.state);
+      if (addr.pincode) onChange("pincode", addr.pincode);
+      if (addr.country) onChange("country", addr.country);
+      toast.success("Address filled from your location");
+    } catch {
+      toast.error("Couldn't get your location. Please allow location access.");
+    } finally {
+      setLocating(false);
+    }
+  };
+
   const renderInput = (
     label: string,
     name: string,
@@ -61,10 +85,23 @@ const AddressInfo = ({ data, errors, onChange }: any) => {
     >
       <Typography
         variant="h5"
-        sx={{ fontWeight: 700, mb: 3, color: PRIMARY, textAlign: "center" }}
+        sx={{ fontWeight: 700, mb: 2, color: PRIMARY, textAlign: "center" }}
       >
         Address Information
       </Typography>
+
+      {/* Use my location → auto-fills address fields */}
+      <Box sx={{ display: "flex", justifyContent: "center", mb: 2.5 }}>
+        <Button
+          onClick={handleUseLocation}
+          disabled={locating}
+          startIcon={locating ? <CircularProgress size={16} /> : <MyLocationIcon />}
+          variant="outlined"
+          sx={{ borderColor: PRIMARY, color: PRIMARY, textTransform: "none", fontWeight: 600, borderRadius: "10px", "&:hover": { borderColor: PRIMARY, bgcolor: "rgba(27,36,71,.05)" } }}
+        >
+          {locating ? "Detecting…" : "Use my current location"}
+        </Button>
+      </Box>
 
       {/* Address */}
       {renderInput(
@@ -146,7 +183,10 @@ const AddressInfo = ({ data, errors, onChange }: any) => {
         value={data.state}
         error={!!errors.state}
         helperText={errors.state}
-        onChange={(e) => onChange("state", e.target.value)}
+        onChange={(e) => {
+          onChange("state", e.target.value);
+          onChange("city", ""); // reset city when state changes
+        }}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
@@ -167,20 +207,56 @@ const AddressInfo = ({ data, errors, onChange }: any) => {
           "& .MuiFormLabel-asterisk": { color: PRIMARY },
         }}
       >
-        <MenuItem value="X">X</MenuItem>
-        <MenuItem value="Y">Y</MenuItem>
-        <MenuItem value="Z">Z</MenuItem>
+        {INDIAN_STATES.map((s) => (
+          <MenuItem key={s} value={s}>
+            {s}
+          </MenuItem>
+        ))}
       </TextField>
 
-      {/* City */}
-      {renderInput(
-        "City",
-        "city",
-        data.city,
-        errors.city,
-        <LocationCityIcon sx={{ color: PRIMARY }} />,
-        "Enter your city"
-      )}
+      {/* City Dropdown — depends on the selected state */}
+      <TextField
+        fullWidth
+        select
+        required
+        label="City"
+        value={data.city || ""}
+        error={!!errors.city}
+        helperText={errors.city || (!data.state ? "Select a state first" : "")}
+        disabled={!data.state}
+        onChange={(e) => onChange("city", e.target.value)}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <LocationCityIcon sx={{ color: PRIMARY }} />
+            </InputAdornment>
+          ),
+        }}
+        sx={{
+          mb: 2,
+          "& .MuiOutlinedInput-root": {
+            borderRadius: "12px",
+            "& fieldset": { borderColor: PRIMARY },
+            "&:hover fieldset": { borderColor: PRIMARY },
+            "&.Mui-focused fieldset": { borderColor: PRIMARY },
+          },
+          "& label": { color: PRIMARY, fontWeight: 600 },
+          "& .MuiInputLabel-root.Mui-focused": { color: PRIMARY },
+          "& .MuiFormLabel-asterisk": { color: PRIMARY },
+        }}
+      >
+        {/* Include the autofilled city even if it's not in the curated list */}
+        {Array.from(
+          new Set([
+            ...(data.city ? [data.city] : []),
+            ...citiesForState(data.state),
+          ])
+        ).map((c) => (
+          <MenuItem key={c} value={c}>
+            {c}
+          </MenuItem>
+        ))}
+      </TextField>
 
       {/* Pincode */}
       <TextField

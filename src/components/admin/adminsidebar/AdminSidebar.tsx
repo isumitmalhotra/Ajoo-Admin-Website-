@@ -163,10 +163,37 @@ const AdminSidebar = () => {
           borderBottom: "1px solid #e5e7eb",
         }}
       >
-        <Octagon size={28} color="#7115bd" />
+        <Box
+          sx={{
+            width: 34,
+            height: 34,
+            borderRadius: "10px",
+            background: "linear-gradient(135deg, #1B2447 0%, #2A356B 100%)",
+            display: "grid",
+            placeItems: "center",
+            color: "#FFFAF0",
+            fontFamily: "'Fraunces', serif",
+            fontWeight: 700,
+            fontSize: "18px",
+            letterSpacing: "-0.04em",
+            boxShadow: "inset 0 -2px 0 rgba(0,0,0,.15)",
+            flexShrink: 0,
+          }}
+        >
+          A
+        </Box>
         {!isCollapsed && (
-          <Typography fontWeight={600} color="#27548a">
-            Your Logo
+          <Typography
+            sx={{
+              fontFamily: "'Fraunces', serif",
+              fontWeight: 600,
+              fontSize: "18px",
+              letterSpacing: "-0.02em",
+              color: "#1B2447",
+              "& em": { fontStyle: "italic", fontWeight: 400, color: "#C16345" },
+            }}
+          >
+            aajoo<em>Homes</em>
           </Typography>
         )}
       </Box>
@@ -187,12 +214,12 @@ const AdminSidebar = () => {
                     mx: 1,
                     my: 0.5,
                     borderRadius: 1,
-                    color: "#27548a",
+                    color: "#3D4670",
                     "&.active": {
-                      color: "#8e07d6",
+                      color: "#1B2447",
                     },
                     "&:hover": {
-                      color: "#8e07d6",
+                      color: "#1B2447",
                     },
                   }}
                 >
@@ -239,9 +266,9 @@ const AdminSidebar = () => {
                             sx={{
                               my: 0.3,
                               borderRadius: 1,
-                              color: "#27548a",
+                              color: "#3D4670",
                               "&.active": {
-                                color: "#8e07d6",
+                                color: "#1B2447",
                               },
                             }}
                           >

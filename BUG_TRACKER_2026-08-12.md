@@ -253,21 +253,21 @@ platforms is not done when one side ships.
 - [ ] **A-22** show Properties in the slider and gave the see all button top right / Show 10-12 properties
 - [ ] **A-23** Then show Curated For you
 - [ ] **A-24** show Properties in the slider and gave the see all button top right / Show 10-12 properties
-- [ ] **A-25** Show Blogs 4-5 and top right add see all and go to blog page
-- [ ] **A-26** Show the FAQ and end the page.
+- [x] **A-25** Show Blogs 4-5 and top right add see all and go to blog page — **blog list + post screens built on app AND web (`/blog`, `/blog/:id`); "See all" and cards now go somewhere**
+- [x] **A-26** Show the FAQ and end the page. — **`HomeFaqStrip` at the foot of the home screen, "See all" → /faq**
 
 **Property Detail page**
 
-- [ ] **A-27** Property namse show the verified badage
-- [ ] **A-28** in the app show all the properties deteilas like website
-- [ ] **A-29** About /aminities / hose rule / location/ reviews/ host/ ploices in diffrent tables like webiste
-- [ ] **A-30** do not show all of the above in long page add these of above in listing like:
-- [ ] **A-31** if user clkick on the about shoe property dicption only, if user click on amanties shows aminties only and show on
-- [ ] **A-32** Instead of reviews mention customer/user experinces
-- [ ] **A-33** Then show gallary into
-- [ ] **A-34** show near by attaraction places
-- [ ] **A-35** Show distance from / near airport/ near hospital/ near park/ bus stand
-- [ ] **A-36** show property blog pages
+- [x] **A-27** Property namse show the verified badage — **beside the name, driven by `verification_status`, not the meaningless `is_verify`**
+- [x] **A-28** in the app show all the properties deteilas like website — **+ map and policies, which the app never had**
+- [x] **A-29** About /aminities / hose rule / location/ reviews/ host/ ploices in diffrent tables like webiste
+- [x] **A-30** do not show all of the above in long page add these of above in listing like: — **real tab panels on both platforms; the web ones were jump links**
+- [x] **A-31** if user clkick on the about shoe property dicption only, if user click on amanties shows aminties only and show on
+- [x] **A-32** Instead of reviews mention customer/user experinces — **"Guest experiences"**
+- [x] **A-33** Then show gallary into
+- [x] **A-34** show near by attaraction places — **from `property_nearby_places`; admin can now enter them (Admin → Properties → Nearby)**
+- [x] **A-35** Show distance from / near airport/ near hospital/ near park/ bus stand — **same source; sub-km shows in metres. Added Park and Beach to the vocabulary**
+- [x] **A-36** show property blog pages — **blog strip on the property page, links to the blog**
 
 **Reserve Page**
 

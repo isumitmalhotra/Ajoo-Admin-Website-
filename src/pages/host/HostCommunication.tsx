@@ -1,78 +1,47 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Avatar,
   Box,
   Button,
   Chip,
+  CircularProgress,
   Paper,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
 import SendRoundedIcon from "@mui/icons-material/SendRounded";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import {
+  fetchHostThreads,
+  appendMessage,
+  type Message,
+  type ThreadBadge,
+} from "../../features/host/hostCommunication.slice";
 
-type Message = {
-  id: string;
-  sender: "HOST" | "SUPPORT";
-  text: string;
-  at: string;
-};
-
-type Thread = {
-  id: string;
-  title: string;
-  badge: "Payout" | "Booking" | "General";
-  unread: number;
-  messages: Message[];
-};
-
-const INITIAL_THREADS: Thread[] = [
-  {
-    id: "TH-01",
-    title: "Payout settlement follow-up",
-    badge: "Payout",
-    unread: 2,
-    messages: [
-      {
-        id: "m1",
-        sender: "HOST",
-        text: "Can you confirm the ETA for the May payout release?",
-        at: "2026-05-15T09:20:00.000Z",
-      },
-      {
-        id: "m2",
-        sender: "SUPPORT",
-        text: "Finance team is validating ledger entries. Expected by tomorrow evening.",
-        at: "2026-05-15T10:02:00.000Z",
-      },
-    ],
-  },
-  {
-    id: "TH-02",
-    title: "Guest refund clarification",
-    badge: "Booking",
-    unread: 0,
-    messages: [
-      {
-        id: "m3",
-        sender: "SUPPORT",
-        text: "Please share booking ID so we can check refund status.",
-        at: "2026-05-14T12:00:00.000Z",
-      },
-    ],
-  },
-];
-
-const badgeColor: Record<Thread["badge"], { bg: string; color: string }> = {
-  Payout: { bg: "#ede9fe", color: "#5b21b6" },
+const badgeColor: Record<ThreadBadge, { bg: string; color: string }> = {
+  Payout: { bg: "#FFFAF0", color: "#1B2447" },
   Booking: { bg: "#dbeafe", color: "#1d4ed8" },
   General: { bg: "#ecfccb", color: "#3f6212" },
 };
 
 export default function HostCommunication() {
-  const [threads, setThreads] = useState<Thread[]>(INITIAL_THREADS);
-  const [selectedThreadId, setSelectedThreadId] = useState<string>(INITIAL_THREADS[0]?.id || "");
+  const dispatch = useAppDispatch();
+  const { threads, loading, error } = useAppSelector((state) => state.hostCommunication);
+  const [selectedThreadId, setSelectedThreadId] = useState<string>("");
   const [draft, setDraft] = useState("");
+
+  useEffect(() => {
+    dispatch(fetchHostThreads());
+  }, [dispatch]);
+
+  // Auto-select the first thread once threads arrive (and keep selection valid).
+  useEffect(() => {
+    if (threads.length > 0 && !threads.some((t) => t.id === selectedThreadId)) {
+      setSelectedThreadId(threads[0].id);
+    }
+  }, [threads, selectedThreadId]);
 
   const selectedThread = useMemo(
     () => threads.find((thread) => thread.id === selectedThreadId) || null,
@@ -88,13 +57,7 @@ export default function HostCommunication() {
       at: new Date().toISOString(),
     };
 
-    setThreads((prev) =>
-      prev.map((thread) =>
-        thread.id === selectedThread.id
-          ? { ...thread, messages: [...thread.messages, newMessage], unread: 0 }
-          : thread
-      )
-    );
+    dispatch(appendMessage({ threadId: selectedThread.id, message: newMessage }));
     setDraft("");
   };
 
@@ -105,7 +68,7 @@ export default function HostCommunication() {
         sx={{
           p: 2.5,
           borderRadius: "1rem",
-          border: "1px solid #ede9fe",
+          border: "1px solid #FFFAF0",
           boxShadow: "0 12px 28px rgba(17,24,39,0.05)",
         }}
       >
@@ -124,10 +87,24 @@ export default function HostCommunication() {
           gap: 1.3,
         }}
       >
-        <Paper elevation={0} sx={{ borderRadius: "1rem", border: "1px solid #ede9fe", p: 1.25 }}>
+        <Paper elevation={0} sx={{ borderRadius: "1rem", border: "1px solid #FFFAF0", p: 1.25 }}>
           <Typography variant="subtitle2" fontWeight={800} sx={{ px: 1, py: 0.5 }}>
             Conversations
           </Typography>
+          {error && (
+            <Alert severity="error" sx={{ m: 0.5, borderRadius: "0.6rem" }}>
+              {error}
+            </Alert>
+          )}
+          {loading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+              <CircularProgress size={22} sx={{ color: "#2A356B" }} />
+            </Box>
+          ) : threads.length === 0 ? (
+            <Typography variant="body2" color="text.secondary" sx={{ px: 1, py: 2 }}>
+              No conversations yet.
+            </Typography>
+          ) : (
           <Stack spacing={0.8}>
             {threads.map((thread) => (
               <Box
@@ -136,7 +113,7 @@ export default function HostCommunication() {
                 sx={{
                   p: 1.1,
                   borderRadius: "0.75rem",
-                  border: selectedThreadId === thread.id ? "1px solid #c4b5fd" : "1px solid #e5e7eb",
+                  border: selectedThreadId === thread.id ? "1px solid #D9CFB8" : "1px solid #e5e7eb",
                   bgcolor: selectedThreadId === thread.id ? "#faf5ff" : "#ffffff",
                   cursor: "pointer",
                   transition: "all .2s ease",
@@ -163,13 +140,14 @@ export default function HostCommunication() {
               </Box>
             ))}
           </Stack>
+          )}
         </Paper>
 
         <Paper
           elevation={0}
           sx={{
             borderRadius: "1rem",
-            border: "1px solid #ede9fe",
+            border: "1px solid #FFFAF0",
             p: 1.4,
             minHeight: 420,
             display: "flex",
@@ -207,7 +185,7 @@ export default function HostCommunication() {
                       justifyContent={isHost ? "flex-end" : "flex-start"}
                     >
                       {!isHost ? (
-                        <Avatar sx={{ width: 28, height: 28, bgcolor: "#6d28d9", fontSize: "0.7rem" }}>
+                        <Avatar sx={{ width: 28, height: 28, bgcolor: "#2A356B", fontSize: "0.7rem" }}>
                           S
                         </Avatar>
                       ) : null}
@@ -216,7 +194,7 @@ export default function HostCommunication() {
                           maxWidth: "75%",
                           p: 1,
                           borderRadius: "0.75rem",
-                          bgcolor: isHost ? "#ede9fe" : "#f3f4f6",
+                          bgcolor: isHost ? "#FFFAF0" : "#f3f4f6",
                           color: "#1f2937",
                         }}
                       >
@@ -248,7 +226,7 @@ export default function HostCommunication() {
                   variant="contained"
                   onClick={handleSend}
                   disabled={!draft.trim()}
-                  sx={{ bgcolor: "#6d28d9" }}
+                  sx={{ bgcolor: "#2A356B" }}
                 >
                   <SendRoundedIcon fontSize="small" />
                 </Button>

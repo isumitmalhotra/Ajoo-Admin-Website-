@@ -2,14 +2,23 @@ const model = require("../models");
 const common = require("../utils/common");
 const commonConfig = require("../config/commonConfig");
 const { Op } = require("sequelize");
-
 const { generateUniqueCategorySlug } = require("../utils/slugify");
-
+const { ensureRecord, buildPagedPayload, AdminServiceError } = require("../services/admin/adminCrud.service");
+const { logAdminMutation } = require("../services/admin/adminAudit.service");
 
 const createOrUpdatePropertyCategory = async (req, res) => {
     try {
         const reqData = { ...req.body };
-        let categoryId = reqData.categoryId;
+        let categoryId = reqData.categoryId ? Number(reqData.categoryId) : null;
+
+        let existingCategory = null;
+        if (categoryId) {
+            existingCategory = await model.tbl_categories.findOne({
+                where: { cat_id: categoryId, cat_isDelete: commonConfig.isNo },
+                raw: true
+            });
+            ensureRecord(existingCategory, "Category not found", commonConfig.notFoundStatus);
+        }
 
         const slug = await generateUniqueCategorySlug(reqData.cat_title, categoryId || null);
         const payload = {
@@ -18,15 +27,31 @@ const createOrUpdatePropertyCategory = async (req, res) => {
             cat_isActive: reqData.cat_isActive,
             cat_isDelete: commonConfig.isNo,
         };
+
         if (categoryId) {
             await model.tbl_categories.updateCategory(categoryId, payload);
-        } else {
-            const data = await model.tbl_categories.createCategory(payload);
-            categoryId = data.cat_id;
+            await logAdminMutation(req, {
+                action: "update",
+                entity: "category",
+                entityId: categoryId,
+                before: existingCategory,
+                after: payload,
+            });
+            return common.response(req, res, commonConfig.successStatus, true, "Category updated successfully");
         }
-        return common.response(req, res, commonConfig.successStatus, true, "Category saved successfully");
+
+        const data = await model.tbl_categories.createCategory(payload);
+        categoryId = data.cat_id;
+        await logAdminMutation(req, {
+            action: "create",
+            entity: "category",
+            entityId: categoryId,
+            after: payload,
+        });
+        return common.response(req, res, commonConfig.createdStatus, true, "Category saved successfully");
     } catch (error) {
-        return common.response(req, res, commonConfig.errorStatus, false, error.message);
+        const status = error instanceof AdminServiceError ? error.status : commonConfig.serverErrorStatus;
+        return common.response(req, res, status, false, error.message);
     }
 };
 
@@ -41,18 +66,13 @@ const categoriesForDropdown = async (req, res) => {
             order: [["cat_title", "ASC"]],
             raw: true,
         });
-        if (categories.length === 0) {
-            return common.response(req, res, commonConfig.successStatus, true, "No categories found");
-        }
         return common.response(req, res, commonConfig.successStatus, true, "Categories fetched successfully", categories);
-        
     } catch (error) {
-        return common.response(req, res, commonConfig.errorStatus, false, error.message);
+        return common.response(req, res, commonConfig.serverErrorStatus, false, error.message);
     }
-}
+};
 
 const getPropertyCategories = async (req, res) => {
-    // GET /api/property/categories?search=lux&page=1&limit=10
     try {
         const reqData = { ...req.body };
         const page = Number(reqData.page) > 0 ? Number(reqData.page) : 1;
@@ -63,45 +83,58 @@ const getPropertyCategories = async (req, res) => {
 
         const whereClause = { cat_isDelete: commonConfig.isNo };
         if (search) {
-            whereClause.cat_title = { [Op.like]: `%${search}%`, };
+            whereClause.cat_title = { [Op.like]: `%${search}%` };
         }
-        if (status !== "") {
+        if (status !== null) {
             whereClause.cat_isActive = status;
         }
+
         const { rows, count } = await model.tbl_categories.findAndCountAll({
             where: whereClause,
-            limit: limit,
-            offset: offset,
+            limit,
+            offset,
             raw: true
         });
-        if (rows.lenght === 0) {
-            return common.response(req, res, commonConfig.successStatus, true, "No categories found");
-        }
-        const totalPages = Math.ceil(count / limit);
-        return common.response(req, res, commonConfig.successStatus, true, "Categories fetched successfully", {
+
+        return common.response(req, res, commonConfig.successStatus, true, "Categories fetched successfully", buildPagedPayload({
+            rows,
+            count,
             page,
             limit,
             offset,
-            totalCount: count,
-            totalPages,
             search,
-            data: rows,
-        });
+            key: "data",
+        }));
     } catch (error) {
-        return common.response(req, res, commonConfig.errorStatus, false, error.message);
+        return common.response(req, res, commonConfig.serverErrorStatus, false, error.message);
     }
 };
 
 const deleteCategory = async (req, res) => {
     try {
-        const categoryId = req.body.categoryId;
+        const categoryId = Number(req.body.categoryId);
         if (!categoryId) {
             return common.response(req, res, commonConfig.badRequestStatus, false, "Category ID is required");
         }
+
+        const category = await model.tbl_categories.findOne({
+            where: { cat_id: categoryId, cat_isDelete: commonConfig.isNo },
+            raw: true
+        });
+        ensureRecord(category, "Category not found", commonConfig.notFoundStatus);
+
         await model.tbl_categories.updateCategory(categoryId, { cat_isDelete: commonConfig.isYes });
+        await logAdminMutation(req, {
+            action: "delete",
+            entity: "category",
+            entityId: categoryId,
+            before: category,
+            after: { cat_isDelete: commonConfig.isYes },
+        });
         return common.response(req, res, commonConfig.successStatus, true, "Category deleted successfully");
     } catch (error) {
-        return common.response(req, res, commonConfig.errorStatus, false, error.message);
+        const status = error instanceof AdminServiceError ? error.status : commonConfig.serverErrorStatus;
+        return common.response(req, res, status, false, error.message);
     }
 };
 
@@ -109,17 +142,16 @@ const getCategory = async (req, res) => {
     try {
         const category = await model.tbl_categories.findOne({
             where: {
-                cat_id: req.body.categoryId,
+                cat_id: Number(req.body.categoryId),
                 cat_isDelete: commonConfig.isNo
             },
             raw: true
         });
-        if (!category) {
-            return common.response(req, res, commonConfig.notFoundStatus, false, "Category not found");
-        }
+        ensureRecord(category, "Category not found", commonConfig.notFoundStatus);
         return common.response(req, res, commonConfig.successStatus, true, "Category fetched successfully", category);
     } catch (error) {
-        return common.response(req, res, commonConfig.errorStatus, false, error.message);
+        const status = error instanceof AdminServiceError ? error.status : commonConfig.serverErrorStatus;
+        return common.response(req, res, status, false, error.message);
     }
 };
 
@@ -133,17 +165,22 @@ const updateStatus = async (req, res) => {
             },
             raw: true,
         });
-        if (!category) {
-            return common.response(req, res, commonConfig.notFoundStatus || 404, false, "Category not found");
-        }
+        ensureRecord(category, "Category not found", commonConfig.notFoundStatus);
+
         await model.tbl_categories.updateCategory(categoryId, { cat_isActive: status });
+        await logAdminMutation(req, {
+            action: "status_update",
+            entity: "category",
+            entityId: categoryId,
+            before: category,
+            after: { cat_isActive: status },
+        });
         return common.response(req, res, commonConfig.successStatus, true, "Category status updated successfully");
     } catch (error) {
-        return common.response(req, res, commonConfig.errorStatus, false, error.message);
+        const status = error instanceof AdminServiceError ? error.status : commonConfig.serverErrorStatus;
+        return common.response(req, res, status, false, error.message);
     }
 };
-
-
 
 module.exports = {
     createOrUpdatePropertyCategory,
@@ -152,4 +189,4 @@ module.exports = {
     getCategory,
     updateStatus,
     categoriesForDropdown
-}
+};

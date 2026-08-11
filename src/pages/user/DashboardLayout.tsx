@@ -1,4 +1,3 @@
-// import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 import {
@@ -13,35 +12,53 @@ import {
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import CloseIcon from "@mui/icons-material/Close";
 
-// Import your other components here
+// Account-area sections
+import UserDashboard from "./dashboard.tsx";
 import UserProfile from "./UserProfile.tsx";
 import Bookings from "./UserBookings.tsx";
 import UserOngoingBooking from "./userOngoingBooking.tsx";
+import UserTransactions from "./UserTransactions.tsx";
+import UserSaved from "./UserSaved.tsx";
+
+const MENU: { key: string; label: string }[] = [
+  { key: "dashboard", label: "Dashboard" },
+  { key: "profile", label: "Profile" },
+  { key: "bookings", label: "Bookings" },
+  { key: "ongoing", label: "Ongoing" },
+  { key: "transactions", label: "Transactions" },
+  { key: "saved", label: "Saved" },
+];
 
 const DashboardLayout: React.FC = () => {
   const location = useLocation();
-  
-  const [activeSection, setActiveSection] = useState("profile");
+
+  const [activeSection, setActiveSection] = useState("dashboard");
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
-  
   useEffect(() => {
     if (location.state?.section) {
       setActiveSection(location.state.section);
     }
   }, [location.state]);
+
   const renderSection = () => {
     switch (activeSection) {
+      case "dashboard":
+        return <UserDashboard />;
       case "profile":
         return <UserProfile />;
       case "bookings":
         return <Bookings />;
       case "ongoing":
         return <UserOngoingBooking />;
+      case "transactions":
+        return <UserTransactions />;
+      case "saved":
+        return <UserSaved />;
       default:
         return <Typography>Select a section</Typography>;
     }
@@ -71,71 +88,30 @@ const DashboardLayout: React.FC = () => {
       <Divider sx={{ my: 2 }} />
 
       {/* Menu Buttons */}
-      <Button
-        fullWidth
-        variant={activeSection === "profile" ? "contained" : "outlined"}
-        sx={{
-          mb: 1,
-          borderColor: "#1B2447",
-          color: activeSection === "profile" ? "#fff" : "#1B2447",
-          backgroundColor:
-            activeSection === "profile" ? "#1B2447" : "transparent",
-          "&:hover": {
+      {MENU.map((item) => (
+        <Button
+          key={item.key}
+          fullWidth
+          variant={activeSection === item.key ? "contained" : "outlined"}
+          sx={{
+            mb: 1,
+            borderColor: "#1B2447",
+            color: activeSection === item.key ? "#fff" : "#1B2447",
             backgroundColor:
-              activeSection === "profile" ? "#a0324f" : "#fbe6ec",
-          },
-        }}
-        onClick={() => {
-          setActiveSection("profile");
-          setMobileOpen(false);
-        }}
-      >
-        Profile
-      </Button>
-
-      <Button
-        fullWidth
-        variant={activeSection === "bookings" ? "contained" : "outlined"}
-        sx={{
-          mb: 1,
-          borderColor: "#1B2447",
-          color: activeSection === "bookings" ? "#fff" : "#1B2447",
-          backgroundColor:
-            activeSection === "bookings" ? "#1B2447" : "transparent",
-          "&:hover": {
-            backgroundColor:
-              activeSection === "bookings" ? "#a0324f" : "#fbe6ec",
-          },
-        }}
-        onClick={() => {
-          setActiveSection("bookings");
-          setMobileOpen(false);
-        }}
-      >
-        Bookings
-      </Button>
-
-      <Button
-        fullWidth
-        variant={activeSection === "ongoing" ? "contained" : "outlined"}
-        sx={{
-          mb: 1,
-          borderColor: "#1B2447",
-          color: activeSection === "ongoing" ? "#fff" : "#1B2447",
-          backgroundColor:
-            activeSection === "ongoing" ? "#1B2447" : "transparent",
-          "&:hover": {
-            backgroundColor:
-              activeSection === "ongoing" ? "#a0324f" : "#fbe6ec",
-          },
-        }}
-        onClick={() => {
-          setActiveSection("ongoing");
-          setMobileOpen(false);
-        }}
-      >
-        ongoing
-      </Button>
+              activeSection === item.key ? "#1B2447" : "transparent",
+            "&:hover": {
+              backgroundColor:
+                activeSection === item.key ? "#a0324f" : "#fbe6ec",
+            },
+          }}
+          onClick={() => {
+            setActiveSection(item.key);
+            setMobileOpen(false);
+          }}
+        >
+          {item.label}
+        </Button>
+      ))}
     </Box>
   );
 

@@ -1,17 +1,37 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import { useNavigate } from "react-router-dom";
+import storage from "../../styles/utils/storage";
+import { getOngoingBookings } from "../../services/customerApi";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 const OngoingFloat: React.FC = () => {
   const navigate = useNavigate();
+  // Only surface this for a logged-in user who actually has an ongoing trip.
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (!storage.getToken()) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await getOngoingBookings();
+        if (!cancelled) setVisible(rows.length > 0);
+      } catch {
+        if (!cancelled) setVisible(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!visible) return null;
 
   const handleClick = () => {
-    // ✅ Navigate with query param (or you can use state)
-    // navigate("/user-dashboard?section=ongoing");
     navigate("/user-dashboard", { state: { section: "ongoing" } });
   };
 

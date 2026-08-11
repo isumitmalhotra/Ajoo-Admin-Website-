@@ -378,3 +378,16 @@ body {
 .input-with-icon {
   padding-right: 2.5rem !important;
 }
+
+/* ── Listing map: price-pin markers ──
+   The .ajoo-price-pin class is applied to Leaflet's marker wrapper.
+   Strip default visual styling so the inner <div> (the pill) is the
+   only thing rendered. */
+.ajoo-price-pin {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.ajoo-price-pin:focus {
+  outline: none;
+}

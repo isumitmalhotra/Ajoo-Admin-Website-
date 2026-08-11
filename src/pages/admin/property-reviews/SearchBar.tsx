@@ -7,7 +7,7 @@ import {
   TextField,
   MenuItem,
 } from "@mui/material";
-import { PurpleThemeColor } from "../../../theme/themeColor";
+import { Brand } from "../../../theme/themeColor";
 import { SearchBarProps } from "./types";
 
 const SearchBar: React.FC<SearchBarProps> = ({
@@ -67,10 +67,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
             sx={{
               minWidth: 220,
               "& .MuiOutlinedInput-root.Mui-focused fieldset": {
-                borderColor: PurpleThemeColor,
+                borderColor: Brand.indigo,
               },
               "& .MuiInputLabel-root.Mui-focused": {
-                color: PurpleThemeColor,
+                color: Brand.indigo,
               },
             }}
           />
@@ -88,10 +88,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
             sx={{
               minWidth: 160,
               "& .MuiOutlinedInput-root.Mui-focused fieldset": {
-                borderColor: PurpleThemeColor,
+                borderColor: Brand.indigo,
               },
               "& .MuiInputLabel-root.Mui-focused": {
-                color: PurpleThemeColor,
+                color: Brand.indigo,
               },
             }}
           >
@@ -114,10 +114,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
             sx={{
               minWidth: 120,
               "& .MuiOutlinedInput-root.Mui-focused fieldset": {
-                borderColor: PurpleThemeColor,
+                borderColor: Brand.indigo,
               },
               "& .MuiInputLabel-root.Mui-focused": {
-                color: PurpleThemeColor,
+                color: Brand.indigo,
               },
             }}
           >

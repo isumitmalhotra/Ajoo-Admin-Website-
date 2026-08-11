@@ -1,0 +1,11 @@
+const path = require('path');
+
+// Point sequelize-cli at the bridge config (which reads config/db.config.js),
+// so `npx sequelize-cli db:migrate` targets the live DB the app uses.
+// See config/sequelize-cli.config.js for the why.
+module.exports = {
+  config: path.resolve('config', 'sequelize-cli.config.js'),
+  'models-path': path.resolve('models'),
+  'migrations-path': path.resolve('migrations'),
+  'seeders-path': path.resolve('seeders'),
+};

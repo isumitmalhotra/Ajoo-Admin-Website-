@@ -1,233 +1,75 @@
 import React from "react";
-import {
-  Box,
-  Container,
-  Typography,
-  Card,
-  CardContent,
-  useTheme,
-  useMediaQuery,
-} from "@mui/material";
+import { Box, Container, Typography, useTheme, useMediaQuery } from "@mui/material";
+import GavelIcon from "@mui/icons-material/Gavel";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import Reveal from "../../components/frontend/Reveal";
 import termsTopImage from "../../assets/hotel.jpg";
-import termsBottomImage from "../../assets/hotel.jpg";
+
+const INDIGO = "#1B2447";
+const TERRA = "#C16345";
+const CREAM = "#FFFAF0";
+const BG = "#EFE7D6";
+const BORDER = "#D9CFB8";
+const MUTED = "#6B7390";
 
 const TermsAndConditions: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const sections = [
-    {
-      title: "1. Definitions",
-      points: [
-        "“User/Guest” – any individual using Aajoo to search, book, or stay at a listed property.",
-        "“Host” – property owner/operator who lists accommodation on Aajoo.",
-        "“Property” – homestay, guesthouse, or accommodation unit listed on Aajoo.",
-        "“Platform” – Aajoo’s website, mobile application, and related services.",
-      ],
-    },
-    {
-      title: "2. Eligibility",
-      points: [
-        "Users must be 18 years or older and legally competent to contract under Indian law.",
-        "Hosts must be the legal owners/operators of the property or have authorization.",
-        "Both Users and Hosts must provide accurate, complete, and verifiable information.",
-      ],
-    },
-    {
-      title: "3. Responsibilities of Users (Guests)",
-      points: [
-        "Provide valid government ID at the time of check-in.",
-        "Respect Host’s property rules and local laws.",
-        "Avoid illegal, fraudulent, or disruptive activities.",
-        "Be responsible for personal belongings and safety during the stay.",
-        "Any property damage caused during stay shall be the User’s liability.",
-      ],
-    },
-    {
-      title: "4. Responsibilities of Hosts",
-      points: [
-        "Ensure the property is registered with the State Tourism Departments, where applicable (e.g., Himachal Pradesh Homestay Rules 2025).",
-        "Comply with local laws, fire safety, sanitation, police intimation, and taxation requirements.",
-        "Provide true and accurate descriptions, photos, and pricing of the property.",
-        "Maintain the property in a safe, clean, and habitable condition.",
-        "Not discriminate against guests on the basis of religion, caste, gender, or background.",
-        "Accept all bookings/payments exclusively through the Aajoo platform.",
-        "Respond promptly and courteously to guest queries or complaints.",
-      ],
-    },
-    {
-      title: "5. Booking & Payments",
-      points: [
-        "All bookings must be made via the Aajoo app/platform.",
-        "Payments are processed securely by Aajoo and remitted to Hosts after deducting applicable platform commission, GST, and charges.",
-        "Refunds/cancellations are governed by Aajoo’s Cancellation Policy, updated periodically.",
-        "Any off-platform payments or fraudulent bookings may result in account termination.",
-      ],
-    },
-    {
-      title: "6. Prohibited Activities",
-      points: [
-        "Use the platform for fraudulent, illegal, or harmful purposes.",
-        "Upload false, misleading, or offensive content.",
-        "Circumvent the platform by making/accepting payments outside Aajoo.",
-        "Engage in harassment, abuse, or threats against other users, hosts, or Aajoo staff.",
-      ],
-    },
-    {
-      title: "7. Data Protection & Privacy",
-      points: [
-        "Aajoo collects and processes personal data as per its Privacy Policy.",
-        "Data may be shared with Hosts, payment providers, or authorities only as required by law.",
-        "Both Users and Hosts must maintain confidentiality of their login details.",
-      ],
-    },
-    {
-      title: "8. Liability & Disclaimers",
-      points: [
-        "Aajoo is an intermediary platform and does not own or operate properties.",
-        "Hosts are solely responsible for the legality, safety, and quality of their properties.",
-        "Users are responsible for their own safety, belongings, and conduct.",
-        "Aajoo shall not be liable for accidents, theft, loss, or damages during a stay.",
-        "Aajoo is not responsible for false representations by Hosts or misconduct by Guests.",
-      ],
-    },
-    {
-      title: "9. Suspension & Termination",
-      points: [
-        "Aajoo may suspend or terminate accounts of Users/Hosts for fraudulent activities or breach of these Terms.",
-        "Users/Hosts may delete their accounts by providing written notice or using in-app options.",
-      ],
-    },
-    {
-      title: "10. Governing Law & Dispute Resolution",
-      points: [
-        "These Terms are governed by the laws of India.",
-        "Any disputes shall be subject to the exclusive jurisdiction of courts in Shimla or Chandigarh, as applicable.",
-        "Parties shall first attempt to resolve disputes amicably before approaching courts.",
-      ],
-    },
-    {
-      title: "11. Updates to Terms",
-      points: [
-        "Aajoo reserves the right to modify or update these Terms at any time.",
-        "Continued use of the platform after updates implies acceptance of the revised Terms.",
-      ],
-    },
+    { title: "1. Definitions", points: ["“User/Guest” – any individual using aajoo to search, book, or stay at a listed property.", "“Host” – property owner/operator who lists accommodation on aajoo.", "“Property” – homestay, guesthouse, or accommodation unit listed on aajoo.", "“Platform” – aajoo’s website, mobile application, and related services."] },
+    { title: "2. Eligibility", points: ["Users must be 18 years or older and legally competent to contract under Indian law.", "Hosts must be the legal owners/operators of the property or have authorization.", "Both users and hosts must provide accurate, complete, and verifiable information."] },
+    { title: "3. Responsibilities of users (guests)", points: ["Provide valid government ID at check-in.", "Respect the host’s property rules and local laws.", "Avoid illegal, fraudulent, or disruptive activities.", "Be responsible for personal belongings and safety during the stay.", "Any property damage caused during the stay is the user’s liability."] },
+    { title: "4. Responsibilities of hosts", points: ["Ensure the property is registered with State Tourism Departments where applicable.", "Comply with local laws, fire safety, sanitation, police intimation, and taxation.", "Provide true descriptions, photos, and pricing of the property.", "Maintain the property in a safe, clean, and habitable condition.", "Do not discriminate against guests on any basis.", "Accept all bookings/payments exclusively through the aajoo platform.", "Respond promptly and courteously to guest queries or complaints."] },
+    { title: "5. Booking & payments", points: ["All bookings must be made via the aajoo platform.", "Payments are processed securely and remitted to hosts after platform commission, GST, and charges.", "Refunds/cancellations are governed by aajoo’s Cancellation Policy.", "Off-platform payments or fraudulent bookings may result in account termination."] },
+    { title: "6. Prohibited activities", points: ["Using the platform for fraudulent, illegal, or harmful purposes.", "Uploading false, misleading, or offensive content.", "Circumventing the platform by paying outside aajoo.", "Harassment, abuse, or threats against other users, hosts, or aajoo staff."] },
+    { title: "7. Data protection & privacy", points: ["aajoo collects and processes personal data per its Privacy Policy.", "Data may be shared with hosts, payment providers, or authorities only as required by law.", "Both parties must keep their login details confidential."] },
+    { title: "8. Liability & disclaimers", points: ["aajoo is an intermediary and does not own or operate properties.", "Hosts are solely responsible for the legality, safety, and quality of their properties.", "Users are responsible for their own safety, belongings, and conduct.", "aajoo is not liable for accidents, theft, loss, or damages during a stay."] },
+    { title: "9. Suspension & termination", points: ["aajoo may suspend or terminate accounts for fraud or breach of these terms.", "Users/hosts may delete their accounts via written notice or in-app options."] },
+    { title: "10. Governing law & disputes", points: ["These terms are governed by the laws of India.", "Disputes are subject to the jurisdiction of courts in Shimla or Chandigarh, as applicable.", "Parties shall first attempt to resolve disputes amicably."] },
+    { title: "11. Updates to terms", points: ["aajoo may modify or update these terms at any time.", "Continued use after updates implies acceptance of the revised terms."] },
   ];
 
   return (
-    <Box sx={{ bgcolor: "#fff8fa", py: { xs: 6, md: 10 } }}>
-      <Container maxWidth="md">
-        {/* Header Image */}
-        <Box
-          sx={{
-            width: "100%",
-            height: isMobile ? 180 : 300,
-            borderRadius: 4,
-            overflow: "hidden",
-            mb: 6,
-            boxShadow: "0 8px 20px rgba(193,67,101,0.15)",
-          }}
-        >
-          <Box
-            component="img"
-            src={termsTopImage}
-            alt="Aajoo Terms Banner"
-            sx={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-            }}
-          />
+    <Box sx={{ bgcolor: BG }}>
+      {/* Hero */}
+      <Box sx={{ position: "relative", height: isMobile ? 190 : 280, backgroundImage: `url(${termsTopImage})`, backgroundSize: "cover", backgroundPosition: "center" }}>
+        <Box sx={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(27,36,71,.35) 0%, rgba(27,36,71,.78) 100%)", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", color: CREAM, textAlign: "center", px: 2 }}>
+          <GavelIcon sx={{ fontSize: 38, mb: 1, color: "#E9B79E" }} />
+          <Typography sx={{ fontFamily: "'Fraunces', serif", fontWeight: 400, letterSpacing: "-0.02em", fontSize: { xs: "1.8rem", md: "2.6rem" } }}>
+            Terms &amp; Conditions
+          </Typography>
+          <Typography sx={{ mt: 0.5, opacity: 0.9, fontSize: { xs: "0.85rem", md: "1rem" } }}>
+            The rules of using the aajoo platform.
+          </Typography>
         </Box>
+      </Box>
 
-        {/* Title Section */}
-        <Typography
-          variant="h4"
-          align="center"
-          fontWeight={700}
-          sx={{ color: "#1B2447", mb: 2 }}
-        >
-          📜 Aajoo – Terms & Conditions
-        </Typography>
-        <Typography
-          align="center"
-          sx={{
-            maxWidth: "80%",
-            mx: "auto",
-            color: "text.secondary",
-            mb: 6,
-          }}
-        >
-          These Terms & Conditions (“Terms”) govern the use of the Aajoo App and
-          Platform, operated by Aajoo Homes Private Limited (“Aajoo,” “we,”
-          “our,” “us”). By accessing or using the app, registering as a User or
-          Host, or engaging in any transactions through the platform, you
-          (“User,” “Guest,” or “Host”) agree to be bound by these Terms.
-        </Typography>
+      <Container maxWidth="md" sx={{ py: { xs: 4, md: 6 } }}>
+        <Reveal>
+          <Typography sx={{ textAlign: "center", color: MUTED, mb: 5, lineHeight: 1.7, maxWidth: 720, mx: "auto" }}>
+            These Terms govern your use of the aajoo app and platform, operated by Aajoo Homes Private Limited.
+            By accessing the platform, registering, or transacting, you agree to be bound by these terms.
+          </Typography>
+        </Reveal>
 
-        {/* Content Section */}
         {sections.map((section, index) => (
-          <Card
-            key={index}
-            elevation={0}
-            sx={{
-              mb: 3,
-              borderRadius: 3,
-              bgcolor: "#ffffff",
-              border: "1px solid #f3c8d2",
-              boxShadow: "0 4px 15px rgba(193,67,101,0.05)",
-              transition: "all 0.3s ease",
-              "&:hover": { boxShadow: "0 8px 25px rgba(193,67,101,0.12)" },
-            }}
-          >
-            <CardContent>
-              <Typography
-                variant="h6"
-                fontWeight={700}
-                sx={{ color: "#1B2447", mb: 1.5 }}
-              >
+          <Reveal key={index} delay={Math.min(index * 0.03, 0.25)}>
+            <Box sx={{ mb: 2.5, p: { xs: 2.5, md: 3.5 }, borderRadius: "16px", bgcolor: CREAM, border: `1px solid ${BORDER}`, boxShadow: "0 1px 2px rgba(27,36,71,.04)" }}>
+              <Typography sx={{ fontFamily: "'Fraunces', serif", fontWeight: 500, fontSize: { xs: 18, md: 20 }, color: INDIGO, mb: 1.5 }}>
                 {section.title}
               </Typography>
-              {section.points.map((point, i) => (
-                <Typography
-                  key={i}
-                  variant="body1"
-                  sx={{
-                    mb: 1,
-                    color: "text.secondary",
-                    lineHeight: 1.7,
-                  }}
-                >
-                  • {point}
-                </Typography>
-              ))}
-            </CardContent>
-          </Card>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                {section.points.map((point, i) => (
+                  <Box key={i} sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
+                    <CheckCircleOutlineIcon sx={{ color: TERRA, fontSize: 18, mt: 0.3, flexShrink: 0 }} />
+                    <Typography sx={{ color: MUTED, lineHeight: 1.65, fontSize: "0.95rem" }}>{point}</Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          </Reveal>
         ))}
-
-        {/* Footer Image */}
-        <Box
-          sx={{
-            width: "100%",
-            height: isMobile ? 160 : 280,
-            borderRadius: 4,
-            overflow: "hidden",
-            mt: 8,
-            boxShadow: "0 8px 20px rgba(193,67,101,0.15)",
-          }}
-        >
-          <Box
-            component="img"
-            src={termsBottomImage}
-            alt="Aajoo Policy Image"
-            sx={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-            }}
-          />
-        </Box>
       </Container>
     </Box>
   );

@@ -7,7 +7,7 @@ import {
 import "./App.css";
 import notFound from "./assets/UI/404.jpg";
 import { AdminLayout } from "./components";
-import AdminProtectedRoute, { GuestRoute } from "./components/authGaurd";
+import AdminProtectedRoute, { GuestRoute, HostRoute } from "./components/authGaurd";
 import { SidebarProvider } from "./context/AdminContext";
 import AdminBooking from "./pages/admin/adminBooking/AdminBooking";
 import {
@@ -39,6 +39,7 @@ import {
   PropertiesForm,
   PropertiesVerifications,
   PropertyReviews,
+  BecomeHost,
 } from "./pages";
 
 // Finance Management System pages
@@ -58,6 +59,9 @@ import CommissionReport from "./pages/admin/finance/CommissionReport";
 import TaxSummary from "./pages/admin/finance/TaxSummary";
 import CashFlowReport from "./pages/admin/finance/CashFlowReport";
 
+// Admin settings
+import AdminSettingsPage from "./pages/admin/settings/AdminSettingsPage";
+
 // NEED TO SET ORDER
 import CommonLayout from "./components/layout/CommonLayout";
 import { Home } from "./pages";
@@ -76,11 +80,14 @@ import HostProfile from "./pages/host/HostProfile";
 import HostSupport from "./pages/host/HostSupport";
 import HostPerformance from "./pages/host/HostPerformance";
 import HostCommunication from "./pages/host/HostCommunication";
+import { Toaster } from "react-hot-toast";
+import SubmitReview from "./pages/user/review/SubmitReview";
+import VerifyComplete from "./pages/user/verify/VerifyComplete";
 
 function App() {
   return (
     <Router>
-      {/* <Toaster position="top-left" reverseOrder={false} /> */}
+      <Toaster position="top-center" reverseOrder={false} />
       <Routes>
         <Route path="/" element={<CommonLayout />}>
           <Route index element={<Home />} />
@@ -100,6 +107,8 @@ function App() {
             element={<CancelBookResult />}
           />
           <Route path="/user/checkout/:id" element={<UserCheckoutPage />} />
+          <Route path="/user/review/:bookingId" element={<SubmitReview />} />
+          <Route path="/verify/complete" element={<VerifyComplete />} />
           <Route path="/state-regulation" element={<StateRegulation />} />
           {/* <Route path="/state-regulation" element={<StateRegulation />} /> */}
           <Route path="/help-center" element={<HelpCenter />} />
@@ -109,6 +118,7 @@ function App() {
             element={<WhyHostsListWithAajoo />}
           />
           <Route path="/Privacy-Policy" element={<PrivacyPolicyPage />} />
+          <Route path="/become-a-host" element={<BecomeHost />} />
           <Route path="*" element={<NotFound image={notFound} />} />
         </Route>
 
@@ -128,16 +138,18 @@ function App() {
         </Route>
         <Route path="/admin/login" element={<AdminLogin />} />
 
-        <Route path="/host" element={<HostLayout />}>
-          <Route index element={<Navigate to="/host/dashboard" replace />} />
-          <Route path="dashboard" element={<HostDashboard />} />
-          <Route path="bookings" element={<HostBookings />} />
-          <Route path="earnings" element={<HostEarnings />} />
-          <Route path="performance" element={<HostPerformance />} />
-          <Route path="statements" element={<HostStatements />} />
-          <Route path="profile" element={<HostProfile />} />
-          <Route path="support" element={<HostSupport />} />
-          <Route path="communication" element={<HostCommunication />} />
+        <Route element={<HostRoute />}>
+          <Route path="/host" element={<HostLayout />}>
+            <Route index element={<Navigate to="/host/dashboard" replace />} />
+            <Route path="dashboard" element={<HostDashboard />} />
+            <Route path="bookings" element={<HostBookings />} />
+            <Route path="earnings" element={<HostEarnings />} />
+            <Route path="performance" element={<HostPerformance />} />
+            <Route path="statements" element={<HostStatements />} />
+            <Route path="profile" element={<HostProfile />} />
+            <Route path="support" element={<HostSupport />} />
+            <Route path="communication" element={<HostCommunication />} />
+          </Route>
         </Route>
 
         <Route element={<AdminProtectedRoute />}>
@@ -184,7 +196,7 @@ function App() {
             <Route path="finance/reports/tax" element={<TaxSummary />} />
             <Route path="finance/reports/cashflow" element={<CashFlowReport />} />
 
-            <Route path="settings" element={<h1>Settings</h1>} />
+            <Route path="settings" element={<AdminSettingsPage />} />
             <Route path="*" element={<Navigate to="/admin/dashboard" />} />
           </Route>
         </Route>

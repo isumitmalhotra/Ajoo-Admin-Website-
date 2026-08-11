@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { Form, Formik } from "formik";
-import { PurpleThemeColor } from "../../../theme/themeColor";
+import { Brand } from "../../../theme/themeColor";
 import { setupTagSchema } from "../../../validations/admin-validations";
 import type { AddUpdateFormProps } from "./types";
 import { themeCss } from "../../../theme/themeCss";
@@ -134,7 +134,7 @@ export default function AddUpdateForm({
                             ? "error.main"
                             : undefined,
                         "&.Mui-focused": {
-                          color: PurpleThemeColor,
+                          color: Brand.indigo,
                         },
                         transition: "color 0.3s ease",
                       }}
@@ -152,7 +152,7 @@ export default function AddUpdateForm({
                       error={touched.tag_name && !!errors.tag_name}
                       sx={{
                         "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                          borderColor: PurpleThemeColor,
+                          borderColor: Brand.indigo,
                         },
                         transition: "all 0.3s ease",
                       }}
@@ -175,7 +175,7 @@ export default function AddUpdateForm({
                             ? "error.main"
                             : undefined,
                         "&.Mui-focused": {
-                          color: PurpleThemeColor,
+                          color: Brand.indigo,
                         },
                         transition: "color 0.3s ease",
                       }}
@@ -193,7 +193,7 @@ export default function AddUpdateForm({
                       input={<OutlinedInput label="Status" />}
                       sx={{
                         "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                          borderColor: PurpleThemeColor,
+                          borderColor: Brand.indigo,
                         },
                         transition: "all 0.3s ease",
                       }}
@@ -228,7 +228,7 @@ export default function AddUpdateForm({
                     type="submit"
                     variant="contained"
                     sx={{
-                      bgcolor: PurpleThemeColor,
+                      bgcolor: Brand.indigo,
                       transition: "all 0.3s ease",
                       "&:hover": {
                         bgcolor: "#6f137f",

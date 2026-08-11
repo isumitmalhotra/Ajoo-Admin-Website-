@@ -30,7 +30,14 @@ export const VerifyOtpForm = () => {
     const [loading, setLoading] = useState(false);
     const [resendLoading, setResendLoading] = useState(false);
     const [timer, setTimer] = useState(30);
-    const { state: { email } } = useLocation();
+    const location = useLocation();
+    const email = (location.state as { email?: string } | null)?.email;
+
+    useEffect(() => {
+        if (!email) {
+            navigate("/auth/forget", { replace: true });
+        }
+    }, [email, navigate]);
 
     useEffect(() => {
         if (timer > 0) {
@@ -40,6 +47,7 @@ export const VerifyOtpForm = () => {
     }, [timer]);
 
     const handleSubmit = async (values: OtpValues) => {
+        if (!email) return;
         try {
             setLoading(true);
             const response = await verifyOtp({
@@ -68,6 +76,7 @@ export const VerifyOtpForm = () => {
     };
 
     const handleResendOtp = async () => {
+        if (!email) return;
         try {
             setResendLoading(true);
             await forgotPassword(email);

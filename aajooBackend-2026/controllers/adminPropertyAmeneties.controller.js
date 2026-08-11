@@ -2,55 +2,94 @@ const model = require("../models");
 const common = require("../utils/common");
 const commonConfig = require("../config/commonConfig");
 const { Op } = require("sequelize");
+const { ensureRecord, buildPagedPayload, AdminServiceError } = require("../services/admin/adminCrud.service");
+const { logAdminMutation } = require("../services/admin/adminAudit.service");
 
 const createUpdateAmeneties = async (req, res) => {
     try {
         const reqData = { ...req.body };
-        let amenetiesId = reqData.amenetiesId;
-        let payload = {
+        const amenetiesId = reqData.amenetiesId ? Number(reqData.amenetiesId) : null;
+
+        let existingAmenity = null;
+        if (amenetiesId) {
+            existingAmenity = await model.tbl_amenities.findOne({
+                where: { amn_id: amenetiesId, amn_isDelete: commonConfig.isNo },
+                raw: true
+            });
+            ensureRecord(existingAmenity, "Amenity not found", commonConfig.notFoundStatus);
+        }
+
+        const payload = {
             amn_title: reqData.amn_title,
             amn_isActive: reqData.amn_isActive
         };
+
         if (amenetiesId) {
             await model.tbl_amenities.updateAmenity(amenetiesId, payload);
-        } else {
-            await model.tbl_amenities.createAmenity(payload);
+            await logAdminMutation(req, {
+                action: "update",
+                entity: "amenity",
+                entityId: amenetiesId,
+                before: existingAmenity,
+                after: payload,
+            });
+            return common.response(req, res, commonConfig.successStatus, true, "Amenity updated successfully");
         }
-        return common.response(req, res, commonConfig.successStatus, true, "Amenity saved successfully");
+
+        const createdAmenity = await model.tbl_amenities.createAmenity(payload);
+        await logAdminMutation(req, {
+            action: "create",
+            entity: "amenity",
+            entityId: createdAmenity.amn_id,
+            after: payload,
+        });
+        return common.response(req, res, commonConfig.createdStatus, true, "Amenity saved successfully");
     } catch (error) {
-        return common.response(req, res, commonConfig.errorStatus, false, error.message);
+        const status = error instanceof AdminServiceError ? error.status : commonConfig.serverErrorStatus;
+        return common.response(req, res, status, false, error.message);
     }
 };
 
 const deleteAmenity = async (req, res) => {
     try {
-        const reqData = { ...req.body };
-        const amenetiesId = reqData.amenetiesId;
+        const amenetiesId = Number(req.body.amenetiesId);
         if (!amenetiesId) {
-            return common.response(req, res, commonConfig.errorStatus, false, "Amenity ID is required");
+            return common.response(req, res, commonConfig.badRequestStatus, false, "Amenity ID is required");
         }
-        await model.tbl_amenities.update({ amn_isDelete: 1 }, { where: { amn_id: amenetiesId } });
+
+        const amenity = await model.tbl_amenities.findOne({
+            where: { amn_id: amenetiesId, amn_isDelete: commonConfig.isNo },
+            raw: true
+        });
+        ensureRecord(amenity, "Amenity not found", commonConfig.notFoundStatus);
+
+        await model.tbl_amenities.update({ amn_isDelete: commonConfig.isYes }, { where: { amn_id: amenetiesId } });
+        await logAdminMutation(req, {
+            action: "delete",
+            entity: "amenity",
+            entityId: amenetiesId,
+            before: amenity,
+            after: { amn_isDelete: commonConfig.isYes },
+        });
         return common.response(req, res, commonConfig.successStatus, true, "Amenity deleted successfully");
     } catch (error) {
-        return common.response(req, res, commonConfig.errorStatus, false, error.message);
+        const status = error instanceof AdminServiceError ? error.status : commonConfig.serverErrorStatus;
+        return common.response(req, res, status, false, error.message);
     }
 };
 
 const amenity = async (req, res) => {
     try {
-        const reqData = { ...req.body };
-        const amenetiesId = reqData.amenetiesId;
-        let whereClause = {
+        const amenetiesId = Number(req.body.amenetiesId);
+        const amenityData = await model.tbl_amenities.getAmenety({
             amn_isDelete: commonConfig.isNo,
-            amn_id: reqData.amenetiesId
-        };
-        const amenityData = await model.tbl_amenities.getAmenety(whereClause);
-        if (!amenityData) {
-            return common.response(req, res, commonConfig.notFoundStatus, false, "Amenity not found");
-        }
+            amn_id: amenetiesId
+        });
+        ensureRecord(amenityData, "Amenity not found", commonConfig.notFoundStatus);
         return common.response(req, res, commonConfig.successStatus, true, "Amenity fetched successfully", amenityData);
     } catch (error) {
-        return common.response(req, res, commonConfig.errorStatus, false, error.message);
+        const status = error instanceof AdminServiceError ? error.status : commonConfig.serverErrorStatus;
+        return common.response(req, res, status, false, error.message);
     }
 };
 
@@ -62,13 +101,13 @@ const amenetiesListing = async (req, res) => {
         const offset = (page - 1) * limit;
         const search = reqData.search?.trim() || "";
         const status = reqData.status ?? null;
-        let whereClause = {
+        const whereClause = {
             amn_isDelete: commonConfig.isNo,
         };
         if (search) {
             whereClause.amn_title = { [Op.like]: `%${search}%` };
         }
-        if (status !== "") {
+        if (status !== "" && status !== null && status !== undefined) {
             whereClause.amn_isActive = status;
         }
         const { rows, count } = await model.tbl_amenities.findAndCountAll({
@@ -78,41 +117,43 @@ const amenetiesListing = async (req, res) => {
             order: [["amn_id", "DESC"]],
             raw: true,
         });
-        if (rows.length === 0) {
-            return common.response(req, res, commonConfig.notFoundStatus, false, "No amenities found");
 
-        }
-        return common.response(req, res, commonConfig.successStatus, true, "Amenity listing fetched successfully", {
+        return common.response(req, res, commonConfig.successStatus, true, "Amenity listing fetched successfully", buildPagedPayload({
+            rows,
+            count,
             page,
             limit,
             offset,
             search,
-            totalRecords: count,
-            currentPage: page,
-            totalPages: Math.ceil(count / limit),
-            search,
-            data: rows,
-        });
+            key: "data",
+        }));
     } catch (error) {
-        return common.response(req, res, commonConfig.errorStatus, false, error.message);
+        return common.response(req, res, commonConfig.serverErrorStatus, false, error.message);
     }
 };
 
 const updateStatus = async (req, res) => {
     try {
         const { amenetiesId, amn_isActive } = req.body;
-        const amenity = await model.tbl_amenities.findByPk(amenetiesId);
-        if (!amenity) {
-            return common.response(req, res, commonConfig.errorStatus, false, "Amenity not found");
-        }
+        const amenityRecord = await model.tbl_amenities.findByPk(amenetiesId, { raw: true });
+        ensureRecord(amenityRecord, "Amenity not found", commonConfig.notFoundStatus);
+
         await model.tbl_amenities.update(
-            { amn_isActive: amn_isActive },
+            { amn_isActive },
             { where: { amn_id: amenetiesId } }
         );
+        await logAdminMutation(req, {
+            action: "status_update",
+            entity: "amenity",
+            entityId: amenetiesId,
+            before: amenityRecord,
+            after: { amn_isActive },
+        });
         return common.response(req, res, commonConfig.successStatus, true, "Amenity status updated successfully");
 
     } catch (error) {
-        return common.response(req, res, commonConfig.errorStatus, false, error.message);
+        const status = error instanceof AdminServiceError ? error.status : commonConfig.serverErrorStatus;
+        return common.response(req, res, status, false, error.message);
     }
 };
 
@@ -123,19 +164,15 @@ const amenetiesListingForDropdown = async (req, res) => {
                 amn_isDelete: commonConfig.isNo,
                 amn_isActive: commonConfig.isYes
             },
-            attributes: ['amn_id', 'amn_title'],
-            order: [['amn_title', 'ASC']],
+            attributes: ["amn_id", "amn_title"],
+            order: [["amn_title", "ASC"]],
             raw: true
         });
-        if (amenities.length === 0) {
-            return common.response(req, res, commonConfig.notFoundStatus, false, "No amenities found");
-        }
         return common.response(req, res, commonConfig.successStatus, true, "Amenity listing fetched successfully", amenities);
-        
     } catch (error) {
-        return common.response(req, res, commonConfig.errorStatus, false, error.message);
+        return common.response(req, res, commonConfig.serverErrorStatus, false, error.message);
     }
-}
+};
 
 module.exports = {
     createUpdateAmeneties,
@@ -144,4 +181,4 @@ module.exports = {
     amenetiesListing,
     updateStatus,
     amenetiesListingForDropdown
-}
+};

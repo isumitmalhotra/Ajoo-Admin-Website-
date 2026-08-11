@@ -65,7 +65,7 @@
 - [x] **BOOK-7** · P1 · ✅ `749388f` — ongoing-booking modal no longer renders fake "Manali / Aajoo Premium Homestay / cozy mountain views"/Unsplash placeholders; shows real booking data or hides the field.
 - [x] **BOOK-8** · P1 · ✅ verified **already done** — `PropertyGallery` desktop is a hero + grid (`2fr 1fr 1fr`, first image spans as hero, "+N more" overlay); mobile keeps a slider (appropriate).
 - [x] **BOOK-9** · P1 · ✅ `749388f` — location map moved to **after** the Guest Reviews section ("Where you'll be").
-- [ ] **BOOK-4** · P1 · 🔒 **Nearby places dynamic** (places API or curated). *Blocked: data source decision.*
+- [x] **BOOK-4** · P1 · **Nearby places** — ✅ **DONE, and it needed no places API.** `property_nearby_places` has existed since the listing wizard shipped and nothing read it; the legacy add-property form never wrote to it, so the table held 0 rows. `GET /properties/:id` returns it now, both platforms render it, and Admin → Properties → **Nearby** fills it in for listings that predate the wizard. Data entry is the remaining work, not a provider decision.
 
 ### A6. Cross-cutting
 - [x] **CC-1** · P1 · ✅ `62957dc` — reusable `Skeletons` component (property card/grid, stat cards, list rows, detail page) using MUI wave skeletons; applied to the property listing grid, renter dashboard, and property-detail page (replacing bare spinners). Reusable for the rest as they surface.
@@ -135,7 +135,7 @@
 *(Cross-ref `CLIENT_INPUTS_REQUIRED.md`. Nothing below can start until provided.)*
 - [x] **E-1** · **Category list** — ✅ now **specified in Section-0** (§F3 category set); no longer blocked.
 - [ ] **E-2** · **Weather API** choice + key → unblocks RENT-7.
-- [ ] **E-3** · **Nearby-places** data source → unblocks BOOK-4.
+- [x] ~~**E-3** · Nearby-places data source~~ — not needed. The hosts supply the distances; see BOOK-4.
 - [ ] **E-4** · **Cancellation-policy text** (final copy) → completes BOOK-6.
 - [ ] **E-5** · **Marketing copy / logo / brand font** → unblocks the parked marketing-site UI + Section-0 (§F).
 

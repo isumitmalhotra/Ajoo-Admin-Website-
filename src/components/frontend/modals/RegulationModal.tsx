@@ -31,7 +31,7 @@ const RegulationModal: React.FC<RegulationModalProps> = ({
           maxHeight: "80vh",
           overflowY: "auto",
           p: 4,
-          fontFamily: "'Poppins', sans-serif",
+          fontFamily: "'Inter', sans-serif",
         }}
       >
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>

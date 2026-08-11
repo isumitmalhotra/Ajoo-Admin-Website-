@@ -39,6 +39,7 @@ export { default as PropDetailMap } from "./frontend/PropDetailMap";
 export { default as BookingSection } from "./frontend/BookingSection";
 export { default as ExploreMore } from "./frontend/ExploreMore";
 export { default as PropertyGallery } from "./frontend/PropertyGallery";
+export { default as AmenitiesGrid } from "./frontend/AmenitiesGrid";
 export { default as FeaturedProperties } from "./frontend/FeaturedProperties";
 export { default as NotificationDropdown } from "./frontend/NotificationDropdown";
 export { default as OngoingFloat } from "./frontend/OngoingFloat";

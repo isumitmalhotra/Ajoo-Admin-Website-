@@ -2,14 +2,38 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addIndex('tbl_properties', ['property_host_id']);
-    await queryInterface.addIndex('tbl_properties', ['is_active']);
-    await queryInterface.addIndex('tbl_properties', ['is_deleted']);
+    const tableName = 'tbl_properties';
+    const existingIndexes = await queryInterface.showIndex(tableName);
+    const existingIndexNames = new Set(existingIndexes.map(index => index.name));
+
+    if (!existingIndexNames.has('tbl_properties_property_host_id')) {
+      await queryInterface.addIndex(tableName, ['property_host_id']);
+    }
+
+    if (!existingIndexNames.has('tbl_properties_is_active')) {
+      await queryInterface.addIndex(tableName, ['is_active']);
+    }
+
+    if (!existingIndexNames.has('tbl_properties_is_deleted')) {
+      await queryInterface.addIndex(tableName, ['is_deleted']);
+    }
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeIndex('tbl_properties', ['property_host_id']);
-    await queryInterface.removeIndex('tbl_properties', ['is_active']);
-    await queryInterface.removeIndex('tbl_properties', ['is_deleted']);
+    const tableName = 'tbl_properties';
+    const existingIndexes = await queryInterface.showIndex(tableName);
+    const existingIndexNames = new Set(existingIndexes.map(index => index.name));
+
+    if (existingIndexNames.has('tbl_properties_property_host_id')) {
+      await queryInterface.removeIndex(tableName, ['property_host_id']);
+    }
+
+    if (existingIndexNames.has('tbl_properties_is_active')) {
+      await queryInterface.removeIndex(tableName, ['is_active']);
+    }
+
+    if (existingIndexNames.has('tbl_properties_is_deleted')) {
+      await queryInterface.removeIndex(tableName, ['is_deleted']);
+    }
   }
 };

@@ -1,10 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { Box, Typography, Button, TextField, Stack } from "@mui/material";
+import { Box, Typography, Button, TextField, Stack, CircularProgress } from "@mui/material";
+import { useNavigate, useLocation } from "react-router-dom";
+import toast from "react-hot-toast";
+import { verifySignupOtp, resendSignupOtp } from "../services/customerApi";
 
 const SignupOtpVerification: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { userId, email } = (location.state || {}) as {
+    userId?: number | string;
+    email?: string;
+  };
+
   const [otp, setOtp] = useState("");
   const [timer, setTimer] = useState(30); // 30s timer
   const [canResend, setCanResend] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   // Timer countdown effect
   useEffect(() => {
@@ -18,15 +29,35 @@ const SignupOtpVerification: React.FC = () => {
   }, [timer]);
 
   // Handle resend OTP
-  const handleResend = () => {
-    setOtp("");
-    setTimer(30);
-    setCanResend(false);
-    alert("OTP resent successfully!");
+  const handleResend = async () => {
+    if (!userId) return;
+    try {
+      await resendSignupOtp(userId);
+      setOtp("");
+      setTimer(30);
+      setCanResend(false);
+      toast.success("OTP resent to your email.");
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || "Couldn't resend OTP.");
+    }
   };
 
-  const handleVerify = () => {
-    alert(`OTP Verified: ${otp}`);
+  const handleVerify = async () => {
+    if (!userId) {
+      toast.error("Session expired. Please sign up again.");
+      navigate("/auth/signup");
+      return;
+    }
+    setVerifying(true);
+    try {
+      await verifySignupOtp({ userId, otp });
+      toast.success("Account verified! Please sign in.");
+      navigate("/auth/login");
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || "Invalid OTP. Please try again.");
+    } finally {
+      setVerifying(false);
+    }
   };
 
   return (
@@ -61,7 +92,8 @@ const SignupOtpVerification: React.FC = () => {
           OTP Verification
         </Typography>
         <Typography variant="body2" color="text.secondary" mb={3}>
-          Please enter the 4-digit OTP sent to your registered email/phone.
+          Please enter the OTP sent to{" "}
+          {email ? <strong>{email}</strong> : "your registered email"}.
         </Typography>
 
         {/* OTP Input */}
@@ -119,9 +151,10 @@ const SignupOtpVerification: React.FC = () => {
             fontWeight: 600,
           }}
           onClick={handleVerify}
-          disabled={otp.length !== 4}
+          disabled={otp.length !== 4 || verifying}
+          startIcon={verifying ? <CircularProgress size={16} sx={{ color: "#fff" }} /> : undefined}
         >
-          Verify OTP
+          {verifying ? "Verifying…" : "Verify OTP"}
         </Button>
       </Box>
     </Box>

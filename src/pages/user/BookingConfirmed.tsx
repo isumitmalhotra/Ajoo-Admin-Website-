@@ -22,7 +22,7 @@ const BookingConfirmed: React.FC = () => {
     <Box
       sx={{
         minHeight: "100vh",
-        background: "linear-gradient(135deg, #ffffff, #ffe6ee)",
+        background: "#EFE7D6",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
@@ -103,7 +103,8 @@ const BookingConfirmed: React.FC = () => {
               Get Directions
             </Button>
 
-            {/* GO HOME BUTTON */}
+            {/* After completing a booking, take the user to their bookings
+                (not the homepage). */}
             <Button
               variant="contained"
               startIcon={<HomeIcon />}
@@ -115,12 +116,14 @@ const BookingConfirmed: React.FC = () => {
                 fontWeight: 600,
                 textTransform: "none",
                 "&:hover": {
-                  backgroundColor: "#a63655",
+                  backgroundColor: "#2A356B",
                 },
               }}
-              onClick={() => navigate("/")}
+              onClick={() =>
+                navigate("/user-dashboard", { state: { section: "bookings" } })
+              }
             >
-              Go to Home
+              View My Bookings
             </Button>
           </Box>
         </Box>

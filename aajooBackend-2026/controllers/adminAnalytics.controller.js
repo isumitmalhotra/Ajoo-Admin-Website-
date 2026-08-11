@@ -1,8 +1,4 @@
-const model = require("../models");
-const common = require("../utils/common");
-const commonConfig = require("../config/commonConfig");
-const { CloudinaryManager } = require("../utils/cloudinary");
-const { Op, fn, col, literal } = require("sequelize");
+const { Op, fn, col } = require("sequelize");
 const {
   tbl_bookings,
   tbl_properties,
@@ -12,27 +8,34 @@ const {
 
 exports.getBookingAnalytics = async (req, res) => {
   try {
-    const { state, city, fromDate, toDate } = req.query;
+    const state = req.query.state?.trim() || "";
+    const city = req.query.city?.trim() || "";
+    const { fromDate, toDate } = req.query;
 
-    console.log("QUERY PARAMS 👉", {
-      state,
-      city,
-      fromDate,
-      toDate,
-    });
     const bookingWhere = {
       book_is_delete: 0,
     };
+
     if (fromDate && toDate) {
       bookingWhere.book_added_at = {
         [Op.between]: [new Date(fromDate), new Date(toDate)],
       };
     }
+
     const propertyWhere = {};
-    propertyWhere.property_state = {
-      [Op.like]: state,
-    };
-    if (city) propertyWhere.property_city = city.trim();
+
+    if (state) {
+      propertyWhere.property_state = {
+        [Op.like]: `%${state}%`,
+      };
+    }
+
+    if (city) {
+      propertyWhere.property_city = {
+        [Op.like]: `%${city}%`,
+      };
+    }
+
     const data = await tbl_bookings.findAll({
       attributes: [
         [fn("MONTHNAME", col("tbl_bookings.book_added_at")), "month"],
@@ -75,6 +78,7 @@ exports.getBookingAnalytics = async (req, res) => {
       ],
       raw: true,
     });
+
     const monthOrder = [
       "January", "February", "March", "April", "May", "June",
       "July", "August", "September", "October", "November", "December"
@@ -90,26 +94,26 @@ exports.getBookingAnalytics = async (req, res) => {
       if (!monthMap[monthShort]) {
         monthMap[monthShort] = {};
       }
+
       monthMap[monthShort][category] = Number(row.count);
       categorySet.add(category);
     });
+
     const categories = Object.keys(monthMap).sort((a, b) => {
-      const getIndex = (m) =>
-        monthOrder.findIndex((full) =>
-          full.startsWith(m)
-        );
+      const getIndex = (month) => monthOrder.findIndex((fullMonth) => fullMonth.startsWith(month));
       return getIndex(a) - getIndex(b);
     });
-    const series = Array.from(categorySet).map((cat) => ({
-      name: cat,
-      data: categories.map(
-        (month) => monthMap[month][cat] || 0
-      ),
+
+    const series = Array.from(categorySet).map((category) => ({
+      name: category,
+      data: categories.map((month) => monthMap[month][category] || 0),
     }));
-    const allValues = series.flatMap((s) => s.data);
+
+    const allValues = series.flatMap((item) => item.data);
     const maxVal = Math.max(...allValues, 0);
     const tick = getNiceTick(maxVal);
     const yMax = Math.ceil(maxVal / tick) * tick;
+
     return res.json({
       categories,
       series,
@@ -119,7 +123,6 @@ exports.getBookingAnalytics = async (req, res) => {
         tick,
       },
     });
-
   } catch (err) {
     console.error(err);
     return res.status(500).json({
@@ -127,6 +130,7 @@ exports.getBookingAnalytics = async (req, res) => {
     });
   }
 };
+
 function getNiceTick(max) {
   if (max <= 10) return 2;
   if (max <= 50) return 10;

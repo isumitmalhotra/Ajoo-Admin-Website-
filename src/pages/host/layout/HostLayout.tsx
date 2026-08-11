@@ -9,9 +9,9 @@ export default function HostLayout() {
       sx={{
         display: "flex",
         minHeight: "100vh",
-        bgcolor: "#f8fafc",
+        bgcolor: "#EFE7D6",
         background:
-          "radial-gradient(circle at top right, rgba(167,139,250,0.18), rgba(248,250,252,1) 38%)",
+          "radial-gradient(circle at top right, rgba(27,36,71,0.06), rgba(239,231,214,1) 38%)",
       }}
     >
       <HostSidebar />

@@ -1,0 +1,6 @@
+<=	bookmark_properties_page.dart
+<=	custom_drawer.dart
+<=	negotitaion_page.dart
+<=	pre_booking_card.dart
+<=	prebooking_home_carousel.dart
+=>	common_back_button.dart

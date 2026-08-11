@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Box,
   Button,
   Chip,
+  CircularProgress,
   MenuItem,
   Paper,
   Stack,
@@ -10,60 +12,24 @@ import {
   Typography,
 } from "@mui/material";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
-
-type StatementRow = {
-  id: string;
-  period: string;
-  generatedOn: string;
-  totalBookings: number;
-  grossEarnings: number;
-  deductions: number;
-  netPayout: number;
-  status: "READY" | "PROCESSING";
-};
-
-const MOCK_STATEMENTS: StatementRow[] = [
-  {
-    id: "STM-2405",
-    period: "May 2026",
-    generatedOn: "2026-05-13",
-    totalBookings: 18,
-    grossEarnings: 214000,
-    deductions: 32000,
-    netPayout: 182000,
-    status: "READY",
-  },
-  {
-    id: "STM-2404",
-    period: "Apr 2026",
-    generatedOn: "2026-04-12",
-    totalBookings: 16,
-    grossEarnings: 196500,
-    deductions: 27600,
-    netPayout: 168900,
-    status: "READY",
-  },
-  {
-    id: "STM-2403",
-    period: "Mar 2026",
-    generatedOn: "2026-03-11",
-    totalBookings: 14,
-    grossEarnings: 173400,
-    deductions: 24600,
-    netPayout: 148800,
-    status: "PROCESSING",
-  },
-];
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { fetchHostStatements } from "../../features/host/hostStatements.slice";
 
 const formatINR = (amount: number) => `INR ${amount.toLocaleString("en-IN")}`;
 
 export default function HostStatements() {
+  const dispatch = useAppDispatch();
+  const { items, loading, error } = useAppSelector((state) => state.hostStatements);
   const [statusFilter, setStatusFilter] = useState<"ALL" | "READY" | "PROCESSING">("ALL");
 
+  useEffect(() => {
+    dispatch(fetchHostStatements());
+  }, [dispatch]);
+
   const rows = useMemo(() => {
-    if (statusFilter === "ALL") return MOCK_STATEMENTS;
-    return MOCK_STATEMENTS.filter((row) => row.status === statusFilter);
-  }, [statusFilter]);
+    if (statusFilter === "ALL") return items;
+    return items.filter((row) => row.status === statusFilter);
+  }, [statusFilter, items]);
 
   return (
     <Stack spacing={2}>
@@ -72,7 +38,7 @@ export default function HostStatements() {
         sx={{
           p: 2.6,
           borderRadius: "1rem",
-          border: "1px solid #ede9fe",
+          border: "1px solid #FFFAF0",
           boxShadow: "0 12px 28px rgba(17,24,39,0.05)",
         }}
       >
@@ -107,9 +73,29 @@ export default function HostStatements() {
         </Stack>
       </Paper>
 
+      {error && (
+        <Alert severity="error" sx={{ borderRadius: "0.8rem" }}>
+          {error}
+        </Alert>
+      )}
+
+      {loading ? (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 6,
+            borderRadius: "1rem",
+            border: "1px solid #FFFAF0",
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
+          <CircularProgress size={28} sx={{ color: "#2A356B" }} />
+        </Paper>
+      ) : (
       <Paper
         elevation={0}
-        sx={{ p: 2.2, borderRadius: "1rem", border: "1px solid #ede9fe", overflowX: "auto" }}
+        sx={{ p: 2.2, borderRadius: "1rem", border: "1px solid #FFFAF0", overflowX: "auto" }}
       >
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
@@ -176,10 +162,13 @@ export default function HostStatements() {
         </table>
         {rows.length === 0 && (
           <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
-            No statements found for the selected filter.
+            {items.length === 0
+              ? "No statements available yet. Your monthly payout statements will appear here."
+              : "No statements found for the selected filter."}
           </Typography>
         )}
       </Paper>
+      )}
     </Stack>
   );
 }

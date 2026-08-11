@@ -5,13 +5,11 @@ const schema = require("../schema/adminTermsAndCond.schema");
 const validation = require("../middleware/validation");
 const { adminAuthToken } = require("../middleware/authorization");
 // const { upload } = require("../utils/fileHandler");
-const { adminApiLimiter } = require("../middleware/adminRateLimiter");
+const { adminApiLimiter } = require("../middleware/rateLimiter");
 
-
-router.post("/admin/terms-condition/add", [validation(schema.termsConditionSchema), adminApiLimiter, adminAuthToken], controller.addUpdateTerms);
-router.post("/admin/terms-condition/listing", [adminApiLimiter, adminAuthToken], controller.listingTerms);
-router.post("/admin/terms-condition/delete", [validation(schema.termsConditionIdSchema), adminApiLimiter, adminAuthToken], controller.deleteTerms);
-router.post("/admin/terms-condition/detail", [validation(schema.termsConditionIdSchema), adminApiLimiter, adminAuthToken], controller.detailTerms);
-
+router.post("/admin/terms-condition/add", adminApiLimiter, [validation(schema.termsConditionSchema), adminAuthToken], controller.addUpdateTerms);
+router.post("/admin/terms-condition/listing", adminApiLimiter, [validation(schema.termsListingSchema), adminAuthToken], controller.listingTerms);
+router.post("/admin/terms-condition/delete", adminApiLimiter, [validation(schema.termsConditionIdSchema), adminAuthToken], controller.deleteTerms);
+router.post("/admin/terms-condition/detail", adminApiLimiter, [validation(schema.termsConditionIdSchema), adminAuthToken], controller.detailTerms);
 
 module.exports = router;

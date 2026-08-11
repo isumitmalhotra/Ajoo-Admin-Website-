@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Card,
@@ -6,27 +6,59 @@ import {
   Typography,
   useTheme,
   useMediaQuery,
+  CircularProgress,
 } from "@mui/material";
 import { BookingDetailsModal } from "../../components";
+import { getMyBookings } from "../../services/customerApi";
 
 const themeColor = "#1B2447";
 
-const bookings = [
-  { id: "BKG001", propertyName: "Luxury Apartment in Chennai", price: 4500, status: "Confirmed", date: "2025-10-10" },
-  { id: "BKG002", propertyName: "Cozy Villa in Goa", price: 7200, status: "Pending", date: "2025-10-09" },
-  { id: "BKG003", propertyName: "Mountain Retreat in Manali", price: 6500, status: "Cancelled", date: "2025-09-28" },
-  { id: "BKG004", propertyName: "Beachfront Suite in Pondicherry", price: 8200, status: "Confirmed", date: "2025-09-26" },
-  { id: "BKG005", propertyName: "Modern Flat in Mumbai", price: 5300, status: "Pending", date: "2025-09-24" },
-  { id: "BKG006", propertyName: "Hill View Stay in Ooty", price: 4600, status: "Confirmed", date: "2025-09-21" },
-  { id: "BKG007", propertyName: "Heritage Home in Jaipur", price: 7500, status: "Cancelled", date: "2025-09-19" },
-  { id: "BKG008", propertyName: "Skyline Apartment in Bangalore", price: 6900, status: "Confirmed", date: "2025-09-17" },
-  { id: "BKG009", propertyName: "Palm Villa in Kerala", price: 7200, status: "Pending", date: "2025-09-14" },
-  { id: "BKG010", propertyName: "Forest Cabin in Munnar", price: 4800, status: "Confirmed", date: "2025-09-12" },
-];
+interface BookingRow {
+  id: string;
+  propertyName: string;
+  price: number;
+  status: string;
+  date: string;
+}
 
 const UserBookings: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+
+  // Real bookings — GET /user/booking-history
+  const [bookings, setBookings] = useState<BookingRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadBookings = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const rows = await getMyBookings();
+      setBookings(
+        rows.map((b: any) => ({
+          id: String(b.book_id ?? b.book_pri_id ?? ""),
+          propertyName:
+            b["bookingProperty.property_name"] ||
+            b.bookingProperty?.property_name ||
+            "Property",
+          price: Number(b.book_price) || 0,
+          status: b["bookingStatus.bs_title"] || b.bookingStatus?.bs_title || "—",
+          date: b.book_added_at
+            ? new Date(b.book_added_at).toLocaleDateString("en-IN")
+            : "",
+        }))
+      );
+    } catch {
+      setError("Couldn't load your bookings. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadBookings();
+  }, []);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -54,12 +86,26 @@ const UserBookings: React.FC = () => {
           color: themeColor,
           mb: 4,
           textAlign: "center",
-          fontFamily: "'Poppins', sans-serif",
+          fontFamily: "'Inter', sans-serif",
           fontSize: isMobile ? "1.6rem" : "2rem",
         }}
       >
         My Bookings
       </Typography>
+
+      {loading && (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+          <CircularProgress sx={{ color: themeColor }} />
+        </Box>
+      )}
+      {!loading && error && (
+        <Typography sx={{ textAlign: "center", color: "#b00020", py: 4 }}>{error}</Typography>
+      )}
+      {!loading && !error && bookings.length === 0 && (
+        <Typography sx={{ textAlign: "center", color: "#6B7390", py: 6 }}>
+          You have no bookings yet.
+        </Typography>
+      )}
 
       {/* Cards Wrapper */}
       <Box
@@ -106,7 +152,7 @@ const UserBookings: React.FC = () => {
                   variant="h6"
                   sx={{
                     fontWeight: 700,
-                    fontFamily: "'Poppins', sans-serif",
+                    fontFamily: "'Inter', sans-serif",
                     fontSize: isMobile ? "1rem" : "1.2rem",
                   }}
                 >
@@ -116,7 +162,7 @@ const UserBookings: React.FC = () => {
                   variant="body2"
                   sx={{
                     color: "#666",
-                    fontFamily: "'Poppins', sans-serif",
+                    fontFamily: "'Inter', sans-serif",
                     fontSize: "0.9rem",
                   }}
                 >
@@ -131,7 +177,7 @@ const UserBookings: React.FC = () => {
                   sx={{
                     fontWeight: 700,
                     color: "#000",
-                    fontFamily: "'Poppins', sans-serif",
+                    fontFamily: "'Inter', sans-serif",
                     fontSize: "1rem",
                   }}
                 >
@@ -147,7 +193,7 @@ const UserBookings: React.FC = () => {
                         ? "#e6a100"
                         : "red",
                     fontWeight: 600,
-                    fontFamily: "'Poppins', sans-serif",
+                    fontFamily: "'Inter', sans-serif",
                     fontSize: "0.9rem",
                   }}
                 >
@@ -161,7 +207,7 @@ const UserBookings: React.FC = () => {
                   variant="body2"
                   sx={{
                     color: "#777",
-                    fontFamily: "'Poppins', sans-serif",
+                    fontFamily: "'Inter', sans-serif",
                     fontSize: "0.9rem",
                   }}
                 >
@@ -178,6 +224,7 @@ const UserBookings: React.FC = () => {
         open={open}
         onClose={handleClose}
         bookingId={selectedId}
+        onCancelled={loadBookings}
       />
     </Box>
   );

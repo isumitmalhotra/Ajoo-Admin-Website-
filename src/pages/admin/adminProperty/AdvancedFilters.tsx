@@ -38,7 +38,7 @@ import {
   }
   
   /* 🎨 COLORS */
-  const PURPLE = "#1B2447";
+  const INDIGO = "#1B2447";
   const PURPLE_LIGHT = "#EDE9FE";
   const GREEN = "#16A34A";
   const RED = "#DC2626";
@@ -47,24 +47,24 @@ import {
   const filterInputSx = {
     "& .MuiOutlinedInput-root": {
       borderRadius: 3,
-      color: PURPLE,
+      color: INDIGO,
       backgroundColor: "#fff",
       "& fieldset": {
         borderColor: PURPLE_LIGHT,
       },
       "&:hover fieldset": {
-        borderColor: PURPLE,
+        borderColor: INDIGO,
       },
       "&.Mui-focused fieldset": {
-        borderColor: PURPLE,
+        borderColor: INDIGO,
         borderWidth: 2,
       },
     },
     "& .MuiInputLabel-root": {
-      color: PURPLE,
+      color: INDIGO,
     },
     "& .MuiInputLabel-root.Mui-focused": {
-      color: PURPLE,
+      color: INDIGO,
     },
   };
   
@@ -193,7 +193,7 @@ import {
               sx={filterInputSx}
               InputProps={{
                 startAdornment: (
-                  <InputAdornment position="start" sx={{ color: PURPLE }}>
+                  <InputAdornment position="start" sx={{ color: INDIGO }}>
                     $
                   </InputAdornment>
                 ),
@@ -229,7 +229,7 @@ import {
             <Button
               onClick={onClear}
               sx={{
-                color: PURPLE,
+                color: INDIGO,
                 fontWeight: 700,
                 textTransform: "none",
               }}

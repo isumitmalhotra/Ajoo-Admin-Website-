@@ -27,12 +27,6 @@ const KPI_SKELETON = [
   { label: "Occupancy", value: "0%" },
 ];
 
-const RECENT_ACTIVITY = [
-  { id: "B-1042", title: "3-night booking confirmed", when: "Today, 10:22 AM", status: "Confirmed" },
-  { id: "P-2481", title: "Payout initiated for INR 18,300", when: "Yesterday", status: "Processing" },
-  { id: "R-752", title: "New 5-star guest review posted", when: "2 days ago", status: "Positive" },
-];
-
 export default function HostDashboard() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -53,6 +47,7 @@ export default function HostDashboard() {
   const activeListings = data?.activeListings ?? 0;
   const upcomingBookings = data?.upcomingBookings ?? 0;
   const occupancyRate = Math.max(0, Math.min(100, data?.occupancyRate ?? 0));
+  const recentActivity = data?.recentActivity ?? [];
 
   const kpiCards = [
     { label: "This Month Earnings", value: `INR ${monthEarnings.toLocaleString("en-IN")}` },
@@ -96,7 +91,7 @@ export default function HostDashboard() {
           borderRadius: "1.1rem",
           color: "#ffffff",
           border: "1px solid rgba(255,255,255,0.25)",
-          background: "linear-gradient(125deg, #5b21b6 0%, #1B2447 45%, #3F6B4E 100%)",
+          background: "linear-gradient(125deg, #1B2447 0%, #1B2447 45%, #3F6B4E 100%)",
           boxShadow: "0 18px 32px rgba(91,33,182,0.25)",
         }}
       >
@@ -125,7 +120,7 @@ export default function HostDashboard() {
             sx={{
               textTransform: "none",
               fontWeight: 700,
-              color: "#5b21b6",
+              color: "#1B2447",
               bgcolor: "#ffffff",
               borderRadius: "0.65rem",
               "&:hover": { bgcolor: "#f5f3ff" },
@@ -150,7 +145,7 @@ export default function HostDashboard() {
             sx={{
               p: 2,
               borderRadius: "0.95rem",
-              border: "1px solid #ede9fe",
+              border: "1px solid #FFFAF0",
               boxShadow: "0 12px 26px rgba(17,24,39,0.05)",
             }}
           >
@@ -188,7 +183,7 @@ export default function HostDashboard() {
                 cursor: "pointer",
                 transition: "all .2s ease",
                 "&:hover": {
-                  borderColor: "#c4b5fd",
+                  borderColor: "#D9CFB8",
                   bgcolor: "#faf5ff",
                   transform: "translateY(-1px)",
                 },
@@ -204,7 +199,7 @@ export default function HostDashboard() {
                   placeItems: "center",
                 }}
               >
-                <Icon sx={{ fontSize: 18, color: "#6d28d9" }} />
+                <Icon sx={{ fontSize: 18, color: "#2A356B" }} />
               </Box>
               <Typography variant="body2" fontWeight={700} color="#374151">
                 {action.title}
@@ -221,7 +216,7 @@ export default function HostDashboard() {
           gap: 1.6,
         }}
       >
-        <Paper elevation={0} sx={{ p: 2.2, borderRadius: "0.95rem", border: "1px solid #ede9fe" }}>
+        <Paper elevation={0} sx={{ p: 2.2, borderRadius: "0.95rem", border: "1px solid #FFFAF0" }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1.2}>
             <Typography variant="subtitle1" fontWeight={800}>
               Occupancy Health
@@ -237,8 +232,8 @@ export default function HostDashboard() {
             sx={{
               height: 10,
               borderRadius: 20,
-              bgcolor: "#ede9fe",
-              "& .MuiLinearProgress-bar": { bgcolor: "#6d28d9" },
+              bgcolor: "#FFFAF0",
+              "& .MuiLinearProgress-bar": { bgcolor: "#2A356B" },
             }}
           />
           <Typography variant="h6" fontWeight={800} mt={1}>
@@ -246,25 +241,31 @@ export default function HostDashboard() {
           </Typography>
         </Paper>
 
-        <Paper elevation={0} sx={{ p: 2.2, borderRadius: "0.95rem", border: "1px solid #ede9fe" }}>
+        <Paper elevation={0} sx={{ p: 2.2, borderRadius: "0.95rem", border: "1px solid #FFFAF0" }}>
           <Typography variant="subtitle1" fontWeight={800} mb={1.1}>
             Recent Activity
           </Typography>
-          <Stack spacing={1.1}>
-            {RECENT_ACTIVITY.map((item) => (
-              <Box key={item.id} sx={{ p: 1.1, borderRadius: "0.7rem", bgcolor: "#faf5ff" }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Typography variant="body2" fontWeight={700} color="#1f2937">
-                    {item.title}
+          {recentActivity.length > 0 ? (
+            <Stack spacing={1.1}>
+              {recentActivity.map((item) => (
+                <Box key={item.id} sx={{ p: 1.1, borderRadius: "0.7rem", bgcolor: "#faf5ff" }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography variant="body2" fontWeight={700} color="#1f2937">
+                      {item.title}
+                    </Typography>
+                    <Chip size="small" label={item.status} sx={{ bgcolor: "#FFFAF0", color: "#1B2447" }} />
+                  </Stack>
+                  <Typography variant="caption" color="text.secondary">
+                    {item.id} • {item.when}
                   </Typography>
-                  <Chip size="small" label={item.status} sx={{ bgcolor: "#ede9fe", color: "#5b21b6" }} />
-                </Stack>
-                <Typography variant="caption" color="text.secondary">
-                  {item.id} • {item.when}
-                </Typography>
-              </Box>
-            ))}
-          </Stack>
+                </Box>
+              ))}
+            </Stack>
+          ) : (
+            <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+              No recent activity yet. New bookings, payouts, and reviews will appear here.
+            </Typography>
+          )}
         </Paper>
       </Box>
     </Stack>

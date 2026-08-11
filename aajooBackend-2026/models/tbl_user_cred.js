@@ -53,7 +53,23 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'tbl_user_cred',
-    timestamps: false
+    timestamps: false,
+    indexes: [
+      {
+        unique: true,
+        fields: ['cred_user_id'],
+        name: 'uq_tbl_user_cred_user_id',
+      },
+      {
+        unique: true,
+        fields: ['cred_user_email', 'cred_user_isDelete'],
+        name: 'uq_tbl_user_cred_email_deleted',
+      },
+      {
+        fields: ['cred_user_isHost', 'cred_user_isUser'],
+        name: 'idx_tbl_user_cred_roles',
+      },
+    ]
   });
   return tbl_user_cred;
 };
