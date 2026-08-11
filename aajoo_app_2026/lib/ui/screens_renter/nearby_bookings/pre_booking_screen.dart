@@ -8,7 +8,16 @@ import 'package:rent_home/controller/common_controller.dart';
 import 'package:rent_home/ui/screens_renter/home/map/map_controller.dart';
 import 'package:rent_home/controller/search_controller.dart';
 import 'package:rent_home/data/models/search_property_model.dart';
+import 'package:rent_home/ui/screens_renter/home/components/lux_theme.dart';
+import 'package:rent_home/ui/screens_renter/home/components/lux_toggle_button.dart';
+import 'package:rent_home/ui/screens_renter/home/components/search_sheet.dart';
+import 'package:rent_home/ui/screens_renter/home/components/text_category_pills.dart';
+import 'package:rent_home/ui/screens_renter/nearby_bookings/area_rails.dart';
 import 'package:rent_home/ui/screens_renter/nearby_bookings/pre_booking_card.dart';
+import 'package:rent_home/ui/screens_renter/nearby_bookings/stay_dates_bar.dart';
+import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';
+import 'package:rent_home/models/properties_response_model.dart';
+import 'package:rent_home/utils/fonts.dart';
 import 'package:shimmer/shimmer.dart';
 
 class PreBookingScreen extends StatefulWidget {
@@ -30,6 +39,20 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
   bool _isSearching = false;
   bool isLuxury = false; // Add luxury state
 
+  /// Stay dates chosen up here and carried into the property page, so the
+  /// guest is not asked for them twice.
+  DateTime? _checkIn;
+  DateTime? _checkOut;
+
+  /// One rail per area (Shimla, Kufri, Mohali, Panchkula, Kharar...), each
+  /// loaded independently.
+  final _areaRails = Get.put(AreaRailsController(), tag: 'prebooking');
+
+  /// See kHiddenBrowseCategories — shared with the home screen so the two
+  /// browse rows cannot drift apart, which is exactly what happened when this
+  /// screen and the home screen each kept their own category list.
+  static const _hiddenCategories = kHiddenBrowseCategories;
+
   Future<String> getAddress(double lat, double long) async {
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(lat, long);
@@ -41,33 +64,17 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
     }
   }
 
-  void _showLuxuryModeDialog(
+  Future<void> _showLuxuryModeDialog(
       BuildContext context, bool isLuxury, Function(bool) onSwitch) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-              isLuxury ? "Switch to Normal Mode?" : "Switch to Luxury Mode?"),
-          content: Text(isLuxury
-              ? "Are you sure you want to switch back to normal mode?"
-              : "Do you want to enable luxury mode for premium properties?"),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () {
-                onSwitch(!isLuxury); // Toggle the mode
-                Navigator.of(context).pop();
-              },
-              child: const Text("Switch"),
-            ),
-          ],
-        );
+    return showLuxSwitchDialog(
+      context,
+      isLuxury: isLuxury,
+      onSwitch: (val) async {
+        onSwitch(val);
+        await Future.wait([
+          searchController.getPreBooking(isLuxury: val),
+          _areaRails.load(isLuxury: val),
+        ]);
       },
     );
   }
@@ -139,61 +146,6 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
   int _selectedHotelIndex = -1;
 
   // Add method to filter properties by category
-  void _filterByCategory(String categoryName) {
-    // Use the updated search function to handle both text and category filtering
-    _searchProperties(_queryController.text);
-  }
-
-  Widget _hotelTypeBlock(int index, String image, String type) {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: () {
-        setState(() {
-          if (_selectedHotelIndex == index) {
-            _selectedHotelIndex = -1;
-            _filterByCategory(''); // Clear filter
-          } else {
-            _selectedHotelIndex = index;
-            _filterByCategory(type); // Filter by selected category
-          }
-        });
-      },
-      child: Column(
-        children: [
-          Container(
-            height: 60,
-            width: 60,
-            decoration: BoxDecoration(
-              color: index == _selectedHotelIndex
-                  ? theme.primaryColor.withOpacity(0.6)
-                  : Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: theme.primaryColor,
-                width: 2,
-              ),
-            ),
-            child: Center(
-              child: Image.asset(image, height: 45, width: 45),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            type,
-            style: TextStyle(
-              color: index == _selectedHotelIndex
-                  ? theme.primaryColor
-                  : Colors.black87,
-              fontWeight: index == _selectedHotelIndex
-                  ? FontWeight.bold
-                  : FontWeight.normal,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   String _sortOption = 'default';
   List<SearchPropertyModel> _sortProperties(
       List<SearchPropertyModel> properties) {
@@ -278,22 +230,72 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
     });
   }
 
-  // Helper method to get category name by index
-  String _getCategoryNameByIndex(int index) {
-    switch (index) {
-      case 0:
-        return "Sharing";
-      case 1:
-        return "Family";
-      case 2:
-        return "Couple";
-      case 3:
-        return "Party";
-      case 4:
-        return "Single";
-      default:
-        return "";
-    }
+  /// The category the guest picked, by title.
+  ///
+  /// This used to be a switch over five hardcoded indexes returning "Sharing",
+  /// "Family", "Couple", "Party", "Single" — names that had to agree with a
+  /// hardcoded tile row AND with tbl_categories, and did not. The pills carry
+  /// the real title now, so there is nothing to keep in step.
+  String _selectedCategoryTitle = '';
+
+  String _getCategoryNameByIndex(int index) => _selectedCategoryTitle;
+
+  /// Open a stay from an area rail, carrying the dates chosen up here.
+  ///
+  /// dealFrom/dealTo is the property page's existing "open with these dates
+  /// already selected" input, so the guest is not asked for them a second
+  /// time and the stay is priced the moment the page loads.
+  void _openProperty(SearchPropertyModel p) {
+    final images = (p.images ?? const [])
+        .map((e) => e.toString())
+        .where((e) => e.isNotEmpty)
+        .toList();
+    final cats = () {
+      final ct = p.categoryTitles;
+      if (ct == null) return <String>[];
+      if (ct is List) return ct.map((e) => e.toString()).toList();
+      return <String>[ct.toString()];
+    }();
+
+    Get.to(() => PropertyPage(
+          property: Property(
+            propertyId: p.propertyId,
+            propertyName: p.propertyName ?? 'Unnamed Property',
+            propertyAddress: p.propertyAddress ?? '',
+            propertyDesc: p.propertyDesc ?? '',
+            propertyPrice: p.propertyPrice ?? '0.0',
+            propertyCity: p.propertyCity ?? '',
+            propertyLongitude: p.propertyLongitude ?? '0',
+            propertyLatitude: p.propertyLatitude ?? '0',
+            propertyHostId: p.propertyHostId,
+            propertyZip: p.propertyZip,
+            propertyContact: p.propertyContact,
+            propDetailsPropDetailIsPetFriendly:
+                p.propDetailsPropDetailIsPetFriendly,
+            propDetailsPropDetailIsSmoke: p.propDetailsPropDetailIsSmoke,
+            propDetailsPropDetailInTime: p.propDetailsPropDetailInTime,
+            propDetailsPropDetailOutTime: p.propDetailsPropDetailOutTime,
+            propDetailsPropDetailExtra: p.propDetailsPropDetailExtra,
+            coverImage: p.coverImage,
+            images: images,
+            categoryTitles: cats,
+          ),
+          price: p.propertyPrice ?? '0',
+          name: p.propertyName ?? 'Stay',
+          location: p.propertyAddress ?? '',
+          image: p.coverImage ?? '',
+          id: p.propertyId!,
+          rating: '0',
+          description: p.propertyDesc ?? '',
+          lat: p.propertyLatitude ?? '0',
+          long: p.propertyLongitude ?? '0',
+          galleryImages: images,
+          showNegotiationButton: false,
+          inTime: p.propDetailsPropDetailInTime,
+          outTime: p.propDetailsPropDetailOutTime,
+          dealFrom: _checkIn == null ? null : StayDatesBar.api(_checkIn!),
+          dealTo: _checkOut == null ? null : StayDatesBar.api(_checkOut!),
+        ));
   }
 
 // Add filter function
@@ -436,6 +438,7 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
   @override
   void initState() {
     super.initState();
+    _areaRails.load(isLuxury: isLuxury);
     searchController.getPreBooking(isLuxury: isLuxury);
     currentLocation = mapController.currentPosition.value;
   }
@@ -451,49 +454,79 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
+      backgroundColor: isLuxury ? Lux.bg : null,
       appBar: AppBar(
-        toolbarHeight: 80,
+        toolbarHeight: 76,
         elevation: 0,
-        title: FutureBuilder<String>(
-          future:
-              getAddress(currentLocation.latitude, currentLocation.longitude),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Text("Loading...");
-            }
-            if (snapshot.hasError) {
-              // Soft fallback — geocoding can fail for many reasons (offline,
-              // quota, etc.). Render an empty title rather than a scary
-              // "Error fetching address" string.
-              return const Text("Location unavailable");
-            }
-            return Container(
-                width: double.infinity,
-                alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(30),
+        automaticallyImplyLeading: false,
+        backgroundColor: isLuxury ? Lux.bg : kCream,
+        foregroundColor: isLuxury ? Lux.ink : Colors.black87,
+        // The location was a FutureBuilder that reverse-geocoded on every
+        // rebuild and could not be changed — it printed where the phone was
+        // and that was that. Same editable pill the home screen uses, so
+        // tapping it opens the destination search.
+        title: Obx(() {
+          final place = mapController.currentPlace.value;
+          return InkWell(
+            onTap: () => showSearchSheet(context),
+            borderRadius: BorderRadius.circular(999),
+            child: Row(
+              children: [
+                Icon(
+                  isLuxury
+                      ? Lux.icon(Icons.location_on_outlined)
+                      : Icons.location_on_outlined,
+                  size: 20,
+                  color: isLuxury ? Lux.gold : kIndigo,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Home",
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Pre-booking near',
+                          style: inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: isLuxury ? Lux.muted : kMuted)),
+                      Text(
+                        place.isEmpty ? 'Nearby' : place,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: inter(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w700,
+                            color: isLuxury ? Lux.ink : kInk),
                       ),
-                    ),
-                    Text(snapshot.data ?? "Unknown Location"),
-                  ],
-                ));
-          },
-        ),
-        centerTitle: true,
-        backgroundColor: kCream,
-        foregroundColor: Colors.black87,
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(Icons.keyboard_arrow_down,
+                    size: 18, color: isLuxury ? Lux.muted : kMuted),
+              ],
+            ),
+          );
+        }),
+        titleSpacing: 16,
+        centerTitle: false,
+        // The mode switch, top right beside the search. This was a hand-rolled
+        // pill using theme.primaryColor and an asset called "diamond .png"
+        // (with a space in the filename); the home screen's animated toggle is
+        // the real one.
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: LuxToggleButton(
+              isLuxury: isLuxury,
+              height: 42,
+              width: 96,
+              onTap: () => _showLuxuryModeDialog(
+                  context, isLuxury, (val) => setState(() => isLuxury = val)),
+            ),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(6.0),
@@ -521,6 +554,14 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                   );
                 }
                 if (searchController.isLoading.value) {
+                  // LUX gets its own loader — a gold LUX wordmark rather than
+                  // the grey shimmer, so the wait itself says the mode changed.
+                  if (isLuxury) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 80),
+                      child: LuxLoader(),
+                    );
+                  }
                   return ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -565,27 +606,51 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
 
                 return Column(
                   children: [
-                    // Enhanced search bar with filter button
-                    SizedBox(
-                      height: 100,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            const SizedBox(width: 20),
-                            _hotelTypeBlock(1, "assets/family.png", "Family"),
-                            const SizedBox(width: 20),
-                            _hotelTypeBlock(0, "assets/sharing.png", "Sharing"),
-                            const SizedBox(width: 20),
-                            _hotelTypeBlock(2, "assets/couple.png", "Couple"),
-                            const SizedBox(width: 20),
-                            _hotelTypeBlock(3, "assets/girls.png", "Party"),
-                            const SizedBox(width: 20),
-                            _hotelTypeBlock(4, "assets/boy.png", "Single"),
-                            const SizedBox(width: 20),
-                          ],
+                    // Browse by category — the platform's real property
+                    // types, read from the same source the home screen uses.
+                    //
+                    // This was five hardcoded image tiles for Family, Sharing,
+                    // Couple, Party and Single: occupancy types, not property
+                    // types, and their filter matched category TITLES that
+                    // three of them did not even correspond to. The spec asks
+                    // for homestays and villas here.
+                    Obx(() {
+                      final cats = (commonController
+                                  .cats.value?.data.categories ??
+                              [])
+                          .where((c) => !_hiddenCategories
+                              .contains(c.catTitle.trim().toLowerCase()))
+                          .toList();
+                      if (cats.isEmpty) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: TextCategoryPills(
+                          categories: ['All', ...cats.map((c) => c.catTitle)],
+                          selectedIndex: _selectedHotelIndex + 1,
+                          onChanged: (i) {
+                            setState(() => _selectedHotelIndex = i - 1);
+                            _selectedCategoryTitle =
+                                i == 0 ? '' : cats[i - 1].catTitle;
+                            _searchProperties(_queryController.text);
+                          },
                         ),
+                      );
+                    }),
+
+                    // Check-in / check-out. Pre-booking had no date input at
+                    // all — you found a stay, opened it, and only then were
+                    // asked when you wanted it.
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8.0, vertical: 8.0),
+                      child: StayDatesBar(
+                        checkIn: _checkIn,
+                        checkOut: _checkOut,
+                        isLuxury: isLuxury,
+                        onChanged: (a, b) =>
+                            setState(() { _checkIn = a; _checkOut = b; }),
+                        onClear: () =>
+                            setState(() { _checkIn = null; _checkOut = null; }),
                       ),
                     ),
 
@@ -959,7 +1024,42 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                           ],
                         ),
                       )
-                    else
+                    else ...[
+                      // Area rails — Shimla, Kufri, Mohali, Panchkula, Kharar
+                      // and Chandigarh, ten to twelve stays each. Only shown
+                      // when the guest is browsing rather than searching, and
+                      // each rail hides itself when its area has no listings
+                      // (Kufri has none on the platform today).
+                      if (!_isSearching && _selectedHotelIndex == -1)
+                        Obx(() {
+                          if (_areaRails.loading.value) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 40),
+                              child: isLuxury
+                                  ? const LuxLoader(
+                                      message: 'Curating luxury stays by area')
+                                  : const Center(
+                                      child: CircularProgressIndicator(
+                                          color: kIndigo)),
+                            );
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                for (final area in kPreBookingAreas)
+                                  AreaRail(
+                                    area: area,
+                                    isLuxury: isLuxury,
+                                    properties:
+                                        _areaRails.byArea[area] ?? const [],
+                                    onOpen: (p) => _openProperty(p),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }),
                       ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
@@ -970,6 +1070,7 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                               property: property, index: index);
                         },
                       ),
+                    ],
                   ],
                 );
               }),
@@ -980,37 +1081,4 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
     );
   }
 
-  Widget _buildAmenityChip(IconData icon, String label) {
-    return Chip(
-      avatar: Icon(icon, size: 18, color: Colors.grey[700]),
-      label: Text(
-        label,
-        style: TextStyle(
-          fontSize: 14,
-          color: Colors.grey[700],
-        ),
-      ),
-      backgroundColor: Colors.grey[200],
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-    );
-  }
-}
-
-Widget _buildAmenityChip(IconData icon, String label) {
-  return Chip(
-    avatar: Icon(icon, size: 18, color: Colors.grey[700]),
-    label: Text(
-      label,
-      style: TextStyle(
-        fontSize: 14,
-        color: Colors.grey[700],
-      ),
-    ),
-    backgroundColor: Colors.grey[200],
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
-  );
 }

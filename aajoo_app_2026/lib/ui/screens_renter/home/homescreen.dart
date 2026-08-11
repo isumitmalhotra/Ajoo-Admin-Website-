@@ -12,6 +12,8 @@ import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/ui/screens_renter/home/components/branded_header.dart';
 import 'package:rent_home/ui/screens_renter/home/components/curated_grid_shimmer.dart';
+import 'package:rent_home/ui/screens_renter/home/components/lux_theme.dart';
+import 'package:rent_home/ui/screens_renter/nearby_bookings/area_rails.dart';
 import 'package:rent_home/ui/screens_renter/home/components/lux_toggle_button.dart';
 import 'package:rent_home/ui/screens_renter/home/components/filter_dialog_content.dart';
 import 'package:rent_home/ui/screens_renter/home/components/search_pill.dart';
@@ -106,33 +108,21 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
     }
   }
 
-  void _showLuxuryModeDialog(
+  /// The LUX switch. Was a bare Material AlertDialog — the same grey box in
+  /// both directions, so the one moment that should feel like crossing into a
+  /// different mode felt like a permissions prompt. See lux_theme.dart.
+  Future<void> _showLuxuryModeDialog(
       BuildContext context, bool isLuxury, Function(bool) onSwitch) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-              isLuxury ? "Switch to Normal Mode?" : "Switch to Luxury Mode?"),
-          content: Text(isLuxury
-              ? "Are you sure you want to switch back to normal mode?"
-              : "Do you want to enable luxury mode for premium properties?"),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () {
-                onSwitch(!isLuxury); // Toggle the mode
-                Navigator.of(context).pop();
-              },
-              child: const Text("Switch"),
-            ),
-          ],
-        );
+    return showLuxSwitchDialog(
+      context,
+      isLuxury: isLuxury,
+      onSwitch: (val) async {
+        onSwitch(val);
+        // Hold the LUX loader up until the listings are actually in, so the
+        // switch never flashes the standard page mid-transition.
+        await (val
+            ? mapController.fetchLuxuryProperties()
+            : mapController.fetchProperties());
       },
     );
   }
@@ -294,9 +284,17 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                           ///
                           /// The lower row is gone and this one does the work.
                           Obx(() {
-                            final cats = commonController
-                                    .cats.value?.data.categories ??
-                                [];
+                            // Occupancy types left over from an older
+                            // catalogue — couple, party, Resort — are filtered
+                            // out of browse. NOT deleted: 10 live properties
+                            // are still tagged with them and dropping the rows
+                            // would leave those uncategorised.
+                            final cats = (commonController
+                                        .cats.value?.data.categories ??
+                                    [])
+                                .where((c) => !kHiddenBrowseCategories
+                                    .contains(c.catTitle.trim().toLowerCase()))
+                                .toList();
                             if (cats.isEmpty) return const SizedBox.shrink();
                             return TextCategoryPills(
                               // "All" first, then whatever the platform
@@ -387,10 +385,6 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                                     (val) {
                                       setState(() => isLuxury = val);
                                       mapController.isLuxury.value = isLuxury;
-                                      isLuxury
-                                          ? mapController
-                                              .fetchLuxuryProperties()
-                                          : mapController.fetchProperties();
                                     },
                                   );
                                 },

@@ -65,4 +65,33 @@ class HomePageSearchService {
       rethrow;
     }
   }
+
+  /// Properties in one named area, for the pre-booking area rails.
+  ///
+  /// Filters on `area`, not `city`. property_city is unreliable across the
+  /// imported dataset — an exact city match returns 1 property for Mohali and
+  /// 0 for Chandigarh, while the same names in property_address return 48 and
+  /// 51. The backend's `filters.area` does the address match.
+  Future<SearchResponse> getPropertiesByArea(
+    String area, {
+    bool isLuxury = false,
+    int limit = 12,
+  }) async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    final data = {
+      "query": "",
+      "longitude": "",
+      "latitude": "",
+      "sort_by": "property_id",
+      "order": "desc",
+      "limit": limit,
+      "offset": 0,
+      "radius": 10,
+      "isLuxury": isLuxury,
+      "filters": {"area": area},
+    };
+    final response = await _dio.post("properties/list", data: data);
+    return SearchResponse.fromJson(response.data);
+  }
 }
