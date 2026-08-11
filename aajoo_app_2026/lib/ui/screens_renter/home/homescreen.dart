@@ -184,13 +184,20 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    SearchPill(
-                      location: 'Goa',
+                    // Was hardcoded to "Goa" while the properties underneath
+                    // were already being fetched around the user's real
+                    // coordinates — the listings were right and the label above
+                    // them named somewhere they had never been. "Nearby" until
+                    // the geocoder answers, rather than inventing a place.
+                    Obx(() => SearchPill(
+                      location: mapController.currentPlace.value.isEmpty
+                          ? 'Nearby'
+                          : mapController.currentPlace.value,
                       details: 'Any week · 1 guest',
                       // Airbnb-style search modal (Where / When / Who +
                       // suggested destinations + advanced filters).
                       onTap: () => showSearchSheet(context),
-                    ),
+                    )),
                     const SizedBox(height: 8),
                     Obx(() => userController.isLoading.value ||
                             userController.ongoingBookings.value == null
@@ -250,10 +257,16 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                             ),
                           ),
 
-                          /// 🔹 M3 — Weekly hero card
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 12),
-                            child: WeeklyHeroCard(),
+                          /// 🔹 M3 — hero card, fed from what the search
+                          /// actually returned and where the user actually is.
+                          /// It used to render "1,240 verified homes" and
+                          /// "18 new in Goa this week" on every device.
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Obx(() => WeeklyHeroCard(
+                                  homesNearby: mapController.properties.length,
+                                  region: mapController.currentPlace.value,
+                                )),
                           ),
 
                           /// 🔹 Near by button

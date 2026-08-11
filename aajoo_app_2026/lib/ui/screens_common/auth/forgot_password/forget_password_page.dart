@@ -171,7 +171,8 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                   fieldHeight: 50,
                   fieldWidth: 50,
                 ),
-                length: 4,
+                // Six digits — see the note in auth/verify/verify_page.dart.
+                length: 6,
                 appContext: context,
                 autoFocus: true,
                 onChanged: (value) => controller.otp.value = value,
@@ -185,9 +186,9 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                     onPressed: controller.isLoading.value
                         ? null // Disable button during loading
                         : () async {
-                            if (controller.otp.value.length != 4) {
+                            if (controller.otp.value.length != 6) {
                               Get.snackbar(
-                                  'Error', 'Please enter a valid 4-digit OTP');
+                                  'Error', 'Please enter the 6-digit code we emailed you.');
                               return;
                             }
                             final isVerified = await controller.verifyOtp();

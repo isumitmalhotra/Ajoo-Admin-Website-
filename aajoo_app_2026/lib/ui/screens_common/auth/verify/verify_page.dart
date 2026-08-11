@@ -65,7 +65,7 @@ class VerifyPage extends StatelessWidget {
 
                 // Description
                 Text(
-                  'Enter the 4-digit code sent to',
+                  'Enter the 6-digit code sent to',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.grey[600],
@@ -98,7 +98,14 @@ class VerifyPage extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: PinCodeTextField(
                     appContext: context,
-                    length: 4,
+            // SIX digits. The server's generateOtp was deliberately raised from
+            // four (9,000 possibilities is small enough to grind through when the
+            // emailed code is the only thing guarding an account) and the app was
+            // never updated — so the field took four digits, the validation
+            // demanded exactly four, and the code in the email could not be
+            // entered at all. Signup verification and password reset were both
+            // impossible to complete.
+                    length: 6,
                     obscureText: false,
                     animationType: AnimationType.fade,
                     pinTheme: PinTheme(

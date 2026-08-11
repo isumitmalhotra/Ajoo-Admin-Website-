@@ -14,6 +14,7 @@ class MapController extends GetxController {
   final MapService mapService = MapService();
   final Rx<LatLng> currentPosition = const LatLng(28.495000, 77.40905397).obs;
   final Rx<bool> isLuxury = false.obs;
+
   Future<Position?> getCurrentLocation() async {
     final LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {

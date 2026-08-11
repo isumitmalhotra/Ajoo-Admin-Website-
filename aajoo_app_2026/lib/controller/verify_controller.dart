@@ -23,10 +23,10 @@ class VerifyController extends GetxController {
   }
 
   Future<void> verifyOtp() async {
-    if (otp.value.length != 4) {
+    if (otp.value.length != 6) {
       authController.showSnackbar(
         'Error',
-        'Please enter a valid 4-digit OTP',
+        'Please enter the 6-digit code we emailed you.',
         true,
       );
       return;

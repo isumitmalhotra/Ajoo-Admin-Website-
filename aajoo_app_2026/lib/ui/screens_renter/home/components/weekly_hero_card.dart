@@ -2,33 +2,40 @@ import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/utils/fonts.dart';
 
-/// AajooHomes weekly hero card — matches the POC mobile "this week" block.
+/// AajooHomes home hero card.
 ///
 ///   ┌───────────────────────────────────────────────────┐
-///   │  THIS WEEK                                        │
-///   │  1,240 verified homes.                            │
+///   │  NEARBY                                           │
+///   │  128 homes near you.                              │
 ///   │  No booking fee.                                  │
 ///   │                                                   │
-///   │  ↗  18 new in Goa this week                       │
+///   │  ↗  Showing stays around Kharar                   │
 ///   └───────────────────────────────────────────────────┘
 ///
-/// Dark indigo gradient (kIndigo → kIndigo600), cream typography.
-/// V1 takes hard-coded values; later this can be wired to
-/// `commonController` / a stats API.
+/// This card used to read "1,240 verified homes" and "18 new in Goa this week"
+/// — both hardcoded defaults, rendered on every device regardless of where the
+/// user was or what was actually listed. Its own comment admitted it: "V1 takes
+/// hard-coded values; later this can be wired to a stats API."
+///
+/// There is no stats API. So it shows the two things that ARE real — how many
+/// homes the search actually returned, and where the user actually is — and the
+/// invented "new this week" figure is gone rather than guessed. Nothing reports
+/// it, and a number nobody can source is worse than no number.
 class WeeklyHeroCard extends StatelessWidget {
-  final int verifiedCount;
-  final int newThisWeek;
+  /// How many homes the nearby search returned. 0 while it is still loading.
+  final int homesNearby;
+
+  /// Resolved place name; empty until the geocoder answers.
   final String region;
 
   const WeeklyHeroCard({
     super.key,
-    this.verifiedCount = 1240,
-    this.newThisWeek = 18,
-    this.region = 'Goa',
+    this.homesNearby = 0,
+    this.region = '',
   });
 
-  String get _formattedVerified {
-    final s = verifiedCount.toString();
+  String get _formattedCount {
+    final s = homesNearby.toString();
     final buf = StringBuffer();
     for (var i = 0; i < s.length; i++) {
       if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
@@ -62,7 +69,7 @@ class WeeklyHeroCard extends StatelessWidget {
         children: [
           // Overline
           Text(
-            'THIS WEEK',
+            region.isEmpty ? 'NEARBY' : region.toUpperCase(),
             style: inter(
               fontSize: 11,
               fontWeight: FontWeight.w600,
@@ -73,7 +80,7 @@ class WeeklyHeroCard extends StatelessWidget {
           const SizedBox(height: 8),
           // Headline — two lines, Fraunces
           Text(
-            '$_formattedVerified verified homes.',
+            homesNearby > 0 ? '$_formattedCount homes near you.' : 'Homes near you.',
             style: fraunces(
               fontSize: 22,
               fontWeight: FontWeight.w500,
@@ -102,7 +109,9 @@ class WeeklyHeroCard extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  '$newThisWeek new in $region this week',
+                  region.isEmpty
+                      ? 'Finding stays around you…'
+                      : 'Showing stays around $region',
                   style: inter(
                     fontSize: 13,
                     color: kCream.withOpacity(0.85),

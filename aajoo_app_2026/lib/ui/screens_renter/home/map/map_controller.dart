@@ -1,3 +1,4 @@
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -14,6 +15,38 @@ class MapController extends GetxController {
   final MapService mapService = MapService();
   final Rx<LatLng> currentPosition = const LatLng(28.495000, 77.40905397).obs;
   final Rx<bool> isLuxury = false.obs;
+
+  /// The name of wherever the user actually is — "Kharar", "Gurugram".
+  ///
+  /// The home screen's search pill was hardcoded to "Goa" while the property
+  /// list underneath it was already being fetched around the user's real
+  /// coordinates. The listings were right; the label above them named somewhere
+  /// the user had never been.
+  ///
+  /// Resolved with the platform's own geocoder (the `geocoding` package, already
+  /// a dependency) — no key, no quota. Empty until it resolves, and the UI falls
+  /// back to "Nearby" rather than inventing a place.
+  final RxString currentPlace = ''.obs;
+
+  /// Best-effort: a device with no geocoder, permission or network simply
+  /// leaves the label alone.
+  Future<void> resolveCurrentPlace() async {
+    try {
+      final marks = await placemarkFromCoordinates(
+        currentPosition.value.latitude,
+        currentPosition.value.longitude,
+      );
+      if (marks.isEmpty) return;
+      final p = marks.first;
+      // locality is the town/city; subAdministrativeArea is the district, the
+      // more useful answer when a village has no locality of its own.
+      final name = [p.locality, p.subAdministrativeArea, p.administrativeArea]
+          .firstWhere((v) => v != null && v.trim().isNotEmpty, orElse: () => null);
+      if (name != null) currentPlace.value = name.trim();
+    } catch (_) {
+      // Leave it empty — the UI shows "Nearby".
+    }
+  }
   Future<Position?> getCurrentLocation() async {
     final LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
@@ -79,6 +112,8 @@ class MapController extends GetxController {
     final Position? position = await getCurrentLocation();
     if (position != null) {
       currentPosition.value = LatLng(position.latitude, position.longitude);
+      // Name it, so the search pill can stop saying "Goa".
+      resolveCurrentPlace();
     } else {
       print("location permission denied");
       error.value = 'Location permission denied';
@@ -98,6 +133,7 @@ class MapController extends GetxController {
     try {
       isLoading.value = true;
       currentPosition.value = pos;
+      resolveCurrentPlace();
       await getProperties(pos.latitude, pos.longitude,
           category: category, radius: radius);
     } finally {
