@@ -42,8 +42,10 @@ class Homescreen extends StatefulWidget {
 }
 
 class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
-  int _selectedHotelIndex = -1;
-  // M4 — text category pills selection. V1 is purely visual.
+  // Which category pill is selected. 0 = "All"; anything higher indexes the
+  // API category list. This used to be paired with a second _selectedHotelIndex
+  // for the duplicate lower row, and the two could disagree about what was
+  // filtered.
   int _propertyType = 0;
   late AnimationController _animationController;
   late Timer _timer;
@@ -145,7 +147,6 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
       key: _scaffoldKey,
       // POC mobile: no opaque AppBar — the branded header floats over the map.
@@ -270,16 +271,43 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                           ),
 
                           /// 🔹 Near by button
-                          fetchNearByProperties(theme),
 
                           const SizedBox(height: 16),
 
-                          /// 🔹 M4 — Category circles
-                          TextCategoryPills(
-                            selectedIndex: _propertyType,
-                            onChanged: (i) =>
-                                setState(() => _propertyType = i),
-                          ),
+                          /// 🔹 Categories — ONE row, from the API, that filters.
+                          ///
+                          /// There used to be two category rows on this screen.
+                          /// This one showed a HARDCODED list — 'All', 'Villas',
+                          /// 'Heritage', 'Beach', 'Hills', 'Apartments', where
+                          /// Beach and Hills are not categories at all — and its
+                          /// onChanged only set a local int, so tapping it
+                          /// filtered nothing. The real categories were in a
+                          /// second "Browse by Category" row further down, with
+                          /// a SEPARATE icon map that disagreed with this one
+                          /// (a cottage was a cabin here and a cottage there).
+                          ///
+                          /// The lower row is gone and this one does the work.
+                          Obx(() {
+                            final cats = commonController
+                                    .cats.value?.data.categories ??
+                                [];
+                            if (cats.isEmpty) return const SizedBox.shrink();
+                            return TextCategoryPills(
+                              // "All" first, then whatever the platform
+                              // actually offers.
+                              categories: ['All', ...cats.map((c) => c.catTitle)],
+                              selectedIndex: _propertyType,
+                              onChanged: (i) {
+                                setState(() => _propertyType = i);
+                                if (i == 0) {
+                                  mapController.fetchProperties();
+                                } else {
+                                  final cat = cats[i - 1];
+                                  _filterByCategoryId(cat.catId, cat.catTitle);
+                                }
+                              },
+                            );
+                          }),
 
                           const SizedBox(height: 16),
 
@@ -419,52 +447,12 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                           }),
                           const SizedBox(height: 20),
 
-                          /// Browse by Category
-                          Text(
-                            "Browse by Category",
-                            style: fraunces(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              color: kInk,
-                            ),
-                          ),
+                          // The second category row lived here. It duplicated
+                          // the one at the top of this screen, with its own
+                          // icon map that disagreed with it, and the client saw
+                          // the same categories twice on one page. Folded into
+                          // the row above.
 
-                          const SizedBox(height: 20),
-
-                          // Categories come from the API, not a hardcoded
-                          // list. The previous row offered Family / Sharing /
-                          // Couple / Party / Single and resolved their ids by
-                          // NAME — none of those exist in tbl_categories any
-                          // more, and the lookup fell back to "first category"
-                          // rather than null, so every button silently
-                          // filtered by the wrong thing.
-                          SizedBox(
-                            height: 100,
-                            child: Obx(() {
-                              final cats = commonController
-                                      .cats.value?.data.categories ??
-                                  [];
-                              if (cats.isEmpty) return const SizedBox.shrink();
-                              return ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 10),
-                                itemCount: cats.length,
-                                separatorBuilder: (_, __) =>
-                                    const SizedBox(width: 20),
-                                itemBuilder: (_, i) => Reveal(
-                                  delay: Reveal.staggerDelay(i, stepMs: 35),
-                                  child: _hotelTypeBlock(
-                                    cats[i].catId,
-                                    _iconForCategory(cats[i].catTitle),
-                                    cats[i].catTitle,
-                                  ),
-                                ),
-                              );
-                            }),
-                          ),
-
-                          const SizedBox(height: 30),
 
                           /// 🔹 Action Buttons — Pre-Booking + animated LUX
                           Row(
@@ -562,42 +550,7 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
     );
   }
 
-  Padding fetchNearByProperties(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // button to relocate
-          const SizedBox(width: 10),
-          InkWell(
-            onTap: () {
-              mapController.fetchProperties();
-            },
-            child: Container(
-              height: 50,
-              width: 50,
-              decoration: BoxDecoration(
-                color: kCream,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: kLine),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Center(
-                  child: Icon(
-                    Icons.my_location,
-                    color: theme.primaryColor,
-                    size: 30,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget buildReviewList() {
     return Obx(
@@ -735,74 +688,10 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
 
   /// An icon per spec category. The web uses photography; on a phone a glyph
   /// stays legible at 64px and cannot go missing like an asset can.
-  IconData _iconForCategory(String title) {
-    final t = title.toLowerCase();
-    if (t.contains('villa')) return Icons.villa_outlined;
-    if (t.contains('apartment')) return Icons.apartment_outlined;
-    if (t.contains('cottage')) return Icons.cottage_outlined;
-    if (t.contains('farm')) return Icons.agriculture_outlined;
-    if (t.contains('heritage')) return Icons.account_balance_outlined;
-    if (t.contains('boutique')) return Icons.storefront_outlined;
-    if (t.contains('luxury')) return Icons.diamond_outlined;
-    if (t.contains('pet')) return Icons.pets_outlined;
-    return Icons.home_outlined; // Homestays, and anything added later
-  }
+
 
   /// `catId` is the real tbl_categories id, so filtering needs no name lookup.
-  Widget _hotelTypeBlock(int catId, IconData icon, String type) {
-    final selected = catId == _selectedHotelIndex;
-    return InkWell(
-      borderRadius: BorderRadius.circular(18),
-      onTap: () {
-        setState(() {
-          if (_selectedHotelIndex == catId) {
-            // Tapping the selected one clears the filter.
-            _selectedHotelIndex = -1;
-            mapController.fetchProperties();
-          } else {
-            _selectedHotelIndex = catId;
-            _filterByCategoryId(catId, type);
-          }
-        });
-      },
-      child: Column(
-        children: [
-          Container(
-            height: 64,
-            width: 64,
-            decoration: BoxDecoration(
-              color: kSurface,
-              borderRadius: BorderRadius.circular(18),
-              border: selected
-                  ? Border.all(color: kIndigo, width: 2)
-                  : null,
-              boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: kIndigo.withOpacity(0.22),
-                        blurRadius: 12,
-                        offset: const Offset(0, 5),
-                      ),
-                    ]
-                  : kSoftShadow,
-            ),
-            child: Center(
-              child: Icon(icon, size: 30, color: selected ? kIndigo : kInk2),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            type,
-            style: inter(
-              fontSize: 12.5,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              color: selected ? kIndigo : kInk2,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   /// Filter by a real category id. The old path mapped a UI index to a name,
   /// searched the API for it, and fell back to the FIRST category when the

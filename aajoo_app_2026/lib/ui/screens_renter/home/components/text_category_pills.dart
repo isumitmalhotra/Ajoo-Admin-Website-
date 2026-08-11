@@ -13,35 +13,49 @@ class TextCategoryPills extends StatelessWidget {
 
   const TextCategoryPills({
     super.key,
-    this.categories = const [
-      'All',
-      'Villas',
-      'Heritage',
-      'Beach',
-      'Hills',
-      'Apartments',
-    ],
+    // Was a hardcoded list containing 'Beach' and 'Hills', which are not
+    // categories the platform has ever offered. Callers pass the real ones;
+    // this is only what shows before they load.
+    this.categories = const ['All'],
     this.selectedIndex = 0,
     this.onChanged,
   });
 
-  // Map a backend category name to a representative icon (fallback for unknowns).
+  /// The ONLY category-icon map in the app.
+  ///
+  /// There were two. This one, and a second in homescreen.dart for the
+  /// duplicate "Browse by Category" row, and they disagreed: a cottage was a
+  /// cabin here and a cottage there, a boutique stay was a hotel here and a
+  /// storefront there. The same category drew two different icons on one
+  /// screen. That row is gone; this is the single source.
+  ///
+  /// Ordered so the nine real categories match exactly before any looser
+  /// keyword can catch them — "Luxury Stays" must not be picked up by a
+  /// generic 'stay' rule.
   static IconData _iconFor(String name) {
-    final n = name.toLowerCase();
-    if (n.contains('all') || n.contains('more')) return Icons.grid_view_rounded;
-    if (n.contains('homestay') || n == 'home') return Icons.home_outlined;
+    final n = name.toLowerCase().trim();
+
+    if (n == 'all' || n.contains('more')) return Icons.grid_view_rounded;
+
+    // The nine categories the platform actually offers.
+    if (n.contains('homestay')) return Icons.home_outlined;
     if (n.contains('villa')) return Icons.villa_outlined;
-    if (n.contains('cottage') || n.contains('cabin')) return Icons.cabin_outlined;
     if (n.contains('apart') || n.contains('flat')) return Icons.apartment_rounded;
+    if (n.contains('cottage') || n.contains('cabin')) return Icons.cottage_outlined;
     if (n.contains('farm')) return Icons.agriculture_outlined;
     if (n.contains('heritage')) return Icons.account_balance_outlined;
+    if (n.contains('boutique')) return Icons.storefront_outlined;
+    if (n.contains('luxury') || n == 'lux') return Icons.diamond_outlined;
+    if (n.contains('pet')) return Icons.pets_outlined;
+
+    // Older or ad-hoc rows that still exist in the database.
+    if (n.contains('resort')) return Icons.pool_outlined;
     if (n.contains('beach')) return Icons.beach_access_outlined;
     if (n.contains('hill') || n.contains('mountain')) return Icons.terrain_rounded;
-    if (n.contains('boutique') || n.contains('hotel')) return Icons.hotel_outlined;
-    if (n.contains('luxury') || n.contains('lux')) return Icons.diamond_outlined;
-    if (n.contains('pet')) return Icons.pets_outlined;
+    if (n.contains('hotel')) return Icons.hotel_outlined;
     if (n.contains('tree')) return Icons.park_outlined;
     if (n.contains('pg') || n.contains('hostel')) return Icons.meeting_room_outlined;
+
     return Icons.holiday_village_outlined;
   }
 
