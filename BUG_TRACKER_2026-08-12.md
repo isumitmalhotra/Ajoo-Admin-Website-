@@ -221,25 +221,25 @@ platforms is not done when one side ships.
 - [ ] **A-5** Phone number verification missing
 - [ ] **A-6** Fix the google sign in the login page
 - [ ] **A-7** signup with google is missing when new account create
-- [ ] **A-8** When i signup my account without OTP my account is generated / but gave me error
-- [ ] **A-9** Signup is not done i recieved the email that my account is created and complete the profile
+- [x] **A-8** ✅ When i signup my account without OTP my account is generated / but gave me error — *same root cause as A-10: the verify screen only accepted 4 digits, so the emailed 6-digit code could never be entered. Account created, code sent, screen unusable.*
+- [x] **A-9** ✅ Signup is not done i recieved the email that my account is created — *same cause as A-8/A-10.*
 
 **Forget**
 
-- [ ] **A-10** When i Forgot the password in the screen it shows 4 digit to fill and when i recieved the email there shows the 6 digit
+- [x] **A-10** ✅ Forgot password shows 4 digits, email sends 6 — *🔴 ROOT CAUSE. Server raised generateOtp to 6 digits; app never updated. Four call sites had `length: 4` + validation demanding exactly 4. Signup verification was broken the same way.*
 - [ ] **A-11** Phone No forgot Password is missing
 - [ ] **A-12** Fix all the Forgot System
 
 **Renter**
 
 - [ ] **A-13** Show Properties in maps as per current location
-- [ ] **A-14** Show Current Loaction instead of Goa
+- [x] **A-14** ✅ Show Current Location instead of Goa — *search pill hardcoded to "Goa" while listings were already fetched around real coordinates. Now resolved via the platform geocoder; "Nearby" until it answers.*
 - [ ] **A-15** Add notifiaction icon on the top right instead of profile icon
 
 **This week tab**
 
-- [ ] **A-16** Show current real data in the tab
-- [ ] **A-17** 18 new property also in real time
+- [x] **A-16** ✅ Show current real data in the tab — *card rendered hardcoded "1,240 verified homes"; now the real nearby count and place.*
+- [x] **A-17** ✅ 18 new property also in real time — *"18 new in Goa this week" was a hardcoded default. Nothing reports it, so it is removed rather than guessed.*
 - [ ] **A-18** remove the reloctor button and fix into the app
 
 **Browser by cat.**
