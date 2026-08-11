@@ -15,7 +15,22 @@ import 'package:rent_home/utils/fonts.dart';
 class HomeBlogStrip extends StatefulWidget {
   final VoidCallback? onSeeAll;
   final ValueChanged<BlogPost>? onOpen;
-  const HomeBlogStrip({super.key, this.onSeeAll, this.onOpen});
+
+  /// How many posts to show. The home screen wants five; the property page
+  /// wants three beside everything else on it.
+  final int max;
+
+  /// The property page calls the same strip "From the blog" too, so this only
+  /// exists to keep both callers on one widget rather than growing a copy.
+  final String title;
+
+  const HomeBlogStrip({
+    super.key,
+    this.onSeeAll,
+    this.onOpen,
+    this.max = 5,
+    this.title = 'From the blog',
+  });
 
   @override
   State<HomeBlogStrip> createState() => _HomeBlogStripState();
@@ -33,7 +48,7 @@ class _HomeBlogStripState extends State<HomeBlogStrip> {
   }
 
   Future<void> _load() async {
-    final list = await _service.getBlogs(limit: 5);
+    final list = await _service.getBlogs(limit: widget.max);
     if (!mounted) return;
     _posts.assignAll(list);
     _loading.value = false;
@@ -49,7 +64,7 @@ class _HomeBlogStripState extends State<HomeBlogStrip> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SectionHeader(
-            title: 'From the blog',
+            title: widget.title,
             onSeeAll: widget.onSeeAll,
           ),
           const SizedBox(height: 10),

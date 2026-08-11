@@ -1,3 +1,6 @@
+import 'package:rent_home/ui/screens_renter/property_details/components/property_tabs.dart';
+import 'package:rent_home/ui/screens_renter/blog/blog_screens.dart';
+import 'package:rent_home/ui/screens_renter/home/components/home_blog_strip.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/cupertino.dart';
@@ -118,6 +121,9 @@ class _PropertyPageState extends State<PropertyPage>
   /// already gave us so the rating does not flicker in on load.
   double? get _rating => _single?.rating ?? widget.property.rating;
   int get _reviewCount => _single?.reviewCount ?? widget.property.reviewCount;
+
+  /// Which of the seven sections is open (A-29/A-30/A-31).
+  PropertyTab _tab = PropertyTab.about;
 
   @override
   void initState() {
@@ -1309,43 +1315,6 @@ class _PropertyPageState extends State<PropertyPage>
     );
   }
 
-  Widget _buildTags() {
-    final List<String> tags = _single?.tags != null
-        ? _single!.tags!
-            .map((e) => e is Map
-                ? (e['tag_name']?.toString() ?? e.toString())
-                : e.toString())
-            .toList()
-        : (widget.property.tags ?? []);
-
-    if (tags.isEmpty) return const SizedBox.shrink();
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: tags.map((t) {
-          return Container(
-            margin: const EdgeInsets.only(right: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.orange.withOpacity(0.3)),
-            ),
-            child: Text(
-              t,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
   @override
   void dispose() {
     _animationController.dispose();
@@ -1477,7 +1446,11 @@ class _PropertyPageState extends State<PropertyPage>
                       // the number 164 typed into the layout.
                       Row(
                         children: [
-                          if (_single?.isVerify == true) ...[
+                          // A-27 — driven by verification_status. This read
+                          // isVerify, which is 1 on 29,229 of the 29,232 live
+                          // listings, so the pill appeared on every stay
+                          // nobody had reviewed.
+                          if (_single?.isVerified == true) ...[
                             const VerifiedPill(),
                             const SizedBox(width: 12),
                           ],
@@ -1506,10 +1479,11 @@ class _PropertyPageState extends State<PropertyPage>
                       ),
                       const SizedBox(height: 16),
                       // "Aajoo Verified Home" trust card — only for listings
-                      // admin has actually verified. It used to render for
-                      // every property, so an unvetted listing advertised
-                      // itself as checked for quality, safety and hygiene.
-                      if (_single?.isVerify == true)
+                      // admin has actually verified. Gating this on isVerify
+                      // was no gate at all (see above): the card claiming a
+                      // listing was checked for quality, safety and hygiene
+                      // showed on all 29,219 that had not been.
+                      if (_single?.isVerified == true)
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
@@ -1555,200 +1529,20 @@ class _PropertyPageState extends State<PropertyPage>
                         const SizedBox(height: 20),
                       ],
                       const Divider(color: kLine, height: 1),
-                      const SizedBox(height: 16),
-                      Text(
-                        "Property Description",
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      Text(
-                        _single?.propertyDesc ?? widget.description,
-                        style: theme.textTheme.bodyLarge,
+                      const SizedBox(height: 12),
+                      // A-29/A-30/A-31 — the seven sections as tabs, matching
+                      // the website. Everything below this used to render at
+                      // once down one very long scroll.
+                      PropertyTabBar(
+                        active: _tab,
+                        reviewCount: _reviewCount,
+                        onChanged: (t) => setState(() => _tab = t),
                       ),
                       const SizedBox(height: 16),
-                      Text(
-                        "Check In/Out Time",
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          Text(
-                            _single?.propDetails?.inTime ?? "Not Available",
-                            style: theme.textTheme.bodyLarge,
-                          ),
-                          const SizedBox(width: 4),
-                          const Text("•"),
-                          const SizedBox(width: 4),
-                          Text(
-                            _single?.propDetails?.outTime ?? "Not Available",
-                            style: theme.textTheme.bodyLarge,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // _buildAmenities prints its own "Amenities" heading, so
-                      // a second one here rendered the word twice, stacked.
-                      _buildAmenities(),
-                      const SizedBox(height: 16),
-                      Text(
-                        "Host Details",
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      // The host, and the listing's published contact — clearly
-                      // separated. This block used to print the property's
-                      // phone number in bold where a name belongs, under a
-                      // stock photo hotlinked from Google's image cache, with
-                      // the property email beneath it as "Not Available".
-                      Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(bottom: 2),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 26,
-                                  backgroundColor: kIndigo,
-                                  backgroundImage: (_host?.image != null)
-                                      ? CachedNetworkImageProvider(_host!.image!)
-                                      : null,
-                                  child: (_host?.image == null)
-                                      ? Text(
-                                          (_host?.name ?? 'H')
-                                              .trim()
-                                              .characters
-                                              .first
-                                              .toUpperCase(),
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 20,
-                                          ),
-                                        )
-                                      : null,
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        _host?.name ?? 'Your host',
-                                        style: context.textTheme.bodyMedium
-                                            ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Text(
-                                        _host?.subtitle ??
-                                            'Verified Aajoo host',
-                                        style: context.textTheme.bodySmall
-                                            ?.copyWith(
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if ((_single?.propertyContact ??
-                                    widget.property.propertyContact) !=
-                                null) ...[
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Icon(Icons.call_outlined,
-                                      size: 16, color: Colors.grey[600]),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Listing contact: '
-                                    '${_single?.propertyContact ?? widget.property.propertyContact}',
-                                    style: context.textTheme.bodySmall
-                                        ?.copyWith(color: Colors.grey[700]),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Property Rules",
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(top: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  widget.property
-                                              .propDetailsPropDetailIsPetFriendly ==
-                                          true
-                                      ? Icons.check_circle
-                                      : Icons.cancel,
-                                  color: widget.property
-                                              .propDetailsPropDetailIsPetFriendly ==
-                                          true
-                                      ? Colors.green
-                                      : Colors.red,
-                                ),
-                                const SizedBox(width: 8),
-                                const Text("Pet Friendly"),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(
-                                  widget.property
-                                              .propDetailsPropDetailIsSmoke ==
-                                          true
-                                      ? Icons.check_circle
-                                      : Icons.cancel,
-                                  color: widget.property
-                                              .propDetailsPropDetailIsSmoke ==
-                                          true
-                                      ? Colors.green
-                                      : Colors.red,
-                                ),
-                                const SizedBox(width: 8),
-                                const Text("Smoking Allowed"),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
+                      _buildTabPanel(theme),
+                      const SizedBox(height: 24),
+                      // A-33 — the gallery sits below the panels, so it is
+                      // reachable whichever section is open.
                       Text(
                         "Gallery",
                         style: theme.textTheme.labelLarge?.copyWith(
@@ -1758,18 +1552,13 @@ class _PropertyPageState extends State<PropertyPage>
                       ),
                       const SizedBox(height: 8),
                       _buildImageGallery(),
-                      const SizedBox(height: 16),
-                      Text(
-                        "Tags",
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
+                      const SizedBox(height: 24),
+                      // A-36 — the blog, from the property page.
+                      HomeBlogStrip(
+                        max: 3,
+                        title: 'From the blog',
+                        onSeeAll: () => Get.to(() => const BlogListScreen()),
                       ),
-                      const SizedBox(height: 8),
-                      _buildTags(),
-                      const SizedBox(height: 16),
-                      _buildReviews(),
                       const SizedBox(height: 90),
                     ],
                   ),
@@ -2213,137 +2002,255 @@ Book now: https://aajoo.com/property/${widget.id}
     );
   }
 
-  Widget _buildAmenities() {
-    // Check if property has amenities data
-    if (widget.property.amenities != null &&
-        widget.property.amenities!.isNotEmpty) {
-      return Column(
+  /// The open section. Only one renders — that is the point of the change.
+  Widget _buildTabPanel(ThemeData theme) {
+    switch (_tab) {
+      case PropertyTab.about:
+        return _panelAbout(theme);
+      case PropertyTab.amenities:
+        return _panelAmenities();
+      case PropertyTab.rules:
+        return _panelRules();
+      case PropertyTab.location:
+        return _panelLocation();
+      case PropertyTab.experiences:
+        return _buildReviews();
+      case PropertyTab.host:
+        return _panelHost();
+      case PropertyTab.policies:
+        return _panelPolicies();
+    }
+  }
+
+  Widget _panelAbout(ThemeData theme) {
+    final desc = (_single?.propertyDesc ?? widget.description).trim();
+    final inTime = _single?.propDetails?.inTime;
+    final outTime = _single?.propDetails?.outTime;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const PanelTitle('About this stay'),
+        if (desc.isEmpty)
+          const PanelEmpty("The host hasn't written a description yet.")
+        else
+          Text(desc, style: inter(fontSize: 14, color: kInk, height: 1.65)),
+        if (inTime != null || outTime != null) ...[
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              const Icon(Icons.schedule_outlined, size: 18, color: kIndigo600),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  [
+                    if (inTime != null) 'Check-in from $inTime',
+                    if (outTime != null) 'Check-out by $outTime',
+                  ].join(' · '),
+                  style: inter(fontSize: 13.5, color: kInk),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _panelAmenities() {
+    // Real amenities only. _buildAmenities falls back to the global tag list
+    // when a listing has none, which puts somebody else's tags under this
+    // stay's "Amenities" heading.
+    final list = _single?.amenities ?? widget.property.amenities;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const PanelTitle('What this place offers'),
+        if (list == null || list.isEmpty)
+          const PanelEmpty("The host hasn't listed amenities for this stay yet.")
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: list
+                .map((a) => Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: kIndigo50,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.check_circle_outline,
+                              size: 15, color: kIndigo600),
+                          const SizedBox(width: 6),
+                          Text(a.toString(),
+                              style: inter(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: kIndigo600)),
+                        ],
+                      ),
+                    ))
+                .toList(),
+          ),
+      ],
+    );
+  }
+
+  Widget _panelRules() {
+    final legacyPet = (_single?.propDetails?.isPetFriendly ??
+            widget.property.propDetailsPropDetailIsPetFriendly) ==
+        true;
+    final legacySmoke = (_single?.propDetails?.isSmoke ??
+            widget.property.propDetailsPropDetailIsSmoke) ==
+        true;
+    final lines = buildRuleLines(
+      rules: _single?.houseRules,
+      checkIn: _single?.propDetails?.inTime,
+      checkOut: _single?.propDetails?.outTime,
+      legacyPetFriendly: legacyPet,
+      legacySmoking: legacySmoke,
+      hasLegacyFlags: _single != null,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const PanelTitle('House rules'),
+        if (lines.isEmpty)
+          const PanelEmpty(
+              "The host hasn't published house rules for this stay.")
+        else
+          ...lines,
+      ],
+    );
+  }
+
+  Widget _panelLocation() {
+    final lat = double.tryParse(
+        _single?.propertyLatitude ?? widget.property.propertyLatitude);
+    final lng = double.tryParse(
+        _single?.propertyLongitude ?? widget.property.propertyLongitude);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const PanelTitle("Where you'll be"),
+        Row(
+          children: [
+            const Icon(Icons.location_on_outlined, size: 16, color: kMuted),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(widget.location,
+                  style: inter(fontSize: 13, color: kMuted)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        PropertyAreaMap(lat: lat, lng: lng),
+        NearbySection(groups: _single?.nearby ?? const []),
+      ],
+    );
+  }
+
+  Widget _panelHost() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: kLine),
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Property-specific amenities
-          _buildPropertyDataSection("Amenities", widget.property.amenities!),
-          const SizedBox(height: 16),
-
-          // Property categories if available
-          if (widget.property.categories != null &&
-              widget.property.categories!.isNotEmpty) ...[
-            _buildPropertyDataSection(
-                "Categories", widget.property.categories!),
-            const SizedBox(height: 16),
-          ],
-
-          // Property tags if available
-          if (widget.property.tags != null && widget.property.tags!.isNotEmpty)
-            _buildPropertyDataSection("Tags", widget.property.tags!),
-        ],
-      );
-    }
-
-    // Fallback to common tags if no property-specific data
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: List.generate(
-            commonController.tags.value?.data.tags.length ?? 0, (index) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 3.0),
-            child: Chip(
-              shape: RoundedRectangleBorder(
-                side: BorderSide(
-                  color: Colors.orange.shade100,
-                  width: 1.5,
-                ),
-                borderRadius: const BorderRadius.all(Radius.circular(60)),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: kIndigo,
+                backgroundImage: (_host?.image != null)
+                    ? CachedNetworkImageProvider(_host!.image!)
+                    : null,
+                child: (_host?.image == null)
+                    ? Text(
+                        (_host?.name ?? 'H').trim().characters.first.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      )
+                    : null,
               ),
-              backgroundColor: Colors.orange.shade100,
-              label: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 0.0),
-                child: Text(
-                  commonController.tags.value!.data.tags[index].tagName
-                      .toString()
-                      .capitalize!,
-                  style: TextStyle(
-                    color: Colors.orange.shade900,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Hosted by ${_host?.name ?? 'your host'}',
+                        style: inter(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w700,
+                            color: kInk)),
+                    const SizedBox(height: 2),
+                    Text(_host?.subtitle ?? 'Aajoo host',
+                        style: inter(fontSize: 12, color: kMuted)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if ((_single?.propertyContact ?? widget.property.propertyContact) !=
+              null) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(Icons.call_outlined, size: 16, color: kMuted),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Listing contact: '
+                    '${_single?.propertyContact ?? widget.property.propertyContact}',
+                    style: inter(fontSize: 12.5, color: kMuted),
                   ),
                 ),
-              ),
+              ],
             ),
-          );
-        }),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _buildPropertyDataSection(String title, List<dynamic> items) {
+  Widget _panelPolicies() {
+    final inTime = _single?.propDetails?.inTime;
+    final outTime = _single?.propDetails?.outTime;
+    final security = _single?.propDetails?.monthlySecurity;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey[800],
+        const PanelTitle('Policies'),
+        // The cancellation terms the booking sheet already shows, repeated
+        // here because this is where a guest looks for them.
+        const RuleLine(
+            ok: true,
+            text: 'Free cancellation up to 48 hours before check-in.'),
+        if (inTime != null || outTime != null)
+          RuleLine(
+            ok: true,
+            text: [
+              if (inTime != null) 'Check-in $inTime',
+              if (outTime != null) 'Check-out $outTime',
+            ].join(' · '),
           ),
-        ),
-        const SizedBox(height: 8),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: items.map<Widget>((item) {
-              String displayName = '';
-              // Brand palette. These were Material blue / green / purple —
-              // the pre-redesign theme leaking through, so amenity chips read
-              // blue and tag chips purple on an otherwise teal-and-clay page.
-              Color chipColor = kIndigo50;
-              Color textColor = kIndigo600;
-
-              // Handle different data structures
-              if (item is Map<String, dynamic>) {
-                // Extract name from different possible fields
-                displayName = item['name']?.toString() ??
-                    item['title']?.toString() ??
-                    item['amenity_name']?.toString() ??
-                    item['category_name']?.toString() ??
-                    item['tag_name']?.toString() ??
-                    'Unknown';
-              } else {
-                displayName = item.toString();
-              }
-
-              // Tags get the accent tint so the three groups stay separable
-              // without leaving the palette.
-              if (title == 'Tags') {
-                chipColor = kClay.withOpacity(0.14);
-                textColor = kClay600;
-              }
-
-              return Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: Chip(
-                  shape: RoundedRectangleBorder(
-                    side: BorderSide(
-                      color: chipColor,
-                      width: 1.5,
-                    ),
-                    borderRadius: const BorderRadius.all(Radius.circular(20)),
-                  ),
-                  backgroundColor: chipColor,
-                  label: Text(
-                    displayName.capitalize ?? displayName,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
+        if (security != null && security.isNotEmpty && security != '0')
+          RuleLine(ok: true, text: 'Security deposit ₹$security'),
+        const RuleLine(
+            ok: true, text: 'Secure payment via trusted gateways.'),
+        const RuleLine(
+            ok: true, text: 'Price negotiable — send the host an offer.'),
       ],
     );
   }

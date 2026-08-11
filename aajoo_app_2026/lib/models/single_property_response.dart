@@ -45,10 +45,25 @@ class SinglePropertyData {
   final String? propertyContact;
   final String? propertyEmail;
   final bool? isActive;
-  /// Whether admin has verified this listing. The detail page shows an "Aajoo
-  /// Verified Home" trust card, which was unconditional — every listing, vetted
-  /// or not, claimed to be verified for quality, safety and hygiene.
+  /// Legacy flag. Kept because other screens still read it, but do NOT gate the
+  /// verified badge on it: it is 1 on 29,229 of the 29,232 live listings, so
+  /// the "Aajoo Verified Home" card it used to guard appeared on every listing
+  /// nobody had reviewed. Use [isVerified] instead.
   final bool? isVerify;
+
+  /// "verified" | "unverified" | "draft" — the column admin verification
+  /// actually writes. Ten listings are verified today.
+  final String? verificationStatus;
+
+  /// Distances the host entered at listing time (airport, hospital, bus stand…).
+  /// Empty for every listing created before the listing wizard, which is nearly
+  /// all of them — an empty list means "the host didn't say", never
+  /// "there is nothing nearby", so the section hides rather than showing zeros.
+  final List<NearbyGroup> nearby;
+
+  /// Structured house rules from the listing wizard, or null when the host
+  /// never filled them in (the legacy pet/smoking flags carry it then).
+  final PropertyHouseRules? houseRules;
   /// Real average rating and review count from the backend aggregate; null
   /// rating means nobody has reviewed this stay yet.
   final double? rating;
@@ -79,6 +94,9 @@ class SinglePropertyData {
     this.propertyEmail,
     this.isActive,
     this.isVerify,
+    this.verificationStatus,
+    this.nearby = const [],
+    this.houseRules,
     this.rating,
     this.reviewCount = 0,
     this.isLuxury,
@@ -136,6 +154,18 @@ class SinglePropertyData {
       propertyEmail: json['property_email'],
       isActive: json['is_active'],
       isVerify: json['is_verify'] == true || json['is_verify'] == 1,
+      verificationStatus: json['verification_status']?.toString(),
+      nearby: (json['nearby'] is List)
+          ? (json['nearby'] as List)
+              .whereType<Map>()
+              .map((e) => NearbyGroup.fromJson(Map<String, dynamic>.from(e)))
+              .where((g) => g.places.isNotEmpty)
+              .toList()
+          : const [],
+      houseRules: json['houseRules'] is Map
+          ? PropertyHouseRules.fromJson(
+              Map<String, dynamic>.from(json['houseRules'] as Map))
+          : null,
       rating: json['rating'] == null
           ? null
           : double.tryParse(json['rating'].toString()),
@@ -153,6 +183,9 @@ class SinglePropertyData {
           : null,
     );
   }
+
+  /// A-27 — the only honest source for the verified badge.
+  bool get isVerified => (verificationStatus ?? '').toLowerCase() == 'verified';
 
   // Helper method to safely parse integers from various types
   static int? _parseIntSafely(dynamic value) {
@@ -269,4 +302,105 @@ class SinglePropertyDetails {
       'propDetail_monthly_security': monthlySecurity,
     };
   }
+}
+
+/// One nearby category ("Transport") and the places under it, as
+/// GET /properties/:id returns them. Distances are in kilometres.
+class NearbyGroup {
+  final String key;
+  final String label;
+  final List<NearbyPlace> places;
+
+  const NearbyGroup({
+    required this.key,
+    required this.label,
+    required this.places,
+  });
+
+  factory NearbyGroup.fromJson(Map<String, dynamic> json) => NearbyGroup(
+        key: (json['key'] ?? '').toString(),
+        label: (json['label'] ?? '').toString(),
+        places: (json['places'] is List)
+            ? (json['places'] as List)
+                .whereType<Map>()
+                .map((e) => NearbyPlace.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
+            : const [],
+      );
+}
+
+class NearbyPlace {
+  final String place;
+  final String slug;
+  final double km;
+
+  const NearbyPlace({required this.place, required this.slug, required this.km});
+
+  factory NearbyPlace.fromJson(Map<String, dynamic> json) => NearbyPlace(
+        place: (json['place'] ?? '').toString(),
+        slug: (json['slug'] ?? '').toString(),
+        km: double.tryParse('${json['km']}') ?? 0,
+      );
+
+  /// "600 m" reads better than "0.6 km" and is what the spec asks for.
+  String get distanceLabel =>
+      km < 1 ? '${(km * 1000).round()} m' : '${km.toStringAsFixed(km == km.roundToDouble() ? 0 : 1)} km';
+}
+
+/// House rules from the listing wizard.
+///
+/// Every flag is nullable and null means the host never answered — which is
+/// NOT the same as "no". A null is left out of the list rather than rendered
+/// as a red cross against a rule the host never considered.
+class PropertyHouseRules {
+  final bool? petsAllowed;
+  final double? petFee;
+  final bool? smoking;
+  final bool? alcohol;
+  final bool? visitors;
+  final bool? parties;
+  final bool? loudMusic;
+  final bool? commercialShoot;
+  final bool? cookingAllowed;
+  final bool? selfCheckin;
+  final bool? caretakerAvailable;
+  final String? quietHours;
+  final bool? damageDeposit;
+
+  const PropertyHouseRules({
+    this.petsAllowed,
+    this.petFee,
+    this.smoking,
+    this.alcohol,
+    this.visitors,
+    this.parties,
+    this.loudMusic,
+    this.commercialShoot,
+    this.cookingAllowed,
+    this.selfCheckin,
+    this.caretakerAvailable,
+    this.quietHours,
+    this.damageDeposit,
+  });
+
+  static bool? _b(dynamic v) => v == null ? null : (v == true || v == 1);
+
+  factory PropertyHouseRules.fromJson(Map<String, dynamic> json) =>
+      PropertyHouseRules(
+        petsAllowed: _b(json['petsAllowed']),
+        petFee: json['petFee'] == null
+            ? null
+            : double.tryParse('${json['petFee']}'),
+        smoking: _b(json['smoking']),
+        alcohol: _b(json['alcohol']),
+        visitors: _b(json['visitors']),
+        parties: _b(json['parties']),
+        loudMusic: _b(json['loudMusic']),
+        commercialShoot: _b(json['commercialShoot']),
+        cookingAllowed: _b(json['cookingAllowed']),
+        selfCheckin: _b(json['selfCheckin']),
+        caretakerAvailable: _b(json['caretakerAvailable']),
+        quietHours: json['quietHours']?.toString(),
+        damageDeposit: _b(json['damageDeposit']),
+      );
 }

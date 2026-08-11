@@ -1,0 +1,11 @@
+name: ionicons
+description: Local shim for Ionicons to avoid IconData subclassing.
+version: 0.0.1
+publish_to: 'none'
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter

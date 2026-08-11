@@ -18,6 +18,7 @@ import 'package:rent_home/ui/screens_renter/home/components/search_pill.dart';
 import 'package:rent_home/ui/screens_renter/home/components/search_sheet.dart';
 import 'package:rent_home/ui/screens_renter/home/components/text_category_pills.dart';
 import 'package:rent_home/ui/screens_renter/home/components/home_faq_strip.dart';
+import 'package:rent_home/ui/screens_renter/blog/blog_screens.dart';
 import 'package:rent_home/ui/screens_renter/home/components/home_blog_strip.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/ui/screens_renter/home/components/property_slider.dart';
@@ -537,7 +538,13 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                           /// — that is the dead-control bug this sheet reports
                           /// elsewhere. The strip reads, and the handlers go in
                           /// with the blog screen (S0-BLOG-1).
-                          const HomeBlogStrip(),
+                          // "See all" and the cards had nowhere to go until
+                          // the blog screens existed.
+                          HomeBlogStrip(
+                            onSeeAll: () => Get.to(() => const BlogListScreen()),
+                            onOpen: (post) =>
+                                Get.to(() => BlogPostScreen(post: post)),
+                          ),
 
                           const SizedBox(height: 24),
 
