@@ -287,6 +287,16 @@ platforms is not done when one side ships.
 - [x] **A-49** Confirmed page: Get Directions icon + map in the app → **new `BookingConfirmedScreen` with stay dates, amount, paid-vs-due, and an in-app map with Get Directions. Coordinates now come from the detail payload — the widget's string params are empty on some callers, which is how Get Directions launched Maps at 0,0.**
 - [x] **A-50** Ongoing page missing the map → **same `StayMap` widget inline. It had a button that made a second request just to fetch coordinates and then threw the guest out to Google Maps; the coordinates were in the payload all along and the model was discarding them.**
 
+### LUX mode & Pre-booking (Aug 08-26 App, batch of 2026-08-12) — app only
+- [x] **A-51** LUX needs its own colours, icons and animations → **`lux_theme.dart`: near-black + gold against standard's Warm Ivory + teal, gold section rules, filled-icon swap, slower motion curve, gold-edged cards. Kept off the global `k*` tokens on purpose — ~88 files read those.**
+- [x] **A-52** A loader that shows LUX → **gold LUX wordmark under a sweeping arc with a sheen crossing the letters; replaces the grey shimmer whenever LUX is on.**
+- [x] **A-53** LUX page felt identical to standard → **the switch dialog is now dressed for the direction of travel, and entering LUX holds the LUX loader over the screen until the luxury listings land, so it never flashes the standard page mid-switch. Both screens used a bare Material AlertDialog before.**
+- [x] **A-54** Pre-booking: current location editable, like home → **was a FutureBuilder that reverse-geocoded on every rebuild and could not be changed. Now the home screen's pill + destination search.**
+- [x] **A-55** Browse by category → homestays/villas, drop single/couple → **real property types from the API, same source as home. Was five hardcoded tiles (Family/Sharing/Couple/Party/Single) whose filter matched category titles three of them didn't correspond to. `couple`/`party`/`Resort` hidden from browse on BOTH screens via one shared set — hidden, not deleted: 10 live properties are tagged with them.**
+- [x] **A-56** LUX button top right with the search → **the home screen's animated toggle. Was a hand-rolled pill on `theme.primaryColor` using an asset literally named `diamond .png`.**
+- [x] **A-57/A-58** Area sliders, 10–12 properties each → **Shimla, Kufri, Mohali, Panchkula, Kharar, Chandigarh; loaded in parallel. Filtered on `area` (address) not `city` — exact city match returns 1 for Mohali and 0 for Chandigarh, vs 48 and 51 by address. Verified on production: five rails return a full twelve. ⚠️ **Kufri has no listings on the platform**, so its rail hides itself until it does.**
+- [x] **A-59** Check-in / check-out on pre-booking → **there was no date input at all. Dates carry into the property page via its existing dealFrom/dealTo input, so the stay is priced on arrival.**
+
 **Reserve Page**
 
 - [ ] **A-37** View Details: Booking shows Daily weekly monthly/// Mention instead of daily, pernight and monthly remove weekly
