@@ -240,12 +240,12 @@ platforms is not done when one side ships.
 
 - [x] **A-16** ✅ Show current real data in the tab — *card rendered hardcoded "1,240 verified homes"; now the real nearby count and place.*
 - [x] **A-17** ✅ 18 new property also in real time — *"18 new in Goa this week" was a hardcoded default. Nothing reports it, so it is removed rather than guessed.*
-- [ ] **A-18** remove the reloctor button and fix into the app
+- [x] **A-18** ✅ remove the relocator button — *a standalone 50×50 `my_location` button sat mid-feed whose only job was to re-run the property fetch. That is what pull-to-refresh and the map's own controls do.*
 
 **Browser by cat.**
 
-- [ ] **A-19** Show all the icon that show below and only 1 time remove from below and add these into one where 1st fix
-- [ ] **A-20** Fix all the cat. icons a
+- [x] **A-19** ✅ one category row, not two — *🔴 The two rows were NOT duplicates: the top was a **hardcoded** list (incl. 'Beach'/'Hills', which aren't categories) that **filtered nothing**; the bottom had the real API categories and did the work. Top row now takes the API list and filters; bottom deleted along with its helpers and a parallel `_selectedHotelIndex`.*
+- [x] **A-20** ✅ Fix all the cat. icons — *there were **two icon maps** that disagreed (cottage→cabin vs cottage; boutique→hotel vs storefront), so one category drew two different icons on one screen. Consolidated to one, ordered so the nine real categories match before looser keywords. **Note:** three icons will still look wrong until `Resort`/`couple`/`party` are purged — that is A-52, a data fix.*
 - [ ] **A-21** Fix the Pre Booking & Lux Buttoon Below the Browse by Cat.
 
 **Properties in your current locations**
