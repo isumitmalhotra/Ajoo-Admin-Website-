@@ -372,10 +372,21 @@ class _AuthPageState extends State<AuthPage> {
                           )),
                     ),
 
-                    // "Continue with Google" — only on the login tab. Sign-up
-                    // collects KYC and other details Google cannot supply, so
-                    // offering it there would strand the user mid-flow.
-                    if (isLogin) ...[
+                    // "Continue with Google" — on BOTH tabs.
+                    //
+                    // It used to be login-only, on the reasoning that sign-up
+                    // collects KYC which Google cannot supply. But the server
+                    // already handles exactly that: /user/auth/google CREATES
+                    // the account when it does not exist, marks it verified
+                    // (Google has proven the address, so our OTP step has
+                    // nothing left to establish) and returns the list of
+                    // profile gaps to fill in later.
+                    //
+                    // So Google sign-up worked the whole time — it was simply
+                    // unreachable from the tab where someone creating an account
+                    // would look for it, which is what "signup with google is
+                    // missing when new account create" describes.
+                    ...[
                       const SizedBox(height: 18),
                       Row(children: [
                         Expanded(child: Divider(color: kMuted.withOpacity(.3))),
@@ -415,7 +426,10 @@ class _AuthPageState extends State<AuthPage> {
                                   width: 18,
                                   errorBuilder: (_, __, ___) =>
                                       const SizedBox.shrink()),
-                              label: Text('Continue with Google',
+                              label: Text(
+                                  isLogin
+                                      ? 'Continue with Google'
+                                      : 'Sign up with Google',
                                   style: inter(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600)),
