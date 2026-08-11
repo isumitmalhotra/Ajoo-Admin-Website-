@@ -219,8 +219,8 @@ platforms is not done when one side ships.
 **Sign up**
 
 - [ ] **A-5** Phone number verification missing
-- [ ] **A-6** Fix the google sign in the login page
-- [ ] **A-7** signup with google is missing when new account create
+- [~] **A-6** Fix the google sign in the login page — *⚠️ NO DEFECT FOUND. Package name, BOTH keystore SHA-1s, serverClientId and the backend all verified correct 2026-08-11. Errors are now named instead of showing raw PlatformException codes. Most likely remaining cause: a **Play Store build**, whose App Signing SHA-1 must be added to Firebase separately.*
+- [~] **A-7** signup with google is missing when new account create — *⚠️ NOT A BUG — deliberately omitted (signup collects KYC Google can't supply). Becomes possible only if A-82/A-83 land. **Blocked on that decision.***
 - [x] **A-8** ✅ When i signup my account without OTP my account is generated / but gave me error — *same root cause as A-10: the verify screen only accepted 4 digits, so the emailed 6-digit code could never be entered. Account created, code sent, screen unusable.*
 - [x] **A-9** ✅ Signup is not done i recieved the email that my account is created — *same cause as A-8/A-10.*
 
@@ -234,7 +234,7 @@ platforms is not done when one side ships.
 
 - [ ] **A-13** Show Properties in maps as per current location
 - [x] **A-14** ✅ Show Current Location instead of Goa — *search pill hardcoded to "Goa" while listings were already fetched around real coordinates. Now resolved via the platform geocoder; "Nearby" until it answers.*
-- [ ] **A-15** Add notifiaction icon on the top right instead of profile icon
+- [x] **A-15** ✅ Add notification icon on the top right instead of profile icon — *was a person icon, tooltipped "Profile", on a callback named onProfileTap, that opened NotificationsScreen.*
 
 **This week tab**
 
@@ -333,8 +333,8 @@ platforms is not done when one side ships.
 
 - [ ] **A-70** Instaed of Transacation show negaoation tab where user can find all the negioataion
 - [ ] **A-71** Show 4-5 trancation only below show the FAQ
-- [ ] **A-72** total booking is not working show the graph weekly and monthly bookings to the host
-- [ ] **A-73** ongoing stays/property /buttons are not working
+- [x] **A-72** ✅ total booking + weekly/monthly graph — *count loads fine; the tile was inert (A-73). New BookingsTrendCard built from booking history already loaded — no new endpoint.*
+- [x] **A-73** ✅ ongoing stays / property / buttons not working — *all four dashboard tiles were plain Containers with no tap handler. Each now opens the screen it describes.*
 - [ ] **A-74** Check more nesscary points that we can show in the host dashboard
 - [ ] **A-75** Support //// Messeages insetad of the support
 - [ ] **A-76** In the messeage show the aajoo support button on top and other user cionverstaion below
