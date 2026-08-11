@@ -1,5 +1,4 @@
 import 'dart:async';
-import '../../motion/aajoo_motion.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -12,14 +11,16 @@ import 'package:rent_home/controller/search_controller.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/ui/screens_renter/home/components/branded_header.dart';
-import 'package:rent_home/ui/screens_renter/home/components/curated_card.dart';
 import 'package:rent_home/ui/screens_renter/home/components/curated_grid_shimmer.dart';
 import 'package:rent_home/ui/screens_renter/home/components/lux_toggle_button.dart';
 import 'package:rent_home/ui/screens_renter/home/components/filter_dialog_content.dart';
 import 'package:rent_home/ui/screens_renter/home/components/search_pill.dart';
 import 'package:rent_home/ui/screens_renter/home/components/search_sheet.dart';
-import 'package:rent_home/ui/screens_renter/home/components/section_header.dart';
 import 'package:rent_home/ui/screens_renter/home/components/text_category_pills.dart';
+import 'package:rent_home/ui/screens_renter/home/components/home_faq_strip.dart';
+import 'package:rent_home/ui/screens_renter/home/components/home_blog_strip.dart';
+import 'package:rent_home/data/models/properties_response_model.dart';
+import 'package:rent_home/ui/screens_renter/home/components/property_slider.dart';
 import 'package:rent_home/ui/screens_renter/home/components/weekly_hero_card.dart';
 import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';
 import 'package:rent_home/ui/screens_renter/home/map/map_screen.dart';
@@ -311,149 +312,10 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
 
                           const SizedBox(height: 16),
 
-                          /// 🔹 Trust bar (new design)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 14, horizontal: 6),
-                            decoration: BoxDecoration(
-                                color: kCream,
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: kLine)),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: const [
-                                _TrustItem(Icons.verified_user_outlined,
-                                    'Verified\nProperties'),
-                                _TrustItem(
-                                    Icons.lock_outline, 'Secure\nPayments'),
-                                _TrustItem(
-                                    Icons.sell_outlined, 'Best Price\nGuarantee'),
-                                _TrustItem(Icons.headset_mic_outlined,
-                                    '24/7\nSupport'),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          /// 🔹 M5 — Curated for you (2-col grid)
-                          Obx(() {
-                            if (mapController.isLoading.value) {
-                              return const CuratedGridShimmer();
-                            }
-                            final items = mapController.properties
-                                .take(4)
-                                .toList();
-                            if (items.isEmpty) {
-                              return const SizedBox.shrink();
-                            }
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SectionHeader(
-                                  title: 'Curated for you',
-                                  onSeeAll: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const PreBookingScreen(),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                const SizedBox(height: 12),
-                                GridView.builder(
-                                  shrinkWrap: true,
-                                  physics:
-                                      const NeverScrollableScrollPhysics(),
-                                  itemCount: items.length,
-                                  gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    crossAxisSpacing: 12,
-                                    mainAxisSpacing: 12,
-                                    childAspectRatio: 0.72,
-                                  ),
-                                  itemBuilder: (context, i) {
-                                    final p = items[i];
-                                    // Short cascade, matching the web's
-                                    // results grid.
-                                    return Reveal(
-                                      delay: Reveal.staggerDelay(i),
-                                      child: CuratedCard(
-                                      property: p,
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => PropertyPage(
-                                              property: p,
-                                              price: p.propertyPrice,
-                                              name: p.propertyName,
-                                              location: p.propertyAddress,
-                                              image: p.coverImage ?? '',
-                                              id: p.propertyId,
-                                              rating: '4.5',
-                                              description: p.propertyDesc,
-                                              lat: p.propertyLatitude,
-                                              long: p.propertyLongitude,
-                                              galleryImages: p.images
-                                                  .map((e) => e.toString())
-                                                  .toList(),
-                                              inTime: p
-                                                  .propDetailsPropDetailInTime,
-                                              outTime: p
-                                                  .propDetailsPropDetailOutTime,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      ),
-                                    );
-                                  },
-                                ),
-                                const SizedBox(height: 24),
-                              ],
-                            );
-                          }),
-
-                          /// 🔹 Find Your Stay
-                          Obx(() {
-                            if (mapController.isLoading.value) {
-                              return const SizedBox.shrink();
-                            }
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Find Your Stay",
-                                  style: fraunces(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w700,
-                                    color: kInk,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                SizedBox(
-                                  height: 310,
-                                  child: PreBookingHomeCarousel(
-                                    properties:
-                                        mapController.properties.toList(),
-                                  ),
-                                ),
-                              ],
-                            );
-                          }),
-                          const SizedBox(height: 20),
-
-                          // The second category row lived here. It duplicated
-                          // the one at the top of this screen, with its own
-                          // icon map that disagreed with it, and the client saw
-                          // the same categories twice on one page. Folded into
-                          // the row above.
-
-
+                          // A-21: Pre-Booking and LUX sit directly under the
+                          // category row now. They were near the bottom of the
+                          // page, below the property grids, which is past the
+                          // point most people stop scrolling.
                           /// 🔹 Action Buttons — Pre-Booking + animated LUX
                           Row(
                             children: [
@@ -533,8 +395,157 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
 
                           const SizedBox(height: 20),
 
-                          /// 🔹 Reviews (View All visible)
+                          /// 🔹 Trust bar (new design)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 14, horizontal: 6),
+                            decoration: BoxDecoration(
+                                color: kCream,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: kLine)),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: const [
+                                _TrustItem(Icons.verified_user_outlined,
+                                    'Verified\nProperties'),
+                                _TrustItem(
+                                    Icons.lock_outline, 'Secure\nPayments'),
+                                _TrustItem(
+                                    Icons.sell_outlined, 'Best Price\nGuarantee'),
+                                _TrustItem(Icons.headset_mic_outlined,
+                                    '24/7\nSupport'),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          /// 🔹 A-22 / A-23 / A-24 — two property rails.
+                          ///
+                          /// Both were one 2-column grid of FOUR headed
+                          /// "Curated for you". The sheet asks for two sliders
+                          /// of 10-12 with "See all" top-right, so both use the
+                          /// shared PropertySlider rather than two copies that
+                          /// can drift apart — which is precisely how this
+                          /// screen ended up with two category rows and two
+                          /// disagreeing icon maps.
+                          Obx(() {
+                            if (mapController.isLoading.value) {
+                              return const CuratedGridShimmer();
+                            }
+                            final all = mapController.properties.toList();
+                            if (all.isEmpty) return const SizedBox.shrink();
+
+                            // Nearest first — the search returns them ordered
+                            // by distance, so this really is "near you".
+                            final nearby = all.take(12).toList();
+
+                            // "Curated" has no personalisation behind it. The
+                            // platform collects no preference signal, so there
+                            // is nothing to tailor to a person. What it CAN do
+                            // honestly is lead with the stays that present
+                            // best: rated first (the model carries a real
+                            // rating and review count), then the ones with a
+                            // photo. Deterministic, and it uses nothing that
+                            // was invented. Worth revisiting when there is a
+                            // genuine signal to rank on.
+                            final curated = [...all]..sort((a, b) {
+                                double score(Property p) =>
+                                    (p.rating ?? 0) * 2 +
+                                    (p.reviewCount > 0 ? 1 : 0) +
+                                    ((p.coverImage ?? '').isNotEmpty ? 1 : 0);
+                                return score(b).compareTo(score(a));
+                              });
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                PropertySlider(
+                                  title: 'Properties in your current location',
+                                  properties: nearby,
+                                  onSeeAll: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) => const PreBookingScreen()),
+                                  ),
+                                  onOpen: _openProperty,
+                                ),
+                                const SizedBox(height: 24),
+                                PropertySlider(
+                                  title: 'Curated for you',
+                                  properties: curated,
+                                  onSeeAll: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) => const PreBookingScreen()),
+                                  ),
+                                  onOpen: _openProperty,
+                                ),
+                                const SizedBox(height: 24),
+                              ],
+                            );
+                          }),
+
+                          /// 🔹 Find Your Stay
+                          Obx(() {
+                            if (mapController.isLoading.value) {
+                              return const SizedBox.shrink();
+                            }
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Find Your Stay",
+                                  style: fraunces(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: kInk,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  height: 310,
+                                  child: PreBookingHomeCarousel(
+                                    properties:
+                                        mapController.properties.toList(),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }),
+                          const SizedBox(height: 20),
+
+                          // The second category row lived here. It duplicated
+                          // the one at the top of this screen, with its own
+                          // icon map that disagreed with it, and the client saw
+                          // the same categories twice on one page. Folded into
+                          // the row above.
+
+
+                          /// 🔹 Reviews
                           buildReviewList(),
+
+                          const SizedBox(height: 24),
+
+                          /// 🔹 A-25 — blogs, four or five. The app had no blog
+                          /// layer at all; the endpoint has existed the whole
+                          /// time and nothing on the phone ever called it.
+                          ///
+                          /// No "See all" and no tap target yet, deliberately:
+                          /// there is no /blog route in this app to send anyone
+                          /// to. A link that goes nowhere is worse than no link
+                          /// — that is the dead-control bug this sheet reports
+                          /// elsewhere. The strip reads, and the handlers go in
+                          /// with the blog screen (S0-BLOG-1).
+                          const HomeBlogStrip(),
+
+                          const SizedBox(height: 24),
+
+                          /// 🔹 A-26 — FAQs, and the page ends here.
+                          HomeFaqStrip(
+                            max: 5,
+                            onSeeAll: () => Get.toNamed('/faq'),
+                          ),
 
                           const SizedBox(height: 30),
                         ],
@@ -692,6 +703,36 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
 
   /// `catId` is the real tbl_categories id, so filtering needs no name lookup.
 
+
+  /// Open a property. One place, so a rail cannot drift from another in what
+  /// it passes through — the previous inline version hardcoded `rating: '4.5'`
+  /// for every stay on the screen.
+  void _openProperty(Property p) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PropertyPage(
+          property: p,
+          price: p.propertyPrice,
+          name: p.propertyName,
+          location: p.propertyAddress,
+          image: p.coverImage ?? '',
+          id: p.propertyId,
+          // ratingLabel is '' when the property has no rating, which lets the
+          // detail page say "New". The inline version this replaced passed a
+          // hardcoded '4.5' for every stay on the screen — a score nobody had
+          // given, on a platform with no reviews in it.
+          rating: p.ratingLabel,
+          description: p.propertyDesc,
+          lat: p.propertyLatitude,
+          long: p.propertyLongitude,
+          galleryImages: p.images.map((e) => e.toString()).toList(),
+          inTime: p.propDetailsPropDetailInTime,
+          outTime: p.propDetailsPropDetailOutTime,
+        ),
+      ),
+    );
+  }
 
   /// Filter by a real category id. The old path mapped a UI index to a name,
   /// searched the API for it, and fell back to the FIRST category when the
