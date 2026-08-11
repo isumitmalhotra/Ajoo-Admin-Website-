@@ -47,15 +47,37 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
       // wait a bit to ensure map is rendered
       await Future.delayed(const Duration(milliseconds: 300));
 
-      // _moveCameraToProperty();
+      _moveCameraToProperty();
     });
     propertyController.getPropertyReviews(widget.propertyId);
   }
 
+  // Shown for the moment before the property's own coordinates arrive. This
+  // was Mountain View, California — the Android emulator's default — and it was
+  // never replaced, because _moveCameraToProperty() had been deleted while its
+  // two call sites were left commented out. So a guest opening their booking
+  // saw a map of California, permanently, whatever they had booked.
   static const CameraPosition _initialPosition = CameraPosition(
-    target: LatLng(37.42796133580664, -122.085749655962),
-    zoom: 14.4746,
+    target: LatLng(28.495000, 77.40905397),
+    zoom: 12,
   );
+
+  /// Centre the map on the property once its coordinates have loaded.
+  Future<void> _moveCameraToProperty() async {
+    try {
+      final loc = userController.propertyLocation.value;
+      // (0,0) is the null island — a property with no coordinates stored, which
+      // is worth leaving alone rather than flying the camera into the Atlantic.
+      if (loc.latitude == 0 && loc.longitude == 0) return;
+      if (!_controller.isCompleted) return;
+      final controller = await _controller.future;
+      await controller.animateCamera(
+        CameraUpdate.newCameraPosition(CameraPosition(target: loc, zoom: 15)),
+      );
+    } catch (_) {
+      // A map that does not pan is worth less than a screen that crashes.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +98,10 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
                     if (!_controller.isCompleted) {
                       _controller.complete(controller);
                     }
-                    // _moveCameraToProperty();
+                    // Also move on creation: whichever of the two happens
+                    // last — the map being ready, or the property loading —
+                    // is the one that lands it in the right place.
+                    _moveCameraToProperty();
                   },
                 ),
                 const SizedBox(height: 20),

@@ -60,7 +60,13 @@ class _MapScreenState extends State<MapScreen> {
     if (permission == LocationPermission.denied ||
         permission == LocationPermission.deniedForever) {
       _showPermissionDeniedDialog();
+      // Declining location used to RETURN here, and _fetchProperties() is only
+      // reached from _getUserCurrentLocation() — so the map opened with no
+      // properties on it at all, over California (see the fallback below).
+      // Somebody who says "not now" should still see stays, just not centred
+      // on themselves.
       setState(() => _isCheckingLocation = false);
+      _fetchProperties();
       return;
     }
 
@@ -240,12 +246,31 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _getUserCurrentLocation() async {
-    Position position = await Geolocator.getCurrentPosition();
-    _initialPosition = LatLng(position.latitude, position.longitude);
-    print("User Location: $_initialPosition");
-    mapController.currentPosition.value = _initialPosition!;
-    setState(() => _isCheckingLocation = false);
-    _fetchProperties();
+    // getCurrentPosition can take a while indoors and can fail outright with
+    // GPS off. It was neither time-boxed nor caught, so either case left
+    // _isCheckingLocation true forever and the screen sat on its loader with
+    // no way out.
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 12),
+        ),
+      );
+      _initialPosition = LatLng(position.latitude, position.longitude);
+      mapController.currentPosition.value = _initialPosition!;
+    } catch (_) {
+      // A fix we already had beats no map at all. Falls through to the
+      // controller's position if there is no cached one.
+      final last = await Geolocator.getLastKnownPosition().catchError((_) => null);
+      if (last != null) {
+        _initialPosition = LatLng(last.latitude, last.longitude);
+        mapController.currentPosition.value = _initialPosition!;
+      }
+    } finally {
+      if (mounted) setState(() => _isCheckingLocation = false);
+      _fetchProperties();
+    }
   }
 
   void _fetchProperties() {
@@ -478,9 +503,18 @@ class _MapScreenState extends State<MapScreen> {
                         myLocationButtonEnabled: false,
                         myLocationEnabled: true,
                         mapType: MapType.normal,
+                        // The fallback was LatLng(37.427961, -122.085749) —
+                        // Mountain View, California, the Android emulator's
+                        // default. Any time the position had not resolved, the
+                        // map opened on another continent while the property
+                        // search ran against the controller's coordinates, so
+                        // the map and the pins disagreed by 12,000 km.
+                        //
+                        // It falls back to the SAME position the properties
+                        // were fetched around, so the two can never diverge.
                         initialCameraPosition: CameraPosition(
                           target: _initialPosition ??
-                              const LatLng(37.427961, -122.085749),
+                              mapController.currentPosition.value,
                           zoom: 14.4746,
                         ),
                         onMapCreated: (GoogleMapController controller) {
