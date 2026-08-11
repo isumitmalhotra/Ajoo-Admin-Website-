@@ -102,10 +102,23 @@ class KycController extends GetxController {
         showAlert('Verification failed',
             "We couldn't verify your identity. Please try again.", true);
       } else {
-        // pending / in_review — let them proceed; status updates server-side.
+        // pending / in_review.
+        //
+        // This used to say "You can continue meanwhile" and then hand back
+        // verified: false — and the booking gate that called it immediately
+        // blocked with "Verification required". The guest was told two
+        // opposite things within a second and their booking was dropped, which
+        // is what "I did the KYC and didn't get back to my booking" describes.
+        //
+        // The gate is a compliance check, so it is not being loosened; the
+        // message is made true instead.
         status.value = 'in_review';
-        showAlert('In review',
-            'Your verification is being reviewed. You can continue meanwhile.', false);
+        showAlert(
+            'Still reviewing',
+            "We're checking your ID — this usually takes a few minutes. "
+                "We'll let you know as soon as it's approved, and you can "
+                "finish your booking then.",
+            false);
         _finish(verified: false);
       }
     } catch (e) {

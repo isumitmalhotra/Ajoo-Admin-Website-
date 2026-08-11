@@ -1140,9 +1140,26 @@ class _PropertyPageState extends State<PropertyPage>
                       });
                       if (verified != true &&
                           authController.userData.value?.isKycVerified != true) {
+                        // Say which of the three things actually happened. This
+                        // was one flat "Verification required" for all of them,
+                        // including the case where the guest HAD just completed
+                        // KYC and was waiting on review — which reads as though
+                        // the app ignored what they had just done.
+                        //
+                        // Their dates, guests and coupon are still on this
+                        // screen; nothing is lost by staying here.
+                        final st = (authController
+                                    .userData.value?.verificationStatus ??
+                                '')
+                            .toLowerCase();
+                        final inReview =
+                            st == 'in_review' || st == 'pending' || st == 'partial';
                         bookingController.showSnackbar(
-                          'Verification required',
-                          'Please verify your identity to continue booking.',
+                          inReview ? 'Still reviewing your ID' : 'Verification required',
+                          inReview
+                              ? "We're checking your ID now. Your dates are saved — "
+                                  "come back to finish once it's approved."
+                              : 'Please verify your identity to continue booking.',
                           true,
                         );
                         return;

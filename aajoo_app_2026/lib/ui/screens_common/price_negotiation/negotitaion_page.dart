@@ -266,9 +266,19 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
         });
         if (verified != true &&
             authController.userData.value?.isKycVerified != true) {
+          // Same three-way distinction as the property page: telling a guest
+          // who has just finished KYC that "verification is required" reads as
+          // though the app ignored what they did.
+          final st =
+              (authController.userData.value?.verificationStatus ?? '').toLowerCase();
+          final inReview =
+              st == 'in_review' || st == 'pending' || st == 'partial';
           bookingController.showSnackbar(
-            'Verification required',
-            'Please verify your identity to continue booking.',
+            inReview ? 'Still reviewing your ID' : 'Verification required',
+            inReview
+                ? "We're checking your ID now. Your offer is saved — come back "
+                    "to finish once it's approved."
+                : 'Please verify your identity to continue booking.',
             true,
           );
           return;
