@@ -220,9 +220,9 @@ platforms is not done when one side ships.
 
 - [ ] **A-5** Phone number verification missing
 - [~] **A-6** Fix the google sign in the login page — *⚠️ NO DEFECT FOUND. Package name, BOTH keystore SHA-1s, serverClientId and the backend all verified correct 2026-08-11. Errors are now named instead of showing raw PlatformException codes. Most likely remaining cause: a **Play Store build**, whose App Signing SHA-1 must be added to Firebase separately.*
-- [~] **A-7** signup with google is missing when new account create — *⚠️ NOT A BUG — deliberately omitted (signup collects KYC Google can't supply). Becomes possible only if A-82/A-83 land. **Blocked on that decision.***
-- [x] **A-8** ✅ When i signup my account without OTP my account is generated / but gave me error — *same root cause as A-10: the verify screen only accepted 4 digits, so the emailed 6-digit code could never be entered. Account created, code sent, screen unusable.*
-- [x] **A-9** ✅ Signup is not done i recieved the email that my account is created — *same cause as A-8/A-10.*
+- [x] **A-7** ✅ signup with google is missing when new account create — *I was wrong to call this blocked. `/user/auth/google` already CREATES the account and marks it verified; the button was just not rendered on the sign-up tab. Now on both, labelled "Sign up with Google". Web already had it on both.*
+- [x] **A-8** ✅ account generated without OTP but gave an error — *🔴 REAL CAUSE (found 2026-08-11): the **Google** path. "Without OTP" was the tell. googleSignIn created the user AND sent the welcome email BEFORE running its account gates, so a later refusal left an account that existed, an email that had landed, and an error on screen. Email now sent after every gate, only on genuine creation.*
+- [x] **A-9** ✅ signup not done but I received the "account created / complete the profile" email — *same cause as A-8: welcome email fired before the gates. Fixed together.*
 
 **Forget**
 
