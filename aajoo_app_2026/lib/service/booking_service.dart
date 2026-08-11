@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
@@ -13,14 +14,14 @@ class BookingService {
       contentType: 'application/json',
     ),
   )..interceptors.add(PrettyDioLogger(
-      requestHeader: true,
-      requestBody: true,
-      responseBody: true,
+      requestHeader: kDebugMode,
+      requestBody: kDebugMode,
+      responseBody: kDebugMode,
       responseHeader: false,
       error: true,
       compact: true,
       maxWidth: 90,
-      enabled: true,
+      enabled: kDebugMode,
     ));
   final String baseUrl = 'https://aajaodev.onrender.com';
 

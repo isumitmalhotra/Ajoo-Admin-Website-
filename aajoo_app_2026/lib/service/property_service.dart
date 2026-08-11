@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
@@ -20,14 +21,14 @@ class PropertyService {
   PropertyService() {
     dio.options.baseUrl = baseUrl;
     dio.interceptors.add(PrettyDioLogger(
-      requestHeader: true,
-      requestBody: true,
-      responseBody: true,
+      requestHeader: kDebugMode,
+      requestBody: kDebugMode,
+      responseBody: kDebugMode,
       responseHeader: false,
       error: true,
       compact: true,
       maxWidth: 90,
-      enabled: true,
+      enabled: kDebugMode,
     ));
   }
   final _secureStorage = const FlutterSecureStorage();

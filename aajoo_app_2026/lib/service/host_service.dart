@@ -1,5 +1,6 @@
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:rent_home/models/host_booking_history_model.dart';
@@ -15,14 +16,14 @@ class HostService {
   HostService() {
     _dio.options.baseUrl = baseUrl;
     _dio.interceptors.add(PrettyDioLogger(
-      requestHeader: true,
-      requestBody: true,
-      responseBody: true,
+      requestHeader: kDebugMode,
+      requestBody: kDebugMode,
+      responseBody: kDebugMode,
       responseHeader: false,
       error: true,
       compact: true,
       maxWidth: 90,
-      enabled: true,
+      enabled: kDebugMode,
     ));
     _dio.options.contentType = 'application/json';
 

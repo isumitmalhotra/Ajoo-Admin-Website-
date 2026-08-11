@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:io';
 import "package:http/http.dart" as http;
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
+import '../data/source/remote/dio_config.dart';
 import '../models/update_user_model.dart';
 import '../models/user_models.dart';
 
@@ -16,18 +16,16 @@ class AuthService {
   String? _token;
 
   AuthService() {
-    _dio.options.baseUrl = baseUrl;
-    _dio.options.contentType = 'application/json';
-    _dio.interceptors.add(PrettyDioLogger(
-      requestHeader: true,
-      requestBody: true,
-      responseBody: true,
-      responseHeader: false,
-      error: true,
-      compact: true,
-      maxWidth: 90,
-      enabled: true,
-    ));
+    // Was: no timeouts at all, and a logger that printed request bodies —
+    // passwords on the way out, JWTs on the way back — into logcat on every
+    // device, release builds included.
+    //
+    // The timeouts matter here more than anywhere: the backend is on Render's
+    // free tier and sleeps after ~15 minutes, so the first login of the day has
+    // to wake it. Without a timeout that is an indefinite spinner, and the
+    // connection attempt against a waking container is what produced
+    // "No route to host" on a server that was healthy a minute later.
+    DioConfig.apply(_dio, baseUrl);
 
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) {

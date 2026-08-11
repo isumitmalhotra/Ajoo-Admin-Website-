@@ -2,6 +2,7 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -75,14 +76,14 @@ class NotificationService {
       receiveTimeout: const Duration(seconds: 8),
     ),
   )..interceptors.add(PrettyDioLogger(
-      requestHeader: true,
-      requestBody: true,
-      responseBody: true,
+      requestHeader: kDebugMode,
+      requestBody: kDebugMode,
+      responseBody: kDebugMode,
       responseHeader: false,
       error: true,
       compact: true,
       maxWidth: 90,
-      enabled: true,
+      enabled: kDebugMode,
     ));
 
   // Single source of truth: route through Apiconstants so the notification
