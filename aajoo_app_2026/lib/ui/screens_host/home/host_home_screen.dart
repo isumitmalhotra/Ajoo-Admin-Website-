@@ -9,6 +9,7 @@ import 'package:rent_home/ui/screens_host/booking_history/booking_history_screen
 import 'package:rent_home/ui/screens_host/ongoing_booking/view_ongoing_booking_page.dart';
 import 'package:rent_home/ui/screens_host/payout/payout_page.dart';
 import 'package:rent_home/ui/screens_host/support/host_support_screen.dart';
+import 'package:rent_home/ui/screens_host/home/components/bookings_trend_card.dart';
 import 'package:rent_home/ui/screens_host/home/components/host_home_shimmer.dart';
 import 'package:rent_home/ui/screens_host/home/components/host_recent_transaction_item_view.dart';
 import 'package:rent_home/ui/screens_host/home/components/host_recent_transaction_loading_view.dart';
@@ -97,6 +98,19 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
               Reveal(delay: Reveal.staggerDelay(1), child: _earningsCard()),
               const SizedBox(height: 16),
               _statGrid(),
+              const SizedBox(height: 16),
+              // A-72 asked for a weekly/monthly bookings graph. Built from the
+              // booking history this screen already loads, so it costs no extra
+              // request — and it draws real counts or says there are none,
+              // rather than inventing a shape.
+              Reveal(
+                delay: Reveal.staggerDelay(2),
+                child: Obx(() => BookingsTrendCard(
+                      bookings: hostController
+                              .hostBookingHistoryResponse.value?.data ??
+                          const [],
+                    )),
+              ),
               const SizedBox(height: 22),
               Reveal(
                 child: _sectionHeader('Ongoing Bookings',
@@ -269,13 +283,25 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
                   child: Reveal(
                       delay: Reveal.staggerDelay(0),
                       child: _statCard(Ionicons.calendar_outline, '$bookings',
-                          'Total Bookings', _teal50, kIndigo600))),
+                          'Total Bookings', _teal50, kIndigo600,
+                          onTap: () => Get.to(() => const BookingHistoryScreen())))),
               const SizedBox(width: 12),
               Expanded(
                   child: Reveal(
                       delay: Reveal.staggerDelay(1),
                       child: _statCard(Icons.schedule, '$ongoing',
-                          'Ongoing Stays', _orange50, kClay))),
+                          'Ongoing Stays', _orange50, kClay,
+                          // Straight to the stay when there is exactly one;
+                          // otherwise the bookings list, where they all are.
+                          onTap: () {
+                            final list = hostController
+                                .HostOngoingResponse.value?.data.bookings;
+                            if (list != null && list.length == 1) {
+                              Get.to(() => ViewOngoingBookingPage(booking: list.first));
+                            } else {
+                              Get.to(() => const BookingHistoryScreen());
+                            }
+                          }))),
             ],
           ),
           const SizedBox(height: 12),
@@ -285,13 +311,15 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
                   child: Reveal(
                       delay: Reveal.staggerDelay(2),
                       child: _statCard(Ionicons.home_outline, '$properties',
-                          'Properties', _teal50, kIndigo600))),
+                          'Properties', _teal50, kIndigo600,
+                          onTap: () => Get.to(() => const HostPropertyListingScreen())))),
               const SizedBox(width: 12),
               Expanded(
                   child: Reveal(
                       delay: Reveal.staggerDelay(3),
                       child: _statCard(Icons.receipt_long_outlined, '$txns',
-                          'Transactions', _orange50, kClay))),
+                          'Transactions', _orange50, kClay,
+                          onTap: () => Get.to(() => const PayoutPage())))),
             ],
           ),
         ],
@@ -299,9 +327,17 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
     });
   }
 
+  /// A dashboard tile.
+  ///
+  /// These were plain Containers — they looked like buttons, sat under headings
+  /// a host would expect to drill into, and did nothing at all when tapped.
+  /// That is what "ongoing stays / property / buttons are not working" meant:
+  /// not that the numbers were wrong, but that the tiles were inert. Each one
+  /// now opens the screen it describes, with a ripple so it reads as tappable.
   Widget _statCard(
-      IconData icon, String value, String label, Color bg, Color fg) {
-    return Container(
+      IconData icon, String value, String label, Color bg, Color fg,
+      {VoidCallback? onTap}) {
+    final card = Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: kSurface,
@@ -323,6 +359,16 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
                   fontSize: 22, fontWeight: FontWeight.w700, color: kInk)),
           Text(label, style: inter(fontSize: 12, color: kMuted)),
         ],
+      ),
+    );
+
+    if (onTap == null) return card;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: card,
       ),
     );
   }
