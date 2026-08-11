@@ -40,13 +40,32 @@ class ForgetPasswordController extends GetxController {
   Future<bool> sendOtp() async {
     isLoading.value = true;
     try {
-      final response = await _forgetPasswordService.sendOtpToEmail(email.value);
+      // A-11: accept a mobile number as well as an email. The field takes
+      // whichever the person actually signed up with, rather than making them
+      // remember which one it was.
+      final isMobile = ForgotPasswordService.looksLikeMobile(email.value);
+      final bool response;
+      String? failure;
+      if (isMobile) {
+        final r = await _forgetPasswordService.sendOtpToMobile(email.value);
+        response = r.ok;
+        failure = r.message;
+      } else {
+        response = await _forgetPasswordService.sendOtpToEmail(email.value);
+      }
       if (response) {
-        showAlert('Success', 'OTP sent to ${email.value}', false);
+        showAlert('Code sent',
+            isMobile
+                ? 'We sent a code by SMS to ${email.value}'
+                : 'If that email is registered, a code is on its way to it',
+            false);
         startResendTimer(); // Restart timer after sending OTP
         return true;
       } else {
-        showAlert('Error', 'Failed to send OTP', true);
+        // Show the server's own reason — including "SMS isn't available yet" —
+        // rather than a flat "Failed to send OTP" that says nothing about what
+        // to do next.
+        showAlert('Error', failure ?? 'Failed to send OTP', true);
         if (resendCountdown.value > 0) {
           // Get.snackbar(
           //     'Info', 'You can resend OTP in ${resendCountdown.value} seconds',
