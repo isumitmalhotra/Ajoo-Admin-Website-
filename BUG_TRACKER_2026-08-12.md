@@ -227,8 +227,8 @@ platforms is not done when one side ships.
 **Forget**
 
 - [x] **A-10** ✅ Forgot password shows 4 digits, email sends 6 — *🔴 ROOT CAUSE. Server raised generateOtp to 6 digits; app never updated. Four call sites had `length: 4` + validation demanding exactly 4. Signup verification was broken the same way.*
-- [ ] **A-11** Phone No forgot Password is missing
-- [ ] **A-12** Fix all the Forgot System
+- [~] **A-11** 🟡 Phone No forgot Password — *BUILT. The platform had **no SMS capability at all**, so this was absent rather than broken. New provider-agnostic `sms.service` (msg91/twilio/fast2sms) + `POST /user/forget-password/sms`, sharing the same OTP row, expiry and lockout as email. App accepts a phone number too. **Needs `SMS_PROVIDER` + credentials to actually send** — until then it says so honestly and points at email.*
+- [x] **A-12** ✅ Fix all the Forgot System — *🔴 Audit found the reset OTP was WEAKER than the signup OTP, which is backwards since it grants a password change: **no expiry, unlimited guesses**. Both now enforced from the same constants. Also: `sendEmail` was never awaited so the failure branch could never fire (it reported success on bounced mail); an unknown address answered "No record found" (membership oracle); no deleted-account filter.*
 
 **Renter**
 
