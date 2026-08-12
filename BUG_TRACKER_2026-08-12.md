@@ -339,16 +339,16 @@ platforms is not done when one side ships.
 **My booking Page**
 
 - [x] **A-58** Chnage the all the tabs as per the current theme — **app only; the web has no tabbed bookings page (separate `/account/upcoming` and `/account/past-stays` routes). The header was a solid `kIndigo` slab with white-on-teal tabs, the pre-redesign skin. Now Warm Ivory + ink text with a short teal rule under the selected label — the same treatment as `PropertyTabBar`, so the app's two tab rows read as one idea. Tabs distribute evenly instead of bunching left. Bucketing logic untouched.**
-- [ ] **A-59** Upcoming stay / Ongoing page / Completed / Cancelled
-- [ ] **A-60** User click on the view on the details page
-- [ ] **A-61** Show the support button and host chat button and host details below the booking if TAB but not in the cancelled Show there book now button only do not show the Host details
-- [ ] **A-62** Show the all property page below all of the above mentioned
-- [ ] **A-63** Show property photos instead of maps
+- [x] **A-59** Upcoming stay / Ongoing page / Completed / Cancelled — **already correct; no change needed. The four tabs existed and `_bucket()` reads the stay DATES, not just the status title, which matters because a paid stay keeps the status "Paid" for its whole life — bucketing on the title alone left finished stays under Upcoming forever.**
+- [x] **A-60** User click on the view on the details page — **works: "View Details" on each card opens the booking with its own `bookPropId`. Verified, not changed.**
+- [x] **A-61** Show the support button and host chat button and host details below the booking if TAB but not in the cancelled Show there book now button only do not show the Host details — **Support + "Chat with host" + a host card under the booking. Host chat opens the existing negotiation thread for that property. On a Cancelled booking: no host card, no chat, no host phone number, the Host tab is removed from the panels below, and the bottom bar becomes a single "Book now". ⚠️ Support is kept on Cancelled — a refund is a support question, and that is when a guest most needs it. Say the word if you want it gone there too.**
+- [x] **A-62** Show the all property page below all of the above mentioned — **the same seven tab panels the property page uses. Extracted from ~240 lines of private methods on `_PropertyPageState` into a shared `PropertyDetailPanels`; both screens now render one implementation, so the "empty means hidden, never zero" rules cannot drift between them.**
+- [x] **A-63** Show property photos instead of maps — **swipeable gallery with counter and dots. The map is not lost: it is still under the Location tab below, and the confirmed and ongoing screens still lead with it (that was asked for last batch). No photos means no gallery, not a stock photo of somewhere they did not stay.**
 
 **Menu**
 
-- [ ] **A-64** Remove right side menu and fix this menu below the profile page where all pages exits
-- [ ] **A-65** Safety, about us pages same as the website
+- [x] **A-64** Remove right side menu and fix this menu below the profile page where all pages exits — **`CustomDrawer` deleted. Its entries (Dashboard, Bookmarks, Safety, Settings, About) joined the profile screen's list, which already had Edit Profile / History / Notifications / Support / Logout. 🔴 The drawer had no menu button: it opened by tapping the unlabelled aajoohomes logo, so those five pages were reachable only by guessing. The logo is branding now.**
+- [~] **A-65** Safety, about us pages same as the website — **About: DONE and properly. The app was rendering `common/about-us`, an older copy deck the website no longer uses — the site says "More Than a Stay. A Place to Belong." with Our Story / Vision / Mission / 5 values / 6 differentiators, the app still said "AAJOO – AAJAO AAJOO MEIN" and "Walking Distance Optimization". The app now reads the same CMS page the website reads (`public/cms/about`) over the same spec defaults, so they match today and an admin edit lands on both. ⚠️ Safety: NOT possible as asked — **the website has no Safety page** (only `/about` and `/state-regulation`; there is no `safety` key in the web CMS schema). The app page was brought onto the current theme and its re-fetch-on-every-rebuild bug fixed, but its content still comes from `common/safety`. **Needs a decision: build the web Safety page, or treat the app's as the source of truth.**
 
 **Prolie Page**
 
