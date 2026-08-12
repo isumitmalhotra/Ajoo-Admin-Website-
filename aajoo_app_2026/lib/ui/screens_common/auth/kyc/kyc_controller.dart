@@ -21,11 +21,17 @@ class KycController extends GetxController {
   // caller via Get.back instead of navigating to a dashboard.
   final bool returnResult;
 
+  /// Re-verify on purpose, ignoring the server's 90-day skip. Set when the
+  /// user asked to update their documents from the profile (A-66) — without
+  /// it the server declines to make a session for an already-verified user.
+  final bool force;
+
   KycController({
     required this.context,
     required this.isHost,
     this.bookingId,
     this.returnResult = false,
+    this.force = false,
   });
 
   // idle | starting | launched | polling | verified | in_review | declined | error
@@ -43,9 +49,22 @@ class KycController extends GetxController {
       final session = await _service.createSession(
         context: context,
         bookingId: bookingId,
+        force: force,
       );
       _sessionId = session['sessionId']?.toString();
       final url = session['sessionUrl']?.toString();
+
+      // Already verified inside the server's validity window, so it declined
+      // to open a session. That is a success, not an outage — it used to fall
+      // into the branch below and tell a verified user that verification was
+      // temporarily unavailable (A-66).
+      if (session['alreadyVerified'] == true) {
+        status.value = 'verified';
+        showAlert('Already verified',
+            'Your identity is already verified. Nothing to do.', false);
+        _finish(verified: true);
+        return;
+      }
 
       // DIDIT not configured server-side (stub) — don't block the flow.
       if (session['stub'] == true || url == null || url.isEmpty) {

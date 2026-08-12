@@ -21,11 +21,22 @@ class VerifyService {
 
   Future<String?> _token() => _storage.read(key: _tokenKey);
 
-  /// Starts a DIDIT session. Returns `{sessionId, sessionUrl, stub}`.
-  /// `sessionUrl` is null when DIDIT isn't configured server-side (stub mode).
+  /// Starts a DIDIT session. Returns
+  /// `{sessionId, sessionUrl, stub, alreadyVerified}`.
+  ///
+  /// `sessionUrl` is null in two very different situations, and the caller has
+  /// to tell them apart: DIDIT is not configured server-side (`stub`), or the
+  /// user is already verified inside the 90-day window and the server skipped
+  /// the session (`alreadyVerified`). Both used to arrive as a bare null URL,
+  /// so someone who was verified and asked to redo their KYC was told identity
+  /// verification was temporarily unavailable (A-66).
+  ///
+  /// [force] re-verifies on purpose, ignoring that skip. Use it only when the
+  /// user has explicitly asked to redo KYC.
   Future<Map<String, dynamic>> createSession({
     required String context,
     int? bookingId,
+    bool force = false,
   }) async {
     final token = await _token();
     final res = await _dio.post(
@@ -33,6 +44,7 @@ class VerifyService {
       data: {
         'context': context,
         if (bookingId != null) 'bookingId': bookingId,
+        if (force) 'force': true,
       },
       options: Options(headers: {'Authorization': 'Bearer $token'}),
     );
@@ -41,6 +53,7 @@ class VerifyService {
       'sessionId': data['sessionId'],
       'sessionUrl': data['sessionUrl'],
       'stub': data['stub'] == true,
+      'alreadyVerified': data['status']?.toString() == 'verified',
     };
   }
 

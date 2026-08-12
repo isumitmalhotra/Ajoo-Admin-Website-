@@ -12,6 +12,7 @@ import 'package:rent_home/ui/screens_renter/dashboard/dashboard_screen.dart';
 import 'package:rent_home/ui/screens_renter/history/history_page.dart';
 import 'package:rent_home/ui/screens_renter/safety/safety_page.dart';
 import 'package:rent_home/ui/screens_common/update_profile/update_profile_screen.dart';
+import 'package:rent_home/utils/address_autofill.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -162,6 +163,121 @@ class _ProfileScreenState extends State<ProfileScreen>
       return 'Document number seems too short';
     }
     return null;
+  }
+
+  /// A-66 — redo identity verification from the profile.
+  ///
+  /// Goes through DIDIT, the same check that verified the user in the first
+  /// place, with force set so the server does not skip it for someone who is
+  /// already verified. Refreshes the profile afterwards so the badge and the
+  /// document details reflect the new decision rather than the old one.
+  Future<void> _reRunKyc() async {
+    await Get.toNamed('/kyc', arguments: {
+      'context': 'renter_kyc',
+      'isHost': false,
+      'returnResult': true,
+      'force': true,
+    });
+    await authController.getUserDetails(skipLogoutOnError: true);
+    if (mounted) setState(() {});
+  }
+
+  /// A-67 — fill the address without typing it.
+  ///
+  /// Two ways in, because they fail in different situations: GPS is precise
+  /// but needs permission and a fix, a PIN code works indoors and offline of
+  /// GPS but only determines the city. Neither overwrites a field the lookup
+  /// had nothing for.
+  bool _autofillBusy = false;
+
+  Future<void> _autofillFromLocation() async {
+    if (_autofillBusy) return;
+    setState(() => _autofillBusy = true);
+    final res = await addressFromCurrentLocation();
+    if (!mounted) return;
+    setState(() {
+      _autofillBusy = false;
+      final p = res.parts;
+      if (p != null) {
+        if (p.address.trim().isNotEmpty) _addressController.text = p.address;
+        if (p.city.trim().isNotEmpty) _cityController.text = p.city;
+        if (p.postalCode.trim().isNotEmpty) {
+          _zipcodeController.text = p.postalCode;
+        }
+      }
+    });
+    if (!res.ok) {
+      Get.snackbar('Location', addressLookupMessage(res.error));
+    }
+  }
+
+  Future<void> _autofillFromZip() async {
+    if (_autofillBusy) return;
+    final pin = _zipcodeController.text.trim();
+    if (pin.length < 6) {
+      Get.snackbar('PIN code', 'Enter a 6-digit PIN code first.');
+      return;
+    }
+    setState(() => _autofillBusy = true);
+    final res = await addressFromPostalCode(pin);
+    if (!mounted) return;
+    setState(() {
+      _autofillBusy = false;
+      final p = res.parts;
+      // A PIN determines the city, not the street — the address field is
+      // left exactly as the user had it.
+      if (p != null && p.city.trim().isNotEmpty) _cityController.text = p.city;
+    });
+    if (!res.ok) {
+      Get.snackbar('PIN code', addressLookupMessage(res.error));
+    }
+  }
+
+  Widget _buildAddressAutofill() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: _autofillBusy ? null : _autofillFromLocation,
+              icon: _autofillBusy
+                  ? const SizedBox(
+                      height: 15,
+                      width: 15,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: kIndigo))
+                  : const Icon(Icons.my_location, size: 17),
+              label: const Text('Use my location',
+                  overflow: TextOverflow.ellipsis),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: kIndigo600,
+                side: const BorderSide(color: kLine),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: _autofillBusy ? null : _autofillFromZip,
+              icon: const Icon(Icons.pin_drop_outlined, size: 17),
+              label: const Text('Fill from PIN',
+                  overflow: TextOverflow.ellipsis),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: kIndigo600,
+                side: const BorderSide(color: kLine),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showKycBottomSheet(BuildContext context) {
@@ -746,387 +862,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  void _showUpdateDocumentBottomSheet(BuildContext context) {
-    XFile? selectedFile;
-    final TextEditingController docNumberController = TextEditingController();
-    final updateFormKey = GlobalKey<FormState>();
-    String? selectedDocTypeId; // use doc type ID as value
-
-    // Ensure doc types are loaded
-    if (commonController.docTypes.value == null ||
-        (commonController.docTypes.value?.data.isEmpty ?? true)) {
-      commonController.fetchDocTypes();
-    }
-
-    // Pre-fill with existing data if available
-    final userData = authController.userData.value;
-    final kycDocs = userData?.kycDocs;
-    if (kycDocs != null) {
-      docNumberController.text = kycDocs.udNumber;
-      // We'll map the current title to an ID after doc types are available (inside builder)
-    }
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.95,
-              decoration: const BoxDecoration(
-                color: kCream,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-                  left: 16,
-                  right: 16,
-                  top: 16,
-                ),
-                child: Form(
-                  key: updateFormKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Header
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Update KYC Document',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Iconsax.close_circle,
-                                color: Colors.grey),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Document Type Dropdown (from CommonController)
-                      const Text(
-                        'Document Type',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Obx(() {
-                        // Map existing KYC title to an ID once data is loaded
-                        final docs =
-                            commonController.docTypes.value?.data ?? [];
-                        if (docs.isNotEmpty &&
-                            selectedDocTypeId == null &&
-                            kycDocs != null &&
-                            kycDocs.docTypeDTitle.isNotEmpty) {
-                          for (final d in docs) {
-                            if (d.dTitle.trim().toLowerCase() ==
-                                kycDocs.docTypeDTitle.trim().toLowerCase()) {
-                              // ensure we set inside setState to rebuild dropdown with value
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                setState(() {
-                                  selectedDocTypeId = d.dId.toString();
-                                });
-                              });
-                              break;
-                            }
-                          }
-                        }
-
-                        if (commonController.isLoading.value) {
-                          return Container(
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                  color: kprimaryColor),
-                            ),
-                          );
-                        }
-
-                        if (docs.isEmpty) {
-                          return Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.red[50],
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.red[200]!),
-                            ),
-                            child: Text(
-                              'Document types unavailable',
-                              style: TextStyle(color: Colors.grey[700]),
-                            ),
-                          );
-                        }
-
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: DropdownButtonFormField<String>(
-                            value: selectedDocTypeId, // ID as value
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              prefixIcon:
-                                  Icon(Iconsax.card, color: kprimaryColor),
-                            ),
-                            items: docs
-                                .map((docType) => DropdownMenuItem<String>(
-                                      value: docType.dId.toString(),
-                                      child: Text(docType.dTitle),
-                                    ))
-                                .toList(),
-                            onChanged: (String? newValue) {
-                              setState(() {
-                                selectedDocTypeId = newValue;
-                              });
-                            },
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please select a document type';
-                              }
-                              return null;
-                            },
-                          ),
-                        );
-                      }),
-                      const SizedBox(height: 16),
-
-                      // Document Number
-                      const Text(
-                        'Document Number',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: docNumberController,
-                        decoration: InputDecoration(
-                          hintText: 'Enter document number',
-                          prefixIcon: const Icon(Iconsax.card_edit,
-                              color: kprimaryColor),
-                          filled: true,
-                          fillColor: Colors.grey[100],
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                        keyboardType: TextInputType.text,
-                        validator: (value) {
-                          final title = selectedDocTypeId != null
-                              ? _docTitleFromId(selectedDocTypeId!)
-                              : null;
-                          return _validateDocNumber(value, docTypeTitle: title);
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Document Upload
-                      const Text(
-                        'Upload Document',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      GestureDetector(
-                        onTap: () async {
-                          final file = await _pickKycDocument();
-                          if (file != null) {
-                            setState(() {
-                              selectedFile = file;
-                            });
-                          }
-                        },
-                        child: Container(
-                          height: 120,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: selectedFile != null
-                                  ? kprimaryColor
-                                  : Colors.grey[400]!,
-                              width: selectedFile != null ? 2 : 1,
-                            ),
-                          ),
-                          child: selectedFile == null
-                              ? Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Iconsax.document_upload,
-                                      color: Colors.grey[600],
-                                      size: 40,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Tap to select new document',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'JPG, PNG or PDF supported',
-                                      style: TextStyle(
-                                        color: Colors.grey[500],
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(
-                                      Iconsax.document_text,
-                                      color: kprimaryColor,
-                                      size: 40,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      selectedFile!.name,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.black87,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Tap to change document',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                        ),
-                      ),
-                      const Spacer(),
-
-                      // Update Button
-                      Obx(() => SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: authController.isLoading.value
-                                  ? null
-                                  : () async {
-                                      if (updateFormKey.currentState!
-                                              .validate() &&
-                                          selectedDocTypeId != null) {
-                                        if (selectedFile == null) {
-                                          Get.snackbar(
-                                            'Error',
-                                            'Please select a document to upload',
-                                            backgroundColor: Colors.red,
-                                            colorText: Colors.white,
-                                            snackPosition: SnackPosition.BOTTOM,
-                                          );
-                                          return;
-                                        }
-
-                                        try {
-                                          final userData =
-                                              authController.userData.value!;
-                                          await authController.updateDocument(
-                                            userFullName: userData.fullName,
-                                            userPnumber: userData.phoneNumber,
-                                            userAddress: userData.address,
-                                            userCity: userData.city,
-                                            userZipcode: userData.zipcode,
-                                            docType:
-                                                int.parse(selectedDocTypeId!),
-                                            docNumber:
-                                                docNumberController.text.trim(),
-                                            userIdDoc: File(selectedFile!.path),
-                                          );
-
-                                          if (authController
-                                              .error.value.isEmpty) {
-                                            Navigator.pop(context);
-                                          }
-                                        } catch (e) {
-                                          Get.snackbar(
-                                            'Error',
-                                            'Failed to update document: $e',
-                                            backgroundColor: Colors.red,
-                                            colorText: Colors.white,
-                                            snackPosition: SnackPosition.BOTTOM,
-                                          );
-                                        }
-                                      }
-                                    },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: kprimaryColor,
-                                foregroundColor: Colors.white,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: authController.isLoading.value
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        color: kCream,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Text(
-                                      'Update Document',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                            ),
-                          )),
-                      const SizedBox(height: 10),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   Future<void> _updateProfile() async {
     if (_formKey.currentState?.validate() != true) return;
 
@@ -1512,6 +1247,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       'Phone', _phoneController,
                                       keyboardType: TextInputType.phone,
                                       maxlength: 10),
+                                  _buildAddressAutofill(),
                                   _buildAnimatedTextField(
                                       'Address', _addressController,
                                       maxlength: 100),
@@ -1591,25 +1327,44 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                   fontSize: 14,
                                                   color: Colors.grey),
                                             ),
-                                            trailing: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 6),
-                                              decoration: BoxDecoration(
-                                                color: Colors.green,
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                              child: const Text(
-                                                'Verified',
-                                                style: TextStyle(
-                                                    color: kCream,
-                                                    fontSize: 12,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              ),
-                                            ),
+                                            // This chip said "Verified" for
+                                            // anyone who had uploaded a file.
+                                            // Uploading a document is not
+                                            // being verified — same mistake as
+                                            // the listing badge that read
+                                            // is_verify. It reads the DIDIT
+                                            // decision now, and says "Under
+                                            // review" until there is one.
+                                            trailing: Builder(builder: (_) {
+                                              final verified = authController
+                                                      .userData
+                                                      .value
+                                                      ?.isKycVerified ??
+                                                  false;
+                                              return Container(
+                                                padding: const EdgeInsets
+                                                    .symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 6),
+                                                decoration: BoxDecoration(
+                                                  color: verified
+                                                      ? Colors.green
+                                                      : kClay,
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: Text(
+                                                  verified
+                                                      ? 'Verified'
+                                                      : 'Under review',
+                                                  style: const TextStyle(
+                                                      color: kCream,
+                                                      fontSize: 12,
+                                                      fontWeight:
+                                                          FontWeight.bold),
+                                                ),
+                                              );
+                                            }),
                                           ),
                                           const Divider(
                                               height: 1, color: Colors.grey),
@@ -1644,14 +1399,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                 color: kprimaryColor,
                                                 size: 24),
                                             title: const Text(
-                                              'Update Document',
+                                              'Update documents',
                                               style: TextStyle(
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.w600,
                                                   color: kprimaryColor),
                                             ),
                                             subtitle: const Text(
-                                              'Upload a new KYC document',
+                                              'Verify your identity again with a new document',
                                               style: TextStyle(
                                                   fontSize: 14,
                                                   color: Colors.grey),
@@ -1660,9 +1415,15 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                 Iconsax.arrow_right_3,
                                                 color: kprimaryColor,
                                                 size: 20),
-                                            onTap: () =>
-                                                _showUpdateDocumentBottomSheet(
-                                                    context),
+                                            // Runs DIDIT again rather than the
+                                            // manual upload sheet (A-66).
+                                            // Updating your ID should go
+                                            // through the same check that
+                                            // verified it the first time,
+                                            // otherwise a new document lands
+                                            // unverified behind a badge that
+                                            // still says otherwise.
+                                            onTap: _reRunKyc,
                                           ),
                                         ],
                                       ),

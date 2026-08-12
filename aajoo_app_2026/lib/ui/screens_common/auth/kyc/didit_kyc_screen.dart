@@ -19,6 +19,9 @@ class DiditKycScreen extends StatelessWidget {
       isHost: args['isHost'] == true,
       bookingId: args['bookingId'] is int ? args['bookingId'] as int : null,
       returnResult: args['returnResult'] == true,
+      // Set by "Update documents" on the profile — redo KYC even though the
+      // user is already verified.
+      force: args['force'] == true,
     ));
 
     return Scaffold(
