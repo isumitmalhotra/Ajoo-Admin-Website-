@@ -297,42 +297,48 @@ platforms is not done when one side ships.
 - [x] **A-57/A-58** Area sliders, 10–12 properties each → **Shimla, Kufri, Mohali, Panchkula, Kharar, Chandigarh; loaded in parallel. Filtered on `area` (address) not `city` — exact city match returns 1 for Mohali and 0 for Chandigarh, vs 48 and 51 by address. Verified on production: five rails return a full twelve. ⚠️ **Kufri has no listings on the platform**, so its rail hides itself until it does.**
 - [x] **A-59** Check-in / check-out on pre-booking → **there was no date input at all. Dates carry into the property page via its existing dealFrom/dealTo input, so the stay is priced on arrival.**
 
+> ⚠️ **Id drift, resolved 2026-08-13.** The batch sections above renumbered as
+> they went and ran up to +2 ahead of this list from the KYC group onward, so
+> the same item had two ids. **This verbatim list is the id of record** — it is
+> what the client's sheet says and what they quote back. Each item below now
+> carries the batch id it shipped under, in brackets.
+
 **Reserve Page**
 
-- [ ] **A-37** View Details: Booking shows Daily weekly monthly/// Mention instead of daily, pernight and monthly remove weekly
-- [ ] **A-38** Check in- out time is fixed by host remove the edit icon only/ its fixed already
-- [ ] **A-39** Below the Total Price don't show any price nothing
-- [ ] **A-40** if user select the monthly do not chnage the price below, price change according to the dates and set by host
-- [ ] **A-41** Price various on the Minmun price, Ideal price, Maximun Price/ monthly Price / weekly price only for host not for user show accordngy of user booking stay for 7 days
-- [ ] **A-42** instead of reserve show the negotiate & Reserve
-- [ ] **A-43** Then shows the Book now and negotiate button Fix the negoatition buttion do n't show loader of negoation
+- [x] **A-37** *(shipped as batch A-37)* View Details: Booking shows Daily weekly monthly/// Mention instead of daily, pernight and monthly remove weekly
+- [x] **A-38** *(batch A-38)* Check in- out time is fixed by host remove the edit icon only/ its fixed already
+- [x] **A-39** *(batch A-39)* Below the Total Price don't show any price nothing
+- [x] **A-40** *(batch A-40)* if user select the monthly do not chnage the price below, price change according to the dates and set by host
+- [x] **A-41** *(batch A-41)* Price various on the Minmun price, Ideal price, Maximun Price/ monthly Price / weekly price only for host not for user show accordngy of user booking stay for 7 days
+- [x] **A-42** *(batch A-42)* instead of reserve show the negotiate & Reserve
+- [x] **A-43** *(batch A-43)* Then shows the Book now and negotiate button Fix the negoatition buttion do n't show loader of negoation
 
 **KYC**
 
-- [ ] **A-44** When I click on book now or Negotiate Asking for KYC I Have done with the KYC from the app i didn't get my previous page where i left my booking before booked a property
-- [ ] **A-45** When I'm a new user why it shows one time POA Beacuse I'm only booked i property, if user book more than 1 property then at that time show the POA policy
-- [ ] **A-46** When i'm done with the booking , booking confrim page in missing in real time booking and send email once the booking is done for both the ends user and host
-- [ ] **A-47** Booking confrimed page is missing show the get direction icon and the maps inside the app as per the refrence image
-- [ ] **A-48** When i done with the booking ongooing page missing on the maps
+- [x] **A-44** *(batch A-45)* When I click on book now or Negotiate Asking for KYC I Have done with the KYC from the app i didn't get my previous page where i left my booking before booked a property
+- [x] **A-45** *(batch A-46)* When I'm a new user why it shows one time POA Beacuse I'm only booked i property, if user book more than 1 property then at that time show the POA policy
+- [x] **A-46** *(batch A-47)* When i'm done with the booking , booking confrim page in missing in real time booking and send email once the booking is done for both the ends user and host
+- [x] **A-47** *(batch A-48/A-49)* Booking confrimed page is missing show the get direction icon and the maps inside the app as per the refrence image
+- [x] **A-48** *(batch A-50)* When i done with the booking ongooing page missing on the maps
 
 **LUX Mode**
 
-- [ ] **A-49** Lux Mode Make some diffrence in colors and icons and animations some diffrenteant from the standrad / fix a loader like it show lux
-- [ ] **A-50** LUX Page same as the standard PAge only/ make it feel like LUX experince
+- [x] **A-49** *(batch A-51/A-52)* Lux Mode Make some diffrence in colors and icons and animations some diffrenteant from the standrad / fix a loader like it show lux
+- [x] **A-50** *(batch A-53)* LUX Page same as the standard PAge only/ make it feel like LUX experince
 
-**Prebooking : Page**
+**Prebooking : Page** — *all seven shipped in app commit `05696a3`; re-verified in code 2026-08-13 (see the file/line receipts in `SESSION_HANDOFF_2026-08-13.md` §3 batch 4).*
 
-- [ ] **A-51** Current location is editable and show same like fic the home page and Browse by category.
-- [ ] **A-52** Chnage the Browser by catgeory into homestay villas remove single couple etc
-- [ ] **A-53** Fix the LUX button Top Right with the search that chnage of mode from there
-- [ ] **A-54** In the prebooking show the properties in slider by areas
-- [ ] **A-55** Shimla/ Kufri / Mohali, panchkula/ mohali/ Kharar
-- [ ] **A-56** show all the areas types in the slider and show 10-12 properties in slide
-- [ ] **A-57** in the prebooking gave the check in check out dates select to the user
+- [x] **A-51** *(batch A-54)* Current location is editable and show same like fic the home page and Browse by category. — **`showSearchSheet` on the location pill; was a `FutureBuilder` that re-geocoded every rebuild and could not be changed**
+- [x] **A-52** *(batch A-55)* Chnage the Browser by catgeory into homestay villas remove single couple etc — **real API property types via `TextCategoryPills`; `couple`/`party`/`single`/`sharing`/`resort` hidden through the shared `kHiddenBrowseCategories`**
+- [x] **A-53** *(batch A-56)* Fix the LUX button Top Right with the search that chnage of mode from there — **the home screen's animated `LuxToggleButton`, top right beside the search**
+- [x] **A-54** *(batch A-57)* In the prebooking show the properties in slider by areas — **`AreaRail`, one per area, each loading independently**
+- [x] **A-55** *(batch A-57)* Shimla/ Kufri / Mohali, panchkula/ mohali/ Kharar — **`kPreBookingAreas` = Shimla, Kufri, Mohali, Panchkula, Kharar, Chandigarh. ⚠️ Kufri has no listings, so its rail hides itself until it does**
+- [x] **A-56** *(batch A-58)* show all the areas types in the slider and show 10-12 properties in slide — **`perArea: 12`; filtered on `area` (address LIKE) not `city`, which returns 1 for Mohali and 0 for Chandigarh**
+- [x] **A-57** *(batch A-59)* in the prebooking gave the check in check out dates select to the user — **`StayDatesBar`, carried into the property page as `dealFrom`/`dealTo` so the stay is priced on arrival**
 
 **My booking Page**
 
-- [ ] **A-58** Chnage the all the tabs as per the current theme
+- [x] **A-58** Chnage the all the tabs as per the current theme — **app only; the web has no tabbed bookings page (separate `/account/upcoming` and `/account/past-stays` routes). The header was a solid `kIndigo` slab with white-on-teal tabs, the pre-redesign skin. Now Warm Ivory + ink text with a short teal rule under the selected label — the same treatment as `PropertyTabBar`, so the app's two tab rows read as one idea. Tabs distribute evenly instead of bunching left. Bucketing logic untouched.**
 - [ ] **A-59** Upcoming stay / Ongoing page / Completed / Cancelled
 - [ ] **A-60** User click on the view on the details page
 - [ ] **A-61** Show the support button and host chat button and host details below the booking if TAB but not in the cancelled Show there book now button only do not show the Host details
