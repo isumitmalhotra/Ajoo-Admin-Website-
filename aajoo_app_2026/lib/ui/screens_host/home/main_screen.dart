@@ -9,7 +9,7 @@ import 'package:rent_home/ui/screens_host/add_property/host_property_listing_scr
 import 'package:rent_home/ui/screens_host/booking_history/booking_history_screen.dart';
 import 'package:rent_home/ui/screens_host/invoices/invoice_page.dart';
 import 'package:rent_home/ui/screens_host/profile/host_profile.dart';
-import 'package:rent_home/ui/screens_host/support/host_support_screen.dart';
+import 'package:rent_home/ui/screens_host/support/host_messages_screen.dart';
 import 'package:rent_home/service/notification_service.dart';
 import '../../../constants.dart';
 import '../../../utils/fonts.dart';
@@ -38,7 +38,9 @@ class _MainScreenState extends State<MainScreen> {
   late final List<Widget> _screens = [
     HostHomeScreen(onMenuTap: _openDrawer), // slot 0 · tab 2
     const BookingHistoryScreen(), // slot 1 · tab 3
-    const HostSupportScreen(), // slot 2 · tab 6
+    // A-75 — Messages, not Support. Support is still here, pinned at the top
+    // of it; the guest conversations that had no home in the app are below.
+    const HostMessagesScreen(), // slot 2 · tab 6
     const HostProfilePage(), // slot 3 · tab 5
     InvoicePage(), // slot 4 · tab 7 (drawer only)
   ];
@@ -120,7 +122,7 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
             ),
-            _navItem(6, currentTab, Icons.chat_bubble_outline, 'Support'),
+            _navItem(6, currentTab, Icons.chat_bubble_outline, 'Messages'),
             _navItem(5, currentTab, Ionicons.person_outline, 'Profile'),
           ],
         ),

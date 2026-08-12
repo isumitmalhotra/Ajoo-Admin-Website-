@@ -15,6 +15,7 @@ import 'package:rent_home/ui/screens_host/host_controller.dart';
 import 'package:rent_home/ui/screens_host/property_details/view_host_property_details.dart';
 import 'package:rent_home/ui/screens_host/update_property/update_property_page.dart';
 import 'package:rent_home/ui/screens_common/update_profile/update_profile_screen.dart';
+import 'package:rent_home/ui/screens_host/profile/host_menu.dart';
 import 'package:shimmer/shimmer.dart';
 
 class HostProfilePage extends StatefulWidget {
@@ -26,6 +27,7 @@ class HostProfilePage extends StatefulWidget {
 
 class _HostProfilePageState extends State<HostProfilePage> {
   final ImagePicker _picker = ImagePicker();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   XFile? _profileImage;
   XFile? coverImage;
 
@@ -236,7 +238,10 @@ class _HostProfilePageState extends State<HostProfilePage> {
   Widget build(BuildContext context) {
     final user = authController.userData.value;
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: kscaffoldColor,
+      // A-79 — the menu, on the right, opened from the top of this page.
+      endDrawer: const HostMenuDrawer(),
       body: RefreshIndicator(
         onRefresh: () async {
           hostController.getHostProperties();
@@ -247,6 +252,26 @@ class _HostProfilePageState extends State<HostProfilePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header row: the menu button sits top-right, which is the only
+              // thing on this page that was not reachable from it before.
+              Row(
+                children: [
+                  Text('Profile',
+                      style: fraunces(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: kInk)),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: 'Menu',
+                    icon: const Icon(Icons.menu_rounded,
+                        size: 24, color: kInk),
+                    onPressed: () =>
+                        _scaffoldKey.currentState?.openEndDrawer(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
               // Profile photo section
               Center(
                 child: Stack(
@@ -410,28 +435,17 @@ class _HostProfilePageState extends State<HostProfilePage> {
               ),
               const SizedBox(height: 12),
 
-              // Logout. The host Profile tab had none at all — the only copy
-              // was in the home drawer, which opens from the header on the
-              // Dashboard tab, so a host sitting on Profile had nowhere to
-              // sign out from. The renter Profile has it in the same place.
-              Card(
-                elevation: 3,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: ListTile(
-                  leading: const Icon(Icons.logout, color: kDanger),
-                  title: const Text(
-                    'Logout',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600, color: kDanger),
-                  ),
-                  subtitle: const Text('Sign out of this device'),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () => authController.logout(),
-                ),
-              ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 8),
+              // A-78 — every page a host can reach, on the profile.
+              //
+              // These lived only in the home drawer, which opens from the
+              // Dashboard tab's header: a host sitting on Profile could not
+              // reach Payouts, Bank Account, Terms, Privacy or even Logout.
+              // Same list the drawer renders, from one declaration.
+              _buildSectionTitle('Menu'),
+              const SizedBox(height: 10),
+              const HostMenuList(),
+              const SizedBox(height: 12),
 
               // Managed Properties section
               _buildSectionTitle("Managed Properties", icon: Icons.add,
