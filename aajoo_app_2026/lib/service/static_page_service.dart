@@ -32,6 +32,31 @@ class StaticPageService {
     }
   }
 
+  /// Editor overrides for a CMS page, the same source the website reads.
+  ///
+  /// Never throws and never returns null: a page built on this renders its
+  /// spec defaults and is complete without the network. Blank overrides are
+  /// dropped — a field saved as an empty string would otherwise erase a
+  /// heading with nothing on the page to explain why.
+  Future<Map<String, String>> getCmsPage(String page) async {
+    try {
+      final response = await _dio.get("public/cms/$page");
+      final data = response.data is Map ? response.data['data'] : null;
+      if (data is Map) {
+        final out = <String, String>{};
+        data.forEach((k, v) {
+          final s = v?.toString() ?? '';
+          if (s.trim().isNotEmpty) out[k.toString()] = s;
+        });
+        return out;
+      }
+    } catch (_) {
+      // The page keeps its defaults. Failing here would blank About over a
+      // CMS problem, which is worse than ignoring the CMS.
+    }
+    return const {};
+  }
+
   Future<SafetyDataModel> getSafetyData() async {
     try {
       final response = await _dio.get("common/safety");

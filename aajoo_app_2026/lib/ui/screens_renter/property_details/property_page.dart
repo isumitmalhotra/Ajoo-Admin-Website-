@@ -126,8 +126,6 @@ class _PropertyPageState extends State<PropertyPage>
   double? get _rating => _single?.rating ?? widget.property.rating;
   int get _reviewCount => _single?.reviewCount ?? widget.property.reviewCount;
 
-  /// Which of the seven sections is open (A-29/A-30/A-31).
-  PropertyTab _tab = PropertyTab.about;
 
   @override
   void initState() {
@@ -1538,13 +1536,23 @@ class _PropertyPageState extends State<PropertyPage>
                       // A-29/A-30/A-31 — the seven sections as tabs, matching
                       // the website. Everything below this used to render at
                       // once down one very long scroll.
-                      PropertyTabBar(
-                        active: _tab,
+                      PropertyDetailPanels(
+                        single: _single,
+                        host: _host,
                         reviewCount: _reviewCount,
-                        onChanged: (t) => setState(() => _tab = t),
+                        experiencesBuilder: _buildReviews,
+                        fallback: PropertyPanelFallback(
+                          description: widget.description,
+                          location: widget.location,
+                          amenities: widget.property.amenities,
+                          latitude: widget.property.propertyLatitude,
+                          longitude: widget.property.propertyLongitude,
+                          contact: widget.property.propertyContact,
+                          petFriendly:
+                              widget.property.propDetailsPropDetailIsPetFriendly,
+                          smoking: widget.property.propDetailsPropDetailIsSmoke,
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      _buildTabPanel(theme),
                       const SizedBox(height: 24),
                       // A-33 — the gallery sits below the panels, so it is
                       // reachable whichever section is open.
@@ -2008,258 +2016,6 @@ Book now: https://aajoo.com/property/${widget.id}
     );
   }
 
-  /// The open section. Only one renders — that is the point of the change.
-  Widget _buildTabPanel(ThemeData theme) {
-    switch (_tab) {
-      case PropertyTab.about:
-        return _panelAbout(theme);
-      case PropertyTab.amenities:
-        return _panelAmenities();
-      case PropertyTab.rules:
-        return _panelRules();
-      case PropertyTab.location:
-        return _panelLocation();
-      case PropertyTab.experiences:
-        return _buildReviews();
-      case PropertyTab.host:
-        return _panelHost();
-      case PropertyTab.policies:
-        return _panelPolicies();
-    }
-  }
-
-  Widget _panelAbout(ThemeData theme) {
-    final desc = (_single?.propertyDesc ?? widget.description).trim();
-    final inTime = _single?.propDetails?.inTime;
-    final outTime = _single?.propDetails?.outTime;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const PanelTitle('About this stay'),
-        if (desc.isEmpty)
-          const PanelEmpty("The host hasn't written a description yet.")
-        else
-          Text(desc, style: inter(fontSize: 14, color: kInk, height: 1.65)),
-        if (inTime != null || outTime != null) ...[
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              const Icon(Icons.schedule_outlined, size: 18, color: kIndigo600),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  [
-                    if (inTime != null) 'Check-in from $inTime',
-                    if (outTime != null) 'Check-out by $outTime',
-                  ].join(' · '),
-                  style: inter(fontSize: 13.5, color: kInk),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _panelAmenities() {
-    // Real amenities only. _buildAmenities falls back to the global tag list
-    // when a listing has none, which puts somebody else's tags under this
-    // stay's "Amenities" heading.
-    final list = _single?.amenities ?? widget.property.amenities;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const PanelTitle('What this place offers'),
-        if (list == null || list.isEmpty)
-          const PanelEmpty("The host hasn't listed amenities for this stay yet.")
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: list
-                .map((a) => Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: kIndigo50,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.check_circle_outline,
-                              size: 15, color: kIndigo600),
-                          const SizedBox(width: 6),
-                          Text(a.toString(),
-                              style: inter(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: kIndigo600)),
-                        ],
-                      ),
-                    ))
-                .toList(),
-          ),
-      ],
-    );
-  }
-
-  Widget _panelRules() {
-    final legacyPet = (_single?.propDetails?.isPetFriendly ??
-            widget.property.propDetailsPropDetailIsPetFriendly) ==
-        true;
-    final legacySmoke = (_single?.propDetails?.isSmoke ??
-            widget.property.propDetailsPropDetailIsSmoke) ==
-        true;
-    final lines = buildRuleLines(
-      rules: _single?.houseRules,
-      checkIn: _single?.propDetails?.inTime,
-      checkOut: _single?.propDetails?.outTime,
-      legacyPetFriendly: legacyPet,
-      legacySmoking: legacySmoke,
-      hasLegacyFlags: _single != null,
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const PanelTitle('House rules'),
-        if (lines.isEmpty)
-          const PanelEmpty(
-              "The host hasn't published house rules for this stay.")
-        else
-          ...lines,
-      ],
-    );
-  }
-
-  Widget _panelLocation() {
-    final lat = double.tryParse(
-        _single?.propertyLatitude ?? widget.property.propertyLatitude);
-    final lng = double.tryParse(
-        _single?.propertyLongitude ?? widget.property.propertyLongitude);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const PanelTitle("Where you'll be"),
-        Row(
-          children: [
-            const Icon(Icons.location_on_outlined, size: 16, color: kMuted),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(widget.location,
-                  style: inter(fontSize: 13, color: kMuted)),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        PropertyAreaMap(lat: lat, lng: lng),
-        NearbySection(groups: _single?.nearby ?? const []),
-      ],
-    );
-  }
-
-  Widget _panelHost() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: kSurface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: kLine),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: kIndigo,
-                backgroundImage: (_host?.image != null)
-                    ? CachedNetworkImageProvider(_host!.image!)
-                    : null,
-                child: (_host?.image == null)
-                    ? Text(
-                        (_host?.name ?? 'H').trim().characters.first.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                        ),
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Hosted by ${_host?.name ?? 'your host'}',
-                        style: inter(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w700,
-                            color: kInk)),
-                    const SizedBox(height: 2),
-                    Text(_host?.subtitle ?? 'Aajoo host',
-                        style: inter(fontSize: 12, color: kMuted)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if ((_single?.propertyContact ?? widget.property.propertyContact) !=
-              null) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Icon(Icons.call_outlined, size: 16, color: kMuted),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Listing contact: '
-                    '${_single?.propertyContact ?? widget.property.propertyContact}',
-                    style: inter(fontSize: 12.5, color: kMuted),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _panelPolicies() {
-    final inTime = _single?.propDetails?.inTime;
-    final outTime = _single?.propDetails?.outTime;
-    final security = _single?.propDetails?.monthlySecurity;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const PanelTitle('Policies'),
-        // The cancellation terms the booking sheet already shows, repeated
-        // here because this is where a guest looks for them.
-        const RuleLine(
-            ok: true,
-            text: 'Free cancellation up to 48 hours before check-in.'),
-        if (inTime != null || outTime != null)
-          RuleLine(
-            ok: true,
-            text: [
-              if (inTime != null) 'Check-in $inTime',
-              if (outTime != null) 'Check-out $outTime',
-            ].join(' · '),
-          ),
-        if (security != null && security.isNotEmpty && security != '0')
-          RuleLine(ok: true, text: 'Security deposit ₹$security'),
-        const RuleLine(
-            ok: true, text: 'Secure payment via trusted gateways.'),
-        const RuleLine(
-            ok: true, text: 'Price negotiable — send the host an offer.'),
-      ],
-    );
-  }
 
   Widget _buildImageGallery() {
     return SizedBox(

@@ -1,17 +1,26 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/controller/user_controller.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/data/models/booking_history_response_model.dart';
+import 'package:rent_home/data/models/properties_response_model.dart';
+import 'package:rent_home/models/host_profile.dart';
+import 'package:rent_home/models/single_property_response.dart';
 import 'package:rent_home/service/device_service.dart';
+import 'package:rent_home/service/property_service.dart';
+import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
+import 'package:rent_home/ui/screens_common/price_negotiation/negotitaion_page.dart';
+import 'package:rent_home/ui/screens_common/support/support_screen.dart';
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/ui/screens_renter/history/history_description/components/booking_property_gallery.dart';
 import 'package:rent_home/ui/screens_renter/history/history_description/components/property_description_section.dart';
-import 'package:rent_home/ui/screens_renter/history/history_description/components/property_details_map_section.dart';
 import 'package:rent_home/ui/screens_renter/history/history_description/property_review_controller.dart';
 import 'package:rent_home/ui/screens_renter/history/history_description/review/property_review_section.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:rent_home/ui/screens_renter/property_details/components/property_tabs.dart';
+import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';
 
 class HistoryDescriptionPage extends StatefulWidget {
   const HistoryDescriptionPage({
@@ -28,15 +37,28 @@ class HistoryDescriptionPage extends StatefulWidget {
 }
 
 class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
-  final Completer<GoogleMapController> _controller =
-      Completer<GoogleMapController>();
   final UserController userController = Get.put(UserController());
   final PropertyReviewController propertyController =
       Get.put<PropertyReviewController>(
     PropertyReviewController(),
   );
   final reviewController = TextEditingController();
+  final PropertyService _propertyService = PropertyService();
   double rating = 0.0;
+
+  /// Who hosts the stay. Fetched separately — the property payload carries only
+  /// a host id, which is why the property page had to do the same.
+  HostProfile? _host;
+
+  /// A cancelled booking shows a "Book now" button and no host at all: no host
+  /// card, no chat, no phone number. The guest is not staying there, so the
+  /// host is not theirs to contact.
+  bool get _isCancelled =>
+      (widget.bookingData.bookingStatusBsTitle ?? '')
+          .toLowerCase()
+          .contains('cancel');
+
+  SinglePropertyData? get _single => userController.property.value?.data;
 
   @override
   void initState() {
@@ -44,39 +66,19 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await userController.getProperty(widget.propertyId);
-      // wait a bit to ensure map is rendered
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      _moveCameraToProperty();
+      if (!mounted) return;
+      await _fetchHost();
     });
     propertyController.getPropertyReviews(widget.propertyId);
   }
 
-  // Shown for the moment before the property's own coordinates arrive. This
-  // was Mountain View, California — the Android emulator's default — and it was
-  // never replaced, because _moveCameraToProperty() had been deleted while its
-  // two call sites were left commented out. So a guest opening their booking
-  // saw a map of California, permanently, whatever they had booked.
-  static const CameraPosition _initialPosition = CameraPosition(
-    target: LatLng(28.495000, 77.40905397),
-    zoom: 12,
-  );
-
-  /// Centre the map on the property once its coordinates have loaded.
-  Future<void> _moveCameraToProperty() async {
-    try {
-      final loc = userController.propertyLocation.value;
-      // (0,0) is the null island — a property with no coordinates stored, which
-      // is worth leaving alone rather than flying the camera into the Atlantic.
-      if (loc.latitude == 0 && loc.longitude == 0) return;
-      if (!_controller.isCompleted) return;
-      final controller = await _controller.future;
-      await controller.animateCamera(
-        CameraUpdate.newCameraPosition(CameraPosition(target: loc, zoom: 15)),
-      );
-    } catch (_) {
-      // A map that does not pan is worth less than a screen that crashes.
-    }
+  Future<void> _fetchHost() async {
+    if (_isCancelled) return; // Nothing on this page will show it.
+    final hostId = _single?.propertyHostId;
+    if (hostId == null || hostId == 0) return;
+    final host = await _propertyService.getHostProfile(hostId);
+    if (!mounted || host == null) return;
+    setState(() => _host = host);
   }
 
   @override
@@ -87,145 +89,66 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                HistoryMapSection(
-                  isLoading: userController.isLoading,
-                  propertyLocation: userController.propertyLocation,
-                  initialPosition: _initialPosition,
-                  onMapCreated: (controller) {
-                    if (!_controller.isCompleted) {
-                      _controller.complete(controller);
-                    }
-                    // Also move on creation: whichever of the two happens
-                    // last — the map being ready, or the property loading —
-                    // is the one that lands it in the right place.
-                    _moveCameraToProperty();
-                  },
-                ),
-                const SizedBox(height: 20),
-                Padding(
-                  padding: const EdgeInsets.all(0.0),
-                  child: Obx(
-                    () => PropertyDescriptionSection(
-                        isLoading: userController.isLoading,
-                        // Fall back to the property info stored on the booking
-                        // when the live property can't be fetched (e.g. the host
-                        // later removed the listing) — so history never goes blank.
-                        propertyName:
-                            userController.property.value?.data?.propertyName ??
-                                widget.bookingData.bookingPropertyPropertyName,
-                        propertyAddress: userController
-                                .property.value?.data?.propertyAddress ??
-                            widget.bookingData.bookingPropertyPropertyAddress,
-                        bookingDataWidget:
-                            _buildBookingData(widget.bookingData)),
+            child: Obx(
+              () => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // A-63 — the stay's photos, where the map used to be.
+                  BookingPropertyGallery(
+                    isLoading: userController.isLoading.value,
+                    images: _single?.images ?? const [],
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  child: Text(
-                    'Rating and Reviews',
-                    style: fraunces(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
-                      color: kInk,
+                  const SizedBox(height: 20),
+                  PropertyDescriptionSection(
+                      isLoading: userController.isLoading,
+                      // Fall back to the property info stored on the booking
+                      // when the live property can't be fetched (e.g. the host
+                      // later removed the listing) — so history never goes blank.
+                      propertyName: _single?.propertyName ??
+                          widget.bookingData.bookingPropertyPropertyName,
+                      propertyAddress: _single?.propertyAddress ??
+                          widget.bookingData.bookingPropertyPropertyAddress,
+                      bookingDataWidget: _buildBookingData(widget.bookingData)),
+                  // A-61 — help and the host, directly under the booking.
+                  _actions(),
+                  const SizedBox(height: 8),
+                  const Divider(color: kLine, height: 1),
+                  const SizedBox(height: 16),
+                  // A-62 — the whole property page below all of the above,
+                  // from the same component the property detail screen uses.
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: PropertyDetailPanels(
+                      single: _single,
+                      host: _host,
+                      reviewCount: _single?.reviewCount ?? 0,
+                      // The guest stayed here, so this is where they write the
+                      // review — the panel doubles as the review form.
+                      experiencesBuilder: () => PropertyReviewSection(
+                        propertyId: widget.propertyId,
+                        bookingData: widget.bookingData,
+                      ),
+                      // No host anywhere on a cancelled booking.
+                      hidden: _isCancelled ? const {PropertyTab.host} : const {},
+                      fallback: PropertyPanelFallback(
+                        location: widget
+                                .bookingData.bookingPropertyPropertyAddress ??
+                            '',
+                      ),
                     ),
                   ),
-                ),
-                PropertyReviewSection(
-                  propertyId: widget.propertyId,
-                  bookingData: widget.bookingData,
-                ),
-                const SizedBox(height: 100),
-              ],
+                  const SizedBox(height: 110),
+                ],
+              ),
             ),
           ),
           Positioned(
+            left: 0,
+            right: 0,
             bottom: 10,
             child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: SizedBox(
-                width: MediaQuery.of(context).size.width - 32,
-                child: Row(
-                  children: [
-                    InkWell(
-                      borderRadius: BorderRadius.circular(14),
-                      onTap: () {
-                        DeviceService.launchDialPad(userController
-                                .property.value?.data?.propertyContact ??
-                            "");
-                      },
-                      child: Container(
-                        height: 52,
-                        width: 52,
-                        decoration: BoxDecoration(
-                          color: kSurface,
-                          border: Border.all(color: kIndigo),
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: kSoftShadow,
-                        ),
-                        child: const Icon(
-                          Icons.phone,
-                          size: 22,
-                          color: kIndigo,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(14),
-                        onTap: () async {
-                          final LatLng location =
-                              userController.propertyLocation.value;
-
-                          final lat = location.latitude;
-                          final lng = location.longitude;
-
-                          DeviceService.showMapOptions(context, lat, lng);
-                        },
-                        child: Container(
-                          height: 52,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [kIndigo600, kIndigo],
-                            ),
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: kIndigo.withOpacity(0.3),
-                                blurRadius: 14,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.directions,
-                                  color: kCream, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                "Get Directions",
-                                style: inter(
-                                  color: kCream,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _isCancelled ? _bookNowBar() : _stayBar(),
             ),
           )
         ],
@@ -233,11 +156,340 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
     );
   }
 
+  /// The bar for a live booking: reach the host, and get there.
+  Widget _stayBar() {
+    return Row(
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () {
+            DeviceService.launchDialPad(_single?.propertyContact ?? "");
+          },
+          child: Container(
+            height: 52,
+            width: 52,
+            decoration: BoxDecoration(
+              color: kSurface,
+              border: Border.all(color: kIndigo),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: kSoftShadow,
+            ),
+            child: const Icon(Icons.phone, size: 22, color: kIndigo),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () async {
+              final location = userController.propertyLocation.value;
+              DeviceService.showMapOptions(
+                  context, location.latitude, location.longitude);
+            },
+            child: Container(
+              height: 52,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [kIndigo600, kIndigo],
+                ),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: kIndigo.withOpacity(0.3),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.directions, color: kCream, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    "Get Directions",
+                    style: inter(
+                      color: kCream,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// A cancelled booking gets one action, and it is not about the host.
+  Widget _bookNowBar() {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: _bookAgain,
+      child: Container(
+        height: 52,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [kIndigo600, kIndigo],
+          ),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: kIndigo.withOpacity(0.3),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Text(
+          'Book now',
+          style: inter(
+              color: kCream, fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+      ),
+    );
+  }
+
+  /// A-61 — support, the host chat, and who the host is, under the booking.
+  ///
+  /// On a cancelled booking only support survives: the spec says no host
+  /// details there, and support is the one thing a guest is more likely to
+  /// need after a cancellation, not less (a refund is a support question).
+  Widget _actions() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _actionButton(
+                  icon: Icons.support_agent_outlined,
+                  label: 'Support',
+                  onTap: () => Get.to(() => const SupportScreen()),
+                ),
+              ),
+              if (!_isCancelled) ...[
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _actionButton(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    label: 'Chat with host',
+                    onTap: _openHostChat,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (!_isCancelled) ...[
+            const SizedBox(height: 14),
+            _hostCard(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _actionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        height: 46,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: kSurface,
+          border: Border.all(color: kLine),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 18, color: kIndigo600),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: inter(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: kInk),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Who the guest is staying with. The same shape as the Host panel below,
+  /// deliberately: this one is the summary you get without opening a tab.
+  Widget _hostCard() {
+    final contact = _single?.propertyContact;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: kLine),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: kIndigo,
+            backgroundImage: (_host?.image != null)
+                ? NetworkImage(_host!.image!)
+                : null,
+            child: (_host?.image == null)
+                ? Text(
+                    (_host?.name ?? 'H').trim().characters.first.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  )
+                : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Hosted by ${_host?.name ?? 'your host'}',
+                    style: inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: kInk)),
+                const SizedBox(height: 2),
+                Text(
+                  contact == null || contact.isEmpty
+                      ? (_host?.subtitle ?? 'Aajoo host')
+                      : contact,
+                  style: inter(fontSize: 12, color: kMuted),
+                ),
+              ],
+            ),
+          ),
+          if (contact != null && contact.isNotEmpty)
+            IconButton(
+              tooltip: 'Call host',
+              onPressed: () => DeviceService.launchDialPad(contact),
+              icon: const Icon(Icons.call_outlined, color: kIndigo600),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// The listing as the rest of the app models it.
+  ///
+  /// The booking detail loads a SinglePropertyData; the negotiation chat and
+  /// the property page both want a Property. Rather than widen their APIs for
+  /// one caller, translate here.
+  Property? _propertyModel() {
+    final s = _single;
+    if (s == null) return null;
+    return Property(
+      propertyId: s.propertyId ?? widget.propertyId,
+      propertyName: s.propertyName ?? '',
+      propertyAddress: s.propertyAddress ?? '',
+      propertyDesc: s.propertyDesc ?? '',
+      propertyPrice: s.propertyPrice ?? '0',
+      propertyCity: s.propertyCity ?? '',
+      propertyLongitude: s.propertyLongitude ?? '0',
+      propertyLatitude: s.propertyLatitude ?? '0',
+      propertyHostId: s.propertyHostId ?? 0,
+      propertyZip: s.propertyZip,
+      propertyContact: s.propertyContact,
+      propertyEmail: s.propertyEmail,
+      images: s.images ?? const [],
+      categoryTitles:
+          (s.categories ?? const []).map((c) => c.toString()).toList(),
+      amenities: (s.amenities ?? const []).map((a) => a.toString()).toList(),
+      rating: s.rating,
+      reviewCount: s.reviewCount,
+    );
+  }
+
+  Future<void> _openHostChat() async {
+    final property = _propertyModel();
+    if (property == null) {
+      Fluttertoast.showToast(msg: 'Still loading this stay — try again.');
+      return;
+    }
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    if (token == null) {
+      Fluttertoast.showToast(msg: 'Please login to message the host.');
+      return;
+    }
+    final userId = Get.find<AuthController>().userData.value?.userId;
+    if (userId == null) {
+      Fluttertoast.showToast(msg: 'Please login to message the host.');
+      return;
+    }
+    if (!mounted) return;
+    Get.to(() => PriceNegotiationPage(
+          userId: userId.toString(),
+          senderId: userId.toString(),
+          receiverId: property.propertyHostId.toString(),
+          hostId: property.propertyHostId.toString(),
+          propertyId: property.propertyId.toString(),
+          serverUrl: Apiconstants.serverUrl,
+          token: token,
+          property: property,
+          lat: property.propertyLatitude,
+          long: property.propertyLongitude,
+        ));
+  }
+
+  void _bookAgain() {
+    final property = _propertyModel();
+    if (property == null) {
+      Fluttertoast.showToast(msg: 'Still loading this stay — try again.');
+      return;
+    }
+    Get.to(() => PropertyPage(
+          id: property.propertyId,
+          image: property.images.isNotEmpty ? property.images.first : '',
+          name: property.propertyName,
+          price: property.propertyPrice,
+          description: property.propertyDesc,
+          rating: property.ratingLabel,
+          lat: property.propertyLatitude,
+          long: property.propertyLongitude,
+          location: property.propertyAddress,
+          galleryImages: property.images,
+          property: property,
+        ));
+  }
+
   AppBar _appBar(BuildContext context) {
     return AppBar(
-      title: const Text('History Description'),
-      backgroundColor: Theme.of(context).primaryColor,
-      foregroundColor: Theme.of(context).scaffoldBackgroundColor,
+      // "History Description" is the name of a database table, not a thing a
+      // guest recognises. It is their booking.
+      title: Text('Your booking',
+          style:
+              fraunces(fontSize: 18, fontWeight: FontWeight.w600, color: kInk)),
+      backgroundColor: kCream,
+      foregroundColor: kInk,
+      elevation: 0,
       centerTitle: true,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new),
@@ -364,27 +616,6 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class BookingHistoryMapShimmer extends StatelessWidget {
-  const BookingHistoryMapShimmer({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Shimmer.fromColors(
-        baseColor: Colors.grey[300]!,
-        highlightColor: Colors.grey[50]!,
-        child: Container(
-          height: double.infinity,
-          width: double.infinity,
-          color: Colors.grey[300],
-        ),
       ),
     );
   }

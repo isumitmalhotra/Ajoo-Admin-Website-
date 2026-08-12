@@ -1,6 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/models/host_profile.dart';
 import 'package:rent_home/models/single_property_response.dart';
 import 'package:rent_home/utils/fonts.dart';
 
@@ -33,11 +35,16 @@ class PropertyTabBar extends StatelessWidget {
   final ValueChanged<PropertyTab> onChanged;
   final int reviewCount;
 
+  /// Which tabs to draw, in order. Defaults to all seven; the booking detail
+  /// drops Host on a cancelled booking.
+  final List<PropertyTab>? only;
+
   const PropertyTabBar({
     super.key,
     required this.active,
     required this.onChanged,
     this.reviewCount = 0,
+    this.only,
   });
 
   @override
@@ -46,7 +53,7 @@ class PropertyTabBar extends StatelessWidget {
       height: 42,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        children: PropertyTab.values.map((t) {
+        children: (only ?? PropertyTab.values).map((t) {
           final selected = t == active;
           final label = t == PropertyTab.experiences && reviewCount > 0
               ? '${_tabLabels[t]} ($reviewCount)'
@@ -326,4 +333,367 @@ List<Widget> buildRuleLines({
         text: legacySmoking ? 'Smoking allowed' : 'No smoking indoors'));
   }
   return lines;
+}
+
+/// Everything the panels need that does not come from the single-property
+/// payload.
+///
+/// The property page reaches this screen with a full Property already in hand
+/// and falls back to it when the detail fetch fails; the booking-history
+/// detail arrives with only a booking row. Both cases are "use this when the
+/// listing did not say", so they go through one object.
+class PropertyPanelFallback {
+  final String description;
+  final String location;
+  final List<dynamic>? amenities;
+  final String? latitude;
+  final String? longitude;
+  final String? contact;
+  final bool? petFriendly;
+  final bool? smoking;
+
+  const PropertyPanelFallback({
+    this.description = '',
+    this.location = '',
+    this.amenities,
+    this.latitude,
+    this.longitude,
+    this.contact,
+    this.petFriendly,
+    this.smoking,
+  });
+}
+
+/// The tab bar and its seven panels, as one widget.
+///
+/// This lived as ~240 lines of private methods on _PropertyPageState. The
+/// booking-history detail needs the same seven sections under the booking
+/// (A-62), and a second copy of the panels is a second place for the "empty
+/// means hidden, never zero" rules to rot — the fake amenity list and the
+/// invented house rules removed in batch 1 were exactly that kind of drift.
+/// One implementation, two callers.
+class PropertyDetailPanels extends StatefulWidget {
+  final SinglePropertyData? single;
+  final HostProfile? host;
+  final int reviewCount;
+  final PropertyPanelFallback fallback;
+
+  /// Guest experiences differs per screen — the property page lists the
+  /// listing's reviews with a "see all" route, the booking detail offers the
+  /// review the guest can write for the stay they just had. Supplied by the
+  /// caller rather than reimplemented here.
+  ///
+  /// A builder, not a Widget: the property page's version calls Get.find at
+  /// build time, and building it eagerly would run that on every rebuild
+  /// whatever tab is open — including when the controller is not registered.
+  final Widget Function()? experiencesBuilder;
+
+  /// Tabs to leave out. The booking detail hides Host on a cancelled booking,
+  /// where the spec says the host must not be shown at all.
+  final Set<PropertyTab> hidden;
+
+  const PropertyDetailPanels({
+    super.key,
+    required this.single,
+    this.host,
+    this.reviewCount = 0,
+    this.fallback = const PropertyPanelFallback(),
+    this.experiencesBuilder,
+    this.hidden = const {},
+  });
+
+  @override
+  State<PropertyDetailPanels> createState() => _PropertyDetailPanelsState();
+}
+
+class _PropertyDetailPanelsState extends State<PropertyDetailPanels> {
+  late PropertyTab _tab = _visible.first;
+
+  List<PropertyTab> get _visible =>
+      PropertyTab.values.where((t) => !widget.hidden.contains(t)).toList();
+
+  @override
+  void didUpdateWidget(covariant PropertyDetailPanels old) {
+    super.didUpdateWidget(old);
+    // A booking can flip to cancelled while this page is open, taking the Host
+    // tab with it. Sitting on a tab that no longer exists would render nothing.
+    if (widget.hidden.contains(_tab)) {
+      setState(() => _tab = _visible.first);
+    }
+  }
+
+  SinglePropertyData? get _s => widget.single;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        PropertyTabBar(
+          active: _tab,
+          reviewCount: widget.reviewCount,
+          onChanged: (t) => setState(() => _tab = t),
+          only: _visible,
+        ),
+        const SizedBox(height: 16),
+        _panel(),
+      ],
+    );
+  }
+
+  Widget _panel() {
+    switch (_tab) {
+      case PropertyTab.about:
+        return _about();
+      case PropertyTab.amenities:
+        return _amenities();
+      case PropertyTab.rules:
+        return _rules();
+      case PropertyTab.location:
+        return _location();
+      case PropertyTab.experiences:
+        return widget.experiencesBuilder?.call() ?? const SizedBox.shrink();
+      case PropertyTab.host:
+        return _hostPanel();
+      case PropertyTab.policies:
+        return _policies();
+    }
+  }
+
+  Widget _about() {
+    final desc = (_s?.propertyDesc ?? widget.fallback.description).trim();
+    final inTime = _s?.propDetails?.inTime;
+    final outTime = _s?.propDetails?.outTime;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const PanelTitle('About this stay'),
+        if (desc.isEmpty)
+          const PanelEmpty("The host hasn't written a description yet.")
+        else
+          Text(desc, style: inter(fontSize: 14, color: kInk, height: 1.65)),
+        if (inTime != null || outTime != null) ...[
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              const Icon(Icons.schedule_outlined, size: 18, color: kIndigo600),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  [
+                    if (inTime != null) 'Check-in from $inTime',
+                    if (outTime != null) 'Check-out by $outTime',
+                  ].join(' · '),
+                  style: inter(fontSize: 13.5, color: kInk),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _amenities() {
+    // Real amenities only — never the global tag list, which puts somebody
+    // else's tags under this stay's heading.
+    final list = _s?.amenities ?? widget.fallback.amenities;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const PanelTitle('What this place offers'),
+        if (list == null || list.isEmpty)
+          const PanelEmpty(
+              "The host hasn't listed amenities for this stay yet.")
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: list
+                .map((a) => Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: kIndigo50,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.check_circle_outline,
+                              size: 15, color: kIndigo600),
+                          const SizedBox(width: 6),
+                          Text(a.toString(),
+                              style: inter(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: kIndigo600)),
+                        ],
+                      ),
+                    ))
+                .toList(),
+          ),
+      ],
+    );
+  }
+
+  Widget _rules() {
+    final legacyPet =
+        (_s?.propDetails?.isPetFriendly ?? widget.fallback.petFriendly) == true;
+    final legacySmoke =
+        (_s?.propDetails?.isSmoke ?? widget.fallback.smoking) == true;
+    final lines = buildRuleLines(
+      rules: _s?.houseRules,
+      checkIn: _s?.propDetails?.inTime,
+      checkOut: _s?.propDetails?.outTime,
+      legacyPetFriendly: legacyPet,
+      legacySmoking: legacySmoke,
+      hasLegacyFlags: _s != null,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const PanelTitle('House rules'),
+        if (lines.isEmpty)
+          const PanelEmpty(
+              "The host hasn't published house rules for this stay.")
+        else
+          ...lines,
+      ],
+    );
+  }
+
+  Widget _location() {
+    final lat =
+        double.tryParse(_s?.propertyLatitude ?? widget.fallback.latitude ?? '');
+    final lng = double.tryParse(
+        _s?.propertyLongitude ?? widget.fallback.longitude ?? '');
+    // The caller's own label wins where it has one — the property page passes
+    // the location string it was opened with, which is what it displayed
+    // before these panels moved out of it. The listing's address is the
+    // fallback, for callers (the booking detail) that have no label of theirs.
+    final where = widget.fallback.location.trim().isNotEmpty
+        ? widget.fallback.location
+        : (_s?.propertyAddress ?? '');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const PanelTitle("Where you'll be"),
+        if (where.trim().isNotEmpty)
+          Row(
+            children: [
+              const Icon(Icons.location_on_outlined, size: 16, color: kMuted),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(where, style: inter(fontSize: 13, color: kMuted)),
+              ),
+            ],
+          ),
+        const SizedBox(height: 12),
+        PropertyAreaMap(lat: lat, lng: lng),
+        NearbySection(groups: _s?.nearby ?? const []),
+      ],
+    );
+  }
+
+  Widget _hostPanel() {
+    final host = widget.host;
+    final contact = _s?.propertyContact ?? widget.fallback.contact;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: kLine),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: kIndigo,
+                backgroundImage: (host?.image != null)
+                    ? CachedNetworkImageProvider(host!.image!)
+                    : null,
+                child: (host?.image == null)
+                    ? Text(
+                        (host?.name ?? 'H')
+                            .trim()
+                            .characters
+                            .first
+                            .toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Hosted by ${host?.name ?? 'your host'}',
+                        style: inter(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w700,
+                            color: kInk)),
+                    const SizedBox(height: 2),
+                    Text(host?.subtitle ?? 'Aajoo host',
+                        style: inter(fontSize: 12, color: kMuted)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (contact != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(Icons.call_outlined, size: 16, color: kMuted),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Listing contact: $contact',
+                      style: inter(fontSize: 12.5, color: kMuted)),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _policies() {
+    final inTime = _s?.propDetails?.inTime;
+    final outTime = _s?.propDetails?.outTime;
+    final security = _s?.propDetails?.monthlySecurity;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const PanelTitle('Policies'),
+        const RuleLine(
+            ok: true,
+            text: 'Free cancellation up to 48 hours before check-in.'),
+        if (inTime != null || outTime != null)
+          RuleLine(
+            ok: true,
+            text: [
+              if (inTime != null) 'Check-in $inTime',
+              if (outTime != null) 'Check-out $outTime',
+            ].join(' · '),
+          ),
+        if (security != null && security.isNotEmpty && security != '0')
+          RuleLine(ok: true, text: 'Security deposit ₹$security'),
+        const RuleLine(ok: true, text: 'Secure payment via trusted gateways.'),
+        const RuleLine(
+            ok: true, text: 'Price negotiable — send the host an offer.'),
+      ],
+    );
+  }
 }

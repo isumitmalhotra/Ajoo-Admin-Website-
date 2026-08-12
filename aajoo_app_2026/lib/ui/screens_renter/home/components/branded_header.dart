@@ -9,7 +9,6 @@ import 'package:rent_home/utils/fonts.dart';
 ///
 /// All actions are exposed via callbacks; this widget owns no state.
 class BrandedHeader extends StatelessWidget {
-  final VoidCallback? onMenuTap; // also doubles as logo tap (open drawer)
   final VoidCallback? onWishlistTap;
   /// Opens notifications. Was named onProfileTap and paired with a person
   /// icon, while the handler behind it pushed NotificationsScreen — the icon
@@ -18,7 +17,6 @@ class BrandedHeader extends StatelessWidget {
 
   const BrandedHeader({
     super.key,
-    this.onMenuTap,
     this.onWishlistTap,
     this.onNotificationsTap,
   });
@@ -29,41 +27,40 @@ class BrandedHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       child: Row(
         children: [
-          // Logo mark + wordmark — tapping opens the drawer.
-          InkWell(
-            onTap: onMenuTap,
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _LogoMark(),
-                  const SizedBox(width: 10),
-                  // "aajoo" (indigo) + "homes" (clay italic) — POC pairing.
-                  RichText(
-                    text: TextSpan(
-                      style: fraunces(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: kInk,
-                      ),
-                      children: [
-                        const TextSpan(text: 'aajoo'),
-                        TextSpan(
-                          text: 'homes',
-                          style: fraunces(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w400,
-                            fontStyle: FontStyle.italic,
-                            color: kClay,
-                          ),
-                        ),
-                      ],
+          // Branding, and only branding. This used to be the app's menu
+          // button — an unlabelled logo that opened a drawer (A-64). Nothing
+          // said it was tappable, so the pages behind it were effectively
+          // hidden; they are on the profile tab now.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _LogoMark(),
+                const SizedBox(width: 10),
+                // "aajoo" (indigo) + "homes" (clay italic) — POC pairing.
+                RichText(
+                  text: TextSpan(
+                    style: fraunces(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: kInk,
                     ),
+                    children: [
+                      const TextSpan(text: 'aajoo'),
+                      TextSpan(
+                        text: 'homes',
+                        style: fraunces(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w400,
+                          fontStyle: FontStyle.italic,
+                          color: kClay,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           const Spacer(),

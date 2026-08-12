@@ -6,7 +6,11 @@ import 'package:iconsax/iconsax.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/screens_renter/guest_shell.dart';
 import 'package:rent_home/controller/user_controller.dart';
+import 'package:rent_home/ui/screens_common/about/about_page.dart';
+import 'package:rent_home/ui/screens_renter/bookmark_properties/bookmark_properties_page.dart';
+import 'package:rent_home/ui/screens_renter/dashboard/dashboard_screen.dart';
 import 'package:rent_home/ui/screens_renter/history/history_page.dart';
+import 'package:rent_home/ui/screens_renter/safety/safety_page.dart';
 import 'package:rent_home/ui/screens_common/update_profile/update_profile_screen.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:image_picker/image_picker.dart';
@@ -1879,19 +1883,37 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  /// Every page the app has, in one place (A-64).
+  ///
+  /// These used to be split between here and a right-hand drawer opened by
+  /// tapping the logo on the home screen — an unmarked target, so Dashboard,
+  /// Bookmarks, Safety, Settings and About were reachable only by guessing.
+  /// The drawer is gone; this is the menu.
   List<Widget> _buildSettingsItems() {
     return [
       _buildSettingItem('Edit Profile', Icons.edit, () {
         Get.to(() => const UpdateProfileScreen());
       }),
+      _buildSettingItem('Dashboard', Icons.dashboard_outlined, () {
+        Get.to(() => const RenterDashboardScreen());
+      }),
       _buildSettingItem('Booking History', Icons.history, () {
         Get.to(() => const HistoryPage());
       }),
-      // "Payment Methods" and "Notifications" lived here and only raised a
-      // "coming soon" snackbar. A row that answers nothing is worse than no
-      // row — they are out until there is a screen behind them.
+      _buildSettingItem('Bookmarks', Icons.bookmark_border, () {
+        Get.to(() => const BookmarkedPropertiesPage());
+      }),
+      // "Payment Methods" lived here and only raised a "coming soon"
+      // snackbar. A row that answers nothing is worse than no row — it is out
+      // until there is a screen behind it.
       _buildSettingItem('Notifications', Icons.notifications, () {
         Get.toNamed('/notifications');
+      }),
+      _buildSettingItem('Safety', Icons.security, () {
+        Get.to(() => const SafetyPage());
+      }),
+      _buildSettingItem('Settings', Icons.settings, () {
+        Get.toNamed('/settings');
       }),
       _buildSettingItem('Help & Support', Icons.help, () {
         try {
@@ -1899,6 +1921,9 @@ class _ProfileScreenState extends State<ProfileScreen>
         } catch (e) {
           Get.snackbar('Error', 'Failed to open support: $e');
         }
+      }),
+      _buildSettingItem('About', Icons.info_outline, () {
+        Get.to(() => const AboutPage());
       }),
       _buildSettingItem('Logout', Icons.logout, () async {
         try {

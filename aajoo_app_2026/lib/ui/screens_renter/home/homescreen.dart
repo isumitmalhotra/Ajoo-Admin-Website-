@@ -33,7 +33,6 @@ import 'package:rent_home/ui/screens_renter/nearby_bookings/pre_booking_screen.d
 import 'package:rent_home/ui/screens_renter/bookmark_properties/bookmark_properties_page.dart';
 import 'package:rent_home/ui/screens_common/notifications/notification_screen.dart';
 import 'package:rent_home/service/notification_service.dart';
-import 'package:rent_home/ui/screens_renter/home/components/custom_drawer.dart';
 import 'package:rent_home/ui/screens_renter/home/components/negotiated_deal_banner.dart';
 import 'package:rent_home/controller/deals_controller.dart';
 import 'package:rent_home/ui/screens_renter/home/pre_booking_home_carousel/prebooking_home_carousel.dart';
@@ -143,7 +142,9 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
     return Scaffold(
       key: _scaffoldKey,
       // POC mobile: no opaque AppBar — the branded header floats over the map.
-      drawer: CustomDrawer(),
+      // A-64: the drawer that used to hang here is gone. Its entries live on
+      // the profile screen, which is a tab, rather than behind a logo tap
+      // nothing marked as a menu.
       body: SafeArea(
         child: Stack(
           children: [
@@ -162,8 +163,6 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     BrandedHeader(
-                      onMenuTap: () =>
-                          _scaffoldKey.currentState?.openDrawer(),
                       onWishlistTap: () => Navigator.push(
                         context,
                         CupertinoPageRoute(
