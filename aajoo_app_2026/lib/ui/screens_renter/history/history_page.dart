@@ -11,10 +11,12 @@ import 'package:rent_home/ui/screens_renter/history/components/renter_history_li
 import 'package:rent_home/ui/screens_renter/guest_shell.dart';
 import 'package:rent_home/utils/stay_clock.dart';
 
-/// My Bookings — re-skinned to the new design (scaffold bookings_screen): teal
-/// app bar + 4 status tabs (Upcoming / Ongoing / Completed / Cancelled). The
-/// getUserHistory wiring + BookingCard rows are unchanged; tabs just filter the
-/// same real data by status.
+/// My Bookings — 4 status tabs (Upcoming / Ongoing / Completed / Cancelled)
+/// over the same getUserHistory data; the tabs only filter, they never refetch.
+///
+/// Header and tabs follow the current theme: Warm Ivory surface, ink text, teal
+/// as an accent under the selected label. It wore a solid teal app bar with
+/// white-on-teal tabs until 2026-08-13 — the pre-redesign skin.
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
 
@@ -93,22 +95,34 @@ class _HistoryPageState extends State<HistoryPage> {
       child: Scaffold(
         backgroundColor: kscaffoldColor,
         appBar: AppBar(
-          backgroundColor: kIndigo,
-          foregroundColor: Colors.white,
+          backgroundColor: kCream,
+          foregroundColor: kInk,
           elevation: 0,
           centerTitle: true,
           title: Text('My Bookings',
               style: fraunces(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white)),
+                  fontSize: 18, fontWeight: FontWeight.w600, color: kInk)),
+          // The header was a solid teal slab with white-on-teal tabs — the
+          // skin this app wore before the redesign. Everything built since
+          // (the property detail tabs, the blog, the confirmed screen) sits on
+          // Warm Ivory and spends teal only on the accent. Same treatment as
+          // PropertyTabBar so the two tab rows in the app read as one idea:
+          // ink for the selected label, muted for the rest, and a short teal
+          // rule under the word rather than a full-width bar.
           bottom: TabBar(
-            isScrollable: true,
-            indicatorColor: Colors.white,
-            indicatorWeight: 2.5,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            labelStyle: inter(fontSize: 13.5, fontWeight: FontWeight.w700),
+            isScrollable: false,
+            indicator: const UnderlineTabIndicator(
+              borderSide: BorderSide(width: 2, color: kIndigo600),
+              insets: EdgeInsets.symmetric(horizontal: 4),
+            ),
+            indicatorSize: TabBarIndicatorSize.label,
+            dividerColor: kLine,
+            dividerHeight: 1,
+            labelColor: kInk,
+            unselectedLabelColor: kMuted,
+            labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+            overlayColor: WidgetStatePropertyAll(kIndigo.withOpacity(0.04)),
+            labelStyle: inter(fontSize: 13.5, fontWeight: FontWeight.w600),
             unselectedLabelStyle: inter(fontSize: 13.5),
             tabs: [for (final name in _tabNames) Tab(text: name)],
           ),
