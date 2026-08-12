@@ -4,6 +4,7 @@ import 'package:rent_home/constants.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/data/models/host_booking_history_model.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:rent_home/ui/screens_host/booking_history/host_booking_detail_page.dart';
 import 'package:rent_home/ui/screens_host/booking_history/host_booking_history_controller.dart';
 import 'package:rent_home/ui/motion/aajoo_motion.dart';
 import 'package:rent_home/utils/stay_clock.dart';
@@ -92,20 +93,30 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
       child: Scaffold(
         backgroundColor: kscaffoldColor,
         appBar: AppBar(
-          backgroundColor: kIndigo,
-          foregroundColor: Colors.white,
+          backgroundColor: kCream,
+          foregroundColor: kInk,
           elevation: 0,
           centerTitle: true,
           title: Text('Bookings',
               style: fraunces(
-                  fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white)),
+                  fontSize: 18, fontWeight: FontWeight.w600, color: kInk)),
+          // Same treatment as the guest's Bookings screen and the property
+          // detail tabs — the solid teal slab with white-on-teal tabs was the
+          // pre-redesign skin.
           bottom: TabBar(
-            isScrollable: true,
-            indicatorColor: Colors.white,
-            indicatorWeight: 2.5,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            labelStyle: inter(fontSize: 13.5, fontWeight: FontWeight.w700),
+            isScrollable: false,
+            indicator: const UnderlineTabIndicator(
+              borderSide: BorderSide(width: 2, color: kIndigo600),
+              insets: EdgeInsets.symmetric(horizontal: 4),
+            ),
+            indicatorSize: TabBarIndicatorSize.label,
+            dividerColor: kLine,
+            dividerHeight: 1,
+            labelColor: kInk,
+            unselectedLabelColor: kMuted,
+            labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+            overlayColor: WidgetStatePropertyAll(kIndigo.withOpacity(0.04)),
+            labelStyle: inter(fontSize: 13.5, fontWeight: FontWeight.w600),
             unselectedLabelStyle: inter(fontSize: 13.5),
             tabs: const [
               Tab(text: 'Upcoming'),
@@ -183,7 +194,8 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         const SizedBox(height: 100),
-        Icon(icons[bucket], size: 60, color: kLine),
+        // kLine is a border colour — on the ivory scaffold it was invisible.
+        Icon(icons[bucket], size: 60, color: kMuted.withOpacity(0.45)),
         const SizedBox(height: 12),
         Center(
           child: Text('No ${labels[bucket]} bookings',
@@ -343,6 +355,26 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                           inter(fontSize: 13, fontWeight: FontWeight.w700)),
                 ),
             ],
+          ),
+          const SizedBox(height: 12),
+          // A-68 — the card was the end of the road: a name, a number, and no
+          // way to see what was actually booked.
+          SizedBox(
+            width: double.infinity,
+            height: 42,
+            child: ElevatedButton(
+              onPressed: () =>
+                  Get.to(() => HostBookingDetailPage(booking: booking)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kIndigo,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text("View Details",
+                  style: inter(fontSize: 13.5, fontWeight: FontWeight.w700)),
+            ),
           ),
         ],
       ),

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:rent_home/models/host_booking_history_model.dart';
+import 'package:rent_home/models/host_negotiation.dart';
 import 'package:rent_home/models/host_ongoing_response.dart';
 import 'package:rent_home/models/host_properties_reponse.dart' as hostResponse;
 import 'package:rent_home/models/transaction_model.dart';
@@ -146,6 +147,29 @@ class HostService {
     } catch (err) {
       print(err);
       throw _handleError(err);
+    }
+  }
+
+  /// Every negotiation addressed to this host, newest first (A-70).
+  ///
+  /// The endpoint has existed since negotiation shipped and nothing called it,
+  /// so a host could only find an offer by catching its push notification.
+  /// Returns an empty list rather than throwing — an empty negotiations
+  /// section is a correct dashboard, an exception is a broken one.
+  Future<List<HostNegotiation>> getNegotiations() async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final response = await _dio.get("/host/negotiations/list");
+      final data = response.data is Map ? response.data['data'] : null;
+      final list = data is Map ? data['negotiations'] : null;
+      if (list is! List) return const [];
+      return list
+          .whereType<Map>()
+          .map((e) => HostNegotiation.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } catch (err) {
+      return const [];
     }
   }
 

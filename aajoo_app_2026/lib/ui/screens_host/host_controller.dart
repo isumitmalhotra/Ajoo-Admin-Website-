@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:rent_home/controller/alert_dialog.dart';
 import 'package:rent_home/data/models/host_booking_history_model.dart';
 import 'package:rent_home/data/models/host_ongoing_response.dart';
+import 'package:rent_home/models/host_negotiation.dart';
 import 'package:rent_home/data/models/host_properties_reponse.dart';
 import 'package:rent_home/data/models/transaction_model.dart';
 import 'package:rent_home/service/host_service.dart';
@@ -47,6 +48,10 @@ class HostController extends GetxController {
   Rx<HostBookingHistoryResponse?> hostBookingHistoryResponse =
       Rx<HostBookingHistoryResponse?>(null);
 
+  /// Negotiations addressed to this host, newest first (A-70).
+  final RxList<HostNegotiation> negotiations = <HostNegotiation>[].obs;
+  final RxBool negotiationsFetched = false.obs;
+
   Future<void> _initialize() async {
     final token = await storage.read(key: TOKEN_KEY);
     hostService.setToken(token ?? '');
@@ -68,6 +73,15 @@ class HostController extends GetxController {
     } finally {
       loading.value = false;
     }
+  }
+
+  /// Every offer waiting on this host (A-70). Never throws — the service
+  /// returns an empty list on failure, and an empty negotiations section is a
+  /// correct dashboard.
+  Future<void> getNegotiations() async {
+    negotiationsFetched.value = false;
+    negotiations.value = await hostService.getNegotiations();
+    negotiationsFetched.value = true;
   }
 
   Future<void> getTransactionHistory() async {

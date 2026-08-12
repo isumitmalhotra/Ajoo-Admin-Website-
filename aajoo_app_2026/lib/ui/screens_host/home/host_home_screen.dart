@@ -15,6 +15,9 @@ import 'package:rent_home/ui/screens_host/home/components/host_recent_transactio
 import 'package:rent_home/ui/screens_host/home/components/host_recent_transaction_loading_view.dart';
 import 'package:rent_home/ui/screens_host/home/components/no_ongoing_booking_view.dart';
 import 'package:rent_home/ui/screens_host/home/components/no_recent_transaction_view.dart';
+import 'package:rent_home/ui/screens_host/home/components/negotiation_card.dart';
+import 'package:rent_home/ui/screens_host/negotiations/host_negotiations_screen.dart';
+import 'package:rent_home/ui/screens_renter/home/components/home_faq_strip.dart';
 import 'package:rent_home/models/host_ongoing_response.dart';
 import '../../../constants.dart';
 import '../../../utils/fonts.dart';
@@ -53,6 +56,7 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
       hostController.getHostOngoing(hostId),
       hostController.getHostProperties(),
       hostController.getHostBookingHistory(),
+      hostController.getNegotiations(),
     ]);
   }
 
@@ -122,9 +126,29 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
               const SizedBox(height: 18),
               Reveal(child: _boostBanner()),
               const SizedBox(height: 22),
-              Reveal(child: _sectionHeader('Recent Transactions')),
+              // A-70 — negotiations, which is what a host actually has to act
+              // on. /host/negotiations/list shipped with the feature and
+              // nothing called it, so an offer was only ever visible in a push
+              // notification; miss it and it was gone.
+              Reveal(
+                child: _sectionHeader('Negotiations',
+                    actionLabel: 'View all',
+                    onAction: () =>
+                        Get.to(() => const HostNegotiationsScreen())),
+              ),
+              const SizedBox(height: 10),
+              _negotiationsList(),
+              const SizedBox(height: 22),
+              Reveal(
+                child: _sectionHeader('Recent Transactions',
+                    actionLabel: 'View all',
+                    onAction: () => Get.to(() => const PayoutPage())),
+              ),
               const SizedBox(height: 8),
               _transactionsList(),
+              const SizedBox(height: 22),
+              // A-71 — FAQ closes the page, as on the guest home.
+              const Reveal(child: HomeFaqStrip()),
             ],
           ),
         ),
@@ -272,7 +296,8 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
       // totalCount, not properties.length — the list is one page now, so
       // length would report 20 for a host who owns 29,230.
       final properties = hostController.hostPropertyCount;
-      final txns = hostController.transactionHistoryResponse.value?.data.length ?? 0;
+      final pendingOffers =
+          hostController.negotiations.where((n) => n.isPending).length;
       // Tiles arrive in sequence rather than all at once, capped short so the
       // last one never reads as lag.
       return Column(
@@ -317,9 +342,15 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
               Expanded(
                   child: Reveal(
                       delay: Reveal.staggerDelay(3),
-                      child: _statCard(Icons.receipt_long_outlined, '$txns',
-                          'Transactions', _orange50, kClay,
-                          onTap: () => Get.to(() => const PayoutPage())))),
+                      // A-74 — this tile counted transactions, which is a
+                      // number the host can neither act on nor change, sitting
+                      // directly above the transaction list that shows them
+                      // anyway. Offers awaiting a reply is the one number on
+                      // this dashboard with a decision attached to it.
+                      child: _statCard(Icons.handshake_outlined, '$pendingOffers',
+                          'Offers to review', _orange50, kClay,
+                          onTap: () =>
+                              Get.to(() => const HostNegotiationsScreen())))),
             ],
           ),
         ],
@@ -553,6 +584,64 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
     );
   }
 
+  /// The three most recent negotiations, pending first — the ones with a
+  /// decision in them belong at the top of a dashboard.
+  Widget _negotiationsList() {
+    return Obx(() {
+      if (!hostController.negotiationsFetched.value) {
+        return const Padding(
+          padding: EdgeInsets.symmetric(vertical: 20),
+          child: Center(child: CircularProgressIndicator(color: kIndigo)),
+        );
+      }
+      final all = hostController.negotiations.toList();
+      if (all.isEmpty) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 16),
+          decoration: BoxDecoration(
+            color: kSurface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: kLine),
+          ),
+          child: Column(
+            children: [
+              Icon(Icons.handshake_outlined,
+                  size: 34, color: kMuted.withOpacity(0.45)),
+              const SizedBox(height: 10),
+              Text('No offers yet',
+                  style: inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: kInk)),
+              const SizedBox(height: 4),
+              Text('Guests can negotiate your price — offers land here.',
+                  textAlign: TextAlign.center,
+                  style: inter(fontSize: 12.5, color: kMuted)),
+            ],
+          ),
+        );
+      }
+      final sorted = [...all]..sort((a, b) {
+          if (a.isPending == b.isPending) return 0;
+          return a.isPending ? -1 : 1;
+        });
+      final shown = sorted.take(3).toList();
+      return Column(
+        children: [
+          for (int i = 0; i < shown.length; i++)
+            Padding(
+              padding: EdgeInsets.only(bottom: i == shown.length - 1 ? 0 : 12),
+              child: NegotiationCard(
+                n: shown[i],
+                onTap: () => Get.to(() => const HostNegotiationsScreen()),
+              ),
+            ),
+        ],
+      );
+    });
+  }
+
   Widget _transactionsList() {
     return Obx(() {
       if (hostController.loading.value &&
@@ -561,12 +650,15 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
       }
       final txns = hostController.transactionHistoryResponse.value?.data ?? [];
       if (txns.isEmpty) return const NoRecentTransactionView();
+      // A-71 — five, not the entire payment history down the dashboard. The
+      // full list is a tap away on the Payouts screen.
+      final shown = txns.take(5).toList();
       return ListView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: txns.length,
+        itemCount: shown.length,
         itemBuilder: (context, index) {
-          final t = txns[index];
+          final t = shown[index];
           final d = t.payAddedAt;
           final formatDate = '${d.day}/${d.month}/${d.year}';
           return HostRecentTransactionItemView(

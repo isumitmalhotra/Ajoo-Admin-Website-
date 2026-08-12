@@ -54,6 +54,20 @@ class HostBookingHistory {
   String userDetailsUserFullName;
   String userDetailsUserPnumber;
 
+  /// Which listing was booked, and by whom (A-68/A-69).
+  ///
+  /// The host's list carried neither until 2026-08-13 — the endpoint selected
+  /// six booking columns and no ids — so a host could see that a booking
+  /// existed and nothing about what was booked or who to message. 0 means the
+  /// server has not been deployed with the wider query yet; callers should
+  /// treat it as "not available" rather than as a real id.
+  int bookPropId;
+  int bookUserId;
+  double bookTotalAmt;
+  int bookNoOfGuests;
+  String propertyName;
+  String propertyAddress;
+
   HostBookingHistory({
     required this.bookId,
     required this.bookInvoice,
@@ -67,6 +81,12 @@ class HostBookingHistory {
     required this.bookingStatusBsCode,
     required this.userDetailsUserFullName,
     required this.userDetailsUserPnumber,
+    this.bookPropId = 0,
+    this.bookUserId = 0,
+    this.bookTotalAmt = 0,
+    this.bookNoOfGuests = 0,
+    this.propertyName = '',
+    this.propertyAddress = '',
   });
 
   factory HostBookingHistory.fromJson(Map<String, dynamic> json) {
@@ -94,6 +114,18 @@ class HostBookingHistory {
       return false;
     }
 
+    int parseInt(dynamic v) {
+      if (v is num) return v.toInt();
+      if (v is String) return int.tryParse(v) ?? 0;
+      return 0;
+    }
+
+    double parseDouble(dynamic v) {
+      if (v is num) return v.toDouble();
+      if (v is String) return double.tryParse(v) ?? 0;
+      return 0;
+    }
+
     return HostBookingHistory(
       bookId: json['book_id']?.toString() ?? '',
       bookInvoice: json['book_invoice']?.toString() ?? '',
@@ -109,6 +141,14 @@ class HostBookingHistory {
           json['userDetails.user_fullName']?.toString() ?? '',
       userDetailsUserPnumber:
           json['userDetails.user_pnumber']?.toString() ?? '',
+      bookPropId: parseInt(json['book_prop_id']),
+      bookUserId: parseInt(json['book_user_id']),
+      bookTotalAmt: parseDouble(json['book_total_amt']),
+      bookNoOfGuests: parseInt(json['book_no_of_guests']),
+      propertyName:
+          json['bookingProperty.property_name']?.toString() ?? '',
+      propertyAddress:
+          json['bookingProperty.property_address']?.toString() ?? '',
     );
   }
 
@@ -125,5 +165,11 @@ class HostBookingHistory {
         'bookingStatus.bs_code': bookingStatusBsCode,
         'userDetails.user_fullName': userDetailsUserFullName,
         'userDetails.user_pnumber': userDetailsUserPnumber,
+        'book_prop_id': bookPropId,
+        'book_user_id': bookUserId,
+        'book_total_amt': bookTotalAmt,
+        'book_no_of_guests': bookNoOfGuests,
+        'bookingProperty.property_name': propertyName,
+        'bookingProperty.property_address': propertyAddress,
       };
 }
