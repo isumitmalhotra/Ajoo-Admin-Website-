@@ -181,7 +181,9 @@ class _HistoryPageState extends State<HistoryPage> {
     return ListView(
       children: [
         const SizedBox(height: 90),
-        Icon(icons[bucket], size: 64, color: kLine),
+        // kLine is a border colour: #EAE4DA on the #FAF8F4 scaffold is about
+        // 1.15:1, so this icon was very nearly invisible.
+        Icon(icons[bucket], size: 64, color: kMuted.withOpacity(0.45)),
         const SizedBox(height: 12),
         Center(
           child: Text('No ${labels[bucket]} bookings',
