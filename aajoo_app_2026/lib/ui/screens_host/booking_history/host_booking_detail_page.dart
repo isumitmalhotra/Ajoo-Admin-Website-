@@ -161,8 +161,13 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
                       '₹ ${(b.bookTotalAmt > 0 ? b.bookTotalAmt : b.bookPrice).toStringAsFixed(0)}')),
               const SizedBox(width: 10),
               Expanded(
-                  child: _fact(
-                      'PAYMENT', b.bookIsCod ? 'Pay on arrival' : 'Paid online')),
+                  // The METHOD, not the state. This said "Paid online" on a
+                  // booking whose status badge two rows below read "Payment
+                  // Pending" — the tile describes how they chose to pay, and
+                  // saying "Paid" for an unpaid booking is the kind of
+                  // flattering-but-wrong label this sheet keeps turning up.
+                  child: _fact('PAYMENT',
+                      b.bookIsCod ? 'Pay on arrival' : 'Online')),
             ],
           ),
           if (b.bookNoOfGuests > 0) ...[

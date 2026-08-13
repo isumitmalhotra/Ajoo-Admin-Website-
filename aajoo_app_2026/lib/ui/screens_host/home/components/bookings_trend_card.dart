@@ -96,13 +96,20 @@ class _BookingsTrendCardState extends State<BookingsTrendCard> {
           ),
           const SizedBox(height: 14),
           SizedBox(
-            height: 120,
+            height: 132,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: data.map((e) {
-                // Scale to the tallest bar, with a floor so a single booking is
-                // still visible rather than a hairline.
-                final h = max == 0 ? 0.0 : (e.value / max) * 92.0;
+                // The bar takes whatever vertical space the two labels leave,
+                // as a fraction of the tallest month. It used to be a fixed
+                // 92px inside a 120px box, so the tallest column — count
+                // label + bar + month label — came to about 126px and Flutter
+                // painted "BOTTOM OVERFLOWED BY 10 PIXELS" across the chart on
+                // any host whose busiest month set the scale. Proportional
+                // means it cannot overflow at any text scale.
+                final factor = max == 0
+                    ? 0.04
+                    : (e.value == 0 ? 0.04 : (e.value / max).clamp(0.08, 1.0));
                 return Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -114,12 +121,20 @@ class _BookingsTrendCardState extends State<BookingsTrendCard> {
                                 fontWeight: FontWeight.w600,
                                 color: kInk2)),
                       const SizedBox(height: 3),
-                      Container(
-                        height: e.value == 0 ? 3 : (h < 8 ? 8 : h),
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        decoration: BoxDecoration(
-                          color: e.value == 0 ? kLine : kIndigo600,
-                          borderRadius: BorderRadius.circular(5),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.bottomCenter,
+                          child: FractionallySizedBox(
+                            heightFactor: factor,
+                            child: Container(
+                              margin:
+                                  const EdgeInsets.symmetric(horizontal: 3),
+                              decoration: BoxDecoration(
+                                color: e.value == 0 ? kLine : kIndigo600,
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 6),

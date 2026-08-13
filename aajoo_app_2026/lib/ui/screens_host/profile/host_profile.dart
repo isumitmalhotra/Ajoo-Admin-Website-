@@ -27,7 +27,6 @@ class HostProfilePage extends StatefulWidget {
 
 class _HostProfilePageState extends State<HostProfilePage> {
   final ImagePicker _picker = ImagePicker();
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   XFile? _profileImage;
   XFile? coverImage;
 
@@ -238,11 +237,14 @@ class _HostProfilePageState extends State<HostProfilePage> {
   Widget build(BuildContext context) {
     final user = authController.userData.value;
     return Scaffold(
-      key: _scaffoldKey,
       backgroundColor: kscaffoldColor,
-      // A-79 — the menu, on the right, opened from the top of this page.
-      endDrawer: const HostMenuDrawer(),
-      body: RefreshIndicator(
+      // This screen has no AppBar and sits in the shell's IndexedStack, so
+      // nothing was insetting it: the header row rendered underneath the
+      // status bar, with the clock sitting on top of "Profile" and the
+      // signal icons over the menu button — which also swallowed taps on it.
+      body: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
         onRefresh: () async {
           hostController.getHostProperties();
           hostController.getHostOngoing(user?.userId ?? 0);
@@ -266,8 +268,12 @@ class _HostProfilePageState extends State<HostProfilePage> {
                     tooltip: 'Menu',
                     icon: const Icon(Icons.menu_rounded,
                         size: 24, color: kInk),
-                    onPressed: () =>
-                        _scaffoldKey.currentState?.openEndDrawer(),
+                    // A-79 — slides the menu in from the right. This was a
+                    // Scaffold endDrawer, which never opened: this page is
+                    // nested inside the shell's IndexedStack, so its Scaffold
+                    // is a child of MainScreen's and never gets a drawer
+                    // surface of its own. The button was inert on device.
+                    onPressed: () => showHostMenu(context),
                   ),
                 ],
               ),
@@ -601,6 +607,7 @@ class _HostProfilePageState extends State<HostProfilePage> {
               }),
             ],
           ),
+        ),
         ),
       ),
     );

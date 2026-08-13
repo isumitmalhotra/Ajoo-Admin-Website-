@@ -186,14 +186,56 @@ class HostMenuList extends StatelessWidget {
   }
 }
 
-/// The same menu as a right-hand drawer, opened from the profile header
-/// (A-79).
+/// Slide the menu in from the right (A-79).
+///
+/// NOT a Scaffold endDrawer. The host profile is a page inside the shell's
+/// IndexedStack, so its Scaffold is nested inside MainScreen's — and a nested
+/// Scaffold never gets its own drawer surface, so openEndDrawer() did nothing
+/// at all. Verified on device: the button was inert. A route of its own works
+/// wherever the page is mounted.
+Future<void> showHostMenu(BuildContext context) {
+  return showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Menu',
+    barrierColor: Colors.black.withOpacity(0.35),
+    transitionDuration: const Duration(milliseconds: 220),
+    pageBuilder: (_, __, ___) => const _HostMenuPanel(),
+    transitionBuilder: (_, anim, __, child) => SlideTransition(
+      position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+          .animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+      child: child,
+    ),
+  );
+}
+
+class _HostMenuPanel extends StatelessWidget {
+  const _HostMenuPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.82,
+        height: double.infinity,
+        child: Material(
+          color: kCream,
+          child: const HostMenuDrawer(),
+        ),
+      ),
+    );
+  }
+}
+
+/// The menu's contents. Rendered inside [showHostMenu]'s panel.
 class HostMenuDrawer extends StatelessWidget {
   const HostMenuDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Drawer(
+      elevation: 0,
       backgroundColor: kCream,
       child: SafeArea(
         child: Column(
