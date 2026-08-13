@@ -126,6 +126,35 @@ class _PropertyPageState extends State<PropertyPage>
   double? get _rating => _single?.rating ?? widget.property.rating;
   int get _reviewCount => _single?.reviewCount ?? widget.property.reviewCount;
 
+  /// What this stay actually is, for the pill over the hero image. Null when
+  /// the listing carries no category — the pill then renders nothing rather
+  /// than the literal "Apartment" it used to print on every property.
+  ///
+  /// `_single.categories` is a List<dynamic> whose entries are maps like
+  /// `{cat_id: 5, cat_title: Apartments, cat_slug: apartments}`, so a bare
+  /// toString() prints the whole record. The Property fallback holds plain
+  /// title strings. Both shapes are handled here.
+  String? get _heroCategory {
+    String? titleOf(dynamic c) {
+      if (c == null) return null;
+      if (c is Map) {
+        final t = (c['cat_title'] ?? c['title'] ?? '').toString().trim();
+        return t.isEmpty ? null : t;
+      }
+      final s = c.toString().trim();
+      return s.isEmpty ? null : s;
+    }
+
+    for (final source in [_single?.categories, widget.property.categoryTitles]) {
+      if (source == null) continue;
+      for (final c in source) {
+        final t = titleOf(c);
+        if (t != null) return t;
+      }
+    }
+    return null;
+  }
+
 
   @override
   void initState() {
@@ -1954,61 +1983,61 @@ Book now: https://aajoo.com/property/${widget.id}
         Positioned(
           bottom: 20,
           left: 16,
+          // Two pills over the hero image, and both used to be fiction.
+          //
+          // The rating showed "0.0" while the reviews loaded and then a
+          // hardcoded "4.2" for any stay with no rating at all — an invented
+          // score, on the listing page, above a line that correctly said "New
+          // listing". Two answers on one screen, and the flattering one was
+          // made up. Same class as the badge that read is_verify: this is the
+          // third copy of the invented-rating bug, after widget.rating's
+          // constant "4.5" in the hero badge and the meta row.
+          //
+          // The category said "Apartment" on every property in the catalogue,
+          // regardless of what it actually is.
+          //
+          // Now: the rating pill appears only for a stay someone has really
+          // rated, and the category pill prints the listing's own first
+          // category, or nothing.
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.star, size: 16, color: Colors.amber),
-                    const SizedBox(width: 4),
-                    Obx(
-                      () => propertyController.isLoading.value
-                          ? const Text("0.0")
-                          : propertyController.propertyReviewResponse.value
-                                      .data!.averageRating
-                                      .toString() ==
-                                  "null"
-                              ? Text(
-                                  "4.2",
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Text(
-                                  propertyController.propertyReviewResponse
-                                      .value.data!.averageRating
-                                      .toString(),
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: Colors.white,
-                                  ),
-                                ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      "Apartment",
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.white,
+              if (_rating != null) ...[
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.45),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.star, size: 16, color: Colors.amber),
+                      const SizedBox(width: 4),
+                      Text(
+                        _rating!.toStringAsFixed(1),
+                        style: theme.textTheme.bodyMedium
+                            ?.copyWith(color: Colors.white),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+              ],
+              if (_heroCategory != null)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.45),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Text(
+                    _heroCategory!,
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: Colors.white),
+                  ),
+                ),
             ],
           ),
         ),
