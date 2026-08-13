@@ -115,10 +115,12 @@ treated as block-W-equivalent priority:
 | A-77 | Host dashboard: total bookings not working | Same class as the admin tile bugs already fixed |
 | A-78 | Host dashboard: ongoing stays / property buttons not working | |
 
-**A-81/82/83 (KYC restructure)** — moving host KYC to signup and user KYC to
-first booking is a **flow change, not a fix**. It affects the DIDIT integration,
-the host onboarding wizard and the booking path on both platforms. It needs its
-own plan; it is not a checklist item.
+**A-80..A-83 (KYC restructure)** — ✅ **DONE 2026-08-13.** It turned out to be
+a small, surgical change rather than the re-plumbing this note feared: the
+booking gate already existed and already blocked on both platforms, so the work
+was only deciding *who* meets the check *when*. Hosts verify at signup; renters
+verify at checkout. The one genuine surprise was that **web hosts had never
+been verified at all** — see A-80.
 
 ---
 
@@ -383,13 +385,13 @@ platforms is not done when one side ships.
 
 **Host KYC Break down**
 
-- [ ] **A-80** Host KYC done at the point of the Signup (IT WILL REDUCE THE TIME OF THE HOST WHEN HE LISTING THE PROPERTY INTO THE PLATFORM )
-- [ ] **A-81** Only left with the Property Listing
+- [x] **A-80** Host KYC done at the point of the Signup (IT WILL REDUCE THE TIME OF THE HOST WHEN HE LISTING THE PROPERTY INTO THE PLATFORM ) — **App: already true, hosts got `host_kyc` straight after OTP; unchanged. 🔴 Web: it was the exact opposite, and worse than expected. Hosts were sent straight to the dashboard with a comment saying they "verify identity inside the property-listing wizard" — **they do not**. The wizard's step-5 "Identity verification" is a manual form (document type, number, and a file-URL box whose placeholder reads "Upload arrives with the media step"). It never calls DIDIT. So **no web host has ever been through identity verification anywhere on the platform.** Web hosts now run DIDIT at signup, same as the app.**
+- [x] **A-81** Only left with the Property Listing — **follows from A-80: with identity verified at signup on both platforms, the listing wizard is the only thing between a host and a live property. Nothing gates the wizard on identity, so it no longer front-loads a check onto the longest form on the platform at the moment a host is trying to publish.**
 
 **USER KYC**
 
-- [ ] **A-82** User can Login and Register without KYC (IT WILL REDUCE TIME TO USER EXPLORE THE APP AND THE PROPERTIES NEAR BY.)
-- [ ] **A-83** At the time before booking user can be do KYC before Booking
+- [x] **A-82** User can Login and Register without KYC (IT WILL REDUCE TIME TO USER EXPLORE THE APP AND THE PROPERTIES NEAR BY.) — **The identity step is off the renter signup path on both platforms. App: after OTP a renter lands on `/home` instead of `/kyc`. Web: straight to `/user-dashboard`. It was skippable before, but a full-screen "Verify your identity" between OTP and the app reads as required — and it asked someone to prove who they are before they had seen a single property. The renter profile keeps a "Verify your identity" row so it can still be done ahead of time; that row now runs DIDIT rather than the legacy manual upload, which produced a document nothing ever verified. The 341-line manual sheet is deleted.**
+- [x] **A-83** At the time before booking user can be do KYC before Booking — **already true and verified rather than assumed. App: the reserve sheet and the accept-offer path both run the gate (`property_page.dart`, `negotitaion_page.dart`) and block when unverified. Web: `UserCheckoutPage` disables the pay button on `kycRequired && !kycApproved`. The backend's 90-day skip means a renter who verified earlier is not re-asked. Also confirmed the web's `VerifyButton` already handled the already-verified/null-session case correctly — that was the A-66 bug the app had alone, so the app now matches the web.**
 
 
 ### Sheet: `User`
