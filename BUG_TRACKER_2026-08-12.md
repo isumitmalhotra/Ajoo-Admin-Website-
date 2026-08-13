@@ -215,10 +215,10 @@ platforms is not done when one side ships.
 
 **When open app**
 
-- [ ] **A-1** change the loader
-- [ ] **A-2** add ringtone/bell tone provided by us / sharing on whatsapp
-- [ ] **A-3** Change the logo from the app icon / inside and outside the app
-- [ ] **A-4** Landing Page add slide instead of single image
+- [~] **A-1** change the loader — 🔒 **BLOCKED ON YOUR ASSET.** The splash runs `Lottie.asset('assets/Animation - 1750412011914.json')` — a stock file still carrying its download timestamp. Swapping it is a one-line change; we need the branded animation.
+- [~] **A-2** add ringtone/bell tone provided by us / sharing on whatsapp — **Sharing: DONE** (`Share.share` on the property page — the system sheet includes WhatsApp). 🔒 **Ringtone: BLOCKED ON YOUR ASSET.** `AndroidNotificationDetails("channel_id", "channel_name")` uses the device default, there is no `android/app/src/main/res/raw/`, and the sheet says the tone is "provided by us". Send the file and it is a channel definition plus one asset. **Note:** Android caches notification channels — adding a custom sound needs a NEW channel id, or existing installs keep the old sound forever.
+- [~] **A-3** Change the logo from the app icon / inside and outside the app — 🔒 **BLOCKED ON YOUR ASSET.** In-app art (`assets/aajoo_new_logo.png`) is in place; the launcher icon is still the stock `ic_launcher.png` and there is no `flutter_launcher_icons` config in `pubspec.yaml`. Needs the final 1024×1024 icon.
+- [x] **A-4** Landing Page add slide instead of single image — **already done in an earlier batch, never ticked.** `auth_page.dart` runs a `CarouselSlider` over three images (`home_1/2/3.jpg`), autoplaying on a 3s interval.
 
 **Sign up**
 
@@ -250,13 +250,13 @@ platforms is not done when one side ships.
 
 - [x] **A-19** ✅ one category row, not two — *🔴 The two rows were NOT duplicates: the top was a **hardcoded** list (incl. 'Beach'/'Hills', which aren't categories) that **filtered nothing**; the bottom had the real API categories and did the work. Top row now takes the API list and filters; bottom deleted along with its helpers and a parallel `_selectedHotelIndex`.*
 - [x] **A-20** ✅ Fix all the cat. icons — *there were **two icon maps** that disagreed (cottage→cabin vs cottage; boutique→hotel vs storefront), so one category drew two different icons on one screen. Consolidated to one, ordered so the nine real categories match before looser keywords. **Note:** three icons will still look wrong until `Resort`/`couple`/`party` are purged — that is A-52, a data fix.*
-- [ ] **A-21** Fix the Pre Booking & Lux Buttoon Below the Browse by Cat.
+- [x] **A-21** Fix the Pre Booking & Lux Buttoon Below the Browse by Cat. — **already done in an earlier batch, never ticked.** `homescreen.dart` carries an explicit `A-21` comment: Pre-Booking and the animated LUX toggle sit directly under the category row.
 
 **Properties in your current locations**
 
-- [ ] **A-22** show Properties in the slider and gave the see all button top right / Show 10-12 properties
-- [ ] **A-23** Then show Curated For you
-- [ ] **A-24** show Properties in the slider and gave the see all button top right / Show 10-12 properties
+- [x] **A-22** show Properties in the slider and gave the see all button top right / Show 10-12 properties — **already done, never ticked.** `homescreen.dart` carries an explicit `A-22 / A-23 / A-24` comment; both rails use the shared `PropertySlider` with "See all" top-right.
+- [x] **A-23** Then show Curated For you — **already done, never ticked.** Second rail, titled "Curated for you".
+- [x] **A-24** show Properties in the slider and gave the see all button top right / Show 10-12 properties — **already done, never ticked.** Same shared `PropertySlider`, not a second copy.
 - [x] **A-25** Show Blogs 4-5 and top right add see all and go to blog page — **blog list + post screens built on app AND web (`/blog`, `/blog/:id`); "See all" and cards now go somewhere**
 - [x] **A-26** Show the FAQ and end the page. — **`HomeFaqStrip` at the foot of the home screen, "See all" → /faq**
 
