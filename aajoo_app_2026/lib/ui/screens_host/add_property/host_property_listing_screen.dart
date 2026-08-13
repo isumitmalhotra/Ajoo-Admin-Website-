@@ -16,6 +16,8 @@ import 'package:rent_home/ui/screens_host/add_property/property_image_picker.dar
 import 'package:rent_home/ui/screens_host/host_controller.dart';
 import 'package:rent_home/ui/screens_host/host_tab_provider.dart';
 
+import 'package:rent_home/ui/screens_renter/nearby_bookings/area_rails.dart'
+    show kHiddenBrowseCategories;
 import 'widgets/property_form_widgets.dart';
 import 'package:rent_home/widgets/app_ui.dart' show AppCard;
 
@@ -139,9 +141,25 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
         _minPriceController.text.trim().isEmpty) {
       return 3;
     }
+    // House rules is a required field on step 4, and this function did not
+    // know about it. The effect was a dead end: Submit ran the form's
+    // validate(), which failed on House Rules, flashed a snackbar, then asked
+    // this function where to go — and because every field it checked was
+    // fine, it answered "stay where you are". The host was left on the last
+    // step with a button that appeared to do nothing at all, and no way to
+    // find out which field was blocking them. Verified on device.
+    if (_houseRulesController.text.trim().isEmpty) return 4;
     if (_contactController.text.trim().isEmpty ||
         _emailController.text.trim().isEmpty) {
       return 5;
+    }
+    // These two only exist when their property type is selected, and both are
+    // required when they do — the same silent dead end as House Rules.
+    if (isSharingSelected && _numberOfBedsController.text.trim().isEmpty) {
+      return 0;
+    }
+    if (isPartySelected && _numberOfGuestsController.text.trim().isEmpty) {
+      return 0;
     }
     return _step;
   }
@@ -170,7 +188,16 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
             .toList() ??
         [];
     hotelTypes.removeWhere((t) => t.toLowerCase() == 'apartment');
-    hotelTypes.add('Family');
+    // E-16 — never offer a host a category a guest cannot browse to.
+    //
+    // This listed Resort, Couple and Party, all three of which the guest side
+    // filters out of Browse by Category on the home and pre-booking screens,
+    // and added "Family", which is not a category the platform has at all. So
+    // a host could file a listing somewhere no guest can ever reach it —
+    // which is exactly how the 10 orphaned listings behind kHiddenBrowseCategories
+    // came to exist. One list, both sides.
+    hotelTypes.removeWhere(
+        (t) => kHiddenBrowseCategories.contains(t.trim().toLowerCase()));
 
     final user = authController.userData.value;
     _emailController.text = user?.email ?? '';
@@ -927,7 +954,8 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
             const SizedBox(width: 8),
             Expanded(
                 child: PropertyTextField(
-                    _zipCodeController, 'Zip Code', Icons.pin_drop)),
+                    _zipCodeController, 'Zip Code', Icons.pin_drop,
+                    kind: FieldKind.pincode)),
           ]),
           const SizedBox(height: 16),
         ],
@@ -1026,6 +1054,7 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
               'Quiet hours (e.g. 10 PM - 7 AM)', Icons.nightlight_round,
               isRequired: false),
           PropertyTextField(_videoUrlController, 'Video tour URL (optional)',
+              kind: FieldKind.url,
               Icons.videocam_outlined,
               isRequired: false),
           const SizedBox(height: 8),
@@ -1316,8 +1345,9 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
         children: [
           const SectionTitle('Contact Information'),
           PropertyTextField(_contactController, 'WhatsApp Number', Icons.phone,
-              isNumeric: true),
-          PropertyTextField(_emailController, 'Email', Icons.email),
+              kind: FieldKind.phone),
+          PropertyTextField(_emailController, 'Email', Icons.email,
+              kind: FieldKind.email),
           const SizedBox(height: 10),
         ],
       );

@@ -20,6 +20,19 @@ class PropertyService {
   final String baseUrl = "https://aajaodev.onrender.com/";
   PropertyService() {
     dio.options.baseUrl = baseUrl;
+    // Dio defaults every timeout to null, which means WAIT FOREVER. Submitting
+    // a listing posts several megabytes of photos and documents in one
+    // multipart request, and when that stalls — Render's free tier sleeping,
+    // a slow upload, a dropped connection — the host sat on a spinning Submit
+    // button with no error, no timeout and no way back. Verified on device:
+    // ten minutes of spinner, nothing created, nothing said. Same class as
+    // the negotiation loader that only a socket event could clear.
+    //
+    // Generous, because the upload is genuinely large — but finite, so the
+    // failure path can actually run and tell the host what happened.
+    dio.options.connectTimeout = const Duration(seconds: 30);
+    dio.options.sendTimeout = const Duration(minutes: 3);
+    dio.options.receiveTimeout = const Duration(minutes: 3);
     dio.interceptors.add(PrettyDioLogger(
       requestHeader: kDebugMode,
       requestBody: kDebugMode,
@@ -77,10 +90,19 @@ class PropertyService {
       print("Failed to add property: ${response.data}");
       return false;
     } on DioException catch (e) {
+      final timedOut = e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.connectionTimeout;
       lastAddError = _messageFrom(e.response?.data) ??
           (e.response?.statusCode == 429
               ? 'Too many upload attempts. Wait a minute and try again.'
-              : 'Could not reach the server. Check your connection.');
+              // A timeout is not "check your connection" — the connection is
+              // usually fine and the photos are simply large. Say what would
+              // actually help.
+              : timedOut
+                  ? 'Upload timed out. Your photos may be too large — try '
+                      'fewer or smaller images, then submit again.'
+                  : 'Could not reach the server. Check your connection.');
       print("Error: ${e.response?.data} ${e.message}");
       return false;
     }
