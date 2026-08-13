@@ -59,14 +59,28 @@ class VerifyController extends GetxController {
 
         showAlert('Success', 'Verification successful', false);
 
-        // Identity verification (DIDIT) step — verify once at registration so
-        // renters aren't re-checked at booking and hosts can list. The KYC
-        // screen's "I'll do this later" routes on to the dashboard.
+        // Identity verification, split by who is signing up (A-80/A-82).
+        //
+        // Hosts verify here, at registration. A host cannot be paid or take a
+        // booking unverified, so the check has to happen before they list —
+        // doing it now means the listing wizard is the only thing left
+        // afterwards, which is the point of A-80/A-81.
+        //
+        // Renters do NOT. Someone who has just made an account wants to look
+        // at properties, and an identity check is a strange thing to meet
+        // before you have seen anything worth verifying for. The booking gate
+        // already asks — see the reserve sheet and accept-offer paths — so
+        // nothing goes unverified that matters; it is asked at the moment it
+        // means something instead of at the moment it costs the most.
         final isHost = response.data.user.isHost;
-        Get.offAllNamed('/kyc', arguments: {
-          'context': isHost ? 'host_kyc' : 'renter_kyc',
-          'isHost': isHost,
-        });
+        if (isHost) {
+          Get.offAllNamed('/kyc', arguments: {
+            'context': 'host_kyc',
+            'isHost': true,
+          });
+        } else {
+          Get.offAllNamed('/home');
+        }
       } else {
         error.value = response.message;
         showAlert('Error', response.message, true);

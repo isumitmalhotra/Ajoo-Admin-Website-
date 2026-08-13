@@ -37,13 +37,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   final _formKey = GlobalKey<FormState>();
   final _scrollController = ScrollController();
   final ImagePicker _picker = ImagePicker();
-  Future<XFile?> _pickKycDocument() async {
-    final pickedFile = await _picker.pickMedia();
-    if (pickedFile != null) {
-      return pickedFile;
-    }
-    return null;
-  }
 
   // Form controllers
   final TextEditingController _fnameController = TextEditingController();
@@ -277,347 +270,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
         ],
       ),
-    );
-  }
-
-  void _showKycBottomSheet(BuildContext context) {
-    XFile? selectedFile;
-    final TextEditingController cardNumberController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    String? selectedDocType;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-                left: 16,
-                right: 16,
-                top: 16,
-              ),
-              child: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Upload KYC Document',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Iconsax.close_circle,
-                              color: Colors.grey),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ],
-                    ),
-                    // DIDIT identity status — once verified the manual upload
-                    // below is no longer required.
-                    Obx(() {
-                      final verified =
-                          authController.userData.value?.isKycVerified ?? false;
-                      if (!verified) return const SizedBox.shrink();
-                      return Container(
-                        margin: const EdgeInsets.only(top: 10),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 7),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF15803D).withOpacity(0.10),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.verified,
-                                size: 16, color: Color(0xFF15803D)),
-                            SizedBox(width: 6),
-                            Text('Identity verified',
-                                style: TextStyle(
-                                    color: Color(0xFF15803D),
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 13)),
-                          ],
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 16),
-
-                    // Document Type Dropdown
-                    Obx(() {
-                      if (commonController.isLoading.value) {
-                        return Container(
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Center(
-                            child:
-                                CircularProgressIndicator(color: kprimaryColor),
-                          ),
-                        );
-                      }
-
-                      if (commonController.docTypes.value == null ||
-                          commonController.docTypes.value!.data.isEmpty) {
-                        return Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.red[50],
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.red[200]!),
-                          ),
-                          child: Text(
-                            'Document types unavailable',
-                            style: TextStyle(color: Colors.grey[700]),
-                          ),
-                        );
-                      }
-
-                      return DropdownButtonFormField<String>(
-                        value: selectedDocType,
-                        decoration: InputDecoration(
-                          labelText: 'Select Document Type',
-                          prefixIcon: const Icon(Iconsax.document_text,
-                              color: kprimaryColor),
-                          filled: true,
-                          fillColor: Colors.grey[100],
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please select document type';
-                          }
-                          return null;
-                        },
-                        items: commonController.docTypes.value!.data
-                            .map((docType) {
-                          return DropdownMenuItem(
-                            value: docType.dId.toString(),
-                            child: Text(docType.dTitle),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedDocType = value;
-                          });
-                        },
-                      );
-                    }),
-
-                    const SizedBox(height: 16),
-
-                    // Document Upload Section
-                    GestureDetector(
-                      onTap: () async {
-                        final file = await _pickKycDocument();
-                        if (file != null) {
-                          setState(() {
-                            selectedFile = file;
-                          });
-                        }
-                      },
-                      child: Container(
-                        height: 100,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: kLine),
-                        ),
-                        child: Center(
-                          child: selectedFile == null
-                              ? const Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Iconsax.document_upload,
-                                        color: kprimaryColor, size: 30),
-                                    SizedBox(height: 8),
-                                    Text('Select Document',
-                                        style: TextStyle(color: Colors.grey)),
-                                  ],
-                                )
-                              : Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(Iconsax.tick_circle,
-                                        color: Colors.green, size: 30),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      selectedFile!.name,
-                                      style: const TextStyle(
-                                          fontSize: 14, color: Colors.black87),
-                                      textAlign: TextAlign.center,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Document Number Field
-                    TextFormField(
-                      controller: cardNumberController,
-                      decoration: InputDecoration(
-                        labelText: 'Document Number',
-                        prefixIcon:
-                            const Icon(Iconsax.card, color: kprimaryColor),
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      keyboardType: TextInputType.text,
-                      validator: (value) {
-                        final title = selectedDocType != null
-                            ? _docTitleFromId(selectedDocType!)
-                            : null;
-                        return _validateDocNumber(value, docTypeTitle: title);
-                      },
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Submit Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          if (formKey.currentState!.validate() &&
-                              selectedFile != null) {
-                            try {
-                              authController
-                                  .updateUserProfile(
-                                UserUpdateRequest(
-                                  userFname: _fnameController.text
-                                          .trim()
-                                          .isNotEmpty
-                                      ? _fnameController.text.trim()
-                                      : (authController.userData.value?.fullName
-                                              .split(' ')
-                                              .first ??
-                                          ''),
-                                  userLname: _lnameController.text
-                                          .trim()
-                                          .isNotEmpty
-                                      ? _lnameController.text.trim()
-                                      : (authController.userData.value?.fullName
-                                                      .split(' ')
-                                                      .length ??
-                                                  0) >
-                                              1
-                                          ? authController
-                                              .userData.value!.fullName
-                                              .split(' ')
-                                              .last
-                                          : '',
-                                  userPnumber:
-                                      _phoneController.text.trim().isNotEmpty
-                                          ? _phoneController.text.trim()
-                                          : (authController.userData.value
-                                                  ?.phoneNumber ??
-                                              ''),
-                                  userAddress:
-                                      _addressController.text.trim().isNotEmpty
-                                          ? _addressController.text.trim()
-                                          : (authController
-                                                  .userData.value?.address ??
-                                              ''),
-                                  userCity: _cityController.text
-                                          .trim()
-                                          .isNotEmpty
-                                      ? _cityController.text.trim()
-                                      : (authController.userData.value?.city ??
-                                          ''),
-                                  userZipcode:
-                                      _zipcodeController.text.trim().isNotEmpty
-                                          ? _zipcodeController.text.trim()
-                                          : (authController
-                                                  .userData.value?.zipcode ??
-                                              ''),
-                                  docNumber: cardNumberController.text.trim(),
-                                  docType: selectedDocType,
-                                  idDoc: selectedFile != null
-                                      ? File(selectedFile!.path)
-                                      : null,
-                                ),
-                              )
-                                  .then((_) {
-                                authController.getUserDetails();
-                              });
-                              Navigator.pop(context);
-
-                              Get.snackbar(
-                                'Success',
-                                'KYC document submitted for verification',
-                                backgroundColor: kprimaryColor,
-                                colorText: Colors.white,
-                                snackPosition: SnackPosition.BOTTOM,
-                              );
-                            } catch (e) {
-                              Get.snackbar(
-                                'Error',
-                                'Failed to submit KYC document: $e',
-                                backgroundColor: Colors.red,
-                                colorText: Colors.white,
-                                snackPosition: SnackPosition.BOTTOM,
-                              );
-                            }
-                          } else {
-                            Get.snackbar(
-                              'Error',
-                              'Please fill all required fields and select a document',
-                              backgroundColor: Colors.red,
-                              colorText: Colors.white,
-                              snackPosition: SnackPosition.BOTTOM,
-                            );
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: kprimaryColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Submit',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 
@@ -1258,7 +910,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       maxlength: 6,
                                       keyboardType: TextInputType.number),
                                   const SizedBox(height: 20),
-                                  // KYC Document Section
+                                  // KYC section.
+                                  //
+                                  // A-82 removed the identity check from
+                                  // signup, so this is now the only place a
+                                  // renter can verify ahead of time rather
+                                  // than being stopped at checkout. It runs
+                                  // DIDIT — the same check the booking gate
+                                  // runs — instead of the legacy manual
+                                  // upload, which produced a document nothing
+                                  // verified.
                                   if (authController.userData.value?.kycDocs ==
                                       null)
                                     Card(
@@ -1269,17 +930,17 @@ class _ProfileScreenState extends State<ProfileScreen>
                                               BorderRadius.circular(12)),
                                       child: ListTile(
                                         leading: const Icon(
-                                            Iconsax.document_upload,
+                                            Icons.verified_user_outlined,
                                             color: kprimaryColor,
                                             size: 24),
                                         title: const Text(
-                                          'Upload KYC Document',
+                                          'Verify your identity',
                                           style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w600),
                                         ),
                                         subtitle: const Text(
-                                          'Submit ID proof for government verification',
+                                          'Do it now and checkout stays instant later',
                                           style: TextStyle(
                                               fontSize: 14, color: Colors.grey),
                                         ),
@@ -1287,8 +948,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                             Iconsax.arrow_right_3,
                                             color: kprimaryColor,
                                             size: 20),
-                                        onTap: () =>
-                                            _showKycBottomSheet(context),
+                                        onTap: _reRunKyc,
                                       ),
                                     )
                                   else
