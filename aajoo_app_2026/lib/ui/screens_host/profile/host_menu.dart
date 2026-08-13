@@ -186,63 +186,41 @@ class HostMenuList extends StatelessWidget {
   }
 }
 
-/// Slide the menu in from the right (A-79).
+/// Open the host menu from the profile header (A-79).
 ///
-/// NOT a Scaffold endDrawer. The host profile is a page inside the shell's
-/// IndexedStack, so its Scaffold is nested inside MainScreen's — and a nested
-/// Scaffold never gets its own drawer surface, so openEndDrawer() did nothing
-/// at all. Verified on device: the button was inert. A route of its own works
-/// wherever the page is mounted.
+/// Two earlier attempts did not work on device, and both are worth recording
+/// so nobody re-tries them:
+///
+///  1. A Scaffold `endDrawer` on the profile page. The page is a child of the
+///     shell's IndexedStack, so its Scaffold is nested inside MainScreen's —
+///     and a nested Scaffold never gets a drawer surface. The button was
+///     inert.
+///  2. A showGeneralDialog panel wrapping [Drawer]. A Drawer outside a
+///     Scaffold has no drawer scope to attach to and rendered nothing.
+///
+/// A modal sheet needs no Scaffold ancestor and no drawer scope, so it works
+/// wherever the page is mounted. The button stays where the client asked for
+/// it — top-right of the profile.
 Future<void> showHostMenu(BuildContext context) {
-  return showGeneralDialog(
+  return showModalBottomSheet<void>(
     context: context,
-    barrierDismissible: true,
-    barrierLabel: 'Menu',
-    barrierColor: Colors.black.withOpacity(0.35),
-    transitionDuration: const Duration(milliseconds: 220),
-    pageBuilder: (_, __, ___) => const _HostMenuPanel(),
-    transitionBuilder: (_, anim, __, child) => SlideTransition(
-      position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
-          .animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
-      child: child,
+    isScrollControlled: true,
+    backgroundColor: kCream,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
     ),
-  );
-}
-
-class _HostMenuPanel extends StatelessWidget {
-  const _HostMenuPanel();
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.82,
-        height: double.infinity,
-        child: Material(
-          color: kCream,
-          child: const HostMenuDrawer(),
+    builder: (sheetContext) => SafeArea(
+      top: false,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(sheetContext).size.height * 0.85,
         ),
-      ),
-    );
-  }
-}
-
-/// The menu's contents. Rendered inside [showHostMenu]'s panel.
-class HostMenuDrawer extends StatelessWidget {
-  const HostMenuDrawer({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      elevation: 0,
-      backgroundColor: kCream,
-      child: SafeArea(
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 12, 10),
+              padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
               child: Row(
                 children: [
                   Text('Menu',
@@ -253,27 +231,28 @@ class HostMenuDrawer extends StatelessWidget {
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.close, color: kInk2),
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () => Navigator.of(sheetContext).pop(),
                   ),
                 ],
               ),
             ),
             const Divider(color: kLine, height: 1),
-            Expanded(
+            Flexible(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                shrinkWrap: true,
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
                 children: [
-                  // Close the drawer before navigating: popping after the push
-                  // races the navigation, which is what made the old host
-                  // drawer's Logout unreliable.
+                  // Close before navigating: popping after the push races the
+                  // navigation, which is what made the old host drawer's
+                  // Logout unreliable.
                   HostMenuList(
-                      beforeNavigate: () => Navigator.of(context).pop()),
+                      beforeNavigate: () => Navigator.of(sheetContext).pop()),
                 ],
               ),
             ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
 }
