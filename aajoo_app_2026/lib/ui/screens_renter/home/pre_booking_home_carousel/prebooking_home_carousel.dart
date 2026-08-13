@@ -12,12 +12,21 @@ class PreBookingHomeCarousel extends StatefulWidget {
   final String title;
   final VoidCallback? onSeeAll;
 
+  /// The category currently filtering this list, if any. Only used to explain
+  /// an empty result honestly — see _buildEmptyState.
+  final String? filterLabel;
+
+  /// Clears that filter. Omitted when the caller has no filter to clear.
+  final VoidCallback? onClearFilter;
+
   const PreBookingHomeCarousel({
     super.key,
     required this.properties,
     this.isLoading = false,
     this.title = "Featured Properties",
     this.onSeeAll,
+    this.filterLabel,
+    this.onClearFilter,
   });
 
   @override
@@ -607,11 +616,21 @@ class _PreBookingHomeCarouselState extends State<PreBookingHomeCarousel> {
     );
   }
 
+  /// Nothing to show — and the reason matters.
+  ///
+  /// This always read "No stays available yet / Check back soon", which is a
+  /// statement about the whole platform. After a guest taps a category it is
+  /// also untrue: the stays are there, none of them carry that category. Being
+  /// told the app is empty when you have just filtered it is how a working
+  /// filter looks broken, so when a filter is on, the message names it and
+  /// offers the way back.
   Widget _buildEmptyState() {
+    final filter = widget.filterLabel?.trim();
+    final filtered = filter != null && filter.isNotEmpty;
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16.0),
-      padding: const EdgeInsets.symmetric(vertical: 36),
+      padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
       decoration: BoxDecoration(
         color: kSurface,
         borderRadius: BorderRadius.circular(18),
@@ -628,11 +647,15 @@ class _PreBookingHomeCarouselState extends State<PreBookingHomeCarousel> {
               color: kIndigo.withOpacity(0.07),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.villa_outlined, size: 28, color: kIndigo),
+            child: Icon(
+                filtered ? Icons.filter_alt_off_outlined : Icons.villa_outlined,
+                size: 28,
+                color: kIndigo),
           ),
           const SizedBox(height: 14),
           Text(
-            "No stays available yet",
+            filtered ? 'No $filter near you' : 'No stays available yet',
+            textAlign: TextAlign.center,
             style: fraunces(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -641,9 +664,26 @@ class _PreBookingHomeCarouselState extends State<PreBookingHomeCarousel> {
           ),
           const SizedBox(height: 4),
           Text(
-            "Check back soon for new places to stay",
-            style: inter(fontSize: 12.5, color: kMuted),
+            filtered
+                ? 'Other stays are available here — just none listed under this category.'
+                : 'Check back soon for new places to stay',
+            textAlign: TextAlign.center,
+            style: inter(fontSize: 12.5, color: kMuted, height: 1.45),
           ),
+          if (filtered && widget.onClearFilter != null) ...[
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: widget.onClearFilter,
+              icon: const Icon(Icons.close, size: 16),
+              label: const Text('Show all stays'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: kIndigo600,
+                side: const BorderSide(color: kLine),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
         ],
       ),
     );

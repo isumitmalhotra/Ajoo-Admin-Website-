@@ -51,6 +51,12 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
   // for the duplicate lower row, and the two could disagree about what was
   // filtered.
   int _propertyType = 0;
+
+  /// The category the guest is filtering by, or null for "All". Held so an
+  /// empty result can name it — 16 of 29,241 live properties carry any
+  /// category at all, so most filters legitimately return nothing and the
+  /// screen has to say why rather than look broken.
+  String? _selectedCategoryTitle;
   late AnimationController _animationController;
   late Timer _timer;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -301,11 +307,14 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                               categories: ['All', ...cats.map((c) => c.catTitle)],
                               selectedIndex: _propertyType,
                               onChanged: (i) {
-                                setState(() => _propertyType = i);
-                                if (i == 0) {
+                                final cat = i == 0 ? null : cats[i - 1];
+                                setState(() {
+                                  _propertyType = i;
+                                  _selectedCategoryTitle = cat?.catTitle;
+                                });
+                                if (cat == null) {
                                   mapController.fetchProperties();
                                 } else {
-                                  final cat = cats[i - 1];
                                   _filterByCategoryId(cat.catId, cat.catTitle);
                                 }
                               },
@@ -506,6 +515,19 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                                   child: PreBookingHomeCarousel(
                                     properties:
                                         mapController.properties.toList(),
+                                    // So an empty result can say which filter
+                                    // emptied it, rather than claiming the
+                                    // platform has no stays.
+                                    filterLabel: _selectedCategoryTitle,
+                                    onClearFilter: _selectedCategoryTitle == null
+                                        ? null
+                                        : () {
+                                            setState(() {
+                                              _propertyType = 0;
+                                              _selectedCategoryTitle = null;
+                                            });
+                                            mapController.fetchProperties();
+                                          },
                                   ),
                                 ),
                               ],
