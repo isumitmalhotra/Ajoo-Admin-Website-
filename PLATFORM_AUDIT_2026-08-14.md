@@ -26,7 +26,7 @@ the running system instead.
 | 1 | Admin portal — the 20 web-sheet items | ✅ **Done** — 19/20, W-13 partial |
 | 2 | Guest web E2E — every public page, dead APIs, dummy data | ✅ **Done** — 14 fixed, 5 open |
 | 3 | Host web E2E | ✅ **Done** — 2 fixed, 7 open |
-| 4 | App E2E | Largely covered 2026-08-13 |
+| 4 | App E2E | ✅ **Done** — 5 fixed, 5 open |
 | 5 | Fix → redeploy → re-verify | Rolling |
 
 ## Deployed and verified live
@@ -110,6 +110,7 @@ now sees on screen.
 | C-8 | 🔴 **Boost sells plans that charge nothing and do nothing** (H-3, H-4) | Decide: wire payment + search ranking (with paid-placement labelling), or take the page down. It currently offers ₹499/₹1,499/₹3,999 plans |
 | C-9 | **Referral reward has no payment path** (H-6) | Commit to settling manually via `/admin/referrals/list`, or build a wallet. Guests are promised ₹300 |
 | C-10 | Blog is placeholder content (G-13) | Five posts reading "blog one".."blog five", live and linked from the homepage |
+| C-11 | App will still call the **dev** backend in production (M-6) | Decide the production API host. `_prodBaseUrl` currently equals `_devBaseUrl` and the host is hardcoded in 20 files |
 
 ### Engineering — found, not yet fixed
 
@@ -216,3 +217,44 @@ Checked carefully because they looked wrong at first glance and were not:
 | H-7 | `POST /properties/search` peaked at **3.9 s** | The slowest endpoint on the platform, and it is on the critical browse path |
 | H-8 | "29227 Active Listings" | Missing thousands separator; the same page writes "29,228 listings" and "₹55,980" correctly |
 | H-9 | Property pickers list 100 of 29,230 as a flat wall of names | Calendar and Boost both. An artifact of the seeded catalogue, but unusable as a picker |
+
+---
+
+## Phase 4 — app E2E
+
+Built, installed and driven on `emulator-5554` (Android 17). `flutter analyze`:
+**0 errors in our code** (640 issues, all `info` lints, almost all from the
+ionicons package).
+
+### First, what the app does *not* have
+
+Worth stating, because the web's worst findings do not carry over. The app has
+**no** fabricated listing fallbacks, **no** hardcoded destination counts,
+**no** invented host statistics, **no** "Dynamic Pricing" or "Smart Calendar"
+claims, **no** referral rupee promise, and **no** paid Boost plans — its
+"boost banner" is a *List a new property* CTA. It also already renders a
+neutral placeholder for listings with no photo, so it never had G-9.
+
+**Every API call the app makes maps to a real backend route** — extracted every
+`.get/.post/.put/.patch/.delete` path and diffed against all 281 routes:
+**zero dead endpoints**.
+
+### Fixed and verified
+
+| # | Finding | Evidence |
+|---|---|---|
+| M-1 | 🔴 **The Safety page described a different product.** `GET /common/safety` — what a guest reads before deciding to sleep in a stranger's house — promised an **"in-app emergency button that connects them to local authorities"**, **host insurance**, **user protection programmes**, a **reporting system** with a team that "continuously monitors" it, **host safety training**, and that hosts are "required" to provide smoke detectors and first aid kits. None of it exists; there is no report or flag endpoint anywhere in the API. Two of those describe **financial cover**. This is E-13, fixed on web in an earlier session — but the web reads `cmsSchema.ts` and the app reads the backend, so the app never got it. | Rewritten to what the platform does, mirroring the web page. Live in production and confirmed on device |
+| M-2 | About Us claimed "along with **SOS features**" | Same invented capability. Removed |
+| M-3 | 🔴 **The app's FAQ was six questions for a different product** — "How do I book a **hotel** on the app?", "Do we have host facilities?" — hardcoded in `utils/data.js`, while **35 real, categorised, admin-editable FAQs** sat in `tbl_faqs` (the ones the website's Help Centre shows). An admin editing them saw no change in the app, because the app never read them. | Fixed **in the backend, not the app**, so it reaches every installed copy with no store update. Verified on device: the FAQ screen now lists "What is Aajoo Homes?", "Who can become a host?"… |
+| M-4 | `[Your Platform Name]` appeared **four times** in the guest and host Terms | An unfilled template marker in a document users are asked to agree to. Confirmed gone in production |
+| M-5 | 🔴 **Shared properties carried a made-up rating and a dead link.** The share sheet printed `Rating: ${widget.rating} ★` — the value the *caller* passes, which `NegotiatedDealBanner` hardcodes to `'4.5'` and `CuratedCard` defaults to `'4.5'`. A stay with no reviews was recommended into someone else's WhatsApp at 4.5 stars. The fourth copy of the invented-rating bug, and the only one that leaves the platform. The link pointed at `https://aajoo.com/property/<id>` — **that domain does not resolve** (curl: 000), and the route is `/property?id=<id>`. Every shared property was a dead link twice over. | Real rating + review count, "Newly listed" when there is none, and `https://www.aajoohomes.com/property?id=<id>` (verified 200) |
+
+### Phase 4 — still open
+
+| # | Item | Notes |
+|---|---|---|
+| M-6 | The shipped app points at the **dev** backend | `_prodBaseUrl` is set to the same value as `_devBaseUrl` (`aajaodev.onrender.com`), and the host is **hardcoded again in 20 files** rather than read from `ApiConstants`. When a production API is stood up, the app will keep calling dev, and pointing it at the new one is a 20-file edit |
+| M-7 | Host menu has no "switch to guest" | `/user/switch-mode` exists and the web offers it; the host menu ends at Logout |
+| M-8 | "29230 Properties" | Missing thousands separator — the same defect as H-8 on web |
+| M-9 | Dead twin tree under `lib/screens/` and `lib/widgets/` | Confirmed unreachable from the live tree, but it still carries the old `aajoo.com` share link and Lorem ipsum (`models/product.dart`), and it ships in the binary |
+| M-10 | "24x7" support claimed in 3 places | Same client decision as G-16 on web |
