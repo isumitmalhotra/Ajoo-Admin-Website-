@@ -25,7 +25,7 @@ the running system instead.
 |---|---|---|
 | 1 | Admin portal — the 20 web-sheet items | ✅ **Done** — 19/20, W-13 partial |
 | 2 | Guest web E2E — every public page, dead APIs, dummy data | ✅ **Done** — 12 fixed, 5 open |
-| 3 | Host web E2E | Queued |
+| 3 | Host web E2E | ✅ **Done** — 2 fixed, 7 open |
 | 4 | App E2E | Largely covered 2026-08-13 |
 | 5 | Fix → redeploy → re-verify | Rolling |
 
@@ -107,6 +107,9 @@ now sees on screen.
 | C-5 | App loader / ringtone / launcher icon (A-1, A-2, A-3) | The branded assets |
 | C-6 | List-your-property parity (A-77) | The SEO design + a decision to schedule the Listing Engine port |
 | C-7 | Unbacked safety claims (E-13) | Per claim: build the feature or drop the line |
+| C-8 | 🔴 **Boost sells plans that charge nothing and do nothing** (H-3, H-4) | Decide: wire payment + search ranking (with paid-placement labelling), or take the page down. It currently offers ₹499/₹1,499/₹3,999 plans |
+| C-9 | **Referral reward has no payment path** (H-6) | Commit to settling manually via `/admin/referrals/list`, or build a wallet. Guests are promised ₹300 |
+| C-10 | Blog is placeholder content (G-13) | Five posts reading "blog one".."blog five", live and linked from the homepage |
 
 ### Engineering — found, not yet fixed
 
@@ -173,3 +176,41 @@ photographs. None of it would have shown up as an error.
 | G-15 | Document title does not update on SPA navigation | `/account/dashboard` still reads "Login to Aajoo Homes"; `/search` reads the generic site title |
 | G-16 | "24x7" support claimed on Contact and Getting Started | A staffing promise, not a code defect — **client to confirm or drop** |
 | G-17 | Copy says "North India" / "the Himalayas" | Inventory is nationwide (Tamil Nadu 1,871, Odisha 1,486, Kerala 707); the destination rail now shows those states while the prose says Himalayas |
+
+---
+
+## Phase 3 — host web E2E
+
+Signed in as `aajoo.host1@mailinator.com` (user 100 — **29,227 live listings,
+19 bookings**, verified). Walked dashboard, properties, bookings, calendar,
+messages, negotiations, earnings, payouts, performance, boost, refer, profile,
+settings, support. Every API call captured in the request log: **39 distinct
+endpoints, 2 non-2xx**, one of which was my own curl typo.
+
+### Fixed and verified
+
+| # | Finding | Evidence |
+|---|---|---|
+| H-1 | 🔴 **Boost was dead on arrival.** The model set `modelName: 'tbl_boost'` and no `tableName`, so Sequelize pluralised it and queried **`tbl_boosts`** — the real table is `tbl_boost`. `GET /host/boost/list` returned **400 "Table 'tbl_boosts' doesn't exist"** on every load of the Boost page, silently, while the page went on offering three paid plans. `POST /host/boost/activate` would have failed identically. Most models here survive the default because their tables are already plural (`tbl_user` → `tbl_users`); this one is not. | 400 → **200**. Activate now writes a row (starter, ₹499, 7-day window). Test row deleted |
+| H-2 | Payouts promised "reach your account within **2-3 business days**" — printed directly above a history where **all six payouts read FAILED**. Nothing enforces 2-3 days: release is admin-scheduled and the transfer goes through RazorpayX, which has no credentials, which is *why* they failed. | Now describes the process and points at the status column |
+
+### Verified working (no defect)
+
+Checked carefully because they looked wrong at first glance and were not:
+
+- **Host dashboard** — reads ₹55,980 this month, 29,227 active listings, 3 upcoming, 15% commission, real ledger activity. My first look showed zeros because I read the page before the fetches resolved, not because of a bug.
+- **Performance** — ₹73,757 / 90 days, 6 cancellations, and `—` for average rating rather than a fabricated 0. Correct on the empty-means-hidden rule.
+- **Calendar, Messages, Negotiations, Earnings, Properties, Bookings** — all live data.
+- **Referrals** — genuinely implemented end to end: `recordReferralOnSignup` on signup, `creditReferralForUser` from the booking flow, `/user/referrals/summary` reporting real counts.
+
+### Phase 3 — still open
+
+| # | Item | Notes |
+|---|---|---|
+| H-3 | 🔴 **Boost takes no payment** | `POST /host/boost/activate` needs only host auth. No Razorpay order, no verification. A host clicks Boost Now on the ₹3,999 Pro plan and it activates instantly, free. **Confirmed by activating one.** Every plan sold on that page currently earns ₹0 |
+| H-4 | 🔴 **Nothing consumes a boost** | `boost` appears in exactly three files: `host.controller` (create/list), `admin.controller` (list), `models/tbl_boost`. `property.controller`, which serves `/properties/search`, never references it. So "Top of search", "2x/3x more visibility", "Featured badge", "Homepage feature" are not delivered by any code. Note that paid placement normally has to be **labelled** to guests — this is a product and compliance decision, not a bug fix I should make unilaterally |
+| H-5 | "Priority support" / "Dedicated manager" on the Boost plans | Support is one ticket queue with no tiering |
+| H-6 | Referral reward has **no way to be paid** | The programme is built, but `creditReferralForUser` only flips `ref_status` to "credited". There is **no wallet, balance, coin or reward table anywhere in the database** — I checked. Guests are promised "₹300 Aajoo Coins", hosts "you earn ₹300", and there is nowhere for it to land. It *is* fulfillable manually — an admin can read `/admin/referrals/list` and settle by hand — so this needs a **client decision: commit to settling manually, or build the wallet** |
+| H-7 | `POST /properties/search` peaked at **3.9 s** | The slowest endpoint on the platform, and it is on the critical browse path |
+| H-8 | "29227 Active Listings" | Missing thousands separator; the same page writes "29,228 listings" and "₹55,980" correctly |
+| H-9 | Property pickers list 100 of 29,230 as a flat wall of names | Calendar and Boost both. An artifact of the seeded catalogue, but unusable as a picker |
