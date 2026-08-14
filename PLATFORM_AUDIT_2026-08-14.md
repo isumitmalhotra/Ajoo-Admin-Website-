@@ -24,7 +24,7 @@ the running system instead.
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Admin portal — the 20 web-sheet items | ✅ **Done** — 19/20, W-13 partial |
-| 2 | Guest web E2E — every public page, dead APIs, dummy data | ▶ In progress |
+| 2 | Guest web E2E — every public page, dead APIs, dummy data | ✅ **Done** — 12 fixed, 5 open |
 | 3 | Host web E2E | Queued |
 | 4 | App E2E | Largely covered 2026-08-13 |
 | 5 | Fix → redeploy → re-verify | Rolling |
@@ -127,4 +127,49 @@ now sees on screen.
 
 ## Phase 2 — guest web E2E
 
-Findings recorded here as they are confirmed.
+Run against a local backend so every API call lands in a request log, with the
+frontend pointed at it. Pages walked: home/explore, search, property detail,
+about, contact, FAQ/help centre, blog, safety, getting started, become a host,
+login, guest dashboard.
+
+### The theme of this phase
+
+Phase 1 was about things that were **broken**. Phase 2 is about things that
+were **untrue**. Every finding below is a screen stating something the
+database does not support — invented inventory, invented statistics, invented
+photographs. None of it would have shown up as an error.
+
+### Fixed and verified
+
+| # | Finding | Evidence |
+|---|---|---|
+| G-1 | 🔴 **Search invented six listings when it found none.** `FALLBACK_RESULTS` rendered whenever the live query was empty. Searching Manali reported "**6 properties found**" and showed The Maple Cottage 4.8 (126), The Skyfall Villa 4.9 (98) and four more — invented ratings, invented review counts, every card linking to `/property` with no id — while the map beside them correctly said "No stays to show here yet". It also fires on a **failed request**, so an outage rendered as a healthy result page. The honest empty state was already written and simply unreachable. | Removed; loading state added. `?q=Tokyo` now shows the empty state, `?q=Manali` returns 100 real stays near Mandi |
+| G-2 | Explore's trending rail had the same fallback, showing on **first paint every time**, before the request finished. | Removed; loading and empty states added |
+| G-3 | 🔴 **Featured Destinations was five hardcoded tiles with hardcoded counts.** Manali "1,250+ stays" → **0 in the database**; Jibhi "680+" → 0; Kasol "520+" → 0; Shimla "910+" → 50; McLeod Ganj "430+" → 0. Four of five led to a search that could return nothing. | New `GET /properties/destinations`. Rail now reads Uttar Pradesh 2,843 / Madhya Pradesh 2,115 / Bihar 1,891 / Tamil Nadu 1,871 / Odisha 1,486, and clicking through returns real listings |
+| G-4 | The empty state's "here's where we do have places" chips were read off the fetched result set — empty exactly when they are needed, so that row was **always blank**. | Now from the destinations endpoint |
+| G-5 | **Foreign place names silently resolved to Indian villages.** The geocoder is India-restricted (correct) but matches loosely: "Tokyo" → the village of Takyo, Kurung Kumey, and the page reported "«Tokyo» stays · 100 properties found" for stays 4,500 km away. | Now says "No exact match — showing stays near Takyo, Hiya, Sangram SDO" |
+| G-6 | 🔴 **Become a Host led with three invented statistics.** "₹48,750 Avg. monthly earning" (no basis — 24 bookings have *ever* been made), "2,153 Active hosts" (**there are 4**, two with a live listing), "4.8★ Avg. host rating" (**every review table has 0 rows**), "Join thousands of hosts" (four). An earnings figure is an inducement to sign up. | Replaced with three claims that are true and need no number; "listing is free" is the platform's own FAQ answer |
+| G-7 | Two of six advertised host tools **do not exist**: "Smart Calendar — block dates and sync bookings" (no blocking, no sync) and "Dynamic Pricing — smart price suggestions" (no pricing endpoint at all). The other four are real. | Rewritten to what exists. Also softened "Fast Payouts" (admin-scheduled, RazorpayX not live) and "24x7 Support" (a ticket system) |
+| G-8 | Safety told guests to "add a trusted contact **in your profile**" — `tbl_users` has no such column and no screen offers one. The only emergency contact in the product belongs to a *listing*. | Replaced with something a guest can act on |
+| G-9 | 🔴 **Every listing without a photo showed a random stock photograph as its own.** `picsum.photos/seed/aajoo<id>`, stable per listing, styled exactly like a real photo. **16 of 29,228** active listings have an image. | Inline SVG "Photo coming soon" placeholder |
+| G-10 | "You may also like" used the **visitor's** location, not the property's — a Chattarpur, New Delhi listing recommended four stays in Mandi, HP. | Now passes the property's coordinates; the same page recommends Delhi stays |
+| G-11 | Guest dashboard rendered a lone " ★" chip over unrated stays — a rating badge with no rating. | Hidden when null |
+| G-12 | Host Terms contained the literal editing marker "**[specific time frame]**" in a clause hosts agree to. | Describes the mechanism instead; there is no fixed figure (per-schedule, admin-set) |
+
+### Verified working (no defect)
+
+- **Contact form** — end to end: submit → `POST /contact/message` 200 → row in `tbl_contact_messages` → confirmation banner. Social links are already CMS-driven and render as non-links when unset.
+- **Help Centre** — 35 real FAQs, live category counts.
+- **About**, **Getting Started** — no fabricated figures.
+- **Login → guest dashboard** — real data (4 bookings, ₹34,251 spent, 1 saved).
+- **Property detail** — real listing data, tabs, availability, host block.
+
+### Phase 2 — still open
+
+| # | Item | Notes |
+|---|---|---|
+| G-13 | Blog is placeholder content | Five posts titled "blog one"…"blog five", each "blog short description", live and linked from the homepage and footer. Machinery works; **content is the client's** |
+| G-14 | 99.95% of listings have no photograph | Now honest, but a stay with no photo barely sells. Needs real images or the seeded catalogue trimmed — same root as the junk city labels |
+| G-15 | Document title does not update on SPA navigation | `/account/dashboard` still reads "Login to Aajoo Homes"; `/search` reads the generic site title |
+| G-16 | "24x7" support claimed on Contact and Getting Started | A staffing promise, not a code defect — **client to confirm or drop** |
+| G-17 | Copy says "North India" / "the Himalayas" | Inventory is nationwide (Tamil Nadu 1,871, Odisha 1,486, Kerala 707); the destination rail now shows those states while the prose says Himalayas |
