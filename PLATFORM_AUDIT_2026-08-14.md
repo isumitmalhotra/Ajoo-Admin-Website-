@@ -24,7 +24,7 @@ the running system instead.
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Admin portal — the 20 web-sheet items | ✅ **Done** — 19/20, W-13 partial |
-| 2 | Guest web E2E — every public page, dead APIs, dummy data | ✅ **Done** — 12 fixed, 5 open |
+| 2 | Guest web E2E — every public page, dead APIs, dummy data | ✅ **Done** — 14 fixed, 5 open |
 | 3 | Host web E2E | ✅ **Done** — 2 fixed, 7 open |
 | 4 | App E2E | Largely covered 2026-08-13 |
 | 5 | Fix → redeploy → re-verify | Rolling |
@@ -157,6 +157,8 @@ photographs. None of it would have shown up as an error.
 | G-9 | 🔴 **Every listing without a photo showed a random stock photograph as its own.** `picsum.photos/seed/aajoo<id>`, stable per listing, styled exactly like a real photo. **16 of 29,228** active listings have an image. | Inline SVG "Photo coming soon" placeholder |
 | G-10 | "You may also like" used the **visitor's** location, not the property's — a Chattarpur, New Delhi listing recommended four stays in Mandi, HP. | Now passes the property's coordinates; the same page recommends Delhi stays |
 | G-11 | Guest dashboard rendered a lone " ★" chip over unrated stays — a rating badge with no rating. | Hidden when null |
+| G-18 | 🔴 **Property detail invented a listing when the fetch failed.** The placeholder was a complete stay — "The Maple Cottage", Jibhi, ₹3,200/night, full description — with a live **Book Now**. A dead id, deleted listing or network blip rendered a convincing property that does not exist. A missing listing returns `null` rather than throwing, so that path rendered the shell around empty values instead: nameless stay, ₹0, Book Now still live. | `?id=999999` now says "We couldn't load this stay"; `?id=15` unchanged |
+| G-19 | 🔴 **`/account/checkout` was fabricated end to end.** Someone else's stay ("The Maple Cottage, Manali, 25–27 May"), a fake financial summary (**₹12,600 paid, ₹2,000 refundable deposit, +₹250 coins**), a star rating and review box that discarded whatever was typed, and a "Complete Check-out" button that checked nobody out — it navigated to Past Stays. Unlinked, but reachable by URL. | Deleted. The real review flow already exists at `/account/review`, wired to `submitReview` |
 | G-12 | Host Terms contained the literal editing marker "**[specific time frame]**" in a clause hosts agree to. | Describes the mechanism instead; there is no fixed figure (per-schedule, admin-set) |
 
 ### Verified working (no defect)
