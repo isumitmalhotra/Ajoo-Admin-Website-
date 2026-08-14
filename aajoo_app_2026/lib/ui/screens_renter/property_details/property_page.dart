@@ -1726,14 +1726,32 @@ class _PropertyPageState extends State<PropertyPage>
       icon: Icons.ios_share,
       tooltip: 'Share',
       onPressed: () {
+        // Two things were wrong with the message people actually forward.
+        //
+        // "Rating: ${widget.rating} ★" printed the value the CALLER passed in,
+        // which is the constant "4.5" — the deal banner hardcodes it and
+        // CuratedCard defaults to it. The pills on this screen were fixed to
+        // show a real rating or none at all; the share text was the copy that
+        // was missed, and it is the one that leaves the platform. A stay with
+        // no reviews was being recommended to someone else's WhatsApp at 4.5
+        // stars. It now uses the same real rating the page shows, and says
+        // nothing when there is nothing to say.
+        //
+        // The link pointed at https://aajoo.com/property/<id>. That domain does
+        // not resolve, and the site's route is /property?id=<id>, so every
+        // property anyone shared was a dead link twice over.
+        final r = _rating;
+        final ratingLine = r == null
+            ? 'Newly listed'
+            : 'Rating: ${r.toStringAsFixed(1)} ★ ($_reviewCount review${_reviewCount == 1 ? '' : 's'})';
         final shareText = '''
 Check out this amazing property on Aajoo!
 Name: ${widget.name}
 Location: ${widget.location}
 Price: ₹${widget.price}/night
-Rating: ${widget.rating} ★
+$ratingLine
 Description: ${widget.description}
-Book now: https://aajoo.com/property/${widget.id}
+Book now: https://www.aajoohomes.com/property?id=${widget.id}
 ''';
         Share.share(
           shareText,
