@@ -27,7 +27,7 @@ the running system instead.
 | 2 | Guest web E2E — every public page, dead APIs, dummy data | ✅ **Done** — 14 fixed, 5 open |
 | 3 | Host web E2E | ✅ **Done** — 2 fixed, 7 open |
 | 4 | App E2E | ✅ **Done** — 5 fixed, 5 open |
-| 5 | Fix → redeploy → re-verify | Rolling |
+| 5 | Fix → redeploy → re-verify | ✅ **Done** — all fixes live and re-verified in production |
 
 ## Deployed and verified live
 
@@ -106,7 +106,6 @@ now sees on screen.
 | C-4 | Phone verification (A-5) | SMS provider credentials + DLT approval |
 | C-5 | App loader / ringtone / launcher icon (A-1, A-2, A-3) | The branded assets |
 | C-6 | List-your-property parity (A-77) | The SEO design + a decision to schedule the Listing Engine port |
-| C-7 | Unbacked safety claims (E-13) | Per claim: build the feature or drop the line |
 | C-8 | 🔴 **Boost sells plans that charge nothing and do nothing** (H-3, H-4) | Decide: wire payment + search ranking (with paid-placement labelling), or take the page down. It currently offers ₹499/₹1,499/₹3,999 plans |
 | C-9 | **Referral reward has no payment path** (H-6) | Commit to settling manually via `/admin/referrals/list`, or build a wallet. Guests are promised ₹300 |
 | C-10 | Blog is placeholder content (G-13) | Five posts reading "blog one".."blog five", live and linked from the homepage |
@@ -120,7 +119,7 @@ now sees on screen.
 | P-2 | Placeholder identities in finance | Invoices show `Host #111` / `Guest #123`, payouts `Host #12`. IDs where names belong |
 | P-3 | Blank columns everywhere | User PHONE, host LOCATION, invoice PARTY all `—` on every row |
 | P-4 | Property form Submit is silent on validation failure | Errors render beside fields only. On property 7 it did nothing because zip/country are NULL in the DB — no top-level "fix these" signal |
-| P-5 | Legacy admin is dead code | All 15 folders of `src/pages/admin/*` unrouted. Delete or restore deliberately |
+| P-5 | Legacy admin is dead code | All 15 folders of `src/pages/admin/*` unrouted. Delete or restore deliberately. **Caution:** `src/pages/user/*` is NOT all dead — `/home` and `/user-dashboard` are routed. Check reachability by symbol, not by path: App.tsx imports `Home` from `./pages`, so grepping for `user/home` finds nothing |
 | P-6 | `apiValidation.ts` is documentation only | Not wired to anything, and says POST where the code uses PUT |
 | P-7 | Junk city labels (E-3) | ~4,260 listings show wrong cities; needs a licensed geocoder |
 | P-8 | Categories are a placeholder (E-15) | Even split across 9 categories; not real classification |
