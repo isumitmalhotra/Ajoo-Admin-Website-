@@ -28,6 +28,7 @@ the running system instead.
 | 3 | Host web E2E | ✅ **Done** — 2 fixed, 7 open |
 | 4 | App E2E | ✅ **Done** — 5 fixed, 5 open |
 | 5 | Fix → redeploy → re-verify | ✅ **Done** — all fixes live and re-verified in production |
+| 6 | Transactional E2E — booking, payment, invoice, ledger | ✅ **Done** — 5 fixed, 3 open |
 
 ## Deployed and verified live
 
@@ -109,6 +110,7 @@ now sees on screen.
 | C-8 | 🔴 **Boost sells plans that charge nothing and do nothing** (H-3, H-4) | Decide: wire payment + search ranking (with paid-placement labelling), or take the page down. It currently offers ₹499/₹1,499/₹3,999 plans |
 | C-9 | **Referral reward has no payment path** (H-6) | Commit to settling manually via `/admin/referrals/list`, or build a wallet. Guests are promised ₹300 |
 | C-10 | Blog is placeholder content (G-13) | Five posts reading "blog one".."blog five", live and linked from the homepage |
+| C-12 | 🔴 **This deploy cannot collect money** (T-5) | `RAZORPAY_KEY_ID` is not set on Render, so checkout runs on the bundled test key: guests can complete a booking and nothing is charged. Check `GET /health/env` → `payments` before go-live |
 | C-11 | App will still call the **dev** backend in production (M-6) | Decide the production API host. `_prodBaseUrl` currently equals `_devBaseUrl` and the host is hardcoded in 20 files |
 
 ### Engineering — found, not yet fixed
@@ -257,3 +259,54 @@ neutral placeholder for listings with no photo, so it never had G-9.
 | M-8 | "29230 Properties" | Missing thousands separator — the same defect as H-8 on web |
 | M-9 | Dead twin tree under `lib/screens/` and `lib/widgets/` | Confirmed unreachable from the live tree, but it still carries the old `aajoo.com` share link and Lorem ipsum (`models/product.dart`), and it ships in the binary |
 | M-10 | "24x7" support claimed in 3 places | Same client decision as G-16 on web |
+
+---
+
+## Phase 6 — the money path
+
+Ran a real booking end to end as the renter: property → dates → review →
+payment → confirmation → host → ledger. **Booking `B478912`** — Azure Sky
+Apartment, 23–26 Sep 2026, 3 nights, ₹10,080, pay-at-property. Left in place as
+evidence; the phantom row my abandoned card attempt created was deleted.
+
+### The money is right
+
+Checked to the rupee against `tbl_financial_ledger`:
+
+| Line | Amount | Check |
+|---|---|---|
+| Guest payment | ₹10,080 | ₹3,200 × 3 = ₹9,600 room + ₹480 GST |
+| Accommodation GST (5%) | ₹480 | correct band — 5% applies under ₹7,500/night |
+| Platform commission (15%) | ₹1,440 | 15% of ₹9,600 |
+| GST on commission (18%) | ₹259 | folded into the host earning line |
+| **Host earning** | **₹7,901** | 9,600 − 1,440 − 259 ✓ |
+
+The rate band is applied correctly too: `calculateBookingtax` charges 5% at or below ₹7,500 a night and 18% above it, which matches the Indian GST rule for accommodation. I had this down as a defect until I read it.
+
+7,901 + 1,440 + 259 + 480 = **10,080**. Balances exactly. All four entries
+`PENDING`, correct for an unpaid pay-at-property booking. Host's booking count
+went 19 → 20, so it reached the host.
+
+### Things that turned out to be right (checked because they looked wrong)
+
+- **Abandoned checkouts.** Clicking Pay and walking away from Razorpay leaves a `statusPaymentPending` row. It does **not** leak into the guest's bookings list, and `getPropertyAvailability` only honours pending rows for **30 minutes** before releasing the dates — a proper payment hold with a timeout.
+- **Non-host hitting host APIs.** A renter's token returns **200** from `/host/bookings/search`, `/host/dashboard/summary` and `/host/payout/history`. I checked the response bodies before calling it a leak: all three come back **empty**, because every query is scoped to the caller's own id. **Not a vulnerability.** The role gate is missing and safety rests entirely on that scoping — worth closing as defence in depth, not an incident.
+- **"Guest" in the nav** on the confirmation page was my screenshot landing before `getUserDetail()` resolved. Not a regression.
+
+### Fixed and verified
+
+| # | Finding | Evidence |
+|---|---|---|
+| T-1 | 🔴 **Every listing claimed a mountain view.** The category chip read `category_titles` and fell back to the literal `"Mountain View"` — so a 2-BHK in Sector 62, Noida advertised a mountain view. The category was never missing: **search** returns `category_titles`, **single-property** returns `categories[].cat_title`, and this page only reads the single one. | Reads both; drops the chip when there is genuinely no category. Property 9 now reads "Apartments" |
+| T-2 | 🔴 **Bookings never recorded whether the guest was verified.** `guest_verification_status` is only written by the per-booking DIDIT flow, so all 26 bookings read `unverified` — including ones by a renter DIDIT-verified since 28 July. A host checking who is arriving saw **every** guest as unverified. | Snapshotted at creation from the account's real status; failure can never block a booking |
+| T-3 | I overstated a safety claim in Phase 4 | I wrote *"Guests complete an identity check before a booking is confirmed."* Running a booking showed that states more than the system holds: the check runs in the flow and does redirect an unverified guest to DIDIT, but it **fails open** if the service is unreachable and `POST /booking/create` has **no server-side gate**. Corrected on both platforms |
+| T-4 | The **"Invoice"** button on the confirmation page, with a download icon, navigated to the dashboard — no invoice anywhere | The invoice is real: a PDF attached to the confirmation email. The page now says where it is |
+| T-5 | 🔴 **A deploy with no Razorpay key takes payments that collect nothing** | `RAZORPAY_KEY_ID` is **not set on Render** (confirmed via `/health/env`), so the API runs on the bundled fallback test key. Checkout opens, the guest pays, the booking confirms, an invoice is issued — and no money moves. Invisible until someone reconciles a bank account. `/health/env` now reports `payments: { mode, usingFallbackKey, collectsMoney, warning }`. **Deliberately not a hard failure** — I first wrote it as a boot-time throw, then checked production: the key is missing *now*, so that would have crashed the API on the next deploy |
+
+### Phase 6 — still open
+
+| # | Item | Notes |
+|---|---|---|
+| T-6 | No server-side role gate on `/host/*` | Harmless today because every query is scoped by caller id, and confirmed empty for a non-host. Add the gate anyway |
+| T-7 | KYC before booking is client-side and fails open | `POST /booking/create` accepts any authenticated user. If identity checks are meant to be a real gate, they belong on the server |
+| T-8 | Bookings are capped at **3 months ahead** | `validateBookingDates` rejects anything further out. Probably deliberate, but it is not stated anywhere a guest can see — worth confirming it is intended |
