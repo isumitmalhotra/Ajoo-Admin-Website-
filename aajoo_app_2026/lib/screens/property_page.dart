@@ -1267,14 +1267,24 @@ class _PropertyPageState extends State<PropertyPage>
                 actions: [
                   IconButton(
                     onPressed: () {
+                      // This page is reached from the MAP (map_screen ->
+                      // hotel_dialog -> here), which I had wrongly written off
+                      // as dead code. Two things were wrong with what it
+                      // shared: the rating is whatever the caller passed —
+                      // the map hardcoded "4.5" — and aajoo.com does not
+                      // resolve, so the link was dead twice over. Same fix as
+                      // the redesigned property page.
+                      final r = widget.rating.trim();
+                      final ratingLine =
+                          r.isEmpty ? 'Newly listed' : 'Rating: $r ★';
                       final shareText = '''
 Check out this amazing property on Aajoo!
 Name: ${widget.name}
 Location: ${widget.location}
 Price: ₹${widget.price}/night
-Rating: ${widget.rating} ★
+$ratingLine
 Description: ${widget.description}
-Book now: https://aajoo.com/property/${widget.id}
+Book now: https://www.aajoohomes.com/property?id=${widget.id}
 ''';
                       Share.share(
                         shareText,

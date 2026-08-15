@@ -349,7 +349,11 @@ class _MapScreenState extends State<MapScreen> {
             property.propertyPrice,
             property.images.cast<String>(),
             property.propertyDesc,
-            "4.5",
+            // Was the constant "4.5" for every pin on the map. The model
+            // carries the real average and ratingLabel is empty when nobody
+            // has reviewed the stay, so an unrated place now says nothing
+            // rather than claiming four and a half stars.
+            property.ratingLabel,
             property.coverImage ??
                 (property.images.isNotEmpty ? property.images[0] : ""),
             property.propertyId,
