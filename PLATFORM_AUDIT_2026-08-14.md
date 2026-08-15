@@ -118,10 +118,21 @@ now sees on screen.
 
 ### Engineering — found, not yet fixed
 
+**Dead code (P-5, P-6, M-9) — done 15 Aug.** Import graphs built from the real
+entry points, not from grep. Web: 496 files, 29 removed (build passes). App:
+293 files, 41 removed (analyze clean, APK builds). API: 380 files, only **3**
+removed — the 23 `scripts/` and `sequelize-cli.config.js` are unreachable *by
+design* and deleting them would have broken migrations and the operational
+tooling.
+
+Two of my own entries were wrong and the graph caught both: P-5 claimed all 15
+folders of `src/pages/admin` were dead (only 11 files are), and M-9 called
+`lib/screens/property_page.dart` an unreachable twin when the **map** reaches
+it — so it was still sharing a dead `aajoo.com` link with a hardcoded 4.5-star
+rating. Fixed in the same pass.
+
 | # | Item | Notes |
 |---|---|---|
-| P-5 | Legacy admin is dead code | All 15 folders of `src/pages/admin/*` unrouted. Delete or restore deliberately. **Caution:** `src/pages/user/*` is NOT all dead — `/home` and `/user-dashboard` are routed. Check reachability by symbol, not by path: App.tsx imports `Home` from `./pages`, so grepping for `user/home` finds nothing |
-| P-6 | `apiValidation.ts` is documentation only | Not wired to anything, and says POST where the code uses PUT |
 | P-7 | Junk city labels (E-3) | ~4,260 listings show wrong cities; needs a licensed geocoder |
 | P-8 | Categories are a placeholder (E-15) | Even split across 9 categories; not real classification |
 
@@ -249,7 +260,6 @@ neutral placeholder for listings with no photo, so it never had G-9.
 | # | Item | Notes |
 |---|---|---|
 | M-6 | The shipped app points at the **dev** backend | `_prodBaseUrl` is set to the same value as `_devBaseUrl` (`aajaodev.onrender.com`), and the host is **hardcoded again in 20 files** rather than read from `ApiConstants`. When a production API is stood up, the app will keep calling dev, and pointing it at the new one is a 20-file edit |
-| M-9 | Dead twin tree under `lib/screens/` and `lib/widgets/` | Confirmed unreachable from the live tree, but it still carries the old `aajoo.com` share link and Lorem ipsum (`models/product.dart`), and it ships in the binary |
 | M-10 | "24x7" support claimed in 3 places | Same client decision as G-16 on web |
 
 ---
