@@ -174,9 +174,7 @@ photographs. None of it would have shown up as an error.
 |---|---|---|
 | G-13 | Blog is placeholder content | Five posts titled "blog one"…"blog five", each "blog short description", live and linked from the homepage and footer. Machinery works; **content is the client's** |
 | G-14 | 99.95% of listings have no photograph | Now honest, but a stay with no photo barely sells. Needs real images or the seeded catalogue trimmed — same root as the junk city labels |
-| G-15 | Document title does not update on SPA navigation | `/account/dashboard` still reads "Login to Aajoo Homes"; `/search` reads the generic site title |
 | G-16 | "24x7" support claimed on Contact and Getting Started | A staffing promise, not a code defect — **client to confirm or drop** |
-| G-17 | Copy says "North India" / "the Himalayas" | Inventory is nationwide (Tamil Nadu 1,871, Odisha 1,486, Kerala 707); the destination rail now shows those states while the prose says Himalayas |
 
 ---
 
@@ -213,8 +211,7 @@ Checked carefully because they looked wrong at first glance and were not:
 | H-4 | 🔴 **Nothing consumes a boost** | `boost` appears in exactly three files: `host.controller` (create/list), `admin.controller` (list), `models/tbl_boost`. `property.controller`, which serves `/properties/search`, never references it. So "Top of search", "2x/3x more visibility", "Featured badge", "Homepage feature" are not delivered by any code. Note that paid placement normally has to be **labelled** to guests — this is a product and compliance decision, not a bug fix I should make unilaterally |
 | H-5 | "Priority support" / "Dedicated manager" on the Boost plans | Support is one ticket queue with no tiering |
 | H-6 | Referral reward has **no way to be paid** | The programme is built, but `creditReferralForUser` only flips `ref_status` to "credited". There is **no wallet, balance, coin or reward table anywhere in the database** — I checked. Guests are promised "₹300 Aajoo Coins", hosts "you earn ₹300", and there is nowhere for it to land. It *is* fulfillable manually — an admin can read `/admin/referrals/list` and settle by hand — so this needs a **client decision: commit to settling manually, or build the wallet** |
-| H-8 | "29227 Active Listings" | Missing thousands separator; the same page writes "29,228 listings" and "₹55,980" correctly |
-| H-9 | Property pickers list 100 of 29,230 as a flat wall of names | Calendar and Boost both. An artifact of the seeded catalogue, but unusable as a picker |
+| H-9 | ~~Property pickers unusable at 29,230~~ | **Not a defect — my error.** `PropertyPicker` already falls back to a server-side search box with a "100 of 29,230" counter once an account exceeds a page. I had read the `<select>`'s option text in an innerText dump and taken it for a flat list |
 
 ---
 
@@ -252,8 +249,6 @@ neutral placeholder for listings with no photo, so it never had G-9.
 | # | Item | Notes |
 |---|---|---|
 | M-6 | The shipped app points at the **dev** backend | `_prodBaseUrl` is set to the same value as `_devBaseUrl` (`aajaodev.onrender.com`), and the host is **hardcoded again in 20 files** rather than read from `ApiConstants`. When a production API is stood up, the app will keep calling dev, and pointing it at the new one is a 20-file edit |
-| M-7 | Host menu has no "switch to guest" | `/user/switch-mode` exists and the web offers it; the host menu ends at Logout |
-| M-8 | "29230 Properties" | Missing thousands separator — the same defect as H-8 on web |
 | M-9 | Dead twin tree under `lib/screens/` and `lib/widgets/` | Confirmed unreachable from the live tree, but it still carries the old `aajoo.com` share link and Lorem ipsum (`models/product.dart`), and it ships in the binary |
 | M-10 | "24x7" support claimed in 3 places | Same client decision as G-16 on web |
 
@@ -341,8 +336,6 @@ the guest UI.
 
 | # | Item | Notes |
 |---|---|---|
-| N-5 | Offers above the asking price are accepted silently | Existing data has guests offering ₹3,000 against a ₹2,900 listing and ₹20,000 against ₹9,800. Not harmful, but nothing flags it |
-| N-6 | The negotiated-deal badge shows the exact percentage | Now reads e.g. "−21.06%". Precise and honest, but a rounded display would read better — as long as the charge stays on the exact figure |
 
 ---
 
