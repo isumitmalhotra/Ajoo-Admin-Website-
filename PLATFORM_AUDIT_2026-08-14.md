@@ -30,6 +30,7 @@ the running system instead.
 | 5 | Fix → redeploy → re-verify | ✅ **Done** — all fixes live and re-verified in production |
 | 6 | Transactional E2E — booking, payment, invoice, ledger | ✅ **Done** — 5 fixed, 3 open |
 | 7 | Negotiation & refunds | ✅ **Done** — 4 fixed, 2 open |
+| 9 | Correctness & hardening | ✅ **Done** — 4 fixed, T-7 partial |
 | 8 | Admin portal E2E | ✅ **Done** — **7 fixed, 0 open** |
 
 ## Deployed and verified live
@@ -123,8 +124,6 @@ now sees on screen.
 | P-6 | `apiValidation.ts` is documentation only | Not wired to anything, and says POST where the code uses PUT |
 | P-7 | Junk city labels (E-3) | ~4,260 listings show wrong cities; needs a licensed geocoder |
 | P-8 | Categories are a placeholder (E-15) | Even split across 9 categories; not real classification |
-| P-9 | App: notifications reopen on cold start | Suspect `NotificationRoutingMiddleware` |
-| P-10 | App: listing upload size | ~4MB never completed; ~180KB took ~90s. Needs client-side image compression |
 
 ---
 
@@ -305,8 +304,7 @@ went 19 → 20, so it reached the host.
 
 | # | Item | Notes |
 |---|---|---|
-| T-6 | No server-side role gate on `/host/*` | Harmless today because every query is scoped by caller id, and confirmed empty for a non-host. Add the gate anyway |
-| T-7 | KYC before booking is client-side and fails open | `POST /booking/create` accepts any authenticated user. If identity checks are meant to be a real gate, they belong on the server |
+| T-7 | KYC before booking still not fully enforced | ⚠️ **partly closed 15 Aug** — a *declined* identity is now refused server-side. Refusing merely *unverified* is blocked on the app: it routes a `/kyc` screen that nothing in checkout opens, so a hard gate would strand every unverified app user with no way to verify. Ship the two together |
 | T-8 | Bookings are capped at **3 months ahead** | `validateBookingDates` rejects anything further out. Probably deliberate, but it is not stated anywhere a guest can see — worth confirming it is intended |
 
 ---
