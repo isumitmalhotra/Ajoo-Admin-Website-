@@ -29,6 +29,7 @@ the running system instead.
 | 4 | App E2E | ✅ **Done** — 5 fixed, 5 open |
 | 5 | Fix → redeploy → re-verify | ✅ **Done** — all fixes live and re-verified in production |
 | 6 | Transactional E2E — booking, payment, invoice, ledger | ✅ **Done** — 5 fixed, 3 open |
+| 7 | Negotiation & refunds | ✅ **Done** — 4 fixed, 2 open |
 
 ## Deployed and verified live
 
@@ -310,3 +311,40 @@ went 19 → 20, so it reached the host.
 | T-6 | No server-side role gate on `/host/*` | Harmless today because every query is scoped by caller id, and confirmed empty for a non-host. Add the gate anyway |
 | T-7 | KYC before booking is client-side and fails open | `POST /booking/create` accepts any authenticated user. If identity checks are meant to be a real gate, they belong on the server |
 | T-8 | Bookings are capped at **3 months ahead** | `validateBookingDates` rejects anything further out. Probably deliberate, but it is not stated anywhere a guest can see — worth confirming it is intended |
+
+---
+
+## Phase 7 — negotiation and refunds
+
+The feature the platform is named for, plus the cancellation path. Put a real
+offer through it: **offer 14**, Urban Nest Studio, list ₹1,900, offered ₹1,500
+for 10–12 Sept, accepted by the host. Then cancelled booking `B478912` through
+the guest UI.
+
+### Two defects in the negotiation itself
+
+| # | Finding | Evidence |
+|---|---|---|
+| N-1 | 🔴 **The guest was not charged the price the host agreed to.** Accepting an offer mints a coupon whose discount is a percentage, and `cpn_dsctn_percnt` was typed **INT**. 21.0526% stored as **21** → two nights billed at **₹3,002** against an agreed **₹3,000**. The comment directly above that line claims the percentage form "reproduces the agreed per-night price for any stay length". It did not. Error up to half a percent of tariff **per night, in either direction** — at ₹9,800/night the old code underpaid the *host* by ₹10 on a five-night stay. | Column widened to `DECIMAL(5,2)` (idempotent migration; 21 → 21.00, no reinterpretation). Percentage now rounded **up**, so residue always favours the guest and never bills above the agreed price. Verified across five tariffs: worst case ₹2.20 in the guest's favour, never against |
+| N-2 | 🔴 **The negotiated dates were written and then ignored.** `cpn_book_from` / `cpn_book_to` carry the exact stay the host agreed to, and `validateAndPriceCoupon` never looked at them. A host who accepted a low nightly rate for two nights in September had that price redeemable **on any dates**, including a peak week they would never have agreed to. | Both call sites pass the stay dates; a mismatch is refused with the dates the deal is actually for. Only enforced when the coupon pins dates, so global coupons are untouched. Verified: correct dates → 21.06%, ₹2,999.72; different dates → *"This deal is for 10-09-2026 to 12-09-2026."* |
+
+### One defect in cancellation
+
+| # | Finding | Evidence |
+|---|---|---|
+| N-3 | 🔴 **Cancelling left the ledger open.** `retractPayout` withdraws queued payouts but only touches `tbl_payouts`. Cancelling B478912 left four **PENDING** entries against a stay that is not happening — ₹10,080 guest payment, ₹1,440 commission, ₹7,901 host earning, ₹480 tax. Inert for today's totals (every earnings figure filters on `COMPLETED` — I checked before treating it as urgent), but **not harmless**: `recordBookingFinance` promotes PENDING → COMPLETED the moment money is marked collected, and never looks at the booking's status. A cancelled booking later marked paid would have its earning resurrected and a payout raised for a stay nobody took. | Both cancellation paths now reverse pending entries. `REVERSED` was already in the enum and had never been used. Applied to B478912: all four now REVERSED |
+| N-4 | The booking rail contradicted the listing's own policy | Every listing said *"Free cancellation — Up to 48 hours before check-in"*, hardcoded, while the Policies tab on the **same page** rendered the real terms. Flexible is **24** hours, not 48 — and a Non-Refundable listing was promising free cancellation. Now shows the listing's real label and summary |
+
+### Verified correct
+
+- **The offer itself.** Receiver resolved from the property rather than trusted from the client; note text saved and rendered to the host — the W-10 fix working end to end.
+- **The refund ladder.** Checked every policy against its own summary at six points from 720h to 2h before check-in: flexible 100/50, moderate 100/50, firm 100/25, strict 100/50/0, non-refundable and super-strict 0 throughout. All match.
+- **The cancellation dialog.** Quotes the real policy, computes 100%, and says *"No payment taken"* rather than promising a refund of money never collected.
+- **The client's discount maths** mirrors the server's formula and reads the percentage as a float, so both sides stayed in sync automatically after the precision change.
+
+### Phase 7 — still open
+
+| # | Item | Notes |
+|---|---|---|
+| N-5 | Offers above the asking price are accepted silently | Existing data has guests offering ₹3,000 against a ₹2,900 listing and ₹20,000 against ₹9,800. Not harmful, but nothing flags it |
+| N-6 | The negotiated-deal badge shows the exact percentage | Now reads e.g. "−21.06%". Precise and honest, but a rounded display would read better — as long as the charge stays on the exact figure |
