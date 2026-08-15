@@ -3,10 +3,12 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@android:color/white" />
 
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+    <!-- The Aajoo mark, so the launch screen is branded rather than a blank
+         white flash. This block ships commented out by Flutter and had never
+         been enabled, and launch_image did not exist until now. -->
+    <item>
         <bitmap
             android:gravity="center"
             android:src="@mipmap/launch_image" />
-    </item> -->
+    </item>
 </layer-list>

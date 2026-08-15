@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive launcher icon (Android 8+).
+
+     The app shipped only legacy mipmap PNGs, so every modern launcher wrapped
+     the icon in a white circle and shrank it — the mark ended up as a small
+     square floating inside a white disc instead of filling the icon.
+
+     A background colour plus a transparent foreground lets the launcher mask
+     the icon to whatever shape the device uses (circle, squircle, teardrop)
+     with the mark sitting correctly in the safe zone. The legacy PNGs stay as
+     the fallback for pre-26 devices. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <monochrome android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>
