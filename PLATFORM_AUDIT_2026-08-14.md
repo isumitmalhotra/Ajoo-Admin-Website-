@@ -30,7 +30,7 @@ the running system instead.
 | 5 | Fix → redeploy → re-verify | ✅ **Done** — all fixes live and re-verified in production |
 | 6 | Transactional E2E — booking, payment, invoice, ledger | ✅ **Done** — 5 fixed, 3 open |
 | 7 | Negotiation & refunds | ✅ **Done** — 4 fixed, 2 open |
-| 8 | Admin portal E2E | ✅ **Done** — 5 fixed, 2 open |
+| 8 | Admin portal E2E | ✅ **Done** — **7 fixed, 0 open** |
 
 ## Deployed and verified live
 
@@ -362,10 +362,12 @@ against a local request log: **29 distinct endpoints, one dead**.
 | A-3 | **The blank columns were never missing data.** User PHONE and host LOCATION showed a dash on every row — but 6 of 11 users have a phone stored and 2 of 4 hosts have a city. The list queries simply never selected `user_pnumber` / `user_city` / `user_address`. The user *detail* query has always selected the phone, so it was one screen away the whole time. | Verified: Nikita Patiyal reads 8219990394; hosts read "shimla" and "Goa". Remaining dashes are genuinely null |
 | A-4 | **Invoices did not say who they were for.** The list returned `inv_host_id` / `inv_user_id` and no names, so the PARTY column was a dash on every row. An invoice list exists to tell you who owes or is owed. (Same root cause as the ledger's `Host #111`.) | Names joined in — one query per page per side — plus `partyName`: host for commission and payout statements, guest for booking receipts. Verified: Sumit Malhotra / Nameesh Patiyal / navi |
 | A-5 | **The property form's Submit failed silently.** Editing property 7 looked like a dead button. Formik marks fields touched on submit so the errors *were* rendered — beside their fields, off-screen on a form that long. Property 7's zip and country are NULL, so two fields the admin had never scrolled to blocked the save with nothing on screen to say so. | A summary at the button now names them. Verified: *"This property can't be saved yet — country: Country is required / zip_code: Zip Code is required."* Also removed a `console.log` firing on every render |
+| A-6 | 🔴 **`GET /admin/dashboard` took 2.4 s.** `getUserStats`, `getHostStats` and `getPropStats` each ran **four counts in sequence**, awaited one after another. The queries are trivial — the cost is the ~160 ms round trip to a remote database, so three helpers × four serial counts was **twelve round trips**, while the eight counts beside them (which do run in parallel) took 200 ms between them. | One grouped query per block via a shared `countStats()`. User block measured **748 ms → 214 ms**, identical numbers out. Endpoint **2.4 s → ~610 ms** warm, tiles still agreeing with the screens they link to |
+| A-7 | **`Host #111` / `Guest #123` in the ledger.** Rows carry `fl_host_id`/`fl_user_id` and no names, so the PARTY column and both per-entity ledger pages fell back to an id — "Host #111" printed over that host's own ledger. | `attachPartyNames()` joins names with one query per page for the whole set; `searchInvoices` refactored onto it too, having grown its own copy. Verified: ledger reads "Aajoo Test Host"; detail pages head "Aajoo Test Host" and "Sumit Malhotra". Platform-level tax rows still show a dash, correctly |
 
 ### Phase 8 — still open
 
+Nothing. A-6 and A-7 were closed on 15 Aug.
+
 | # | Item | Notes |
 |---|---|---|
-| A-6 | `GET /admin/dashboard` takes **2.4 s** | The slowest admin call; second only to `/properties/search` platform-wide |
-| A-7 | Ledger still shows `Host #111` / `Guest #123` | Same fix as A-4, not yet applied to the ledger endpoints |
