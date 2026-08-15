@@ -40,6 +40,7 @@ the running system instead.
 | User Active/Inactive toggle | FE `ffdcb7c` | string `Deactivate this user` present in the live bundle |
 | Add User / Add Host dialog | FE `c75dfcb` | `Add New Host`, `A profile photo is required` present |
 | Offer note rendered | FE `f67f5ca` | `Message sent with the offer` present |
+| OTP bypass closed | — | Client removed it from Render (15 Aug). Verified: `/health/env` reports `OTP_DEV_BYPASS: false`, **and** no live code reads it — the only references left are the env-presence list and a commented-out line. Verification enforces attempt limits, expiry, and identical wording for wrong-code vs unknown-account |
 
 ---
 
@@ -102,7 +103,6 @@ now sees on screen.
 
 | # | Item | What is needed |
 |---|---|---|
-| C-1 | 🔴 `OTP_DEV_BYPASS` is `true` in production | Set `false` in Render. OTP can be bypassed on a live system |
 | C-2 | 🔴 Payouts cannot send money | `RAZORPAYX_KEY_ID`, `RAZORPAYX_KEY_SECRET`, `RAZORPAYX_ACCOUNT_NUMBER` (+ `FIELD_ENCRYPTION_KEY`) |
 | C-3 | Render env wrong | 5 `DB_*` incorrect, 4 vars missing — `RENDER_ENV_CHECKLIST.md` |
 | C-4 | Phone verification (A-5) | SMS provider credentials + DLT approval |
