@@ -23,13 +23,14 @@ the running system instead.
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1 | Admin portal — the 20 web-sheet items | ✅ **Done** — 19/20, W-13 partial |
+| 1 | Admin portal — the 20 web-sheet items | ✅ **Done** — **20/20** (W-13 closed in phase 8) |
 | 2 | Guest web E2E — every public page, dead APIs, dummy data | ✅ **Done** — 14 fixed, 5 open |
 | 3 | Host web E2E | ✅ **Done** — 2 fixed, 7 open |
 | 4 | App E2E | ✅ **Done** — 5 fixed, 5 open |
 | 5 | Fix → redeploy → re-verify | ✅ **Done** — all fixes live and re-verified in production |
 | 6 | Transactional E2E — booking, payment, invoice, ledger | ✅ **Done** — 5 fixed, 3 open |
 | 7 | Negotiation & refunds | ✅ **Done** — 4 fixed, 2 open |
+| 8 | Admin portal E2E | ✅ **Done** — 5 fixed, 2 open |
 
 ## Deployed and verified live
 
@@ -118,10 +119,6 @@ now sees on screen.
 
 | # | Item | Notes |
 |---|---|---|
-| P-1 | W-13 host **update** form | Creation exists; update does not |
-| P-2 | Placeholder identities in finance | Invoices show `Host #111` / `Guest #123`, payouts `Host #12`. IDs where names belong |
-| P-3 | Blank columns everywhere | User PHONE, host LOCATION, invoice PARTY all `—` on every row |
-| P-4 | Property form Submit is silent on validation failure | Errors render beside fields only. On property 7 it did nothing because zip/country are NULL in the DB — no top-level "fix these" signal |
 | P-5 | Legacy admin is dead code | All 15 folders of `src/pages/admin/*` unrouted. Delete or restore deliberately. **Caution:** `src/pages/user/*` is NOT all dead — `/home` and `/user-dashboard` are routed. Check reachability by symbol, not by path: App.tsx imports `Home` from `./pages`, so grepping for `user/home` finds nothing |
 | P-6 | `apiValidation.ts` is documentation only | Not wired to anything, and says POST where the code uses PUT |
 | P-7 | Junk city labels (E-3) | ~4,260 listings show wrong cities; needs a licensed geocoder |
@@ -348,3 +345,27 @@ the guest UI.
 |---|---|---|
 | N-5 | Offers above the asking price are accepted silently | Existing data has guests offering ₹3,000 against a ₹2,900 listing and ₹20,000 against ₹9,800. Not harmful, but nothing flags it |
 | N-6 | The negotiated-deal badge shows the exact percentage | Now reads e.g. "−21.06%". Precise and honest, but a rounded display would read better — as long as the charge stays on the exact figure |
+
+---
+
+## Phase 8 — admin portal
+
+The only portal without a full sweep. Walked **all 30 admin routes** in-app
+against a local request log: **29 distinct endpoints, one dead**.
+
+### Fixed and verified
+
+| # | Finding | Evidence |
+|---|---|---|
+| A-1 | 🔴 **An empty list returned 404.** `POST /admin/property/review/search` 404'd on every load of the admin Reviews page — not routing, the controller: `if (rows.length == 0) return notFoundStatus`. Every review table is empty, so it fired every time and the page rendered blank, with no way to tell "nothing here yet" from "this is broken". **Four more list endpoints did the same**: admin bookings, both booking-status lists, and review analytics. | All five now return 200 with an empty array and the usual pagination envelope. Single-record lookups keep their 404s, which are correct. Verified 404 → 200 `{"totalRecords":0,"reviews":[]}` |
+| A-2 | 🔴 **W-13 — no way to edit a user or host.** The last open item from your sheet. There was no admin update endpoint, so a wrong phone number could not be corrected. It turned out `/admin/user/create` has **always upserted** — and the reason nobody could use it was 140 lines further down: editing a user with no KYC row, without re-uploading their ID, hit `user_kyc_docs.create()` with `ud_afile_id` omitted. That column is NOT NULL with no default, so MySQL threw **"Field 'ud_afile_id' doesn't have a default value"** and rolled the whole save back with a 400. Every ordinary edit failed that way. | Backend no longer attempts a KYC row with no document. The dialog now does create *and* update, loading the **full record** first — prefilling from a table row would have written blanks over stored phone/DOB/zipcode. Verified: host 100 Goa → Panaji saved, every other field intact |
+| A-3 | **The blank columns were never missing data.** User PHONE and host LOCATION showed a dash on every row — but 6 of 11 users have a phone stored and 2 of 4 hosts have a city. The list queries simply never selected `user_pnumber` / `user_city` / `user_address`. The user *detail* query has always selected the phone, so it was one screen away the whole time. | Verified: Nikita Patiyal reads 8219990394; hosts read "shimla" and "Goa". Remaining dashes are genuinely null |
+| A-4 | **Invoices did not say who they were for.** The list returned `inv_host_id` / `inv_user_id` and no names, so the PARTY column was a dash on every row. An invoice list exists to tell you who owes or is owed. (Same root cause as the ledger's `Host #111`.) | Names joined in — one query per page per side — plus `partyName`: host for commission and payout statements, guest for booking receipts. Verified: Sumit Malhotra / Nameesh Patiyal / navi |
+| A-5 | **The property form's Submit failed silently.** Editing property 7 looked like a dead button. Formik marks fields touched on submit so the errors *were* rendered — beside their fields, off-screen on a form that long. Property 7's zip and country are NULL, so two fields the admin had never scrolled to blocked the save with nothing on screen to say so. | A summary at the button now names them. Verified: *"This property can't be saved yet — country: Country is required / zip_code: Zip Code is required."* Also removed a `console.log` firing on every render |
+
+### Phase 8 — still open
+
+| # | Item | Notes |
+|---|---|---|
+| A-6 | `GET /admin/dashboard` takes **2.4 s** | The slowest admin call; second only to `/properties/search` platform-wide |
+| A-7 | Ledger still shows `Host #111` / `Guest #123` | Same fix as A-4, not yet applied to the ledger endpoints |
