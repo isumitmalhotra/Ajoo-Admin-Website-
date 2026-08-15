@@ -1,4 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 // The controller registered in InitBinding — not lib/controller/auth_controller
@@ -10,6 +11,8 @@ import '../models/properties_response_model.dart';
 import '../utils/notification_link.dart';
 
 class NotificationRoutingService extends GetxService {
+  final _storage = const FlutterSecureStorage();
+
   static NotificationRoutingService get instance => Get.find();
 
   final RxString _pendingRoute = ''.obs;
@@ -21,12 +24,37 @@ class NotificationRoutingService extends GetxService {
     _setupNotificationHandlers();
   }
 
+  /// Key under which the last cold-start notification we acted on is stored.
+  static const _handledColdStartKey = 'last_handled_initial_message';
+
   void _setupNotificationHandlers() {
-    // Handle notification when app is opened from notification (terminated state)
-    FirebaseMessaging.instance.getInitialMessage().then((message) {
-      if (message != null) {
-        handleNotificationData(message.data);
+    // Handle notification when app is opened from notification (terminated
+    // state).
+    //
+    // getInitialMessage() returns the push that launched the app — but it is
+    // not guaranteed to return it only once. On Android the launch intent
+    // survives, so an ordinary cold start later can hand back the SAME message
+    // and the app navigates off to a notification the user dealt with days
+    // ago. Remembering which one we have already acted on makes this
+    // idempotent whatever the platform does.
+    FirebaseMessaging.instance.getInitialMessage().then((message) async {
+      if (message == null) return;
+
+      final id = message.messageId ??
+          // Not every provider sets messageId; fall back to something stable
+          // for this payload so we still de-duplicate.
+          '${message.sentTime?.millisecondsSinceEpoch ?? ''}:${message.data}';
+
+      try {
+        final seen = await _storage.read(key: _handledColdStartKey);
+        if (seen == id) return; // already routed for this one
+        await _storage.write(key: _handledColdStartKey, value: id);
+      } catch (_) {
+        // Storage unavailable — route anyway rather than swallow a tap the
+        // user just made.
       }
+
+      handleNotificationData(message.data);
     });
 
     // Handle notification when app is in background and notification is tapped

@@ -35,7 +35,7 @@ class _HostProfilePageState extends State<HostProfilePage> {
 
   // Pick profile image
   Future<void> _pickProfileImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery, maxWidth: 1024, maxHeight: 1024, imageQuality: 85);
     if (pickedFile != null) {
       setState(() {
         _profileImage = pickedFile;
@@ -44,7 +44,7 @@ class _HostProfilePageState extends State<HostProfilePage> {
   }
 
   Future<void> _pickCoverImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery, maxWidth: 1024, maxHeight: 1024, imageQuality: 85);
     if (pickedFile != null) {
       setState(() {
         coverImage = pickedFile;

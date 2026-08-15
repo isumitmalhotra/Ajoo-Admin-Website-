@@ -35,7 +35,12 @@ class _HostPropertyDetailsState extends State<HostPropertyDetails> {
 
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
-    final value = await picker.pickImage(source: ImageSource.gallery);
+      // Downscaled at pick time. Uploading the camera original meant a
+      // 4-12MB file per photo: measured earlier, ~4MB never completed at
+      // all and ~180KB took about 90 seconds. image_picker resizes and
+      // re-encodes before the file ever reaches us, so this needs no
+      // extra package and costs nothing at display size.
+    final value = await picker.pickImage(source: ImageSource.gallery, maxWidth: 1920, maxHeight: 1920, imageQuality: 80);
     if (value != null) {
       setState(() {
         hostController.coverImage.value = File(value.path);

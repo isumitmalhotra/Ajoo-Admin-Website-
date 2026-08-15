@@ -347,7 +347,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     try {
       final XFile? pickedFile = await _picker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 80,
+        maxWidth: 2000, maxHeight: 2000, imageQuality: 85,
       );
 
       if (pickedFile != null) {

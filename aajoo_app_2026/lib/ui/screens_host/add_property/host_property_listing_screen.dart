@@ -263,7 +263,12 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
   // ── Document picking ──────────────────────────────────────────────────────
 
   Future<void> _pickDocument(String documentType) async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+      // Downscaled at pick time. Uploading the camera original meant a
+      // 4-12MB file per photo: measured earlier, ~4MB never completed at
+      // all and ~180KB took about 90 seconds. image_picker resizes and
+      // re-encodes before the file ever reaches us, so this needs no
+      // extra package and costs nothing at display size.
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 2000, maxHeight: 2000, imageQuality: 85);
     if (picked == null) return;
     setState(() {
       switch (documentType) {

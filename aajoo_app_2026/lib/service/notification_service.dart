@@ -229,23 +229,11 @@ class NotificationService {
       }
     });
 
-    // Handle notification when app is opened from terminated state
-    FirebaseMessaging.instance
-        .getInitialMessage()
-        .then((RemoteMessage? message) {
-      if (message != null) {
-        logger.w("📩 Notification opened app from terminated state");
-        logger.w("📩 Notification Data: ${message.data}");
-        // Delay to ensure app is fully initialized
-        Future.delayed(const Duration(seconds: 2), () {
-          if (Get.isRegistered<NotificationRoutingService>()) {
-            // Get.find<NotificationRoutingService>()
-            //     .handleNotificationData(message.data);
-            // Get.to(() => NotificationsScreen());
-          }
-        });
-      }
-    });
+    // Cold-start handling lives in NotificationRoutingService, which is the
+    // service that knows how to route. This was a second getInitialMessage()
+    // subscriber whose body had been commented out to stop it double-routing,
+    // leaving a 2-second timer that woke up and did nothing. One owner is
+    // clearer than one owner plus a disabled copy.
 
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   }
