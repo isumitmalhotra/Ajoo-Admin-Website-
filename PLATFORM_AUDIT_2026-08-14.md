@@ -300,7 +300,7 @@ went 19 → 20, so it reached the host.
 | # | Item | Notes |
 |---|---|---|
 | T-7 | KYC before booking still not fully enforced | ⚠️ **partly closed 15 Aug** — a *declined* identity is now refused server-side. Refusing merely *unverified* is blocked on the app: it routes a `/kyc` screen that nothing in checkout opens, so a hard gate would strand every unverified app user with no way to verify. Ship the two together |
-| T-8 | Bookings are capped at **3 months ahead** | `validateBookingDates` rejects anything further out. Probably deliberate, but it is not stated anywhere a guest can see — worth confirming it is intended |
+| T-8 | ✅ **closed 15 Aug** — 3-month horizon | Client confirmed the limit is intended. The calendar did not know about it, so a guest could pick March, see a total, and meet the rule at the payment step. Days past the horizon are now disabled, paging stops there, and the rule is stated under the calendar. Verified: 1–15 Nov selectable, 16 Nov onward disabled |
 
 ---
 
