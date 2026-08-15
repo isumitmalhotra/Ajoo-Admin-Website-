@@ -25,7 +25,7 @@ the running system instead.
 |---|---|---|
 | 1 | Admin portal — the 20 web-sheet items | ✅ **Done** — **20/20** (W-13 closed in phase 8) |
 | 2 | Guest web E2E — every public page, dead APIs, dummy data | ✅ **Done** — 14 fixed, 5 open |
-| 3 | Host web E2E | ✅ **Done** — 2 fixed, 7 open |
+| 3 | Host web E2E | ✅ **Done** — 3 fixed, 6 open |
 | 4 | App E2E | ✅ **Done** — 5 fixed, 5 open |
 | 5 | Fix → redeploy → re-verify | ✅ **Done** — all fixes live and re-verified in production |
 | 6 | Transactional E2E — booking, payment, invoice, ledger | ✅ **Done** — 5 fixed, 3 open |
@@ -194,6 +194,7 @@ endpoints, 2 non-2xx**, one of which was my own curl typo.
 | # | Finding | Evidence |
 |---|---|---|
 | H-1 | 🔴 **Boost was dead on arrival.** The model set `modelName: 'tbl_boost'` and no `tableName`, so Sequelize pluralised it and queried **`tbl_boosts`** — the real table is `tbl_boost`. `GET /host/boost/list` returned **400 "Table 'tbl_boosts' doesn't exist"** on every load of the Boost page, silently, while the page went on offering three paid plans. `POST /host/boost/activate` would have failed identically. Most models here survive the default because their tables are already plural (`tbl_user` → `tbl_users`); this one is not. | 400 → **200**. Activate now writes a row (starter, ₹499, 7-day window). Test row deleted |
+| H-7 | 🔴 **`POST /properties/search` was the slowest endpoint on the platform** — 3.9 s, on the guest browse path. Profiled per stage: 216 ms to find the nearest ids, **944 ms** for the rows with four `hasMany` includes (MySQL building the cartesian product of every category × amenity × tag, de-duplicated in JS), then **419 + 200 + 205 ms** of images, ratings and host-visibility lookups running one after another for no reason. | `separate: true` on the three collections (997 → 745 ms, identical counts), and the three lookups now issued concurrently — both helpers split into fetch/apply so the wrappers keep working for their other callers. **~2 s → ~1.4 s** locally. Verified by diffing the whole response against production: same 100 rows, same order, same keys; the only differences are Cloudinary's per-request analytics token |
 | H-2 | Payouts promised "reach your account within **2-3 business days**" — printed directly above a history where **all six payouts read FAILED**. Nothing enforces 2-3 days: release is admin-scheduled and the transfer goes through RazorpayX, which has no credentials, which is *why* they failed. | Now describes the process and points at the status column |
 
 ### Verified working (no defect)
@@ -213,7 +214,6 @@ Checked carefully because they looked wrong at first glance and were not:
 | H-4 | 🔴 **Nothing consumes a boost** | `boost` appears in exactly three files: `host.controller` (create/list), `admin.controller` (list), `models/tbl_boost`. `property.controller`, which serves `/properties/search`, never references it. So "Top of search", "2x/3x more visibility", "Featured badge", "Homepage feature" are not delivered by any code. Note that paid placement normally has to be **labelled** to guests — this is a product and compliance decision, not a bug fix I should make unilaterally |
 | H-5 | "Priority support" / "Dedicated manager" on the Boost plans | Support is one ticket queue with no tiering |
 | H-6 | Referral reward has **no way to be paid** | The programme is built, but `creditReferralForUser` only flips `ref_status` to "credited". There is **no wallet, balance, coin or reward table anywhere in the database** — I checked. Guests are promised "₹300 Aajoo Coins", hosts "you earn ₹300", and there is nowhere for it to land. It *is* fulfillable manually — an admin can read `/admin/referrals/list` and settle by hand — so this needs a **client decision: commit to settling manually, or build the wallet** |
-| H-7 | `POST /properties/search` peaked at **3.9 s** | The slowest endpoint on the platform, and it is on the critical browse path |
 | H-8 | "29227 Active Listings" | Missing thousands separator; the same page writes "29,228 listings" and "₹55,980" correctly |
 | H-9 | Property pickers list 100 of 29,230 as a flat wall of names | Calendar and Boost both. An artifact of the seeded catalogue, but unusable as a picker |
 
