@@ -87,7 +87,7 @@ now sees on screen.
 | W-10 | Where can I check the negotiation message | 🔧 fixed | The offer's note lives on the offer row; the thread read the chat table, so an offer with a note but no chat said "no messages were exchanged" **and the note was never sent to the admin at all**. Now included and rendered above the thread |
 | W-11 | Rename form to "Add New Host" | 🔧 built | — |
 | W-12 | Add host form is not working | 🔧 built | There was no form. `src/pages/admin/*` (15 folders) is unrouted dead code. One dialog now covers user and host — the backend has always had one endpoint, `/admin/user/create` with `user_isHost` |
-| W-13 | Host **update** form title | ⚠️ **partial** | Creation built; there is still no host *update* form in the new admin. Same cause as W-11/12 |
+| W-13 | Host **update** form title | ✅ **closed in phase 8** | No admin update endpoint existed, but `/admin/user/create` has always upserted — it just failed on every real edit with "Field 'ud_afile_id' doesn't have a default value". Backend fixed, edit dialog built, verified against the database |
 | W-14 | Description points vanish after save | ✅ verified | Property 15 reads its saved point back; confirmed in `propDetail_extra` |
 | W-15 | Same for property document upload | ✅ fixed | Docs live in **two** tables (admin → `tbl_attachments`, wizard → `tbl_property_documents`); the read merges both |
 | W-16 | Pet / Smoking unchanged after save | ✅ verified | DB `0/0` ↔ form loads `0/0` |
