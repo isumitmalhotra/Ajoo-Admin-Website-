@@ -335,7 +335,13 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
               Expanded(
                   child: Reveal(
                       delay: Reveal.staggerDelay(2),
-                      child: _statCard(Ionicons.home_outline, '$properties',
+                      // _formatAmount does Indian grouping and is already used for
+                      // the earnings figure above. This tile printed the raw
+                      // integer, so a host with 29,230 listings read "29230"
+                      // directly under "₹72,940".
+                      child: _statCard(
+                          Ionicons.home_outline,
+                          _formatAmount(properties),
                           'Properties', _teal50, kIndigo600,
                           onTap: () => Get.to(() => const HostPropertyListingScreen())))),
               const SizedBox(width: 12),
