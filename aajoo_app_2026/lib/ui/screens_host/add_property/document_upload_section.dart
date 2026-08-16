@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rent_home/constants.dart';
@@ -41,6 +43,7 @@ class DocumentUploadSection extends StatelessWidget {
         // ── Tiles ─────────────────────────────────────────────────────────────
         _DocumentTile(
           title: 'Fire and Safety NOC',
+          file: fireAndSafetyNOC,
           subtitle: 'Fire and safety clearance certificate',
           isUploaded: fireAndSafetyNOC != null,
           onTap: () => onPick('fireAndSafety'),
@@ -51,6 +54,7 @@ class DocumentUploadSection extends StatelessWidget {
         if (_isHimachal && !isPartySelected) ...[
           _DocumentTile(
             title: 'Jama Bandhi Document',
+          file: jamaBandhiDoc,
             subtitle:
                 'Property registration or ownership document (Himachal Pradesh only)',
             isUploaded: jamaBandhiDoc != null,
@@ -63,6 +67,7 @@ class DocumentUploadSection extends StatelessWidget {
         if (isPartySelected) ...[
           _DocumentTile(
             title: 'Party License Document',
+          file: partyLicenseDoc,
             subtitle: 'Party license document (for party properties only)',
             isUploaded: partyLicenseDoc != null,
             onTap: () => onPick('partyLicense'),
@@ -72,6 +77,7 @@ class DocumentUploadSection extends StatelessWidget {
 
         _DocumentTile(
           title: 'NOC Document',
+          file: nocDocument,
           subtitle: 'No Objection Certificate',
           isUploaded: nocDocument != null,
           onTap: () => onPick('noc'),
@@ -80,6 +86,7 @@ class DocumentUploadSection extends StatelessWidget {
 
         _DocumentTile(
           title: 'Police Verification Document',
+          file: policeVerificationDoc,
           subtitle: 'Police clearance certificate',
           isUploaded: policeVerificationDoc != null,
           onTap: () => onPick('policeVerification'),
@@ -112,11 +119,16 @@ class _DocumentTile extends StatelessWidget {
   final bool isUploaded;
   final VoidCallback onTap;
 
+  /// The picked file, for the thumbnail. A green tick says "something was
+  /// selected"; only a picture of the document says it was the RIGHT one.
+  final XFile? file;
+
   const _DocumentTile({
     required this.title,
     required this.subtitle,
     required this.isUploaded,
     required this.onTap,
+    this.file,
   });
 
   @override
@@ -126,16 +138,29 @@ class _DocumentTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: ListTile(
-          leading: Icon(
-            isUploaded ? Icons.check_circle : Icons.upload_file,
-            color: isUploaded ? kSuccess : kMuted,
-          ),
+          leading: isUploaded && file != null
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.file(
+                    File(file!.path),
+                    width: 44,
+                    height: 44,
+                    fit: BoxFit.cover,
+                    // A non-image document keeps the tick instead of an error.
+                    errorBuilder: (_, __, ___) =>
+                        const Icon(Icons.check_circle, color: kSuccess),
+                  ),
+                )
+              : Icon(
+                  isUploaded ? Icons.check_circle : Icons.upload_file,
+                  color: isUploaded ? kSuccess : kMuted,
+                ),
           title: Text(
             title,
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
           subtitle: Text(
-            isUploaded ? 'Document uploaded' : subtitle,
+            isUploaded ? 'Selected — tap to replace' : subtitle,
             style: TextStyle(
               color: isUploaded ? kSuccess : kMuted,
             ),

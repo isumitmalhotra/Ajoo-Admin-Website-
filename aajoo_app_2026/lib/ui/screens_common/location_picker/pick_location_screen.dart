@@ -1,12 +1,26 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/data/ApiConstants.dart';
+import 'package:rent_home/data/source/remote/dio_config.dart';
 import 'package:rent_home/ui/screens_common/location_picker/location_permission_denied.dart';
 import 'package:rent_home/ui/screens_host/add_property/new_property_controller_legacy.dart';
+
+/// One search suggestion from the backend's geocode proxy — the same
+/// /public/geocode/search the website's picker uses, so both platforms agree
+/// on what a place search finds. Keyless (OSM/Nominatim via our server), so it
+/// works even if the Google tiles key ever lapses.
+class _PlaceHit {
+  final double lat;
+  final double lng;
+  final String label;
+  const _PlaceHit(this.lat, this.lng, this.label);
+}
 
 class PickLocationScreen extends StatefulWidget {
   const PickLocationScreen({super.key});
@@ -19,6 +33,65 @@ class _PickLocationScreenState extends State<PickLocationScreen> {
   final controller = Get.find<NewPropertyController>();
   LatLng? currentPosition;
   GoogleMapController? _googleMapController;
+
+  // ── Place search ──────────────────────────────────────────────────────────
+  // The picker used to be tap-and-drag only: a host listing a property in
+  // another town had to fling the map across the country by hand.
+  final _searchController = TextEditingController();
+  final Dio _dio = Dio();
+  Timer? _debounce;
+  List<_PlaceHit> _hits = [];
+  bool _searching = false;
+
+  void _onSearchChanged(String q) {
+    _debounce?.cancel();
+    if (q.trim().length < 3) {
+      setState(() => _hits = []);
+      return;
+    }
+    // Debounced hard — the backend paces Nominatim at one request a second.
+    _debounce = Timer(const Duration(milliseconds: 550), () async {
+      setState(() => _searching = true);
+      try {
+        final res = await _dio.get('/public/geocode/search',
+            queryParameters: {'q': q.trim()});
+        final body = res.data;
+        final places = (body is Map && body['success'] == true)
+            ? (body['data']?['places'] as List? ?? [])
+            : [];
+        if (!mounted) return;
+        setState(() {
+          _hits = places
+              .whereType<Map>()
+              .map((p) => _PlaceHit(
+                    (p['lat'] as num).toDouble(),
+                    (p['lng'] as num).toDouble(),
+                    '${p['label'] ?? ''}',
+                  ))
+              .toList();
+        });
+      } catch (_) {
+        if (mounted) setState(() => _hits = []);
+      } finally {
+        if (mounted) setState(() => _searching = false);
+      }
+    });
+  }
+
+  void _goToHit(_PlaceHit h) {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _hits = [];
+      _searchController.text = h.label.split(',').first;
+    });
+    // The camera move triggers onCameraMove, which is what feeds lat/lng to
+    // the controller — same path as a manual drag, so nothing else changes.
+    _googleMapController?.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(target: LatLng(h.lat, h.lng), zoom: 16),
+      ),
+    );
+  }
 
   Future<void> _checkLocationPermission() async {
     LocationPermission permission = await Geolocator.checkPermission();
@@ -104,6 +177,7 @@ class _PickLocationScreenState extends State<PickLocationScreen> {
   @override
   void initState() {
     super.initState();
+    DioConfig.apply(_dio, Apiconstants.baseUrl);
     _checkLocationPermission();
   }
 
@@ -146,6 +220,81 @@ class _PickLocationScreenState extends State<PickLocationScreen> {
                 ),
               ),
             ),
+            // Search overlay — type a town or landmark instead of dragging the
+            // map across the country. Same backend search as the website.
+            Positioned(
+              top: 12,
+              left: 16,
+              right: 16,
+              child: Column(
+                children: [
+                  Material(
+                    elevation: 3,
+                    borderRadius: BorderRadius.circular(12),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: _onSearchChanged,
+                      decoration: InputDecoration(
+                        hintText: 'Search a town, area or landmark…',
+                        prefixIcon: _searching
+                            ? const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2)),
+                              )
+                            : const Icon(Icons.search),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.close, size: 18),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _hits = []);
+                                },
+                              )
+                            : null,
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      ),
+                    ),
+                  ),
+                  if (_hits.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(top: 6),
+                      constraints: const BoxConstraints(maxHeight: 220),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: kSoftShadow,
+                      ),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        itemCount: _hits.length,
+                        separatorBuilder: (_, __) =>
+                            const Divider(height: 1, color: kLine),
+                        itemBuilder: (_, i) => ListTile(
+                          dense: true,
+                          leading: const Icon(Icons.place_outlined,
+                              size: 18, color: kIndigo),
+                          title: Text(_hits[i].label,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 13)),
+                          onTap: () => _goToHit(_hits[i]),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
             Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
@@ -176,6 +325,8 @@ class _PickLocationScreenState extends State<PickLocationScreen> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
     _googleMapController?.dispose();
     super.dispose();
   }

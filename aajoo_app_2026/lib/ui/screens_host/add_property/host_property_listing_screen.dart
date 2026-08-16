@@ -930,8 +930,14 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
                   final lat = newPropertyController.latitude.value;
                   final lng = newPropertyController.longitude.value;
                   final hasLoc = lat != 0.0 && lng != 0.0;
+                  // The place, not the coordinates. "Lat: 32.2432" means
+                  // nothing to a host; the reverse geocode has already put the
+                  // city into its field, so say that instead.
+                  final city = _cityController.text.trim();
                   return Text(hasLoc
-                      ? 'Lat: ${lat.toStringAsFixed(4)}, Lng: ${lng.toStringAsFixed(4)}'
+                      ? (city.isNotEmpty
+                          ? 'Location set — near $city'
+                          : 'Location set — tap to adjust')
                       : 'Select Location');
                 }),
               ],
