@@ -41,11 +41,18 @@ class _HomeCmsSectionsState extends State<HomeCmsSections> {
     setState(() => _content = c);
   }
 
+  /// The website's own origin, for resolving relative links.
+  static const _siteOrigin = 'https://www.aajoohomes.com';
+
   Future<void> _openBannerLink(String url) async {
-    // Relative paths are a website convention the admin may well type
-    // ("/explore"); there is no in-app route to map them onto, so only
-    // absolute links are followed rather than opening something wrong.
-    final uri = Uri.tryParse(url);
+    // An admin editing a website naturally types "/search". Left as-is that
+    // parses fine, has no scheme, and launches nothing — a button that
+    // renders and does nothing, which is the exact defect this sprint has
+    // been removing. Resolve it against the site instead, which is what the
+    // admin meant.
+    final raw = url.trim();
+    final full = raw.startsWith('/') ? '$_siteOrigin$raw' : raw;
+    final uri = Uri.tryParse(full);
     if (uri == null || !uri.hasScheme) return;
     // Not gated on canLaunchUrl: on Android 11+ that resolves against a
     // package-visibility list and answers false for apps this one hasn't
