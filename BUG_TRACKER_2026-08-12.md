@@ -535,3 +535,56 @@ platforms is not done when one side ships.
 - [ ] **C-19** Show cat, from admin dashboard add icon also
 - [ ] **C-20** add find your stay header after cat, listing ng
 - [ ] **C-21** Need advise for Browse by cat, section
+
+---
+
+## 6. Blocks U and H — verification pass, 2026-08-16
+
+Every row in the `User` and `Host` sheets was read against the running system
+rather than against this tracker. Three things to say before the table.
+
+**Not all 68 rows are items.** The `User` sheet is a two-level outline that was
+flattened when this doc was generated, so section headings became numbered
+entries: `U-1 Status` is the header row, and `U-14 whishlist`, `U-17 Side Bar`,
+`U-24 About US`, `U-30 Properties Details`, `U-38/U-63 Sockets`, `U-40 On
+going`, `U-44 Cancel Booking Page`, `U-48 Pre Booking`, `U-55 LUX` are the
+group titles for the rows beneath them. A further seven say only "Dicussion
+on…" or "As per current market" — those are agenda points, not specifications.
+**Roughly 22 of 68 rows name a behaviour concrete enough to test.**
+
+**Most of the rest is redesign, not defect.** "Change Map Desgin acc to current
+app trend", "Use relatable SVG, illustrations", "Re desgin nav bar" and their
+neighbours are new design work, and fall under the same §0 caveat already
+recorded for block A.
+
+**Four defects were found and fixed.** All four are shipped and verified.
+
+### Fixed
+
+| ID | Finding | Evidence |
+|---|---|---|
+| **U-23**, **H-5** | `<queries>` in AndroidManifest declared only Flutter's default `PROCESS_TEXT`. With targetSdk 35, Android 11+ hides the installed-app list, so `canLaunchUrl` returned false for undeclared schemes and every link gated on it was dead — social icons, WhatsApp support, tap-to-dial, Get Directions. Failed silently. | WhatsApp support now launches an external app on the emulator; previously the tap did nothing. |
+| **U-12** | `myLocationEnabled: true` with `myLocationButtonEnabled: false` and no replacement — blue dot drawn, no way to return to it after panning. | Re-center added; verified returning the camera to the dot after two pans. Note: first placement (`bottom: 24`) was invisible behind the home's draggable sheet — moved top-right. |
+| **U-27** | `Rate App` tile shipped with an empty `onTap`. Only dead row in Settings. | Wired to `market://` then the https listing, with a message if neither resolves. |
+| **H-3** | "No ongoing bookings" was a 30px grey icon — reads as a rendering failure. | Replaced with `assets/hotel.json`, a bundled but unreferenced travel animation, plus a line saying what happens next. |
+
+### Already working — no change needed
+
+| ID | Checked |
+|---|---|
+| U-3 | Splash no longer shows the castle image; it is the official logo (fixed with the rebrand). |
+| U-14, U-32 | Wishlist is fully wired: `POST /properties/user-saveProp` toggle + `POST /user/saved-properties` list, backed by `tbl_saved_liked_prop`, with an id cache so list tiles don't each make a round trip. |
+| U-36 | Bottom price bar already offsets by `MediaQuery.padding.bottom`. |
+| U-41 | Single-active pay-on-arrival guard exists (`booking.controller.js` Guard 2). |
+| U-46 | Double-booking guard exists (Guard 1), including a 30-minute hold on payment-pending so two guests can't pay for one slot. |
+| U-43 | "View all" present on the dashboard's Upcoming Stays. |
+| U-15 | Greeting with first name present ("Welcome back, Sumit! 👋"). |
+| H-1 | Host greeting `Hi, {firstName}! 👋` renders at the top of the host home. |
+
+### Open, needs a decision rather than a fix
+
+- **U-18** — the redesigned footer (the live one) has no social section at all; the icons live on the legacy footer and Help Center. Adding a social block to the new footer is a design addition, not a repair.
+- **U-6** — city/state data: states were corrected 2026-08-12; ~4,260 junk CITY labels remain (tracked as P-7 in the platform audit).
+- **U-63 "Duplicate Pages"** — 40 duplicate filenames across `lib/`. Real, but the earlier dead-code pass already removed the unreachable ones, so what remains needs case-by-case checking rather than a sweep.
+- **Web social handles** could not be confirmed live from here — Instagram serves a generic shell to logged-out requests and Facebook rejects them, so neither status codes nor page text distinguish a real profile from a missing one. Worth a human click.
+- **`assets/house.png` is a watermarked stock preview** (iconscout/Uigo Design, grid overlay baked in). Not referenced by any code, so nothing renders it, but it ships inside the APK at 1.3 MB. Should be deleted or licensed.
