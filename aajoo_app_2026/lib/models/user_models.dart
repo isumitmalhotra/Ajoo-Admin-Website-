@@ -126,6 +126,7 @@ class UserDetail {
   final bool isVerified;
   final String address;
   final String city;
+  final String state;
   final String zipcode;
   final KycDocs? kycDocs;
   // DIDIT identity status: 'verified' | 'pending' | 'in_review' | 'declined' |
@@ -147,6 +148,7 @@ class UserDetail {
     required this.isVerified,
     required this.address,
     required this.city,
+    this.state = '',
     required this.zipcode,
     this.kycDocs,
     this.verificationStatus = 'unverified',
@@ -173,6 +175,7 @@ class UserDetail {
       isVerified: json['user_isVerified'] ?? false,
       address: json['user_address'] ?? '',
       city: json['user_city'] ?? '',
+      state: json['user_state'] ?? '',
       zipcode: json['user_zipcode'] ?? '',
       kycDocs:
           json['kycDocs'] != null ? KycDocs.fromJson(json['kycDocs']) : null,
@@ -197,6 +200,7 @@ class UserDetail {
       'user_isVerified': isVerified,
       'user_address': address,
       'user_city': city,
+      'user_state': state,
       'user_zipcode': zipcode,
       'kycDocs': kycDocs?.toJson(),
       'verification_status': verificationStatus,

@@ -20,6 +20,7 @@ import 'dart:io';
 import '../../screens_common/auth/auth_controller.dart';
 import '../../../controller/common_controller.dart';
 import '../../../data/models/update_user_model.dart';
+import 'package:rent_home/ui/screens_host/add_property/widgets/state_city_dropdowns.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -44,6 +45,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _cityController = TextEditingController();
+  final TextEditingController _stateController = TextEditingController();
   final TextEditingController _zipcodeController = TextEditingController();
 
   @override
@@ -71,6 +73,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         _phoneController.text = userData.phoneNumber;
         _addressController.text = userData.address;
         _cityController.text = userData.city;
+        _stateController.text = userData.state;
         _zipcodeController.text = userData.zipcode;
       } else {
         Get.snackbar('Warning', 'User data not available');
@@ -194,6 +197,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (p != null) {
         if (p.address.trim().isNotEmpty) _addressController.text = p.address;
         if (p.city.trim().isNotEmpty) _cityController.text = p.city;
+        if (p.state.trim().isNotEmpty) _stateController.text = p.state;
         if (p.postalCode.trim().isNotEmpty) {
           _zipcodeController.text = p.postalCode;
         }
@@ -220,6 +224,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       // A PIN determines the city, not the street — the address field is
       // left exactly as the user had it.
       if (p != null && p.city.trim().isNotEmpty) _cityController.text = p.city;
+      if (p != null && p.state.trim().isNotEmpty) _stateController.text = p.state;
     });
     if (!res.ok) {
       Get.snackbar('PIN code', addressLookupMessage(res.error));
@@ -550,6 +555,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         userPnumber: _phoneController.text.trim(),
         userAddress: _addressController.text.trim(),
         userCity: _cityController.text.trim(),
+        userState: _stateController.text.trim(),
         userZipcode: _zipcodeController.text.trim(),
         docType: docTypeIdToSend,
         docNumber: docNumberToSend,
@@ -714,6 +720,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       _phoneController.dispose();
       _addressController.dispose();
       _cityController.dispose();
+      _stateController.dispose();
       _zipcodeController.dispose();
       _scrollController.dispose();
     } catch (e) {
@@ -903,8 +910,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   _buildAnimatedTextField(
                                       'Address', _addressController,
                                       maxlength: 100),
-                                  _buildAnimatedTextField(
-                                      'City', _cityController),
+                                  // Same reference-table dropdowns as the
+                                  // listing wizard — this screen had a lone
+                                  // free-text City with no state at all.
+                                  StateCityDropdowns(
+                                    stateController: _stateController,
+                                    cityController: _cityController,
+                                  ),
                                   _buildAnimatedTextField(
                                       'Zipcode', _zipcodeController,
                                       maxlength: 6,

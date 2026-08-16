@@ -6,6 +6,7 @@ class UserUpdateRequest {
   final String userPnumber;
   final String userAddress;
   final String userCity;
+  final String userState;
   final String userZipcode;
   final String? docType; 
   final String? docNumber;
@@ -17,6 +18,7 @@ class UserUpdateRequest {
     required this.userPnumber,
     required this.userAddress,
     required this.userCity,
+    this.userState = '',
     required this.userZipcode,
     this.docType,
     this.docNumber,
@@ -31,6 +33,7 @@ class UserUpdateRequest {
         'user_pnumber': userPnumber,
         'user_address': userAddress,
         'user_city': userCity,
+        'user_state': userState,
         'user_zipcode': userZipcode,
         'doc_type': docType,
         'doc_number': docNumber,
