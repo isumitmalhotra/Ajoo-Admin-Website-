@@ -262,7 +262,8 @@ class _MapScreenState extends State<MapScreen> {
     } catch (_) {
       // A fix we already had beats no map at all. Falls through to the
       // controller's position if there is no cached one.
-      final last = await Geolocator.getLastKnownPosition().catchError((_) => null);
+      final last =
+          await Geolocator.getLastKnownPosition().catchError((_) => null);
       if (last != null) {
         _initialPosition = LatLng(last.latitude, last.longitude);
         mapController.currentPosition.value = _initialPosition!;
@@ -467,6 +468,40 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  /// Brings the camera back to the guest's own location.
+  ///
+  /// `myLocationEnabled` was on but `myLocationButtonEnabled` was off and
+  /// nothing replaced it, so the blue dot was drawn with no way to return to
+  /// it: pan away while browsing and the only recovery was to leave the screen
+  /// and come back.
+  ///
+  /// Takes a fresh fix rather than reusing the stored one, since the point of
+  /// pressing it is usually that the guest has physically moved, and writes it
+  /// back to the controller so the map and the property search stay centred on
+  /// the same coordinates. If the fix fails — permission revoked mid-session,
+  /// GPS off — it falls back to the last known position instead of doing
+  /// nothing.
+  Future<void> _recenter() async {
+    if (!_controller.isCompleted) return;
+    final controller = await _controller.future;
+
+    LatLng target = mapController.currentPosition.value;
+    try {
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      ).timeout(const Duration(seconds: 6));
+      target = LatLng(pos.latitude, pos.longitude);
+      mapController.currentPosition.value = target;
+    } catch (_) {
+      // keep the last known position
+    }
+
+    await controller.animateCamera(
+      CameraUpdate.newCameraPosition(
+          CameraPosition(target: target, zoom: 14.5)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -498,39 +533,115 @@ class _MapScreenState extends State<MapScreen> {
                           ),
                         ),
                       )
-                    : GoogleMap(
-                        zoomControlsEnabled: false,
-                        indoorViewEnabled: true,
-                        compassEnabled: false,
-                        trafficEnabled: true,
-                        buildingsEnabled: true,
-                        myLocationButtonEnabled: false,
-                        myLocationEnabled: true,
-                        mapType: MapType.normal,
-                        // The fallback was LatLng(37.427961, -122.085749) —
-                        // Mountain View, California, the Android emulator's
-                        // default. Any time the position had not resolved, the
-                        // map opened on another continent while the property
-                        // search ran against the controller's coordinates, so
-                        // the map and the pins disagreed by 12,000 km.
-                        //
-                        // It falls back to the SAME position the properties
-                        // were fetched around, so the two can never diverge.
-                        initialCameraPosition: CameraPosition(
-                          target: _initialPosition ??
-                              mapController.currentPosition.value,
-                          zoom: 14.4746,
-                        ),
-                        onMapCreated: (GoogleMapController controller) {
-                          if (!_controller.isCompleted) {
-                            _controller.complete(controller);
-                          }
-                        },
-                        markers: markers.values.toSet(),
-                        padding: const EdgeInsets.only(top: 50),
+                    : Stack(
+                        children: [
+                          GoogleMap(
+                            zoomControlsEnabled: false,
+                            indoorViewEnabled: true,
+                            compassEnabled: false,
+                            trafficEnabled: true,
+                            buildingsEnabled: true,
+                            myLocationButtonEnabled: false,
+                            myLocationEnabled: true,
+                            mapType: MapType.normal,
+                            // The fallback was LatLng(37.427961, -122.085749) —
+                            // Mountain View, California, the Android emulator's
+                            // default. Any time the position had not resolved, the
+                            // map opened on another continent while the property
+                            // search ran against the controller's coordinates, so
+                            // the map and the pins disagreed by 12,000 km.
+                            //
+                            // It falls back to the SAME position the properties
+                            // were fetched around, so the two can never diverge.
+                            initialCameraPosition: CameraPosition(
+                              target: _initialPosition ??
+                                  mapController.currentPosition.value,
+                              zoom: 14.4746,
+                            ),
+                            onMapCreated: (GoogleMapController controller) {
+                              if (!_controller.isCompleted) {
+                                _controller.complete(controller);
+                              }
+                            },
+                            markers: markers.values.toSet(),
+                            padding: const EdgeInsets.only(top: 50),
+                          ),
+                          // Top-right, not bottom-right. This screen is only
+                          // ever shown inside the renter home, which lays a
+                          // draggable "N homes near you" sheet over the lower
+                          // third of the map — a bottom-anchored control sits
+                          // underneath it and cannot be tapped at all. The top
+                          // offset clears the search field and the offer chip
+                          // above it.
+                          //
+                          // It is also where Google's own myLocation button
+                          // renders when enabled, so this is the position the
+                          // gesture is already learned for.
+                          Positioned(
+                            right: 16,
+                            top: 268,
+                            child: _RecenterButton(onPressed: _recenter),
+                          ),
+                        ],
                       ),
               ),
             ),
+    );
+  }
+}
+
+/// The map's "back to me" control.
+///
+/// Deliberately a plain button rather than Google's built-in one: the built-in
+/// sits under the search chrome at the top of this screen, which is why it was
+/// switched off in the first place. This keeps it clear of both the top
+/// overlay and the bottom sheet, and shows a spinner while the fix resolves so
+/// a slow GPS lock does not read as another dead tap.
+class _RecenterButton extends StatefulWidget {
+  const _RecenterButton({required this.onPressed});
+
+  final Future<void> Function() onPressed;
+
+  @override
+  State<_RecenterButton> createState() => _RecenterButtonState();
+}
+
+class _RecenterButtonState extends State<_RecenterButton> {
+  bool _busy = false;
+
+  Future<void> _run() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await widget.onPressed();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      shape: const CircleBorder(),
+      elevation: 4,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: _run,
+        child: SizedBox(
+          height: 46,
+          width: 46,
+          child: Center(
+            child: _busy
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.my_location, size: 22),
+          ),
+        ),
+      ),
     );
   }
 }

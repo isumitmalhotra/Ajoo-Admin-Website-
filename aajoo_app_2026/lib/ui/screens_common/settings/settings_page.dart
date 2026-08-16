@@ -8,6 +8,7 @@ import 'package:rent_home/ui/screens_common/about/about_page.dart';
 import 'package:rent_home/ui/screens_common/privacy_policy/privacy-policy_page.dart';
 import 'package:rent_home/ui/screens_common/terms_and_conditions/terms_condition_user_page.dart';
 import 'package:rent_home/ui/screens_common/settings/change_password_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -18,6 +19,38 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   final authController = Get.find<AuthController>();
+
+  /// Opens the store listing so the guest can leave a rating.
+  ///
+  /// The tile shipped with an empty `onTap` — every other row in Settings
+  /// navigates somewhere, this one silently did nothing when tapped.
+  ///
+  /// Tries the Play Store app first (`market://`, which opens the listing
+  /// directly in the installed store) and falls back to the https listing for
+  /// devices without it. If neither opens — which is what happens on a device
+  /// with no Play Store, and on any build before the listing is published —
+  /// the guest is told rather than left tapping a dead row.
+  Future<void> _handleRateApp() async {
+    const pkg = 'com.aajoo.aajoohomes';
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    for (final url in const [
+      'market://details?id=$pkg',
+      'https://play.google.com/store/apps/details?id=$pkg',
+    ]) {
+      try {
+        if (await launchUrl(Uri.parse(url),
+            mode: LaunchMode.externalApplication)) {
+          return;
+        }
+      } catch (_) {
+        // try the next form
+      }
+    }
+    messenger?.showSnackBar(
+      const SnackBar(content: Text("Couldn't open the store listing.")),
+    );
+  }
+
   void _handleLogout() async {
     final confirm = await Get.dialog<bool>(
       AlertDialog(
@@ -291,9 +324,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           SettingsTile(
             title: "Rate App",
-            onTap: () {
-              // Handle Rate App action
-            },
+            onTap: _handleRateApp,
           ),
           const SizedBox(height: 20),
           const SectionHeader(title: "Version 1.0.0"),

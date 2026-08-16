@@ -50,5 +50,42 @@
             <action android:name="android.intent.action.PROCESS_TEXT" />
             <data android:mimeType="text/plain" />
         </intent>
+
+        <!-- Package visibility for url_launcher.
+             Android 11 (API 30) hid the list of installed apps from us. The
+             consequence is narrow but easy to miss: `launchUrl` still works,
+             because starting an activity was never gated, but `canLaunchUrl`
+             resolves against that hidden list and so returns FALSE for every
+             scheme not declared here.
+
+             Every link in the app that asks "can I open this?" before opening
+             it was therefore dead on any device running Android 11 or newer —
+             the social icons on Help & Support, WhatsApp support, tap-to-dial
+             and Get Directions. They failed silently: no crash, no message,
+             the tap simply did nothing. targetSdk is 35, so this applies to
+             effectively the whole install base.
+
+             Declaring the schemes we actually launch restores canLaunchUrl.
+             Nothing here grants new capability — it only makes the check
+             agree with what launchUrl could already do. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+            <data android:scheme="tel" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="mailto" />
+        </intent>
+        <!-- WhatsApp is launched by its own scheme from DeviceService. -->
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
     </queries>
 </manifest>

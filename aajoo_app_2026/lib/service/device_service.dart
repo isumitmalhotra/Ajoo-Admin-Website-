@@ -54,23 +54,45 @@ class DeviceService {
     );
   }
 
-  static void launchGoogleMaps(double latitude, double longitude) async {
-    if (latitude.runtimeType != double || longitude.runtimeType != double) {
-      throw 'Invalid latitude or longitude';
-    }
-    final googleMapsUrl =
-        'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
-    if (await canLaunchUrl(Uri.parse(googleMapsUrl))) {
-      await launchUrl(Uri.parse(googleMapsUrl));
-    } else {
-      throw 'Could not open Google Maps';
+  /// Hands [url] to the app that owns it, returning false instead of throwing.
+  ///
+  /// Every launcher below used to be `if (await canLaunchUrl(u)) launchUrl(u);
+  /// else throw '...';`, which had two faults on Android 11+:
+  ///
+  ///   * `canLaunchUrl` resolves against the installed-app list Android 11
+  ///     hid, so without the manifest `<queries>` it returned false and the
+  ///     whole branch was skipped — WhatsApp support, tap-to-dial and Get
+  ///     Directions all silently did nothing.
+  ///   * the else threw a bare String from an `async void`, so when it did
+  ///     fire nothing could catch it.
+  ///
+  /// The other half of the bug is the launch mode. `launchUrl` defaults to
+  /// `platformDefault`, which on Android opens https in an in-app Custom Tab
+  /// — so `wa.me` rendered WhatsApp's *web page* inside the app instead of
+  /// handing off to WhatsApp, and the maps links opened a map web page rather
+  /// than the Maps app. `externalApplication` is what makes the hand-off the
+  /// deep links were chosen for actually happen.
+  static Future<bool> _open(String url) async {
+    try {
+      return await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (_) {
+      return false;
     }
   }
 
-  static void launchWhatsapp({
+  static Future<bool> launchGoogleMaps(double latitude, double longitude) {
+    final googleMapsUrl =
+        'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
+    return _open(googleMapsUrl);
+  }
+
+  static Future<bool> launchWhatsapp({
     String? phoneNumber,
     String? message,
-  }) async {
+  }) {
     // simply open whatsapp
     String whatsappUrl = 'https://wa.me/';
     if (phoneNumber != null) {
@@ -80,37 +102,19 @@ class DeviceService {
     if (message != null) {
       whatsappUrl += '?text=${Uri.encodeComponent(message)}';
     }
-    if (await canLaunchUrl(Uri.parse(whatsappUrl))) {
-      await launchUrl(Uri.parse(whatsappUrl));
-    } else {
-      throw 'Could not open WhatsApp';
-    }
+    return _open(whatsappUrl);
   }
 
-  static void _launchAppleMaps(double latitude, double longitude) async {
-    final appleMapsUrl = 'https://maps.apple.com/?q=$latitude,$longitude';
-    if (await canLaunchUrl(Uri.parse(appleMapsUrl))) {
-      await launchUrl(Uri.parse(appleMapsUrl));
-    } else {
-      throw 'Could not open Apple Maps';
-    }
+  // ignore: unused_element
+  static Future<bool> _launchAppleMaps(double latitude, double longitude) {
+    return _open('https://maps.apple.com/?q=$latitude,$longitude');
   }
 
-  static void launchDialPad(String phoneNumber) async {
-    final dialUrl = 'tel:$phoneNumber';
-    if (await canLaunchUrl(Uri.parse(dialUrl))) {
-      await launchUrl(Uri.parse(dialUrl));
-    } else {
-      throw 'Could not launch dial pad';
-    }
+  static Future<bool> launchDialPad(String phoneNumber) {
+    return _open('tel:$phoneNumber');
   }
 
-  void launchPhone(String userDetailsUserPnumber) async {
-    final phoneUrl = 'tel:+91$userDetailsUserPnumber';
-    if (await canLaunchUrl(Uri.parse(phoneUrl))) {
-      launchUrl(Uri.parse(phoneUrl));
-    } else {
-      throw 'Could not launch phone dialer';
-    }
+  Future<bool> launchPhone(String userDetailsUserPnumber) {
+    return _open('tel:+91$userDetailsUserPnumber');
   }
 }
