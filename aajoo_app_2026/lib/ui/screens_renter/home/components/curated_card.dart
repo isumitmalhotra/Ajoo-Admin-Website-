@@ -107,6 +107,28 @@ class CuratedCard extends StatelessWidget {
                       ]),
                     ),
                   ),
+                  // Sponsored chip — the disclosure half of paid placement
+                  // (Boost). Gold, and NOT the same pill as Verified: a guest
+                  // must be able to tell "the platform checked this host"
+                  // from "this host paid to be here" at a glance. Sits under
+                  // the Verified pill so the two never overlap.
+                  if (property.isBoosted)
+                    Positioned(
+                      top: 38,
+                      left: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 9, vertical: 4),
+                        decoration: BoxDecoration(
+                            color: const Color(0xCC92650F),
+                            borderRadius: BorderRadius.circular(999)),
+                        child: Text('Sponsored',
+                            style: inter(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white)),
+                      ),
+                    ),
                   // Heart (top-right)
                   Positioned(
                     top: 8,

@@ -86,6 +86,12 @@ class Property {
   /// How many reviews the average is built from. 0 when unrated.
   final int reviewCount;
 
+  /// Paid placement — the property has an active Boost campaign. The backend
+  /// elevates it in search ordering; the client's job is the disclosure half:
+  /// render a visible "Sponsored" chip so a guest can tell paid placement
+  /// from organic ranking.
+  final bool isBoosted;
+
   /// One decimal, for display: "4.6". Empty when unrated.
   String get ratingLabel => rating == null ? '' : rating!.toStringAsFixed(1);
 
@@ -116,6 +122,7 @@ class Property {
     this.amenities,
     this.rating,
     this.reviewCount = 0,
+    this.isBoosted = false,
   });
 
   factory Property.fromJson(Map<String, dynamic> json) => Property(
@@ -166,6 +173,7 @@ class Property {
             ? null
             : double.tryParse(json["rating"].toString()),
         reviewCount: int.tryParse('${json["review_count"] ?? 0}') ?? 0,
+        isBoosted: json["isBoosted"] == true,
       );
 
   Map<String, dynamic> toJson() => {
