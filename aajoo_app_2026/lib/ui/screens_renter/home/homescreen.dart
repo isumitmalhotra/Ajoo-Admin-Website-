@@ -189,14 +189,20 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                     // them named somewhere they had never been. "Nearby" until
                     // the geocoder answers, rather than inventing a place.
                     Obx(() => SearchPill(
-                      location: mapController.currentPlace.value.isEmpty
-                          ? 'Nearby'
-                          : mapController.currentPlace.value,
-                      details: 'Any week · 1 guest',
-                      // Airbnb-style search modal (Where / When / Who +
-                      // suggested destinations + advanced filters).
-                      onTap: () => showSearchSheet(context),
-                    )),
+                          location: mapController.currentPlace.value.isEmpty
+                              ? 'Nearby'
+                              : mapController.currentPlace.value,
+                          // Was a hardcoded "Any week · 1 guest" that never
+                          // changed, whatever you searched — it described no
+                          // actual state, so it was decoration dressed as a
+                          // summary. Removed; the pill now carries the place,
+                          // which IS live. (Client sheet Common: "in search bar
+                          // show current location and remove any week or guest".)
+                          details: null,
+                          // Airbnb-style search modal (Where / When / Who +
+                          // suggested destinations + advanced filters).
+                          onTap: () => showSearchSheet(context),
+                        )),
                     const SizedBox(height: 8),
                     Obx(() => userController.isLoading.value ||
                             userController.ongoingBookings.value == null
@@ -268,6 +274,17 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                             child: Obx(() => WeeklyHeroCard(
                                   homesNearby: mapController.properties.length,
                                   region: mapController.currentPlace.value,
+                                  // The card lives inside this sheet, and the
+                                  // sheet is the list of the very homes it is
+                                  // counting — so "N homes near you ↗" opens
+                                  // them by expanding to full height, rather
+                                  // than pushing a second screen showing the
+                                  // same results.
+                                  onTap: () => _dragController.animateTo(
+                                    0.99,
+                                    duration: const Duration(milliseconds: 280),
+                                    curve: Curves.easeOutCubic,
+                                  ),
                                 )),
                           ),
 
@@ -304,7 +321,10 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                             return TextCategoryPills(
                               // "All" first, then whatever the platform
                               // actually offers.
-                              categories: ['All', ...cats.map((c) => c.catTitle)],
+                              categories: [
+                                'All',
+                                ...cats.map((c) => c.catTitle)
+                              ],
                               selectedIndex: _propertyType,
                               onChanged: (i) {
                                 final cat = i == 0 ? null : cats[i - 1];
@@ -417,8 +437,8 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                                     'Verified\nProperties'),
                                 _TrustItem(
                                     Icons.lock_outline, 'Secure\nPayments'),
-                                _TrustItem(
-                                    Icons.sell_outlined, 'Best Price\nGuarantee'),
+                                _TrustItem(Icons.sell_outlined,
+                                    'Best Price\nGuarantee'),
                                 _TrustItem(Icons.headset_mic_outlined,
                                     '24/7\nSupport'),
                               ],
@@ -473,7 +493,8 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                                   onSeeAll: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                        builder: (_) => const PreBookingScreen()),
+                                        builder: (_) =>
+                                            const PreBookingScreen()),
                                   ),
                                   onOpen: _openProperty,
                                 ),
@@ -484,7 +505,8 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                                   onSeeAll: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                        builder: (_) => const PreBookingScreen()),
+                                        builder: (_) =>
+                                            const PreBookingScreen()),
                                   ),
                                   onOpen: _openProperty,
                                 ),
@@ -519,15 +541,16 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                                     // emptied it, rather than claiming the
                                     // platform has no stays.
                                     filterLabel: _selectedCategoryTitle,
-                                    onClearFilter: _selectedCategoryTitle == null
-                                        ? null
-                                        : () {
-                                            setState(() {
-                                              _propertyType = 0;
-                                              _selectedCategoryTitle = null;
-                                            });
-                                            mapController.fetchProperties();
-                                          },
+                                    onClearFilter:
+                                        _selectedCategoryTitle == null
+                                            ? null
+                                            : () {
+                                                setState(() {
+                                                  _propertyType = 0;
+                                                  _selectedCategoryTitle = null;
+                                                });
+                                                mapController.fetchProperties();
+                                              },
                                   ),
                                 ),
                               ],
@@ -540,7 +563,6 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                           // icon map that disagreed with it, and the client saw
                           // the same categories twice on one page. Folded into
                           // the row above.
-
 
                           /// 🔹 Reviews
                           buildReviewList(),
@@ -560,7 +582,8 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                           // "See all" and the cards had nowhere to go until
                           // the blog screens existed.
                           HomeBlogStrip(
-                            onSeeAll: () => Get.to(() => const BlogListScreen()),
+                            onSeeAll: () =>
+                                Get.to(() => const BlogListScreen()),
                             onOpen: (post) =>
                                 Get.to(() => BlogPostScreen(post: post)),
                           ),
@@ -586,8 +609,6 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
       ),
     );
   }
-
-
 
   Widget buildReviewList() {
     return Obx(
@@ -667,8 +688,7 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                             subtitle: Padding(
                               padding: const EdgeInsets.only(top: 2),
                               child: Text(review.hruDescription,
-                                  style:
-                                      inter(fontSize: 12.5, color: kMuted)),
+                                  style: inter(fontSize: 12.5, color: kMuted)),
                             ),
                             trailing: Container(
                               padding: const EdgeInsets.symmetric(
@@ -726,9 +746,7 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
   /// An icon per spec category. The web uses photography; on a phone a glyph
   /// stays legible at 64px and cannot go missing like an asset can.
 
-
   /// `catId` is the real tbl_categories id, so filtering needs no name lookup.
-
 
   /// Open a property. One place, so a rail cannot drift from another in what
   /// it passes through — the previous inline version hardcoded `rating: '4.5'`
@@ -817,7 +835,10 @@ class _TrustItem extends StatelessWidget {
           label,
           textAlign: TextAlign.center,
           style: inter(
-              fontSize: 10.5, fontWeight: FontWeight.w600, height: 1.2, color: kInk2),
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+              height: 1.2,
+              color: kInk2),
         ),
       ],
     );

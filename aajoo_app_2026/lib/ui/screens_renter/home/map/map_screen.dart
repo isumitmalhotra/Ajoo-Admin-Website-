@@ -274,6 +274,50 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  // ── Pan-to-search ──────────────────────────────────────────────────────
+  // Sliding the map to another area showed no properties there. Nothing was
+  // subscribed to camera movement at all: the list was fetched on first load,
+  // on the luxury toggle, and when the location picker pushed a new position,
+  // and never again. Panning to the next city left you looking at the pins
+  // from the last one.
+  //
+  // The controller already had fetchPropertiesAt(LatLng) for exactly this; it
+  // simply had no caller. (Its sibling fetchProperties() re-reads GPS and
+  // overwrites the position, so it cannot be used here — it would snap the
+  // search straight back to the device.)
+  LatLng? _cameraTarget;
+  LatLng? _lastFetchCenter;
+  bool _areaFetchInFlight = false;
+
+  /// Metres the camera must travel before the area is searched again.
+  ///
+  /// Also what stops this feeding itself: fetchPropertiesAt writes
+  /// currentPosition, the `ever` listener above animates the camera to it, and
+  /// that animation raises another idle. That second idle lands ~0 m from the
+  /// centre we just fetched, so it falls under the threshold and stops there.
+  static const double _refetchThresholdMetres = 1500;
+
+  void _onCameraIdle() {
+    final target = _cameraTarget;
+    if (target == null || _areaFetchInFlight) return;
+
+    final from = _lastFetchCenter ?? mapController.currentPosition.value;
+    final moved = Geolocator.distanceBetween(
+      from.latitude,
+      from.longitude,
+      target.latitude,
+      target.longitude,
+    );
+    if (moved < _refetchThresholdMetres) return;
+
+    _lastFetchCenter = target;
+    _areaFetchInFlight = true;
+    mapController
+        .fetchPropertiesAt(target)
+        .then((_) => createMarkers())
+        .whenComplete(() => _areaFetchInFlight = false);
+  }
+
   void _fetchProperties() {
     Future<void> fetchFunction = mapController.isLuxury.value
         ? mapController.fetchLuxuryProperties()
@@ -563,6 +607,9 @@ class _MapScreenState extends State<MapScreen> {
                                 _controller.complete(controller);
                               }
                             },
+                            onCameraMove: (CameraPosition p) =>
+                                _cameraTarget = p.target,
+                            onCameraIdle: _onCameraIdle,
                             markers: markers.values.toSet(),
                             padding: const EdgeInsets.only(top: 50),
                           ),

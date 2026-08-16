@@ -28,10 +28,23 @@ class WeeklyHeroCard extends StatelessWidget {
   /// Resolved place name; empty until the geocoder answers.
   final String region;
 
+  /// What tapping the card does.
+  ///
+  /// The card draws a north-east arrow next to "Showing stays around X" — the
+  /// standard "this goes somewhere" affordance — but had no gesture handler of
+  /// any kind, so every tap on the most prominent element of the home screen
+  /// did nothing. Reported as "when we click on the near by button its not
+  /// working"; the button was never wired, not broken.
+  ///
+  /// Optional so the card stays usable as a passive banner if it is ever
+  /// placed somewhere with nothing to open.
+  final VoidCallback? onTap;
+
   const WeeklyHeroCard({
     super.key,
     this.homesNearby = 0,
     this.region = '',
+    this.onTap,
   });
 
   String get _formattedCount {
@@ -46,6 +59,29 @@ class WeeklyHeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final card = _card();
+    if (onTap == null) return card;
+    // Ink splash rather than a bare GestureDetector so the tap is visibly
+    // acknowledged; the card paints its own gradient, so the ripple has to go
+    // in front of it rather than behind.
+    return Stack(
+      children: [
+        card,
+        Positioned.fill(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: onTap,
+              child: const SizedBox.expand(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _card() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -80,7 +116,9 @@ class WeeklyHeroCard extends StatelessWidget {
           const SizedBox(height: 8),
           // Headline — two lines, Fraunces
           Text(
-            homesNearby > 0 ? '$_formattedCount homes near you.' : 'Homes near you.',
+            homesNearby > 0
+                ? '$_formattedCount homes near you.'
+                : 'Homes near you.',
             style: fraunces(
               fontSize: 22,
               fontWeight: FontWeight.w500,
