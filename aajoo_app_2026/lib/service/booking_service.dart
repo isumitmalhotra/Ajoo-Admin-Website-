@@ -34,6 +34,22 @@ class BookingService {
     }
   }
 
+  /// Wallet balance (audit C-9) — spendable referral credit. Best-effort:
+  /// any failure reads as ₹0 and the wallet row simply doesn't render, so a
+  /// wallet hiccup can never block a booking.
+  Future<double> getWalletBalance() async {
+    final url = '$baseUrl/user/wallet';
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final response = await _dio.get(url);
+      final data = response.data is Map ? response.data['data'] : null;
+      return double.tryParse('${data is Map ? data['balance'] : 0}') ?? 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
   Future<BookingResponse> createBooking(Map<String, dynamic> data) async {
     final url = '$baseUrl/booking/create';
     // print(data);

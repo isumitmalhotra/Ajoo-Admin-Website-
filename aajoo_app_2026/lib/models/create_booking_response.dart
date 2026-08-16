@@ -51,14 +51,28 @@ class Booking {
   String bookId;
   Order? order;
 
+  /// Wallet split (audit C-9). walletPaid true = the wallet covered the whole
+  /// stay and there is no gateway order to open; walletApplied/payable carry
+  /// the split so the UI can say exactly what happened.
+  bool walletPaid;
+  double walletApplied;
+  double payable;
+
   Booking({
     required this.bookId,
     this.order,
+    this.walletPaid = false,
+    this.walletApplied = 0,
+    this.payable = 0,
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) => Booking(
         bookId: json["book_id"],
         order: json["order"] != null ? Order.fromJson(json["order"]) : null,
+        walletPaid: json["walletPaid"] == true,
+        walletApplied:
+            double.tryParse('${json["walletApplied"] ?? 0}') ?? 0,
+        payable: double.tryParse('${json["payable"] ?? 0}') ?? 0,
       );
 
   Map<String, dynamic> toJson() => {

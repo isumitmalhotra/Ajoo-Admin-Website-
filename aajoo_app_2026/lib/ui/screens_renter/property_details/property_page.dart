@@ -105,6 +105,13 @@ class _PropertyPageState extends State<PropertyPage>
   final propertyController =
       Get.put<NewPropertyController>(NewPropertyController());
   bool isCod = false;
+  // Wallet (audit C-9): referral credit the guest can put toward this stay.
+  // Balance loads best-effort (0 on any failure = the row never renders);
+  // the toggle defaults ON because it is the guest's own money and the split
+  // is shown before they pay. Server recomputes the split from the balance
+  // it holds — these numbers are display only.
+  double _walletBalance = 0;
+  bool _useWallet = true;
   final commonController = Get.find<CommonController>();
   DateTime? selectedDateTo;
   bool _isBookmarked = false;
@@ -171,6 +178,10 @@ class _PropertyPageState extends State<PropertyPage>
     currentPriceString = currentPrice.toStringAsFixed(0);
     _priceController = TextEditingController(text: currentPriceString);
     propertyController.getPropertyReviews(widget.id);
+    // Wallet balance for the booking sheet — fire and forget.
+    BookingService().getWalletBalance().then((b) {
+      if (mounted) setState(() => _walletBalance = b);
+    });
     razorpay = Razorpay();
 
     razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
@@ -991,6 +1002,27 @@ class _PropertyPageState extends State<PropertyPage>
                   ],
                 )
               else
+                const SizedBox.shrink(),
+              // Wallet (audit C-9) — online payments only: cash handed over
+              // at a front desk cannot be split against credit held here, so
+              // the row disappears when pay-on-arrival is ticked rather than
+              // offering something the booking cannot honour.
+              if (_walletBalance > 0 && !isCod && !isPrebooking)
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _useWallet,
+                      onChanged: (v) => setState(() => _useWallet = v!),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Use wallet balance (₹${_walletBalance.toStringAsFixed(0)} available)',
+                        style: const TextStyle(fontSize: 15),
+                      ),
+                    ),
+                  ],
+                ),
+              if (isPrebooking)
                 const Row(
                   children: [
                     Icon(Icons.lock_outline, color: kIndigo),
@@ -1143,6 +1175,10 @@ class _PropertyPageState extends State<PropertyPage>
                       "isPrebooking": isPrebooking,
                       "totalAmount": finalAmount,
                       "advanceAmount": advanceAmount,
+                      // Wallet (audit C-9): a flag, not an amount — the server
+                      // decides how much applies from the balance it holds.
+                      "useWallet":
+                          !isCod && !isPrebooking && _useWallet && _walletBalance > 0,
                     };
                     // Any applied coupon (a negotiated deal OR a code the renter
                     // entered): the backend applies the discount to the subtotal
@@ -1205,7 +1241,13 @@ class _PropertyPageState extends State<PropertyPage>
                         await bookingController.createBooking(bookingData);
                     // The booking exists; nothing left to resume.
                     await PendingBookingStore.clear();
-                    if (!isCod) {
+                    // Wallet covered the whole stay: paid, no gateway modal
+                    // to open. The success dialog is the same one a verified
+                    // online payment reaches.
+                    if (bookingResponse.data.booking.walletPaid) {
+                      successDialog(
+                          "Wallet", bookingResponse.data.booking.bookId);
+                    } else if (!isCod) {
                       final String? orderId =
                           bookingResponse.data.booking.order?.id;
                       if (orderId == null || orderId.isEmpty) {
