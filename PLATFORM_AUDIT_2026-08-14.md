@@ -418,3 +418,56 @@ change. (2) First test target (property 29250, "Vidisha") turned out to sit
 ever find the property. The junk-coordinates problem (P-7) now has a
 commercial edge: a host who boosts a mislocated listing pays for placement
 in searches that cannot reach it.
+
+---
+
+## C-9 closed — the referral reward is real money now (2026-08-16)
+
+Client decision: wallet credit at signup, spendable at checkout, split with
+the gateway when the balance is short, invoice naming both methods. All
+shipped; every claim below was verified against production, not assumed.
+
+**The wallet.** tbl_wallet_transactions is an append-only ledger — balance is
+SUM(credits)−SUM(debits), never a mutable column. wt_reference is UNIQUE and
+carries all idempotency (REF-/BOOK-/BOOKREFUND- prefixes); debits ride inside
+the booking's own transaction after a FOR UPDATE balance read, so concurrent
+checkouts by one guest serialise and a rollback takes the debit with it.
+
+**Crediting.** recordReferralOnSignup pays the referrer the moment the
+referred account exists (client's rule). The migration backfilled every
+referral recorded before the wallet existed. The Refer page's copy — which
+promised "you BOTH earn ₹300 … on their first booking", neither half true —
+now describes exactly the implemented rule.
+
+**Checkout.** useWallet is a flag, not an amount: the server decides how much
+applies from the balance IT holds. Wallet covers what it can; Razorpay's
+order is minted for exactly the remainder, or skipped entirely when the
+wallet covers everything (the booking goes straight to paid with the finance
+footprint + emails that normally ride on gateway verification). Pay-at-stay
+refuses wallet. Cancellations refund the way the guest paid: wallet portion
+back to the wallet, only the captured remainder through Razorpay.
+
+**Verified live, in sequence:** fresh signup with code AJ3I → referrer wallet
++₹300 (ledger row visible) → COD+wallet refused with a sentence → online
+booking B454535 for ₹1,155 split ₹300 wallet + ₹855 gateway (order minted
+for exactly 85500 paise) → HMAC-verified → wallet balance 0 with a balanced
+ledger → invoice PDF reads "Method: Aajoo Wallet (INR 300.00) +
+Online/Razorpay (INR 855.00) · Paid". App verified on-device: booking sheet
+shows "Use wallet balance (₹300 available)" against the live backend.
+
+**Three bugs found by the verification itself, all fixed and shipped:**
+1. Signup with ANY referral code failed outright — cred_user_refrel is a
+   TINYINT and the raw code string ("AJ3I") threw "Incorrect integer value",
+   killing account creation. The referral programme wasn't just unpaid; it
+   was unjoinable, which is why zero referrals were ever recorded.
+2. book_wallet_amt existed in the DB but not on the Sequelize model, and
+   create() silently drops undeclared fields — the first live invoice printed
+   "Online (Razorpay)" with no wallet line. Caught by reading the PDF rather
+   than trusting the happy response.
+3. (From the Boost pass, same pattern of testing-own-code:) a forged
+   signature used to burn the pending order it failed against.
+
+**Flagged, not fixed — needs a decision before real-money launch:** referral
+codes are deterministic ("AJ" + base36(userId)) and the reward now pays at
+signup, so fake-signup farming is trivial. Options: move crediting back
+behind first-booking, add per-referrer caps, or gate on verified KYC.
