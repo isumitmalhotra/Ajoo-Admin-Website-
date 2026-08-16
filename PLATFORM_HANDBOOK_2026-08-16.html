@@ -1,0 +1,670 @@
+<title>Aajoo Platform Handbook</title>
+<style>
+  :root{
+    --ground:#F7F8F6; --surface:#FFFFFF; --surface-2:#F1F3F0;
+    --ink:#14201C; --ink-2:#3E4C47; --ink-3:#6B7873;
+    --line:#DDE3DF; --line-soft:#E9EDEA;
+    --teal:#0F5D52; --teal-soft:#E3EFEC;
+    --gold:#8A6512; --gold-soft:#F4EDDD;
+    --crit:#9E2620; --crit-soft:#F7E4E2;
+    --code-bg:#EFF2EF;
+    --shadow:0 1px 2px rgba(20,32,28,.04), 0 8px 24px -14px rgba(20,32,28,.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#0E1513; --surface:#151E1B; --surface-2:#1B2724;
+      --ink:#E8EEEB; --ink-2:#B3C0BB; --ink-3:#7E8D87;
+      --line:#2A3835; --line-soft:#212E2B;
+      --teal:#5FC0AE; --teal-soft:#17302B;
+      --gold:#D9AE58; --gold-soft:#2C2617;
+      --crit:#E98078; --crit-soft:#331C1A;
+      --code-bg:#1C2825;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -14px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0E1513; --surface:#151E1B; --surface-2:#1B2724;
+    --ink:#E8EEEB; --ink-2:#B3C0BB; --ink-3:#7E8D87;
+    --line:#2A3835; --line-soft:#212E2B;
+    --teal:#5FC0AE; --teal-soft:#17302B;
+    --gold:#D9AE58; --gold-soft:#2C2617;
+    --crit:#E98078; --crit-soft:#331C1A;
+    --code-bg:#1C2825;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -14px rgba(0,0,0,.7);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);
+    font-family:ui-sans-serif,system-ui,"Segoe UI Variable Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:15.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .mono,code{font-family:ui-monospace,"Cascadia Code",Menlo,Consolas,monospace;font-size:.86em}
+  code{background:var(--code-bg);border-radius:4px;padding:1px 5px}
+  .wrap{max-width:86ch;margin:0 auto;padding:52px 24px 100px}
+  .eyebrow{font-size:11.5px;font-weight:660;letter-spacing:.17em;text-transform:uppercase;color:var(--teal);margin:0 0 12px}
+  h1{font-size:clamp(30px,5vw,42px);line-height:1.08;letter-spacing:-.025em;font-weight:690;margin:0 0 14px;text-wrap:balance}
+  .standfirst{font-size:16.5px;color:var(--ink-2);margin:0;max-width:64ch}
+  .stamp{margin-top:20px;padding-top:14px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:6px 22px;font-size:13px;color:var(--ink-3)}
+  nav.toc{margin:34px 0 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:18px 22px;
+    columns:2;column-gap:32px;font-size:13.5px}
+  nav.toc a{color:var(--ink-2);text-decoration:none;display:block;padding:3px 0;break-inside:avoid}
+  nav.toc a:hover{color:var(--teal)}
+  nav.toc b{display:block;color:var(--ink);font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin:8px 0 2px;break-inside:avoid}
+  section{margin-top:56px}
+  h2{font-size:23px;font-weight:690;letter-spacing:-.02em;margin:0 0 4px;padding-bottom:10px;border-bottom:2px solid var(--ink)}
+  h3{font-size:16.5px;font-weight:660;letter-spacing:-.01em;margin:26px 0 8px}
+  h4{font-size:13.5px;font-weight:680;margin:18px 0 6px;color:var(--teal);text-transform:uppercase;letter-spacing:.06em}
+  p{margin:0 0 10px;color:var(--ink-2)}
+  p b,li b{color:var(--ink)}
+  ul,ol{margin:0 0 12px;padding-left:22px;color:var(--ink-2)}
+  li{margin:3px 0}
+  .lede{font-size:14.5px;color:var(--ink-2);max-width:70ch;margin:10px 0 0}
+  table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:13.5px;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:660;background:var(--surface-2)}
+  tr:last-child td{border-bottom:0}
+  .scroll{overflow-x:auto;border-radius:10px}
+  .pill{font-size:10px;font-weight:720;letter-spacing:.07em;text-transform:uppercase;padding:2px 8px;border-radius:999px;white-space:nowrap;display:inline-block}
+  .pill.web{background:var(--teal-soft);color:var(--teal)}
+  .pill.app{background:var(--gold-soft);color:var(--gold)}
+  .pill.adm{background:var(--crit-soft);color:var(--crit)}
+  .callout{background:var(--teal-soft);border-radius:10px;padding:12px 16px;font-size:13.5px;color:var(--ink);margin:12px 0}
+  .callout.warn{background:var(--gold-soft)}
+  .callout.crit{background:var(--crit-soft)}
+  .flow{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px;margin:14px 0;overflow-x:auto}
+  .flow figcaption{font-size:12px;color:var(--ink-3);padding:6px 4px 0}
+  pre.mermaid{margin:0;background:transparent}
+  footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-3)}
+  a{color:var(--teal)}
+  @media (max-width:640px){ nav.toc{columns:1} .wrap{padding:38px 16px 80px} }
+</style>
+
+<div class="wrap">
+
+<p class="eyebrow">Aajoo Homes · engineering &amp; product reference</p>
+<h1>Aajoo Platform Handbook</h1>
+<p class="standfirst">
+How the whole platform works — every feature on the website, the mobile app and the admin
+console, described twice over: what it does for the person using it, and what actually happens
+technically underneath. Everything documented here was verified against the running system
+during the August 2026 audit and build cycles, not copied from intentions.
+</p>
+<div class="stamp">
+  <span>Compiled 16 August 2026</span>
+  <span>Covers web · Android app · admin console · backend · integrations</span>
+</div>
+
+<nav class="toc">
+  <b>Foundations</b>
+  <a href="#arch">1 · Architecture &amp; infrastructure</a>
+  <a href="#roles">2 · Roles &amp; account model</a>
+  <a href="#conventions">3 · Platform conventions</a>
+  <b>Guest experience</b>
+  <a href="#discovery">4 · Discovery: explore, search, maps</a>
+  <a href="#property">5 · The property page</a>
+  <a href="#negotiation">6 · Negotiation</a>
+  <a href="#booking">7 · Booking &amp; payment</a>
+  <a href="#wallet">8 · Referral &amp; wallet</a>
+  <a href="#guest-account">9 · Guest account area</a>
+  <b>Host experience</b>
+  <a href="#host">10 · Host portal (web + app)</a>
+  <a href="#listing">11 · Listing a property</a>
+  <a href="#boost">12 · Boost — paid placement</a>
+  <b>Money &amp; trust</b>
+  <a href="#money">13 · The money path</a>
+  <a href="#payouts">14 · Host payouts</a>
+  <a href="#cancellation">15 · Cancellation &amp; refunds</a>
+  <a href="#kyc">16 · Identity verification (KYC)</a>
+  <b>Platform</b>
+  <a href="#admin">17 · Admin console</a>
+  <a href="#notifications">18 · Notifications &amp; messaging</a>
+  <a href="#content">19 · Content: blog, CMS, FAQ</a>
+  <a href="#appendix">20 · Ops, environments, test accounts</a>
+</nav>
+
+<!-- ============================================================ -->
+<section id="arch">
+<h2>1 · Architecture &amp; infrastructure</h2>
+<p class="lede">Three codebases, one backend, one database. Every surface — website, Android app,
+admin console — talks to the same API, so a booking made on the phone appears in the admin
+console and the host portal instantly, because they are all reading the same rows.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Tier</th><th>Technology</th><th>Where it runs</th><th>Repository</th></tr></thead>
+<tbody>
+<tr><td><b>Website</b> (guest + host + admin)</td><td>React 18 · Vite · TypeScript · Redux Toolkit · custom design system (new surfaces) + MUI (legacy)</td><td>Vercel → <code>www.aajoohomes.com</code></td><td class="mono">aajao-frontend-vercel</td></tr>
+<tr><td><b>Mobile app</b> (guest + host)</td><td>Flutter · GetX state management · Dio HTTP · razorpay_flutter · google_maps_flutter · Firebase</td><td>Android APK (Play Store pending)</td><td class="mono">aajoo_app_2026</td></tr>
+<tr><td><b>API</b></td><td>Node.js · Express · Sequelize ORM · JWT auth · Socket.io (negotiation chat)</td><td>Render → <code>aajaodev.onrender.com</code></td><td class="mono">aajaoBackend-render</td></tr>
+<tr><td><b>Database</b></td><td>MySQL — 97 tables, ~29,000 listings</td><td>Clever Cloud (managed)</td><td>—</td></tr>
+</tbody></table></div>
+
+<h3>External services</h3>
+<div class="scroll"><table>
+<thead><tr><th>Service</th><th>What it does</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><b>Razorpay</b></td><td>Guest payments — orders, checkout modal, signature verification, refunds</td><td>Live in <b>test mode</b> by decision; live keys at launch</td></tr>
+<tr><td><b>RazorpayX</b></td><td>Host payouts — bank verification (penny drop) + disbursement</td><td>Built; awaiting credentials + funded account</td></tr>
+<tr><td><b>DIDIT</b></td><td>Identity verification (KYC) — separate workflows for guests and hosts, webhook-driven decisions</td><td>Live</td></tr>
+<tr><td><b>Firebase</b> (project <code>aajoo-bdb20</code>)</td><td>Google sign-in on both platforms · push notifications · the app's Google Maps key</td><td>Live</td></tr>
+<tr><td><b>Brevo</b></td><td>All transactional email over HTTPS (Render blocks SMTP) — sender <code>contactus@aajoohomes.com</code></td><td>Live</td></tr>
+<tr><td><b>Cloudinary</b></td><td>Image + document storage: property photos, avatars, ID documents</td><td>Live on the existing account; env credentials being moved to Render</td></tr>
+<tr><td><b>BotPenguin</b></td><td>Support chatbot on web + app, WhatsApp booking notifications</td><td>Live</td></tr>
+<tr><td><b>Google Maps Platform</b></td><td>App maps (live) · website maps + Places recommendations (built plan; awaiting billing + keys)</td><td>Partial</td></tr>
+</tbody></table></div>
+
+<h3>How configuration works</h3>
+<p>Every credential is <b>environment-first</b>: the API reads Render's environment variables and
+falls back to safe defaults. <code>GET /health/env</code> reports — without exposing any value —
+which required variables are set, whether the database the env points at matches the one the app
+runs on (<code>dbChecks</code>), and whether payments can collect real money
+(<code>payments.collectsMoney</code>). That endpoint is the pre-launch gate: it turned red honestly
+during the audit and each item has been driven green by an actual fix, not a suppressed check.</p>
+<p>Deployment is push-to-deploy on both hosts: a push to <code>main</code> rebuilds Vercel (web)
+and Render (API) automatically. Database schema changes ship as idempotent Sequelize migrations —
+re-running any migration is a no-op — via a CLI bridge that guarantees migrations run against the
+same database the app uses.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="roles">
+<h2>2 · Roles &amp; account model</h2>
+<p class="lede">One account can be both a guest and a host; the platform keeps the two lives
+separate through the session, not through duplicate accounts.</p>
+<ul>
+<li><b>Guest (renter)</b> — browses, negotiates, books, pays, reviews. KYC is required only at the
+moment of booking, never for browsing.</li>
+<li><b>Host</b> — lists properties, receives offers and bookings, gets paid. KYC happens at
+signup, so listing is unobstructed afterwards.</li>
+<li><b>Admin</b> — a separate login (<code>/admin/login</code>) with its own token, role-based
+access control on the API (<code>requireRole</code> middleware), and its own session storage so an
+admin logout can never leak into a guest session on the same browser.</li>
+</ul>
+<h4>Technically</h4>
+<p>Login mints a JWT carrying <code>userId</code>, <code>email</code>, <code>isHost</code> and a
+derived <code>role</code> claim. Host-mode ↔ guest-mode switching calls
+<code>/user/switch-mode</code>, which mints a fresh token server-side — the app deliberately does
+not store the password to re-login silently. Unverified accounts can attempt login: the server
+answers with <code>needsVerification</code> and re-sends a code <em>without issuing a token</em>,
+and checks the password first so the endpoint cannot be used to probe which emails exist.
+Google sign-in on both platforms flows through Firebase Auth: the client obtains an ID token,
+posts it to <code>/user/auth/google</code>, and the backend verifies it with Firebase Admin
+credentials — account creation gates run <em>before</em> any welcome email is sent.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="conventions">
+<h2>3 · Platform conventions</h2>
+<p class="lede">Rules that hold everywhere, adopted during the audit because their violations kept
+producing the same class of bug.</p>
+<ul>
+<li><b>Empty means hidden, never zero.</b> A stay with no reviews shows "New", not 0.0 ★. A
+listing with no photo shows an honest "Photo coming soon" frame, never a stock image of somewhere
+else. A rail with no inventory (e.g. Kufri) hides itself.</li>
+<li><b>No invented numbers.</b> "1,240 verified homes", "18 new this week", "3× more views" — all
+removed. If nothing measures it, the UI does not claim it.</li>
+<li><b>Paid placement is disclosed.</b> Anything ranked because money changed hands carries a
+visible "Sponsored" label distinct from the Verified badge.</li>
+<li><b>Server decides money.</b> Clients send flags and intents (<code>useWallet</code>, a coupon
+code); amounts are always computed server-side from state the server holds. Checkout modals take
+their amount from the server's payment order, never from a locally computed figure.</li>
+<li><b>Guards fail open, payments fail closed.</b> A hiccup in a safety check (booking-overlap
+lookup, boost ranking, wallet balance display) degrades to the permissive behaviour and logs;
+anything that moves money requires positive verification (HMAC signatures) to proceed.</li>
+<li><b>Idempotency by unique reference.</b> Wallet entries, referral rewards and refunds carry
+unique reference keys (<code>REF-</code>, <code>BOOK-</code>, <code>BOOKREFUND-</code>) so any
+retried or double-fired operation collides and becomes a no-op.</li>
+<li><b>Dates travel as <code>DD-MM-YYYY</code></b> between clients and API for bookings.</li>
+<li><b>Web ↔ app parity.</b> A fix on one platform lands on the other in the same pass
+(standing rule since 9 Aug), with a shared ledger of gaps.</li>
+</ul>
+</section>
+
+<!-- ============================================================ -->
+<section id="discovery">
+<h2>4 · Discovery — explore, search, maps</h2>
+
+<h3>The front door <span class="pill web">Web</span></h3>
+<p>The bare domain resolves to <b>Explore</b> for visitors, and straight to the right dashboard
+for signed-in users (host → host dashboard, guest → account dashboard), decided by reading the
+role from the session token. Explore shows destination tiles with <em>real</em> inventory counts
+(a state-grouped query with a 5-minute cache; only places with ≥10 listings appear), property
+rails, and search.</p>
+
+<h3>Search <span class="pill web">Web</span> <span class="pill app">App</span></h3>
+<p><b>Non-technical:</b> type a place, get stays around it, filter by category, see them as cards
+and on a map. Boosted stays appear first with a Sponsored label.</p>
+<p><b>Technical:</b> one endpoint serves every guest surface — <code>POST /properties/search</code>
+takes latitude/longitude/radius/category and runs a two-pass query: pass one resolves the
+<em>nearest N ids</em> by Haversine distance in SQL (capped, so a wide search cannot return the
+entire 29k catalogue — that once produced a 23.6&nbsp;MB response); pass two loads those ids with
+their relations, fetched as separate queries rather than joins to avoid the cartesian-product
+blow-up (measured: 997ms joined vs 745ms separate). Images, ratings and host-visibility are then
+attached in one <code>Promise.all</code>. Active boosts elevate to the top (tier ladder), each row
+carries <code>isBoosted</code>, and listings from deactivated hosts are filtered out.</p>
+
+<h3>The map <span class="pill app">App</span></h3>
+<p>The app's home <em>is</em> a map (Google Maps) with custom ₹ price-bubble markers drawn on a
+canvas, a draggable bottom sheet carrying the result list, category pills, and the LUX toggle.
+Three behaviours worth knowing:</p>
+<ul>
+<li><b>Pan-to-search</b> — sliding the map to a new area re-queries around the camera centre once
+it settles more than 1.5&nbsp;km from the last search (the threshold is also what stops the
+re-centre animation from re-triggering itself).</li>
+<li><b>Re-centre button</b> — takes a fresh GPS fix and re-syncs both camera and search to it.</li>
+<li><b>Honest fallbacks</b> — if location is declined, properties still load around the last
+known position (the map never opens empty over California, which the emulator default once
+caused).</li>
+</ul>
+
+<h3>LUX mode <span class="pill app">App</span> <span class="pill web">Web</span></h3>
+<p>A switch into the luxury catalogue (<code>is_luxury</code> listings) with its own visual
+identity in the app: near-black + gold palette, its own loader, filled icons, slower motion. The
+switch dialog is themed for the direction of travel and holds the LUX loader until luxury
+listings have actually landed.</p>
+
+<h3>Pre-booking <span class="pill app">App</span> <span class="pill web">Web</span></h3>
+<p>Advance booking of stays by area — rails for Shimla, Kufri, Mohali, Panchkula, Kharar and
+Chandigarh (12 stays each, matched on address because city labels in the imported catalogue are
+unreliable), check-in/check-out pickers that carry into the property page, and a 10% advance
+payment model. <span class="pill adm">Known limitation</span> the backend has no first-class
+"deposit" concept yet — the advance is charged as the booking price, which is recorded honestly
+in the tracker as needing a proper <code>advanceAmount</code> model.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="property">
+<h2>5 · The property page</h2>
+<p class="lede">The same seven-panel structure on web and app, rendered from one shared
+implementation on the app side so the two screens cannot drift.</p>
+<ul>
+<li><b>Gallery</b> — swipeable photos with counter; no photos means no gallery, never stock.</li>
+<li><b>Tabs</b> — About · Amenities · House Rules · Location (map) · Guest experiences (reviews) ·
+Host · Policies. Real tab panels on both platforms.</li>
+<li><b>Verified badge</b> — driven by the listing's real verification status, not the legacy
+always-on flag.</li>
+<li><b>Nearby</b> — distances to airport / hospital / park / bus stand etc., from
+<code>property_nearby_places</code> (host wizard writes it; admin can edit it). Sub-kilometre
+distances render in metres. Absent data renders nothing — never "0 km to the airport".</li>
+<li><b>Ratings</b> — a real average and count from reviews, or "New". (Both platforms previously
+invented 4.5/4.6 defaults; those are gone.)</li>
+<li><b>Sticky price bar</b> — per-night rate, total for chosen dates, and the two calls to
+action: <b>Book now</b> and <b>Negotiate</b>.</li>
+</ul>
+<p><b>Technical:</b> detail loads from <code>GET /properties/:id</code> plus separate calls for
+reviews, nearby groups and availability. Booked date ranges come from
+<code>POST /booking/property-availability</code> and grey out taken nights in the date picker on
+both platforms.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="negotiation">
+<h2>6 · Negotiation — the platform's signature</h2>
+<p><b>Non-technical:</b> a guest offers a price for their dates; the host accepts, declines or
+counters in a chat; an accepted price becomes a personal 24-hour coupon that books the stay at
+exactly the agreed amount.</p>
+
+<figure class="flow">
+<pre class="mermaid">
+sequenceDiagram
+    participant G as Guest
+    participant API as API + Socket
+    participant H as Host
+    G->>API: Offer ₹X for dates (POST /negotiations/offer)
+    API->>H: Push + in-app notification
+    H->>API: Counter ₹Y / Accept / Decline
+    API->>G: Socket message in thread
+    Note over API: On accept — mint personal coupon<br/>valid 24h, discount = ceil to guest's favour
+    G->>API: Book with couponCode
+    API->>API: Recompute price server-side, apply coupon, add GST
+</pre>
+<figcaption>An accepted offer becomes a coupon, so the negotiated price survives into the normal booking pipeline.</figcaption>
+</figure>
+
+<p><b>Technical:</b> offers live in a thread keyed on property + the two parties, with a
+server-maintained <code>offer_number</code> sequence. The receiver is always resolved from the
+property's own host — never trusted from the client. Chat is Socket.io with a REST fallback;
+the accept path mints a one-time coupon whose discount percentage is <em>ceiled</em> so rounding
+can never bill the guest above the agreed price (a real ₹1 overcharge found and fixed in audit
+phase 7). Hosts see offers in a dedicated screen ("Awaiting you" first) and in the Messages tab —
+guest conversations <em>are</em> the negotiation threads, so there is no second messaging system
+to drift. Admins can read all negotiation messages (<code>/admin/negotiations/messages</code>).</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="booking">
+<h2>7 · Booking &amp; payment</h2>
+<p><b>Non-technical:</b> pick dates, see the price with GST, choose Pay online / Pay at property,
+optionally apply wallet credit, pay, get a confirmation screen, an email (both sides), a WhatsApp
+message, and an invoice.</p>
+
+<figure class="flow">
+<pre class="mermaid">
+flowchart TD
+    A[Guest confirms dates + method] --> K{KYC verified?}
+    K -- no --> D[DIDIT verification<br/>booking saved to disk, resumes after] --> A
+    K -- yes --> G[Server guards]
+    G --> G1[Dates overlap? incl. 30-min hold<br/>on pending checkouts]
+    G --> G2[Pay-on-arrival: one active POA per guest]
+    G1 & G2 --> P{Payment path}
+    P -- Pay at property --> COD[Booked · finance recorded PENDING<br/>promoted when collected]
+    P -- Online --> W{Wallet applied?}
+    W -- covers all --> WP[PAID outright · no gateway<br/>ledger + emails fire now]
+    W -- part / none --> RZ[Razorpay order for exact remainder]
+    RZ --> V[Checkout modal → HMAC signature verify]
+    V --> PAID[PAID · ledger + invoice + payout queued<br/>emails + WhatsApp + push both sides]
+</pre>
+<figcaption>The create call is one transaction: booking row, payment row, history row and wallet debit commit together or not at all.</figcaption>
+</figure>
+
+<h4>The guards, precisely</h4>
+<ul>
+<li><b>Double-booking:</b> a booking is refused if its dates overlap any live reservation on the
+property — including online checkouts still pending payment, held for 30 minutes so two guests
+cannot pay for the same nights, but never longer, so an abandoned checkout cannot lock dates.</li>
+<li><b>Pay-on-arrival:</b> one active POA booking per guest, enforced server-side (the app's
+display logic agrees with it, keyed on status ids, not titles).</li>
+<li>Both guards <b>fail open</b>: an unexpected error in the check logs and lets the booking
+proceed rather than blocking legitimate guests.</li>
+</ul>
+
+<h4>Pricing &amp; tax</h4>
+<p>Clients send the pre-tax room subtotal; the server computes GST — <b>5%</b> for stays at
+₹7,500/night or below, <b>18%</b> above — and stores subtotal, tax, rate and total on the booking.
+(The app once sent the taxed total and got taxed twice; that class of bug is why the server owns
+the math.) Booking ids are human-readable (<code>B454535</code>) with a matching invoice number.</p>
+
+<h4>Confirmation</h4>
+<p>A real confirmed <em>route</em> (not a dialog that can miss), showing dates, amounts, paid vs
+due, and an in-app map with Get Directions. Emails go to <b>both</b> guest and host on every paid
+booking (they once fired only for pay-on-arrival), WhatsApp confirmation goes via BotPenguin, and
+in-app bells notify host and admin.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="wallet">
+<h2>8 · Referral &amp; wallet</h2>
+<p><b>Non-technical:</b> share your code; when a friend signs up with it, ₹300 lands in your
+wallet immediately. Wallet money pays for stays — fully, or as a part-payment where the gateway
+charges only the difference. The invoice names both methods.</p>
+
+<figure class="flow">
+<pre class="mermaid">
+flowchart LR
+    S[Friend signs up with code AJ…] --> R[tbl_referrals row · credited]
+    R --> C[Wallet CREDIT ₹300<br/>ref REF-id — replay-safe]
+    C --> B{Guest books online<br/>useWallet on}
+    B --> L[Balance read FOR UPDATE<br/>inside booking transaction]
+    L --> X{Balance vs total}
+    X -- covers all --> F[Paid outright · no gateway]
+    X -- partial --> P[Wallet DEBIT + Razorpay order<br/>for exact remainder]
+    P --> I[Invoice: Aajoo Wallet ₹300 + Online ₹855]
+</pre>
+<figcaption>Verified live: booking B454535 — ₹1,155 total, ₹300 wallet, ₹855 gateway, invoice naming both.</figcaption>
+</figure>
+
+<p><b>Technical:</b> the wallet is an append-only ledger (<code>tbl_wallet_transactions</code>) —
+balance is always the sum of credits minus debits, never a mutable column that can drift from its
+own history. Unique references make every credit/debit replay-safe. Debits ride inside the
+booking's database transaction after a row-locking balance read, so two simultaneous checkouts by
+one guest serialise and a rupee cannot be spent twice; if the booking rolls back, the debit rolls
+back with it. Cancellations refund <b>the way the guest paid</b>: wallet portion back to the
+wallet instantly, only the gateway-captured remainder through Razorpay. Referral codes are
+deterministic (<code>AJ</code> + base36 of the user id) — flagged: pay-at-signup plus guessable
+codes is farmable, and one of three small anti-abuse rules should be picked before real-money
+launch.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="guest-account">
+<h2>9 · Guest account area</h2>
+<div class="scroll"><table>
+<thead><tr><th>Surface</th><th>What it holds</th><th>Where</th></tr></thead>
+<tbody>
+<tr><td><b>Dashboard</b></td><td>Upcoming stays, saved count, reviews, total spent, quick actions, negotiated-deal + resume-booking banners</td><td><span class="pill web">Web</span> <span class="pill app">App</span></td></tr>
+<tr><td><b>Bookings</b></td><td>Upcoming / Ongoing / Completed / Cancelled — bucketed on stay <em>dates</em>, not status titles; detail view with the full property panels, Support, Chat-with-host; Cancelled shows Book-now only</td><td><span class="pill web">Web</span> <span class="pill app">App</span></td></tr>
+<tr><td><b>Ongoing stay</b></td><td>Stay map inline, Get Directions, pay-remaining for POA (same Razorpay path), checkout actions</td><td><span class="pill web">Web</span> <span class="pill app">App</span></td></tr>
+<tr><td><b>Saved</b></td><td>Wishlist — hearts sync to the backend (<code>tbl_saved_liked_prop</code>), with an id cache so list tiles don't each round-trip</td><td><span class="pill web">Web</span> <span class="pill app">App</span></td></tr>
+<tr><td><b>Reviews</b></td><td>Write per completed booking; averages feed every card and page</td><td><span class="pill web">Web</span> <span class="pill app">App</span></td></tr>
+<tr><td><b>Refer &amp; Earn</b></td><td>Code, share links, wallet balance, totals — copy matches the implemented rule exactly</td><td><span class="pill web">Web</span> <span class="pill app">App</span></td></tr>
+<tr><td><b>Profile</b></td><td>Details with GPS / PIN autofill, avatar upload (Cloudinary), Update-documents = a real DIDIT re-verification</td><td><span class="pill web">Web</span> <span class="pill app">App</span></td></tr>
+<tr><td><b>Settings</b></td><td>Change password (current-password flow), T&amp;C / Privacy / FAQ / Contact / Rate App, logout, delete account</td><td><span class="pill app">App</span> <span class="pill web">Web</span></td></tr>
+<tr><td><b>Support</b></td><td>Call, WhatsApp, email, BotPenguin chat, FAQ</td><td><span class="pill web">Web</span> <span class="pill app">App</span></td></tr>
+</tbody></table></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="host">
+<h2>10 · Host portal</h2>
+<p class="lede">A full parallel product: on the web a sidebar shell over thirteen screens; in the
+app its own tabbed shell. Both wired to live data — every number on the dashboard is queried, not
+decorated.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Screen</th><th>What it does — and what's underneath</th></tr></thead>
+<tbody>
+<tr><td><b>Dashboard</b></td><td>Earnings, bookings trend (weekly/monthly graph computed from booking history already loaded), ongoing stays, "Offers to review" (the one number with a decision attached), recent transactions capped at 5, negotiations rail — pending first.</td></tr>
+<tr><td><b>Properties</b></td><td>Listing table with server-side search (29k-safe), status toggles, cover image update, deletion with history-preserving semantics.</td></tr>
+<tr><td><b>Bookings</b></td><td>Same four buckets as the guest side; detail page shows guest details, Support, Chat-with-guest (the negotiation thread from the host's side) and the full property panels. Backend note: <code>/host/booking-history</code> had to be widened — it returned neither property id nor guest id.</td></tr>
+<tr><td><b>Calendar</b></td><td>Availability view; booked ranges from the same availability endpoint the pickers use.</td></tr>
+<tr><td><b>Negotiations</b></td><td>"Awaiting you" / "All", cards leading with the offer, the ask, the gap and the dates.</td></tr>
+<tr><td><b>Earnings / Payouts / Invoices</b></td><td>See §13–14 — the host-visible end of the finance pipeline, including adding bank details (verified by penny drop, stored encrypted) and invoice PDF downloads.</td></tr>
+<tr><td><b>Boost</b></td><td>See §12.</td></tr>
+<tr><td><b>Messages</b></td><td>Aajoo Support pinned on top; guest conversations below (they are the negotiation threads — one messaging system, not two).</td></tr>
+<tr><td><b>Refer / Profile / Settings / Support</b></td><td>Host variants of the guest surfaces, including host T&amp;C.</td></tr>
+</tbody></table></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="listing">
+<h2>11 · Listing a property</h2>
+<p><b>Two generations coexist, by design:</b></p>
+<ul>
+<li><b>Legacy form</b> (live on both platforms): the app's 6-step wizard (Type / Location /
+Photos / Pricing / Preferences / Publish) posting once to <code>POST /properties/add</code>; the
+web's equivalent form. New listings land as <b>Pending</b> and appear publicly only after admin
+verification.</li>
+<li><b>Listing Engine</b> (live on web at <code>/redesign/host/list-property</code>): a
+schema-driven 5-step wizard — the client fetches <code>GET /listing/schema</code> (29 top-level
+groups, per-category flows, conditional visibility rules) and walks
+<code>/listing/step1..step5</code> with draft resume, a media pipeline
+(upload/patch/delete), a readiness check and a final submit, writing ~24 modular tables
+(foundation, location, capacity, amenities, house rules, cancellation tiers, nearby places,
+compliance, contacts…). Porting the app onto this engine is the one large open feature — blocked
+on a design the sheet references but never shared.</li>
+</ul>
+</section>
+
+<!-- ============================================================ -->
+<section id="boost">
+<h2>12 · Boost — paid placement</h2>
+<p><b>Non-technical:</b> a host pays ₹499/week, ₹1,499/month or ₹3,999/quarter to put a listing
+at the top of guest searches, wearing a "Sponsored" label. Higher tiers outrank lower ones.
+The plan copy promises exactly what ships — placement, ladder, badge, duration — and nothing
+else.</p>
+<p><b>Technical:</b> purchase is <code>order → Razorpay checkout → HMAC verify</code> (the same
+signature machinery as bookings). The paid window is stamped at <em>verification</em>, so an
+abandoned checkout doesn't consume paid days; one live boost per property; a re-fired verify is
+idempotent; a forged signature is refused <em>without</em> burning the pending order (a bug found
+by adversarially testing the endpoint before trusting it). Ranking: active boosts elevate in the
+guest search with the tier ladder (pro &gt; growth &gt; starter), stable within groups so
+nearest-first survives; expiry is time-bounded in the query itself so a boost stops ranking the
+second it ends. The admin's property table is deliberately <em>not</em> ad-ranked. Revenue lands
+in the financial ledger as <code>BOOST_PAYMENT</code>. Verified live: a boosted listing outranked
+a physically nearer one on web and app, with the chip rendered on both.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="money">
+<h2>13 · The money path</h2>
+<p class="lede">Audited end-to-end in phase 6 and found arithmetically exact. Every rupee that
+moves writes ledger rows; every paid booking gets an invoice; every host credit queues a payout.</p>
+
+<h4>What one paid booking produces</h4>
+<div class="scroll"><table>
+<thead><tr><th>Artifact</th><th>Content</th></tr></thead>
+<tbody>
+<tr><td><b>Ledger rows</b> (<code>tbl_financial_ledger</code>)</td><td><code>GUEST_PAYMENT</code> (credit, full amount) · <code>HOST_EARNING</code> (host's share) · <code>PLATFORM_COMMISSION</code> (15% of subtotal) · commission GST (18% on the commission) · <code>TAX_COLLECTED</code> (the stay's GST). Pay-on-arrival records as <b>PENDING</b> — visible but not counted as revenue until collected. Other types: <code>REFUND</code>, <code>PAYOUT</code>, <code>ADJUSTMENT</code>, <code>BOOST_PAYMENT</code>.</td></tr>
+<tr><td><b>Invoice</b> (<code>BOOKING_RECEIPT</code>)</td><td>GST breakdown (SAC 996311), nightly itemisation, payment method(s) incl. wallet splits, exact paid-at timestamp. Downloadable as PDF by guest, host and admin.</td></tr>
+<tr><td><b>Payout row</b></td><td>Host's net queued for disbursement (§14).</td></tr>
+</tbody></table></div>
+<p><b>Tax rules:</b> stay GST is 5% at ≤ ₹7,500/night, 18% above; platform commission is 15% with
+18% GST on the commission itself. All splits are computed once, server-side, in
+<code>financeRecorder</code>.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="payouts">
+<h2>14 · Host payouts</h2>
+<figure class="flow">
+<pre class="mermaid">
+flowchart LR
+    E[Paid booking] --> Q[Payout QUEUED<br/>host net + period]
+    H[Host adds bank details] --> PD[Penny-drop verification<br/>RazorpayX]
+    PD --> S[Stored AES-256-GCM encrypted<br/>masked everywhere in UI]
+    Q --> A{Admin approves}
+    A -- full refund happened --> W[Payout withdrawn]
+    A -- partial refund --> HOLD[ON HOLD · reason recorded<br/>human re-prices, platform won't pay a figure it knows is wrong]
+    A -- clean --> X[RazorpayX disbursement]
+</pre>
+<figcaption>Built and audited end to end; disbursement awaits RazorpayX credentials + a funded account.</figcaption>
+</figure>
+<p>Admin sees a full payout detail view — host, booking, guest, masked bank details — and every
+finance export opens with the report name, period covered and generation time so a saved file
+can never be mistaken for a different filter's output.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="cancellation">
+<h2>15 · Cancellation &amp; refunds</h2>
+<p><b>Non-technical:</b> cancelling computes what the guest is owed from the property's
+cancellation policy and how far ahead of check-in they are, tells them the exact amount and
+method, and sends the money back the way it came.</p>
+<p><b>Technical:</b> policies are per-property (including a Custom policy with its own
+hours-before → refund-% ladder stored per listing). The cancellation itself commits first —
+status, refund fields, history row, in one transaction — and money moves <em>after</em>, so a
+gateway hiccup can never leave a booking in limbo; failures are recorded for manual settlement
+rather than thrown at the guest. Refunds are wallet-first for wallet-paid portions, then Razorpay
+for the captured remainder. The host's queued payout is withdrawn on a full refund and put
+<b>on hold with the reason recorded</b> on a partial one. Both sides receive a cancellation
+notice that states the money outcome explicitly — including "nothing was charged" for unpaid
+bookings.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="kyc">
+<h2>16 · Identity verification (KYC)</h2>
+<p><b>The policy:</b> hosts verify at signup (so listing is frictionless afterwards); renters
+browse freely and verify at their first booking. Decided 13 Aug and live on both platforms.</p>
+<p><b>Technical:</b> DIDIT drives verification with two separate workflows (guest / host).
+<code>createSession</code> applies a 90-day skip for already-verified users so a verified renter
+isn't re-asked at every checkout; a <code>force</code> flag exists for deliberate re-verification
+(Profile → Update documents), because the skip once made re-verification impossible while blaming
+an outage. Decisions arrive by webhook and are recorded on the account; each booking snapshots
+the guest's verification status at booking time. On Android, DIDIT opens in the system browser
+and the OS may kill the app meanwhile — so the in-progress booking is saved to disk first, and a
+"Finish your booking" banner restores property + dates on return. The "Verified" chip reads the
+DIDIT <em>decision</em> — uploading a document is not verifying.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="admin">
+<h2>17 · Admin console</h2>
+<p class="lede">Separate login, separate token, RBAC on the API. Redesigned shell with a sidebar;
+two legacy screens deliberately retained (property create/edit form, booking-status config)
+because they hold capability nothing newer replaces yet.</p>
+<div class="scroll"><table>
+<thead><tr><th>Area</th><th>Capabilities</th></tr></thead>
+<tbody>
+<tr><td><b>Dashboard</b></td><td>Platform stats via grouped-count queries (optimised 2.4s → 610ms), activity feed.</td></tr>
+<tr><td><b>Users / Hosts</b></td><td>Search, create (with per-document-type validation: Aadhaar 12 digits, DL, passport), activate/deactivate, delete with history-preserving "deleted" badges. Deactivating a host hides their listings from guests.</td></tr>
+<tr><td><b>Properties</b></td><td>29k-safe server-side search; verification queue (new listings are Pending until approved); nearby-places editor; category manager (icons + names, API-driven everywhere).</td></tr>
+<tr><td><b>Bookings</b></td><td>Full booking table, statuses, detail.</td></tr>
+<tr><td><b>Finance</b></td><td>Overview, ledger search (with party names attached), payouts (detail + approve/reject + hold), invoices (download), schedules, period-stamped exports.</td></tr>
+<tr><td><b>Negotiations</b></td><td>Read every negotiation message; threads open inline.</td></tr>
+<tr><td><b>Referrals</b></td><td>Referral list with statuses (rewards now settle automatically into wallets).</td></tr>
+<tr><td><b>Boost</b></td><td>Campaign list across hosts.</td></tr>
+<tr><td><b>Blog + CMS</b></td><td>Blog authoring (drives web + app blog); CMS editor for About / Safety pages — one edit lands on both platforms.</td></tr>
+<tr><td><b>Notifications</b></td><td>Admin bell fed by booking/payment/cancellation events.</td></tr>
+</tbody></table></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="notifications">
+<h2>18 · Notifications &amp; messaging</h2>
+<div class="scroll"><table>
+<thead><tr><th>Channel</th><th>What travels over it</th><th>How</th></tr></thead>
+<tbody>
+<tr><td><b>Email</b> (Brevo HTTPS)</td><td>Welcome (post-gates only), OTP codes, booking confirmations to <em>both</em> sides, cancellation notices with the money outcome, password reset</td><td>Provider-agnostic mailer; falls back to SMTP off-Render; sender <code>contactus@aajoohomes.com</code>; the logo is served un-hashed so old emails never break</td></tr>
+<tr><td><b>Push</b> (Firebase)</td><td>Offers, payments, booking events — deep-linking into the app</td><td>Token registry keyed on the <em>token</em> (not the user), so a second device doesn't silently unregister the first</td></tr>
+<tr><td><b>In-app bells</b></td><td>Role-routed notifications for guest, host and admin</td><td><code>tbl_notifications</code>, fire-and-forget so a notification failure can never break a booking</td></tr>
+<tr><td><b>WhatsApp</b> (BotPenguin)</td><td>Booking confirmations</td><td>Guarded — failures log and continue</td></tr>
+<tr><td><b>SMS</b></td><td>Phone OTP / phone password-reset — <b>built, dormant</b></td><td>Provider-agnostic service (MSG91/Twilio/Fast2SMS) sharing the same OTP expiry + lockout as email; activates when credentials + DLT approval exist</td></tr>
+</tbody></table></div>
+<p><b>OTP hygiene (applies to every code):</b> 6 digits everywhere, enforced expiry, limited
+attempts, no membership oracle (unknown emails get the same response shape), and email
+send-failures actually report failure.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="content">
+<h2>19 · Content — blog, CMS pages, FAQ</h2>
+<ul>
+<li><b>Blog</b> — admin-authored; public list + post pages on web (<code>/blog</code>,
+<code>/blog/:id</code>) and in the app, with home-screen strips on both. (Current posts are
+placeholders — a client content item.)</li>
+<li><b>CMS pages</b> — About and Safety are server-held documents behind a whitelist
+(<code>public/cms/:page</code>); web and app read the same document over the same defaults, so an
+admin edit lands everywhere at once. The Safety page's former claims (emergency button, host
+insurance, "every host rigorously verified") were removed on both platforms because none of them
+were true.</li>
+<li><b>FAQ</b> — seeded, categorised, rendered on web help-centre and app FAQ screens, plus home
+strips.</li>
+<li><b>Legal</b> — Terms (guest + host variants), Privacy Policy, state regulation page.</li>
+</ul>
+</section>
+
+<!-- ============================================================ -->
+<section id="appendix">
+<h2>20 · Ops, environments, test accounts</h2>
+
+<h3>Environments &amp; deploys</h3>
+<ul>
+<li><b>Web:</b> push to <code>main</code> → Vercel build → <code>www.aajoohomes.com</code>.</li>
+<li><b>API:</b> push to <code>main</code> → Render deploy → <code>aajaodev.onrender.com</code>.
+Free-tier cold starts can take ~45s after idle — the first dashboard load after a quiet period
+can briefly show empty tiles (a keep-alive pinger exists as an option).</li>
+<li><b>Database migrations:</b> <code>npx sequelize-cli db:migrate</code> from the backend repo —
+bridged to the live database, idempotent by convention.</li>
+<li><b>App:</b> <code>flutter build apk</code>; Play Store release pending (needs the production
+API host decision — the shipped app currently points at the dev backend URL — plus a release
+keystore and Firebase SHA-1 registration).</li>
+</ul>
+
+<h3>Health &amp; readiness</h3>
+<p><code>GET /health/env</code> — required-variable presence, database drift checks, payment-mode
+readiness. This is the go-live gate: <code>ready: true</code> +
+<code>payments.collectsMoney: true</code> before real guests.</p>
+
+<h3>Test accounts (test mode)</h3>
+<div class="scroll"><table>
+<thead><tr><th>Role</th><th>Account</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td>Guest</td><td class="mono">sumit.m@zyphextech.com</td><td>Referral code AJ3I; wallet funded ₹300</td></tr>
+<tr><td>Host</td><td class="mono">aajoo.host1@mailinator.com</td><td>Owns the 29k seeded catalogue; live boost campaigns</td></tr>
+<tr><td>Admin</td><td class="mono">admin@mailinator.com</td><td>Full console</td></tr>
+</tbody></table></div>
+<p>Payments run on Razorpay <b>test mode</b> — checkouts complete, no real money moves — per the
+launch plan.</p>
+
+<h3>Known-open items</h3>
+<p>Everything currently blocked on client inputs or decisions (credentials, assets, content,
+catalogue decision, referral anti-abuse rule, listing-engine port design) lives in the
+<b>client checklist</b> document and the audit's carry-forward tables — deliberately not
+duplicated here, so this handbook can stay true longer than any single week's to-do list.</p>
+</section>
+
+<footer>
+Aajoo Homes · Platform Handbook · compiled 16 Aug 2026 from the verified state of the running
+system. Companion documents: the platform audit (engineering detail per phase), the client
+checklist (open inputs), and the returned bug sheet (per-row status).
+</footer>
+
+</div>
