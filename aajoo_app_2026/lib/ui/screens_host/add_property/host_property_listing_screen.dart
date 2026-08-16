@@ -19,6 +19,7 @@ import 'package:rent_home/ui/screens_host/host_tab_provider.dart';
 import 'package:rent_home/ui/screens_renter/nearby_bookings/area_rails.dart'
     show kHiddenBrowseCategories;
 import 'widgets/property_form_widgets.dart';
+import 'widgets/state_city_dropdowns.dart';
 import 'package:rent_home/widgets/app_ui.dart' show AppCard;
 
 import 'widgets/terms_bottom_sheet.dart';
@@ -950,14 +951,13 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
   Widget _buildAddressFields() => Column(
         children: [
           PropertyTextField(_addressController, 'Address', Icons.location_on),
-          Row(children: [
-            Expanded(
-                child: PropertyTextField(
-                    _cityController, 'City', Icons.location_city)),
-            const SizedBox(width: 8),
-            Expanded(
-                child: PropertyTextField(_stateController, 'State', Icons.map)),
-          ]),
+          // Dropdowns from the same reference tables the website uses — one
+          // address vocabulary on both platforms. The map picker still writes
+          // into these controllers; the dropdowns follow it.
+          StateCityDropdowns(
+            stateController: _stateController,
+            cityController: _cityController,
+          ),
           Row(children: [
             Expanded(
                 child: PropertyTextField(
