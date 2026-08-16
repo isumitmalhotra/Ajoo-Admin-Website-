@@ -372,3 +372,49 @@ Nothing. A-6 and A-7 were closed on 15 Aug.
 
 | # | Item | Notes |
 |---|---|---|
+
+---
+
+## C-8 closed — Boost is a real product now (2026-08-16)
+
+Client decision: build it. Shipped and verified live on all three tiers of the
+stack.
+
+**Payment.** /host/boost/order creates a real Razorpay order (pending row;
+paid window stamped at verification so an abandoned checkout doesn't eat paid
+days); /host/boost/verify checks the HMAC signature and only then activates.
+The old free-activation endpoint is a tombstone. One live boost per property;
+verify is idempotent on retry. Revenue lands in tbl_financial_ledger as
+BOOST_PAYMENT (verified: fl_id 53, ₹499 CREDIT, BOOST-3, COMPLETED).
+
+**Ranking.** Active boosts elevate in getProperties — the endpoint every
+guest surface uses — pro above growth above starter above unboosted, stable
+within groups so nearest-first survives. Deliberately NOT in adminPropSearch:
+admins auditing the catalogue see ground truth. Expiry is time-bounded in the
+ranking query itself.
+
+**Disclosure.** Every boosted row carries isBoosted; web and app cards render
+a gold "Sponsored" chip, visually distinct from both the category tag and the
+Verified pill. The web card's old fallback tag for uncategorised listings
+literally said "Featured" — renamed "Stay" so an ad label can never be
+confused with filler. Plan copy rewritten to promise only what ships; gone:
+"Basic analytics", "Priority support", "Dedicated manager", "3x more views"
+(which also closes the H-5 unhonourable-claims finding).
+
+**Verified live:** growth boost purchased for property 27406 (Avi, Bhopal)
+through order → signature → verify against production; /properties/search
+around Bhopal ranks Avi #1 above a NEARER unboosted property (0.24 km vs
+0.20 km — elevation demonstrably beats distance); aajoohomes.com/search?q=Bhopal
+renders Avi first with the Sponsored pill; the app at a Bhopal location shows
+the same card, chip and ordering. A forged-signature attempt was refused —
+and the first attempt at that test found and fixed a real bug (a bad
+callback used to burn the pending order, stranding a captured payment).
+
+**Two honest caveats.** (1) The payment leg ran on the test key by client
+decision; the checkout modal itself is Razorpay's own UI, wired identically
+to the proven booking flow — at launch, setting the live keys is the only
+change. (2) First test target (property 29250, "Vidisha") turned out to sit
+97 km from geocoded Vidisha — the boost worked, but no guest search would
+ever find the property. The junk-coordinates problem (P-7) now has a
+commercial edge: a host who boosts a mislocated listing pays for placement
+in searches that cannot reach it.
