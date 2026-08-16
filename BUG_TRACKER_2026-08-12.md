@@ -588,3 +588,30 @@ recorded for block A.
 - **U-63 "Duplicate Pages"** — 40 duplicate filenames across `lib/`. Real, but the earlier dead-code pass already removed the unreachable ones, so what remains needs case-by-case checking rather than a sweep.
 - **Web social handles** could not be confirmed live from here — Instagram serves a generic shell to logged-out requests and Facebook rejects them, so neither status codes nor page text distinguish a real profile from a missing one. Worth a human click.
 - **`assets/house.png` is a watermarked stock preview** (iconscout/Uigo Design, grid overlay baked in). Not referenced by any code, so nothing renders it, but it ships inside the APK at 1.3 MB. Should be deleted or licensed.
+
+---
+
+## 7. Block C (`Common`) — verification pass, 2026-08-16
+
+21 rows. Nine name a testable behaviour; **five were broken and are fixed**.
+
+### Fixed and verified
+
+| Row | Finding | Verified by |
+|---|---|---|
+| **C-9** "sliding the map, properties are not appearing" | Nothing was subscribed to camera movement at all. Properties were fetched on first load, on the luxury toggle, and when the location picker pushed a position — never again. `fetchPropertiesAt(LatLng)` already existed in the controller with no caller. Wired to `onCameraIdle` behind a 1.5 km threshold, which also breaks the feedback loop the fetch would otherwise create with the existing `ever(currentPosition)` camera animation. | Panned Chandigarh centre → Sector 7/8: count moved **98 → 53** and new price markers drew. |
+| **C-16** "near by button not working" | The hero card draws a ↗ arrow — the standard this-goes-somewhere affordance — with no gesture handler of any kind. The most prominent element on the home screen absorbed every tap. Never wired, rather than broken. Now expands the sheet it already sits inside, which lists the very homes it is counting. | Tapped → sheet expanded to full, revealing categories and listings. |
+| **C-8** "in search bar show current location and remove any week or guest" | `SearchPill` carried a hardcoded "Any week · 1 guest" as both its default and the value the home screen passed, so the subtitle never changed whatever was searched. | Pill now reads "Chandigarh" alone. |
+| **C-3, C-4** "use the same font for aajoo name across all platforms / same for login page" | **The website never loaded Fraunces.** 44 components, 90 call sites — including the element rendering the "aajoo" wordmark — set `'Fraunces', serif`. An unloaded family does not warn; it silently takes the next stack entry, so all of it rendered in Times New Roman. The app sets the same wordmark in Fraunces in all four places it appears. Added to the font import. | Measured on production: Fraunces 497px vs serif 433px, with a deliberately absent family reproducing 433px as a control. |
+| **C-10** "set the re center button on map" | Same as U-12 — shipped in the previous pass. | Camera returns to the blue dot. |
+
+### Needs a decision, not a fix
+
+- **C-5 "Forget Password (contactus@aajoohomes.com)"** — the row is ambiguous and the change is consequential. The app currently shows **`aajoolive@gmail.com`** as the support address in both the renter and host support screens. `contactus@aajoohomes.com` appears nowhere in any of the three repos. Whether this is meant to be the password-reset *sender*, the support *contact*, or both — and whether that mailbox exists and is monitored — has to come from you. Pointing guests at an address that does not receive mail is worse than the Gmail.
+- **C-3, remaining half** — the redesigned web header's wordmark uses `--fd` (Plus Jakarta Sans), not Fraunces, so it still differs from the app. Changing it would contradict design decision **BR-2** recorded in `index.css` ("Plus Jakarta Sans carries hero and marketing headings… the brief asks for no decorative faces"). Two client instructions conflict; picking one is your call. The objectively broken half — 90 call sites silently rendering Times — is fixed either way.
+- **C-14 contradicts U-11.** C-14 asks for chip filters by "monthly, per night"; U-11 asks to "remove weekly and montly filter". These cannot both be built.
+- **C-1** "flash app logo with tag line with music" is marked **Provided by US** in the sheet — still waiting on the audio and tagline assets (already tracked as A-1/A-2, C-5 in the platform audit).
+
+### Not defects
+
+C-2, C-7, C-11, C-12, C-13, C-15, C-17, C-18, C-19, C-20, C-21 are redesign, new features, or discussion ("Need advise for Browse by cat, section"). C-6 ("mention aajoo only") is a naming decision — the app currently renders "aajoo" + "homes" as a pair.
