@@ -23,6 +23,7 @@ import 'package:rent_home/ui/screens_renter/home/components/home_faq_strip.dart'
 import 'package:rent_home/ui/screens_renter/blog/blog_screens.dart';
 import 'package:rent_home/ui/screens_renter/home/components/resume_booking_banner.dart';
 import 'package:rent_home/ui/screens_renter/home/components/home_blog_strip.dart';
+import 'package:rent_home/ui/screens_renter/home/components/home_cms_sections.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/ui/screens_renter/home/components/property_slider.dart';
 import 'package:rent_home/ui/screens_renter/home/components/weekly_hero_card.dart';
@@ -446,6 +447,12 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                           ),
 
                           const SizedBox(height: 16),
+
+                          /// 🔹 Admin-curated blocks — featured stays and the
+                          /// promotional banner, edited at /admin/cms-home.
+                          /// Placed ahead of the algorithmic rails on purpose:
+                          /// curation before algorithm, same as the website.
+                          HomeCmsSections(onOpen: _openProperty),
 
                           /// 🔹 A-22 / A-23 / A-24 — two property rails.
                           ///
