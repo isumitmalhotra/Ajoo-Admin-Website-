@@ -30,8 +30,30 @@ class AppInputFormatters {
         LengthLimitingTextInputFormatter(max),
       ];
 
-  /// Indian mobile: 10 digits. (Starting 6-9 belongs to submit validation.)
-  static List<TextInputFormatter> get mobile => digits(10);
+  /// Indian mobile: 10 digits, tolerant of a pasted +91 or a trunk 0.
+  ///
+  /// Plain digitsOnly + a 10-char cap silently turns "+91 98765 43210" into
+  /// "9198765432" — still ten digits, still passes the validator, and the
+  /// wrong number. The prefix is dropped only once the value is too long to
+  /// be a bare mobile, because 9198765432 IS a valid number and typing it
+  /// must not have its own first two digits eaten.
+  static List<TextInputFormatter> get mobile => [
+        FilteringTextInputFormatter.digitsOnly,
+        TextInputFormatter.withFunction((oldValue, newValue) {
+          var d = newValue.text;
+          if (d.length > 10 && d.startsWith('91')) d = d.substring(2);
+          if (d.length > 10 && d.startsWith('0')) {
+            d = d.replaceFirst(RegExp(r'^0+'), '');
+          }
+          if (d.length > 10) d = d.substring(0, 10);
+          return d == newValue.text
+              ? newValue
+              : TextEditingValue(
+                  text: d,
+                  selection: TextSelection.collapsed(offset: d.length),
+                );
+        }),
+      ];
 
   /// PIN code: 6 digits.
   static List<TextInputFormatter> get pincode => digits(6);
