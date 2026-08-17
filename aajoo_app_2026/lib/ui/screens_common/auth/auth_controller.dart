@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/controller/alert_dialog.dart';
+import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/data/models/action_result.dart';
 import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
 import 'dart:io';
@@ -270,6 +271,7 @@ class AuthController extends GetxController {
                   controller: phoneController,
                   keyboardType: TextInputType.phone,
                   maxLength: 10,
+                  inputFormatters: AppInputFormatters.mobile,
                   autofocus: true,
                   decoration: InputDecoration(
                     labelText: 'Mobile number',

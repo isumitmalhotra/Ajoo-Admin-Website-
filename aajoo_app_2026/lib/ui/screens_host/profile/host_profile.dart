@@ -17,6 +17,7 @@ import 'package:rent_home/ui/screens_host/update_property/update_property_page.d
 import 'package:rent_home/ui/screens_common/update_profile/update_profile_screen.dart';
 import 'package:rent_home/ui/screens_host/profile/host_menu.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:rent_home/utils/input_sanitizers.dart';
 
 class HostProfilePage extends StatefulWidget {
   const HostProfilePage({super.key});
@@ -149,6 +150,7 @@ class _HostProfilePageState extends State<HostProfilePage> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: cardNumberController,
+                      inputFormatters: AppInputFormatters.upperAlnum(20),
                       decoration: InputDecoration(
                         labelText: 'Card Number (e.g., Aadhaar, Passport)',
                         prefixIcon:

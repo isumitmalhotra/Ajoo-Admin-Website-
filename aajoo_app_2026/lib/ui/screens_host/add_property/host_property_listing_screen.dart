@@ -1041,7 +1041,7 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
             Expanded(
                 child: PropertyTextField(
                     _floorNoController, 'Floor No.', Icons.stairs,
-                    isRequired: false)),
+                    isRequired: false, isNumeric: true)),
             const SizedBox(width: 12),
             Expanded(
                 child: PropertyTextField(_bathroomsController, 'Bathrooms',

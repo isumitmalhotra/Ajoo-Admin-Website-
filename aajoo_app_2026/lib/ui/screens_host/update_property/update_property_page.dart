@@ -1,5 +1,8 @@
 import 'dart:io';
 
+import 'package:flutter/services.dart';
+import 'package:rent_home/utils/input_sanitizers.dart';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -382,14 +385,31 @@ class _UpdatePropertyPageState extends State<UpdatePropertyPage> {
                             isNumeric: true)),
                   ]),
                   Row(children: [
-                    Expanded(child: _buildTextField(cityCtrl, 'City')),
+                    Expanded(
+                        child: _buildTextField(cityCtrl, 'City',
+                            inputFormatters: AppInputFormatters.place)),
                     const SizedBox(width: 12),
-                    Expanded(child: _buildTextField(stateCtrl, 'State')),
+                    Expanded(
+                        child: _buildTextField(stateCtrl, 'State',
+                            inputFormatters: AppInputFormatters.place)),
                   ]),
                   Row(children: [
-                    Expanded(child: _buildTextField(countryCtrl, 'Country')),
+                    Expanded(
+                        child: _buildTextField(countryCtrl, 'Country',
+                            inputFormatters: AppInputFormatters.place)),
                     const SizedBox(width: 12),
-                    Expanded(child: _buildTextField(zipCtrl, 'Zip')),
+                    Expanded(
+                        child: _buildTextField(zipCtrl, 'Zip',
+                            keyboardType: TextInputType.number,
+                            inputFormatters: AppInputFormatters.pincode,
+                            validator: (v) {
+                              final t = (v ?? '').trim();
+                              if (t.isEmpty) return 'Enter Zip';
+                              if (!RegExp(r'^[1-9]\d{5}$').hasMatch(t)) {
+                                return 'Enter a valid 6-digit PIN code';
+                              }
+                              return null;
+                            })),
                   ]),
                 ],
               ),
@@ -401,8 +421,28 @@ class _UpdatePropertyPageState extends State<UpdatePropertyPage> {
                 children: [
                   const SectionTitle('Contact'),
                   const SizedBox(height: 12),
-                  _buildTextField(contactCtrl, 'Contact'),
-                  _buildTextField(emailCtrl, 'Email'),
+                  _buildTextField(contactCtrl, 'Contact',
+                      keyboardType: TextInputType.phone,
+                      inputFormatters: AppInputFormatters.mobile,
+                      validator: (v) {
+                        final t = (v ?? '').trim();
+                        if (t.isEmpty) return 'Enter Contact';
+                        if (!RegExp(r'^[6-9]\d{9}$').hasMatch(t)) {
+                          return 'Enter a valid 10-digit mobile number';
+                        }
+                        return null;
+                      }),
+                  _buildTextField(emailCtrl, 'Email',
+                      keyboardType: TextInputType.emailAddress,
+                      inputFormatters: AppInputFormatters.email,
+                      validator: (v) {
+                        final t = (v ?? '').trim();
+                        if (t.isEmpty) return 'Enter Email';
+                        if (!RegExp(r'^[\w.+-]+@[\w-]+\.[\w.-]+$').hasMatch(t)) {
+                          return 'Enter a valid email address';
+                        }
+                        return null;
+                      }),
                 ],
               ),
             ),
@@ -592,13 +632,23 @@ class _UpdatePropertyPageState extends State<UpdatePropertyPage> {
       );
 
   Widget _buildTextField(TextEditingController c, String label,
-      {int maxLines = 1, bool isNumeric = false, bool isRequired = true}) {
+      {int maxLines = 1,
+      bool isNumeric = false,
+      bool isRequired = true,
+      TextInputType? keyboardType,
+      List<TextInputFormatter>? inputFormatters,
+      String? Function(String?)? validator}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14.0),
       child: TextFormField(
         controller: c,
         maxLines: maxLines,
-        keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
+        // isNumeric used to set only the keyboard — a hint, not a rule.
+        // Numeric now also filters the characters themselves.
+        inputFormatters:
+            inputFormatters ?? (isNumeric ? AppInputFormatters.amount : null),
+        keyboardType: keyboardType ??
+            (isNumeric ? TextInputType.number : TextInputType.text),
         decoration: InputDecoration(
           labelText: label,
           filled: true,
@@ -619,11 +669,12 @@ class _UpdatePropertyPageState extends State<UpdatePropertyPage> {
             borderSide: const BorderSide(color: kIndigo, width: 1.5),
           ),
         ),
-        validator: (v) {
-          if (!isRequired) return null;
-          if (v == null || v.trim().isEmpty) return 'Enter $label';
-          return null;
-        },
+        validator: validator ??
+            (v) {
+              if (!isRequired) return null;
+              if (v == null || v.trim().isEmpty) return 'Enter $label';
+              return null;
+            },
       ),
     );
   }

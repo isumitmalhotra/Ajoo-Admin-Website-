@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:animations/animations.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/ui/screens_renter/guest_shell.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/ui/screens_common/about/about_page.dart';
@@ -897,15 +899,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   _buildAnimatedTextField(
                                     'First Name',
                                     _fnameController,
+                                    inputFormatters: AppInputFormatters.name,
                                   ),
                                   _buildAnimatedTextField(
                                     'Last Name',
                                     _lnameController,
+                                    inputFormatters: AppInputFormatters.name,
                                   ),
                                   _buildAnimatedTextField(
                                       'Phone', _phoneController,
                                       keyboardType: TextInputType.phone,
-                                      maxlength: 10),
+                                      maxlength: 10,
+                                      inputFormatters:
+                                          AppInputFormatters.mobile),
                                   _buildAddressAutofill(),
                                   _buildAnimatedTextField(
                                       'Address', _addressController,
@@ -920,7 +926,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   _buildAnimatedTextField(
                                       'Zipcode', _zipcodeController,
                                       maxlength: 6,
-                                      keyboardType: TextInputType.number),
+                                      keyboardType: TextInputType.number,
+                                      inputFormatters:
+                                          AppInputFormatters.pincode),
                                   const SizedBox(height: 20),
                                   // KYC section.
                                   //
@@ -1146,6 +1154,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     TextEditingController controller, {
     TextInputType keyboardType = TextInputType.text,
     int? maxlength,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -1153,6 +1162,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         maxLength: maxlength,
         controller: controller,
         keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
         // Matches the web's field treatment: a filled warm surface with a
         // quiet border, and teal only on focus. A full-strength teal outline
         // on every field at rest made the form read as eight things all

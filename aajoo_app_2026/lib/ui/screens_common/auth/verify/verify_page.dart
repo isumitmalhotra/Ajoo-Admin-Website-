@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:iconsax/iconsax.dart';
@@ -125,6 +126,10 @@ class VerifyPage extends StatelessWidget {
                     animationDuration: const Duration(milliseconds: 200),
                     enableActiveFill: true,
                     keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    // An OTP paste is only ever six digits.
+                    beforeTextPaste: (text) =>
+                        RegExp(r'^\d{6}$').hasMatch((text ?? '').trim()),
                     textStyle: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w600,
@@ -133,7 +138,6 @@ class VerifyPage extends StatelessWidget {
                     onChanged: (value) {
                       controller.otp.value = value;
                     },
-                    beforeTextPaste: (text) => true,
                   ),
                 ),
 

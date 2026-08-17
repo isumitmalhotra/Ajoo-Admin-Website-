@@ -6,6 +6,7 @@ import 'package:rent_home/ui/screens_host/payout/add_payout_account_page.dart';
 import 'package:rent_home/ui/screens_host/payout/components/plan_overview_card.dart';
 import 'package:rent_home/ui/screens_host/payout/payout_controller.dart';
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/utils/input_sanitizers.dart';
 
 class PayoutPage extends StatefulWidget {
   const PayoutPage({super.key});
@@ -491,6 +492,7 @@ class _PayoutPageState extends State<PayoutPage> {
                 TextField(
                   controller: amountController,
                   keyboardType: TextInputType.number,
+                  inputFormatters: AppInputFormatters.digits(7),
                   decoration: InputDecoration(
                     labelText: 'Enter Amount (₹)',
                     border: OutlineInputBorder(

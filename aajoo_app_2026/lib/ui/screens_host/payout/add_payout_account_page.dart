@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/screens_host/payout/payout_controller.dart';
+import 'package:rent_home/utils/input_sanitizers.dart';
 
 class AddPayoutAccountPage extends StatefulWidget {
   const AddPayoutAccountPage({super.key});
@@ -163,6 +164,7 @@ class _AddPayoutAccountPageState extends State<AddPayoutAccountPage> {
                   label: 'Account Holder Name (optional)',
                   icon: Icons.person_outline,
                   textCapitalization: TextCapitalization.words,
+                  inputFormatters: AppInputFormatters.name,
                   validator: null,
                 ),
                 const SizedBox(height: 14),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:get/get.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:rent_home/constants.dart';
@@ -87,6 +89,16 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
             TextFormField(
               onChanged: (value) => controller.email.value = value,
               keyboardType: TextInputType.emailAddress,
+              inputFormatters: AppInputFormatters.email,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              validator: (v) {
+                final t = (v ?? '').trim();
+                if (t.isEmpty) return 'Please enter your email';
+                if (!RegExp(r'^[\w.+-]+@[\w-]+\.[\w.-]+$').hasMatch(t)) {
+                  return 'Please enter a valid email address';
+                }
+                return null;
+              },
               decoration: InputDecoration(
                 labelText: 'Email Address',
                 prefixIcon: const Icon(Icons.email),
@@ -273,6 +285,19 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
             TextFormField(
               onChanged: (value) => controller.password.value = value,
               obscureText: true,
+              inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              // Same rule as change_password_page — a reset must not be able
+              // to set a password the rest of the app would refuse.
+              validator: (v) {
+                final t = v ?? '';
+                if (t.isEmpty) return 'Please enter a new password';
+                if (t.length < 8) return 'At least 8 characters';
+                if (!t.contains(RegExp(r'[A-Z]'))) return 'Add an uppercase letter';
+                if (!t.contains(RegExp(r'[a-z]'))) return 'Add a lowercase letter';
+                if (!t.contains(RegExp(r'\d'))) return 'Add a number';
+                return null;
+              },
               decoration: InputDecoration(
                 labelText: 'New Password',
                 prefixIcon: const Icon(Icons.lock),
@@ -284,6 +309,10 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
             TextFormField(
               onChanged: (value) => controller.cPassword.value = value,
               obscureText: true,
+              inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              validator: (v) =>
+                  (v ?? '') == controller.password.value ? null : 'Passwords do not match',
               decoration: InputDecoration(
                 labelText: 'Confirm Password',
                 prefixIcon: const Icon(Icons.lock),

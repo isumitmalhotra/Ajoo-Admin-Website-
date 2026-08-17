@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/data/ApiConstants.dart';
+import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/data/source/remote/dio_config.dart';
 
 /// Linked State → City dropdowns for address forms — the same reference data
@@ -176,6 +177,9 @@ class _StateCityDropdownsState extends State<StateCityDropdowns> {
         if (_cityManual)
           TextFormField(
             initialValue: cityText,
+            // A town name is letters — "78" as a city is exactly the junk the
+            // catalogue cleanup spent a migration removing.
+            inputFormatters: AppInputFormatters.place,
             decoration: _dec('City *').copyWith(
               helperText: 'Not on the list — typed manually',
               suffixIcon: IconButton(

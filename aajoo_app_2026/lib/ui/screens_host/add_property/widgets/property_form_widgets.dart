@@ -113,12 +113,18 @@ class PropertyTextField extends StatelessWidget {
           LengthLimitingTextInputFormatter(10),
         ];
       case FieldKind.decimal:
-        // Digits with at most one decimal point.
+        // Digits with at most one decimal point — a second '.' is refused
+        // outright instead of silently truncated.
         return [
-          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+          FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+          TextInputFormatter.withFunction((oldValue, newValue) =>
+              '.'.allMatches(newValue.text).length > 1 ? oldValue : newValue),
+          LengthLimitingTextInputFormatter(10),
         ];
       case FieldKind.email:
       case FieldKind.url:
+        // Format is the validator's job, but whitespace can never be right.
+        return [FilteringTextInputFormatter.deny(RegExp(r'\s'))];
       case FieldKind.text:
         return const [];
     }

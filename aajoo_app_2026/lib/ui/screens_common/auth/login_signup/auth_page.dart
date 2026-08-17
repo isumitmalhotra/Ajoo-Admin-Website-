@@ -9,6 +9,7 @@ import 'package:rent_home/widgets/option_button.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/utils/input_sanitizers.dart';
 import '../auth_controller.dart';
 
 class AuthPage extends StatefulWidget {
@@ -32,14 +33,20 @@ class _AuthPageState extends State<AuthPage> {
   final userType = 0.obs;
 
   String? validatePassword(String? value) {
+    // Same rule as change_password_page — a signup could otherwise create a
+    // password the change-password screen would refuse to ever set.
     if (value == null || value.isEmpty) {
       return 'Please enter a password';
     }
+    if (value.length < 8) return 'Password must be at least 8 characters';
     if (!value.contains(RegExp(r'[A-Z]'))) {
-      return 'Password must contain uppercase letters';
+      return 'Password must contain an uppercase letter';
     }
     if (!value.contains(RegExp(r'[a-z]'))) {
-      return 'Password must contain lowercase letters';
+      return 'Password must contain a lowercase letter';
+    }
+    if (!value.contains(RegExp(r'\d'))) {
+      return 'Password must contain a number';
     }
     return null;
   }
@@ -198,6 +205,8 @@ class _AuthPageState extends State<AuthPage> {
                         children: [
                           TextFormField(
                             controller: emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            inputFormatters: AppInputFormatters.email,
                             decoration: _dec('Email', Icons.mail_outline),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -225,7 +234,14 @@ class _AuthPageState extends State<AuthPage> {
                                           : Icons.visibility_outlined,
                                       color: kMuted, size: 20),
                                 )),
-                            validator: validatePassword,
+                            // Strict shape only when CREATING the password.
+                            // On login the stored password is whatever it is —
+                            // a stricter rule here would lock those users out.
+                            validator: (v) => isLogin
+                                ? ((v == null || v.isEmpty)
+                                    ? 'Please enter your password'
+                                    : null)
+                                : validatePassword(v),
                           ),
                           if (!isLogin)
                             Padding(

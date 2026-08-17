@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:rent_home/utils/input_sanitizers.dart';
 import '../../../constants.dart';
 import '../auth/auth_controller.dart';
 import '../../../controller/common_controller.dart';
@@ -517,6 +518,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
               inputFormatters: [
                 // Only allow alphanumeric characters (no emojis/symbols)
                 FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                LengthLimitingTextInputFormatter(20),
               ],
               validator: (value) {
                 // If user selected a type (or has existing type mapped), validate against pattern
@@ -702,6 +704,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                             Expanded(
                               child: TextFormField(
                                 controller: _firstNameController,
+                                inputFormatters: AppInputFormatters.name,
                                 decoration: const InputDecoration(
                                   labelText: 'First Name',
                                   border: OutlineInputBorder(),
@@ -719,6 +722,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                             Expanded(
                               child: TextFormField(
                                 controller: _lastNameController,
+                                inputFormatters: AppInputFormatters.name,
                                 decoration: const InputDecoration(
                                   labelText: 'Last Name',
                                   border: OutlineInputBorder(),
@@ -737,6 +741,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _phoneController,
+                          inputFormatters: AppInputFormatters.mobile,
                           decoration: const InputDecoration(
                             labelText: 'Phone Number',
                             border: OutlineInputBorder(),
@@ -746,6 +751,9 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Please enter phone number';
+                            }
+                            if (!RegExp(r'^[6-9]\d{9}$').hasMatch(value.trim())) {
+                              return 'Enter a valid 10-digit mobile number';
                             }
                             return null;
                           },
@@ -772,6 +780,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                             Expanded(
                               child: TextFormField(
                                 controller: _cityController,
+                                inputFormatters: AppInputFormatters.place,
                                 decoration: const InputDecoration(
                                   labelText: 'City',
                                   border: OutlineInputBorder(),
@@ -789,6 +798,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                             Expanded(
                               child: TextFormField(
                                 controller: _zipcodeController,
+                                inputFormatters: AppInputFormatters.pincode,
                                 decoration: const InputDecoration(
                                   labelText: 'Zipcode',
                                   border: OutlineInputBorder(),

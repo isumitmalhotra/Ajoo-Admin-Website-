@@ -19,6 +19,7 @@ import 'package:rent_home/service/device_service.dart';
 import 'package:rent_home/service/negotitation_service.dart';
 
 import '../controller/auth_controller.dart';
+import 'package:rent_home/utils/input_sanitizers.dart';
 
 class PriceNegotiationPage extends StatefulWidget {
   final String userId;
@@ -1094,6 +1095,8 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                                     widget.userId,
                                                     widget.hostId),
                                         keyboardType: TextInputType.number,
+                                        inputFormatters:
+                                            AppInputFormatters.digits(7),
                                         decoration: InputDecoration(
                                           hintText: negotiationController
                                                   .offerFinalized.value

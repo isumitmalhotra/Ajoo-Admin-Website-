@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/utils/input_sanitizers.dart';
 import '../../../../utils/csc_picker/csc_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
@@ -57,10 +59,11 @@ class _InfoScreenState extends State<InfoScreen> {
   static const int minAge = 18;
   static const int maxFileSizeMB = 5;
 
-  // Validation regex patterns
-  static final RegExp _nameRegex = RegExp(r'^[a-zA-Z\s]{2,50}$');
-  static final RegExp _pincodeRegex = RegExp(r'^\d{6}$');
-  static final RegExp _phoneRegex = RegExp(r'^\d{10}$');
+  // Validation regex patterns — the same rules the rest of the platform uses:
+  // names may carry . ' -, a PIN cannot start with 0, a mobile starts 6-9.
+  static final RegExp _nameRegex = RegExp(r"^[a-zA-Z .'’-]{2,50}$");
+  static final RegExp _pincodeRegex = RegExp(r'^[1-9]\d{5}$');
+  static final RegExp _phoneRegex = RegExp(r'^[6-9]\d{9}$');
 
   // Document validation patterns
   static final Map<String, RegExp> _documentPatterns = {
@@ -796,7 +799,10 @@ class _InfoScreenState extends State<InfoScreen> {
             icon: Iconsax.user,
             validator: _validateName,
             textCapitalization: TextCapitalization.words,
-            maxLength: 30,
+            // 50 to match _nameRegex — the old 30 cap rejected names the
+            // validator itself allowed.
+            maxLength: 50,
+            inputFormatters: AppInputFormatters.name,
             theme: theme,
           ),
           const SizedBox(height: 20),
@@ -843,6 +849,7 @@ class _InfoScreenState extends State<InfoScreen> {
                   keyboardType: TextInputType.phone,
                   validator: _validatePhone,
                   maxLength: 10,
+                  inputFormatters: AppInputFormatters.mobile,
                   theme: theme,
                 ),
               ),
@@ -881,6 +888,7 @@ class _InfoScreenState extends State<InfoScreen> {
             keyboardType: TextInputType.number,
             validator: _validatePincode,
             maxLength: 6,
+            inputFormatters: AppInputFormatters.pincode,
             theme: theme,
           ),
         ],
@@ -937,6 +945,14 @@ class _InfoScreenState extends State<InfoScreen> {
             textCapitalization: TextCapitalization.characters,
             maxLength: _getDocumentNumberMaxLength(),
             enabled: selectedDocType.isNotEmpty,
+            // Uppercase alphanumeric plus '-' (the DL format uses one); the
+            // per-type validator still enforces the exact shape at submit.
+            inputFormatters: [
+              TextInputFormatter.withFunction((oldValue, newValue) =>
+                  newValue.copyWith(text: newValue.text.toUpperCase())),
+              FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9-]')),
+              LengthLimitingTextInputFormatter(_getDocumentNumberMaxLength()),
+            ],
             theme: theme,
           ),
           const SizedBox(height: 24),
@@ -961,6 +977,7 @@ class _InfoScreenState extends State<InfoScreen> {
     int maxLines = 1,
     bool readOnly = false,
     bool enabled = true,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -983,6 +1000,7 @@ class _InfoScreenState extends State<InfoScreen> {
           maxLines: maxLines,
           readOnly: readOnly,
           enabled: enabled,
+          inputFormatters: inputFormatters,
           cursorColor: kIndigo,
           style: inter(
             fontSize: 15,

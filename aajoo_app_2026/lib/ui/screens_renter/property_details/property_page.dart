@@ -36,6 +36,7 @@ import 'package:rent_home/widgets/amenity_row.dart';
 import 'package:rent_home/widgets/host_card.dart';
 import 'package:rent_home/widgets/verified_pill.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:rent_home/utils/input_sanitizers.dart';
 
 class PropertyPage extends StatefulWidget {
   final String image;
@@ -1078,6 +1079,7 @@ class _PropertyPageState extends State<PropertyPage>
                           child: TextField(
                             controller: _couponController,
                             textCapitalization: TextCapitalization.characters,
+                            inputFormatters: AppInputFormatters.upperAlnum(30),
                             decoration: const InputDecoration(
                               hintText: 'Have a coupon code?',
                               border: InputBorder.none,
