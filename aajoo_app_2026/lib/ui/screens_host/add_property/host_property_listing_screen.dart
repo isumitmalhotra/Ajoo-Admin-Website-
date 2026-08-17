@@ -123,6 +123,68 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
     'Publish',
   ];
 
+  /// What is wrong with THIS step, or null when it is complete.
+  ///
+  /// Continue used to be a bare `_step++`: a host could walk all six steps
+  /// without filling anything and only learn at Publish, which then bounced
+  /// them back. Every step now answers for itself before it lets you past.
+  ///
+  /// The form's own validate() cannot do this job — all six steps stay mounted
+  /// in an IndexedStack, so it would also fail on fields the host has not
+  /// reached yet.
+  String? _stepProblem(int step) {
+    switch (step) {
+      case 0:
+        if (_propertyNameController.text.trim().isEmpty) {
+          return 'Give your property a name';
+        }
+        if (tempSelected.isEmpty) return 'Choose a property type';
+        if (isSharingSelected && _numberOfBedsController.text.trim().isEmpty) {
+          return 'Enter how many beds are available';
+        }
+        if (isPartySelected && _numberOfGuestsController.text.trim().isEmpty) {
+          return 'Enter how many guests are allowed';
+        }
+        return null;
+      case 1:
+        final addr = _addressController.text.trim();
+        if (addr.isEmpty) return 'Enter the property address';
+        if (addr.length < 8 ||
+            !RegExp(r'[A-Za-z]{3}').hasMatch(addr) ||
+            !RegExp(r'\s').hasMatch(addr)) {
+          return 'Enter the full address — house/flat, street and area';
+        }
+        if (_stateController.text.trim().isEmpty) return 'Select the state';
+        if (_cityController.text.trim().isEmpty) return 'Select the city';
+        if (_countryController.text.trim().isEmpty) return 'Enter the country';
+        if (!RegExp(r'^[1-9]\d{5}$').hasMatch(_zipCodeController.text.trim())) {
+          return 'Enter a valid 6-digit PIN code';
+        }
+        return null;
+      case 2:
+        if (images.length < 2) return 'Add at least 2 photos of your property';
+        return null;
+      case 3:
+        if (_descriptionController.text.trim().isEmpty) {
+          return 'Describe your property';
+        }
+        if (_exactPriceController.text.trim().isEmpty) {
+          return 'Enter the price per night';
+        }
+        if (_minPriceController.text.trim().isEmpty) {
+          return 'Enter the minimum price you would accept';
+        }
+        return null;
+      case 4:
+        if (_houseRulesController.text.trim().isEmpty) {
+          return 'Add your house rules';
+        }
+        return null;
+      default:
+        return null;
+    }
+  }
+
   // First step (in order) whose required inputs are still missing — used to
   // jump the user to the problem when publish-time validation fails.
   int _firstInvalidStep() {
@@ -711,7 +773,14 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
             : SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => setState(() => _step++),
+                  onPressed: () {
+                    final problem = _stepProblem(_step);
+                    if (problem != null) {
+                      _showSnackBar(problem, isError: true);
+                      return;
+                    }
+                    setState(() => _step++);
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kIndigo,
                     foregroundColor: Colors.white,
@@ -950,7 +1019,8 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
 
   Widget _buildAddressFields() => Column(
         children: [
-          PropertyTextField(_addressController, 'Address', Icons.location_on),
+          PropertyTextField(_addressController, 'Address', Icons.location_on,
+              kind: FieldKind.address),
           // Dropdowns from the same reference tables the website uses — one
           // address vocabulary on both platforms. The map picker still writes
           // into these controllers; the dropdowns follow it.

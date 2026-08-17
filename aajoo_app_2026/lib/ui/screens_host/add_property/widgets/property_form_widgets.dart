@@ -26,6 +26,10 @@ enum FieldKind {
   /// Indian PIN: exactly 6 digits, cannot start with 0.
   pincode,
 
+  /// A street address: several words containing letters. "wd23fd" used to be
+  /// accepted because the only rule was "not empty".
+  address,
+
   url,
 }
 
@@ -91,6 +95,8 @@ class PropertyTextField extends StatelessWidget {
         return TextInputType.emailAddress;
       case FieldKind.url:
         return TextInputType.url;
+      case FieldKind.address:
+        return TextInputType.streetAddress;
       case FieldKind.text:
         return TextInputType.text;
     }
@@ -125,6 +131,7 @@ class PropertyTextField extends StatelessWidget {
       case FieldKind.url:
         // Format is the validator's job, but whitespace can never be right.
         return [FilteringTextInputFormatter.deny(RegExp(r'\s'))];
+      case FieldKind.address:
       case FieldKind.text:
         return const [];
     }
@@ -165,6 +172,15 @@ class PropertyTextField extends StatelessWidget {
         final uri = Uri.tryParse(value);
         if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
           return 'Enter a full link, starting with https://';
+        }
+        return null;
+      case FieldKind.address:
+        // Same rule as the web wizard: several words, containing letters.
+        // Loose enough for "12 MG Road", tight enough to refuse "wd23fd".
+        if (value.length < 8 ||
+            !RegExp(r'[A-Za-z]{3}').hasMatch(value) ||
+            !RegExp(r'\s').hasMatch(value)) {
+          return 'Enter the full address — house/flat, street and area';
         }
         return null;
       case FieldKind.text:
