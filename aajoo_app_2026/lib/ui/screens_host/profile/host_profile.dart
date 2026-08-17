@@ -667,6 +667,13 @@ class _HostProfilePageState extends State<HostProfilePage> {
     final vs = property.verificationStatus.toLowerCase();
     final bool approved =
         (property.isActive && property.isVerify) || vs == 'verified' || vs == 'approved';
+    // Whether the ADMIN has cleared this listing — deliberately independent of
+    // isActive, which is the host's own on/off. Folding isActive into the
+    // approval test made the pause switch vanish the moment it was used: the
+    // listing stopped counting as approved, the control that had just been
+    // flipped disappeared, and the host had no way to turn it back on.
+    final bool adminCleared =
+        property.isVerify || vs == 'verified' || vs == 'approved';
     // is_verify carries the rejection too, and it is the field the admin's
     // decision actually writes — verification_status stays "unverified" on a
     // rejected listing, which is how a turned-down stay sat under "Pending
@@ -852,7 +859,7 @@ class _HostProfilePageState extends State<HostProfilePage> {
                   // approved listings get it: there is nothing to pause while
                   // the listing is still waiting on (or turned down by) an
                   // admin.
-                  if (approved) ...[
+                  if (adminCleared && !rejected) ...[
                     const SizedBox(height: 4),
                     Row(children: [
                       Expanded(
