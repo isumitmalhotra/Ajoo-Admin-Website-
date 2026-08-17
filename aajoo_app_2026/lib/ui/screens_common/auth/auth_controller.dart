@@ -1,4 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
+import 'package:rent_home/constants.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -209,6 +211,22 @@ class AuthController extends GetxController {
     token.value = data.token;
     authService.setToken(data.token);
 
+    // No account proceeds without a mobile number. Email signup has always
+    // required one; Google signup never asked, which is how accounts with a
+    // blank phone column came to exist. This gate catches them — new AND
+    // pre-existing — on every login, whatever channel created them.
+    if (data.user.phoneNumber.trim().isEmpty) {
+      final captured = await _requirePhone(data);
+      if (!captured) {
+        // Refusing the number means no session — otherwise the rule is
+        // decoration.
+        token.value = '';
+        isLoggedIn.value = false;
+        authService.setToken('');
+        return;
+      }
+    }
+
     showAlert('Success', 'Login successful', false);
     if (Get.isRegistered<NotificationRoutingService>()) {
       final notificationService = Get.find<NotificationRoutingService>();
@@ -220,6 +238,95 @@ class AuthController extends GetxController {
         Get.offAllNamed('/home');
       }
     }
+  }
+
+  /// Blocking phone capture — the only exits are a saved 10-digit number or
+  /// declining, which ends the session. Returns whether a number was saved.
+  Future<bool> _requirePhone(LoginData data) async {
+    final phoneController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final names = data.user.fullName.trim().split(RegExp(r'\s+'));
+
+    final result = await Get.dialog<bool>(
+      PopScope(
+        canPop: false,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('One last thing — your mobile number'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Google doesn't share it, and hosts and our support team "
+                  'need a way to reach you about bookings. Every Aajoo '
+                  'account carries one.',
+                  style: TextStyle(fontSize: 13, color: kMuted),
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  maxLength: 10,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: 'Mobile number',
+                    counterText: '',
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (v) {
+                    final t = (v ?? '').trim();
+                    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(t)) {
+                      return 'Enter a valid 10-digit mobile number';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(result: false),
+              child: const Text('Sign out'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: kIndigo, foregroundColor: Colors.white),
+              onPressed: () {
+                if (formKey.currentState?.validate() ?? false) {
+                  Get.back(result: true);
+                }
+              },
+              child: const Text('Save and continue'),
+            ),
+          ],
+        ),
+      ),
+      barrierDismissible: false,
+    );
+
+    if (result != true) return false;
+
+    final saved = await updateUserProfile(UserUpdateRequest(
+      userFname: names.isNotEmpty ? names.first : data.user.fullName,
+      userLname: names.length > 1 ? names.sublist(1).join(' ') : '',
+      userPnumber: phoneController.text.trim(),
+      userAddress: data.user.address,
+      userCity: data.user.city,
+      userState: data.user.state,
+      userZipcode: data.user.zipcode,
+      docType: null,
+      docNumber: null,
+    ));
+    if (!saved.isSuccess) {
+      showAlert('Error', saved.message, true);
+      return false;
+    }
+    return true;
   }
 
   Future<void> getUserDetails({bool skipLogoutOnError = false}) async {
