@@ -667,7 +667,12 @@ class _HostProfilePageState extends State<HostProfilePage> {
     final vs = property.verificationStatus.toLowerCase();
     final bool approved =
         (property.isActive && property.isVerify) || vs == 'verified' || vs == 'approved';
-    final bool rejected = vs == 'rejected' || vs == 'declined';
+    // is_verify carries the rejection too, and it is the field the admin's
+    // decision actually writes — verification_status stays "unverified" on a
+    // rejected listing, which is how a turned-down stay sat under "Pending
+    // review" telling the host to keep waiting for a decision already made.
+    final bool rejected =
+        property.isRejected || vs == 'rejected' || vs == 'declined';
     final String statusLabel =
         approved ? 'Approved' : (rejected ? 'Rejected' : 'Pending review');
     final Color statusColor =

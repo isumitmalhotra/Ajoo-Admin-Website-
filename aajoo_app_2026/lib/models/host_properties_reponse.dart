@@ -132,6 +132,7 @@ class Property {
         required this.propertyEmail,
         required this.isActive,
         required this.isVerify,
+        this.isRejected = false,
         this.verificationStatus = 'unverified',
         this.propertyType = '',
         this.bookingPref = '',
@@ -176,6 +177,9 @@ class Property {
     final String propertyEmail;
     final bool isActive;
     final bool isVerify;
+    /// True when the admin turned this listing down, so the host is told to
+    /// re-apply instead of being left on "Pending review" forever.
+    final bool isRejected;
     final String verificationStatus;
     final int isLuxury;
     // Host-onboarding (H1) fields — returned by /host/property-search so the
@@ -250,6 +254,7 @@ class Property {
             propertyEmail: propertyEmail ?? this.propertyEmail,
             isActive: isActive ?? this.isActive,
             isVerify: isVerify ?? this.isVerify,
+            isRejected: isRejected,
             verificationStatus: verificationStatus ?? this.verificationStatus,
             isLuxury: isLuxury ?? this.isLuxury,
             propDetailsPropDetailIsPetFriendly: propDetailsPropDetailIsPetFriendly ?? this.propDetailsPropDetailIsPetFriendly,
@@ -280,7 +285,8 @@ class Property {
             propertyContact: json["property_contact"] ?? "",
             propertyEmail: json["property_email"] ?? "",
             isActive: json["is_active"] ?? false,
-            isVerify: json["is_verify"] ?? false,
+            isVerify: verifyIsApproved(json["is_verify"]),
+            isRejected: verifyIsRejected(json["is_verify"]),
             verificationStatus: json["verification_status"] ?? "unverified",
             propertyType: (json["property_type"] ?? '').toString(),
             bookingPref: (json["booking_pref"] ?? '').toString(),
@@ -343,4 +349,28 @@ class Property {
     String toString(){
         return "$propertyId, $propertyHostId, $propertyName, $propertyAddress, $propertyLongitude, $propertyLatitude, $propertyDesc, $propertyPrice, $propertyMiniPrice, $propertyCity, $propertyZip, $propertyState, $propertyContry, $propertyContact, $propertyEmail, $isActive, $isVerify, $isLuxury, $propDetailsPropDetailIsPetFriendly, $propDetailsPropDetailIsSmoke, $propDetailsPropDetailInTime, $propDetailsPropDetailOutTime, $propDetailsPropDetailExtra, $coverImage, $images, ";
     }
+}
+
+/// Read `is_verify` whatever shape it arrives in.
+///
+/// tbl_properties has a Sequelize afterFind hook that rewrites this field on
+/// LIST responses: 1 becomes `true`, 2 becomes the STRING "Rejected", 3
+/// becomes `false`, 0 stays 0. The model declared `final bool isVerify` and
+/// assigned the raw value, so the first rejected listing a host owned threw
+/// "type 'String' is not a subtype of type 'bool'" and took their ENTIRE
+/// property list down with it — not one bad row, the whole screen.
+///
+/// The web has the same normaliser in redesign/lib/verifyStatus.ts; keep the
+/// two in step.
+bool verifyIsApproved(dynamic v) {
+  if (v is bool) return v;
+  if (v is num) return v == 1;
+  final s = v?.toString().trim().toLowerCase();
+  return s == 'verified' || s == 'true' || s == '1';
+}
+
+bool verifyIsRejected(dynamic v) {
+  if (v is num) return v == 2;
+  final s = v?.toString().trim().toLowerCase();
+  return s == 'rejected' || s == '2';
 }

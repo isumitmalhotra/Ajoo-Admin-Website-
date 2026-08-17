@@ -56,7 +56,9 @@ class _HostPropertyDetailsState extends State<HostPropertyDetails> {
     if ((p.isActive && p.isVerify) || vs == 'verified' || vs == 'approved') {
       return (label: 'Approved', color: kSuccess, icon: Icons.verified);
     }
-    if (vs == 'rejected' || vs == 'declined') {
+    // p.isRejected reads is_verify, which is what the admin's decision writes;
+    // verification_status stays "unverified" on a rejected listing.
+    if (p.isRejected || vs == 'rejected' || vs == 'declined') {
       return (label: 'Rejected', color: kDanger, icon: Icons.cancel);
     }
     return (
