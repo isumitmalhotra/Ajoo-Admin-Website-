@@ -840,18 +840,46 @@ class _HostProfilePageState extends State<HostProfilePage> {
                   ]),
                   const SizedBox(height: 10),
                   Wrap(spacing: 6, runSpacing: 4, children: [
-                    if (approved)
-                      _buildChip(
-                          label: isActive ? 'Active' : 'Paused',
-                          color: isActive ? Colors.blue : kMuted,
-                          icon: isActive
-                              ? Icons.check_circle_outline
-                              : Icons.pause_circle_outline),
                     _buildChip(
                         label: 'In $checkIn · Out $checkOut',
                         color: kInk2,
                         icon: Icons.schedule),
                   ]),
+                  // Active/Paused was a badge that only reported the state —
+                  // pausing a listing meant opening it first. It is a switch
+                  // now, and flipping it patches this one row through the
+                  // controller instead of refetching the whole list. Only
+                  // approved listings get it: there is nothing to pause while
+                  // the listing is still waiting on (or turned down by) an
+                  // admin.
+                  if (approved) ...[
+                    const SizedBox(height: 4),
+                    Row(children: [
+                      Expanded(
+                        child: Text(
+                          isActive
+                              ? 'Active — visible to guests'
+                              : 'Paused — hidden from guests',
+                          style:
+                              const TextStyle(fontSize: 12.5, color: kInk2),
+                        ),
+                      ),
+                      Transform.scale(
+                        scale: 0.85,
+                        child: Switch(
+                          value: isActive,
+                          activeColor: kSuccess,
+                          activeTrackColor: kSuccess.withOpacity(0.35),
+                          inactiveThumbColor: kMuted,
+                          inactiveTrackColor: kMuted.withOpacity(0.3),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          onChanged: (v) => hostController.setPropertyActive(
+                              property.propertyId, v),
+                        ),
+                      ),
+                    ]),
+                  ],
                 ],
               ),
             ),

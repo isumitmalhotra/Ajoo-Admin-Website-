@@ -124,25 +124,52 @@ class HostController extends GetxController {
     }
   }
 
-  Future<bool> updatePropertyStatus(int propId, int status) async {
-    loading.value = true;
+  /// Flip one listing between active (visible to guests) and paused.
+  ///
+  /// The row is patched in place. This used to call getHostProperties() on
+  /// success, which redrew a single chip at the cost of throwing away every
+  /// page the host had loaded past the first and any search they had typed —
+  /// pausing listing #40 sent them back to listing #1. It also left the whole
+  /// screen on a shimmer while the refetch ran.
+  ///
+  /// The switch is answered immediately and the server confirms afterwards; a
+  /// failed call puts the row back where the host left it.
+  Future<bool> setPropertyActive(int propertyId, bool active) async {
+    final was = _patchPropertyActive(propertyId, active);
     try {
-      final response = await hostService.updatePropertyStatus(propId, status);
-      if (response) {
+      final ok =
+          await hostService.updatePropertyStatus(propertyId, active ? 1 : 0);
+      if (ok) {
         showSnackbar("Property Status Updated Successfully", "", false);
-        await getHostProperties();
       } else {
+        if (was != null) _patchPropertyActive(propertyId, was);
         showSnackbar(
             "Something went Wrong", "error updating property status", true);
       }
-      return response;
+      return ok;
     } catch (e) {
       error.value = e.toString();
+      if (was != null) _patchPropertyActive(propertyId, was);
       showSnackbar(e.toString(), "Error updating property status", true);
       return false;
-    } finally {
-      loading.value = false;
     }
+  }
+
+  /// Rewrites `is_active` on one loaded listing and returns what it was, or
+  /// null when the loaded page doesn't hold that listing (nothing to revert).
+  bool? _patchPropertyActive(int propertyId, bool active) {
+    final response = hostPropertiesResponse.value;
+    final data = response?.data;
+    if (data == null) return null;
+    final index =
+        data.properties.indexWhere((p) => p.propertyId == propertyId);
+    if (index < 0) return null;
+    final was = data.properties[index].isActive;
+    final properties = [...data.properties];
+    properties[index] = properties[index].copyWith(isActive: active);
+    hostPropertiesResponse.value =
+        response!.copyWith(data: data.copyWith(properties: properties));
+    return was;
   }
 
   /// First page of the host's listings. /host/property-search is paginated —

@@ -461,38 +461,38 @@ class _HostPropertyDetailsState extends State<HostPropertyDetails> {
   }
 
   Future<void> _confirmStatus(bool value) async {
-    await showDialog(
+    final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Obx(
-        () => hostController.loading.value
-            ? const Center(child: CircularProgressIndicator(color: kprimaryColor))
-            : AlertDialog(
-                title: const Text('Update listing status'),
-                content: Text(value
-                    ? 'Make this listing active and visible to guests?'
-                    : 'Pause this listing so guests can\'t see it?'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cancel'),
-                  ),
-                  TextButton(
-                    onPressed: () async {
-                      await hostController
-                          .updatePropertyStatus(
-                              widget.property.propertyId, value ? 1 : 0)
-                          .then((_) => hostController.getHostProperties());
-                      if (mounted) Navigator.of(context).pop();
-                      hostController.getHostProperties();
-                      setState(() => isActive = value);
-                    },
-                    child: Text(value ? 'Activate' : 'Pause'),
-                  ),
-                ],
-              ),
+      builder: (context) => AlertDialog(
+        title: const Text('Update listing status'),
+        content: Text(value
+            ? 'Make this listing active and visible to guests?'
+            : 'Pause this listing so guests can\'t see it?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(value ? 'Activate' : 'Pause'),
+          ),
+        ],
       ),
     );
+    if (confirmed != true) return;
+
+    // Answer the switch first, then let the server confirm it. The controller
+    // patches the same listing in the host's list, so the card behind this
+    // page follows along without the list being fetched again. On failure both
+    // go back to where the host left them — the switch used to move whatever
+    // the backend said, which meant a rejected change still read as applied.
+    final was = isActive;
+    setState(() => isActive = value);
+    final ok = await hostController.setPropertyActive(
+        widget.property.propertyId, value);
+    if (!ok && mounted) setState(() => isActive = was);
   }
 
   // ── Actions ──────────────────────────────────────────────────────────────────
@@ -555,11 +555,12 @@ class _HostPropertyDetailsState extends State<HostPropertyDetails> {
           ),
           TextButton(
             onPressed: () async {
+              // deleteProperty already reloads the list — the row is gone, not
+              // just changed — so it isn't asked for a second time here.
               await hostController
                   .deleteProperty(widget.property.propertyId)
                   .then((_) => Navigator.of(context).pop());
               if (mounted) Navigator.of(context).pop();
-              hostController.getHostProperties();
             },
             child: const Text('Delete', style: TextStyle(color: kDanger)),
           ),
