@@ -49,6 +49,13 @@ class BookingHistoryData {
   String? bookDetailsBtBookFrom;
   String? bookDetailsBtBookTo;
   dynamic book_price;
+  // /user/booking-history has always returned these four; the model dropped
+  // them, so a guest's own booking could show dates and a status but never
+  // what they actually paid or how many guests it was for.
+  double? bookTotalAmt;
+  bool bookIsPaid;
+  bool bookIsCod;
+  int? bookNoOfGuests;
 
   BookingHistoryData(
       {this.bookId,
@@ -62,7 +69,11 @@ class BookingHistoryData {
       this.bookingStatusBsTitle,
       this.bookDetailsBtBookFrom,
       this.bookDetailsBtBookTo,
-      required this.book_price});
+      required this.book_price,
+      this.bookTotalAmt,
+      this.bookIsPaid = false,
+      this.bookIsCod = false,
+      this.bookNoOfGuests});
 
   factory BookingHistoryData.fromJson(Map<String, dynamic> json) =>
       BookingHistoryData(
@@ -78,7 +89,12 @@ class BookingHistoryData {
           bookingStatusBsTitle: json["bookingStatus.bs_title"],
           bookDetailsBtBookFrom: json["bookDetails.bt_book_from"],
           bookDetailsBtBookTo: json["bookDetails.bt_book_to"],
-          book_price: json["book_price"]);
+          book_price: json["book_price"],
+          bookTotalAmt: _toDouble(json["book_total_amt"]),
+          // MySQL sends these as 1/0, so a plain cast to bool would throw.
+          bookIsPaid: _toBool(json["book_is_paid"]),
+          bookIsCod: _toBool(json["book_is_cod"]),
+          bookNoOfGuests: _toInt(json["book_no_of_guests"]));
 
   Map<String, dynamic> toJson() => {
         "book_id": bookId,
@@ -92,6 +108,23 @@ class BookingHistoryData {
         "bookingStatus.bs_title": bookingStatusBsTitle,
         "bookDetails.bt_book_from": bookDetailsBtBookFrom,
         "bookDetails.bt_book_to": bookDetailsBtBookTo,
-        "book_price": book_price
+        "book_price": book_price,
+        "book_total_amt": bookTotalAmt,
+        "book_is_paid": bookIsPaid,
+        "book_is_cod": bookIsCod,
+        "book_no_of_guests": bookNoOfGuests
       };
+}
+
+double? _toDouble(dynamic v) =>
+    v == null ? null : (v is num ? v.toDouble() : double.tryParse(v.toString()));
+
+int? _toInt(dynamic v) =>
+    v == null ? null : (v is num ? v.toInt() : int.tryParse(v.toString()));
+
+bool _toBool(dynamic v) {
+  if (v is bool) return v;
+  if (v is num) return v == 1;
+  final s = v?.toString().toLowerCase();
+  return s == '1' || s == 'true';
 }

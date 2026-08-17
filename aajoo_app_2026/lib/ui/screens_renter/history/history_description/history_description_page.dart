@@ -539,8 +539,100 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
           ],
         ),
         const SizedBox(height: 14),
-        _statusBadge(booking.bookingStatusBsTitle ?? 'Unknown'),
+        // What the stay actually cost, and whether it is paid for. The screen
+        // showed dates and a status word and nothing else — a guest could not
+        // see their own total on their own booking.
+        _charges(booking),
+        const SizedBox(height: 14),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _statusBadge(booking.bookingStatusBsTitle ?? 'Unknown'),
+            // Only when it says something the status doesn't already say —
+            // "Paid" beside "Paid" is two badges carrying one fact.
+            if (_payLabel(booking).toLowerCase() !=
+                (booking.bookingStatusBsTitle ?? '').trim().toLowerCase())
+              _payBadge(booking),
+          ],
+        ),
       ],
+    );
+  }
+
+  String _rupees(num? v) => v == null
+      ? '—'
+      : '₹${v.toStringAsFixed(v % 1 == 0 ? 0 : 2).replaceAllMapped(RegExp(r'(\d)(?=(\d{2})+(\d)(?!\d))'), (m) => '${m[1]},')}';
+
+  Widget _charges(BookingHistoryData booking) {
+    final room = booking.book_price is num
+        ? (booking.book_price as num)
+        : double.tryParse('${booking.book_price ?? ''}');
+    final total = booking.bookTotalAmt;
+    // Tax is not sent on this endpoint; derive it only when both ends are
+    // known, so nothing is invented.
+    final tax = (total != null && room != null) ? total - room : null;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: kSand,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          _chargeRow('Room charge', _rupees(room)),
+          if (tax != null && tax > 0) ...[
+            const SizedBox(height: 6),
+            _chargeRow('Taxes & fees', _rupees(tax)),
+          ],
+          if (booking.bookNoOfGuests != null) ...[
+            const SizedBox(height: 6),
+            _chargeRow('Guests', '${booking.bookNoOfGuests}'),
+          ],
+          const SizedBox(height: 8),
+          const Divider(color: kLine, height: 1),
+          const SizedBox(height: 8),
+          _chargeRow('Total', _rupees(total ?? room), bold: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _chargeRow(String label, String value, {bool bold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label,
+            style: inter(
+                fontSize: bold ? 13 : 12.5,
+                fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+                color: bold ? kInk : kMuted)),
+        Text(value,
+            style: inter(
+                fontSize: bold ? 14 : 12.5,
+                fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
+                color: kInk)),
+      ],
+    );
+  }
+
+  String _payLabel(BookingHistoryData booking) => booking.bookIsPaid
+      ? 'Paid'
+      : (booking.bookIsCod ? 'Pay at property' : 'Payment pending');
+
+  Widget _payBadge(BookingHistoryData booking) {
+    final paid = booking.bookIsPaid;
+    final label = _payLabel(booking);
+    final color = paid ? kSuccess : (booking.bookIsCod ? kIndigo : kDanger);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(label,
+          style: inter(fontSize: 11.5, fontWeight: FontWeight.w700, color: color)),
     );
   }
 

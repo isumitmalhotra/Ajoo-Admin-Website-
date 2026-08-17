@@ -134,7 +134,13 @@ class _HistoryPageState extends State<HistoryPage> {
               return const RenterHistoryListShimmerView();
             }
             final history = userController.bookingHistory.value;
-            final all = (userController.isError.value || history == null)
+            // Only THIS screen's own failure blanks this screen. It used to
+            // read the controller-wide isError, so an unrelated failure
+            // elsewhere hid every booking behind "No upcoming bookings".
+            if (userController.historyError.value && history == null) {
+              return _loadFailed();
+            }
+            final all = history == null
                 ? <BookingHistoryData>[]
                 : List<BookingHistoryData>.from(history.data);
             all.sort((a, b) {
@@ -167,6 +173,34 @@ class _HistoryPageState extends State<HistoryPage> {
           }),
         ),
       ),
+    );
+  }
+
+  /// A failed request is not an empty list, and must not claim to be one.
+  Widget _loadFailed() {
+    return ListView(
+      children: [
+        const SizedBox(height: 90),
+        Icon(Icons.wifi_off_rounded, size: 64, color: kMuted.withOpacity(0.45)),
+        const SizedBox(height: 12),
+        Center(
+          child: Text("Couldn't load your bookings",
+              style: inter(fontSize: 15, fontWeight: FontWeight.w600, color: kInk)),
+        ),
+        const SizedBox(height: 4),
+        Center(
+          child: Text('Check your connection and try again.',
+              style: inter(fontSize: 13, color: kMuted)),
+        ),
+        const SizedBox(height: 14),
+        Center(
+          child: OutlinedButton.icon(
+            onPressed: () => userController.getUserHistory(),
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: const Text('Retry'),
+          ),
+        ),
+      ],
     );
   }
 

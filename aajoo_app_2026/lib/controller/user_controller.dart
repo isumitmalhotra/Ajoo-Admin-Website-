@@ -16,6 +16,15 @@ class UserController extends GetxController {
   final PropertyService _propertyService = PropertyService();
   final RxBool isLoading = false.obs;
   final RxBool isError = false.obs;
+
+  /// Booking history has its own failure flag.
+  ///
+  /// `isError` is shared by every call on this controller — uploading a profile
+  /// photo, deleting a review, changing a password, loading a property. My
+  /// Bookings blanked its whole list whenever that flag was set, so a failure
+  /// in something completely unrelated made a guest's nine bookings disappear
+  /// behind "No upcoming bookings" while they sat loaded in memory.
+  final RxBool historyError = false.obs;
   final Rx<BookingHistoryResponse?> bookingHistory =
       Rx<BookingHistoryResponse?>(null);
   final Rx<SinglePropertyResponse?> property =
@@ -154,10 +163,11 @@ class UserController extends GetxController {
     isLoading.value = true;
     try {
       final response = await _userService.getBookingHistory();
-      print(response.data);
       bookingHistory.value = response;
       isError.value = false;
+      historyError.value = false;
     } catch (e) {
+      historyError.value = true;
       isError.value = true;
       showSnackbar("Error", e.toString(), true);
     } finally {
@@ -171,11 +181,15 @@ class UserController extends GetxController {
     try {
       final response = await _propertyService.getSingleProperty(id);
       property.value = response;
-      propertyLocation.value = LatLng(
-        double.parse(response.data!.propertyLatitude!),
-        double.parse(response.data!.propertyLongitude!),
-      );
-      print("Property Location: ${propertyLocation.value.latitude}");
+      // A listing with no coordinates yet (every field null until the host
+      // finishes the wizard) used to throw here on double.parse(null), which
+      // marked the whole controller errored — and that is what emptied My
+      // Bookings. No map pin is a fact about the listing, not a failure.
+      final lat = double.tryParse('${response.data?.propertyLatitude ?? ''}');
+      final lng = double.tryParse('${response.data?.propertyLongitude ?? ''}');
+      if (lat != null && lng != null) {
+        propertyLocation.value = LatLng(lat, lng);
+      }
       isError.value = false;
     } catch (e) {
       print(e);
