@@ -16,7 +16,10 @@ import 'package:rent_home/ui/screens_common/price_negotiation/components/negotia
 import 'package:rent_home/ui/screens_common/price_negotiation/components/payment_success_dialog.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/negotiation_controller.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
+import 'package:rent_home/service/booking_service.dart';
 import 'package:rent_home/service/negotitation_service.dart';
+import 'package:rent_home/controller/alert_dialog.dart';
+import 'package:rent_home/utils/availability_days.dart';
 
 import '../auth/auth_controller.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
@@ -76,22 +79,55 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
       ? null
       : "${d.day.toString().padLeft(2, '0')}-${d.month.toString().padLeft(2, '0')}-${d.year}";
 
+  // Dates already taken — by a booking or by the host — are not negotiable
+  // either. These two pickers had no availability check, so a renter could
+  // negotiate for a week the host had blocked, and an accepted deal pre-fills
+  // those exact dates back into the booking screen.
+  final BookingService _bookingSvc = BookingService();
+  BookedDays _booked = BookedDays.none;
+
+  Future<void> _loadAvailability() async {
+    final id = int.tryParse(widget.propertyId);
+    if (id == null) return;
+    final ranges = await _bookingSvc.getBookedRanges(id);
+    if (mounted) setState(() => _booked = BookedDays(ranges));
+  }
+
   Future<void> _pickOfferDates() async {
     final now = DateTime.now();
     final first = DateTime(now.year, now.month, now.day);
+    final last = DateTime(now.year + 1, now.month, now.day);
+
+    final startInitial = _booked.firstFree(_offerFrom ?? first, first, last);
+    if (startInitial == null) {
+      showAlert('Dates', 'This property has no free dates in the next year.',
+          true);
+      return;
+    }
     final start = await showDatePicker(
       context: context,
-      initialDate: _offerFrom ?? first,
+      initialDate: startInitial,
       firstDate: first,
-      lastDate: DateTime(now.year + 1, now.month, now.day),
+      lastDate: last,
+      selectableDayPredicate: (d) => !_booked.contains(d),
       helpText: 'Check-in',
     );
     if (start == null) return;
+
+    final endFirst = start.add(const Duration(days: 1));
+    final endLast = DateTime(now.year + 1, now.month + 1, now.day);
+    final endInitial = _booked.firstFree(endFirst, endFirst, endLast);
+    if (endInitial == null) {
+      showAlert(
+          'Dates', 'No check-out date is free after that check-in.', true);
+      return;
+    }
     final end = await showDatePicker(
       context: context,
-      initialDate: start.add(const Duration(days: 1)),
-      firstDate: start.add(const Duration(days: 1)),
-      lastDate: DateTime(now.year + 1, now.month + 1, now.day),
+      initialDate: endInitial,
+      firstDate: endFirst,
+      lastDate: endLast,
+      selectableDayPredicate: (d) => !_booked.contains(d),
       helpText: 'Check-out',
     );
     if (end == null) return;
@@ -106,6 +142,8 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
     super.initState();
     negotiationService = NegotiationService();
     controllerTag = '${widget.userId}_${widget.propertyId}';
+
+    _loadAvailability();
 
     // Initialize scroll controller
     _scrollController = ScrollController();

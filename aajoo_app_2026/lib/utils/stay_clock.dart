@@ -42,6 +42,32 @@ DateTime? parseStayDate(String? raw) {
   return DateTime.utc(parsed.year, parsed.month, parsed.day);
 }
 
+/// Parses the `YYYY-MM-DD` the host-calendar API speaks — Sequelize DATEONLY
+/// columns and /host/calendar — as distinct from the DD-MM-YYYY the booking
+/// tables carry. The two must never be crossed: "03-04-2026" is the 3rd of
+/// April in one and unreadable in the other.
+///
+/// Local midnight, not UTC: this feeds a month grid the host reads in their own
+/// timezone, and a UTC day would highlight the day before for anyone west of
+/// UTC. [parseStayDate] stays UTC because it feeds check-in/check-out instants.
+DateTime? parseIsoDate(String? raw) {
+  if (raw == null) return null;
+  // Tolerates a trailing time, which is what a DATEONLY column serialises to
+  // if the column is ever redeclared as DATE.
+  final m = RegExp(r'^(\d{4})-(\d{1,2})-(\d{1,2})').firstMatch(raw.trim());
+  if (m == null) return null;
+  return DateTime(
+      int.parse(m.group(1)!), int.parse(m.group(2)!), int.parse(m.group(3)!));
+}
+
+/// `DateTime` → `YYYY-MM-DD`. In this form a string compare is also a date
+/// compare, which is what lets the calendar key day lookups and range tests on
+/// the string and never on a DateTime.
+String toIsoDate(DateTime d) =>
+    "${d.year.toString().padLeft(4, '0')}-"
+    "${d.month.toString().padLeft(2, '0')}-"
+    "${d.day.toString().padLeft(2, '0')}";
+
 /// The exact instant a stay day begins or ends, in UTC.
 DateTime? _stayMoment(DateTime? day, int hour) {
   if (day == null) return null;

@@ -8,6 +8,7 @@ import 'package:rent_home/ui/screens_common/privacy_policy/privacy-policy_page.d
 import 'package:rent_home/ui/screens_common/terms_and_conditions/terms_condition_user_page.dart';
 import 'package:rent_home/ui/screens_host/add_property/host_property_listing_screen.dart';
 import 'package:rent_home/ui/screens_host/booking_history/booking_history_screen.dart';
+import 'package:rent_home/ui/screens_host/calendar/host_calendar_screen.dart';
 import 'package:rent_home/ui/screens_host/negotiations/host_negotiations_screen.dart';
 import 'package:rent_home/ui/screens_host/payout/add_payout_account_page.dart';
 import 'package:rent_home/ui/screens_host/payout/payout_page.dart';
@@ -55,6 +56,12 @@ List<HostMenuEntry> hostMenuEntries({VoidCallback? beforeNavigate}) {
       label: 'Bookings',
       subtitle: 'Upcoming, ongoing and past stays',
       onTap: () => go(() => const BookingHistoryScreen()),
+    ),
+    HostMenuEntry(
+      icon: Ionicons.calendar_outline,
+      label: 'Calendar',
+      subtitle: 'Bookings and blocked dates',
+      onTap: () => go(() => const HostCalendarScreen()),
     ),
     HostMenuEntry(
       icon: Icons.handshake_outlined,

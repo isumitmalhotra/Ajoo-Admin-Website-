@@ -253,7 +253,32 @@ class _PropertyPageState extends State<PropertyPage>
 
   Future<void> _loadAvailability() async {
     final ranges = await _bookingSvc.getBookedRanges(widget.id);
-    if (mounted) setState(() => _bookedRanges = ranges);
+    if (!mounted) return;
+    setState(() {
+      _bookedRanges = ranges;
+      // A deal prefill (_applyDealDates) lands before this response and enables
+      // Book with no availability check at all — the dates were agreed days ago
+      // and the host may have blocked or sold them since. Re-check the moment
+      // the truth arrives rather than letting the server refuse at payment.
+      final from = selectedDate, to = selectedDateTo;
+      if (to != null) {
+        for (var d = DateTime(from.year, from.month, from.day);
+            d.isBefore(to);
+            d = DateTime(d.year, d.month, d.day + 1)) {
+          if (_isBookedDay(d)) {
+            selectedDate = DateTime.now();
+            selectedDateTo = null;
+            totalDays = 0;
+            isButtonEnabled = false;
+            _updatePriceString();
+            Fluttertoast.showToast(
+                msg:
+                    "Those dates are no longer available — please pick new dates.");
+            break;
+          }
+        }
+      }
+    });
   }
 
   // showDatePicker asserts the initialDate is selectable — nudge it off any

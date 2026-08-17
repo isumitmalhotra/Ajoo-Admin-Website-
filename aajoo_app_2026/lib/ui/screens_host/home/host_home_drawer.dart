@@ -6,6 +6,7 @@ import 'package:rent_home/ui/screens_host/host_tab_provider.dart';
 import 'package:rent_home/ui/screens_common/privacy_policy/privacy-policy_page.dart';
 import 'package:rent_home/ui/screens_common/terms_and_conditions/terms_condition_user_page.dart';
 import 'package:rent_home/ui/screens_host/booking_history/booking_history_screen.dart';
+import 'package:rent_home/ui/screens_host/calendar/host_calendar_screen.dart';
 import 'package:rent_home/ui/screens_host/payout/add_payout_account_page.dart';
 import 'package:rent_home/ui/screens_host/payout/payout_page.dart';
 import 'package:rent_home/ui/screens_host/support/host_support_screen.dart';
@@ -74,6 +75,15 @@ class HostHomeDrawer extends StatelessWidget {
               Navigator.pop(context);
               hostTabProvider.resetToHome();
               Get.to(() => const BookingHistoryScreen());
+            },
+          ),
+          ListTile(
+            leading: const Icon(Ionicons.calendar_outline),
+            title: const Text("Calendar"),
+            onTap: () {
+              Navigator.pop(context);
+              hostTabProvider.resetToHome();
+              Get.to(() => const HostCalendarScreen());
             },
           ),
           ListTile(

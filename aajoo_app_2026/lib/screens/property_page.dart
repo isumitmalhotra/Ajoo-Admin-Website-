@@ -19,9 +19,11 @@ import 'package:rent_home/models/properties_response_model.dart';
 import 'package:rent_home/models/single_property_response.dart';
 import 'package:rent_home/screens/Home/homescreen.dart';
 import 'package:rent_home/screens/view_property_all_reviews_page.dart';
+import 'package:rent_home/service/booking_service.dart';
 import 'package:rent_home/service/bookmark_service.dart';
 import 'package:rent_home/service/device_service.dart';
 import 'package:rent_home/service/property_service.dart';
+import 'package:rent_home/utils/availability_days.dart';
 import 'package:rent_home/widgets/bookmark_properties_page.dart';
 import 'package:rent_home/widgets/negotitaion_page.dart';
 import 'package:share_plus/share_plus.dart';
@@ -121,9 +123,28 @@ class _PropertyPageState extends State<PropertyPage>
 
     _checkBookmarkStatus();
 
+    // Dates already taken — by a booking or by the host — must not be
+    // selectable here. This page had no availability check at all while the
+    // redesigned one did, and it is still what a renter lands on from a map
+    // pin, so blocking dates was decorative for anyone arriving that way.
+    _loadAvailability();
+
     // Fetch full property details
     _fetchSingleProperty();
   }
+
+  // ── Availability (R5: booked and host-blocked nights are not selectable) ───
+  final BookingService _bookingSvc = BookingService();
+  BookedDays _booked = BookedDays.none;
+
+  Future<void> _loadAvailability() async {
+    final ranges = await _bookingSvc.getBookedRanges(widget.id);
+    if (mounted) setState(() => _booked = BookedDays(ranges));
+  }
+
+  /// The window both pickers offer.
+  DateTime get _firstBookable => DateTime.now();
+  DateTime get _lastBookable => DateTime.now().add(const Duration(days: 365));
 
   Future<void> _fetchSingleProperty() async {
     try {
@@ -322,11 +343,19 @@ class _PropertyPageState extends State<PropertyPage>
                   '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
                 ),
                 onTap: () async {
+                  final initial = _booked.firstFree(
+                      selectedDate, _firstBookable, _lastBookable);
+                  if (initial == null) {
+                    Fluttertoast.showToast(
+                        msg: "This property has no free dates in the next year.");
+                    return;
+                  }
                   final DateTime? picked = await showDatePicker(
                     context: context,
-                    initialDate: selectedDate,
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                    initialDate: initial,
+                    firstDate: _firstBookable,
+                    lastDate: _lastBookable,
+                    selectableDayPredicate: (d) => !_booked.contains(d),
                     builder: (context, child) {
                       return Theme(
                         data: Theme.of(context).copyWith(
@@ -341,8 +370,11 @@ class _PropertyPageState extends State<PropertyPage>
                     setState(() {
                       selectedDate = picked;
                       selectedDateTo ??= picked.add(const Duration(days: 1));
+                      // Nights, not calendar days: a 12th-to-13th stay is one
+                      // night. The +1 here billed every guest for an extra night
+                      // that the redesigned page and the website never charge.
                       totalDays =
-                          selectedDateTo!.difference(selectedDate).inDays + 1;
+                          selectedDateTo!.difference(selectedDate).inDays;
                       if (totalDays < 1) {
                         totalDays = 1;
                         selectedDateTo =
@@ -365,11 +397,19 @@ class _PropertyPageState extends State<PropertyPage>
                       : 'Book To (DD/MM/YYYY)',
                 ),
                 onTap: () async {
+                  final initial = _booked.firstFree(
+                      selectedDate, selectedDate, _lastBookable);
+                  if (initial == null) {
+                    Fluttertoast.showToast(
+                        msg: "No check-out date is free after that check-in.");
+                    return;
+                  }
                   final DateTime? picked = await showDatePicker(
                     context: context,
-                    initialDate: selectedDate,
+                    initialDate: initial,
                     firstDate: selectedDate,
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                    lastDate: _lastBookable,
+                    selectableDayPredicate: (d) => !_booked.contains(d),
                     builder: (context, child) {
                       return Theme(
                         data: Theme.of(context).copyWith(
@@ -384,8 +424,11 @@ class _PropertyPageState extends State<PropertyPage>
                     setState(() {
                       selectedDateTo = picked;
                       // selectedDate is non-null by design
+                      // Nights, not calendar days: a 12th-to-13th stay is one
+                      // night. The +1 here billed every guest for an extra night
+                      // that the redesigned page and the website never charge.
                       totalDays =
-                          selectedDateTo!.difference(selectedDate).inDays + 1;
+                          selectedDateTo!.difference(selectedDate).inDays;
                       if (totalDays < 1) {
                         totalDays = 1;
                         selectedDateTo =
