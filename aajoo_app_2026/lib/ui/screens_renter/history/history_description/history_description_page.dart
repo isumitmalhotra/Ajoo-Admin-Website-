@@ -8,6 +8,7 @@ import 'package:rent_home/constants/payment_config.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/ui/screens_renter/booking_controller.dart';
 import 'package:rent_home/utils/stay_clock.dart';
+import 'package:rent_home/utils/booking_status.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/data/models/booking_history_response_model.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
@@ -589,12 +590,18 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            _statusBadge(booking.bookingStatusBsTitle ?? 'Unknown'),
-            // Only when it says something the status doesn't already say —
-            // "Paid" beside "Paid" is two badges carrying one fact.
-            if (_payLabel(booking).toLowerCase() !=
-                (booking.bookingStatusBsTitle ?? '').trim().toLowerCase())
-              _payBadge(booking),
+            // The status badge answers "is this stay on?" and only that; the
+            // payment badge answers "has the money arrived?". The stored title
+            // used to be whichever one the DB happened to record, so the two
+            // badges sometimes said the same thing and sometimes left a
+            // question unanswered. See utils/booking_status.dart.
+            _statusBadge(lifecycleLabel(
+              booking.bookingStatusBsTitle,
+              ended: hasEnded(booking.bookDetailsBtBookTo),
+              started: isStaying(booking.bookDetailsBtBookFrom,
+                  booking.bookDetailsBtBookTo),
+            )),
+            _payBadge(booking),
           ],
         ),
         // The booking's own actions. This screen showed a pending payment and

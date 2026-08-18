@@ -23,6 +23,7 @@ import 'package:rent_home/models/host_ongoing_response.dart';
 import '../../../constants.dart';
 import '../../../utils/fonts.dart';
 import '../../motion/aajoo_motion.dart';
+import 'package:rent_home/utils/booking_status.dart';
 
 /// Host Dashboard — re-skinned to the new teal/orange design (scaffold
 /// host_dashboard): in-body header, greeting, earnings card, stat grid,
@@ -511,10 +512,13 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
   }
 
   Widget _bookingCard(Booking b) {
-    final status = b.bookingStatusBsTitle;
-    final isPending = status.toLowerCase().contains('pend');
-    final badgeColor = isPending ? kClay : kSuccess;
-    final badgeBg = isPending ? _orange50 : const Color(0xFFEAF6EE);
+    // "Pending" was read out of the status word, which only some rows carry —
+    // a pay-at-property booking stored as "Booking Confirmed" looked settled.
+    // The payment flags say it outright.
+    final pay = paymentBadge(isPaid: b.bookIsPaid, isCod: b.bookIsCod);
+    final status = pay.label;
+    final badgeColor = pay.fg;
+    final badgeBg = pay.bg;
     return InkWell(
       onTap: () => Get.to(() => ViewOngoingBookingPage(booking: b)),
       borderRadius: BorderRadius.circular(16),

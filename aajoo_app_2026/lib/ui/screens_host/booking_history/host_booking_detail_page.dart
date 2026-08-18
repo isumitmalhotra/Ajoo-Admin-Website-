@@ -14,6 +14,8 @@ import 'package:rent_home/ui/screens_common/price_negotiation/negotitaion_page.d
 import 'package:rent_home/ui/screens_host/support/host_support_screen.dart';
 import 'package:rent_home/ui/screens_renter/property_details/components/property_tabs.dart';
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/utils/booking_status.dart';
+import 'package:rent_home/utils/stay_clock.dart';
 
 /// One of the host's bookings, opened from the Bookings list (A-68/A-69).
 ///
@@ -187,12 +189,36 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
                   color: kIndigo50,
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: Text(b.bookingStatusBsTitle.trim(),
+                // Lifecycle only — the money gets its own chip beside it, so
+                // neither question is answered by guessing at the other.
+                child: Text(
+                    lifecycleLabel(b.bookingStatusBsTitle,
+                        ended: hasEnded(b.bookDetailsBtBookTo),
+                        started: isStaying(b.bookDetailsBtBookFrom,
+                            b.bookDetailsBtBookTo)),
                     style: inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: kIndigo600)),
               ),
+              const SizedBox(width: 6),
+              Builder(builder: (_) {
+                final pay =
+                    paymentBadge(isPaid: b.bookIsPaid, isCod: b.bookIsCod);
+                return Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: pay.bg,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(pay.label,
+                      style: inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: pay.fg)),
+                );
+              }),
             ],
           ),
         ],

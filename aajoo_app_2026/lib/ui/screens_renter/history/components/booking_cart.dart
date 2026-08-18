@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/data/models/booking_history_response_model.dart';
 import 'package:rent_home/ui/screens_renter/history/history_description/history_description_page.dart';
+import '../../../../utils/booking_status.dart';
+import '../../../../utils/stay_clock.dart';
 
 class BookingCard extends StatelessWidget {
   const BookingCard({
@@ -15,6 +17,15 @@ class BookingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Lifecycle and payment are separate questions; see utils/booking_status.
+    final life = lifecycleLabel(
+      booking.bookingStatusBsTitle,
+      ended: hasEnded(booking.bookDetailsBtBookTo),
+      started: isStaying(
+          booking.bookDetailsBtBookFrom, booking.bookDetailsBtBookTo),
+    );
+    final pay =
+        paymentBadge(isPaid: booking.bookIsPaid, isCod: booking.bookIsCod);
     final bookedDate = booking.bookAddedAt is DateTime
         ? booking.bookAddedAt as DateTime
         : null;
@@ -93,13 +104,31 @@ class BookingCard extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Text(
-                    booking.bookingStatusBsTitle ?? '',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: _statusColor(booking.bookingStatusBsTitle),
-                    ),
+                  // "Paid" and "Booking Confirmed" were shown in the same slot
+                  // as if they were the same kind of answer. They are not — one
+                  // is about the money, the other about the stay — so the card
+                  // now shows both, each in its own place.
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        life,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: lifecycleColors(life).$2,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        pay.label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: pay.fg,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -145,16 +174,4 @@ class BookingCard extends StatelessWidget {
     );
   }
 
-  Color _statusColor(String? status) {
-    switch (status) {
-      case 'Paid':
-        return Colors.green;
-      case 'Booked':
-        return Colors.blue;
-      case 'Cancelled':
-        return Colors.red;
-      default:
-        return Colors.orange;
-    }
-  }
 }

@@ -68,6 +68,9 @@ class Booking {
     String userDetailsUserPnumber;
     String userDetailsUserFullName;
     String bookingStatusBsTitle;
+    /// Payment is its own axis — the status title only sometimes mentions it.
+    bool bookIsPaid;
+    bool bookIsCod;
     dynamic bookingStatusBsCode;
     List<dynamic> attachments;
 
@@ -83,6 +86,8 @@ class Booking {
         required this.userDetailsUserPnumber,
         required this.userDetailsUserFullName,
         required this.bookingStatusBsTitle,
+        this.bookIsPaid = false,
+        this.bookIsCod = false,
         required this.bookingStatusBsCode,
         required this.attachments,
     });
@@ -99,6 +104,9 @@ class Booking {
         userDetailsUserPnumber: json["userDetails.user_pnumber"],
         userDetailsUserFullName: json["userDetails.user_fullName"],
         bookingStatusBsTitle: json["bookingStatus.bs_title"],
+        // MySQL TINYINT arrives as 0/1, JSON sometimes as a bool.
+        bookIsPaid: json["book_is_paid"] == true || json["book_is_paid"] == 1,
+        bookIsCod: json["book_is_cod"] == true || json["book_is_cod"] == 1,
         bookingStatusBsCode: json["bookingStatus.bs_code"],
         attachments: List<dynamic>.from(json["attachments"].map((x) => x)),
     );

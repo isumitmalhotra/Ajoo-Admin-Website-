@@ -9,6 +9,7 @@ import 'package:rent_home/ui/screens_host/booking_history/host_booking_history_c
 import 'package:rent_home/ui/screens_host/calendar/host_calendar_screen.dart';
 import 'package:rent_home/ui/motion/aajoo_motion.dart';
 import 'package:rent_home/utils/stay_clock.dart';
+import '../../../utils/booking_status.dart';
 
 /// Host Bookings — re-skinned to the new design (scaffold host_bookings): teal
 /// app bar + 4 status tabs (Upcoming/Ongoing/Completed/Cancelled) filtering the
@@ -224,24 +225,21 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
     );
   }
 
-  // Status → badge colors.
-  (Color, Color) _statusColors(String status) {
-    final b = _bucket(status);
-    switch (b) {
-      case 1:
-        return (const Color(0xFFEAF6EE), kSuccess); // Ongoing
-      case 2:
-        return (const Color(0xFFEFF3F8), kInk2); // Completed
-      case 3:
-        return (const Color(0xFFFDECEC), kDanger); // Cancelled
-      default:
-        return (const Color(0xFFFFF1E6), kClay); // Upcoming
-    }
-  }
-
   Widget _buildCard(
       HostBookingHistory booking, HostBookingHistoryController controller) {
-    final (badgeBg, badgeFg) = _statusColors(booking.bookingStatusBsTitle);
+    // One chip could only ever answer one of two questions, and the stored
+    // title chose a different one per row: "Booking Confirmed" here, "Paid"
+    // there. Both chips now appear on every card, each always answering the
+    // same thing. See utils/booking_status.dart.
+    final life = lifecycleLabel(
+      booking.bookingStatusBsTitle,
+      ended: hasEnded(booking.bookDetailsBtBookTo),
+      started: isStaying(
+          booking.bookDetailsBtBookFrom, booking.bookDetailsBtBookTo),
+    );
+    final (badgeBg, badgeFg) = lifecycleColors(life);
+    final pay = paymentBadge(
+        isPaid: booking.bookIsPaid, isCod: booking.bookIsCod);
     final guest = booking.userDetailsUserFullName.trim().isEmpty
         ? "Guest"
         : booking.userDetailsUserFullName;
@@ -270,11 +268,23 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                     color: badgeBg, borderRadius: BorderRadius.circular(20)),
-                child: Text(booking.bookingStatusBsTitle.trim(),
+                child: Text(life,
                     style: inter(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: badgeFg)),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                    color: pay.bg, borderRadius: BorderRadius.circular(20)),
+                child: Text(pay.label,
+                    style: inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: pay.fg)),
               ),
             ],
           ),
@@ -291,7 +301,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: kIndigo600)),
-              Text(booking.bookIsCod ? "Cash on Delivery" : "Online Payment",
+              Text(booking.bookIsCod ? "Pay at property" : "Paid online",
                   style: inter(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
