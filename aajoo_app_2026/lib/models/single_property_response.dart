@@ -64,6 +64,15 @@ class SinglePropertyData {
   /// Structured house rules from the listing wizard, or null when the host
   /// never filled them in (the legacy pet/smoking flags carry it then).
   final PropertyHouseRules? houseRules;
+
+  /// What the host ticked in the 5-step wizard, grouped the way the FORM
+  /// grouped it, with labels already resolved server-side from the same
+  /// schema the wizard renders from. A group the host left empty never
+  /// arrives, so the page can render these straight through.
+  final List<AmenityGroup> amenityGroups;
+  final List<LabelledPick> experiences;
+  final List<LabelledPick> views;
+  final List<SpecLine> specifications;
   /// Real average rating and review count from the backend aggregate; null
   /// rating means nobody has reviewed this stay yet.
   final double? rating;
@@ -97,6 +106,10 @@ class SinglePropertyData {
     this.verificationStatus,
     this.nearby = const [],
     this.houseRules,
+    this.amenityGroups = const [],
+    this.experiences = const [],
+    this.views = const [],
+    this.specifications = const [],
     this.rating,
     this.reviewCount = 0,
     this.isLuxury,
@@ -166,6 +179,22 @@ class SinglePropertyData {
           ? PropertyHouseRules.fromJson(
               Map<String, dynamic>.from(json['houseRules'] as Map))
           : null,
+      amenityGroups: (json['amenityGroups'] is List)
+          ? (json['amenityGroups'] as List)
+              .whereType<Map>()
+              .map((e) => AmenityGroup.fromJson(Map<String, dynamic>.from(e)))
+              .where((g) => g.items.isNotEmpty)
+              .toList()
+          : const [],
+      experiences: LabelledPick.listFrom(json['experiences']),
+      views: LabelledPick.listFrom(json['views']),
+      specifications: (json['specifications'] is List)
+          ? (json['specifications'] as List)
+              .whereType<Map>()
+              .map((e) => SpecLine.fromJson(Map<String, dynamic>.from(e)))
+              .where((l) => l.value.isNotEmpty)
+              .toList()
+          : const [],
       rating: json['rating'] == null
           ? null
           : double.tryParse(json['rating'].toString()),
@@ -306,6 +335,54 @@ class SinglePropertyDetails {
 
 /// One nearby category ("Transport") and the places under it, as
 /// GET /properties/:id returns them. Distances are in kilometres.
+/// One labelled thing the host picked (an amenity, a view, an experience).
+class LabelledPick {
+  final String key;
+  final String label;
+  const LabelledPick({required this.key, required this.label});
+
+  factory LabelledPick.fromJson(Map<String, dynamic> json) => LabelledPick(
+        key: (json['key'] ?? '').toString(),
+        label: (json['label'] ?? json['key'] ?? '').toString(),
+      );
+
+  static List<LabelledPick> listFrom(dynamic raw) => raw is List
+      ? raw
+          .whereType<Map>()
+          .map((e) => LabelledPick.fromJson(Map<String, dynamic>.from(e)))
+          .where((p) => p.label.isNotEmpty)
+          .toList()
+      : const [];
+}
+
+/// A group of amenities as the wizard asked for them (Bathroom, Internet…).
+class AmenityGroup {
+  final String key;
+  final String label;
+  final List<LabelledPick> items;
+  const AmenityGroup({required this.key, required this.label, required this.items});
+
+  factory AmenityGroup.fromJson(Map<String, dynamic> json) => AmenityGroup(
+        key: (json['key'] ?? '').toString(),
+        label: (json['label'] ?? '').toString(),
+        items: LabelledPick.listFrom(json['items']),
+      );
+}
+
+/// A step-2 property detail, already formatted for printing.
+class SpecLine {
+  final String key;
+  final String label;
+  final String value;
+  const SpecLine({required this.key, required this.label, required this.value});
+
+  factory SpecLine.fromJson(Map<String, dynamic> json) => SpecLine(
+        key: (json['key'] ?? '').toString(),
+        label: (json['label'] ?? '').toString(),
+        value: (json['value'] ?? '').toString(),
+      );
+}
+
 class NearbyGroup {
   final String key;
   final String label;

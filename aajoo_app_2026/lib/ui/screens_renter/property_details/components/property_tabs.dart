@@ -494,10 +494,101 @@ class _PropertyDetailPanelsState extends State<PropertyDetailPanels> {
     );
   }
 
+  /// A row of ticked things — one amenity group, the views, the experiences.
+  Widget _pickWrap(List<LabelledPick> picks) => Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: picks
+            .map((p) => Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: kIndigo50,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.check_circle_outline,
+                          size: 15, color: kIndigo600),
+                      const SizedBox(width: 6),
+                      Text(p.label,
+                          style: inter(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: kIndigo600)),
+                    ],
+                  ),
+                ))
+            .toList(),
+      );
+
   Widget _amenities() {
     // Real amenities only — never the global tag list, which puts somebody
     // else's tags under this stay's heading.
     final list = _s?.amenities ?? widget.fallback.amenities;
+    final groups = _s?.amenityGroups ?? const <AmenityGroup>[];
+    final views = _s?.views ?? const <LabelledPick>[];
+    final experiences = _s?.experiences ?? const <LabelledPick>[];
+    final specs = _s?.specifications ?? const <SpecLine>[];
+
+    // Grouped exactly as the host filled them in. The flat list below is the
+    // legacy catalogue and only ever holds the picks that happen to have a
+    // catalogue counterpart — 8 of one host's 42.
+    if (groups.isNotEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const PanelTitle('What this place offers'),
+          for (final g in groups) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 8),
+              child: Text(g.label.toUpperCase(),
+                  style: inter(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: kMuted,
+                      letterSpacing: .4)),
+            ),
+            _pickWrap(g.items),
+            const SizedBox(height: 14),
+          ],
+          if (views.isNotEmpty) ...[
+            const PanelTitle("What you'll see"),
+            _pickWrap(views),
+            const SizedBox(height: 14),
+          ],
+          if (experiences.isNotEmpty) ...[
+            const PanelTitle('Things to do here'),
+            _pickWrap(experiences),
+            const SizedBox(height: 14),
+          ],
+          if (specs.isNotEmpty) ...[
+            const PanelTitle('Property details'),
+            for (final sp in specs)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 7),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                        child: Text(sp.label,
+                            style: inter(fontSize: 13, color: kMuted))),
+                    const SizedBox(width: 12),
+                    Text(sp.value,
+                        textAlign: TextAlign.right,
+                        style: inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: kInk)),
+                  ],
+                ),
+              ),
+          ],
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
