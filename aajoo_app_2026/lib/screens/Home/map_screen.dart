@@ -57,10 +57,19 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _checkLocationPermission() async {
     LocationPermission permission = await Geolocator.checkPermission();
 
+    // ASK, don't just look. checkPermission() reports `denied` while the OS
+    // prompt is still on screen waiting to be answered — so this used to raise
+    // our own "Location Permission Denied" dialog on top of the system one,
+    // and it stayed up over a map that had resolved and a feed that had
+    // already loaded 98 homes. Requesting awaits the person's actual answer.
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
     if (permission == LocationPermission.denied ||
         permission == LocationPermission.deniedForever) {
+      if (mounted) setState(() => _isCheckingLocation = false);
       _showPermissionDeniedDialog();
-      setState(() => _isCheckingLocation = false);
       return;
     }
 
@@ -214,7 +223,12 @@ class _MapScreenState extends State<MapScreen> {
     return BitmapDescriptor.fromBytes(data.buffer.asUint8List());
   }
 
+  /// Guards against a second copy stacking on the first.
+  bool _permissionDialogOpen = false;
+
   void _showPermissionDeniedDialog() {
+    if (_permissionDialogOpen || !mounted) return;
+    _permissionDialogOpen = true;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -236,7 +250,7 @@ class _MapScreenState extends State<MapScreen> {
           ),
         ],
       ),
-    );
+    ).whenComplete(() => _permissionDialogOpen = false);
   }
 
   Future<void> _getUserCurrentLocation() async {

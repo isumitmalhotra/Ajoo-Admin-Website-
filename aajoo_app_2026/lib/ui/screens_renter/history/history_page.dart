@@ -48,9 +48,15 @@ class _HistoryPageState extends State<HistoryPage> {
     final s = (title ?? '').toLowerCase();
     if (s.contains('cancel')) return 3; // Cancelled — dates are irrelevant.
 
+    // A host who has CHECKED THE GUEST IN has said the stay is happening —
+    // that beats the clock. Without this, a guest checked in at 9am sat under
+    // Upcoming until the 2pm check-in hour while their own card read
+    // "Staying now": the same card disagreeing with the tab it was filed in.
+    final checkedIn = s.contains('check in') || s.contains('check-in');
+
     if (parseStayDate(from) != null && parseStayDate(to) != null) {
       if (hasEnded(to)) return 2; // Completed
-      if (isStaying(from, to)) return 1; // Ongoing
+      if (checkedIn || isStaying(from, to)) return 1; // Ongoing
       return 0; // Upcoming
     }
 

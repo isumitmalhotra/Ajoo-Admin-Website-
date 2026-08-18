@@ -24,6 +24,8 @@ import '../../../constants.dart';
 import '../../../utils/fonts.dart';
 import '../../motion/aajoo_motion.dart';
 import 'package:rent_home/utils/booking_status.dart';
+import 'package:rent_home/ui/screens_host/host_tab_provider.dart';
+import 'package:provider/provider.dart';
 
 /// Host Dashboard — re-skinned to the new teal/orange design (scaffold
 /// host_dashboard): in-body header, greeting, earnings card, stat grid,
@@ -43,10 +45,28 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
   static const Color _teal50 = kIndigo50;
   static const Color _orange50 = Color(0xFFFFF1E6);
 
+  /// Dashboard's slot in the shell's IndexedStack (see host_tab_provider).
+  static const int _dashboardTab = 2;
+  bool _wasVisible = true;
+
   @override
   void initState() {
     super.initState();
     _refresh();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // The shell keeps every tab alive in an IndexedStack, so initState runs
+    // exactly once per session — the figures here were whatever they had been
+    // at login. A host who checked a guest in, then came back, still read
+    // "Ongoing Stays 0" and reasonably doubted the action. Re-fetch each time
+    // this tab becomes the visible one.
+    final isVisible =
+        context.watch<HostTabProvider>().currentTab == _dashboardTab;
+    if (isVisible && !_wasVisible) _refresh();
+    _wasVisible = isVisible;
   }
 
   Future<void> _refresh() async {

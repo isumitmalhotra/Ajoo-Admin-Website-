@@ -625,7 +625,21 @@ class AuthController extends GetxController {
       // example, a guest account asking for host mode), so there is no
       // failure branch to check here — the catch below reports it.
       await authService.switchUserMode(isHost);
+
+      // The new token carries the new mode — but the CACHED user still said
+      // the old one, and this re-saved that stale copy verbatim. The root
+      // route picks which shell to show from that cache, so "Switch to guest"
+      // swapped the token and then landed the host straight back on the host
+      // dashboard: the control appeared to do nothing at all.
+      //
+      // Set the flag to the mode that was ASKED FOR, and do not refresh it
+      // from /user/detail: that endpoint reports the account's CAPABILITY
+      // (this account is a host) and would immediately re-assert isHost=true,
+      // sending the guest straight back to the host shell. On this device the
+      // flag means "which side am I using", which is exactly what the new
+      // token now says too.
       if (userData.value != null) {
+        userData.value = userData.value!.copyWith(isHost: isHost);
         await authService.saveUserData(userData.value!.toJson());
       }
       showAlert('Success', 'Mode switched successfully', false);

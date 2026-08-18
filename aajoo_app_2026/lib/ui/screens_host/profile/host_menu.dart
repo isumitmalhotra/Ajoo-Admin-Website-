@@ -106,21 +106,9 @@ List<HostMenuEntry> hostMenuEntries({VoidCallback? beforeNavigate}) {
       label: 'Privacy Policy',
       onTap: () => go(() => const PrivacyPolicyPage()),
     ),
-    // The host menu ended at Logout, so the only way back to the guest side of
-    // the app was to sign out and sign in again. AuthController.switchMode and
-    // /user/switch-mode already exist and the guest side already offers the
-    // reverse — this was simply never wired up here.
-    HostMenuEntry(
-      icon: Iconsax.repeat,
-      label: 'Switch to guest',
-      subtitle: 'Browse and book stays',
-      onTap: () {
-        beforeNavigate?.call();
-        if (Get.isRegistered<AuthController>()) {
-          Get.find<AuthController>().switchMode(false);
-        }
-      },
-    ),
+    // No "Switch to guest" here. A host who wants to browse as a guest signs in
+    // on the guest side; carrying a second mode through the whole host shell
+    // bought nothing the product actually needs. Removed on request.
     HostMenuEntry(
       icon: Iconsax.logout,
       label: 'Logout',

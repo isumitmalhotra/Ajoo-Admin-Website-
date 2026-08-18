@@ -72,9 +72,15 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
     final s = (title ?? '').toLowerCase();
     if (s.contains('cancel')) return 3; // Cancelled — dates are irrelevant.
 
+    // A host who has CHECKED THE GUEST IN has said the stay is happening —
+    // that beats the clock. Without this, a guest checked in at 9am sat under
+    // Upcoming until the 2pm check-in hour while their own card read
+    // "Staying now": the same card disagreeing with the tab it was filed in.
+    final checkedIn = s.contains('check in') || s.contains('check-in');
+
     if (parseStayDate(from) != null && parseStayDate(to) != null) {
       if (hasEnded(to)) return 2; // Completed
-      if (isStaying(from, to)) return 1; // Ongoing
+      if (checkedIn || isStaying(from, to)) return 1; // Ongoing
       return 0; // Upcoming
     }
 
@@ -225,6 +231,20 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
     );
   }
 
+  /// 6300.0 -> "6,300"; 6300.5 -> "6,300.50".
+  static String _money(num v) {
+    final whole = v == v.roundToDouble();
+    final s = whole ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
+    final parts = s.split('.');
+    final digits = parts[0];
+    final buf = StringBuffer();
+    for (var i = 0; i < digits.length; i++) {
+      if (i > 0 && (digits.length - i) % 3 == 0) buf.write(',');
+      buf.write(digits[i]);
+    }
+    return parts.length > 1 ? '${buf.toString()}.${parts[1]}' : buf.toString();
+  }
+
   Widget _buildCard(
       HostBookingHistory booking, HostBookingHistoryController controller) {
     // One chip could only ever answer one of two questions, and the stored
@@ -296,7 +316,10 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("₹ ${booking.bookPrice}",
+              // The TOTAL the guest owes, not the room subtotal — and without
+              // the raw double's trailing ".0". The detail page always showed
+              // the total, so the two screens disagreed about one booking.
+              Text("₹ ${_money(booking.bookTotalAmt > 0 ? booking.bookTotalAmt : booking.bookPrice)}",
                   style: fraunces(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,

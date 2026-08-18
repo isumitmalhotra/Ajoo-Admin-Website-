@@ -966,6 +966,29 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                         ? () {
                                             final input = double.tryParse(
                                                 offerController.text);
+                                            // Negotiation argues the price
+                                            // DOWN. Offering more than the
+                                            // listing asks is a typo at best —
+                                            // the guest could simply book at
+                                            // the listed price. The server
+                                            // refuses these too; catching it
+                                            // here saves a round trip and says
+                                            // so in the guest's own terms.
+                                            final listPrice = double.tryParse(
+                                                    widget.property
+                                                        .propertyPrice) ??
+                                                0;
+                                            if (input != null &&
+                                                listPrice > 0 &&
+                                                input >= listPrice) {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(SnackBar(
+                                                content: Text(
+                                                    'This stay lists at ₹${listPrice.toStringAsFixed(0)} a night — offer less than that, or just book it.'),
+                                                backgroundColor: Colors.red,
+                                              ));
+                                              return;
+                                            }
                                             if (input != null && input > 0) {
                                               negotiationController
                                                   .sendNegotiationMessage(

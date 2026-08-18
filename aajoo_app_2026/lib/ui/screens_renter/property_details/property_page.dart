@@ -2422,7 +2422,15 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
           lng: double.tryParse(_single?.propertyLongitude ?? widget.long),
           checkIn: _fmtStayDate(selectedDate),
           checkOut: selectedDateTo == null ? null : _fmtStayDate(selectedDateTo!),
-          amount: '₹$currentPriceString',
+          // The GRAND total, not the room subtotal: a pay-at-property guest
+          // owes the taxed amount on arrival, and that is what the server
+          // stored. Saying "Rs 6000 due" after quoting Rs 6300 is a different
+          // number for the same booking.
+          amount: '₹${priceStay(
+            roomSubtotal: double.tryParse(currentPriceString) ?? 0,
+            perNightTariff: currentPrice,
+            discount: _discountOnRoom,
+          ).total.toStringAsFixed(0)}',
           isPayOnArrival: isCod,
         ));
   }

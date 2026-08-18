@@ -7,6 +7,20 @@ import 'package:rent_home/ui/screens_renter/history/history_description/history_
 import '../../../../utils/booking_status.dart';
 import '../../../../utils/stay_clock.dart';
 
+/// 6300.0 -> "6,300"; keeps paise only when they exist.
+String _money(num v) {
+  final whole = v == v.roundToDouble();
+  final str = whole ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
+  final parts = str.split('.');
+  final digits = parts[0];
+  final buf = StringBuffer();
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 == 0) buf.write(',');
+    buf.write(digits[i]);
+  }
+  return parts.length > 1 ? '${buf.toString()}.${parts[1]}' : buf.toString();
+}
+
 class BookingCard extends StatelessWidget {
   const BookingCard({
     super.key,
@@ -98,7 +112,10 @@ class BookingCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Amount: ₹${booking.book_price ?? 0}",
+                    // The TOTAL the guest owes (room + GST), matching the
+                    // booking detail and the confirmation screen. The room
+                    // subtotal alone made one booking show two prices.
+                    "Amount: ₹${_money((booking.bookTotalAmt ?? 0) > 0 ? booking.bookTotalAmt! : (booking.book_price ?? 0))}",
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
