@@ -217,6 +217,29 @@ class HostService {
     }
   }
 
+  /// The mirror of no-show: the guest DID arrive, and the host says so.
+  /// Returns the server's message on failure via exception.
+  Future<void> markBookingCheckIn(String bookingId) async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final response = await _dio
+          .post("/host/booking/check-in", data: {"bookingId": bookingId});
+      final body = response.data;
+      if (body is! Map || body['success'] != true) {
+        throw Exception(
+            (body is Map ? body['message'] : null)?.toString() ??
+                'Could not check the guest in.');
+      }
+    } on DioException catch (err) {
+      final data = err.response?.data;
+      final msg = data is Map ? data['message'] : null;
+      throw Exception(msg is List
+          ? msg.join(', ')
+          : (msg?.toString() ?? 'Could not check the guest in.'));
+    }
+  }
+
   Future<bool> addUserReview(
       int rating, String id, String description, String title) async {
     final token = await const FlutterSecureStorage().read(key: "user_token");

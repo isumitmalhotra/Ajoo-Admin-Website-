@@ -9,6 +9,8 @@ import 'package:rent_home/models/properties_response_model.dart';
 import 'package:rent_home/models/single_property_response.dart';
 import 'package:rent_home/service/device_service.dart';
 import 'package:rent_home/service/property_service.dart';
+import 'package:rent_home/service/host_service.dart';
+import 'package:rent_home/utils/stay_clock.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/negotitaion_page.dart';
 import 'package:rent_home/ui/screens_host/support/host_support_screen.dart';
@@ -41,6 +43,38 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
 
   bool get _isCancelled =>
       b.bookingStatusBsTitle.toLowerCase().contains('cancel');
+
+  bool get _isCheckedIn {
+    final t = b.bookingStatusBsTitle.toLowerCase();
+    return t.contains('check in') || t.contains('check-in');
+  }
+
+  /// Offer Check-in only while it can be true: stay started, not ended, and
+  /// the booking is live. The server enforces the same rules.
+  bool get _canCheckIn =>
+      !_isCancelled &&
+      !_isCheckedIn &&
+      isStaying(b.bookDetailsBtBookFrom, b.bookDetailsBtBookTo);
+
+  bool _checkingIn = false;
+
+  Future<void> _markCheckedIn() async {
+    if (_checkingIn) return;
+    setState(() => _checkingIn = true);
+    try {
+      await HostService().markBookingCheckIn(b.bookId);
+      // The status chip above reads from the model; update it so the page
+      // tells the truth without a refetch.
+      setState(() => b.bookingStatusBsTitle = 'Check In');
+      Fluttertoast.showToast(
+          msg: "Guest checked in — they've been sent a welcome note.");
+    } catch (e) {
+      Fluttertoast.showToast(
+          msg: e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _checkingIn = false);
+    }
+  }
 
   @override
   void initState() {
@@ -254,6 +288,37 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
   /// Support, and the guest. Mirrors the guest's own booking page: on a
   /// cancelled booking the guest is not shown at all, and support remains.
   Widget _actions() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_canCheckIn) ...[
+          // The arrival control the host portal never had: one tap says
+          // "the guest is here", flips the booking to Check In everywhere
+          // (both apps read it as "Staying now") and thanks the guest by
+          // email.
+          ElevatedButton.icon(
+            onPressed: _checkingIn ? null : _markCheckedIn,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kIndigo,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            icon: const Icon(Icons.meeting_room_outlined, size: 18),
+            label: Text(
+                _checkingIn ? 'Checking in…' : 'Mark guest as checked-in',
+                style: inter(fontSize: 14, fontWeight: FontWeight.w700)),
+          ),
+          const SizedBox(height: 10),
+        ],
+        _actionsRow(),
+      ],
+    );
+  }
+
+  Widget _actionsRow() {
     return Row(
       children: [
         Expanded(

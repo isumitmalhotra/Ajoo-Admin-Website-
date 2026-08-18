@@ -30,3 +30,6 @@ aajooBackend-2026/config/db.config.js
 aajooBackend-2026/utils/serviceFirebase.json
 aajooBackend-2026/uploads/
 aajooBackend-2026/logs/
+
+# Test builds are artifacts, not source
+*.apk
