@@ -13,7 +13,7 @@ import 'package:rent_home/ui/screens_renter/bookmark_properties/bookmark_propert
 import 'package:rent_home/ui/screens_renter/dashboard/dashboard_screen.dart';
 import 'package:rent_home/ui/screens_renter/history/history_page.dart';
 import 'package:rent_home/ui/screens_renter/safety/safety_page.dart';
-import 'package:rent_home/ui/screens_common/update_profile/update_profile_screen.dart';
+import 'package:rent_home/ui/widgets/email_otp_sheet.dart';
 import 'package:rent_home/utils/address_autofill.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:image_picker/image_picker.dart';
@@ -22,6 +22,7 @@ import 'dart:io';
 import '../../screens_common/auth/auth_controller.dart';
 import '../../../controller/common_controller.dart';
 import '../../../data/models/update_user_model.dart';
+import '../../../data/models/user_models.dart';
 import 'package:rent_home/ui/screens_host/add_property/widgets/state_city_dropdowns.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -41,6 +42,12 @@ class _ProfileScreenState extends State<ProfileScreen>
   final _scrollController = ScrollController();
   final ImagePicker _picker = ImagePicker();
 
+  /// Preview-first: the tab opens on a read-only view of the saved record —
+  /// same pattern as the host profile — and this flips to true only when the
+  /// user explicitly asks to edit. Just checking your profile no longer means
+  /// staring at an editable form.
+  bool _editing = false;
+
   // Form controllers
   final TextEditingController _fnameController = TextEditingController();
   final TextEditingController _lnameController = TextEditingController();
@@ -59,30 +66,40 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
     try {
       _animationController.forward();
-      _initializeControllers();
+      // Server truth first: the preview must show the saved record, not
+      // whatever was cached at login. skipLogout keeps a flaky refresh from
+      // signing the user out of a tab they only opened to look at.
+      if (authController.isLoggedIn.value) {
+        authController.getUserDetails(skipLogoutOnError: true);
+      }
     } catch (e) {
       Get.snackbar('Error', 'Failed to initialize profile: $e');
     }
   }
 
-  void _initializeControllers() {
-    try {
-      final userData = authController.userData.value;
-      if (userData != null) {
-        final names = userData.fullName.trim().split(' ');
-        _fnameController.text = names.isNotEmpty ? names.first : '';
-        _lnameController.text = names.length > 1 ? names.last : '';
-        _phoneController.text = userData.phoneNumber;
-        _addressController.text = userData.address;
-        _cityController.text = userData.city;
-        _stateController.text = userData.state;
-        _zipcodeController.text = userData.zipcode;
-      } else {
-        Get.snackbar('Warning', 'User data not available');
-      }
-    } catch (e) {
-      Get.snackbar('Error', 'Failed to load user data: $e');
-    }
+  /// Seed the edit form from the CURRENT userData. Called at edit-entry time
+  /// (not once in initState) so the form always starts from the freshest
+  /// fetched record — a form seeded from stale or missing data and then
+  /// saved is a data-wipe machine.
+  void _seedControllersFromUser() {
+    final userData = authController.userData.value;
+    if (userData == null) return;
+    // Everything after the first word is the last name — "Anna Maria Jose"
+    // must not lose its middle on a round-trip through this form.
+    final names = userData.fullName.trim().split(RegExp(r'\s+'));
+    _fnameController.text = names.isNotEmpty ? names.first : '';
+    _lnameController.text = names.length > 1 ? names.sublist(1).join(' ') : '';
+    _phoneController.text = userData.phoneNumber;
+    _addressController.text = userData.address;
+    _cityController.text = userData.city;
+    _stateController.text = userData.state;
+    _zipcodeController.text = userData.zipcode;
+  }
+
+  void _enterEditMode() {
+    if (authController.userData.value == null) return;
+    _seedControllersFromUser();
+    setState(() => _editing = true);
   }
 
   // Helpers: document type specific validation
@@ -551,21 +568,51 @@ class _ProfileScreenState extends State<ProfileScreen>
         }
       }
 
+      // Changing the phone is a sensitive change: the server emails a
+      // one-time code to the account's registered address and refuses the
+      // new number without it. An unchanged phone saves exactly as before.
+      final currentPhone =
+          (authController.userData.value?.phoneNumber ?? '').trim();
+      final newPhone = _phoneController.text.trim();
+      String? otp;
+      if (newPhone != currentPhone) {
+        final sent =
+            await authController.authService.requestSecurityOtp('phone');
+        if (!sent.success) {
+          Get.snackbar('Error', sent.message,
+              snackPosition: SnackPosition.TOP,
+              backgroundColor: Colors.red[100],
+              colorText: Colors.red[900]);
+          return;
+        }
+        otp = await showEmailOtpSheet(
+          email: authController.userData.value?.email ?? 'your email',
+          title: 'Confirm your new number',
+          resend: () => authController.authService.requestSecurityOtp('phone'),
+        );
+        // Backing out of the code sheet abandons the save — nothing changes.
+        if (otp == null) return;
+      }
+
       final request = UserUpdateRequest(
         userFname: _fnameController.text.trim(),
         userLname: _lnameController.text.trim(),
-        userPnumber: _phoneController.text.trim(),
+        userPnumber: newPhone,
         userAddress: _addressController.text.trim(),
         userCity: _cityController.text.trim(),
         userState: _stateController.text.trim(),
         userZipcode: _zipcodeController.text.trim(),
         docType: docTypeIdToSend,
         docNumber: docNumberToSend,
+        otp: otp,
       );
 
       final result = await authController.updateUserProfile(request);
 
       if (result.isSuccess) {
+        // Back to the read-only view showing the freshly saved record
+        // (updateUserProfile refetched /user/detail already).
+        if (mounted) setState(() => _editing = false);
         showDialog(
           context: context,
           builder: (dialogContext) {
@@ -758,6 +805,12 @@ class _ProfileScreenState extends State<ProfileScreen>
           if (authController.isLoading.value) {
             return _buildShimmerLoading();
           }
+          // Signed in but the fetch failed and nothing is cached: say so and
+          // offer a retry, rather than pretending the account is empty.
+          if (authController.isLoggedIn.value &&
+              authController.error.value.isNotEmpty) {
+            return _buildErrorState(context);
+          }
           return _buildSignedOutState(context);
         }
 
@@ -876,245 +929,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                     child: FadeInAnimation(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Form(
-                          key: _formKey,
-                          child: Card(
-                            elevation: 8,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Personal Information',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  _buildAnimatedTextField(
-                                    'First Name',
-                                    _fnameController,
-                                    inputFormatters: AppInputFormatters.name,
-                                  ),
-                                  _buildAnimatedTextField(
-                                    'Last Name',
-                                    _lnameController,
-                                    inputFormatters: AppInputFormatters.name,
-                                  ),
-                                  _buildAnimatedTextField(
-                                      'Phone', _phoneController,
-                                      keyboardType: TextInputType.phone,
-                                      maxlength: 10,
-                                      inputFormatters:
-                                          AppInputFormatters.mobile),
-                                  _buildAddressAutofill(),
-                                  _buildAnimatedTextField(
-                                      'Address', _addressController,
-                                      maxlength: 100),
-                                  // Same reference-table dropdowns as the
-                                  // listing wizard — this screen had a lone
-                                  // free-text City with no state at all.
-                                  StateCityDropdowns(
-                                    stateController: _stateController,
-                                    cityController: _cityController,
-                                  ),
-                                  _buildAnimatedTextField(
-                                      'Zipcode', _zipcodeController,
-                                      maxlength: 6,
-                                      keyboardType: TextInputType.number,
-                                      inputFormatters:
-                                          AppInputFormatters.pincode),
-                                  const SizedBox(height: 20),
-                                  // KYC section.
-                                  //
-                                  // A-82 removed the identity check from
-                                  // signup, so this is now the only place a
-                                  // renter can verify ahead of time rather
-                                  // than being stopped at checkout. It runs
-                                  // DIDIT — the same check the booking gate
-                                  // runs — instead of the legacy manual
-                                  // upload, which produced a document nothing
-                                  // verified.
-                                  if (authController.userData.value?.kycDocs ==
-                                      null)
-                                    Card(
-                                      color: kCream,
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12)),
-                                      child: ListTile(
-                                        leading: const Icon(
-                                            Icons.verified_user_outlined,
-                                            color: kprimaryColor,
-                                            size: 24),
-                                        title: const Text(
-                                          'Verify your identity',
-                                          style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600),
-                                        ),
-                                        subtitle: const Text(
-                                          'Do it now and checkout stays instant later',
-                                          style: TextStyle(
-                                              fontSize: 14, color: Colors.grey),
-                                        ),
-                                        trailing: const Icon(
-                                            Iconsax.arrow_right_3,
-                                            color: kprimaryColor,
-                                            size: 20),
-                                        onTap: _reRunKyc,
-                                      ),
-                                    )
-                                  else
-                                    Card(
-                                      color: Colors.green[50],
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12)),
-                                      child: Column(
-                                        children: [
-                                          ListTile(
-                                            leading: Container(
-                                              padding: const EdgeInsets.all(8),
-                                              decoration: BoxDecoration(
-                                                color: Colors.green,
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                              child: const Icon(
-                                                Iconsax.document_text,
-                                                color: kCream,
-                                                size: 20,
-                                              ),
-                                            ),
-                                            title: const Text(
-                                              'KYC Document Uploaded',
-                                              style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Colors.green),
-                                            ),
-                                            subtitle: Text(
-                                              'Document Type: ${authController.userData.value?.kycDocs?.docTypeDTitle ?? "Unknown"}\nDocument Number: ${authController.userData.value?.kycDocs?.udNumber ?? "Unknown"}',
-                                              style: const TextStyle(
-                                                  fontSize: 14,
-                                                  color: Colors.grey),
-                                            ),
-                                            // This chip said "Verified" for
-                                            // anyone who had uploaded a file.
-                                            // Uploading a document is not
-                                            // being verified — same mistake as
-                                            // the listing badge that read
-                                            // is_verify. It reads the DIDIT
-                                            // decision now, and says "Under
-                                            // review" until there is one.
-                                            trailing: Builder(builder: (_) {
-                                              final verified = authController
-                                                      .userData
-                                                      .value
-                                                      ?.isKycVerified ??
-                                                  false;
-                                              return Container(
-                                                padding: const EdgeInsets
-                                                    .symmetric(
-                                                    horizontal: 12,
-                                                    vertical: 6),
-                                                decoration: BoxDecoration(
-                                                  color: verified
-                                                      ? Colors.green
-                                                      : kClay,
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                ),
-                                                child: Text(
-                                                  verified
-                                                      ? 'Verified'
-                                                      : 'Under review',
-                                                  style: const TextStyle(
-                                                      color: kCream,
-                                                      fontSize: 12,
-                                                      fontWeight:
-                                                          FontWeight.bold),
-                                                ),
-                                              );
-                                            }),
-                                          ),
-                                          const Divider(
-                                              height: 1, color: Colors.grey),
-                                          ListTile(
-                                            leading: const Icon(Iconsax.eye,
-                                                color: kprimaryColor, size: 24),
-                                            title: const Text(
-                                              'View Document',
-                                              style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: kprimaryColor),
-                                            ),
-                                            subtitle: const Text(
-                                              'View your uploaded KYC document',
-                                              style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: Colors.grey),
-                                            ),
-                                            trailing: const Icon(
-                                                Iconsax.arrow_right_3,
-                                                color: kprimaryColor,
-                                                size: 20),
-                                            onTap: () =>
-                                                _showDocumentViewer(context),
-                                          ),
-                                          const Divider(
-                                              height: 1, color: Colors.grey),
-                                          ListTile(
-                                            leading: const Icon(
-                                                Iconsax.document_upload,
-                                                color: kprimaryColor,
-                                                size: 24),
-                                            title: const Text(
-                                              'Update documents',
-                                              style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: kprimaryColor),
-                                            ),
-                                            subtitle: const Text(
-                                              'Verify your identity again with a new document',
-                                              style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: Colors.grey),
-                                            ),
-                                            trailing: const Icon(
-                                                Iconsax.arrow_right_3,
-                                                color: kprimaryColor,
-                                                size: 20),
-                                            // Runs DIDIT again rather than the
-                                            // manual upload sheet (A-66).
-                                            // Updating your ID should go
-                                            // through the same check that
-                                            // verified it the first time,
-                                            // otherwise a new document lands
-                                            // unverified behind a badge that
-                                            // still says otherwise.
-                                            onTap: _reRunKyc,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  const SizedBox(height: 20),
-                                  _buildUpdateButton(),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
+                        child: _editing
+                            ? _buildEditCard()
+                            : _buildPreviewCard(user),
                       ),
                     ),
                   ),
@@ -1125,6 +942,10 @@ class _ProfileScreenState extends State<ProfileScreen>
               // the bottom-nav shell dropped the drawer that used to hold the
               // other copy. A signed-in renter had no way to sign out of the
               // app at all.
+              //
+              // Hidden while editing — a form with Save/Cancel should not sit
+              // above ten unrelated navigation rows.
+              if (!_editing)
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 sliver: SliverList(
@@ -1146,6 +967,383 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
         );
       }),
+    );
+  }
+
+  /// Read-only view of the saved record — what "just checking my profile"
+  /// shows. Values come straight from the fetched userData, never from the
+  /// form controllers, so it can't display half-edited state.
+  Widget _buildPreviewCard(UserDetail user) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Card(
+          elevation: 8,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Personal Information',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    if (user.isKycVerified)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: kSuccess,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.verified, color: kCream, size: 14),
+                            SizedBox(width: 4),
+                            Text(
+                              'Verified',
+                              style: TextStyle(
+                                  color: kCream,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _previewRow(Icons.person_outline, 'Name', user.fullName),
+                _previewRow(Icons.email_outlined, 'Email', user.email),
+                _previewRow(Icons.phone_outlined, 'Phone', user.phoneNumber),
+                _previewRow(Icons.map_outlined, 'State', user.state),
+                _previewRow(
+                    Icons.location_city_outlined, 'City', user.city),
+                _previewRow(Icons.home_outlined, 'Address', user.address),
+                _previewRow(Icons.markunread_mailbox_outlined, 'PIN code',
+                    user.zipcode),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: _enterEditMode,
+                    icon: const Icon(Icons.edit, size: 18),
+                    label: const Text(
+                      'Edit Profile',
+                      style: TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      elevation: 2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildKycSection(),
+      ],
+    );
+  }
+
+  Widget _previewRow(IconData icon, String label, String value) {
+    final trimmed = value.trim();
+    final missing = trimmed.isEmpty;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: kIndigo600),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 76,
+            child: Text(
+              label,
+              style: const TextStyle(
+                  fontSize: 13, color: kMuted, fontWeight: FontWeight.w500),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              missing ? 'Not added yet' : trimmed,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: missing ? FontWeight.w400 : FontWeight.w600,
+                fontStyle: missing ? FontStyle.italic : FontStyle.normal,
+                color: missing ? kMuted : kInk,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The editable form — reached only through "Edit Profile", seeded from a
+  /// successfully fetched record just before it opens.
+  Widget _buildEditCard() {
+    return Form(
+      key: _formKey,
+      child: Card(
+        elevation: 8,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Edit Profile',
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  TextButton(
+                    // Discards the draft; the preview still shows the saved
+                    // record, and re-entering edit re-seeds from it.
+                    onPressed: authController.isLoading.value
+                        ? null
+                        : () => setState(() => _editing = false),
+                    child: const Text('Cancel',
+                        style: TextStyle(color: kMuted)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _buildAnimatedTextField(
+                'First Name',
+                _fnameController,
+                inputFormatters: AppInputFormatters.name,
+              ),
+              _buildAnimatedTextField(
+                'Last Name',
+                _lnameController,
+                inputFormatters: AppInputFormatters.name,
+              ),
+              _buildAnimatedTextField('Phone', _phoneController,
+                  keyboardType: TextInputType.phone,
+                  maxlength: 10,
+                  inputFormatters: AppInputFormatters.mobile),
+              const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: Text(
+                  "Changing your mobile number? We'll email a code to your "
+                  'registered address to confirm it.',
+                  style: TextStyle(fontSize: 12, color: kMuted),
+                ),
+              ),
+              _buildAddressAutofill(),
+              _buildAnimatedTextField('Address', _addressController,
+                  maxlength: 100),
+              // Same reference-table dropdowns as the listing wizard — this
+              // screen had a lone free-text City with no state at all.
+              StateCityDropdowns(
+                stateController: _stateController,
+                cityController: _cityController,
+              ),
+              _buildAnimatedTextField('Zipcode', _zipcodeController,
+                  maxlength: 6,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: AppInputFormatters.pincode),
+              const SizedBox(height: 20),
+              _buildUpdateButton(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// KYC section (preview only).
+  ///
+  /// A-82 removed the identity check from signup, so this is now the only
+  /// place a renter can verify ahead of time rather than being stopped at
+  /// checkout. It runs DIDIT — the same check the booking gate runs —
+  /// instead of the legacy manual upload, which produced a document nothing
+  /// verified.
+  Widget _buildKycSection() {
+    if (authController.userData.value?.kycDocs == null) {
+      return Card(
+        color: kCream,
+        elevation: 0,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: ListTile(
+          leading: const Icon(Icons.verified_user_outlined,
+              color: kprimaryColor, size: 24),
+          title: const Text(
+            'Verify your identity',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          subtitle: const Text(
+            'Do it now and checkout stays instant later',
+            style: TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+          trailing: const Icon(Iconsax.arrow_right_3,
+              color: kprimaryColor, size: 20),
+          onTap: _reRunKyc,
+        ),
+      );
+    }
+    return Card(
+      color: Colors.green[50],
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        children: [
+          ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.green,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Iconsax.document_text,
+                color: kCream,
+                size: 20,
+              ),
+            ),
+            title: const Text(
+              'KYC Document Uploaded',
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.green),
+            ),
+            subtitle: Text(
+              'Document Type: ${authController.userData.value?.kycDocs?.docTypeDTitle ?? "Unknown"}\nDocument Number: ${authController.userData.value?.kycDocs?.udNumber ?? "Unknown"}',
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+            // This chip said "Verified" for anyone who had uploaded a file.
+            // Uploading a document is not being verified — it reads the
+            // DIDIT decision, and says "Under review" until there is one.
+            trailing: Builder(builder: (_) {
+              final verified =
+                  authController.userData.value?.isKycVerified ?? false;
+              return Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: verified ? Colors.green : kClay,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  verified ? 'Verified' : 'Under review',
+                  style: const TextStyle(
+                      color: kCream,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold),
+                ),
+              );
+            }),
+          ),
+          const Divider(height: 1, color: Colors.grey),
+          ListTile(
+            leading: const Icon(Iconsax.eye, color: kprimaryColor, size: 24),
+            title: const Text(
+              'View Document',
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: kprimaryColor),
+            ),
+            subtitle: const Text(
+              'View your uploaded KYC document',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+            trailing: const Icon(Iconsax.arrow_right_3,
+                color: kprimaryColor, size: 20),
+            onTap: () => _showDocumentViewer(context),
+          ),
+          const Divider(height: 1, color: Colors.grey),
+          ListTile(
+            leading: const Icon(Iconsax.document_upload,
+                color: kprimaryColor, size: 24),
+            title: const Text(
+              'Update documents',
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: kprimaryColor),
+            ),
+            subtitle: const Text(
+              'Verify your identity again with a new document',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+            trailing: const Icon(Iconsax.arrow_right_3,
+                color: kprimaryColor, size: 20),
+            // Runs DIDIT again rather than the manual upload sheet (A-66) —
+            // a new document must go through the same check that verified
+            // the first one.
+            onTap: _reRunKyc,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Signed in, fetch failed, nothing cached: an honest error with a retry,
+  /// never blank editable fields.
+  Widget _buildErrorState(BuildContext context) {
+    return SafeArea(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.cloud_off, size: 64, color: Colors.grey[400]),
+              const SizedBox(height: 16),
+              const Text(
+                "Couldn't load your profile",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 17, fontWeight: FontWeight.w600, color: kInk),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                authController.error.value,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 13, color: kMuted),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: () =>
+                    authController.getUserDetails(skipLogoutOnError: true),
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Try again'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kIndigo,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 28, vertical: 12),
+                  shape: const StadiumBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -1334,9 +1532,10 @@ class _ProfileScreenState extends State<ProfileScreen>
   /// The drawer is gone; this is the menu.
   List<Widget> _buildSettingsItems() {
     return [
-      _buildSettingItem('Edit Profile', Icons.edit, () {
-        Get.to(() => const UpdateProfileScreen());
-      }),
+      // Flips this same screen into edit mode (seeded from the fetched
+      // record) instead of pushing the legacy UpdateProfileScreen — one edit
+      // surface, one save pipeline.
+      _buildSettingItem('Edit Profile', Icons.edit, _enterEditMode),
       _buildSettingItem('Dashboard', Icons.dashboard_outlined, () {
         Get.to(() => const RenterDashboardScreen());
       }),

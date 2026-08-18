@@ -51,7 +51,11 @@ class ForgetPasswordController extends GetxController {
         response = r.ok;
         failure = r.message;
       } else {
-        response = await _forgetPasswordService.sendOtpToEmail(email.value);
+        // Email path surfaces the server's reason now too — failures used to
+        // collapse into a bare false that all looked identical to the user.
+        final r = await _forgetPasswordService.sendOtpToEmail(email.value);
+        response = r.ok;
+        failure = r.message;
       }
       if (response) {
         showAlert('Code sent',
@@ -89,11 +93,11 @@ class ForgetPasswordController extends GetxController {
     try {
       final response =
           await _forgetPasswordService.verifyOtp(email.value, otp.value);
-      if (response) {
+      if (response.ok) {
         showAlert('Success', 'OTP verified', false);
         return true;
       } else {
-        showAlert('Error', 'Failed to verify OTP', true);
+        showAlert('Error', response.message ?? 'Failed to verify OTP', true);
         return false;
       }
     } catch (e) {
@@ -111,12 +115,14 @@ class ForgetPasswordController extends GetxController {
     try {
       final response = await _forgetPasswordService.updatePassword(
           password.value, cPassword.value, email.value);
-      if (response) {
+      if (response.ok) {
         showAlert('Success', 'Password updated, Please login with new password',
             false);
         return true;
       } else {
-        showAlert('Error', 'Failed to update password', true);
+        // The server's own reason — a policy rejection names the rule broken.
+        showAlert(
+            'Error', response.message ?? 'Failed to update password', true);
         return false;
       }
     } catch (e) {

@@ -299,14 +299,26 @@ class AuthService {
   Future<BaseResponse> updateProfile(UserUpdateRequest request) async {
     try {
       final token = await storage.read(key: TOKEN_KEY);
-      print("json: ${request.toJson()}");
+      // The backend stores one user_fullName column; the app edits first/last
+      // separately. This used to send ONLY userFname — so saving your profile
+      // truncated "Sumit Malhotra" to "Sumit" — and never sent user_state at
+      // all, which is why State reverted to empty after every save.
+      final fullName = [request.userFname.trim(), request.userLname.trim()]
+          .where((part) => part.isNotEmpty)
+          .join(' ');
       final formData = FormData();
       formData.fields
-        ..add(MapEntry('user_fullName', request.userFname))
+        ..add(MapEntry('user_fullName', fullName))
         ..add(MapEntry('user_pnumber', request.userPnumber))
         ..add(MapEntry('user_address', request.userAddress))
         ..add(MapEntry('user_city', request.userCity))
+        ..add(MapEntry('user_state', request.userState))
         ..add(MapEntry('user_zipcode', request.userZipcode));
+      // One-time email code authorising a phone change. Only attached when
+      // the screen collected one — an unchanged phone saves without it.
+      if (request.otp != null && request.otp!.isNotEmpty) {
+        formData.fields.add(MapEntry('otp', request.otp!));
+      }
       if (request.docType != null) {
         formData.fields.add(MapEntry('doc_type', request.docType!));
       }
@@ -328,6 +340,38 @@ class AuthService {
       return BaseResponse.fromJson(response.data);
     } catch (e) {
       throw _handleError(e);
+    }
+  }
+
+  /// Ask the server to email the account's registered address a one-time
+  /// code authorising a sensitive change. `intent` is 'phone' or 'password'
+  /// (POST /user/security/otp). The change endpoints then require the code:
+  /// /user/update rejects a CHANGED phone without it, and
+  /// /user/update-password takes it alongside the current password.
+  Future<({bool success, String message})> requestSecurityOtp(
+      String intent) async {
+    try {
+      final token = _token ?? await storage.read(key: TOKEN_KEY);
+      final response = await _dio.post(
+        '/user/security/otp',
+        data: {'intent': intent},
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      final data = response.data;
+      final success = data is Map && data['success'] == true;
+      final message = (data is Map ? data['message'] : null)?.toString() ??
+          (success
+              ? 'We emailed you a verification code.'
+              : 'Could not send the verification code.');
+      return (success: success, message: message);
+    } on DioException catch (err) {
+      final data = err.response?.data;
+      final message = (data is Map ? data['message'] : null)?.toString() ??
+          err.message ??
+          'Could not send the verification code.';
+      return (success: false, message: message);
+    } catch (e) {
+      return (success: false, message: e.toString());
     }
   }
 

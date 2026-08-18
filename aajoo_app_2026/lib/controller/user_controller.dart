@@ -135,6 +135,7 @@ class UserController extends GetxController {
     required String currentPassword,
     required String newPassword,
     required String confirmPassword,
+    String? otp,
   }) async {
     isLoading.value = true;
     try {
@@ -143,6 +144,7 @@ class UserController extends GetxController {
         currentPassword: currentPassword,
         newPassword: newPassword,
         confirmPassword: confirmPassword,
+        otp: otp,
       );
       showSnackbar(
         result.success ? "Success" : "Error",

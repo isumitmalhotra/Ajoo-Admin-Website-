@@ -79,6 +79,7 @@ class UserService {
     required String currentPassword,
     required String newPassword,
     required String confirmPassword,
+    String? otp,
   }) async {
     final url = '$baseUrl/user/update-password';
     final token = await const FlutterSecureStorage().read(key: "user_token");
@@ -90,6 +91,10 @@ class UserService {
         'currentPassword': currentPassword,
         'newPassword': newPassword,
         'confirmPassword': confirmPassword,
+        // One-time email code (POST /user/security/otp, intent 'password').
+        // The current password proves the actor knows the secret; the code
+        // proves they hold the mailbox. The server wants both.
+        if (otp != null && otp.isNotEmpty) 'otp': otp,
       });
       final data = response.data;
       final success = data is Map && data['success'] == true;

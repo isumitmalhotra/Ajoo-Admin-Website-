@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/screens_common/auth/forgot_password/forget_password_controller.dart';
+import 'package:rent_home/ui/widgets/password_rules_checklist.dart';
 
 /// ForgetPasswordPage is a multi-step process using PageView:
 /// 1️⃣ Send OTP to Email
@@ -287,17 +288,12 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
               obscureText: true,
               inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
               autovalidateMode: AutovalidateMode.onUserInteraction,
-              // Same rule as change_password_page — a reset must not be able
-              // to set a password the rest of the app would refuse.
-              validator: (v) {
-                final t = v ?? '';
-                if (t.isEmpty) return 'Please enter a new password';
-                if (t.length < 8) return 'At least 8 characters';
-                if (!t.contains(RegExp(r'[A-Z]'))) return 'Add an uppercase letter';
-                if (!t.contains(RegExp(r'[a-z]'))) return 'Add a lowercase letter';
-                if (!t.contains(RegExp(r'\d'))) return 'Add a number';
-                return null;
-              },
+              // Same rules as change_password_page — a reset must not be
+              // able to set a password the rest of the app would refuse.
+              // (This validator used to skip the special-character and
+              // no-space checks, so the two password-creating surfaces
+              // disagreed.)
+              validator: validateAgainstPasswordRules,
               decoration: InputDecoration(
                 labelText: 'New Password',
                 prefixIcon: const Icon(Icons.lock),
@@ -305,6 +301,11 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                     OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               ),
             ),
+            const SizedBox(height: 10),
+            // Live checklist showing what the input expects, ticking rules
+            // off as they're satisfied — the user asked for exactly this.
+            Obx(() =>
+                PasswordRulesChecklist(password: controller.password.value)),
             const SizedBox(height: 10),
             TextFormField(
               onChanged: (value) => controller.cPassword.value = value,

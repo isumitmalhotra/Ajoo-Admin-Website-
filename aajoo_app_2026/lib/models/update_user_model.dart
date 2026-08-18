@@ -8,9 +8,13 @@ class UserUpdateRequest {
   final String userCity;
   final String userState;
   final String userZipcode;
-  final String? docType; 
+  final String? docType;
   final String? docNumber;
   final File? idDoc;
+
+  /// One-time email code authorising a phone-number change. Null when the
+  /// phone is unchanged — the server only demands it for a CHANGED phone.
+  final String? otp;
 
   UserUpdateRequest({
     required this.userFname,
@@ -23,6 +27,7 @@ class UserUpdateRequest {
     this.docType,
     this.docNumber,
     this.idDoc,
+    this.otp,
   });
 
 

@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
+import 'package:rent_home/ui/screens_host/add_property/widgets/state_city_dropdowns.dart';
+import 'package:rent_home/ui/widgets/email_otp_sheet.dart';
 import '../../../constants.dart';
 import '../auth/auth_controller.dart';
 import '../../../controller/common_controller.dart';
@@ -27,6 +29,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _cityController = TextEditingController();
+  final TextEditingController _stateController = TextEditingController();
   final TextEditingController _zipcodeController = TextEditingController();
   final TextEditingController _docNumberController = TextEditingController();
 
@@ -255,6 +258,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
       _phoneController.text = user.phoneNumber;
       _addressController.text = user.address;
       _cityController.text = user.city;
+      _stateController.text = user.state;
       _zipcodeController.text = user.zipcode;
 
       // Load existing document info if available
@@ -393,16 +397,41 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
         docNumberToSend = kyc.udNumber;
       }
 
+      // Changing the phone is a sensitive change: the server emails a
+      // one-time code to the registered address and refuses the new number
+      // without it. An unchanged phone saves exactly as before.
+      final currentPhone =
+          (authController.userData.value?.phoneNumber ?? '').trim();
+      final newPhone = _phoneController.text.trim();
+      String? otp;
+      if (newPhone != currentPhone) {
+        final sent =
+            await authController.authService.requestSecurityOtp('phone');
+        if (!sent.success) {
+          _showSnackBar(sent.message, isError: true);
+          return;
+        }
+        otp = await showEmailOtpSheet(
+          email: authController.userData.value?.email ?? 'your email',
+          title: 'Confirm your new number',
+          resend: () => authController.authService.requestSecurityOtp('phone'),
+        );
+        // Backing out of the code sheet abandons the save — nothing changes.
+        if (otp == null) return;
+      }
+
       final request = UserUpdateRequest(
         userFname: _firstNameController.text.trim(),
         userLname: _lastNameController.text.trim(),
-        userPnumber: _phoneController.text.trim(),
+        userPnumber: newPhone,
         userAddress: _addressController.text.trim(),
         userCity: _cityController.text.trim(),
+        userState: _stateController.text.trim(),
         userZipcode: _zipcodeController.text.trim(),
         docType: docTypeToSend,
         docNumber: docNumberToSend,
         idDoc: selectedDocument,
+        otp: otp,
       );
 
       await authController.updateUserProfile(request);
@@ -676,6 +705,47 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           return const Center(child: CircularProgressIndicator());
         }
 
+        // Never draw blank editable fields: with no user record a form that
+        // seeds empty and saves is a data-wipe machine. Say what happened
+        // and offer a retry instead.
+        if (authController.userData.value == null) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.cloud_off, size: 64, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Couldn't load your profile",
+                    textAlign: TextAlign.center,
+                    style:
+                        TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      await authController.getUserDetails(
+                          skipLogoutOnError: true);
+                      // Re-seed the form once a record actually arrives.
+                      if (authController.userData.value != null) {
+                        _loadUserData();
+                      }
+                    },
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text('Try again'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kprimaryColor,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         return Form(
           key: _formKey,
           autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -775,45 +845,30 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                           },
                         ),
                         const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                controller: _cityController,
-                                inputFormatters: AppInputFormatters.place,
-                                decoration: const InputDecoration(
-                                  labelText: 'City',
-                                  border: OutlineInputBorder(),
-                                  prefixIcon: Icon(Icons.location_city),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter city';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: TextFormField(
-                                controller: _zipcodeController,
-                                inputFormatters: AppInputFormatters.pincode,
-                                decoration: const InputDecoration(
-                                  labelText: 'Zipcode',
-                                  border: OutlineInputBorder(),
-                                  prefixIcon: Icon(Icons.local_post_office),
-                                ),
-                                keyboardType: TextInputType.number,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter zipcode';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-                          ],
+                        // Same reference-table dropdowns every other address
+                        // form uses. This screen had a lone free-text City
+                        // and no State at all — so a state typed here was
+                        // never saved, and free-text cities are how the
+                        // catalogue accumulated junk labels.
+                        StateCityDropdowns(
+                          stateController: _stateController,
+                          cityController: _cityController,
+                        ),
+                        TextFormField(
+                          controller: _zipcodeController,
+                          inputFormatters: AppInputFormatters.pincode,
+                          decoration: const InputDecoration(
+                            labelText: 'Zipcode',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.local_post_office),
+                          ),
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter zipcode';
+                            }
+                            return null;
+                          },
                         ),
                       ],
                     ),
@@ -864,6 +919,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     _phoneController.dispose();
     _addressController.dispose();
     _cityController.dispose();
+    _stateController.dispose();
     _zipcodeController.dispose();
     _docNumberController.dispose();
     super.dispose();

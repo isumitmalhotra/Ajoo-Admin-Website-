@@ -57,25 +57,30 @@ class ForgotPasswordService {
     return null;
   }
 
-  Future<bool> sendOtpToEmail(String email) async {
-    final token = await const FlutterSecureStorage().read(key: "user_token");
-    _dio.options.headers['Authorization'] = 'Bearer $token';
+  /// Email channel. No Authorization header: this is a LOGGED-OUT flow, and
+  /// the stale user_token this used to attach belonged to whoever last used
+  /// the device — wrong on principle even when the server ignored it.
+  Future<({bool ok, String? message})> sendOtpToEmail(String email) async {
+    _dio.options.headers.remove('Authorization');
     try {
       final response = await _dio.post(
         "user/forget-password",
         data: {"userEmail": email.trim()},
       );
-      print(response.data);
-      return response.data['success'];
-    } catch (err) {
-      print(err);
-      return false;
+      return (
+        ok: response.data['success'] == true,
+        message: response.data['message']?.toString()
+      );
+    } on DioException catch (err) {
+      return (ok: false, message: _serverMessage(err));
+    } catch (_) {
+      return (ok: false, message: null);
     }
   }
 
-  Future<bool> verifyOtp(String email, String otp) async {
-    final token = await const FlutterSecureStorage().read(key: "user_token");
-    _dio.options.headers['Authorization'] = 'Bearer $token';
+  Future<({bool ok, String? message})> verifyOtp(
+      String email, String otp) async {
+    _dio.options.headers.remove('Authorization');
     try {
       // Either channel — the server keys the same OTP row on whichever was
       // used, so send the one the person actually typed.
@@ -85,22 +90,28 @@ class ForgotPasswordService {
         else "userEmail": email.trim(),
         "otp": otp,
       });
-      print(response.data);
-      final forgetPasswordToken = response.data['data']["token"];
-      await const FlutterSecureStorage()
-          .write(key: "forget_password_token", value: forgetPasswordToken);
-      return response.data['success'];
-    } catch (err) {
-      print(err);
-      return false;
+      final ok = response.data['success'] == true;
+      if (ok) {
+        final forgetPasswordToken = response.data['data']?["token"];
+        if (forgetPasswordToken != null) {
+          await const FlutterSecureStorage().write(
+              key: "forget_password_token",
+              value: forgetPasswordToken.toString());
+        }
+      }
+      return (ok: ok, message: response.data['message']?.toString());
+    } on DioException catch (err) {
+      return (ok: false, message: _serverMessage(err));
+    } catch (_) {
+      return (ok: false, message: null);
     }
   }
 
-  Future<bool> updatePassword(
+  Future<({bool ok, String? message})> updatePassword(
       String password, String cPassword, String email) async {
+    // The short-lived reset token verifyOtp stored — NOT a user session.
     final token =
         await const FlutterSecureStorage().read(key: "forget_password_token");
-    print('FORGET Token: $token');
     _dio.options.headers['Authorization'] = 'Bearer $token';
     try {
       final response = await _dio.post("user/update/forget-password", data: {
@@ -109,12 +120,15 @@ class ForgotPasswordService {
         "token": token,
         "userEmail": email.trim()
       });
-      print(response.data);
-      return response.data['success'];
+      return (
+        ok: response.data['success'] == true,
+        message: response.data['message']?.toString()
+      );
     } on DioException catch (err) {
-      print(err);
-      print(err.response?.data);
-      return false;
+      // Surface the server's reason — a 422 here carries the password rules.
+      return (ok: false, message: _serverMessage(err));
+    } catch (_) {
+      return (ok: false, message: null);
     }
   }
 }
