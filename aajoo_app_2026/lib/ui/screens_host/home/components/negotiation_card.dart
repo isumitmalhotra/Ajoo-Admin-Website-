@@ -12,7 +12,14 @@ class NegotiationCard extends StatelessWidget {
   final HostNegotiation n;
   final VoidCallback? onTap;
 
-  const NegotiationCard({super.key, required this.n, this.onTap});
+  /// The host's decision, taken ON the card: 'accept' | 'decline' | 'counter'.
+  /// The buttons render only while the offer is pending AND a handler is
+  /// given — the dashboard's compact list passes none and stays read-only.
+  /// The card was pure display before this, which meant the app could SHOW
+  /// offers but the host had no way to answer one anywhere in the app.
+  final Future<void> Function(String action)? onRespond;
+
+  const NegotiationCard({super.key, required this.n, this.onTap, this.onRespond});
 
   static String _money(double v) {
     final s = v.round().toString();
@@ -143,6 +150,80 @@ class NegotiationCard extends StatelessWidget {
                     style: inter(fontSize: 12.5, color: kInk2, height: 1.5)),
               ),
             ],
+            if (onRespond != null && n.isPending) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _action(
+                      label: 'Accept',
+                      icon: Icons.check_rounded,
+                      filled: true,
+                      color: kSuccess,
+                      onTap: () => onRespond!('accept'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _action(
+                      label: 'Counter',
+                      icon: Icons.swap_horiz_rounded,
+                      filled: false,
+                      color: kIndigo,
+                      onTap: () => onRespond!('counter'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _action(
+                      label: 'Decline',
+                      icon: Icons.close_rounded,
+                      filled: false,
+                      color: kDanger,
+                      onTap: () => onRespond!('decline'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _action({
+    required String label,
+    required IconData icon,
+    required bool filled,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: onTap,
+      child: Container(
+        height: 38,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: filled ? color : Colors.transparent,
+          border: Border.all(color: color),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 15, color: filled ? Colors.white : color),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: inter(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: filled ? Colors.white : color)),
+            ),
           ],
         ),
       ),

@@ -220,9 +220,11 @@ class AuthController extends GetxController {
       final captured = await _requirePhone(data);
       if (!captured) {
         // Refusing the number means no session — otherwise the rule is
-        // decoration.
+        // decoration. userData must go too: the login page's .then() checks
+        // it, and leaving it set navigated a session-less user into /home.
         token.value = '';
         isLoggedIn.value = false;
+        userData.value = null;
         authService.setToken('');
         return;
       }

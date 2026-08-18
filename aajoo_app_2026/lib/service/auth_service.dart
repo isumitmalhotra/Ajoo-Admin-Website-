@@ -219,9 +219,9 @@ class AuthService {
         'userId': userId,
         'otp': otp,
       });
-      print(response.data);
-
-      if (response.data['success']) {
+      // == true, not a bare truthiness read: `success` is dynamic, and a 0/1
+      // from the server would make the bare read throw int-is-not-bool.
+      if (response.data['success'] == true) {
         final token = response.data['data']['token'];
         setToken(token);
         await storage.write(key: TOKEN_KEY, value: token);

@@ -6,6 +6,7 @@ import 'package:rent_home/data/models/host_booking_history_model.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:rent_home/ui/screens_host/booking_history/host_booking_detail_page.dart';
 import 'package:rent_home/ui/screens_host/booking_history/host_booking_history_controller.dart';
+import 'package:rent_home/ui/screens_host/calendar/host_calendar_screen.dart';
 import 'package:rent_home/ui/motion/aajoo_motion.dart';
 import 'package:rent_home/utils/stay_clock.dart';
 
@@ -13,7 +14,14 @@ import 'package:rent_home/utils/stay_clock.dart';
 /// app bar + 4 status tabs (Upcoming/Ongoing/Completed/Cancelled) filtering the
 /// real HostBookingHistory data. Card + review dialog wiring unchanged.
 class BookingHistoryScreen extends StatefulWidget {
-  const BookingHistoryScreen({super.key});
+  /// Which tab to open on: 0 Upcoming · 1 Ongoing · 2 Completed · 3 Cancelled.
+  ///
+  /// Every "Ongoing" entry point on the dashboard opened this screen with no
+  /// way to say so, so tapping Ongoing Stays landed on Upcoming and looked
+  /// like the tabs were broken.
+  final int initialTab;
+
+  const BookingHistoryScreen({super.key, this.initialTab = 0});
 
   @override
   State<BookingHistoryScreen> createState() => _BookingHistoryScreenState();
@@ -90,6 +98,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 4,
+      initialIndex: widget.initialTab.clamp(0, 3),
       child: Scaffold(
         backgroundColor: kscaffoldColor,
         appBar: AppBar(
@@ -100,6 +109,16 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
           title: Text('Bookings',
               style: fraunces(
                   fontSize: 18, fontWeight: FontWeight.w600, color: kInk)),
+          actions: [
+            // The calendar answers the question this screen raises — "what
+            // do my next weeks look like" — but it was buried in the drawer
+            // and the profile menu, so the team asked where it had gone.
+            IconButton(
+              tooltip: 'Calendar',
+              icon: const Icon(Icons.calendar_month_outlined, color: kInk2),
+              onPressed: () => Get.to(() => const HostCalendarScreen()),
+            ),
+          ],
           // Same treatment as the guest's Bookings screen and the property
           // detail tabs — the solid teal slab with white-on-teal tabs was the
           // pre-redesign skin.

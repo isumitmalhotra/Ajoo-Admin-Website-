@@ -37,7 +37,12 @@ class _HostMessagesScreenState extends State<HostMessagesScreen> {
   @override
   void initState() {
     super.initState();
-    hostController.getNegotiations();
+    // After the first frame — see host_negotiations_screen: flipping the
+    // fetched flag from initState marks this screen's Obx dirty mid-build and
+    // throws "setState() called during build", leaving it on its spinner.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      hostController.getNegotiations();
+    });
   }
 
   @override

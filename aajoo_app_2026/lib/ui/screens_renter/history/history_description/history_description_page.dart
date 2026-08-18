@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/constants/payment_config.dart';
 import 'package:rent_home/controller/user_controller.dart';
+import 'package:rent_home/ui/screens_renter/booking_controller.dart';
+import 'package:rent_home/utils/stay_clock.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/data/models/booking_history_response_model.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
@@ -38,6 +42,7 @@ class HistoryDescriptionPage extends StatefulWidget {
 
 class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
   final UserController userController = Get.put(UserController());
+  final BookingController _bookingController = Get.put(BookingController());
   final PropertyReviewController propertyController =
       Get.put<PropertyReviewController>(
     PropertyReviewController(),
@@ -45,6 +50,11 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
   final reviewController = TextEditingController();
   final PropertyService _propertyService = PropertyService();
   double rating = 0.0;
+
+  /// Razorpay for the Pay-now leg. Created once; cleared in dispose so the
+  /// event handlers can't outlive the screen.
+  late final Razorpay _razorpay;
+  bool _payBusy = false;
 
   /// Who hosts the stay. Fetched separately — the property payload carries only
   /// a host id, which is why the property page had to do the same.
@@ -64,6 +74,10 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
   void initState() {
     super.initState();
 
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _onPaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _onPaymentError);
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await userController.getProperty(widget.propertyId);
       if (!mounted) return;
@@ -71,6 +85,27 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
     });
     propertyController.getPropertyReviews(widget.propertyId);
   }
+
+  @override
+  void dispose() {
+    _razorpay.clear();
+    reviewController.dispose();
+    super.dispose();
+  }
+
+  /// The stay is over once checkout has passed — nothing left to cancel or pay
+  /// for from here.
+  bool get _stayOver => hasEnded(widget.bookingData.bookDetailsBtBookTo);
+
+  bool get _canCancel => !_isCancelled && !_stayOver;
+
+  /// Online booking still owing. COD guests pay at the property — offering
+  /// them Razorpay here would collect money the host is expecting in person.
+  bool get _owesOnline =>
+      !_isCancelled &&
+      !_stayOver &&
+      !widget.bookingData.bookIsPaid &&
+      !widget.bookingData.bookIsCod;
 
   Future<void> _fetchHost() async {
     if (_isCancelled) return; // Nothing on this page will show it.
@@ -556,8 +591,224 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
               _payBadge(booking),
           ],
         ),
+        // The booking's own actions. This screen showed a pending payment and
+        // an upcoming stay and offered no way to act on either — the only
+        // cancel/pay UI in the app was on the ongoing screen, which an
+        // upcoming booking never reaches.
+        if (_owesOnline || _canCancel) ...[
+          const SizedBox(height: 14),
+          if (_owesOnline) ...[
+            _bookingActionButton(
+              label: _payBusy ? 'Starting payment…' : 'Pay now',
+              icon: Icons.payment_rounded,
+              filled: true,
+              onTap: _payBusy ? null : _payNow,
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (_canCancel)
+            _bookingActionButton(
+              label: 'Cancel booking',
+              icon: Icons.cancel_outlined,
+              filled: false,
+              danger: true,
+              onTap: _showCancelDialog,
+            ),
+        ],
       ],
     );
+  }
+
+  /// The booking's own actions (Pay now / Cancel) — filled or outlined, and
+  /// distinct from the neutral Support / Chat tiles further down.
+  Widget _bookingActionButton({
+    required String label,
+    required IconData icon,
+    required bool filled,
+    bool danger = false,
+    VoidCallback? onTap,
+  }) {
+    final color = danger ? kDanger : kIndigo;
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        height: 46,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: filled ? color : Colors.transparent,
+          border: Border.all(color: color),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 18, color: filled ? kCream : color),
+            const SizedBox(width: 8),
+            Text(label,
+                style: inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: filled ? kCream : color)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Cancel ────────────────────────────────────────────────────────────────
+
+  void _showCancelDialog() {
+    String? selectedReason;
+    final otherReasonController = TextEditingController();
+    // Same presets as the website, so the stored reasons stay comparable.
+    const reasons = [
+      'Plans changed',
+      'Found somewhere else',
+      'Booked by mistake',
+      'Trip cancelled',
+      'Other',
+    ];
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          backgroundColor: kSurface,
+          title: Text('Cancel this booking?',
+              style: fraunces(
+                  fontSize: 18, fontWeight: FontWeight.w700, color: kInk)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Please tell us why — this is shared with the host.',
+                    style: inter(fontSize: 13, color: kMuted)),
+                const SizedBox(height: 6),
+                ...reasons.map((reason) => RadioListTile<String>(
+                      title: Text(reason, style: inter(fontSize: 14)),
+                      value: reason,
+                      groupValue: selectedReason,
+                      activeColor: kprimaryColor,
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      onChanged: (value) =>
+                          setDialogState(() => selectedReason = value),
+                    )),
+                if (selectedReason == 'Other')
+                  TextField(
+                    controller: otherReasonController,
+                    decoration: const InputDecoration(
+                        hintText: 'Please specify the reason'),
+                  ),
+                const SizedBox(height: 10),
+                Text('Refunds follow the property\'s cancellation policy.',
+                    style: inter(fontSize: 12, color: kMuted)),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Keep booking',
+                  style: TextStyle(color: kprimaryColor)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: kDanger, foregroundColor: Colors.white),
+              onPressed: () async {
+                if (selectedReason == null) {
+                  Fluttertoast.showToast(msg: 'Please select a reason');
+                  return;
+                }
+                var finalReason = selectedReason!;
+                if (selectedReason == 'Other') {
+                  if (otherReasonController.text.trim().isEmpty) {
+                    Fluttertoast.showToast(msg: 'Please specify the reason');
+                    return;
+                  }
+                  finalReason = otherReasonController.text.trim();
+                }
+                Navigator.of(dialogContext).pop();
+                await _cancelBooking(finalReason);
+              },
+              child: const Text('Cancel booking'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _cancelBooking(String reason) async {
+    final bookId = widget.bookingData.bookId;
+    if (bookId == null) return;
+    final ok = await _bookingController.cancelBooking(bookId, reason);
+    if (!mounted) return;
+    if (ok) {
+      // Flip the local model so the page redraws as cancelled (badge + Book
+      // now bar) without a refetch; the list behind refreshes for real.
+      setState(() => widget.bookingData.bookingStatusBsTitle = 'Cancelled');
+      userController.getUserHistory();
+      Fluttertoast.showToast(msg: 'Booking cancelled');
+    }
+    // Failure already surfaced by the controller's alert.
+  }
+
+  // ── Pay now ───────────────────────────────────────────────────────────────
+
+  Future<void> _payNow() async {
+    final bookId = widget.bookingData.bookId;
+    if (bookId == null) return;
+    setState(() => _payBusy = true);
+    try {
+      final order = await _bookingController.createOngoingBookingPayment(bookId);
+      final orderId = order['data']?['order']?['id'];
+      if (orderId == null) {
+        Fluttertoast.showToast(msg: 'Failed to create payment order');
+        return;
+      }
+      final fallbackPaise =
+          ((widget.bookingData.bookTotalAmt ?? 0) * 100).round();
+      final amountInPaise = order['data']?['order']?['amount'] ?? fallbackPaise;
+      final auth = Get.find<AuthController>();
+      _razorpay.open({
+        'key': PaymentConfig.razorpayKey,
+        'amount': amountInPaise,
+        'currency': 'INR',
+        'name': 'Aajoo Homes',
+        'description': 'Payment for booking $bookId',
+        'order_id': orderId,
+        'prefill': {
+          'contact': auth.userData.value?.phoneNumber ?? '',
+          'email': auth.userData.value?.email ?? '',
+          'name': auth.userData.value?.fullName ?? '',
+        },
+      });
+    } catch (e) {
+      Fluttertoast.showToast(msg: 'Could not start the payment. Try again.');
+    } finally {
+      if (mounted) setState(() => _payBusy = false);
+    }
+  }
+
+  Future<void> _onPaymentSuccess(PaymentSuccessResponse response) async {
+    final ok = await _bookingController.verifyPayment(
+        response.orderId!, response.paymentId!, response.signature!);
+    if (!mounted) return;
+    if (ok) {
+      setState(() => widget.bookingData.bookIsPaid = true);
+      userController.getUserHistory();
+      Fluttertoast.showToast(msg: 'Payment successful');
+    } else {
+      Fluttertoast.showToast(
+          msg: 'Payment received but not yet confirmed — contact support.');
+    }
+  }
+
+  void _onPaymentError(PaymentFailureResponse response) {
+    Fluttertoast.showToast(
+        msg: 'Payment failed: ${response.message ?? 'cancelled'}');
   }
 
   String _rupees(num? v) => v == null

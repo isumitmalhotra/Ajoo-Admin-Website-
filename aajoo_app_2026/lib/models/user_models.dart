@@ -155,24 +155,29 @@ class UserDetail {
   });
 
   factory UserDetail.fromJson(Map<String, dynamic> json) {
-    print(json.map((key, value) {
-      return MapEntry(key, value is String ? value.trim() : value);
-    }));
+    // MySQL booleans arrive as 0/1 INTEGERS on some endpoints (the Google
+    // sign-in response returns the raw tbl_user row) and as true/false on
+    // others. `(json['user_isHost'] ?? false) || …` threw
+    // "type 'int' is not a subtype of type 'bool'" the moment a 1 arrived —
+    // which killed the whole Google sign-in AFTER the server had already
+    // created the account and mailed the welcome. Coerce, never assume.
+    bool flag(dynamic v) => v == true || v == 1 || v == '1';
     return UserDetail(
       credId: json['cred_id'] ?? 0,
       credUserId: json['cred_user_id'] ?? 0,
       username: json['cred_username'] ?? '',
       email: json['cred_user_email'] ?? '',
-      isHost:
-          (json['user_isHost'] ?? false) || (json['cred_user_isHost'] ?? false),
-      isUser:
-          (json['user_isUser'] ?? false) || (json['cred_user_isUser'] ?? false),
+      isHost: flag(json['user_isHost']) || flag(json['cred_user_isHost']),
+      isUser: flag(json['user_isUser']) || flag(json['cred_user_isUser']),
       attachment: json['attachment'] ?? {},
-      userId: json['userId'] ?? 0,
+      // The raw-row shape carries user_id; getUserWithDetails renames it to
+      // userId. Accept both — a 0 here silently breaks every later call that
+      // needs the id (password change, phone change).
+      userId: json['userId'] ?? json['user_id'] ?? 0,
       fullName: json['user_fullName'] ?? '',
       phoneNumber: json['user_pnumber'] ?? '',
       dob: json['user_dob'] ?? '',
-      isVerified: json['user_isVerified'] ?? false,
+      isVerified: flag(json['user_isVerified']),
       address: json['user_address'] ?? '',
       city: json['user_city'] ?? '',
       state: json['user_state'] ?? '',

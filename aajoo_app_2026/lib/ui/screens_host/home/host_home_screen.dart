@@ -6,6 +6,7 @@ import 'package:rent_home/ui/screens_common/notifications/notification_screen.da
 import 'package:rent_home/ui/screens_host/host_controller.dart';
 import 'package:rent_home/ui/screens_host/add_property/host_property_listing_screen.dart';
 import 'package:rent_home/ui/screens_host/booking_history/booking_history_screen.dart';
+import 'package:rent_home/ui/screens_host/calendar/host_calendar_screen.dart';
 import 'package:rent_home/ui/screens_host/ongoing_booking/view_ongoing_booking_page.dart';
 import 'package:rent_home/ui/screens_host/payout/payout_page.dart';
 import 'package:rent_home/ui/screens_host/support/host_support_screen.dart';
@@ -119,7 +120,10 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
               Reveal(
                 child: _sectionHeader('Ongoing Bookings',
                     actionLabel: 'View all',
-                    onAction: () => Get.to(() => const BookingHistoryScreen())),
+                    // Tab 1 is Ongoing. Without this the link named Ongoing
+                    // opened the list on Upcoming.
+                    onAction: () => Get.to(
+                        () => const BookingHistoryScreen(initialTab: 1))),
               ),
               const SizedBox(height: 10),
               _ongoingList(),
@@ -324,7 +328,8 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
                             if (list != null && list.length == 1) {
                               Get.to(() => ViewOngoingBookingPage(booking: list.first));
                             } else {
-                              Get.to(() => const BookingHistoryScreen());
+                              Get.to(() => const BookingHistoryScreen(
+                                  initialTab: 1));
                             }
                           }))),
             ],
@@ -358,6 +363,56 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
                           onTap: () =>
                               Get.to(() => const HostNegotiationsScreen())))),
             ],
+          ),
+          const SizedBox(height: 12),
+          // The calendar lived only in the drawer and the profile menu, so
+          // the team went looking for it and reported it missing. A full-width
+          // row on the dashboard, where a host looks first.
+          Reveal(
+            delay: Reveal.staggerDelay(4),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => Get.to(() => const HostCalendarScreen()),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                decoration: BoxDecoration(
+                  color: kSurface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: kLine),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: _teal50,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.calendar_month_outlined,
+                          size: 20, color: kIndigo600),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Calendar',
+                              style: fraunces(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: kInk)),
+                          const SizedBox(height: 2),
+                          Text('See your bookings and block dates',
+                              style: inter(fontSize: 12.5, color: kMuted)),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right, color: kMuted),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       );

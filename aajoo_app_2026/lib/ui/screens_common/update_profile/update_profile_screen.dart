@@ -246,6 +246,11 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     );
   }
 
+  /// True once identity verification has matched the account name against a
+  /// document — the backend refuses renames from that point.
+  bool get _nameLocked =>
+      (authController.userData.value?.verificationStatus ?? '') == 'verified';
+
   void _loadUserData() {
     final user = authController.userData.value;
     if (user != null) {
@@ -775,10 +780,18 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                               child: TextFormField(
                                 controller: _firstNameController,
                                 inputFormatters: AppInputFormatters.name,
-                                decoration: const InputDecoration(
+                                // A verified name was matched against a
+                                // government document; the server refuses to
+                                // change it, so the field says so rather than
+                                // accepting an edit it will only lose.
+                                readOnly: _nameLocked,
+                                decoration: InputDecoration(
                                   labelText: 'First Name',
-                                  border: OutlineInputBorder(),
-                                  prefixIcon: Icon(Icons.person),
+                                  border: const OutlineInputBorder(),
+                                  prefixIcon: const Icon(Icons.person),
+                                  helperText: _nameLocked ? 'Verified name' : null,
+                                  fillColor: _nameLocked ? kSand : null,
+                                  filled: _nameLocked,
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -793,10 +806,16 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                               child: TextFormField(
                                 controller: _lastNameController,
                                 inputFormatters: AppInputFormatters.name,
-                                decoration: const InputDecoration(
+                                readOnly: _nameLocked,
+                                decoration: InputDecoration(
                                   labelText: 'Last Name',
-                                  border: OutlineInputBorder(),
-                                  prefixIcon: Icon(Icons.person_outline),
+                                  border: const OutlineInputBorder(),
+                                  prefixIcon: const Icon(Icons.person_outline),
+                                  helperText: _nameLocked
+                                      ? 'Contact support to change your name'
+                                      : null,
+                                  fillColor: _nameLocked ? kSand : null,
+                                  filled: _nameLocked,
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {

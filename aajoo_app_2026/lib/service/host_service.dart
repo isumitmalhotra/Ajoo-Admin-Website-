@@ -173,6 +173,48 @@ class HostService {
     }
   }
 
+  /// Answer an offer: 'accept' | 'decline' | 'counter'.
+  ///
+  /// POST /host/negotiations/respond has existed as long as the list endpoint,
+  /// and the app never called it — the host could SEE offers and had no way to
+  /// answer one anywhere in the app. Accepting mints the guest's one-time 24h
+  /// coupon at the agreed price; the server returns its code, which is worth
+  /// showing so the host knows the deal actually issued.
+  ///
+  /// Throws with the server's own words so a refusal is readable.
+  Future<({bool ok, String? couponCode, String? message})> respondNegotiation({
+    required int offerId,
+    required String action,
+    double? counterPrice,
+    String? message,
+  }) async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final response = await _dio.post("/host/negotiations/respond", data: {
+        "offerId": offerId,
+        "action": action,
+        if (counterPrice != null) "counterPrice": counterPrice,
+        if (message != null && message.trim().isNotEmpty)
+          "message": message.trim(),
+      });
+      final body = response.data;
+      final ok = body is Map && body['success'] == true;
+      final data = body is Map ? body['data'] : null;
+      return (
+        ok: ok,
+        couponCode: data is Map ? data['couponCode']?.toString() : null,
+        message: body is Map ? body['message']?.toString() : null,
+      );
+    } on DioException catch (err) {
+      final data = err.response?.data;
+      final msg = data is Map ? data['message'] : null;
+      throw Exception(msg is List
+          ? msg.join(', ')
+          : (msg?.toString() ?? 'Could not send your response.'));
+    }
+  }
+
   Future<bool> addUserReview(
       int rating, String id, String description, String title) async {
     final token = await const FlutterSecureStorage().read(key: "user_token");

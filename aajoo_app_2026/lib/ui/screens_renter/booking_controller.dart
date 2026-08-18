@@ -133,15 +133,17 @@ class BookingController extends GetxController {
     isLoading.value = true;
     try {
       await _bookingService.cancelBooking(bookingId, reason);
+      return true;
     } catch (e) {
       error.value = e.toString();
       showAlert("Error", "Failed to cancel booking: ${e.toString()}", true);
       return false;
     } finally {
+      // No `return` here: a return inside finally overrides the catch's
+      // `return false`, so every FAILED cancellation reported success and the
+      // booking quietly stayed alive.
       isLoading.value = false;
       userController.fetchOngoingBookings();
-
-      return true;
     }
   }
 
