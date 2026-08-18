@@ -570,9 +570,9 @@ class _HostCalendarScreenState extends State<HostCalendarScreen> {
               isDense: true,
               filled: true,
               fillColor: kSurface,
-              labelText: 'Reason (optional)',
+              labelText: 'Reason (required)',
               labelStyle: inter(fontSize: 12.5, color: kMuted),
-              hintText: 'Maintenance, personal use…',
+              hintText: 'Maintenance, personal use, booked elsewhere…',
               hintStyle: inter(fontSize: 12.5, color: kMuted),
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -607,6 +607,14 @@ class _HostCalendarScreenState extends State<HostCalendarScreen> {
                   onPressed: c.saving.value
                       ? null
                       : () async {
+                          // Same rule as the web and the server: a block
+                          // nobody can explain is a mystery, not a plan.
+                          if (_reason.text.trim().isEmpty) {
+                            Get.snackbar('Reason needed',
+                                'Say why these dates are blocked — maintenance, personal use, booked elsewhere…',
+                                snackPosition: SnackPosition.BOTTOM);
+                            return;
+                          }
                           final ok = await c.blockSelectedDates(_reason.text);
                           if (ok) _reason.clear();
                         },

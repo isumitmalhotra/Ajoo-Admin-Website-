@@ -468,6 +468,55 @@ class _HostProfilePageState extends State<HostProfilePage> {
               }),
               const SizedBox(height: 10),
 
+              // Sort — tens of thousands of listings need an order a person
+              // chose. Server-side; mirrors the web host portal's dropdown.
+              Obx(() {
+                const options = <String, String>{
+                  'newest': 'Newest first',
+                  'name_az': 'Name A–Z',
+                  'name_za': 'Name Z–A',
+                  'price_low': 'Price: low → high',
+                  'price_high': 'Price: high → low',
+                };
+                final current = hostController.propertySort.value;
+                return Align(
+                  alignment: Alignment.centerLeft,
+                  child: PopupMenuButton<String>(
+                    initialValue: current,
+                    onSelected: hostController.setPropertySort,
+                    itemBuilder: (_) => options.entries
+                        .map((e) => PopupMenuItem<String>(
+                            value: e.key, child: Text(e.value)))
+                        .toList(),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: kSurface,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: kLine),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.sort_rounded,
+                              size: 15, color: kInk2),
+                          const SizedBox(width: 6),
+                          Text(options[current] ?? 'Sort',
+                              style: inter(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: kInk2)),
+                          const Icon(Icons.arrow_drop_down,
+                              size: 18, color: kInk2),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 8),
+
               Obx(() {
                 final props = hostController
                         .hostPropertiesResponse.value?.data?.properties ??

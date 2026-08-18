@@ -174,11 +174,23 @@ class HostController extends GetxController {
 
   /// First page of the host's listings. /host/property-search is paginated —
   /// it used to return all 29,230 rows (38 MB) for the test host.
+  /// Server-side ordering — the account holds tens of thousands of listings,
+  /// so "alphabetical" has to happen where the pages are cut, not in Dart.
+  final propertySort = 'newest'.obs;
+
+  Future<void> setPropertySort(String sort) async {
+    if (propertySort.value == sort) return;
+    propertySort.value = sort;
+    await getHostProperties(
+        q: propertySearch.value.isEmpty ? null : propertySearch.value);
+  }
+
   Future<void> getHostProperties({String? q}) async {
     try {
       loading.value = true;
       propertySearch.value = q ?? "";
-      final response = await hostService.getHostProperties(page: 1, q: q);
+      final response = await hostService.getHostProperties(
+          page: 1, q: q, sort: propertySort.value);
       hostPropertiesResponse.value = response;
     } catch (e) {
       error.value = e.toString();
@@ -197,6 +209,7 @@ class HostController extends GetxController {
       final next = await hostService.getHostProperties(
         page: current.page + 1,
         q: propertySearch.value.isEmpty ? null : propertySearch.value,
+        sort: propertySort.value,
       );
       final more = next.data;
       if (more == null) return;
