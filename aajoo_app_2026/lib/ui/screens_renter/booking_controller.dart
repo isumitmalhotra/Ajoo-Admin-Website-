@@ -12,80 +12,34 @@ class BookingController extends GetxController {
   final UserController userController = Get.find<UserController>();
 
   /*
-   * Booking limits, checked before the request so the guest gets an instant
-   * answer rather than a round trip.
+   * Booking limits live on the SERVER, not here.
    *
-   * These used to decide what counts as "active" by comparing the status
-   * TITLE against "Cancelled" and "Completed". There is no Completed status:
-   * tbl_book_statuses has Payment Pending, Cancelled, Paid, Booked,
-   * "Check In ", "Check Out " (with the trailing spaces), Booking Confirmed,
-   * Payment Received and Running. So that comparison excluded exactly one
-   * status and everything else counted, forever.
+   * This class used to pre-check two rules of its own: "max 3 active
+   * bookings" and "max 1 pay-on-arrival". Neither exists on the web or in the
+   * API. Worse, the app creates the booking row BEFORE opening Razorpay, so
+   * every abandoned card payment leaves a Payment Pending row behind — three
+   * of those and the guest was locked out of booking entirely, for three
+   * payments they never made. The exception it threw was never caught, so the
+   * sheet just closed and the guest was told nothing at all.
    *
-   * What it cost: the app creates the booking BEFORE opening Razorpay, so an
-   * abandoned card payment leaves a Payment Pending row behind. Three of those
-   * and the guest was locked out with "You cannot have more than 3 active
-   * bookings" — for three payments they never made.
-   *
-   * Statuses, not titles, now — and the same set the backend's own guard uses,
-   * which deliberately does not treat an unpaid pending booking as holding a
-   * slot beyond a short window.
+   * The server allows unlimited bookings and caps only OUTSTANDING
+   * pay-on-arrival ones (unpaid, not yet checked out), returning a plain
+   * message the UI shows. One rule, in one place.
    */
-  // 2 Cancelled, 7 Check Out: finished either way, never blocking.
-  static const _finishedStatuses = {2, 7};
-  // 1 Payment Pending: created before Razorpay, so it may be an abandoned
-  // checkout rather than a real reservation. The backend holds these for 30
-  // minutes; past that they hold nothing.
-  static const _pendingStatus = 1;
-  static const _pendingHold = Duration(minutes: 30);
-
-  bool _countsAsActive(dynamic b) {
-    final status = b.bookStatus as int;
-    if (_finishedStatuses.contains(status)) return false;
-    if (status == _pendingStatus) {
-      final added = b.bookAddedAt as DateTime?;
-      // No timestamp — treat it as live rather than silently letting a real
-      // reservation through.
-      if (added == null) return true;
-      return DateTime.now().difference(added) < _pendingHold;
-    }
-    return true;
-  }
-
   Future<BookingResponse> createBooking(Map<String, dynamic> data) async {
-    // 1. Check Booking Limits
-    final ongoing = userController.ongoingBookings.value;
-    if (ongoing != null && ongoing.data.bookings.isNotEmpty) {
-      final activeBookings =
-          ongoing.data.bookings.where(_countsAsActive).toList();
-
-      // Rule 1: Max 3 active bookings total
-      if (activeBookings.length >= 3) {
-        showAlert(
-            "Booking Limit Reached",
-            "You cannot have more than 3 active bookings. Please complete or cancel an existing booking.",
-            true);
-        throw Exception("Booking limit reached (Max 3 active bookings)");
-      }
-
-      // Rule 2: Max 1 active Pay on Arrival (COD) booking.
-      // Only reached when the guest already HAS one and is starting another —
-      // it is not a policy notice shown on a first booking.
-      final isNewBookingCod = data['isCod'] == true;
-      if (isNewBookingCod) {
-        final activeCodBookings =
-            activeBookings.where((b) => b.bookIsCod).length;
-        if (activeCodBookings >= 1) {
-          showAlert(
-              "Pay on Arrival Limit",
-              "You can only have 1 active 'Pay on Arrival' booking. Please complete or cancel that one, or pay online for this stay.",
-              true);
-          throw Exception(
-              "COD limit reached (Max 1 active Pay on Arrival booking)");
-        }
-      }
-    }
-
+    // No client-side booking caps.
+    //
+    // This used to enforce "max 3 active bookings" and "max 1 pay-on-arrival"
+    // in the app. Neither rule exists on the web or in the API — they were
+    // invented here — so a guest with three live bookings simply could not
+    // book from the phone at all, and the thrown exception was never caught,
+    // so the sheet closed with no message. That is the "can't book from
+    // mobile" report.
+    //
+    // The server owns this policy: it allows unlimited bookings and caps only
+    // OUTSTANDING pay-on-arrival ones (unpaid and not yet checked out). It
+    // returns a plain message when it refuses, which the UI surfaces. A second
+    // copy of the rule here could only ever drift out of step with it.
     isLoading.value = true;
     try {
       bookingResponse.value = await _bookingService.createBooking(data);

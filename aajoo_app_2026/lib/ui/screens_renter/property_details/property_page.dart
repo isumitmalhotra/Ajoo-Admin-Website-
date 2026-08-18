@@ -92,6 +92,18 @@ class _PropertyPageState extends State<PropertyPage>
   late Razorpay razorpay;
   late double currentPrice;
   int totalDays = 1;
+
+  /// Midnight of the same calendar day.
+  ///
+  /// `selectedDate` starts life as DateTime.now(), so it carries the wall-clock
+  /// time the guest opened the page. Differencing that against a picker date
+  /// (always midnight) and calling .inDays TRUNCATES the leftover hours: a
+  /// 19th→22nd stay booked at 03:25 measured 2 days 20h and billed 2 nights
+  /// for 3 nights of occupancy. Normalising both ends makes the count depend
+  /// on the dates alone, which is the only thing it should depend on.
+  static DateTime _dayOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+  static int _nightsBetween(DateTime from, DateTime to) =>
+      _dayOnly(to).difference(_dayOnly(from)).inDays;
   bool autoAccept = false;
   String currentPriceString = "";
   DateTime selectedDate = DateTime.now();
@@ -229,7 +241,7 @@ class _PropertyPageState extends State<PropertyPage>
     if (from != null && to != null && to.isAfter(from)) {
       selectedDate = from;
       selectedDateTo = to;
-      totalDays = to.difference(from).inDays;
+      totalDays = _nightsBetween(from, to);
       if (totalDays < 1) totalDays = 1;
       isButtonEnabled = true;
       _updatePriceString();
@@ -633,7 +645,7 @@ class _PropertyPageState extends State<PropertyPage>
                       // night more than arriving on the identical dates from
                       // an accepted offer.
                       totalDays =
-                          selectedDateTo!.difference(selectedDate).inDays;
+                          _nightsBetween(selectedDate, selectedDateTo!);
                       if (totalDays < 1) {
                         totalDays = 1;
                         selectedDateTo =
@@ -685,7 +697,7 @@ class _PropertyPageState extends State<PropertyPage>
                       // night more than arriving on the identical dates from
                       // an accepted offer.
                       totalDays =
-                          selectedDateTo!.difference(selectedDate).inDays;
+                          _nightsBetween(selectedDate, selectedDateTo!);
                       if (totalDays < 1) {
                         totalDays = 1;
                         selectedDateTo =
@@ -1145,7 +1157,12 @@ class _PropertyPageState extends State<PropertyPage>
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () async {
+onPressed: () async {
+                  // Nothing in here may fail silently. Before this, an
+                  // exception anywhere in the booking path closed the sheet
+                  // with no message at all — the guest tapped Book Now and
+                  // simply landed back on the property.
+                  try {
                   if (selectedDateTo != null) {
                     _toggleExpanded();
                     String formattedDate =
@@ -1326,6 +1343,13 @@ class _PropertyPageState extends State<PropertyPage>
                       gravity: ToastGravity.BOTTOM,
                       backgroundColor: Colors.red,
                       textColor: Colors.white,
+                    );
+                  }
+                  } catch (e) {
+                    bookingController.showSnackbar(
+                      "Couldn't complete booking",
+                      e.toString().replaceFirst('Exception: ', ''),
+                      true,
                     );
                   }
                 },

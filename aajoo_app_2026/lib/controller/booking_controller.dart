@@ -12,45 +12,19 @@ class BookingController extends GetxController {
   final UserController userController = Get.find<UserController>();
 
   Future<BookingResponse> createBooking(Map<String, dynamic> data) async {
-    // 1. Check Booking Limits
-    final ongoing = userController.ongoingBookings.value;
-    if (ongoing != null && ongoing.data.bookings.isNotEmpty) {
-      // Filter for ACTIVE bookings (exclude Cancelled and Completed)
-      final activeBookings = ongoing.data.bookings.where((b) {
-        final status = b.bookingStatusBsTitle;
-        return status != "Cancelled" && status != "Completed";
-      }).toList();
-
-      // Rule 1: Max 3 active bookings total
-      if (activeBookings.length >= 3) {
-        showSnackbar(
-            "Booking Limit Reached",
-            "You cannot have more than 3 active bookings. Please complete or cancel an existing booking.",
-            true);
-        // Return a dummy failed response or throw error to stop execution
-        // Since we need to return BookingResponse, we can throw an exception or return a failure object if possible.
-        // Throwing exception is safer to stop the flow immediately.
-        throw Exception("Booking limit reached (Max 3 active bookings)");
-      }
-
-      // Rule 2: Max 1 active Pay on Arrival (COD) booking
-      // Check if the NEW booking is COD
-      final isNewBookingCod = data['isCod'] == true;
-
-      if (isNewBookingCod) {
-        final activeCodBookings =
-            activeBookings.where((b) => b.bookIsCod).length;
-        if (activeCodBookings >= 1) {
-          showSnackbar(
-              "Pay on Arrival Limit",
-              "You can only have 1 active 'Pay on Arrival' booking. Please choose online payment or complete your existing booking.",
-              true);
-          throw Exception(
-              "COD limit reached (Max 1 active Pay on Arrival booking)");
-        }
-      }
-    }
-
+    // No client-side booking caps.
+    //
+    // This used to enforce "max 3 active bookings" and "max 1 pay-on-arrival"
+    // in the app. Neither rule exists on the web or in the API — they were
+    // invented here — so a guest with three live bookings simply could not
+    // book from the phone at all, and the thrown exception was never caught,
+    // so the sheet closed with no message. That is the "can't book from
+    // mobile" report.
+    //
+    // The server owns this policy: it allows unlimited bookings and caps only
+    // OUTSTANDING pay-on-arrival ones (unpaid and not yet checked out). It
+    // returns a plain message when it refuses, which the UI surfaces. A second
+    // copy of the rule here could only ever drift out of step with it.
     isLoading.value = true;
     try {
       bookingResponse.value = await _bookingService.createBooking(data);

@@ -49,12 +49,21 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
     return t.contains('check in') || t.contains('check-in');
   }
 
-  /// Offer Check-in only while it can be true: stay started, not ended, and
-  /// the booking is live. The server enforces the same rules.
-  bool get _canCheckIn =>
-      !_isCancelled &&
-      !_isCheckedIn &&
-      isStaying(b.bookDetailsBtBookFrom, b.bookDetailsBtBookTo);
+  /// Offer Check-in from the START OF THE CHECK-IN DAY until checkout.
+  ///
+  /// Deliberately NOT isStaying(), which only turns true at the 14:00 check-in
+  /// hour: a guest who arrives at noon could then be checked in from the
+  /// website (which allows it from midnight) and from the API (same rule), but
+  /// not from the phone in the host's hand. Same rule everywhere.
+  bool get _canCheckIn {
+    if (_isCancelled || _isCheckedIn) return false;
+    final from = parseStayDate(b.bookDetailsBtBookFrom);
+    if (from == null) return false;
+    final today = DateTime.now();
+    final startedToday = !DateTime(from.year, from.month, from.day)
+        .isAfter(DateTime(today.year, today.month, today.day));
+    return startedToday && !hasEnded(b.bookDetailsBtBookTo);
+  }
 
   bool _checkingIn = false;
 
