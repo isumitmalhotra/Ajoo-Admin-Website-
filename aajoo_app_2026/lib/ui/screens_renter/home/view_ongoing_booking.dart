@@ -375,8 +375,14 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Column(
                         children: [
-                          // Primary Action Button (Pay Now or Checkout)
-                          if (!widget.booking.bookIsPaid) ...[
+                          // Primary Action Button (Pay Now or Checkout).
+                          // COD only: /user/ongoing/bookings/payment/create
+                          // refuses anything that isn't pay-at-property, so
+                          // offering this on an unpaid ONLINE booking opened
+                          // a spinner that could only ever end in
+                          // "No Ongoing Booking found".
+                          if (!widget.booking.bookIsPaid &&
+                              widget.booking.bookIsCod) ...[
                             SizedBox(
                               width: double.infinity,
                               height: 55,

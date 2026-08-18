@@ -93,19 +93,25 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
     super.dispose();
   }
 
-  /// The stay is over once checkout has passed — nothing left to cancel or pay
-  /// for from here.
+  /// The stay is over once checkout has passed — nothing left to cancel.
   bool get _stayOver => hasEnded(widget.bookingData.bookDetailsBtBookTo);
 
   bool get _canCancel => !_isCancelled && !_stayOver;
 
-  /// Online booking still owing. COD guests pay at the property — offering
-  /// them Razorpay here would collect money the host is expecting in person.
+  /// A pay-at-property booking that hasn't been settled yet.
+  ///
+  /// Paying online is offered for exactly these, at any point in the stay's
+  /// life — booked today and paying tomorrow, or settling after checking out.
+  /// The whole point of "pay at property" is that the money is still owed, and
+  /// paying it through the platform is safer for both sides than cash at a
+  /// door: the guest gets a receipt and a trail, the host gets a payout they
+  /// don't have to chase. POST /user/ongoing/bookings/payment/create is
+  /// COD-only by design, and settling clears the flag so nobody then turns up
+  /// expecting cash.
   bool get _owesOnline =>
       !_isCancelled &&
-      !_stayOver &&
       !widget.bookingData.bookIsPaid &&
-      !widget.bookingData.bookIsCod;
+      widget.bookingData.bookIsCod;
 
   Future<void> _fetchHost() async {
     if (_isCancelled) return; // Nothing on this page will show it.
@@ -599,10 +605,21 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
           const SizedBox(height: 14),
           if (_owesOnline) ...[
             _bookingActionButton(
-              label: _payBusy ? 'Starting payment…' : 'Pay now',
+              label: _payBusy
+                  ? 'Starting payment…'
+                  : (_stayOver ? 'Pay online now' : 'Pay online instead'),
               icon: Icons.payment_rounded,
               filled: true,
               onTap: _payBusy ? null : _payNow,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _stayOver
+                  ? 'You chose to pay at the property. You can still settle it here — '
+                      'you get a receipt, and the host is paid through Aajoo.'
+                  : 'You chose to pay at the property. Paying here instead is safer '
+                      'for both of you — no cash on the day, and a receipt for it.',
+              style: inter(fontSize: 11.5, color: kMuted, height: 1.45),
             ),
             const SizedBox(height: 8),
           ],
