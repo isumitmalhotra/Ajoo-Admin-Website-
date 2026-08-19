@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -8,6 +9,7 @@ import 'package:rent_home/controller/common_controller.dart';
 import 'package:rent_home/ui/screens_renter/home/map/map_controller.dart';
 import 'package:rent_home/controller/search_controller.dart';
 import 'package:rent_home/data/models/search_property_model.dart';
+import 'package:rent_home/ui/responsive.dart';
 import 'package:rent_home/ui/screens_renter/home/components/lux_theme.dart';
 import 'package:rent_home/ui/screens_renter/home/components/lux_toggle_button.dart';
 import 'package:rent_home/ui/screens_renter/home/components/search_sheet.dart';
@@ -38,6 +40,35 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
   List<SearchPropertyModel> _filteredProperties = [];
   bool _isSearching = false;
   bool isLuxury = false; // Add luxury state
+
+  // Sort & Filter, matching the website's Explore sidebar.
+  //
+  // The sheet used to offer one control — sort by price — while the site let
+  // you narrow by price band, guest rating and property type. Same four sort
+  // orders and the same rating bands are used here so a guest who filters on
+  // the site and then opens the app sees the same set, not a different one.
+  //
+  // These filter the rows already fetched rather than re-querying: the screen
+  // holds the whole page of listings in memory, so narrowing is instant and
+  // works offline, and nothing about how properties are loaded changes.
+  double? _priceMin;
+  double? _priceMax;
+  double _minRating = 0;
+
+  /// True when anything other than the default ordering is in play, i.e. when
+  /// the result list is a narrowed view rather than simply everything.
+  bool get _hasActiveFilters =>
+      _priceMin != null || _priceMax != null || _minRating > 0;
+
+  /// How many filters are on — drives the count badge on the Filter button,
+  /// so an active filter can never be invisible (the commonest cause of
+  /// "where did my properties go?").
+  int get _activeFilterCount =>
+      (_priceMin != null ? 1 : 0) +
+      (_priceMax != null ? 1 : 0) +
+      (_minRating > 0 ? 1 : 0) +
+      (_selectedHotelIndex != -1 ? 1 : 0) +
+      (_sortOption != 'default' ? 1 : 0);
 
   /// Stay dates chosen up here and carried into the property page, so the
   /// guest is not asked for them twice.
@@ -79,91 +110,106 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
     );
   }
 
+  /// One sort row. Takes the *pending* selection and a setter rather than
+  /// reading `_sortOption` directly, so the sheet can stage a choice and only
+  /// commit it on Apply.
   Widget _buildSortOption(
-      String title, String value, IconData icon, StateSetter setModalState) {
-    final isSelected = _sortOption == value;
+    String title,
+    String value,
+    IconData icon,
+    StateSetter setModalState,
+    String current,
+    ValueChanged<String> onSelect,
+  ) {
+    final isSelected = current == value;
+    final accent = isLuxury ? Lux.gold : kIndigo;
+    final ink = isLuxury ? Lux.ink : kInk;
+    final muted = isLuxury ? Lux.muted : kMuted;
     return InkWell(
-      onTap: () {
-        setModalState(() {
-          _sortOption = value;
-        });
-      },
+      onTap: () => onSelect(value),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).primaryColor.withOpacity(0.1)
-              : Colors.grey[50],
+          color: isSelected ? accent.withOpacity(0.10) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color:
-                isSelected ? Theme.of(context).primaryColor : Colors.grey[300]!,
-            width: isSelected ? 2 : 1,
+            color: isSelected ? accent : (isLuxury ? Lux.line : kLine),
+            width: isSelected ? 1.6 : 1,
           ),
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              color: isSelected
-                  ? Theme.of(context).primaryColor
-                  : Colors.grey[600],
-            ),
+            Icon(icon, size: 20, color: isSelected ? accent : muted),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected
-                      ? Theme.of(context).primaryColor
-                      : Colors.black87,
+                style: inter(
+                  fontSize: 15,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? accent : ink,
                 ),
               ),
             ),
             if (isSelected)
-              Icon(
-                Icons.check_circle,
-                color: Theme.of(context).primaryColor,
-              ),
+              Icon(Icons.check_circle_rounded, size: 20, color: accent),
           ],
         ),
       ),
     );
   }
 
-  void _applySorting() {
-    setState(() {
-      if (_isSearching) {
-        _filteredProperties = _sortProperties(_filteredProperties);
-      }
-      // The main list will be sorted in the build method
-    });
-  }
+  /// Re-run the whole narrowing pipeline against the freshly-loaded page.
+  ///
+  /// This used to sort `_filteredProperties` in place and leave the main list
+  /// to the build method, which meant a filter only ever applied while a
+  /// search was active — pick "Price: Low to High" with an empty search box
+  /// and nothing happened. Everything now goes through one path.
+  void _applySorting() => _searchProperties(_queryController.text);
 
   int _selectedHotelIndex = -1;
 
   // Add method to filter properties by category
   String _sortOption = 'default';
+
+  static double _priceOf(SearchPropertyModel p) =>
+      double.tryParse(p.propertyPrice ?? '0') ?? 0;
+
+  /// Price band and guest rating, applied to whatever list is handed in.
+  ///
+  /// An unrated stay has rating `null`, not 0, so a "4.0+" filter drops it —
+  /// same rule the website applies. Claiming an unreviewed stay clears a
+  /// rating bar would be inventing a review.
+  List<SearchPropertyModel> _filterProperties(
+      List<SearchPropertyModel> properties) {
+    if (!_hasActiveFilters) return properties;
+    return properties.where((p) {
+      final price = _priceOf(p);
+      if (_priceMin != null && price < _priceMin!) return false;
+      if (_priceMax != null && price > _priceMax!) return false;
+      if (_minRating > 0 && (p.rating == null || p.rating! < _minRating)) {
+        return false;
+      }
+      return true;
+    }).toList();
+  }
+
   List<SearchPropertyModel> _sortProperties(
       List<SearchPropertyModel> properties) {
     switch (_sortOption) {
       case 'price_low_high':
         return List.from(properties)
-          ..sort((a, b) {
-            final priceA = double.tryParse(a.propertyPrice ?? '0') ?? 0;
-            final priceB = double.tryParse(b.propertyPrice ?? '0') ?? 0;
-            return priceA.compareTo(priceB);
-          });
+          ..sort((a, b) => _priceOf(a).compareTo(_priceOf(b)));
       case 'price_high_low':
         return List.from(properties)
-          ..sort((a, b) {
-            final priceA = double.tryParse(a.propertyPrice ?? '0') ?? 0;
-            final priceB = double.tryParse(b.propertyPrice ?? '0') ?? 0;
-            return priceB.compareTo(priceA);
-          });
+          ..sort((a, b) => _priceOf(b).compareTo(_priceOf(a)));
+      case 'rating':
+        // Unrated stays sort last rather than ahead of a 5.0 — the same rule
+        // the backend uses for sort_by=rating.
+        return List.from(properties)
+          ..sort((a, b) => (b.rating ?? -1).compareTo(a.rating ?? -1));
       default:
         return properties;
     }
@@ -174,7 +220,7 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
     if (searchController.preBookingResponse.value?.data == null) return;
 
     setState(() {
-      if (query.isEmpty && _selectedHotelIndex == -1) {
+      if (query.isEmpty && _selectedHotelIndex == -1 && !_hasActiveFilters) {
         _isSearching = false;
         _filteredProperties.clear();
       } else {
@@ -225,7 +271,7 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
           }).toList();
         }
 
-        _filteredProperties = _sortProperties(baseResults);
+        _filteredProperties = _sortProperties(_filterProperties(baseResults));
       }
     });
   }
@@ -285,7 +331,10 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
           location: p.propertyAddress ?? '',
           image: p.coverImage ?? '',
           id: p.propertyId!,
-          rating: '0',
+          // The real average, not a hardcoded '0' — the response has carried
+          // it all along. An unrated stay stays at '0' so the card can tell
+          // "no reviews yet" from "reviewed badly".
+          rating: p.rating == null ? '0' : p.rating!.toStringAsFixed(1),
           description: p.propertyDesc ?? '',
           lat: p.propertyLatitude ?? '0',
           long: p.propertyLongitude ?? '0',
@@ -298,127 +347,428 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
         ));
   }
 
-// Add filter function
+  /// Sort & Filter — the website's Explore sidebar, as a sheet.
+  ///
+  /// Sort, price band, guest rating and property type, in that order, with the
+  /// same options and the same wording the site uses. Property type reads and
+  /// writes the very same selection as the category pills on the screen behind
+  /// it, so the two can never disagree about what is selected.
+  ///
+  /// The sheet scrolls and is height-capped, because it now holds four
+  /// sections: on a short handset a fixed-height sheet would push Apply off
+  /// the bottom, which is exactly the kind of thing that makes a filter look
+  /// broken when it is only unreachable.
   void _showFilterBottomSheet() {
+    // Edit in a scratch copy, commit on Apply. Tapping outside to dismiss then
+    // leaves the list exactly as it was, rather than half-applying whatever
+    // was touched on the way past.
+    String sort = _sortOption;
+    double? priceMin = _priceMin;
+    double? priceMax = _priceMax;
+    double minRating = _minRating;
+    int categoryIndex = _selectedHotelIndex;
+
+    final minCtrl = TextEditingController(
+        text: priceMin == null ? '' : priceMin.toStringAsFixed(0));
+    final maxCtrl = TextEditingController(
+        text: priceMax == null ? '' : priceMax.toStringAsFixed(0));
+
+    final cats = (commonController.cats.value?.data.categories ?? [])
+        .where((c) =>
+            !_hiddenCategories.contains(c.catTitle.trim().toLowerCase()))
+        .toList();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: isLuxury ? Lux.surface : Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
+        final ink = isLuxury ? Lux.ink : kInk;
+        final muted = isLuxury ? Lux.muted : kMuted;
+        final accent = isLuxury ? Lux.gold : kIndigo;
+
         return StatefulBuilder(
           builder: (context, setModalState) {
-            return Container(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Sort & Filter',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
+            void apply() {
+              setState(() {
+                _sortOption = sort;
+                _priceMin = priceMin;
+                _priceMax = priceMax;
+                _minRating = minRating;
+                if (_selectedHotelIndex != categoryIndex) {
+                  _selectedHotelIndex = categoryIndex;
+                  _selectedCategoryTitle =
+                      categoryIndex == -1 ? '' : cats[categoryIndex].catTitle;
+                }
+              });
+              _applySorting();
+              Navigator.pop(context);
+            }
 
-                  // Sort by Price Section
-                  const Text(
-                    'Sort by Price',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Sort options
-                  _buildSortOption(
-                    'Default',
-                    'default',
-                    Icons.sort,
-                    setModalState,
-                  ),
-                  _buildSortOption(
-                    'Price: Low to High',
-                    'price_low_high',
-                    Icons.arrow_upward,
-                    setModalState,
-                  ),
-                  _buildSortOption(
-                    'Price: High to Low',
-                    'price_high_low',
-                    Icons.arrow_downward,
-                    setModalState,
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Apply Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        _applySorting();
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Apply',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+            return SafeArea(
+              top: false,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Grab handle — the sheet is draggable, so say so.
+                    Container(
+                      margin: const EdgeInsets.only(top: 10, bottom: 4),
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: muted.withOpacity(0.35),
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                  ),
-
-                  // Clear Filters Button
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: TextButton(
-                      onPressed: () {
-                        setModalState(() {
-                          _sortOption = 'default';
-                        });
-                        _applySorting();
-                        Navigator.pop(context);
-                      },
-                      child: Text(
-                        'Clear All',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 16,
-                        ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 8, 0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Sort & Filter',
+                              style: fraunces(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: ink,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: Icon(Icons.close, color: muted),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
+                    Flexible(
+                      child: ListView(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                        children: [
+                          _filterHeading('Sort by', ink),
+                          _buildSortOption('Recommended', 'default',
+                              Icons.auto_awesome, setModalState, sort,
+                              (v) => setModalState(() => sort = v)),
+                          _buildSortOption('Price: Low to High',
+                              'price_low_high', Icons.arrow_upward,
+                              setModalState, sort,
+                              (v) => setModalState(() => sort = v)),
+                          _buildSortOption('Price: High to Low',
+                              'price_high_low', Icons.arrow_downward,
+                              setModalState, sort,
+                              (v) => setModalState(() => sort = v)),
+                          _buildSortOption('Rating', 'rating',
+                              Icons.star_border_rounded, setModalState, sort,
+                              (v) => setModalState(() => sort = v)),
+
+                          const SizedBox(height: 20),
+                          _filterHeading('Price range (per night)', ink),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _priceField(
+                                  controller: minCtrl,
+                                  hint: 'Min',
+                                  ink: ink,
+                                  muted: muted,
+                                  accent: accent,
+                                  onChanged: (v) => priceMin =
+                                      v.trim().isEmpty ? null : double.tryParse(v),
+                                ),
+                              ),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 10),
+                                child: Text('to', style: inter(color: muted)),
+                              ),
+                              Expanded(
+                                child: _priceField(
+                                  controller: maxCtrl,
+                                  hint: 'Max',
+                                  ink: ink,
+                                  muted: muted,
+                                  accent: accent,
+                                  onChanged: (v) => priceMax =
+                                      v.trim().isEmpty ? null : double.tryParse(v),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 20),
+                          _filterHeading('Guest rating', ink),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final band in const [
+                                ['Any', 0.0],
+                                ['4.5+ Excellent', 4.5],
+                                ['4.0+ Very Good', 4.0],
+                                ['3.5+ Good', 3.5],
+                              ])
+                                _filterChip(
+                                  label: band[0] as String,
+                                  selected: minRating == band[1] as double,
+                                  accent: accent,
+                                  ink: ink,
+                                  muted: muted,
+                                  onTap: () => setModalState(
+                                      () => minRating = band[1] as double),
+                                ),
+                            ],
+                          ),
+
+                          if (cats.isNotEmpty) ...[
+                            const SizedBox(height: 20),
+                            _filterHeading('Property type', ink),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                _filterChip(
+                                  label: 'All',
+                                  selected: categoryIndex == -1,
+                                  accent: accent,
+                                  ink: ink,
+                                  muted: muted,
+                                  onTap: () =>
+                                      setModalState(() => categoryIndex = -1),
+                                ),
+                                for (var i = 0; i < cats.length; i++)
+                                  _filterChip(
+                                    label: cats[i].catTitle,
+                                    selected: categoryIndex == i,
+                                    accent: accent,
+                                    ink: ink,
+                                    muted: muted,
+                                    onTap: () =>
+                                        setModalState(() => categoryIndex = i),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+
+                    // Actions pinned below the scroll area, so Apply is
+                    // reachable however long the list of types gets.
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                setModalState(() {
+                                  sort = 'default';
+                                  priceMin = null;
+                                  priceMax = null;
+                                  minRating = 0;
+                                  categoryIndex = -1;
+                                  minCtrl.clear();
+                                  maxCtrl.clear();
+                                });
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: ink,
+                                side: BorderSide(
+                                    color: isLuxury ? Lux.line : kLine),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 15),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: Text('Clear all',
+                                  style: inter(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: ElevatedButton(
+                              onPressed: apply,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: accent,
+                                foregroundColor:
+                                    isLuxury ? Lux.bg : Colors.white,
+                                elevation: 0,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 15),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: Text('Show stays',
+                                  style: inter(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
         );
       },
+    ).whenComplete(() {
+      minCtrl.dispose();
+      maxCtrl.dispose();
+    });
+  }
+
+  String _sortLabel(String value) {
+    switch (value) {
+      case 'price_low_high':
+        return 'Price: Low to High';
+      case 'price_high_low':
+        return 'Price: High to Low';
+      case 'rating':
+        return 'Top rated';
+      default:
+        return 'Recommended';
+    }
+  }
+
+  /// "₹2,000–₹5,000", or an open-ended band when only one end is set.
+  String _priceLabel() {
+    String r(double v) => '₹${v.toStringAsFixed(0)}';
+    if (_priceMin != null && _priceMax != null) {
+      return '${r(_priceMin!)}–${r(_priceMax!)}';
+    }
+    if (_priceMin != null) return 'Above ${r(_priceMin!)}';
+    return 'Under ${r(_priceMax!)}';
+  }
+
+  /// A dismissable chip describing one active filter.
+  Widget _activeChip({
+    required IconData icon,
+    required String label,
+    required VoidCallback onClear,
+    bool gold = false,
+  }) {
+    final tone = gold ? kClay : (isLuxury ? Lux.gold : kIndigo);
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.only(left: 11, right: 6),
+      decoration: BoxDecoration(
+        color: tone.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: tone.withOpacity(0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: tone),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: inter(
+                fontSize: 12.5, fontWeight: FontWeight.w600, color: tone),
+          ),
+          IconButton(
+            onPressed: onClear,
+            icon: Icon(Icons.close_rounded, size: 15, color: tone),
+            padding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+            constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+            tooltip: 'Remove $label',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterHeading(String text, Color ink) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Text(
+          text,
+          style: inter(fontSize: 14, fontWeight: FontWeight.w700, color: ink),
+        ),
+      );
+
+  Widget _priceField({
+    required TextEditingController controller,
+    required String hint,
+    required Color ink,
+    required Color muted,
+    required Color accent,
+    required ValueChanged<String> onChanged,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      // Digits only. A price box that accepts "1,2OO" parses to null and
+      // silently drops the filter the guest thought they had set.
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      onChanged: onChanged,
+      style: inter(fontSize: 15, color: ink),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: inter(fontSize: 15, color: muted),
+        prefixText: '₹ ',
+        prefixStyle: inter(fontSize: 15, color: muted),
+        isDense: true,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: isLuxury ? Lux.line : kLine),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: accent, width: 1.6),
+        ),
+      ),
+    );
+  }
+
+  Widget _filterChip({
+    required String label,
+    required bool selected,
+    required Color accent,
+    required Color ink,
+    required Color muted,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: selected ? accent.withOpacity(0.12) : Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? accent : (isLuxury ? Lux.line : kLine),
+            width: selected ? 1.6 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: inter(
+            fontSize: 13.5,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            color: selected ? accent : ink,
+          ),
+        ),
+      ),
     );
   }
 
@@ -600,9 +950,14 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
 
                 final properties =
                     searchController.preBookingResponse.value!.data;
-                final sortedProperties = _sortProperties(properties);
+                final sortedProperties =
+                    _sortProperties(_filterProperties(properties));
                 final displayProperties =
                     _isSearching ? _filteredProperties : sortedProperties;
+                // Browsing (no search term, no category pill) keeps the area
+                // rails on screen, filters or not.
+                final railsVisible =
+                    _queryController.text.isEmpty && _selectedHotelIndex == -1;
 
                 return Column(
                   children: [
@@ -712,62 +1067,22 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            // Luxury toggle button
-                            InkWell(
-                              onTap: () {
-                                _showLuxuryModeDialog(context, isLuxury, (val) {
-                                  setState(() {
-                                    isLuxury = val;
-                                  });
-                                  // Refresh pre-booking data with luxury mode
-                                  searchController.getPreBooking(
-                                      isLuxury: isLuxury);
-                                });
-                              },
-                              child: Container(
-                                height: 56,
-                                width: 80,
-                                decoration: BoxDecoration(
-                                  color: isLuxury
-                                      ? theme.primaryColor.withOpacity(0.8)
-                                      : theme.primaryColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(30),
-                                  border: Border.all(
-                                    color: theme.primaryColor.withOpacity(0.3),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    Image.asset(
-                                      "assets/diamond .png",
-                                      height: 20,
-                                      width: 20,
-                                    ),
-                                    Text(
-                                      isLuxury ? "NOR" : "LUX",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 12,
-                                        color: isLuxury
-                                            ? Colors.white
-                                            : theme.primaryColor,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
+                            // The LUX/NOR pill used to sit here, beside the
+                            // filter button. It was removed on the client's
+                            // instruction: luxury is a mode for the whole app,
+                            // switched from the home screen, not a filter you
+                            // set per search — and sitting in the filter row it
+                            // read as one. Nothing about luxury mode itself
+                            // changed; `isLuxury` still skins this screen and
+                            // still scopes what it loads.
                             ElevatedButton(
                               onPressed: _showFilterBottomSheet,
                               style: ElevatedButton.styleFrom(
                                 elevation: 0,
-                                backgroundColor: _sortOption != 'default'
+                                backgroundColor: _activeFilterCount > 0
                                     ? theme.primaryColor
                                     : theme.canvasColor,
-                                foregroundColor: _sortOption != 'default'
+                                foregroundColor: _activeFilterCount > 0
                                     ? Colors.white
                                     : theme.primaryColor,
                                 shape: RoundedRectangleBorder(
@@ -776,21 +1091,39 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                                 padding: const EdgeInsets.all(16),
                               ),
                               child: Stack(
+                                clipBehavior: Clip.none,
                                 children: [
                                   const Icon(
                                     Iconsax.filter,
                                     size: 24,
                                   ),
-                                  if (_sortOption != 'default')
+                                  // How many filters are on, not merely that
+                                  // some are. A bare dot leaves the guest
+                                  // opening the sheet to find out.
+                                  if (_activeFilterCount > 0)
                                     Positioned(
-                                      right: -2,
-                                      top: -2,
+                                      right: -6,
+                                      top: -6,
                                       child: Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: const BoxDecoration(
-                                          color: Colors.red,
-                                          shape: BoxShape.circle,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 5, vertical: 1),
+                                        constraints: const BoxConstraints(
+                                            minWidth: 16, minHeight: 16),
+                                        decoration: BoxDecoration(
+                                          color: isLuxury ? Lux.gold : kClay,
+                                          borderRadius:
+                                              BorderRadius.circular(999),
+                                        ),
+                                        child: Text(
+                                          '$_activeFilterCount',
+                                          textAlign: TextAlign.center,
+                                          style: inter(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                            color: isLuxury
+                                                ? Lux.bg
+                                                : Colors.white,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -802,171 +1135,93 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                       ),
                     ),
 
-                    // Active filter indicator
-                    if (_sortOption != 'default' ||
-                        isLuxury ||
-                        _selectedHotelIndex != -1)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Row(
+                    // What is currently narrowing the list, one chip each,
+                    // every one dismissable.
+                    //
+                    // This was a fixed Row of three hardcoded chips, so the
+                    // new price and rating filters would have applied with
+                    // nothing on screen to say so, and a fourth chip would
+                    // have overflowed the row. It scrolls now, and the sort
+                    // chip no longer assumes the sort is by price — picking
+                    // "Rating" used to label itself "Price: High to Low".
+                    if (_activeFilterCount > 0 || isLuxury)
+                      SizedBox(
+                        height: 44,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
                           children: [
-                            // Category filter indicator
                             if (_selectedHotelIndex != -1)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                margin: const EdgeInsets.only(right: 8),
-                                decoration: BoxDecoration(
-                                  color: theme.primaryColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: theme.primaryColor.withOpacity(0.3),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.category,
-                                      size: 16,
-                                      color: theme.primaryColor,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Category: ${_getCategoryNameByIndex(_selectedHotelIndex)}',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: theme.primaryColor,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _selectedHotelIndex = -1;
-                                        });
-                                        _searchProperties(
-                                            _queryController.text);
-                                      },
-                                      child: Icon(
-                                        Icons.close,
-                                        size: 16,
-                                        color: theme.primaryColor,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              _activeChip(
+                                icon: Icons.category_outlined,
+                                label: _getCategoryNameByIndex(
+                                    _selectedHotelIndex),
+                                onClear: () {
+                                  setState(() {
+                                    _selectedHotelIndex = -1;
+                                    _selectedCategoryTitle = '';
+                                  });
+                                  _searchProperties(_queryController.text);
+                                },
                               ),
-                            // Luxury mode indicator
                             if (isLuxury)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                margin: const EdgeInsets.only(right: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.amber.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: Colors.amber.withOpacity(0.3),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Image.asset(
-                                      "assets/diamond .png",
-                                      height: 16,
-                                      width: 16,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Luxury Mode',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.amber[800],
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          isLuxury = false;
-                                        });
-                                        searchController.getPreBooking(
-                                            isLuxury: false);
-                                      },
-                                      child: Icon(
-                                        Icons.close,
-                                        size: 16,
-                                        color: Colors.amber[800],
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              _activeChip(
+                                icon: Icons.diamond_outlined,
+                                label: 'Luxury Mode',
+                                gold: true,
+                                onClear: () {
+                                  setState(() => isLuxury = false);
+                                  searchController.getPreBooking(
+                                      isLuxury: false);
+                                  _areaRails.load(isLuxury: false);
+                                },
                               ),
-                            // Sort indicator
                             if (_sortOption != 'default')
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: theme.primaryColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: theme.primaryColor.withOpacity(0.3),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      _sortOption == 'price_low_high'
-                                          ? Icons.arrow_upward
-                                          : Icons.arrow_downward,
-                                      size: 16,
-                                      color: theme.primaryColor,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      _sortOption == 'price_low_high'
-                                          ? 'Price: Low to High'
-                                          : 'Price: High to Low',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: theme.primaryColor,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _sortOption = 'default';
-                                        });
-                                      },
-                                      child: Icon(
-                                        Icons.close,
-                                        size: 16,
-                                        color: theme.primaryColor,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              _activeChip(
+                                icon: _sortOption == 'price_low_high'
+                                    ? Icons.arrow_upward
+                                    : _sortOption == 'price_high_low'
+                                        ? Icons.arrow_downward
+                                        : Icons.star_border_rounded,
+                                label: _sortLabel(_sortOption),
+                                onClear: () {
+                                  setState(() => _sortOption = 'default');
+                                  _applySorting();
+                                },
+                              ),
+                            if (_priceMin != null || _priceMax != null)
+                              _activeChip(
+                                icon: Icons.payments_outlined,
+                                label: _priceLabel(),
+                                onClear: () {
+                                  setState(() {
+                                    _priceMin = null;
+                                    _priceMax = null;
+                                  });
+                                  _applySorting();
+                                },
+                              ),
+                            if (_minRating > 0)
+                              _activeChip(
+                                icon: Icons.star_rounded,
+                                label: '${_minRating.toStringAsFixed(1)}+',
+                                onClear: () {
+                                  setState(() => _minRating = 0);
+                                  _applySorting();
+                                },
                               ),
                           ],
                         ),
                       ),
 
-                    // Search results info
-                    if (_isSearching)
+                    // Search results info.
+                    //
+                    // Only when the area rails are down. This line counts the
+                    // main list alone, so with the rails up it sat above a
+                    // screen full of matching stays announcing "No stays match
+                    // these filters" — a count for one section, read as a
+                    // verdict on the page.
+                    if (_isSearching && !railsVisible)
                       Padding(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16.0, vertical: 8.0),
@@ -978,9 +1233,15 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                               color: Colors.grey[600],
                             ),
                             const SizedBox(width: 8),
+                            // Name what actually emptied the list. With
+                            // filters in play the old line read: No results
+                            // found for "" — an empty search term blamed for
+                            // a price band's doing.
                             Text(
                               _filteredProperties.isEmpty
-                                  ? 'No results found for "${_queryController.text}"'
+                                  ? (_queryController.text.isNotEmpty
+                                      ? 'No results found for "${_queryController.text}"'
+                                      : 'No stays match these filters')
                                   : '${_filteredProperties.length} result(s) found',
                               style: TextStyle(
                                 color: Colors.grey[600],
@@ -992,7 +1253,13 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                       ),
 
                     // Properties list
-                    if (_isSearching && _filteredProperties.isEmpty)
+                    // The full-screen "nothing here" only takes over when
+                    // there is nothing else on the page to look at. While the
+                    // area rails are up — which is whenever the guest is
+                    // browsing rather than searching a term — an empty main
+                    // list is just an empty section, and blanking the rails
+                    // to announce it would hide the very stays that do match.
+                    if (_isSearching && _filteredProperties.isEmpty && !railsVisible)
                       SizedBox(
                         height: 300,
                         width: double.infinity,
@@ -1015,7 +1282,9 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Try searching with different keywords',
+                              _queryController.text.isNotEmpty
+                                  ? 'Try searching with different keywords'
+                                  : 'Try widening your filters',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey[500],
@@ -1030,7 +1299,17 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                       // when the guest is browsing rather than searching, and
                       // each rail hides itself when its area has no listings
                       // (Kufri has none on the platform today).
-                      if (!_isSearching && _selectedHotelIndex == -1)
+                      // Gated on the SEARCH BOX, not on `_isSearching`.
+                      //
+                      // `_isSearching` now also goes true for a price or
+                      // rating filter, and gating the rails on it made the
+                      // whole area section vanish the moment one was set: a
+                      // guest who asked for stays under ₹1,000 watched the
+                      // ₹900 Shimla stays disappear and got "No properties
+                      // found". A filter narrows what is shown; it does not
+                      // delete the shelf. The rails stay and their contents
+                      // are filtered instead.
+                      if (railsVisible)
                         Obx(() {
                           if (_areaRails.loading.value) {
                             return Padding(
@@ -1052,24 +1331,52 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                                   AreaRail(
                                     area: area,
                                     isLuxury: isLuxury,
-                                    properties:
-                                        _areaRails.byArea[area] ?? const [],
+                                    // Same price/rating narrowing as the main
+                                    // list, so one filter means one thing
+                                    // everywhere on this screen. A rail whose
+                                    // stays are all filtered out hides itself,
+                                    // which it already did for empty areas.
+                                    properties: _sortProperties(
+                                      _filterProperties(
+                                          _areaRails.byArea[area] ?? const []),
+                                    ),
                                     onOpen: (p) => _openProperty(p),
                                   ),
                               ],
                             ),
                           );
                         }),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: displayProperties.length,
-                        itemBuilder: (context, index) {
-                          final property = displayProperties[index];
-                          return PreBookingCard(
-                              property: property, index: index);
-                        },
-                      ),
+                      // One card per row on a phone, two or three across a
+                      // tablet — the same cards, just not stretched to the
+                      // full width of a 10" screen.
+                      if (context.gridColumns(target: 400, max: 3) == 1)
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: displayProperties.length,
+                          itemBuilder: (context, index) {
+                            final property = displayProperties[index];
+                            return PreBookingCard(
+                                property: property, index: index);
+                          },
+                        )
+                      else
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: displayProperties.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount:
+                                context.gridColumns(target: 400, max: 3),
+                            mainAxisExtent: 330,
+                          ),
+                          itemBuilder: (context, index) {
+                            final property = displayProperties[index];
+                            return PreBookingCard(
+                                property: property, index: index);
+                          },
+                        ),
                     ],
                   ],
                 );

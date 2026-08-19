@@ -34,6 +34,27 @@ class SearchResponse {
       };
 }
 
+/// The server sends the average as a string ("4.50"), a number, or null.
+/// Null stays null — see the note on [SearchPropertyModel.rating].
+double? _asRating(dynamic v) {
+  if (v == null) return null;
+  if (v is num) return v.toDouble();
+  return double.tryParse(v.toString());
+}
+
+int _asCount(dynamic v) {
+  if (v is num) return v.toInt();
+  return int.tryParse('${v ?? ''}') ?? 0;
+}
+
+List<String>? _asStringList(dynamic v) {
+  if (v is List) {
+    final out = v.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+    return out.isEmpty ? null : out;
+  }
+  return null;
+}
+
 class SearchPropertyModel {
   dynamic propertyId;
   dynamic propertyHostId;
@@ -64,6 +85,19 @@ class SearchPropertyModel {
   List<String>? images;
   dynamic categoryTitles;
 
+  /// Guest rating out of 5, or null when nobody has reviewed the stay yet.
+  ///
+  /// /properties/list has always returned this (attachRatings runs over every
+  /// row before the response is sent) — the model simply threw it away, so the
+  /// app had no way to sort or filter by rating while the website could. Null
+  /// is not zero: an unrated stay is unknown, not bad, and every comparison
+  /// here keeps those two apart.
+  double? rating;
+  int reviewCount;
+
+  /// Amenity titles, already filtered to the active ones by the server.
+  List<String>? amenities;
+
   SearchPropertyModel({
     this.propertyId,
     this.propertyHostId,
@@ -93,6 +127,9 @@ class SearchPropertyModel {
     this.coverImage,
     this.images,
     this.categoryTitles,
+    this.rating,
+    this.reviewCount = 0,
+    this.amenities,
   });
 
   factory SearchPropertyModel.fromJson(Map<String, dynamic> json) =>
@@ -126,6 +163,9 @@ class SearchPropertyModel {
         coverImage: json["coverImage"],
         images: List<String>.from(json["images"].map((x) => x)),
         categoryTitles: json["category_titles"],
+        rating: _asRating(json["rating"]),
+        reviewCount: _asCount(json["review_count"] ?? json["reviewCount"]),
+        amenities: _asStringList(json["amenities"]),
       );
 
   Map<String, dynamic> toJson() => {
@@ -158,5 +198,8 @@ class SearchPropertyModel {
         "coverImage": coverImage,
         "images": List<dynamic>.from(images!.map((x) => x)),
         "category_titles": categoryTitles,
+        "rating": rating,
+        "review_count": reviewCount,
+        "amenities": amenities,
       };
 }

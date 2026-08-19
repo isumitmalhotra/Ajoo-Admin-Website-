@@ -48,17 +48,21 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
   Widget build(BuildContext context) {
     print(widget.booking.bookingStatusBsTitle);
     return Scaffold(
+      backgroundColor: kSand,
+      // Was a solid teal slab with white-on-teal text — the pre-redesign
+      // header. Every other booking surface (My Bookings, the confirmation
+      // screen, Help & Support) sits on Warm Ivory and spends teal on the
+      // accent only; this is the same treatment, nothing else touched.
       appBar: AppBar(
-        foregroundColor: Colors.white,
-        title: const Text(
+        foregroundColor: kInk,
+        title: Text(
           'Booking Details',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style:
+              fraunces(fontSize: 18, fontWeight: FontWeight.w700, color: kInk),
         ),
-        backgroundColor: kprimaryColor,
+        backgroundColor: kSand,
         elevation: 0,
+        scrolledUnderElevation: 0,
       ),
       body: SingleChildScrollView(
         child: Obx(() {
@@ -453,7 +457,7 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
                                   ),
                                 ),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
+                                  backgroundColor: kSuccess,
                                   foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -569,7 +573,7 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
                                               fontWeight: FontWeight.w500),
                                         ),
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.blue,
+                                          backgroundColor: kIndigo,
                                           foregroundColor: Colors.white,
                                           shape: RoundedRectangleBorder(
                                             borderRadius:
@@ -605,7 +609,7 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
                                                 fontWeight: FontWeight.w500),
                                           ),
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.red,
+                                            backgroundColor: kDanger,
                                             foregroundColor: Colors.white,
                                             shape: RoundedRectangleBorder(
                                               borderRadius:
@@ -704,11 +708,11 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
       case 'payment pending':
         return Colors.orange;
       case 'booked':
-        return Colors.blue;
+        return kIndigo;
       case 'confirmed':
-        return Colors.green;
+        return kSuccess;
       case 'cancelled':
-        return Colors.red;
+        return kDanger;
       default:
         return kprimaryColor;
     }
@@ -732,7 +736,7 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
           return AlertDialog(
             title: const Row(
               children: [
-                Icon(Icons.warning, color: Colors.red, size: 28),
+                Icon(Icons.warning, color: kDanger, size: 28),
                 SizedBox(width: 10),
                 Text(
                   'Cancel Booking',
@@ -795,7 +799,7 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.info_outline, color: Colors.red, size: 20),
+                        const Icon(Icons.info_outline, color: kDanger, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -845,7 +849,7 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
                   await _cancelBooking(finalReason);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
+                  backgroundColor: kDanger,
                   foregroundColor: Colors.white,
                 ),
                 child: const Text('Cancel Anyway'),

@@ -6,6 +6,7 @@ import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:rent_home/models/property_review_response_model.dart';
 import 'package:rent_home/models/single_property_response.dart';
 import 'package:rent_home/models/host_profile.dart';
+import 'package:rent_home/models/destination_model.dart';
 
 class PropertyService {
   /// Why the last addProperties call failed, straight from the server.
@@ -139,6 +140,29 @@ class PropertyService {
       return false;
     }
     return false;
+  }
+
+  /// Places the platform can actually put someone, busiest first.
+  ///
+  /// Same endpoint the website's "Featured Destinations" rail reads, so the two
+  /// can never advertise different places or different counts. Returns an empty
+  /// list rather than throwing — a rail with nothing in it hides itself, which
+  /// is better than a home screen that fails to build.
+  Future<List<Destination>> getDestinations({int limit = 8}) async {
+    try {
+      final response = await dio.get("properties/destinations?limit=$limit");
+      final data = response.data is Map ? response.data['data'] : null;
+      final rows = data is Map ? data['destinations'] : null;
+      if (rows is! List) return const [];
+      return rows
+          .whereType<Map>()
+          .map((r) => Destination.fromJson(Map<String, dynamic>.from(r)))
+          .where((d) => d.name.isNotEmpty)
+          .toList();
+    } catch (e) {
+      debugPrint('getDestinations failed: $e');
+      return const [];
+    }
   }
 
   Future<ReviewResponse> getPropertyReview(int id) async {

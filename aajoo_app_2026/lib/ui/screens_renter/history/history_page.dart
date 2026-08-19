@@ -8,6 +8,7 @@ import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/models/booking_history_response_model.dart';
 import 'package:rent_home/ui/screens_renter/history/components/booking_cart.dart';
 import 'package:rent_home/ui/screens_renter/history/components/renter_history_list_shimmer.dart';
+import 'package:rent_home/ui/responsive.dart';
 import 'package:rent_home/ui/screens_renter/guest_shell.dart';
 import 'package:rent_home/utils/stay_clock.dart';
 
@@ -166,9 +167,30 @@ class _HistoryPageState extends State<HistoryPage> {
                             bucket)
                         .toList();
                 if (items.isEmpty) return _empty(bucket);
-                return ListView.builder(
+                // One column on a phone, two or three across a tablet. The
+                // cards are self-contained, so this is a layout change only —
+                // same cards, same order, same tap target.
+                final columns = context.gridColumns(target: 400, max: 3);
+                if (columns == 1) {
+                  return ListView.builder(
+                    padding: const EdgeInsets.only(top: 6, bottom: 20),
+                    itemCount: items.length,
+                    itemBuilder: (context, i) => Reveal(
+                      delay: Reveal.staggerDelay(i),
+                      child: BookingCard(booking: items[i]),
+                    ),
+                  );
+                }
+                return GridView.builder(
                   padding: const EdgeInsets.only(top: 6, bottom: 20),
                   itemCount: items.length,
+                  gridDelegate:
+                      SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    // Tall enough for the photo plus two lines of address; the
+                    // card sizes itself and this only reserves the space.
+                    mainAxisExtent: 348,
+                  ),
                   itemBuilder: (context, i) => Reveal(
                     delay: Reveal.staggerDelay(i),
                     child: BookingCard(booking: items[i]),

@@ -36,7 +36,7 @@ import 'package:rent_home/ui/screens_common/notifications/notification_screen.da
 import 'package:rent_home/service/notification_service.dart';
 import 'package:rent_home/ui/screens_renter/home/components/negotiated_deal_banner.dart';
 import 'package:rent_home/controller/deals_controller.dart';
-import 'package:rent_home/ui/screens_renter/home/pre_booking_home_carousel/prebooking_home_carousel.dart';
+import 'package:rent_home/ui/screens_renter/home/components/featured_destinations.dart';
 // Removed unused imports
 
 class Homescreen extends StatefulWidget {
@@ -57,7 +57,6 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
   /// empty result can name it — 16 of 29,241 live properties carry any
   /// category at all, so most filters legitimately return nothing and the
   /// screen has to say why rather than look broken.
-  String? _selectedCategoryTitle;
   late AnimationController _animationController;
   late Timer _timer;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -329,10 +328,7 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                               selectedIndex: _propertyType,
                               onChanged: (i) {
                                 final cat = i == 0 ? null : cats[i - 1];
-                                setState(() {
-                                  _propertyType = i;
-                                  _selectedCategoryTitle = cat?.catTitle;
-                                });
+                                setState(() => _propertyType = i);
                                 if (cat == null) {
                                   mapController.fetchProperties();
                                 } else {
@@ -431,9 +427,9 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                                 color: kCream,
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(color: kLine)),
-                            child: Row(
+                            child: const Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: const [
+                              children: [
                                 _TrustItem(Icons.verified_user_outlined,
                                     'Verified\nProperties'),
                                 _TrustItem(
@@ -522,47 +518,30 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                             );
                           }),
 
-                          /// 🔹 Find Your Stay
-                          Obx(() {
-                            if (mapController.isLoading.value) {
-                              return const SizedBox.shrink();
-                            }
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Find Your Stay",
-                                  style: fraunces(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w700,
-                                    color: kInk,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                SizedBox(
-                                  height: 310,
-                                  child: PreBookingHomeCarousel(
-                                    properties:
-                                        mapController.properties.toList(),
-                                    // So an empty result can say which filter
-                                    // emptied it, rather than claiming the
-                                    // platform has no stays.
-                                    filterLabel: _selectedCategoryTitle,
-                                    onClearFilter:
-                                        _selectedCategoryTitle == null
-                                            ? null
-                                            : () {
-                                                setState(() {
-                                                  _propertyType = 0;
-                                                  _selectedCategoryTitle = null;
-                                                });
-                                                mapController.fetchProperties();
-                                              },
-                                  ),
-                                ),
-                              ],
-                            );
-                          }),
+                          /// 🔹 Featured Destinations — the website's rail.
+                          ///
+                          /// This slot used to hold a THIRD property carousel
+                          /// ("Find Your Stay"), under admin-curated featured
+                          /// stays and two more rails of the same cards. The
+                          /// site answers "where could I go?" here instead, and
+                          /// the client asked for the same on the phone.
+                          FeaturedDestinations(
+                            onSelect: (destination, position) {
+                              // Same path a search selection takes: recentre
+                              // and refetch, so the rail changes what you are
+                              // browsing rather than opening a dead end.
+                              mapController.fetchPropertiesAt(position);
+                              // ...and drop the sheet so the guest can see it
+                              // happen. The map is several screens above this
+                              // rail, so without this the tap moved a map
+                              // nobody could see and read as doing nothing.
+                              _dragController.animateTo(
+                                0.28,
+                                duration: const Duration(milliseconds: 320),
+                                curve: Curves.easeOutCubic,
+                              );
+                            },
+                          ),
                           const SizedBox(height: 20),
 
                           // The second category row lived here. It duplicated

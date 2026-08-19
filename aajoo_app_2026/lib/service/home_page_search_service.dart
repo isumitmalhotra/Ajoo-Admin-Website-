@@ -51,7 +51,13 @@ class HomePageSearchService {
       "latitude": "",
       "sort_by": "property_id",
       "order": "desc",
-      "limit": 10,
+      // Was 10. Ten rows is a preview, not a catalogue: with sort and filter
+      // controls on this screen, "Price: Low to High" reordered ten listings
+      // and a price band could only ever narrow those same ten — so a guest
+      // asking for stays under ₹1,000 was told there were none while the
+      // platform held plenty. Sixty is one request, still small, and gives
+      // the controls something real to work on.
+      "limit": 60,
       "offset": 0,
       "radius": 10,
       "isLuxury": isLuxury

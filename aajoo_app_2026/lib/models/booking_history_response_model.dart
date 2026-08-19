@@ -57,6 +57,13 @@ class BookingHistoryData {
   bool bookIsCod;
   int? bookNoOfGuests;
 
+  /// The stay's cover photo. /user/booking-history has attached this for a
+  /// while (it prefers the cover image and falls back to the first gallery
+  /// shot); the model dropped it, so every booking card had to be text-only.
+  /// Null when the listing genuinely has no photo — the card draws a
+  /// placeholder rather than a broken image.
+  String? coverImage;
+
   BookingHistoryData(
       {this.bookId,
       this.bookInvoice,
@@ -73,7 +80,8 @@ class BookingHistoryData {
       this.bookTotalAmt,
       this.bookIsPaid = false,
       this.bookIsCod = false,
-      this.bookNoOfGuests});
+      this.bookNoOfGuests,
+      this.coverImage});
 
   factory BookingHistoryData.fromJson(Map<String, dynamic> json) =>
       BookingHistoryData(
@@ -94,7 +102,8 @@ class BookingHistoryData {
           // MySQL sends these as 1/0, so a plain cast to bool would throw.
           bookIsPaid: _toBool(json["book_is_paid"]),
           bookIsCod: _toBool(json["book_is_cod"]),
-          bookNoOfGuests: _toInt(json["book_no_of_guests"]));
+          bookNoOfGuests: _toInt(json["book_no_of_guests"]),
+          coverImage: json["coverImage"]);
 
   Map<String, dynamic> toJson() => {
         "book_id": bookId,
@@ -112,7 +121,8 @@ class BookingHistoryData {
         "book_total_amt": bookTotalAmt,
         "book_is_paid": bookIsPaid,
         "book_is_cod": bookIsCod,
-        "book_no_of_guests": bookNoOfGuests
+        "book_no_of_guests": bookNoOfGuests,
+        "coverImage": coverImage
       };
 }
 

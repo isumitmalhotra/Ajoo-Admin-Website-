@@ -1,8 +1,24 @@
+// Contact Support — rebuilt in the current design language.
+//
+// This page was the last renter-facing screen still wearing the pre-redesign
+// look: a solid teal AppBar with white text, Flutter's default typeface, and
+// three identical grey-bordered boxes whose only difference was the icon. The
+// client's note was that it "looks old", and it did — nothing else the guest
+// touches is styled like this any more.
+//
+// What changed is presentation only. Every action behind it is the same one:
+// the same phone number, the same WhatsApp handoff, the same BotPenguin chat
+// URL, the same mailto address, the same website, and the same FAQ feed from
+// StaticPageController. The one thing that used to be genuinely hard to find —
+// the support chat — is now the primary button rather than a small circle
+// tucked into the corner of a card, which is what the client asked for.
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/controller/static_page_controller.dart';
 import 'package:rent_home/service/device_service.dart';
+import 'package:rent_home/ui/responsive.dart';
+import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/widgets/social_row.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -10,6 +26,10 @@ import 'package:url_launcher/url_launcher.dart';
 /// One definition, so the mailto link and the address on screen cannot
 /// disagree again.
 const String _supportEmail = 'aajoolive@gmail.com';
+const String _supportPhone = '+91 96252 36254';
+const String _whatsappNumber = '7973918722';
+const String _chatUrl =
+    'https://window-2.botpenguin.com/69803a093817049868bf064f/696f4cdf88f4a8046c67188e';
 
 class SupportScreen extends StatelessWidget {
   const SupportScreen({super.key});
@@ -17,261 +37,317 @@ class SupportScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kcontentColor,
+      backgroundColor: kSand,
       appBar: AppBar(
-        title: const Text('Contact Support'),
-        backgroundColor: kprimaryColor,
-        foregroundColor: kscaffoldColor,
-        centerTitle: true,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor: kSand,
+        foregroundColor: kInk,
+        centerTitle: false,
+        titleSpacing: 0,
+        title: Text(
+          'Help & Support',
+          style: fraunces(
+              fontSize: 20, fontWeight: FontWeight.w700, color: kInk),
+        ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SafeArea(
+        top: false,
         child: SingleChildScrollView(
-          child: Column(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
+          // On a tablet this column would otherwise run the full 1300px and
+          // the FAQ answers would read as one endless line.
+          child: ResponsiveBody(
+              child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const ContactInfoSection(),
-              const SizedBox(height: 10),
-              Divider(color: Colors.grey.shade300),
-              const SizedBox(height: 10),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
-                child: Text('Frequently asked Questions',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade600)),
+              Text(
+                'We usually reply within a few minutes.',
+                style: inter(fontSize: 14, color: kMuted, height: 1.4),
               ),
+              const SizedBox(height: 18),
+              const _ChatCard(),
+              const SizedBox(height: 14),
+              const _ContactChannels(),
+              const SizedBox(height: 26),
+              const _SectionHeading(
+                title: 'Frequently asked questions',
+                subtitle: 'Answers to the things guests ask most.',
+              ),
+              const SizedBox(height: 12),
               const FAQSection(),
-              Divider(color: Colors.grey.shade300),
-              const SizedBox(height: 10),
-              const SocialRow(
-                rowAlignment: MainAxisAlignment.spaceEvenly,
+              const SizedBox(height: 26),
+              const _SectionHeading(
+                title: 'Follow Aajoo Homes',
+                subtitle: 'New stays and offers, first.',
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: kSurface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: kLine),
+                ),
+                child: const SocialRow(
+                  rowAlignment: MainAxisAlignment.spaceEvenly,
+                ),
+              ),
             ],
-          ),
+          )),
         ),
       ),
     );
   }
 }
 
-class ContactInfoSection extends StatelessWidget {
-  const ContactInfoSection({super.key});
+/// The support button the client asked to be redesigned.
+///
+/// It was a 42px circle in the bottom-right corner of the phone-number card,
+/// which is where you put something you do not want found. Chat is the fastest
+/// channel we have, so it leads: full-width, labelled, with WhatsApp beside it
+/// as the equal alternative rather than another anonymous circle.
+class _ChatCard extends StatelessWidget {
+  const _ChatCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: kIndigo.withOpacity(0.22)),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [kIndigo50, kSurface],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: kIndigo,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.support_agent_rounded,
+                    color: Colors.white, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Chat with support',
+                      style: fraunces(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: kInk),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Bookings, refunds, payments — any hour.',
+                      style: inter(fontSize: 12.5, color: kMuted),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: ElevatedButton.icon(
+                  onPressed: () => Get.toNamed(
+                    '/webview',
+                    arguments: {'url': _chatUrl, 'title': 'Support Chat'},
+                  ),
+                  icon: const Icon(Icons.chat_bubble_rounded, size: 18),
+                  label: Text(
+                    'Start chat',
+                    style:
+                        inter(fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kIndigo,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 2,
+                child: OutlinedButton.icon(
+                  onPressed: () => DeviceService.launchWhatsapp(
+                    phoneNumber: _whatsappNumber,
+                    message: 'hello, i need assistance',
+                  ),
+                  icon: Image.asset('assets/whatsapp.png',
+                      width: 18, height: 18),
+                  label: Text(
+                    'WhatsApp',
+                    style:
+                        inter(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: kInk,
+                    side: const BorderSide(color: kLine),
+                    backgroundColor: kSurface,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Phone, email and website, as one grouped list rather than three floating
+/// cards — the same shape Settings uses, so the app reads as one app.
+class _ContactChannels extends StatelessWidget {
+  const _ContactChannels();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: kLine),
+      ),
+      child: Column(
+        children: [
+          _ChannelRow(
+            icon: Icons.phone_in_talk_rounded,
+            label: 'Call us — 24×7',
+            value: _supportPhone,
+            onTap: () => launchUrl(
+              Uri(scheme: 'tel', path: _supportPhone.replaceAll(' ', '')),
+            ),
+          ),
+          const Divider(height: 1, color: kLine, indent: 62),
+          _ChannelRow(
+            icon: Icons.mail_outline_rounded,
+            label: 'Write to us',
+            value: _supportEmail,
+            // The link said "naaajoolive@gmail.com" while the row below it
+            // displayed "aajoolive@gmail.com" — a typo, so every renter who
+            // tapped support email sent it to an address that does not exist
+            // and got a bounce. Kept in one place so they cannot drift again.
+            onTap: () =>
+                launchUrl(Uri(scheme: 'mailto', path: _supportEmail)),
+          ),
+          const Divider(height: 1, color: kLine, indent: 62),
+          _ChannelRow(
+            icon: Icons.language_rounded,
+            label: 'Visit the website',
+            value: 'aajoohomes.com',
+            onTap: () => launchUrl(
+              Uri.parse('https://aajoohomes.com/'),
+              mode: LaunchMode.externalApplication,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChannelRow extends StatelessWidget {
+  const _ChannelRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: kIndigo50,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 18, color: kIndigo),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: inter(fontSize: 12.5, color: kMuted)),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: kInk),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, size: 20, color: kMuted),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade200),
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                blurRadius: 3,
-                offset: const Offset(0, 3),
-              )
-            ],
-            color: kscaffoldColor,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top Row (Icon + Title)
-              const ContactRow(
-                icon: Icons.phone,
-                label: 'Our 24x7 Customer Service',
-                contactInfo: '+91 96252 36254',
-              ),
-
-              const SizedBox(height: 12),
-
-              // Action Buttons Row (NEW)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  // WhatsApp Button
-                  _circleActionButton(
-                    icon: Image.asset(
-                      'assets/whatsapp.png',
-                      width: 22,
-                      height: 22,
-                    ),
-                    bgColor: kprimaryColor.withOpacity(0.1),
-                    onTap: () {
-                      DeviceService.launchWhatsapp(
-                        phoneNumber: "7973918722",
-                        message: "hello, i need assistance",
-                      );
-                    },
-                  ),
-
-                  const SizedBox(width: 12),
-
-                  // Support Agent Button
-                  _circleActionButton(
-                    icon: const Icon(
-                      Icons.support_agent_rounded,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                    bgColor: kprimaryColor,
-                    onTap: () {
-                      Get.toNamed(
-                        '/webview',
-                        arguments: {
-                          'url':
-                              'https://window-2.botpenguin.com/69803a093817049868bf064f/696f4cdf88f4a8046c67188e',
-                          'title': 'Support Chat',
-                        },
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
+        Text(
+          title,
+          style:
+              fraunces(fontSize: 18, fontWeight: FontWeight.w700, color: kInk),
         ),
-        const SizedBox(height: 10),
-        GestureDetector(
-          onTap: () {
-            // The link said "naaajoolive@gmail.com" while the row below it
-            // displayed "aajoolive@gmail.com" — a typo, so every renter who
-            // tapped support email sent it to an address that does not exist
-            // and got a bounce. Kept in one place so they cannot drift again.
-            final Uri emailUri = Uri(scheme: 'mailto', path: _supportEmail);
-            launchUrl(emailUri);
-          },
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade200),
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 3,
-                    offset: const Offset(0, 3),
-                  )
-                ],
-                color: kscaffoldColor),
-            child: const ContactRow(
-              icon: Icons.email,
-              label: 'Write us at',
-              contactInfo: _supportEmail,
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        GestureDetector(
-          onTap: () {
-            // Handle tap on website
-            final Uri websiteUri = Uri.parse('https://aajoohomes.com/');
-            launchUrl(websiteUri);
-          },
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade200),
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 3,
-                    offset: const Offset(0, 3),
-                  )
-                ],
-                color: kscaffoldColor),
-            child: const ContactRow(
-              icon: Icons.web_rounded,
-              label: 'Visit our website for more information.',
-              contactInfo: 'aajoohomes.com',
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _circleActionButton({
-    required Widget icon,
-    required VoidCallback onTap,
-    required Color bgColor,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(50),
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: bgColor,
-        ),
-        child: icon,
-      ),
-    );
-  }
-}
-
-class ContactRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String contactInfo;
-
-  const ContactRow({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.contactInfo,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start, // 👈 important
-      children: [
-        CircleAvatar(
-          backgroundColor: kcontentColor,
-          radius: 25,
-          child: Icon(icon, color: kprimaryColor),
-        ),
-        const SizedBox(width: 15),
-
-        /// 👇 THIS IS THE MAIN FIX
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w400,
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                contactInfo,
-                softWrap: true, // 👈 allows next line
-                maxLines: 2, // 👈 goes to 2nd line if needed
-                overflow:
-                    TextOverflow.ellipsis, // 👈 avoids overflow after 2 lines
-                style: const TextStyle(
-                  color: kprimaryColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 17,
-                ),
-              ),
-            ],
-          ),
-        ),
+        const SizedBox(height: 3),
+        Text(subtitle, style: inter(fontSize: 12.5, color: kMuted)),
       ],
     );
   }
@@ -302,51 +378,118 @@ class _FAQSectionState extends State<FAQSection> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade200),
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 3,
-              offset: const Offset(0, 3),
-            )
-          ],
-          color: kscaffoldColor),
-      child: Obx(() {
-        if (_staticPageController.isLoading.value) {
-          //shimmer
-          return Shimmer.fromColors(
-              baseColor: Colors.grey.shade300,
-              highlightColor: Colors.grey.shade200,
-              child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: 6,
-                  itemBuilder: (context, index) {
-                    return Container(
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      height: 50,
-                      width: double.infinity,
-                      color: Colors.white,
-                    );
-                  }));
-        }
-        final faqData = _staticPageController.faqData.value?.data.faqData;
-        if (faqData == null) {
-          return const Center(child: Text("No data available"));
-        }
-        return ListView.builder(
-          shrinkWrap: true,
-          itemCount: faqData.length,
-          itemBuilder: (context, index) {
-            final faq = faqData[index];
-            return FAQTile(question: faq.title, answer: faq.description);
-          },
+    return Obx(() {
+      if (_staticPageController.isLoading.value) {
+        return Shimmer.fromColors(
+          baseColor: kLine,
+          highlightColor: kSand,
+          child: Column(
+            children: List.generate(
+              4,
+              (_) => Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                height: 58,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ),
         );
-      }),
+      }
+      final faqData = _staticPageController.faqData.value?.data.faqData;
+      final failed = _staticPageController.faqError.value;
+
+      // A request that never landed is not an empty catalogue. The backend
+      // cold-starts, and on the first open of a cold app this section reliably
+      // timed out — which used to render as "No questions here yet" over a
+      // server holding a dozen answers.
+      if (failed && (faqData == null || faqData.isEmpty)) {
+        return _FaqNotice(
+          icon: Icons.wifi_off_rounded,
+          title: "Couldn't load the FAQs",
+          body: 'Check your connection and try again.',
+          onRetry: () => _staticPageController.getFaqData(),
+        );
+      }
+      if (faqData == null || faqData.isEmpty) {
+        // An empty shelf, said plainly, with the way out on it — better than
+        // the bare "No data available" this used to show.
+        return const _FaqNotice(
+          icon: Icons.help_outline_rounded,
+          title: 'No questions here yet',
+          body: 'Chat with us above and we will answer directly.',
+        );
+      }
+      return Column(
+        children: [
+          for (final faq in faqData)
+            FAQTile(question: faq.title, answer: faq.description),
+        ],
+      );
+    });
+  }
+}
+
+/// A single message where the FAQ list would be — empty, or failed with a
+/// way to try again.
+class _FaqNotice extends StatelessWidget {
+  const _FaqNotice({
+    required this.icon,
+    required this.title,
+    required this.body,
+    this.onRetry,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 18),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: kLine),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 26, color: kMuted),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: inter(fontSize: 14, fontWeight: FontWeight.w600, color: kInk),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            body,
+            textAlign: TextAlign.center,
+            style: inter(fontSize: 12.5, color: kMuted),
+          ),
+          if (onRetry != null) ...[
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded, size: 17),
+              label: Text('Retry',
+                  style: inter(fontSize: 13, fontWeight: FontWeight.w600)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: kIndigo,
+                side: const BorderSide(color: kIndigo),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -363,37 +506,45 @@ class FAQTile extends StatefulWidget {
 
 class _FAQTileState extends State<FAQTile> {
   bool isExpanded = false;
+
   @override
   Widget build(BuildContext context) {
-    return ExpansionTile(
-      title: Text(
-        widget.question,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: Colors.grey.shade800,
-        ),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: isExpanded ? kIndigo.withOpacity(0.3) : kLine),
       ),
-      trailing: Icon(
-        isExpanded ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-        color: kprimaryColor,
-      ),
-      collapsedTextColor: Colors.grey.shade800,
-      onExpansionChanged: (value) {
-        setState(() {
-          isExpanded = value;
-        });
-      },
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Text(
-            widget.answer,
-            style: TextStyle(
-              color: Colors.grey.shade600,
-            ),
+      child: Theme(
+        // Kill the default divider lines; the card border is the boundary.
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          shape: const Border(),
+          collapsedShape: const Border(),
+          title: Text(
+            widget.question,
+            style: inter(
+                fontSize: 14.5, fontWeight: FontWeight.w600, color: kInk),
           ),
+          trailing: AnimatedRotation(
+            turns: isExpanded ? 0.5 : 0,
+            duration: const Duration(milliseconds: 180),
+            child: const Icon(Icons.keyboard_arrow_down_rounded,
+                color: kIndigo, size: 22),
+          ),
+          onExpansionChanged: (value) => setState(() => isExpanded = value),
+          children: [
+            Text(
+              widget.answer,
+              style: inter(fontSize: 13.5, color: kInk2, height: 1.5),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
