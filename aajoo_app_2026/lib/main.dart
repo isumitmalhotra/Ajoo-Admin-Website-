@@ -33,8 +33,24 @@ import 'binding/init_binding.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)
-      .whenComplete(() {});
+
+  // Firebase must never be able to stop the app from starting.
+  //
+  // This was an unguarded `await` before runApp(): on a handset with old,
+  // broken or absent Google Play Services — common on budget and older
+  // Samsung devices — initializeApp() throws or simply never returns, and
+  // because runApp() sat behind it the app rendered NOTHING. The user stares
+  // at the launch screen for ever, on a device where everything except push
+  // notifications would have worked perfectly.
+  //
+  // Bounded and caught: if Firebase is unavailable we lose push, and we open.
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)
+        .timeout(const Duration(seconds: 10));
+  } catch (e) {
+    debugPrint('Firebase unavailable, starting without it: $e');
+  }
+
   Get.put(ThemeService());
   runApp(const MyApp());
 }

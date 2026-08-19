@@ -6,13 +6,16 @@ import "package:http/http.dart" as http;
 import '../data/source/remote/dio_config.dart';
 import '../models/update_user_model.dart';
 import '../models/user_models.dart';
+import 'package:rent_home/utils/secure_store.dart';
 
 class AuthService {
   final Dio _dio = Dio();
   final String baseUrl = 'https://aajaodev.onrender.com';
   final String TOKEN_KEY = 'user_token';
   final String USER_DATA_KEY = 'user_data';
-  final FlutterSecureStorage storage = const FlutterSecureStorage();
+  // The shared, hardened instance: reads on a device with a broken Keystore
+  // return null instead of throwing. See utils/secure_store.dart.
+  final FlutterSecureStorage storage = secureStore;
   String? _token;
 
   AuthService() {
@@ -42,7 +45,7 @@ class AuthService {
   }
 
   Future<bool> checkLoginStatus() async {
-    final token = await storage.read(key: TOKEN_KEY);
+    final token = await secureRead(TOKEN_KEY);
     if (token == null || token.isEmpty) {
       return false;
     }
@@ -51,7 +54,7 @@ class AuthService {
   }
 
   Future<UserDetail?> getSavedUserDetails() async {
-    final savedUserDataStr = await storage.read(key: USER_DATA_KEY);
+    final savedUserDataStr = await secureRead(USER_DATA_KEY);
     if (savedUserDataStr == null || savedUserDataStr.isEmpty) {
       return null;
     }

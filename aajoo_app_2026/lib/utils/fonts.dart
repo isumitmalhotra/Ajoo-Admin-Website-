@@ -7,9 +7,28 @@
 // The helper NAMES (fraunces/inter/interTextTheme) are kept for backwards-compat
 // across the app; only the underlying faces changed. BR-2 pairs Plus Jakarta
 // Sans for display with Manrope for UI.
-
+//
+// THE FONTS ARE BUNDLED, NOT DOWNLOADED.
+//
+// These used to come from the `google_fonts` package, which fetches the .ttf
+// from fonts.gstatic.com at runtime and caches it. That put a network request
+// between the app and its own text on every fresh install: on a slow or
+// filtered connection the first screens rendered in a fallback face and then
+// reflowed, and with no connection at all the logs filled with unhandled
+// "Failed host lookup: fonts.gstatic.com" exceptions. On older handsets with
+// stale root certificates the request can fail outright, every time.
+//
+// Both families now ship inside the APK (~340 KB for the pair) and are chosen
+// with a weight axis, so typography is identical everywhere and needs nothing
+// from the network. They are variable fonts, hence `fontVariations`: naming a
+// weight alone would render every style at the default instance.
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
+const String _display = 'PlusJakartaSans';
+const String _body = 'Manrope';
+
+/// The `wght` axis value for a Flutter FontWeight (w400 → 400).
+List<FontVariation> _wght(FontWeight w) => [FontVariation('wght', w.value.toDouble())];
 
 /// Plus Jakarta Sans — headings and brand text. (Helper name kept for compat.)
 TextStyle fraunces({
@@ -20,7 +39,9 @@ TextStyle fraunces({
   double? height,
   FontStyle? fontStyle,
 }) {
-  return GoogleFonts.plusJakartaSans(
+  return TextStyle(
+    fontFamily: _display,
+    fontVariations: _wght(fontWeight),
     fontSize: fontSize,
     fontWeight: fontWeight,
     color: color,
@@ -38,7 +59,9 @@ TextStyle inter({
   double? letterSpacing,
   double? height,
 }) {
-  return GoogleFonts.manrope(
+  return TextStyle(
+    fontFamily: _body,
+    fontVariations: _wght(fontWeight),
     fontSize: fontSize,
     fontWeight: fontWeight,
     color: color,
@@ -50,5 +73,6 @@ TextStyle inter({
 /// Manrope text theme — base text theme inside ThemeData.
 /// (Helper kept named `interTextTheme` for compat.)
 TextTheme interTextTheme([TextTheme? base]) {
-  return GoogleFonts.manropeTextTheme(base);
+  final theme = base ?? ThemeData.light().textTheme;
+  return theme.apply(fontFamily: _body);
 }

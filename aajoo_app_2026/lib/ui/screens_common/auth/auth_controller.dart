@@ -57,7 +57,14 @@ class AuthController extends GetxController {
       isLoggedIn.value = loggedInStatus;
       return loggedInStatus;
     } catch (e) {
-      rethrow;
+      // Do NOT rethrow. This runs during startup, and the only honest answer
+      // when the stored session cannot be read is "we don't know who you are"
+      // — which means logged out, and the app knows how to show a login
+      // screen. Rethrowing here is what turned an unreadable Keystore entry on
+      // one handset into an app frozen on its splash screen.
+      debugPrint('checkLoginStatus failed, treating as signed out: $e');
+      isLoggedIn.value = false;
+      return false;
     }
   }
 

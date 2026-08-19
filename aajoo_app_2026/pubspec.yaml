@@ -135,6 +135,14 @@ flutter:
   # list giving the asset and other descriptors for the font. For
   # example:
   fonts:
+    # Bundled so the app never fetches its own typeface over the network — see
+    # lib/utils/fonts.dart. Variable fonts: weight is chosen via fontVariations.
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/google_fonts/PlusJakartaSans-VF.ttf
+    - family: Manrope
+      fonts:
+        - asset: assets/google_fonts/Manrope-VF.ttf
     - family: Mon
       fonts:
         - asset: assets/Montserrat-Regular.ttf

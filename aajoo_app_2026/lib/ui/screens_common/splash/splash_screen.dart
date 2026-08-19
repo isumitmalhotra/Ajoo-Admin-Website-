@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
 import 'package:rent_home/controller/common_controller.dart';
+import 'package:rent_home/utils/secure_store.dart';
 import '../auth/auth_controller.dart';
 
 // class SplashScreen extends StatefulWidget {
@@ -238,49 +238,77 @@ class _SplashScreenState extends State<SplashScreen> {
     });
   }
 
+  /// Set the moment we navigate away, so the watchdog below stands down.
+  bool _left = false;
+
+  void _go(String route) {
+    if (_left || !mounted) return;
+    _left = true;
+    Get.offAllNamed(route);
+  }
+
+  /// Nobody may be left looking at the splash screen.
+  ///
+  /// This is the bug the client's testers hit on an older Samsung: startup
+  /// read a token from secure storage, the Keystore on that handset threw,
+  /// and the catch below — whose navigation had been commented out — swallowed
+  /// it. The app then sat on the splash for ever, on a device where every
+  /// other screen would have worked fine.
+  ///
+  /// Two independent guarantees now. The catch always lands somewhere, and
+  /// this watchdog fires regardless of what startup is doing: if we are still
+  /// here after eight seconds, something is wedged, and the login screen is a
+  /// far better answer than an animation that never ends.
+  Timer? _watchdog;
+
   Future<void> _initializeApp() async {
-    try {
-      final isLoggedIn = await authController.checkLoginStatus();
-      if (isLoggedIn) {
-        authController.getUserDetails();
+    _watchdog = Timer(const Duration(seconds: 8), () {
+      if (!_left) {
+        debugPrint('Splash watchdog fired — startup did not finish in time.');
+        _go('/login');
       }
-      if (mounted) {
-        final hasSeenOnboarding = await _checkOnboardingStatus();
-        if (!hasSeenOnboarding) {
-          Get.offAllNamed('/onboarding');
-        } else if (!isLoggedIn) {
-          Get.offAllNamed('/login');
-        } else {
-          final isHost = authController.userData.value?.isHost == true;
-          if (isHost) {
-            Get.offAllNamed('/host/home');
-          } else {
-            Get.offAllNamed('/home');
-          }
-        }
+    });
+
+    try {
+      // Capped: a hung read must not outlive the watchdog silently.
+      final isLoggedIn = await authController
+          .checkLoginStatus()
+          .timeout(const Duration(seconds: 6), onTimeout: () => false);
+      if (isLoggedIn) {
+        // Fire-and-forget, but never unhandled — a failure here must not
+        // prevent the app from opening.
+        unawaited(Future(() => authController.getUserDetails())
+            .catchError((Object e) => debugPrint('getUserDetails failed: $e')));
+      }
+      if (!mounted) return;
+
+      final hasSeenOnboarding = await _checkOnboardingStatus();
+      if (!hasSeenOnboarding) {
+        _go('/onboarding');
+      } else if (!isLoggedIn) {
+        _go('/login');
       } else {
-        debugPrint("❌ Widget not mounted, skipping navigation");
+        final isHost = authController.userData.value?.isHost == true;
+        _go(isHost ? '/host/home' : '/home');
       }
     } catch (e) {
-      if (mounted) {
-        debugPrint("➡️ Navigating to /login (fallback)");
-        //Get.offAllNamed('/login');
-      }
+      // Land somewhere. Anywhere. The old code logged this line and then did
+      // nothing, which is how a one-line storage failure became a dead app.
+      debugPrint('Splash init failed, falling back to /login: $e');
+      _go('/login');
     }
   }
 
   Future<bool> _checkOnboardingStatus() async {
-    const storage = FlutterSecureStorage();
-    final token = await storage.read(key: authController.authService.TOKEN_KEY);
-    if (token == null) {
-      return false;
-    }
-    return true;
+    // secureRead never throws and never hangs — see utils/secure_store.dart.
+    final token = await secureRead(authController.authService.TOKEN_KEY);
+    return token != null;
   }
 
   @override
   void dispose() {
     _timer.cancel(); // Cancel the timer to prevent memory leaks
+    _watchdog?.cancel();
     super.dispose();
   }
 
