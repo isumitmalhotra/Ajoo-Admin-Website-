@@ -29,7 +29,20 @@ class NegotiationController extends GetxController {
   // Chat limits
   final RxInt userMessageCount = 0.obs;
   final RxInt hostMessageCount = 0.obs;
-  final RxInt maxMessagesPerUser = 400.obs;
+  /// Two offers each — four messages to the whole negotiation.
+  ///
+  /// This said 400 while the screen above it read "Messages: 0/4" and "Your
+  /// remaining: 400" on the same row, which is what a tester was looking at
+  /// when they said negotiations were not working. Four hundred rounds is not
+  /// a negotiation, and nothing enforces a cap server-side, so the number
+  /// here IS the rule; the original (still in the legacy controller) is two
+  /// per side, and the label has been telling guests four all along.
+  final RxInt maxMessagesPerUser = 2.obs;
+
+  /// The whole negotiation's budget — what the counter shows as the
+  /// denominator. Derived, so the label and the limit cannot drift apart
+  /// again.
+  int get maxTotalMessages => maxMessagesPerUser.value * 2;
   final RxBool chatLimitReached = false.obs;
   final RxBool isUserTurn = true.obs; // User starts first
   final RxString lastMessageSenderId = ''.obs;
@@ -132,7 +145,7 @@ class NegotiationController extends GetxController {
 
     // Check if chat limit is reached
     final totalMessages = userMessageCount.value + hostMessageCount.value;
-    if (totalMessages >= (maxMessagesPerUser.value * 2)) {
+    if (totalMessages >= maxTotalMessages) {
       chatLimitReached.value = true;
       isUserTurn.value = false; // No more turns
     }
@@ -141,11 +154,11 @@ class NegotiationController extends GetxController {
   // Get remaining message count for current user
   int getRemainingMessages(String currentUserId, String hostId) {
     final isUser = currentUserId != hostId;
-    if (isUser) {
-      return maxMessagesPerUser.value - userMessageCount.value;
-    } else {
-      return maxMessagesPerUser.value - hostMessageCount.value;
-    }
+    final used = isUser ? userMessageCount.value : hostMessageCount.value;
+    // Never below zero. History replay can push a count past the cap on an
+    // old negotiation started before the limit existed, and "-3 remaining"
+    // is not a thing to tell anybody.
+    return (maxMessagesPerUser.value - used).clamp(0, maxMessagesPerUser.value);
   }
 
   // Get whose turn it is
@@ -249,11 +262,16 @@ class NegotiationController extends GetxController {
         updateMessageCounts(message.senderId, message.userId, message.hostId);
       }
 
-      // Update currentPrice with the latest offer
+      // Update currentPrice with the latest offer.
+      //
+      // This assignment was commented out, so reopening a negotiation showed
+      // the listed price as the "current offer" no matter how far the
+      // haggling had got — the one place that knows the real standing number
+      // was the one place not allowed to say it.
       final latestOffer = messages
           .lastWhereOrNull((msg) => msg.isOffer && msg.offerPrice != null);
-      if (latestOffer != null) {
-        // currentPrice.value = latestOffer.offerPrice!;
+      if (latestOffer?.offerPrice != null) {
+        currentPrice.value = latestOffer!.offerPrice!;
       }
       final accepted = messages.where((m) => m.isAccepted).toList();
       if (accepted.isNotEmpty) {
@@ -382,10 +400,19 @@ class NegotiationController extends GetxController {
           .loadNegotiationChat(senderId, receiverId, propertyId)
           .then((_) {
         if (_isDisposed) return;
-        currentPrice.value = messages
-                .lastWhereOrNull((msg) => msg.isOffer && msg.offerPrice != null)
-                ?.offerPrice ??
-            0.0;
+        // Only when there IS an offer to show.
+        //
+        // This used to fall back to 0.0, and it fires when the REQUEST
+        // resolves — which is before the chat-history socket event delivers
+        // any messages. So on every fresh negotiation it wiped the listed
+        // price the screen had just been opened with and rendered
+        // "Current Offer ₹0.00" under a "Base: ₹2,900.00" header. The price
+        // standing before the first offer is the listed one; leave it alone.
+        final latest = messages
+            .lastWhereOrNull((msg) => msg.isOffer && msg.offerPrice != null);
+        if (latest?.offerPrice != null) {
+          currentPrice.value = latest!.offerPrice!;
+        }
         // The request is done. This never cleared the flag, so the screen
         // stayed on the spinner until the chat-history socket event happened
         // to arrive — and on a first-time negotiation, where there is no

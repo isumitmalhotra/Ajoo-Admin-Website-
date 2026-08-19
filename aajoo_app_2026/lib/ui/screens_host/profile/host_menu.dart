@@ -81,10 +81,16 @@ List<HostMenuEntry> hostMenuEntries({VoidCallback? beforeNavigate}) {
       subtitle: 'Where your payouts land',
       onTap: () => go(() => const AddPayoutAccountPage()),
     ),
+    // Named for the screen it actually opens.
+    //
+    // This said "Messages · Aajoo support and your guests" and went to
+    // HostSupportScreen — while the shell's bottom bar has its own Messages
+    // tab, which goes to HostMessagesScreen. Two entries called Messages, one
+    // of them support, and no way to reach Host Support by name from here.
     HostMenuEntry(
       icon: Icons.support_agent,
-      label: 'Messages',
-      subtitle: 'Aajoo support and your guests',
+      label: 'Host Support',
+      subtitle: 'Dedicated line, WhatsApp and FAQs',
       onTap: () => go(() => const HostSupportScreen()),
     ),
     HostMenuEntry(

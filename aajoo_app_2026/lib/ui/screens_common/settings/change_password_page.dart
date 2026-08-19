@@ -104,9 +104,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       appBar: AppBar(
         title: Text('Change Password',
             style: fraunces(
-                fontSize: 20, fontWeight: FontWeight.w500, color: kCream)),
-        backgroundColor: kprimaryColor,
-        foregroundColor: kCream,
+                fontSize: 20, fontWeight: FontWeight.w700, color: kInk)),
+        backgroundColor: kSand,
+        foregroundColor: kInk,
         centerTitle: true,
         elevation: 0,
       ),

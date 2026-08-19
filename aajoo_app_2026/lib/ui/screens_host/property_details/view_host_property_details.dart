@@ -75,8 +75,8 @@ class _HostPropertyDetailsState extends State<HostPropertyDetails> {
       backgroundColor: kscaffoldColor,
       appBar: AppBar(
         title: const Text('Property Details'),
-        backgroundColor: kprimaryColor,
-        foregroundColor: kcontentColor,
+        backgroundColor: kSand,
+        foregroundColor: kInk,
         elevation: 0,
         actions: [
           IconButton(

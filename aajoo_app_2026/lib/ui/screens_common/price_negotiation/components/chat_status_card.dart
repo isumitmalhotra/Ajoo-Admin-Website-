@@ -97,8 +97,15 @@ class ChatStatusCard extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Messages: $totalMessages/4'),
-                          Text('Your remaining: $remainingMessages'),
+                          // Denominator comes from the controller, not a
+                          // literal. Hardcoding 4 here while the controller
+                          // capped at 400 is how this row came to read
+                          // "Messages: 0/4" beside "Your remaining: 400".
+                          Text(
+                              'Offers: $totalMessages/${negotiationController.maxTotalMessages}'),
+                          Text(remainingMessages == 1
+                              ? '1 offer left for you'
+                              : '$remainingMessages offers left for you'),
                         ],
                       ),
                       if (negotiationController.chatLimitReached.value)

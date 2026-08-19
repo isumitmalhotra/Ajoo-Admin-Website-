@@ -39,14 +39,17 @@ class _PayoutPageState extends State<PayoutPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kcontentColor,
+      backgroundColor: kSand,
       appBar: AppBar(
-        title: Text('Payout',
+        title: Text('Payouts',
             style: fraunces(
-                fontSize: 20, fontWeight: FontWeight.w500, color: kCream)),
-        backgroundColor: kprimaryColor,
-        foregroundColor: kscaffoldColor,
-        centerTitle: true,
+                fontSize: 20, fontWeight: FontWeight.w700, color: kInk)),
+        backgroundColor: kSand,
+        foregroundColor: kInk,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        titleSpacing: 0,
       ),
       body: Obx(() {
         if (_payoutController.isLoading.value &&
@@ -80,9 +83,9 @@ class _PayoutPageState extends State<PayoutPage> {
                 _requestPayoutButton(context),
                 const SizedBox(height: 30),
                 Text(
-                  'Payout History',
+                  'Payout history',
                   style: fraunces(
-                      fontSize: 22, fontWeight: FontWeight.w500, color: kInk),
+                      fontSize: 18, fontWeight: FontWeight.w700, color: kInk),
                 ),
                 const SizedBox(height: 10),
                 payouts.isEmpty
@@ -98,14 +101,28 @@ class _PayoutPageState extends State<PayoutPage> {
                               .data
                               .payoutRequests[index];
                           return _buildPayoutHistoryTile(
+                            // Reference first, same as the website's table —
+                            // it is what a host quotes to support when a
+                            // payout is queried.
+                            reference: 'PO-${payoutRequest.payReqId}',
                             date: DateFormat('MMM dd, yyyy')
                                 .format(payoutRequest.createdAt),
-                            amount: '₹${payoutRequest.payReqAmount}',
+                            amount: '₹${inr(payoutRequest.payReqAmount)}',
                             status: payoutRequest.payoutStatusBsTitle,
                             context: context,
                           );
                         },
                       ),
+                const SizedBox(height: 24),
+                // Same explanation the website gives, word for word.
+                //
+                // The app said nothing at all about when money moves, so the
+                // page was a balance and a button with no account of what
+                // happens between them. Note what it does NOT say: no "2-3
+                // business days". Nothing enforces that — release is scheduled
+                // by an admin and the transfer goes through RazorpayX — so
+                // this describes the process instead of promising a date.
+                const _PayoutScheduleNote(),
               ],
             ),
           ),
@@ -306,34 +323,23 @@ class _PayoutPageState extends State<PayoutPage> {
                   );
                   _openAddAccount();
                 },
+          // A flat filled button, like every other primary action in the app.
+          // This was a transparent ElevatedButton wrapping an Ink gradient —
+          // the only gradient button left on the host side.
           style: ElevatedButton.styleFrom(
+            backgroundColor: hasAccount ? kIndigo : kLine,
+            foregroundColor: hasAccount ? Colors.white : kMuted,
+            disabledBackgroundColor: kLine,
+            disabledForegroundColor: kMuted,
+            elevation: 0,
+            minimumSize: const Size(double.infinity, 50),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            disabledForegroundColor: Colors.white70,
           ),
-          child: Ink(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: hasAccount
-                    ? [kprimaryColor, kprimaryColor.withOpacity(0.8)]
-                    : [kMuted.withOpacity(0.7), kMuted.withOpacity(0.5)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Container(
-              constraints:
-                  const BoxConstraints(minWidth: 200, minHeight: 50),
-              alignment: Alignment.center,
-              child: Text(
-                hasAccount ? 'Request Payout' : 'Add Account to Request',
-                style: const TextStyle(fontSize: 18, color: Colors.white),
-              ),
-            ),
+          child: Text(
+            hasAccount ? 'Request payout' : 'Add an account to request',
+            style: inter(fontSize: 15.5, fontWeight: FontWeight.w700),
           ),
         ),
       );
@@ -358,96 +364,88 @@ class _PayoutPageState extends State<PayoutPage> {
   }
 
   Widget _buildPayoutHistoryTile({
+    required String reference,
     required String date,
     required String amount,
     required String status,
     required BuildContext context,
   }) {
-    final bool isPending = status.toLowerCase() == 'pending';
+    final s = status.toLowerCase();
+    final bool isPending = s.contains('pending') || s.contains('process');
+    final bool isFailed =
+        s.contains('fail') || s.contains('reject') || s.contains('cancel');
 
-    final Color statusColor =
-        isPending ? const Color(0xFFB45309) : const Color(0xFF166534);
+    final Color statusFg =
+        isFailed ? kDanger : (isPending ? kClay : kSuccess);
+    final Color statusBg = isFailed
+        ? const Color(0xFFFDECEC)
+        : (isPending ? const Color(0xFFFFF6E5) : const Color(0xFFEAF6EE));
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      elevation: 3,
-      color: kCream,
-      shadowColor: kIndigo600.withOpacity(0.25),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: kLine),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            /// 🔹 Leading Icon
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.5),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.account_balance_wallet_rounded,
-                color: kIndigo600,
-                size: 22,
-              ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: kIndigo50,
+              borderRadius: BorderRadius.circular(11),
             ),
-
-            const SizedBox(width: 14),
-
-            /// 🔹 Title & Status
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Payout on $date',
-                    style: const TextStyle(
+            child: const Icon(Icons.account_balance_rounded,
+                color: kIndigo, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(reference,
+                    style: inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: kInk)),
+                const SizedBox(height: 2),
+                Text(date, style: inter(fontSize: 12, color: kMuted)),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(amount,
+                  style: fraunces(
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: kIndigo600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        isPending
-                            ? Icons.hourglass_top_rounded
-                            : Icons.check_circle_rounded,
-                        size: 14,
-                        color: statusColor,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        status,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: statusColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                      fontWeight: FontWeight.w700,
+                      color: kInk)),
+              const SizedBox(height: 4),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: statusBg,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(status,
+                    style: inter(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: statusFg)),
               ),
-            ),
-
-            /// 🔹 Amount
-            Text(
-              amount,
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-                color: kInk,
-              ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }
+
+
 
   void _showPayoutRequestBottomSheet(
       BuildContext context, PayoutController payoutController) {
@@ -586,6 +584,47 @@ class _PayoutPageState extends State<PayoutPage> {
           ),
         );
       },
+    );
+  }
+}
+
+/// What actually happens to a payout, in the platform's own words.
+class _PayoutScheduleNote extends StatelessWidget {
+  const _PayoutScheduleNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: kIndigo50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: kIndigo.withOpacity(0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.schedule_rounded, size: 17, color: kIndigo),
+              const SizedBox(width: 8),
+              Text('Payout schedule',
+                  style: inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: kInk)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Payouts are raised once a stay is completed, then released on "
+            "your account's payout schedule. Every one is listed above with "
+            "its current status, so you can see exactly where your money is.",
+            style: inter(fontSize: 12.5, color: kInk2, height: 1.55),
+          ),
+        ],
+      ),
     );
   }
 }

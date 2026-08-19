@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/utils/fonts.dart';
 
 /// What a field is allowed to contain.
 ///
@@ -41,12 +42,86 @@ class SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        padding: const EdgeInsets.only(top: 4, bottom: 10),
         child: Text(
           title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          // The app's display face. This was Flutter's default, so the
+          // listing wizard was the one host flow whose headings did not
+          // match the rest of the product.
+          style:
+              fraunces(fontSize: 18, fontWeight: FontWeight.w700, color: kInk),
         ),
       );
+}
+
+/// The label above a group of controls (chips, switches, pickers).
+///
+/// These were each written inline as
+/// `TextStyle(fontSize: 16, fontWeight: FontWeight.bold)` — a dozen copies of
+/// the same default-font declaration scattered through the wizard.
+class FieldLabel extends StatelessWidget {
+  const FieldLabel(this.text, {super.key, this.hint});
+
+  final String text;
+  final String? hint;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 6, bottom: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(text,
+                style: inter(
+                    fontSize: 14, fontWeight: FontWeight.w700, color: kInk)),
+            if (hint != null) ...[
+              const SizedBox(height: 2),
+              Text(hint!, style: inter(fontSize: 12, color: kMuted)),
+            ],
+          ],
+        ),
+      );
+}
+
+/// A selectable pill — the same shape the guest filter sheet uses.
+class FormChoiceChip extends StatelessWidget {
+  const FormChoiceChip({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: selected ? kIndigo.withOpacity(0.12) : kSurface,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? kIndigo : kLine,
+            width: selected ? 1.6 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: inter(
+            fontSize: 13.5,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            color: selected ? kIndigo : kInk,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // ── Generic Text Field ────────────────────────────────────────────────────────

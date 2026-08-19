@@ -133,8 +133,8 @@ class _AddPayoutAccountPageState extends State<AddPayoutAccountPage> {
         backgroundColor: kcontentColor,
         appBar: AppBar(
           title: const Text('Bank Account'),
-          backgroundColor: kprimaryColor,
-          foregroundColor: kscaffoldColor,
+          backgroundColor: kSand,
+          foregroundColor: kInk,
           centerTitle: true,
         ),
         body: const Center(child: CircularProgressIndicator()),
@@ -145,8 +145,8 @@ class _AddPayoutAccountPageState extends State<AddPayoutAccountPage> {
       backgroundColor: kcontentColor,
       appBar: AppBar(
         title: Text(isEdit ? 'Edit Bank Account' : 'Add Bank Account'),
-        backgroundColor: kprimaryColor,
-        foregroundColor: kscaffoldColor,
+        backgroundColor: kSand,
+        foregroundColor: kInk,
         centerTitle: true,
       ),
       body: SafeArea(

@@ -39,8 +39,8 @@ class _TermsPageState extends State<TermsPage> {
         title: Text(
             widget.isHost ? "Host Terms & Conditions" : "Terms & Conditions"),
         centerTitle: true,
-        backgroundColor: kprimaryColor,
-        foregroundColor: kscaffoldColor,
+        backgroundColor: kSand,
+        foregroundColor: kInk,
       ),
       body: Obx(() {
         if (_controller.isLoading.value) {

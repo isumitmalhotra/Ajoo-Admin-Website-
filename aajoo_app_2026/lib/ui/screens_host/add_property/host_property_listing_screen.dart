@@ -873,22 +873,19 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
           const SectionTitle('Basic Property Details'),
           PropertyTextField(
               _propertyNameController, 'Property Name', Icons.business),
-          const Text('Property Type',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const FieldLabel('Property Type'),
           const SizedBox(height: 8),
           _buildPropertyTypeChips(),
           const SizedBox(height: 8),
           if (isSharingSelected) ...[
-            const Text('Sharing Property Details',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const FieldLabel('Sharing Property Details'),
             const SizedBox(height: 8),
             PropertyTextField(
                 _numberOfBedsController, 'Beds Available', Icons.bed,
                 isNumeric: true),
           ],
           if (isPartySelected) ...[
-            const Text('Party Property Details',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const FieldLabel('Party Property Details'),
             const SizedBox(height: 8),
             PropertyTextField(_numberOfGuestsController,
                 'Number of Guests (Party)', Icons.people,
@@ -902,10 +899,10 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
         runSpacing: 8.0,
         children: hotelTypes.map((item) {
           final selected = tempSelected.contains(item);
-          return ChoiceChip(
-            label: Text(item.capitalize!),
+          return FormChoiceChip(
+            label: item.capitalize!,
             selected: selected,
-            onSelected: (_) => setState(() {
+            onTap: () => setState(() {
               final isSharing = item.toLowerCase() == 'sharing';
               final isParty = item.toLowerCase() == 'party';
 
@@ -941,11 +938,6 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
               isPartySelected =
                   tempSelected.any((t) => t.toLowerCase() == 'party');
             }),
-            selectedColor: kprimaryColor,
-            backgroundColor: kSand,
-            labelStyle: TextStyle(
-              color: selected ? kCream : kInk,
-            ),
           );
         }).toList(),
       );
@@ -1086,13 +1078,10 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
         spacing: 8,
         runSpacing: 8,
         children: options
-            .map((o) => ChoiceChip(
-                  label: Text(o.capitalizeFirst ?? o),
+            .map((o) => FormChoiceChip(
+                  label: o.capitalizeFirst ?? o,
                   selected: selected == o,
-                  selectedColor: kprimaryColor,
-                  backgroundColor: kSand,
-                  labelStyle: TextStyle(color: selected == o ? kCream : kInk),
-                  onSelected: (_) => setState(() => onSelect(o)),
+                  onTap: () => setState(() => onSelect(o)),
                 ))
             .toList(),
       );
@@ -1264,12 +1253,11 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
               spacing: 8.0,
               runSpacing: 4,
               children: list
-                  .map((a) => FilterChip(
-                        label: Text(a.amnTitle),
+                  .map((a) => FormChoiceChip(
+                        label: a.amnTitle,
                         selected: _selectedAmenityIds.contains(a.amnId),
-                        selectedColor: kprimaryColor.withOpacity(0.15),
-                        checkmarkColor: kprimaryColor,
-                        onSelected: (sel) => setState(() {
+                        onTap: () => setState(() {
+                          final sel = !_selectedAmenityIds.contains(a.amnId);
                           if (sel) {
                             _selectedAmenityIds.add(a.amnId);
                             if (!amenities.contains(a.amnTitle)) {
@@ -1303,15 +1291,13 @@ class _HostPropertyListingScreenState extends State<HostPropertyListingScreen> {
               spacing: 8.0,
               runSpacing: 4,
               children: list
-                  .map((t) => FilterChip(
-                        label: Text(t.tagName),
+                  .map((t) => FormChoiceChip(
+                        label: t.tagName,
                         selected: _selectedTagIds.contains(t.tagId),
-                        selectedColor: kprimaryColor.withOpacity(0.15),
-                        checkmarkColor: kprimaryColor,
-                        onSelected: (sel) => setState(() {
-                          sel
-                              ? _selectedTagIds.add(t.tagId)
-                              : _selectedTagIds.remove(t.tagId);
+                        onTap: () => setState(() {
+                          _selectedTagIds.contains(t.tagId)
+                              ? _selectedTagIds.remove(t.tagId)
+                              : _selectedTagIds.add(t.tagId);
                         }),
                       ))
                   .toList(),

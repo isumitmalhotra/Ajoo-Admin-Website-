@@ -358,7 +358,8 @@ class _UpdatePropertyPageState extends State<UpdatePropertyPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Update Property'),
-        backgroundColor: kprimaryColor,
+        backgroundColor: kSand,
+        foregroundColor: kInk,
       ),
       body: Form(
         key: _formKey,

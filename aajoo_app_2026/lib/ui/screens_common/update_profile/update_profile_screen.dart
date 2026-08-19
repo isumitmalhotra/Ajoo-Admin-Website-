@@ -702,8 +702,8 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Update Profile'),
-        backgroundColor: kprimaryColor,
-        foregroundColor: Colors.white,
+        backgroundColor: kSand,
+        foregroundColor: kInk,
       ),
       body: Obx(() {
         if (authController.isLoading.value) {

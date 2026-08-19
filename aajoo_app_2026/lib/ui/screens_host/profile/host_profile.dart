@@ -244,97 +244,39 @@ class _HostProfilePageState extends State<HostProfilePage> {
       // nothing was insetting it: the header row rendered underneath the
       // status bar, with the clock sitting on top of "Profile" and the
       // signal icons over the menu button — which also swallowed taps on it.
-      body: SafeArea(
-        bottom: false,
-        child: RefreshIndicator(
+      // The hero band runs to the top of the screen, so this must NOT be
+      // inset at the top — SafeArea handles the status bar inside the header
+      // instead, which is how the guest profile does it.
+      body: RefreshIndicator(
         onRefresh: () async {
           hostController.getHostProperties();
           hostController.getHostOngoing(user?.userId ?? 0);
         },
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.zero,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header row: the menu button sits top-right, which is the only
-              // thing on this page that was not reachable from it before.
-              Row(
-                children: [
-                  Text('Profile',
-                      style: fraunces(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: kInk)),
-                  const Spacer(),
-                  IconButton(
-                    tooltip: 'Menu',
-                    icon: const Icon(Icons.menu_rounded,
-                        size: 24, color: kInk),
-                    // A-79 — slides the menu in from the right. This was a
-                    // Scaffold endDrawer, which never opened: this page is
-                    // nested inside the shell's IndexedStack, so its Scaffold
-                    // is a child of MainScreen's and never gets a drawer
-                    // surface of its own. The button was inert on device.
-                    onPressed: () => showHostMenu(context),
-                  ),
-                ],
+              // Teal hero, same as the guest profile.
+              //
+              // The host's version of this page opened with a bare "Profile"
+              // heading and an avatar sitting on plain ivory, so the two
+              // profiles in one app looked like they came from two apps. The
+              // client asked for the host's to match the guest's; this is the
+              // same gradient band, the same white avatar ring, the same
+              // name-and-role stack. The menu button keeps its corner.
+              _HostProfileHero(
+                name: user?.fullName ?? 'Host',
+                image: _profileImage,
+                onPickImage: _pickProfileImage,
+                onOpenMenu: () => showHostMenu(context),
               ),
-              const SizedBox(height: 4),
-              // Profile photo section
-              Center(
-                child: Stack(
-                  alignment: Alignment.bottomRight,
-                  children: [
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundImage: _profileImage != null
-                          ? FileImage(File(_profileImage!.path))
-                          : const AssetImage('assets/boy.png') as ImageProvider,
-                      backgroundColor: kSand,
-                    ),
-                    Container(
-                      decoration: const BoxDecoration(
-                          color: kIndigo, shape: BoxShape.circle),
-                      child: IconButton(
-                        iconSize: 18,
-                        constraints:
-                            const BoxConstraints(minWidth: 36, minHeight: 36),
-                        padding: EdgeInsets.zero,
-                        icon: const Icon(Icons.camera_alt, color: Colors.white),
-                        onPressed: _pickProfileImage,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Name + role
-              Center(
-                child: Column(
-                  children: [
-                    Text(user?.fullName ?? 'Host',
-                        style: fraunces(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: kInk)),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                          color: kIndigo50,
-                          borderRadius: BorderRadius.circular(20)),
-                      child: Text('Host',
-                          style: inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: kIndigo600)),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
+              const SizedBox(height: 18),
+              Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               // Basic Information section
               _buildSectionTitle("Basic Information"),
               const SizedBox(height: 8),
@@ -441,18 +383,6 @@ class _HostProfilePageState extends State<HostProfilePage> {
                   },
                 ),
               ),
-              const SizedBox(height: 12),
-
-              const SizedBox(height: 8),
-              // A-78 — every page a host can reach, on the profile.
-              //
-              // These lived only in the home drawer, which opens from the
-              // Dashboard tab's header: a host sitting on Profile could not
-              // reach Payouts, Bank Account, Terms, Privacy or even Logout.
-              // Same list the drawer renders, from one declaration.
-              _buildSectionTitle('Menu'),
-              const SizedBox(height: 10),
-              const HostMenuList(),
               const SizedBox(height: 12),
 
               // Managed Properties section
@@ -656,9 +586,29 @@ class _HostProfilePageState extends State<HostProfilePage> {
                   ),
                 );
               }),
+
+              const SizedBox(height: 24),
+              // A-78 — every page a host can reach, on the profile.
+              //
+              // These lived only in the home drawer, which opens from the
+              // Dashboard tab's header: a host sitting on Profile could not
+              // reach Payouts, Bank Account, Terms, Privacy or even Logout.
+              // Same list the drawer renders, from one declaration.
+              //
+              // Below the listings, on the client's instruction. A host opens
+              // this page to look at their properties; the menu is somewhere
+              // you go afterwards, and sitting above the listings it pushed
+              // them a full screen down.
+              _buildSectionTitle('Menu'),
+              const SizedBox(height: 10),
+              const HostMenuList(),
+              const SizedBox(height: 8),
             ],
           ),
-        ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );
@@ -997,6 +947,136 @@ class _HostProfilePageState extends State<HostProfilePage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The host profile's hero band — the guest profile's header, for hosts.
+///
+/// The two profiles in this app used to look like they came from two different
+/// apps: the guest's opened on a teal gradient with the avatar in a white
+/// ring, the host's on a bare heading over ivory. The client asked for one
+/// look, and the guest's is the one the website matches.
+///
+/// The status bar is handled here rather than by a Scaffold-level SafeArea,
+/// because the gradient is supposed to run under it.
+class _HostProfileHero extends StatelessWidget {
+  const _HostProfileHero({
+    required this.name,
+    required this.image,
+    required this.onPickImage,
+    required this.onOpenMenu,
+  });
+
+  final String name;
+  final XFile? image;
+  final VoidCallback onPickImage;
+  final VoidCallback onOpenMenu;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [kIndigo, kIndigo600],
+        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 8, 24),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Text('Profile',
+                      style: fraunces(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white)),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: 'Menu',
+                    icon: const Icon(Icons.menu_rounded,
+                        size: 24, color: Colors.white),
+                    // A-79 — slides the menu in from the right. This was a
+                    // Scaffold endDrawer, which never opened: this page is
+                    // nested inside the shell's IndexedStack, so its Scaffold
+                    // is a child of MainScreen's and never gets a drawer
+                    // surface of its own. The button was inert on device.
+                    onPressed: onOpenMenu,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 14,
+                            spreadRadius: 2),
+                      ],
+                    ),
+                    child: CircleAvatar(
+                      radius: 52,
+                      backgroundColor: kCream,
+                      backgroundImage: image != null
+                          ? FileImage(File(image!.path))
+                          : const AssetImage('assets/boy.png')
+                              as ImageProvider,
+                    ),
+                  ),
+                  Material(
+                    color: kClay,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: onPickImage,
+                      child: const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Icon(Icons.camera_alt,
+                            size: 16, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(name,
+                  textAlign: TextAlign.center,
+                  style: fraunces(
+                      fontSize: 21,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white)),
+              const SizedBox(height: 6),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.18),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text('Host',
+                    style: inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white)),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -31,8 +31,8 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
       appBar: AppBar(
         centerTitle: true,
         title: const Text('Privacy & Policies'),
-        backgroundColor: kprimaryColor,
-        foregroundColor: Colors.white,
+        backgroundColor: kSand,
+        foregroundColor: kInk,
         elevation: 0,
       ),
       body: Obx(() {

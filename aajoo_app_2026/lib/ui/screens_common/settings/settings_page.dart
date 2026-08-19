@@ -257,8 +257,8 @@ class _SettingsPageState extends State<SettingsPage> {
       backgroundColor: kcontentColor,
       appBar: AppBar(
         title: const Text('Settings'),
-        backgroundColor: kprimaryColor,
-        foregroundColor: kcontentColor,
+        backgroundColor: kSand,
+        foregroundColor: kInk,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(

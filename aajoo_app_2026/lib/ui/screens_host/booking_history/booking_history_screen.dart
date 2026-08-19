@@ -336,7 +336,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-                color: kcontentColor, borderRadius: BorderRadius.circular(12)),
+                color: kSand, borderRadius: BorderRadius.circular(12)),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -378,55 +378,59 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          // Date + action
+          const Divider(height: 1, color: kLine),
+          const SizedBox(height: 12),
+          // Booked-on date and the actions, on one line.
+          //
+          // "View Details" was a full-width solid teal slab under a separate
+          // action row — two stacked bars of chrome per card, and nothing else
+          // in the app still shouts like that. The guest's booking card settled
+          // on an outline button beside the meta; hosts get the same, so the
+          // two sides of one product stop looking like two products.
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "Booked ${booking.bookAddedAt?.day}/${booking.bookAddedAt?.month}/${booking.bookAddedAt?.year}",
-                style: inter(fontSize: 12, color: kMuted),
+              Expanded(
+                child: Text(
+                  "Booked ${booking.bookAddedAt?.day}/${booking.bookAddedAt?.month}/${booking.bookAddedAt?.year}",
+                  style: inter(fontSize: 12, color: kMuted),
+                ),
               ),
               if (_bucket(booking.bookingStatusBsTitle,
                       from: booking.bookDetailsBtBookFrom,
                       to: booking.bookDetailsBtBookTo) ==
-                  2)
-                ElevatedButton(
+                  2) ...[
+                TextButton(
                   onPressed: () =>
                       _buildReviewDialog(Get.context!, booking, controller),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kClay,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 18, vertical: 10),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: kClay,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    minimumSize: const Size(0, 38),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: Text("Give Review",
+                  child: Text("Give review",
                       style:
                           inter(fontSize: 13, fontWeight: FontWeight.w700)),
                 ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // A-68 — the card was the end of the road: a name, a number, and no
-          // way to see what was actually booked.
-          SizedBox(
-            width: double.infinity,
-            height: 42,
-            child: ElevatedButton(
-              onPressed: () =>
-                  Get.to(() => HostBookingDetailPage(booking: booking)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kIndigo,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                const SizedBox(width: 6),
+              ],
+              // A-68 — the card was the end of the road: a name, a number, and
+              // no way to see what was actually booked.
+              OutlinedButton(
+                onPressed: () =>
+                    Get.to(() => HostBookingDetailPage(booking: booking)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: kIndigo,
+                  side: const BorderSide(color: kIndigo),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+                child: Text("View details",
+                    style: inter(fontSize: 13, fontWeight: FontWeight.w700)),
               ),
-              child: Text("View Details",
-                  style: inter(fontSize: 13.5, fontWeight: FontWeight.w700)),
-            ),
+            ],
           ),
         ],
       ),

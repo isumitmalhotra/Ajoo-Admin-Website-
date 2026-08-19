@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/widgets/app_ui.dart' show withDividers;
 import 'package:rent_home/ui/screens_host/host_controller.dart';
 import 'package:rent_home/data/models/host_ongoing_response.dart';
@@ -31,15 +32,13 @@ class _ViewOngoingBookingPageState extends State<ViewOngoingBookingPage> {
     } catch (_) {}
     return Scaffold(
       appBar: AppBar(
-        foregroundColor: Colors.white,
-        title: const Text(
+        foregroundColor: kInk,
+        title: Text(
           'Booking Details',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style:
+              fraunces(fontSize: 18, fontWeight: FontWeight.w700, color: kInk),
         ),
-        backgroundColor: kprimaryColor,
+        backgroundColor: kSand,
         elevation: 0,
         actions: [
           IconButton(
