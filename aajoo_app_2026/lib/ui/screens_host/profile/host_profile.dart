@@ -280,6 +280,15 @@ class _HostProfilePageState extends State<HostProfilePage> {
               }),
               const SizedBox(height: 8),
 
+              // Unfinished listings, above the finished ones.
+              //
+              // A wizard abandoned halfway used to be lost work: the listing
+              // existed server-side as a draft, but nothing in the app could
+              // reach it, so the host's only move was to start again — and the
+              // account collected orphans nobody could see. Resume reopens the
+              // wizard on the step it was left at.
+              const _DraftsStrip(),
+
               Obx(() {
                 final props = hostController
                         .hostPropertiesResponse.value?.data?.properties ??
@@ -866,6 +875,143 @@ class _HostProfileHero extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The host's unfinished listings, with a way back into each.
+class _DraftsStrip extends StatelessWidget {
+  const _DraftsStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    final hostController = Get.find<HostController>();
+    return Obx(() {
+      final drafts = hostController.draftProperties;
+      // Nothing unfinished → nothing to say. A heading over an empty shelf is
+      // just another row of chrome on a page that already has plenty.
+      if (drafts.isEmpty) return const SizedBox.shrink();
+
+      return Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
+        decoration: BoxDecoration(
+          color: kClay.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: kClay.withOpacity(0.28)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.edit_note_rounded, size: 19, color: kClay),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    drafts.length == 1
+                        ? 'You have an unfinished listing'
+                        : 'You have ${drafts.length} unfinished listings',
+                    style: inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: kInk),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Padding(
+              padding: const EdgeInsets.only(left: 27),
+              child: Text(
+                'Nothing is live until you submit it for review.',
+                style: inter(fontSize: 12, color: kMuted),
+              ),
+            ),
+            const SizedBox(height: 12),
+            for (final d in drafts) _DraftRow(property: d),
+          ],
+        ),
+      );
+    });
+  }
+}
+
+class _DraftRow extends StatelessWidget {
+  const _DraftRow({required this.property});
+
+  final Property property;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = property.propertyName.trim();
+    final where = [
+      property.propertyCity.trim(),
+      property.propertyState.trim(),
+    ].where((e) => e.isNotEmpty).join(', ');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kLine),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  // A draft can legitimately have no name yet — step 1 is
+                  // where the name is asked for.
+                  name.isEmpty ? 'Untitled listing' : name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: name.isEmpty ? kMuted : kInk),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  where.isEmpty ? 'Draft · not submitted' : 'Draft · $where',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: inter(fontSize: 12, color: kMuted),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          OutlinedButton(
+            onPressed: () async {
+              await Navigator.push<void>(
+                context,
+                CupertinoPageRoute<void>(
+                  builder: (_) =>
+                      ListingWizardScreen(propertyId: property.propertyId),
+                ),
+              );
+              // Coming back, the draft may now be submitted — or further
+              // along. Re-read rather than trust what was on screen.
+              Get.find<HostController>().getHostProperties();
+            },
+            style: OutlinedButton.styleFrom(
+              foregroundColor: kClay,
+              side: const BorderSide(color: kClay),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            child: Text('Resume',
+                style: inter(fontSize: 13, fontWeight: FontWeight.w700)),
+          ),
+        ],
       ),
     );
   }

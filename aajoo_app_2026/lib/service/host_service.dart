@@ -70,6 +70,8 @@ class HostService {
     int limit = 20,
     String? q,
     String? sort,
+    /// active | inactive | review | draft. Omit for everything.
+    String? status,
   }) async {
     final url = '$baseUrl/host/property-search';
     final token = await const FlutterSecureStorage().read(key: "user_token");
@@ -81,6 +83,7 @@ class HostService {
         'limit': limit,
         if (q != null && q.trim().isNotEmpty) 'q': q.trim(),
         if (sort != null && sort.isNotEmpty && sort != 'newest') 'sort': sort,
+        if (status != null && status.isNotEmpty) 'status': status,
       });
       final json = response.data;
       // Was: print the whole response, twice. That is a page of listings dumped

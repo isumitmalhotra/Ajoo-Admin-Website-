@@ -178,6 +178,36 @@ class HostController extends GetxController {
   /// so "alphabetical" has to happen where the pages are cut, not in Dart.
   final propertySort = 'newest'.obs;
 
+  // ── Unfinished listings ───────────────────────────────────────────────────
+  //
+  // A draft is a listing started in the 5-step wizard and never submitted:
+  // step 1 creates it with verification_status='draft'. Before this the only
+  // way back into one was to start again, so an abandoned listing was simply
+  // lost work — and the account quietly accumulated orphans.
+  //
+  // Fetched separately from the main page rather than filtered out of it: the
+  // list is paginated over tens of thousands of rows, so a draft on page 40
+  // would never be seen.
+  final RxList<Property> draftProperties = <Property>[].obs;
+  final RxBool draftsFetched = false.obs;
+
+  Future<void> getHostDrafts() async {
+    try {
+      final response = await hostService.getHostProperties(
+        page: 1,
+        limit: 20,
+        status: 'draft',
+        sort: 'newest',
+      );
+      draftProperties.assignAll(response.data?.properties ?? const []);
+    } catch (_) {
+      // A missing draft list is not worth an error over a page that works.
+      draftProperties.clear();
+    } finally {
+      draftsFetched.value = true;
+    }
+  }
+
   Future<void> setPropertySort(String sort) async {
     if (propertySort.value == sort) return;
     propertySort.value = sort;
@@ -192,6 +222,9 @@ class HostController extends GetxController {
       final response = await hostService.getHostProperties(
           page: 1, q: q, sort: propertySort.value);
       hostPropertiesResponse.value = response;
+      // Unawaited on purpose: the drafts strip is secondary, and the list
+      // below it should not wait on it to render.
+      getHostDrafts();
     } catch (e) {
       error.value = e.toString();
     } finally {
