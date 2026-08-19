@@ -9,7 +9,13 @@ import 'package:rent_home/controller/common_controller.dart';
 import 'package:rent_home/models/properties_response_model.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../screens/property_page.dart';
+// The REDESIGNED property page. This dialog is opened from the map on the
+// current home screen, but it used to push `screens/property_page.dart` — the
+// pre-redesign layout. So the homepage looked new and the property page you
+// reached from it looked old, which is exactly what the client reported.
+// Same constructor, same Property model (data/models re-exports it), so this
+// is only a matter of pointing at the right screen.
+import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';
 
 class HotelDialog extends StatelessWidget {
   final String name;
