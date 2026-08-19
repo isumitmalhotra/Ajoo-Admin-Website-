@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:rent_home/ui/screens_host/host_tab_provider.dart';
 import 'package:rent_home/ui/screens_host/host_controller.dart';
 import 'package:rent_home/ui/screens_host/home/host_home_drawer.dart';
-import 'package:rent_home/ui/screens_host/add_property/host_property_listing_screen.dart';
+import 'package:rent_home/ui/screens_host/listing/listing_wizard_screen.dart';
 import 'package:rent_home/ui/screens_host/booking_history/booking_history_screen.dart';
 import 'package:rent_home/ui/screens_host/invoices/invoice_page.dart';
 import 'package:rent_home/ui/screens_host/profile/host_profile.dart';
@@ -86,7 +86,7 @@ class _MainScreenState extends State<MainScreen> {
           children: _screens,
         ),
         floatingActionButton: FloatingActionButton(
-          onPressed: () => Get.to(() => const HostPropertyListingScreen()),
+          onPressed: () => Get.to(() => const ListingWizardScreen()),
           backgroundColor: kIndigo600,
           elevation: 2,
           shape: const CircleBorder(),

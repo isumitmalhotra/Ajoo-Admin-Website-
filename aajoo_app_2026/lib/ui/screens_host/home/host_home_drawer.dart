@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
-import 'package:rent_home/ui/screens_host/add_property/host_property_listing_screen.dart';
+import 'package:rent_home/ui/screens_host/listing/listing_wizard_screen.dart';
 import 'package:rent_home/ui/screens_host/host_tab_provider.dart';
 import 'package:rent_home/ui/screens_common/privacy_policy/privacy-policy_page.dart';
 import 'package:rent_home/ui/screens_common/terms_and_conditions/terms_condition_user_page.dart';
@@ -65,7 +65,7 @@ class HostHomeDrawer extends StatelessWidget {
             onTap: () {
               Navigator.pop(context);
               hostTabProvider.resetToHome();
-              Get.to(() => const HostPropertyListingScreen());
+              Get.to(() => const ListingWizardScreen());
             },
           ),
           ListTile(

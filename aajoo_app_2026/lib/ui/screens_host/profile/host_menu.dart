@@ -6,7 +6,7 @@ import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/ui/screens_common/privacy_policy/privacy-policy_page.dart';
 import 'package:rent_home/ui/screens_common/terms_and_conditions/terms_condition_user_page.dart';
-import 'package:rent_home/ui/screens_host/add_property/host_property_listing_screen.dart';
+import 'package:rent_home/ui/screens_host/listing/listing_wizard_screen.dart';
 import 'package:rent_home/ui/screens_host/booking_history/booking_history_screen.dart';
 import 'package:rent_home/ui/screens_host/calendar/host_calendar_screen.dart';
 import 'package:rent_home/ui/screens_host/negotiations/host_negotiations_screen.dart';
@@ -49,7 +49,7 @@ List<HostMenuEntry> hostMenuEntries({VoidCallback? beforeNavigate}) {
       icon: Icons.add_home_outlined,
       label: 'Add Property',
       subtitle: 'List a new stay',
-      onTap: () => go(() => const HostPropertyListingScreen()),
+      onTap: () => go(() => const ListingWizardScreen()),
     ),
     HostMenuEntry(
       icon: Ionicons.list,

@@ -10,14 +10,13 @@ import 'package:rent_home/widgets/app_ui.dart'
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/data/models/host_properties_reponse.dart';
-import 'package:rent_home/ui/screens_host/add_property/host_property_listing_screen.dart';
+import 'package:rent_home/ui/screens_host/listing/listing_wizard_screen.dart';
 import 'package:rent_home/ui/screens_host/host_controller.dart';
 import 'package:rent_home/ui/screens_host/property_details/view_host_property_details.dart';
 import 'package:rent_home/ui/screens_host/update_property/update_property_page.dart';
 import 'package:rent_home/ui/screens_common/update_profile/update_profile_screen.dart';
 import 'package:rent_home/ui/screens_host/profile/host_menu.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:rent_home/utils/input_sanitizers.dart';
 
 class HostProfilePage extends StatefulWidget {
   const HostProfilePage({super.key});
@@ -44,14 +43,7 @@ class _HostProfilePageState extends State<HostProfilePage> {
     }
   }
 
-  Future<void> _pickCoverImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery, maxWidth: 1024, maxHeight: 1024, imageQuality: 85);
-    if (pickedFile != null) {
-      setState(() {
-        coverImage = pickedFile;
-      });
-    }
-  }
+
 
   // Pick KYC document
   Future<XFile?> _pickKycDocument() async {
@@ -63,166 +55,7 @@ class _HostProfilePageState extends State<HostProfilePage> {
   }
 
   // Show bottom sheet for KYC upload
-  void _showKycBottomSheet(BuildContext context) {
-    XFile? selectedFile;
-    final TextEditingController cardNumberController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-                left: 16,
-                right: 16,
-                top: 16,
-              ),
-              child: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Upload KYC Document',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Iconsax.close_circle,
-                              color: Colors.grey),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    GestureDetector(
-                      onTap: () async {
-                        final file = await _pickKycDocument();
-                        if (file != null) {
-                          setState(() {
-                            selectedFile = file;
-                          });
-                        }
-                      },
-                      child: Container(
-                        height: 100,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: kSand,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: kLine),
-                        ),
-                        child: Center(
-                          child: selectedFile == null
-                              ? const Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Iconsax.document_upload,
-                                        color: kprimaryColor, size: 30),
-                                    SizedBox(height: 8),
-                                    Text('Select Document',
-                                        style: TextStyle(color: kMuted)),
-                                  ],
-                                )
-                              : Text(
-                                  selectedFile!.name,
-                                  style: const TextStyle(
-                                      fontSize: 16, color: Colors.black87),
-                                  textAlign: TextAlign.center,
-                                ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: cardNumberController,
-                      inputFormatters: AppInputFormatters.upperAlnum(20),
-                      decoration: InputDecoration(
-                        labelText: 'Card Number (e.g., Aadhaar, Passport)',
-                        prefixIcon:
-                            const Icon(Iconsax.card, color: kprimaryColor),
-                        filled: true,
-                        fillColor: kCream,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      keyboardType: TextInputType.text,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter the card number';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          if (formKey.currentState!.validate() &&
-                              selectedFile != null) {
-                            // Placeholder for upload action
-                            print(
-                                'Uploading KYC: ${selectedFile!.path}, Card Number: ${cardNumberController.text}');
-                            Get.snackbar(
-                              'Success',
-                              'KYC document submitted for verification',
-                              backgroundColor: kprimaryColor,
-                              colorText: Colors.white,
-                              snackPosition: SnackPosition.BOTTOM,
-                            );
-                            Navigator.pop(context);
-                          } else {
-                            Get.snackbar(
-                              'Error',
-                              'Please select a document and enter a card number',
-                              backgroundColor: Colors.red,
-                              colorText: Colors.white,
-                              snackPosition: SnackPosition.BOTTOM,
-                            );
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: kprimaryColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Submit',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
 
   final HostController hostController = Get.find<HostController>();
   @override
@@ -392,7 +225,7 @@ class _HostProfilePageState extends State<HostProfilePage> {
                   context,
                   CupertinoPageRoute<void>(
                     builder: (BuildContext context) =>
-                        const HostPropertyListingScreen(),
+                        const ListingWizardScreen(),
                   ),
                 );
               }),
@@ -576,7 +409,7 @@ class _HostProfilePageState extends State<HostProfilePage> {
                               context,
                               CupertinoPageRoute<void>(
                                 builder: (_) =>
-                                    const HostPropertyListingScreen(),
+                                    const ListingWizardScreen(),
                               ),
                             );
                           },
@@ -639,21 +472,7 @@ class _HostProfilePageState extends State<HostProfilePage> {
     );
   }
 
-  Widget _buildInfoIconText(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: Colors.grey[700]),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(fontSize: 12, color: Colors.black87),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
+
 
   Widget _buildPropertyTile(Property? property) {
     if (property == null) return const SizedBox.shrink();
@@ -919,37 +738,7 @@ class _HostProfilePageState extends State<HostProfilePage> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start, // 👈 important
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 16,
-              color: kMuted,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              value,
-              textAlign: TextAlign.end,
-              softWrap: true, // 👈 allows wrapping
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.black,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 }
 
 /// The host profile's hero band — the guest profile's header, for hosts.

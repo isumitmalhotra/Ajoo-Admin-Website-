@@ -4,7 +4,7 @@ import 'package:ionicons/ionicons.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/ui/screens_common/notifications/notification_screen.dart';
 import 'package:rent_home/ui/screens_host/host_controller.dart';
-import 'package:rent_home/ui/screens_host/add_property/host_property_listing_screen.dart';
+import 'package:rent_home/ui/screens_host/listing/listing_wizard_screen.dart';
 import 'package:rent_home/ui/screens_host/booking_history/booking_history_screen.dart';
 import 'package:rent_home/ui/screens_host/calendar/host_calendar_screen.dart';
 import 'package:rent_home/ui/screens_host/ongoing_booking/view_ongoing_booking_page.dart';
@@ -369,7 +369,7 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
                           Ionicons.home_outline,
                           _formatAmount(properties),
                           'Properties', _teal50, kIndigo600,
-                          onTap: () => Get.to(() => const HostPropertyListingScreen())))),
+                          onTap: () => Get.to(() => const ListingWizardScreen())))),
               const SizedBox(width: 12),
               Expanded(
                   child: Reveal(
@@ -652,7 +652,7 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
           ),
           const SizedBox(width: 8),
           ElevatedButton(
-            onPressed: () => Get.to(() => const HostPropertyListingScreen()),
+            onPressed: () => Get.to(() => const ListingWizardScreen()),
             style: ElevatedButton.styleFrom(
                 backgroundColor: kClay,
                 foregroundColor: Colors.white,

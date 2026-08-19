@@ -17,7 +17,6 @@ import 'package:rent_home/ui/screens_host/support/host_support_screen.dart';
 import 'package:rent_home/ui/screens_renter/property_details/components/property_tabs.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/utils/booking_status.dart';
-import 'package:rent_home/utils/stay_clock.dart';
 
 /// One of the host's bookings, opened from the Bookings list (A-68/A-69).
 ///
