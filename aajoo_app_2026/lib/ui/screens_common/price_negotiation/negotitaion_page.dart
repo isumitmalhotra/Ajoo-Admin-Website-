@@ -1092,13 +1092,53 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                               ),
                                               const SizedBox(height: 4),
                                               Text(
-                                                'GST will be added during payment.',
+                                                // An auto-accept was settled by
+                                                // the price the host had already
+                                                // agreed to take, so saying "the
+                                                // host accepted" would put words
+                                                // in their mouth — they were
+                                                // told, not asked.
+                                                acceptedMessage?.autoAccepted ==
+                                                        true
+                                                    ? 'At or above the host's minimum, so it was accepted straight away. Book within 24 hours to keep this price. GST is added at payment.'
+                                                    : 'GST will be added during payment.',
                                                 style: theme.textTheme.bodySmall
                                                     ?.copyWith(
                                                   color: Colors.green[700],
                                                   fontWeight: FontWeight.w500,
                                                 ),
                                               ),
+                                              if (acceptedMessage?.couponCode !=
+                                                  null) ...[
+                                                const SizedBox(height: 8),
+                                                Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 10,
+                                                      vertical: 6),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                    border: Border.all(
+                                                        color: Colors
+                                                            .green.shade200),
+                                                  ),
+                                                  child: Text(
+                                                    acceptedMessage!
+                                                        .couponCode!,
+                                                    style: theme.textTheme
+                                                        .bodySmall
+                                                        ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      letterSpacing: 0.6,
+                                                      color: Colors.green[900],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ],
                                           ),
                                         ),

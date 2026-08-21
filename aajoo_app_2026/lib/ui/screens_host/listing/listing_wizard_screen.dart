@@ -868,10 +868,28 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             ),
             if (c.p4['negotiation_enabled'] != false) ...[
               const SizedBox(height: 8),
-              _p4Text('min_acceptable_price', 'Lowest price you will accept (₹)',
+              // The key is what the backend reads. It was
+              // 'min_acceptable_price', which nothing on the server looks at,
+              // so a host who set a floor here set nothing — and their listing
+              // then refused every offer, because an absent floor means "this
+              // stay does not negotiate".
+              _p4Text('negotiation_minimum_price',
+                  'Lowest price you will accept (₹)',
                   numeric: true,
-                  help: 'Guests never see this. Offers below it are declined '
-                      'automatically.'),
+                  // The old text said offers below this are declined
+                  // automatically. They are not: below the floor the offer
+                  // comes to you to accept, counter or decline. Nothing is
+                  // ever refused on your behalf.
+                  help: 'Guests never see this. Offers at or above it are '
+                      'accepted for you straight away; anything below comes to '
+                      'you to decide. Leave it blank and this stay takes no '
+                      'offers at all.'),
+              const SizedBox(height: 8),
+              _p4Text('negotiation_ideal_price', 'Your ideal price (₹)',
+                  numeric: true,
+                  help: 'Optional, and also never shown to guests. Recorded '
+                      'for future pricing guidance — it does not change what '
+                      'gets accepted today.'),
             ],
           ],
         ),

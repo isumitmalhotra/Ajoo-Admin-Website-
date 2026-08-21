@@ -177,6 +177,18 @@ class ListingWizardController extends GetxController {
     merge(details, d['details']);
     merge(p4, d['pricing'], 'pp_');
     merge(p4, d['negotiation'], 'pn_');
+    // The two negotiation tiers live on the flat property row, not in the
+    // modular negotiation table, and the form keys are the ones the save
+    // endpoint reads — so they are mapped explicitly rather than by prefix.
+    final tierRow = d['property'];
+    if (tierRow is Map) {
+      if (tierRow['property_mini_price'] != null) {
+        p4['negotiation_minimum_price'] = tierRow['property_mini_price'];
+      }
+      if (tierRow['property_ideal_price'] != null) {
+        p4['negotiation_ideal_price'] = tierRow['property_ideal_price'];
+      }
+    }
     merge(p4, d['bookingRules'], 'pb_');
     merge(p4, d['settlement'], 'pst_');
     merge(p5, d['houseRules'], 'ph_');

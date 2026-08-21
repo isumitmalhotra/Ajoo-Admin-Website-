@@ -12,6 +12,13 @@ class NegotiationMessageModel {
   final bool isAccepted; // if offer accepted
   final String? acceptedBy; // who accepted
   final String? acceptedAt; // timestamp
+  /// Settled by the engine rather than by the host pressing accept: the guest
+  /// offered at or above the price the host had already agreed to take. Worth
+  /// distinguishing, because "the host accepted your offer" would be putting
+  /// words in their mouth — they were told, not asked.
+  final bool autoAccepted;
+  /// The deal code that carries the agreed price into checkout.
+  final String? couponCode;
 
   NegotiationMessageModel({
     required this.messageId,
@@ -27,6 +34,8 @@ class NegotiationMessageModel {
     this.isAccepted = false,
     this.acceptedBy,
     this.acceptedAt,
+    this.autoAccepted = false,
+    this.couponCode,
   });
 
   factory NegotiationMessageModel.fromJson(Map<String, dynamic> json) {
@@ -60,6 +69,8 @@ class NegotiationMessageModel {
       isAccepted: parseBool(json['is_accepted']),
       acceptedBy: json['accepted_by']?.toString(),
       acceptedAt: json['accepted_at']?.toString(),
+      autoAccepted: parseBool(json['auto']),
+      couponCode: json['coupon_code']?.toString(),
     );
   }
 
@@ -82,6 +93,10 @@ class NegotiationMessageModel {
       isAccepted: isAccepted ?? this.isAccepted,
       acceptedBy: acceptedBy ?? this.acceptedBy,
       acceptedAt: acceptedAt ?? this.acceptedAt,
+      // Carried through, or a copyWith would quietly turn an auto-accepted
+      // offer into one the host is credited with.
+      autoAccepted: autoAccepted,
+      couponCode: couponCode,
     );
   }
 
