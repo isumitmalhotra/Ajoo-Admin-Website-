@@ -322,16 +322,24 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
           // though the app ignored what they did.
           final st =
               (authController.userData.value?.verificationStatus ?? '').toLowerCase();
-          final inReview =
-              st == 'in_review' || st == 'pending' || st == 'partial';
-          bookingController.showSnackbar(
-            inReview ? 'Still reviewing your ID' : 'Verification required',
-            inReview
-                ? "We're checking your ID now. Your offer is saved — come back "
-                    "to finish once it's approved."
-                : 'Please verify your identity to continue booking.',
-            true,
-          );
+          // "pending" is an unfinished check, not one under review — Didit
+          // decides a guest's on the spot. Saying "we're checking your ID"
+          // leaves them waiting on a decision nobody is making.
+          final String title;
+          final String body;
+          if (st == 'in_review') {
+            title = 'Still reviewing your ID';
+            body = "We're checking your ID now. Your offer is saved — come "
+                "back to finish once it's approved.";
+          } else if (st == 'pending' || st == 'partial') {
+            title = 'Verification not finished';
+            body = "You started the check but didn't finish it. Your offer is "
+                'saved — tap Book again to pick up where you left off.';
+          } else {
+            title = 'Verification required';
+            body = 'Please verify your identity to continue booking.';
+          }
+          bookingController.showSnackbar(title, body, true);
           return;
         }
       }
@@ -1100,7 +1108,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                                 // told, not asked.
                                                 acceptedMessage?.autoAccepted ==
                                                         true
-                                                    ? 'At or above the host's minimum, so it was accepted straight away. Book within 24 hours to keep this price. GST is added at payment.'
+                                                    ? "At or above the host's minimum, so it was accepted straight away. Book within 24 hours to keep this price. GST is added at payment."
                                                     : 'GST will be added during payment.',
                                                 style: theme.textTheme.bodySmall
                                                     ?.copyWith(

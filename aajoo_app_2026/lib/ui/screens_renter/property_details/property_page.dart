@@ -1268,16 +1268,29 @@ onPressed: () async {
                                     .userData.value?.verificationStatus ??
                                 '')
                             .toLowerCase();
-                        final inReview =
-                            st == 'in_review' || st == 'pending' || st == 'partial';
-                        bookingController.showSnackbar(
-                          inReview ? 'Still reviewing your ID' : 'Verification required',
-                          inReview
-                              ? "We're checking your ID now. Your dates are saved — "
-                                  "come back to finish once it's approved."
-                              : 'Please verify your identity to continue booking.',
-                          true,
-                        );
+                        // "pending" is not "in review", and telling someone we
+                        // are checking their ID when nobody is checking
+                        // anything leaves them waiting for a decision that will
+                        // never arrive. Didit decides a guest's check on the
+                        // spot; "pending" means they opened it and walked away,
+                        // so the useful thing to say is that it is unfinished.
+                        // Only "in_review" is a real human decision pending.
+                        final String title;
+                        final String body;
+                        if (st == 'in_review') {
+                          title = 'Still reviewing your ID';
+                          body = "We're checking your ID now. Your dates are "
+                              "saved — come back to finish once it's approved.";
+                        } else if (st == 'pending' || st == 'partial') {
+                          title = 'Verification not finished';
+                          body = "You started the check but didn't finish it. "
+                              'Your dates are saved — tap Book again to pick up '
+                              'where you left off.';
+                        } else {
+                          title = 'Verification required';
+                          body = 'Please verify your identity to continue booking.';
+                        }
+                        bookingController.showSnackbar(title, body, true);
                         return;
                       }
                     }
