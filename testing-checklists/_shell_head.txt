@@ -145,6 +145,10 @@
   .note::placeholder{color:var(--ink-3)}
   .note.hide{display:none}
 
+  .chip{font-size:12px; color:var(--ink-3); align-self:center; padding:4px 2px; white-space:nowrap}
+  .chip[data-tone="ok"]{color:var(--pass)}
+  .chip[data-tone="warn"]{color:var(--block)}
+
   .toast{
     position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
     background:var(--ink); color:var(--ground); padding:10px 18px; border-radius:10px;
@@ -164,6 +168,7 @@
       <div class="count tnum" id="cnt">0 / 0</div>
     </div>
     <div class="tools">
+      <span class="chip" id="savechip">Checking saved answers…</span>
       <button class="btn" id="filter">Show: all</button>
       <button class="btn primary" id="copy">Copy report</button>
       <button class="btn" id="reset">Reset</button>
@@ -178,8 +183,7 @@
     <p class="lede">
       Every host-facing feature on Aajoo, in the order a real host meets them — from creating an
       account to being paid. Mark each one <strong>Pass</strong>, <strong>Fail</strong> or
-      <strong>Blocked</strong>, and write what you saw in the note box. Your answers save in this
-      browser as you go, so you can stop and come back.
+      <strong>Blocked</strong>, and write what you saw in the note box. Your answers now save into this document itself as you go — stop anywhere, reopen anywhere, they will be here.
     </p>
     <p class="lede">
       When you're done, or whenever you want me to look at something, press

@@ -1,8 +1,110 @@
 const KEY="aajoo-host-qa-v1";
+const STATE_FILE="data/state.json";
 let state=JSON.parse(localStorage.getItem(KEY)||"{}");
 let filter="all";
-const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
-const id=(s,i)=>s+"|"+i;
+// localStorage is only a CACHE. The artifact viewer's sandboxing can
+// partition or reset it, and a republished document starts blank — answers
+// kept only there kept getting lost. The lasting copy lives in the document
+// itself: every change is debounced into artifact.publish({[STATE_FILE]:…}),
+// which saves a new version of this artifact carrying the answers. On open,
+// the served file and the cache are merged per answer by timestamp, and
+// anything the cache held that the document lacked is pushed back up.
+const cacheState=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} };
+// Keys are the section and check titles, not their positions, so adding a
+// row never moves anyone's answers onto the wrong check.
+const id=(s,i)=>DATA[s].t+"::"+DATA[s].items[i][0];
+// One-time remap of anything still saved under the old positional keys,
+// through the ordering those keys were recorded against (LEGACY_KEYS lives
+// beside each document's DATA).
+(function(){
+  let moved=0;
+  for(const k of Object.keys(state)){
+    if(!k.includes("|")) continue;
+    const to=LEGACY_KEYS[k];
+    if(to && state[to]===undefined){ state[to]=state[k]; moved++; }
+    delete state[k];
+  }
+  if(moved) cacheState();
+})();
+
+/* ── durable saves into the artifact ─────────────────────────── */
+let artifactNS=null, artifactReady=false, canPublish=true, saveTimer=null, saving=false, dirty=false;
+const chip=document.getElementById("savechip");
+const setChip=(txt,tone)=>{ if(chip){ chip.textContent=txt; if(tone){chip.dataset.tone=tone;}else{delete chip.dataset.tone;} } };
+const LOCAL_ONLY="Local only — answers stay in this browser";
+
+const publishState=async()=>{
+  if(!artifactReady||!canPublish) return;
+  if(saving){ dirty=true; return; }
+  saving=true; setChip("Saving…");
+  try{
+    await artifactNS.publish({[STATE_FILE]: JSON.stringify(state)});
+    setChip("Saved to doc ✓","ok");
+  }catch(err){
+    const code=err&&err.code;
+    if(code==="not_writer"||code==="not_granted"||code==="not_declared"||code==="capability_disabled"||code==="capability_removed"){
+      // Permanent for this view — say so once and fall back to the cache.
+      canPublish=false; setChip(LOCAL_ONLY,"warn");
+    }else if(code==="conflict"){
+      // Another view published first; the shell reloads to the winner and
+      // the merge on the next load reconciles. Nothing else to do here.
+      setChip("Syncing…");
+    }else if(code==="rate_limited"){
+      dirty=true; setTimeout(()=>{ if(dirty){dirty=false; publishState();} },15000);
+    }else{
+      setChip("Save failed — kept in this browser, retrying…","warn");
+      dirty=true; setTimeout(()=>{ if(dirty){dirty=false; publishState();} },8000);
+    }
+  }finally{
+    saving=false;
+    if(dirty&&canPublish){ dirty=false; publishState(); }
+  }
+};
+const save=()=>{
+  cacheState();
+  if(!artifactReady||!canPublish) return;
+  setChip("Saving…");
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(publishState,2000);
+};
+// Per-answer newest-wins, honouring the reset tombstone (__cleared): a Reset
+// must not be undone by an older cache on another device.
+const mergeStates=(server,local)=>{
+  const cleared=Math.max(Number(server.__cleared)||0, Number(local.__cleared)||0);
+  const out={};
+  if(cleared) out.__cleared=cleared;
+  let localAhead=(Number(local.__cleared)||0)>(Number(server.__cleared)||0);
+  const keys=new Set([...Object.keys(server),...Object.keys(local)]);
+  for(const k of keys){
+    if(k==="__cleared") continue;
+    const s=server[k]||null, l=local[k]||null;
+    const st=s?(Number(s.t)||0):-1, lt=l?(Number(l.t)||0):-1;
+    const useLocal=lt>st;
+    const win=useLocal?l:s;
+    if(!win) continue;
+    if(Math.max(useLocal?lt:st,0)<cleared) continue;
+    out[k]=win;
+    if(useLocal) localAhead=true;
+  }
+  return {merged:out, localAhead};
+};
+(async()=>{
+  try{
+    if(!(window.claude&&window.claude.use)){ setChip(LOCAL_ONLY,"warn"); return; }
+    artifactNS=await window.claude.use("artifact");
+    if(!artifactNS){ setChip(LOCAL_ONLY,"warn"); return; }
+    let server={};
+    try{
+      const res=await fetch(STATE_FILE,{cache:"no-store"});
+      if(res.ok) server=(await res.json())||{};
+    }catch(e){ /* no saved file yet — first run */ }
+    const {merged, localAhead}=mergeStates(server,state);
+    state=merged; cacheState(); artifactReady=true;
+    render();
+    if(localAhead){ publishState(); } else { setChip("Saved to doc ✓","ok"); }
+  }catch(e){ setChip(LOCAL_ONLY,"warn"); }
+})();
+window.addEventListener("pagehide",()=>{ if(saveTimer){ clearTimeout(saveTimer); publishState(); } });
 
 const toast=(m)=>{const t=document.getElementById("toast");t.textContent=m;t.classList.add("on");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("on"),1900);};
 
@@ -49,13 +151,13 @@ function render(){
       row.querySelectorAll(".seg button").forEach(b=>{
         b.onclick=()=>{
           const v=b.dataset.v;
-          state[k]={...(state[k]||{}), v: st.v===v? null : v};
+          state[k]={...(state[k]||{}), v: st.v===v? null : v, t: Date.now()};
           if(!state[k].v && !state[k].n) delete state[k];
           save(); render();
         };
       });
       const ta=row.querySelector(".note");
-      ta.oninput=()=>{ state[k]={...(state[k]||{}), n:ta.value}; if(!state[k].v&&!state[k].n)delete state[k]; save(); updateBar(); };
+      ta.oninput=()=>{ state[k]={...(state[k]||{}), n:ta.value, t: Date.now()}; if(!state[k].v&&!state[k].n)delete state[k]; save(); updateBar(); };
       rows.appendChild(row);
     });
 
@@ -114,7 +216,9 @@ document.getElementById("copy").onclick=()=>{
 
 document.getElementById("reset").onclick=()=>{
   if(!confirm("Clear every answer and note? This cannot be undone.")) return;
-  state={}; save(); render(); toast("Checklist cleared");
+  // The tombstone timestamp stops an older cache on another device from
+  // quietly resurrecting everything the reset removed.
+  state={__cleared: Date.now()}; save(); render(); toast("Checklist cleared");
 };
 
 render();

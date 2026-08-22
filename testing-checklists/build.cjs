@@ -1,4 +1,9 @@
 const fs=require("fs");
+// ALL THREE pages build from one shell now — the host doc included. The host
+// HTML used to be hand-edited while the shell drifted stale (it still carried
+// the retired positional-key scheme), so a rebuild would have quietly
+// regressed guest and admin. Data files carry each document's DATA plus its
+// LEGACY_KEYS remap; the shell carries everything else.
 function build({data, out, key, title, brand, h1, lede, report}){
   let head=fs.readFileSync("_shell_head.txt","utf8");
   const tail=fs.readFileSync("_shell_tail.txt","utf8");
@@ -14,6 +19,12 @@ function build({data, out, key, title, brand, h1, lede, report}){
   const secs=(d.match(/^\s{2}\{ t:/gm)||[]).length;
   console.log(out+"  —  "+secs+" phases, "+items+" checks, "+(head+d+t).length+" bytes");
 }
+build({
+  data:"_host_data.js", out:"host-checklist.html", key:"aajoo-host-qa-v1",
+  title:"Aajoo Host Readiness", brand:"host readiness", h1:"Host system readiness",
+  lede:"Every host-facing feature on Aajoo, in the order a real host meets them — from creating an account to being paid.",
+  report:"# Aajoo host testing — findings"
+});
 build({
   data:"_renter_data.js", out:"guest-checklist.html", key:"aajoo-guest-qa-v1",
   title:"Aajoo Guest Readiness", brand:"guest readiness", h1:"Guest system readiness",

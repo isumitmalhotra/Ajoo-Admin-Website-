@@ -145,6 +145,10 @@
   .note::placeholder{color:var(--ink-3)}
   .note.hide{display:none}
 
+  .chip{font-size:12px; color:var(--ink-3); align-self:center; padding:4px 2px; white-space:nowrap}
+  .chip[data-tone="ok"]{color:var(--pass)}
+  .chip[data-tone="warn"]{color:var(--block)}
+
   .toast{
     position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
     background:var(--ink); color:var(--ground); padding:10px 18px; border-radius:10px;
@@ -164,6 +168,7 @@
       <div class="count tnum" id="cnt">0 / 0</div>
     </div>
     <div class="tools">
+      <span class="chip" id="savechip">Checking saved answers…</span>
       <button class="btn" id="filter">Show: all</button>
       <button class="btn primary" id="copy">Copy report</button>
       <button class="btn" id="reset">Reset</button>
@@ -177,8 +182,7 @@
     <h1>Guest system readiness</h1>
     <p class="lede">
       Every guest-facing feature on Aajoo, in the order a real guest meets them — from landing on the site to reviewing the stay afterwards. Mark each one <strong>Pass</strong>, <strong>Fail</strong> or
-      <strong>Blocked</strong>, and write what you saw in the note box. Your answers save in this
-      browser as you go, so you can stop and come back.
+      <strong>Blocked</strong>, and write what you saw in the note box. Your answers now save into this document itself as you go — stop anywhere, reopen anywhere, they will be here.
     </p>
     <p class="lede">
       When you're done, or whenever you want me to look at something, press
@@ -323,17 +327,25 @@ const DATA = [
     ["Property posts hide","Open a stay with no posts (29251).","","","No empty Guides & stories heading."],
   ]},
 ];
+const LEGACY_KEYS={"0|0": "Finding a stay::Home loads", "0|1": "Finding a stay::Search by place", "0|2": "Finding a stay::Dates narrow results", "0|3": "Finding a stay::Guest count filters", "0|4": "Finding a stay::Category rails", "0|5": "Finding a stay::Map on search", "0|6": "Finding a stay::LUXE mode", "0|7": "Finding a stay::Pre-booking", "0|8": "Finding a stay::Empty search", "1|0": "The property page::Gallery", "1|1": "The property page::No photos", "1|2": "The property page::Tabs", "1|3": "The property page::Amenities", "1|4": "The property page::Nearby distances", "1|5": "The property page::Map", "1|6": "The property page::Reviews", "1|7": "The property page::Guides & stories", "1|8": "The property page::Price rail", "1|9": "The property page::Floor never shown", "2|0": "Account & access::Signup", "2|1": "Account & access::Email OTP", "2|2": "Account & access::Login", "2|3": "Account & access::Wrong password", "2|4": "Account & access::Google sign-in", "2|5": "Account & access::Forgot password", "2|6": "Account & access::Logout", "3|0": "Identity verification::Prompted at checkout", "3|1": "Identity verification::Complete the check", "3|2": "Identity verification::Stays verified", "3|3": "Identity verification::Not re-asked", "3|4": "Identity verification::Abandoned attempt", "4|0": "Negotiating a price::Send an offer", "4|1": "Negotiating a price::Above the floor", "4|2": "Negotiating a price::Host accepts", "4|3": "Negotiating a price::Host counters", "4|4": "Negotiating a price::Host declines", "4|5": "Negotiating a price::Offer expires", "4|6": "Negotiating a price::Deal reaches checkout", "4|7": "Negotiating a price::Above list price", "4|8": "Negotiating a price::Deal expires", "5|0": "Booking & payment::Review page", "5|1": "Booking & payment::Contact details", "5|2": "Booking & payment::Guest picker", "5|3": "Booking & payment::Dates still free", "5|4": "Booking & payment::Pay at property", "5|5": "Booking & payment::Pay online", "5|6": "Booking & payment::Wallet", "5|7": "Booking & payment::Coupon", "5|8": "Booking & payment::Failure is visible", "5|9": "Booking & payment::Confirmation", "5|10": "Booking & payment::Confirmation email", "6|0": "Booking for someone else::Who is this for", "6|1": "Booking for someone else::Add a traveller", "6|2": "Booking for someone else::Upload their ID", "6|3": "Booking for someone else::Reused next time", "6|4": "Booking for someone else::Booking carries them", "6|5": "Booking for someone else::Host can see them", "6|6": "Booking for someone else::Remove a traveller", "7|0": "My bookings::Dashboard", "7|1": "My bookings::Upcoming", "7|2": "My bookings::Ongoing", "7|3": "My bookings::Next booking", "7|4": "My bookings::Directions", "7|5": "My bookings::Past stays", "7|6": "My bookings::Cancel — see the refund first", "7|7": "My bookings::Cancel", "7|8": "My bookings::Cancelled list", "7|9": "My bookings::Invoice", "8|0": "After the stay::Write a review", "8|1": "After the stay::Edit a review", "8|2": "After the stay::My reviews", "8|3": "After the stay::Saved stays", "8|4": "After the stay::Refer & earn", "8|5": "After the stay::Transactions", "9|0": "Messages & support::Message a host", "9|1": "Messages & support::Notifications", "9|2": "Messages & support::Support", "9|3": "Messages & support::Chatbot", "10|0": "Profile & settings::Profile", "10|1": "Profile & settings::Profile photo", "10|2": "Profile & settings::Change password", "10|3": "Profile & settings::Change phone", "10|4": "Profile & settings::Email read-only", "10|5": "Profile & settings::Delete account", "11|0": "Content pages::Blog index", "11|1": "Content pages::Blog post", "11|2": "Content pages::Explore blog rail", "11|3": "Content pages::About", "11|4": "Content pages::FAQ", "11|5": "Content pages::Contact", "11|6": "Content pages::Newsletter", "11|7": "Content pages::Help centre & policies", "12|0": "On a phone::Search sheet", "12|1": "On a phone::Cards two-up", "12|2": "On a phone::Rails scroll", "12|3": "On a phone::Sticky Book Now", "12|4": "On a phone::Nothing overflows", "13|0": "Regression — today's fixes::No database errors", "13|1": "Regression — today's fixes::Old property links", "13|2": "Regression — today's fixes::Payment errors persist", "13|3": "Regression — today's fixes::Property posts hide"};
 const KEY="aajoo-guest-qa-v1";
+const STATE_FILE="data/state.json";
 let state=JSON.parse(localStorage.getItem(KEY)||"{}");
 let filter="all";
-const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
-// MIGRATED_TO_STABLE_KEYS — see stable_keys.py.
-// Keys are the section and check titles, not their positions, so
-// adding a row no longer moves everyone's answers down one.
+// localStorage is only a CACHE. The artifact viewer's sandboxing can
+// partition or reset it, and a republished document starts blank — answers
+// kept only there kept getting lost. The lasting copy lives in the document
+// itself: every change is debounced into artifact.publish({[STATE_FILE]:…}),
+// which saves a new version of this artifact carrying the answers. On open,
+// the served file and the cache are merged per answer by timestamp, and
+// anything the cache held that the document lacked is pushed back up.
+const cacheState=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} };
+// Keys are the section and check titles, not their positions, so adding a
+// row never moves anyone's answers onto the wrong check.
 const id=(s,i)=>DATA[s].t+"::"+DATA[s].items[i][0];
-// One-time remap of anything saved under the old positional keys,
-// through the ordering those keys were recorded against.
-const LEGACY_KEYS={"0|0": "Finding a stay::Home loads", "0|1": "Finding a stay::Search by place", "0|2": "Finding a stay::Dates narrow results", "0|3": "Finding a stay::Guest count filters", "0|4": "Finding a stay::Category rails", "0|5": "Finding a stay::Map on search", "0|6": "Finding a stay::LUXE mode", "0|7": "Finding a stay::Pre-booking", "0|8": "Finding a stay::Empty search", "1|0": "The property page::Gallery", "1|1": "The property page::No photos", "1|2": "The property page::Tabs", "1|3": "The property page::Amenities", "1|4": "The property page::Nearby distances", "1|5": "The property page::Map", "1|6": "The property page::Reviews", "1|7": "The property page::Guides & stories", "1|8": "The property page::Price rail", "1|9": "The property page::Floor never shown", "2|0": "Account & access::Signup", "2|1": "Account & access::Email OTP", "2|2": "Account & access::Login", "2|3": "Account & access::Wrong password", "2|4": "Account & access::Google sign-in", "2|5": "Account & access::Forgot password", "2|6": "Account & access::Logout", "3|0": "Identity verification::Prompted at checkout", "3|1": "Identity verification::Complete the check", "3|2": "Identity verification::Stays verified", "3|3": "Identity verification::Not re-asked", "3|4": "Identity verification::Abandoned attempt", "4|0": "Negotiating a price::Send an offer", "4|1": "Negotiating a price::Above the floor", "4|2": "Negotiating a price::Host accepts", "4|3": "Negotiating a price::Host counters", "4|4": "Negotiating a price::Host declines", "4|5": "Negotiating a price::Offer expires", "4|6": "Negotiating a price::Deal reaches checkout", "4|7": "Negotiating a price::Above list price", "4|8": "Negotiating a price::Deal expires", "5|0": "Booking & payment::Review page", "5|1": "Booking & payment::Contact details", "5|2": "Booking & payment::Guest picker", "5|3": "Booking & payment::Dates still free", "5|4": "Booking & payment::Pay at property", "5|5": "Booking & payment::Pay online", "5|6": "Booking & payment::Wallet", "5|7": "Booking & payment::Coupon", "5|8": "Booking & payment::Failure is visible", "5|9": "Booking & payment::Confirmation", "5|10": "Booking & payment::Confirmation email", "6|0": "Booking for someone else::Who is this for", "6|1": "Booking for someone else::Add a traveller", "6|2": "Booking for someone else::Upload their ID", "6|3": "Booking for someone else::Reused next time", "6|4": "Booking for someone else::Booking carries them", "6|5": "Booking for someone else::Host can see them", "6|6": "Booking for someone else::Remove a traveller", "7|0": "My bookings::Dashboard", "7|1": "My bookings::Upcoming", "7|2": "My bookings::Ongoing", "7|3": "My bookings::Next booking", "7|4": "My bookings::Directions", "7|5": "My bookings::Past stays", "7|6": "My bookings::Cancel — see the refund first", "7|7": "My bookings::Cancel", "7|8": "My bookings::Cancelled list", "7|9": "My bookings::Invoice", "8|0": "After the stay::Write a review", "8|1": "After the stay::Edit a review", "8|2": "After the stay::My reviews", "8|3": "After the stay::Saved stays", "8|4": "After the stay::Refer & earn", "8|5": "After the stay::Transactions", "9|0": "Messages & support::Message a host", "9|1": "Messages & support::Notifications", "9|2": "Messages & support::Support", "9|3": "Messages & support::Chatbot", "10|0": "Profile & settings::Profile", "10|1": "Profile & settings::Profile photo", "10|2": "Profile & settings::Change password", "10|3": "Profile & settings::Change phone", "10|4": "Profile & settings::Email read-only", "10|5": "Profile & settings::Delete account", "11|0": "Content pages::Blog index", "11|1": "Content pages::Blog post", "11|2": "Content pages::Explore blog rail", "11|3": "Content pages::About", "11|4": "Content pages::FAQ", "11|5": "Content pages::Contact", "11|6": "Content pages::Newsletter", "11|7": "Content pages::Help centre & policies", "12|0": "On a phone::Search sheet", "12|1": "On a phone::Cards two-up", "12|2": "On a phone::Rails scroll", "12|3": "On a phone::Sticky Book Now", "12|4": "On a phone::Nothing overflows", "13|0": "Regression — today's fixes::No database errors", "13|1": "Regression — today's fixes::Old property links", "13|2": "Regression — today's fixes::Payment errors persist", "13|3": "Regression — today's fixes::Property posts hide"};
+// One-time remap of anything still saved under the old positional keys,
+// through the ordering those keys were recorded against (LEGACY_KEYS lives
+// beside each document's DATA).
 (function(){
   let moved=0;
   for(const k of Object.keys(state)){
@@ -342,8 +354,87 @@ const LEGACY_KEYS={"0|0": "Finding a stay::Home loads", "0|1": "Finding a stay::
     if(to && state[to]===undefined){ state[to]=state[k]; moved++; }
     delete state[k];
   }
-  if(moved) save();
+  if(moved) cacheState();
 })();
+
+/* ── durable saves into the artifact ─────────────────────────── */
+let artifactNS=null, artifactReady=false, canPublish=true, saveTimer=null, saving=false, dirty=false;
+const chip=document.getElementById("savechip");
+const setChip=(txt,tone)=>{ if(chip){ chip.textContent=txt; if(tone){chip.dataset.tone=tone;}else{delete chip.dataset.tone;} } };
+const LOCAL_ONLY="Local only — answers stay in this browser";
+
+const publishState=async()=>{
+  if(!artifactReady||!canPublish) return;
+  if(saving){ dirty=true; return; }
+  saving=true; setChip("Saving…");
+  try{
+    await artifactNS.publish({[STATE_FILE]: JSON.stringify(state)});
+    setChip("Saved to doc ✓","ok");
+  }catch(err){
+    const code=err&&err.code;
+    if(code==="not_writer"||code==="not_granted"||code==="not_declared"||code==="capability_disabled"||code==="capability_removed"){
+      // Permanent for this view — say so once and fall back to the cache.
+      canPublish=false; setChip(LOCAL_ONLY,"warn");
+    }else if(code==="conflict"){
+      // Another view published first; the shell reloads to the winner and
+      // the merge on the next load reconciles. Nothing else to do here.
+      setChip("Syncing…");
+    }else if(code==="rate_limited"){
+      dirty=true; setTimeout(()=>{ if(dirty){dirty=false; publishState();} },15000);
+    }else{
+      setChip("Save failed — kept in this browser, retrying…","warn");
+      dirty=true; setTimeout(()=>{ if(dirty){dirty=false; publishState();} },8000);
+    }
+  }finally{
+    saving=false;
+    if(dirty&&canPublish){ dirty=false; publishState(); }
+  }
+};
+const save=()=>{
+  cacheState();
+  if(!artifactReady||!canPublish) return;
+  setChip("Saving…");
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(publishState,2000);
+};
+// Per-answer newest-wins, honouring the reset tombstone (__cleared): a Reset
+// must not be undone by an older cache on another device.
+const mergeStates=(server,local)=>{
+  const cleared=Math.max(Number(server.__cleared)||0, Number(local.__cleared)||0);
+  const out={};
+  if(cleared) out.__cleared=cleared;
+  let localAhead=(Number(local.__cleared)||0)>(Number(server.__cleared)||0);
+  const keys=new Set([...Object.keys(server),...Object.keys(local)]);
+  for(const k of keys){
+    if(k==="__cleared") continue;
+    const s=server[k]||null, l=local[k]||null;
+    const st=s?(Number(s.t)||0):-1, lt=l?(Number(l.t)||0):-1;
+    const useLocal=lt>st;
+    const win=useLocal?l:s;
+    if(!win) continue;
+    if(Math.max(useLocal?lt:st,0)<cleared) continue;
+    out[k]=win;
+    if(useLocal) localAhead=true;
+  }
+  return {merged:out, localAhead};
+};
+(async()=>{
+  try{
+    if(!(window.claude&&window.claude.use)){ setChip(LOCAL_ONLY,"warn"); return; }
+    artifactNS=await window.claude.use("artifact");
+    if(!artifactNS){ setChip(LOCAL_ONLY,"warn"); return; }
+    let server={};
+    try{
+      const res=await fetch(STATE_FILE,{cache:"no-store"});
+      if(res.ok) server=(await res.json())||{};
+    }catch(e){ /* no saved file yet — first run */ }
+    const {merged, localAhead}=mergeStates(server,state);
+    state=merged; cacheState(); artifactReady=true;
+    render();
+    if(localAhead){ publishState(); } else { setChip("Saved to doc ✓","ok"); }
+  }catch(e){ setChip(LOCAL_ONLY,"warn"); }
+})();
+window.addEventListener("pagehide",()=>{ if(saveTimer){ clearTimeout(saveTimer); publishState(); } });
 
 const toast=(m)=>{const t=document.getElementById("toast");t.textContent=m;t.classList.add("on");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("on"),1900);};
 
@@ -390,13 +481,13 @@ function render(){
       row.querySelectorAll(".seg button").forEach(b=>{
         b.onclick=()=>{
           const v=b.dataset.v;
-          state[k]={...(state[k]||{}), v: st.v===v? null : v};
+          state[k]={...(state[k]||{}), v: st.v===v? null : v, t: Date.now()};
           if(!state[k].v && !state[k].n) delete state[k];
           save(); render();
         };
       });
       const ta=row.querySelector(".note");
-      ta.oninput=()=>{ state[k]={...(state[k]||{}), n:ta.value}; if(!state[k].v&&!state[k].n)delete state[k]; save(); updateBar(); };
+      ta.oninput=()=>{ state[k]={...(state[k]||{}), n:ta.value, t: Date.now()}; if(!state[k].v&&!state[k].n)delete state[k]; save(); updateBar(); };
       rows.appendChild(row);
     });
 
@@ -455,7 +546,9 @@ document.getElementById("copy").onclick=()=>{
 
 document.getElementById("reset").onclick=()=>{
   if(!confirm("Clear every answer and note? This cannot be undone.")) return;
-  state={}; save(); render(); toast("Checklist cleared");
+  // The tombstone timestamp stops an older cache on another device from
+  // quietly resurrecting everything the reset removed.
+  state={__cleared: Date.now()}; save(); render(); toast("Checklist cleared");
 };
 
 render();

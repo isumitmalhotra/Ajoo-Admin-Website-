@@ -15,28 +15,42 @@ they were previously only in a session scratchpad, which does not survive.
 > publishes of the same committed HTML. If a link here ever 404s again,
 > republish from these files and update this table plus the latest handoff.
 
-Each page keeps its answers in the browser's `localStorage`, colour-codes
-pass / fail / blocked, and has a **Copy report** button that emits markdown of
-everything failing. **Answers cannot be read from a Claude session** — the user
-has to press Copy report and paste it.
+Each page colour-codes pass / fail / blocked and has a **Copy report** button
+that emits markdown of everything failing.
+
+**Answers save into the artifact itself** (since 2026-08-22). `localStorage`
+is only a cache — the viewer's sandboxing kept resetting it and the user kept
+losing their marks. Every change is debounced into
+`artifact.publish({"data/state.json": …})` via the artifact runtime capability
+(declared as `capabilities: {artifact: {}}` at publish; the declaration is
+stored, so later republishes that omit `capabilities` keep it — never pass
+`{}`, that clears it). On open the page merges the served `data/state.json`
+with the local cache per answer by timestamp (a Reset writes a `__cleared`
+tombstone so an old cache cannot resurrect wiped answers) and pushes any
+local-only marks back up. The chip in the top bar says which mode the page is
+in: "Saved to doc ✓" / "Saving…" / "Local only" (outside claude.ai or on a
+read-only view). Copy report remains the sure way to hand failures to a
+Claude session.
 
 ## Files
 
 | File | What |
 |---|---|
 | `_shell_head.txt` | Page chrome + CSS, up to the `const DATA` line |
-| `_shell_tail.txt` | Rendering, state, filters, Copy report |
-| `_renter_data.js`, `_admin_data.js` | The check data for guest and admin |
-| `build.cjs` | Stitches head + data + tail into the guest and admin pages |
+| `_shell_tail.txt` | State, durable saves, rendering, filters, Copy report |
+| `_host_data.js`, `_renter_data.js`, `_admin_data.js` | Each doc's `DATA` **plus its `LEGACY_KEYS` remap** |
+| `build.cjs` | Stitches head + data + tail into ALL THREE pages |
 | `*-checklist.html` | The built pages, as published |
 | `stable_keys.py` | One-off: migrated all three off positional storage keys |
 | `fix_legacy_map.py` | One-off: rebuilt the host legacy map to survive a section rename |
 | `test_migration.cjs` | Proves saved answers land on the checks they were recorded against |
 | `host-checklist.bak.html` | The pre-2026-08-22 host doc. Only `test_migration.cjs` reads it — it is the ordering the legacy keys were recorded against |
 
-**The host data is inline in `host-checklist.html`** — there is no
-`_host_data.js`, so `build.cjs` does not build it. Edit the `const DATA` array
-in the HTML directly.
+**All three docs build from the shell now** — the host is no longer a
+hand-edited special case (the shell had gone stale against it once, still
+carrying the retired positional-key scheme, and a rebuild would have silently
+regressed guest and admin). Edit the data files, run `node build.cjs`, never
+edit a built page directly.
 
 ## Data shape
 
@@ -71,7 +85,7 @@ So:
 3. **Republish to the same URL** — pass the existing artifact URL as `url`, or
    the update creates a second artifact and the user loses their answers.
 
-## Rebuilding guest and admin
+## Rebuilding all three
 
 ```bash
 node build.cjs
