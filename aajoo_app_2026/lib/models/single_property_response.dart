@@ -1,3 +1,5 @@
+import 'package:rent_home/utils/nightly_rates.dart';
+
 class SinglePropertyResponse {
   final bool? success;
   final String? message;
@@ -73,6 +75,10 @@ class SinglePropertyData {
   final List<LabelledPick> experiences;
   final List<LabelledPick> views;
   final List<SpecLine> specifications;
+
+  /// The host's Friday/Saturday/Sunday rates, when they set any. Null means
+  /// "flat rate" — every night costs [propertyPrice].
+  final PricingRule? pricing;
   /// Real average rating and review count from the backend aggregate; null
   /// rating means nobody has reviewed this stay yet.
   final double? rating;
@@ -110,6 +116,7 @@ class SinglePropertyData {
     this.experiences = const [],
     this.views = const [],
     this.specifications = const [],
+    this.pricing,
     this.rating,
     this.reviewCount = 0,
     this.isLuxury,
@@ -195,6 +202,7 @@ class SinglePropertyData {
               .where((l) => l.value.isNotEmpty)
               .toList()
           : const [],
+      pricing: PricingRule.fromJson(json['pricing']),
       rating: json['rating'] == null
           ? null
           : double.tryParse(json['rating'].toString()),

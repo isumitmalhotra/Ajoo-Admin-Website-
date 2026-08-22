@@ -1,0 +1,87 @@
+/// Per-night pricing, mirroring `utils/nightlyRates.js` on the server and
+/// `src/redesign/lib/nightlyRates.ts` on the web.
+///
+/// Step 4 of the listing wizard asks a host, behind a "Weekend pricing"
+/// toggle, what they charge on Friday, Saturday and Sunday. Nothing read the
+/// answers: the app quoted `rate * nights`, so a guest booking a Saturday was
+/// charged the weekday price and the host was never paid the rate they set.
+///
+/// The server stays authoritative for money; this exists so the app can quote
+/// and itemise a stay without a round trip per night.
+class PricingRule {
+  const PricingRule({
+    required this.base,
+    required this.weekendPricing,
+    this.friday,
+    this.saturday,
+    this.sunday,
+  });
+
+  final double base;
+  final bool weekendPricing;
+  final double? friday;
+  final double? saturday;
+  final double? sunday;
+
+  /// Positive, finite money only — rejects null, "", 0 and rubbish, so a blank
+  /// override falls back to base rather than producing a free night.
+  static double? _money(dynamic v) {
+    if (v == null) return null;
+    final n = v is num ? v.toDouble() : double.tryParse(v.toString());
+    if (n == null || !n.isFinite || n <= 0) return null;
+    return n;
+  }
+
+  static PricingRule? fromJson(dynamic raw) {
+    if (raw is! Map) return null;
+    final j = Map<String, dynamic>.from(raw);
+    return PricingRule(
+      base: _money(j['base']) ?? 0,
+      weekendPricing: j['weekendPricing'] == true,
+      friday: _money(j['friday']),
+      saturday: _money(j['saturday']),
+      sunday: _money(j['sunday']),
+    );
+  }
+
+  /// What one night costs, given the date that night STARTS.
+  ///
+  /// Dart's [DateTime.weekday] is 1 = Monday … 7 = Sunday, NOT the 0 = Sunday
+  /// that JavaScript uses — getting this wrong would silently shift every rate
+  /// by a day, so the constants are named rather than written inline.
+  double rateForDate(DateTime date) {
+    if (!weekendPricing) return base;
+    switch (date.weekday) {
+      case DateTime.friday:
+        return friday ?? base;
+      case DateTime.saturday:
+        return saturday ?? base;
+      case DateTime.sunday:
+        return sunday ?? base;
+      default:
+        return base;
+    }
+  }
+
+  /// Price a stay. Half-open [from, to): the checkout day is not a night.
+  double quote(DateTime? from, DateTime? to) {
+    if (from == null || to == null) return 0;
+    var cursor = DateTime(from.year, from.month, from.day);
+    final end = DateTime(to.year, to.month, to.day);
+    var total = 0.0;
+    var guard = 0;
+    while (cursor.isBefore(end) && guard < 400) {
+      total += rateForDate(cursor);
+      cursor = cursor.add(const Duration(days: 1));
+      guard += 1;
+    }
+    return total;
+  }
+
+  /// True when this stay is priced differently from a flat base x nights, so
+  /// the UI can say why the number is not what the headline rate implies.
+  bool differsFromFlat(DateTime? from, DateTime? to, int nights) {
+    if (!weekendPricing || nights <= 0) return false;
+    return quote(from, to) != base * nights;
+  }
+}

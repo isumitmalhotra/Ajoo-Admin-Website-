@@ -419,7 +419,17 @@ class _PropertyPageState extends State<PropertyPage>
   /// stripUnknown, so the server has never once received it. It now labels the
   /// stay and nothing else — the dates and the host's rate set the price.
   void _updatePriceString() {
-    final totalPrice = currentPrice * totalDays;
+    // Weekend rates, when the host set any. This was currentPrice * totalDays,
+    // which threw away the Friday/Saturday/Sunday prices step 4 collects — the
+    // guest was quoted the weekday rate for a Saturday and the host was never
+    // paid what they had asked for. Falls back to the flat multiplication when
+    // the listing has no weekend pricing, or before the detail has loaded.
+    final rule = _single?.pricing;
+    final weekendTotal = (rule != null && rule.weekendPricing)
+        ? rule.quote(selectedDate, selectedDateTo)
+        : 0.0;
+    final totalPrice =
+        weekendTotal > 0 ? weekendTotal : currentPrice * totalDays;
     currentPriceString = totalPrice.toStringAsFixed(0);
     _priceController.text = currentPriceString;
   }
