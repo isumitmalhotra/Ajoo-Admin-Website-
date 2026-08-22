@@ -4,6 +4,7 @@ import 'package:ionicons/ionicons.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/ui/screens_common/notifications/notification_screen.dart';
 import 'package:rent_home/ui/screens_host/host_controller.dart';
+import 'package:rent_home/ui/widgets/verify_nudge.dart';
 import 'package:rent_home/ui/screens_host/listing/listing_wizard_screen.dart';
 import 'package:rent_home/ui/screens_host/booking_history/booking_history_screen.dart';
 import 'package:rent_home/ui/screens_host/calendar/host_calendar_screen.dart';
@@ -119,6 +120,9 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
             children: [
               _header(),
               const SizedBox(height: 18),
+              // A host learned they were unverified only on pressing Publish,
+              // after filling in all five steps of a listing.
+              const VerifyNudge(isHost: true),
               Reveal(child: _greeting(firstName)),
               const SizedBox(height: 16),
               Reveal(delay: Reveal.staggerDelay(1), child: _earningsCard()),

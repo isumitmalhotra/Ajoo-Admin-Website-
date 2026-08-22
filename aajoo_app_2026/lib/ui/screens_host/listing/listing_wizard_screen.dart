@@ -24,6 +24,7 @@ import 'package:rent_home/ui/screens_host/listing/listing_wizard_controller.dart
 import 'package:rent_home/ui/screens_host/listing/widgets/listing_section.dart';
 import 'package:rent_home/ui/screens_host/listing/widgets/schema_field_input.dart';
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/utils/input_sanitizers.dart';
 
 class ListingWizardScreen extends StatefulWidget {
   const ListingWizardScreen({super.key, this.propertyId});
@@ -831,7 +832,10 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
           sub: 'What one night costs before any discount.',
           children: [
             _p4Text('base_price', 'Price per night (₹)',
-                required: true, numeric: true),
+                required: true,
+                numeric: true,
+                help: 'Your standard rate for one night, before any discount. '
+                    'e.g. 2500'),
             if (r.currencies.length > 1)
               _p4Choice('currency', 'Currency', r.currencies),
           ],
@@ -840,20 +844,29 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
           title: 'Long-stay discounts',
           sub: 'Up to ${r.maxDiscountPercent}%.',
           children: [
-            _p4Text('weekly_discount', 'Weekly discount (%)', numeric: true),
+            _p4Text('weekly_discount', 'Weekly discount (%)',
+                numeric: true,
+                help: 'Off the nightly rate for stays of 7 nights or more. '
+                    '5–15% is common.'),
             _p4Text('monthly_discount', 'Monthly discount (%)',
-                numeric: true),
+                numeric: true,
+                help: 'For 28 nights or more. 20–35% is common.'),
           ],
         ),
         ListingSection(
           title: 'Fees & deposit',
           children: [
-            _p4Text('cleaning_fee', 'Cleaning fee (₹)', numeric: true),
+            _p4Text('cleaning_fee', 'Cleaning fee (₹)',
+                numeric: true,
+                help: 'Typically ₹300–₹1,500 depending on size. '
+                    'Leave blank for none.'),
             if (r.cleaningFeeTypes.isNotEmpty)
               _p4Choice('cleaning_fee_type', 'Cleaning fee applies',
                   r.cleaningFeeTypes),
             _p4Text('security_deposit', 'Security deposit (₹)',
-                numeric: true),
+                numeric: true,
+                help: 'Held against damage, commonly about one night\'s rate. '
+                    'Leave blank for none.'),
             _p4Text('extra_guest_fee', 'Extra guest fee (₹)', numeric: true),
           ],
         ),
@@ -952,23 +965,49 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _ReadinessCard(controller: c),
-        ListingSection(
-          title: 'Identity verification',
-          sub: 'Required before your listing can go live.',
-          children: [
-            _p5Choice('id_type', 'Document type', const [
-              Option(value: 'aadhaar', label: 'Aadhaar'),
-              Option(value: 'passport', label: 'Passport'),
-              Option(value: 'driving_licence', label: 'Driving Licence'),
-              Option(value: 'voter_id', label: 'Voter ID'),
-            ]),
-            _DocumentField(
-              label: 'Identity document',
-              value: c.p5['id_document']?.toString(),
-              onPick: (file) => c.uploadDocument(file, 'id_document'),
-            ),
-          ],
-        ),
+        // Identity is asked for ONCE. A host who has been through the face
+        // and document check has already given us all of this, and was asked
+        // for the same document at signup as well. Verified hosts get a
+        // confirmation instead of a third form.
+        if (c.readiness['identity'] is Map &&
+            (c.readiness['identity'] as Map)['verified'] == true)
+          ListingSection(
+            title: 'Identity verification',
+            sub: 'Already done — nothing to fill in.',
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.verified_user, color: kSuccess, size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Identity verified. You will not be asked for your ID '
+                      'again.',
+                      style: inter(fontSize: 13, color: kInk2),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          )
+        else
+          ListingSection(
+            title: 'Identity verification',
+            sub: 'Required before your listing can go live.',
+            children: [
+              _p5Choice('id_type', 'Document type', const [
+                Option(value: 'aadhaar', label: 'Aadhaar'),
+                Option(value: 'passport', label: 'Passport'),
+                Option(value: 'driving_licence', label: 'Driving Licence'),
+                Option(value: 'voter_id', label: 'Voter ID'),
+              ]),
+              _DocumentField(
+                label: 'Identity document',
+                value: c.p5['id_document']?.toString(),
+                onPick: (file) => c.uploadDocument(file, 'id_document'),
+              ),
+            ],
+          ),
         ListingSection(
           title: 'Property ownership',
           sub: 'One document proving you can list this property.',
@@ -980,20 +1019,53 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             ),
           ],
         ),
-        ListingSection(
-          title: 'Bank details',
-          sub: 'Where your payouts are sent.',
-          children: [
-            _p5Text('account_holder_name', 'Account holder name'),
-            _p5Text('account_number', 'Account number', numeric: true),
-            _p5Text('ifsc', 'IFSC code'),
-            _p5Text('bank_name', 'Bank name'),
-          ],
-        ),
+        // The account that actually receives money lives on the host's
+        // profile — penny-drop verified and encrypted. Asking again per
+        // property meant a host with five listings typed it six times, and
+        // the copy typed here was never the one that got paid.
+        if (c.readiness['payoutAccount'] is Map)
+          ListingSection(
+            title: 'Bank details',
+            sub: 'Where your payouts are sent.',
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.account_balance, color: kIndigo, size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Earnings from this listing go to '
+                      '${(c.readiness['payoutAccount'] as Map)['bankName'] ?? 'your payout account'}'
+                      ' ${(c.readiness['payoutAccount'] as Map)['masked'] ?? ''}'
+                      '. Change it in Payout settings.',
+                      style: inter(fontSize: 13, color: kInk2),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          )
+        else
+          ListingSection(
+            title: 'Bank details',
+            sub: 'Where your payouts are sent.',
+            children: [
+              _p5Text('account_holder_name', 'Account holder name',
+                  formatters: AppInputFormatters.name),
+              _p5Text('account_number', 'Account number', numeric: true),
+              _p5Text('ifsc', 'IFSC code',
+                  formatters: AppInputFormatters.upperAlnum(11)),
+              // Held a 16-digit account number in the reported screenshot.
+              _p5Text('bank_name', 'Bank name',
+                  help: 'e.g. State Bank of India',
+                  formatters: AppInputFormatters.place),
+            ],
+          ),
         ListingSection(
           title: 'Emergency contact',
           children: [
-            _p5Text('emergency_name', 'Contact name'),
+            _p5Text('emergency_name', 'Contact name',
+                formatters: AppInputFormatters.name),
             _p5Text('emergency_phone', 'Contact number',
                 numeric: true, maxLength: 10),
           ],
@@ -1001,7 +1073,8 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
         ListingSection(
           title: 'Caretaker',
           children: [
-            _p5Text('caretaker_name', 'Caretaker name'),
+            _p5Text('caretaker_name', 'Caretaker name',
+                formatters: AppInputFormatters.name),
             _p5Text('caretaker_phone', 'Caretaker number',
                 numeric: true, maxLength: 10),
           ],
@@ -1102,13 +1175,18 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
       );
 
   Widget _p5Text(String key, String label,
-          {bool numeric = false, int? maxLength}) =>
+          {bool numeric = false,
+          int? maxLength,
+          String? help,
+          List<TextInputFormatter>? formatters}) =>
       _KeyedField(
         fieldKey: 'p5-$key',
         initial: (c.p5[key] ?? '').toString(),
         label: label,
         numeric: numeric,
         maxLength: maxLength,
+        help: help,
+        formatters: formatters,
         error: c.fieldErrors[key],
         onChanged: (v) => c.setP5(key, v),
       );
@@ -1149,6 +1227,7 @@ class _KeyedField extends StatefulWidget {
     this.numeric = false,
     this.maxLength,
     this.help,
+    this.formatters,
     this.error,
     required this.onChanged,
   });
@@ -1160,6 +1239,9 @@ class _KeyedField extends StatefulWidget {
   final bool numeric;
   final int? maxLength;
   final String? help;
+  /// Overrides the default numeric/length formatters when a field needs its
+  /// own rule — a bank name that takes letters but not digits, say.
+  final List<TextInputFormatter>? formatters;
   final String? error;
   final ValueChanged<String> onChanged;
 
@@ -1198,15 +1280,16 @@ class _KeyedFieldState extends State<_KeyedField> {
       error: widget.error,
       keyboardType:
           widget.numeric ? TextInputType.number : TextInputType.text,
-      inputFormatters: widget.numeric
-          ? [
-              FilteringTextInputFormatter.digitsOnly,
-              if (widget.maxLength != null)
-                LengthLimitingTextInputFormatter(widget.maxLength),
-            ]
-          : (widget.maxLength != null
-              ? [LengthLimitingTextInputFormatter(widget.maxLength)]
-              : null),
+      inputFormatters: widget.formatters ??
+          (widget.numeric
+              ? [
+                  FilteringTextInputFormatter.digitsOnly,
+                  if (widget.maxLength != null)
+                    LengthLimitingTextInputFormatter(widget.maxLength),
+                ]
+              : (widget.maxLength != null
+                  ? [LengthLimitingTextInputFormatter(widget.maxLength)]
+                  : null)),
       onChanged: widget.onChanged,
     );
   }

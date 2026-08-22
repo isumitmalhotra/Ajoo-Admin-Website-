@@ -1,17 +1,14 @@
-import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
 import '../../../../utils/csc_picker/csc_picker.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import 'package:rent_home/controller/common_controller.dart';
-import 'package:rent_home/data/models/doc_type_response_model.dart';
 import 'package:rent_home/ui/screens_common/auth/create_account_loading_screen.dart';
 import '../auth_controller.dart';
 
@@ -30,7 +27,6 @@ class _InfoScreenState extends State<InfoScreen> {
   // Form keys
   final _step1FormKey = GlobalKey<FormState>();
   final _step2FormKey = GlobalKey<FormState>();
-  final _step3FormKey = GlobalKey<FormState>();
 
   // Text controllers
   final fullNameController = TextEditingController();
@@ -40,7 +36,6 @@ class _InfoScreenState extends State<InfoScreen> {
   final cityController = TextEditingController();
   final stateController = TextEditingController();
   final pincodeController = TextEditingController();
-  final documentNumberController = TextEditingController();
 
   // State variables
   int currentStep = 0;
@@ -49,30 +44,18 @@ class _InfoScreenState extends State<InfoScreen> {
   String selectedCountry = 'India';
   String selectedState = '';
   String selectedCity = '';
-  String selectedDocType = '';
-  File? selectedDocument;
   String documentFileName = '';
 
   // Constants
   static const List<String> genders = ['Male', 'Female', 'Other'];
   static const List<String> countryCodes = ['+91'];
   static const int minAge = 18;
-  static const int maxFileSizeMB = 5;
 
   // Validation regex patterns — the same rules the rest of the platform uses:
   // names may carry . ' -, a PIN cannot start with 0, a mobile starts 6-9.
   static final RegExp _nameRegex = RegExp(r"^[a-zA-Z .'’-]{2,50}$");
   static final RegExp _pincodeRegex = RegExp(r'^[1-9]\d{5}$');
   static final RegExp _phoneRegex = RegExp(r'^[6-9]\d{9}$');
-
-  // Document validation patterns
-  static final Map<String, RegExp> _documentPatterns = {
-    'aadhaar': RegExp(r'^\d{12}$'),
-    'driving_license_1': RegExp(r'^[A-Z]{2}[0-9]{2}[0-9]{4}[0-9]{7}$'),
-    'driving_license_2': RegExp(r'^[A-Z]{2}-[0-9]{13}$'),
-    'passport': RegExp(r'^[A-Z][0-9]{7}$'),
-    'voter_id': RegExp(r'^[A-Z]{3}[0-9]{7}$'),
-  };
 
   @override
   void dispose() {
@@ -83,7 +66,6 @@ class _InfoScreenState extends State<InfoScreen> {
     cityController.dispose();
     stateController.dispose();
     pincodeController.dispose();
-    documentNumberController.dispose();
     super.dispose();
   }
 
@@ -162,90 +144,9 @@ class _InfoScreenState extends State<InfoScreen> {
     return null;
   }
 
-  String? _validateDocumentType(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please select document type';
-    }
-    return null;
-  }
 
-  String? _validateDocumentNumber(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Please enter document number';
-    }
 
-    if (selectedDocType.isEmpty) {
-      return 'Please select document type first';
-    }
 
-    String docNumber = value.trim().replaceAll(' ', '').toUpperCase();
-    String? docTypeName = _getDocumentTypeName();
-
-    if (docTypeName == null) {
-      return 'Invalid document type';
-    }
-
-    return _validateDocumentByType(docNumber, docTypeName);
-  }
-
-  String? _validateDocumentByType(String docNumber, String docTypeName) {
-    switch (docTypeName.toLowerCase()) {
-      case 'adhar card':
-      case 'aadhar card':
-        if (!_documentPatterns['aadhaar']!.hasMatch(docNumber)) {
-          return 'Aadhaar number must be exactly 12 digits';
-        }
-        break;
-
-      case 'driving license':
-      case 'driving licence':
-        if (!_documentPatterns['driving_license_1']!.hasMatch(docNumber) &&
-            !_documentPatterns['driving_license_2']!.hasMatch(docNumber)) {
-          return 'Invalid format. Use: DL1420110012345 or HR-0619850034761';
-        }
-        break;
-
-      case 'passport':
-        if (!_documentPatterns['passport']!.hasMatch(docNumber)) {
-          return 'Passport: 1 letter + 7 digits (e.g., A1234567)';
-        }
-        break;
-
-      case 'voter card':
-      case 'voter id':
-      case 'epic':
-        if (!_documentPatterns['voter_id']!.hasMatch(docNumber)) {
-          return 'Voter ID: 3 letters + 7 digits (e.g., ABC1234567)';
-        }
-        break;
-
-      default:
-        if (docNumber.length < 6) {
-          return 'Document number must be at least 6 characters';
-        }
-        if (docNumber.length > 20) {
-          return 'Document number cannot exceed 20 characters';
-        }
-    }
-
-    return null;
-  }
-
-  String? _validateDocument() {
-    // The scan itself is optional — the web signup also only uploads a file
-    // when one was picked. The document *type and number* above are required
-    // and format-checked, which is what the account record actually stores.
-    if (selectedDocument == null) return null;
-
-    int fileSizeInBytes = selectedDocument!.lengthSync();
-    int fileSizeInMB = fileSizeInBytes ~/ (1024 * 1024);
-
-    if (fileSizeInMB > maxFileSizeMB) {
-      return 'File size must not exceed ${maxFileSizeMB}MB';
-    }
-
-    return null;
-  }
 
   bool _validateStep2() {
     if (!_step2FormKey.currentState!.validate()) {
@@ -267,64 +168,9 @@ class _InfoScreenState extends State<InfoScreen> {
 
   // ==================== HELPER METHODS ====================
 
-  String? _getDocumentTypeName() {
-    if (commonController.docTypes.value == null || selectedDocType.isEmpty) {
-      return null;
-    }
 
-    try {
-      var docType = commonController.docTypes.value!.data.firstWhere(
-        (doc) => doc.dId.toString() == selectedDocType,
-        orElse: () => DocTypeData(dId: 0, dTitle: ''),
-      );
-      return docType.dTitle;
-    } catch (e) {
-      return null;
-    }
-  }
 
-  int _getDocumentNumberMaxLength() {
-    String? docTypeName = _getDocumentTypeName()?.toLowerCase();
 
-    switch (docTypeName) {
-      case 'adhar card':
-      case 'aadhar card':
-        return 12;
-      case 'driving license':
-      case 'driving licence':
-        return 16;
-      case 'passport':
-        return 8;
-      case 'voter card':
-      case 'voter id':
-      case 'epic':
-        return 10;
-      default:
-        return 20;
-    }
-  }
-
-  IconData _getFileIcon(String fileName) {
-    String extension = fileName.split('.').last.toLowerCase();
-    switch (extension) {
-      case 'pdf':
-        return Iconsax.document;
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-        return Iconsax.gallery;
-      default:
-        return Iconsax.document_text;
-    }
-  }
-
-  String _getFileSize(File file) {
-    int bytes = file.lengthSync();
-    if (bytes <= 0) return "0 B";
-    const suffixes = ["B", "KB", "MB", "GB"];
-    int i = (bytes.bitLength - 1) ~/ 10;
-    return '${(bytes / (1 << (i * 10))).toStringAsFixed(1)} ${suffixes[i]}';
-  }
 
   // ==================== UI INTERACTION METHODS ====================
 
@@ -407,34 +253,6 @@ class _InfoScreenState extends State<InfoScreen> {
     });
   }
 
-  Future<void> _pickDocument() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
-        allowMultiple: false,
-      );
-
-      if (result != null && result.files.single.path != null) {
-        File file = File(result.files.single.path!);
-
-        int fileSizeInBytes = file.lengthSync();
-        int fileSizeInMB = fileSizeInBytes ~/ (1024 * 1024);
-
-        if (fileSizeInMB > maxFileSizeMB) {
-          _showErrorSnackbar('File size must not exceed ${maxFileSizeMB}MB');
-          return;
-        }
-
-        setState(() {
-          selectedDocument = file;
-          documentFileName = result.files.single.name;
-        });
-      }
-    } catch (e) {
-      _showErrorSnackbar('Error picking document: $e');
-    }
-  }
 
   void _handleNext() {
     switch (currentStep) {
@@ -444,17 +262,13 @@ class _InfoScreenState extends State<InfoScreen> {
         }
         break;
       case 1:
+        // Signing up used to end on a third step collecting an ID type, an ID
+        // number and a scan of the document — the same document DIDIT reads
+        // for itself during verification, and the same one the listing wizard
+        // asked hosts for a third time. Nothing downstream trusted the typed
+        // copy. The step is gone; identity is established once, by the check
+        // built for it.
         if (_validateStep2()) {
-          setState(() => currentStep = 2);
-        }
-        break;
-      case 2:
-        if (_step3FormKey.currentState!.validate()) {
-          String? docError = _validateDocument();
-          if (docError != null) {
-            _showErrorSnackbar(docError);
-            return;
-          }
           _saveAllData();
         }
         break;
@@ -473,11 +287,8 @@ class _InfoScreenState extends State<InfoScreen> {
       'user_city': selectedCity,
       'user_state': selectedState,
       'user_pincode': pincodeController.text.trim(),
-      'doc_type': selectedDocType,
-      'doc_number': documentNumberController.text.trim().toUpperCase(),
     });
 
-    authController.governmentIdImage.value = selectedDocument;
 
     final email = authController.signupData['user_email'] ?? '';
     final password = authController.signupData['user_password'] ?? '';
@@ -566,9 +377,8 @@ class _InfoScreenState extends State<InfoScreen> {
       child: Column(
         children: [
           Row(
-            children: List.generate(3, (index) {
+            children: List.generate(2, (index) {
               final isActive = index <= currentStep;
-              final isCompleted = index < currentStep;
 
               return Expanded(
                 child: Row(
@@ -590,7 +400,7 @@ class _InfoScreenState extends State<InfoScreen> {
                         ),
                       ),
                     ),
-                    if (index < 2)
+                    if (index < 1)
                       Container(
                         width: 8,
                         height: 4,
@@ -662,14 +472,12 @@ class _InfoScreenState extends State<InfoScreen> {
     final titles = [
       'Personal Information',
       'Address Details',
-      'Document Verification'
     ];
     final subtitles = [
       'Please provide your basic information',
       'Enter your current address details',
-      'Upload a government-issued ID for verification'
     ];
-    final icons = [Iconsax.user, Iconsax.location, Iconsax.document_text_1];
+    final icons = [Iconsax.user, Iconsax.location];
 
     return Row(
       children: [
@@ -730,8 +538,6 @@ class _InfoScreenState extends State<InfoScreen> {
         return _buildStep1(theme);
       case 1:
         return _buildStep2(theme);
-      case 2:
-        return _buildStep3(theme);
       default:
         return const SizedBox();
     }
@@ -765,10 +571,10 @@ class _InfoScreenState extends State<InfoScreen> {
               child: ElevatedButton.icon(
                 onPressed: _handleNext,
                 icon: Icon(
-                  currentStep == 2 ? Iconsax.tick_circle : Iconsax.arrow_right_3,
+                  currentStep == 1 ? Iconsax.tick_circle : Iconsax.arrow_right_3,
                   size: 18,
                 ),
-                label: Text(currentStep == 2 ? 'Complete' : 'Next'),
+                label: Text(currentStep == 1 ? 'Complete' : 'Next'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.primaryColor,
                   foregroundColor: Colors.white,
@@ -896,73 +702,6 @@ class _InfoScreenState extends State<InfoScreen> {
     );
   }
 
-  Widget _buildStep3(ThemeData theme) {
-    return Form(
-      key: _step3FormKey,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Obx(() {
-            if (commonController.isLoading.value) {
-              return _buildLoadingDropdown(theme);
-            }
-
-            if (commonController.docTypes.value == null ||
-                commonController.docTypes.value!.data.isEmpty) {
-              return _buildErrorContainer(
-                  'Document types unavailable', theme);
-            }
-
-            return _buildDropdownField(
-              value: selectedDocType.isEmpty ? null : selectedDocType,
-              label: "Document Type",
-              hint: "Select document type",
-              icon: Iconsax.document_text,
-              items: commonController.docTypes.value!.data
-                  .map((docType) => docType.dId.toString())
-                  .toList(),
-              itemLabels: commonController.docTypes.value!.data
-                  .map((docType) => docType.dTitle ?? 'Unknown Document')
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedDocType = value!;
-                  documentNumberController.clear();
-                });
-              },
-              validator: _validateDocumentType,
-              theme: theme,
-            );
-          }),
-          const SizedBox(height: 20),
-          _buildTextField(
-            controller: documentNumberController,
-            label: "Document Number",
-            hint: "Enter document number",
-            icon: Iconsax.card,
-            validator: _validateDocumentNumber,
-            textCapitalization: TextCapitalization.characters,
-            maxLength: _getDocumentNumberMaxLength(),
-            enabled: selectedDocType.isNotEmpty,
-            // Uppercase alphanumeric plus '-' (the DL format uses one); the
-            // per-type validator still enforces the exact shape at submit.
-            inputFormatters: [
-              TextInputFormatter.withFunction((oldValue, newValue) =>
-                  newValue.copyWith(text: newValue.text.toUpperCase())),
-              FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9-]')),
-              LengthLimitingTextInputFormatter(_getDocumentNumberMaxLength()),
-            ],
-            theme: theme,
-          ),
-          const SizedBox(height: 24),
-          _buildDocumentUploadSection(theme),
-          const SizedBox(height: 20),
-          _buildDocumentGuidelines(theme),
-        ],
-      ),
-    );
-  }
 
   Widget _buildTextField({
     required TextEditingController controller,
@@ -1278,273 +1017,8 @@ class _InfoScreenState extends State<InfoScreen> {
     );
   }
 
-  Widget _buildDocumentUploadSection(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Upload Document',
-          style: inter(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: kInk2,
-          ),
-        ),
-        const SizedBox(height: 8),
-        InkWell(
-          onTap: _pickDocument,
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: selectedDocument != null
-                  ? kSuccess.withOpacity(0.08)
-                  : kSand.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: selectedDocument != null ? kSuccess : kLine,
-                width: selectedDocument != null ? 1.5 : 1.2,
-              ),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: selectedDocument != null
-                        ? kSuccess.withOpacity(0.15)
-                        : kIndigo.withOpacity(0.08),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    selectedDocument != null
-                        ? Iconsax.tick_circle
-                        : Iconsax.document_upload,
-                    size: 30,
-                    color: selectedDocument != null ? kSuccess : kIndigo,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  selectedDocument != null
-                      ? 'Document Uploaded Successfully'
-                      : 'Tap to Upload Document',
-                  style: inter(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: selectedDocument != null ? kSuccess : kIndigo,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  selectedDocument != null
-                      ? documentFileName
-                      : 'Supported: PDF, JPG, PNG (Max ${maxFileSizeMB}MB)',
-                  style: inter(
-                    fontSize: 12,
-                    color: kMuted,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (selectedDocument != null) ...[
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: kCream,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: kLine, width: 1),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.green[50],
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    _getFileIcon(documentFileName),
-                    color: Colors.green[700],
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        documentFileName,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[800],
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _getFileSize(selectedDocument!),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      selectedDocument = null;
-                      documentFileName = '';
-                    });
-                  },
-                  icon: Icon(Iconsax.close_circle, color: Colors.red[400]),
-                  tooltip: 'Remove document',
-                ),
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
-  }
 
-  Widget _buildDocumentGuidelines(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.blue[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue[200]!, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Iconsax.info_circle, color: Colors.blue[700], size: 18),
-              const SizedBox(width: 8),
-              Text(
-                'Document Guidelines',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.blue[700],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildGuidelineItem(
-              'Document should be clear and readable', Colors.blue),
-          _buildGuidelineItem('All four corners must be visible', Colors.blue),
-          _buildGuidelineItem(
-              'Maximum file size: ${maxFileSizeMB}MB', Colors.blue),
-          _buildGuidelineItem(
-              'Accepted formats: PDF, JPG, JPEG, PNG', Colors.blue),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildGuidelineItem(String text, MaterialColor color) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 6),
-            width: 5,
-            height: 5,
-            decoration: BoxDecoration(
-              color: color[600],
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 13,
-                color: color[700],
-                height: 1.4,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildLoadingDropdown(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Document Type',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey[800],
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          height: 56,
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: kLine, width: 1),
-          ),
-          child: Center(
-            child: SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
-  Widget _buildErrorContainer(String message, ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.red[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red[200]!, width: 1),
-      ),
-      child: Row(
-        children: [
-          Icon(Iconsax.close_circle, color: Colors.red[700], size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(
-                color: Colors.red[700],
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

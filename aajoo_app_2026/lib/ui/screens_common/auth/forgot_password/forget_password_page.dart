@@ -24,6 +24,14 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
   late final PageController _pageController;
   final FocusNode _otpFocusNode = FocusNode();
 
+  // Reveal toggles for the two password boxes. Both were hardcoded obscured
+  // with no way to look, which on a phone keyboard means typing a password
+  // that needs a capital, a digit and a symbol blind — and then typing it
+  // blind again into Confirm. The sign-in and change-password screens already
+  // had this; the reset screen was missed.
+  bool _hideNew = true;
+  bool _hideConfirm = true;
+
   @override
   void initState() {
     super.initState();
@@ -285,7 +293,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
             const SizedBox(height: 20),
             TextFormField(
               onChanged: (value) => controller.password.value = value,
-              obscureText: true,
+              obscureText: _hideNew,
               inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
               autovalidateMode: AutovalidateMode.onUserInteraction,
               // Same rules as change_password_page — a reset must not be
@@ -297,6 +305,11 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
               decoration: InputDecoration(
                 labelText: 'New Password',
                 prefixIcon: const Icon(Icons.lock),
+                suffixIcon: IconButton(
+                  icon: Icon(_hideNew ? Icons.visibility_off : Icons.visibility),
+                  tooltip: _hideNew ? 'Show password' : 'Hide password',
+                  onPressed: () => setState(() => _hideNew = !_hideNew),
+                ),
                 border:
                     OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               ),
@@ -309,7 +322,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
             const SizedBox(height: 10),
             TextFormField(
               onChanged: (value) => controller.cPassword.value = value,
-              obscureText: true,
+              obscureText: _hideConfirm,
               inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
               autovalidateMode: AutovalidateMode.onUserInteraction,
               validator: (v) =>
@@ -317,6 +330,12 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
               decoration: InputDecoration(
                 labelText: 'Confirm Password',
                 prefixIcon: const Icon(Icons.lock),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                      _hideConfirm ? Icons.visibility_off : Icons.visibility),
+                  tooltip: _hideConfirm ? 'Show password' : 'Hide password',
+                  onPressed: () => setState(() => _hideConfirm = !_hideConfirm),
+                ),
                 border:
                     OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               ),

@@ -4,6 +4,7 @@ import '../../motion/aajoo_motion.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/widgets/verify_nudge.dart';
 import 'package:rent_home/controller/deals_controller.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/models/ongoing_reponse.dart';
@@ -126,6 +127,9 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
           children: [
+            // Unverified guests found out only at checkout, with a booking
+            // half made. Say it here, where there is time to deal with it.
+            const VerifyNudge(isHost: false),
             // Welcome header
             Container(
               padding: const EdgeInsets.all(18),
