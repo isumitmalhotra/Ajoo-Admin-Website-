@@ -6,7 +6,18 @@ import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/data/models/booking_history_response_model.dart';
 import 'package:rent_home/ui/screens_renter/history/history_description/property_review_controller.dart';
 
-class MyReviewSection extends StatelessWidget {
+/// The guest's own review of a stay, with the edit dialog.
+///
+/// Stateful, and that is load-bearing. The text controller used to be created
+/// inside build() on a StatelessWidget, so every rebuild — and this sits under
+/// GetX observables that update while the dialog is open — handed the field a
+/// brand new controller. The text reset and the caret went with it: you typed a
+/// character and had to tap the field again for the next one. It was never
+/// disposed either.
+///
+/// A controller (or any object that holds what the user is part-way through
+/// typing) belongs to the State, created once and disposed with it.
+class MyReviewSection extends StatefulWidget {
   const MyReviewSection({
     super.key,
     required this.propertyId,
@@ -17,11 +28,25 @@ class MyReviewSection extends StatelessWidget {
   final BookingHistoryData bookingData;
 
   @override
+  State<MyReviewSection> createState() => _MyReviewSectionState();
+}
+
+class _MyReviewSectionState extends State<MyReviewSection> {
+  final TextEditingController reviewController = TextEditingController();
+
+  @override
+  void dispose() {
+    reviewController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final propertyId = widget.propertyId;
+    final bookingData = widget.bookingData;
     final controller = Get.find<PropertyReviewController>();
     final UserController userController = Get.put(UserController());
     final myReview = controller.propertyReviewResponse.value.data?.myReview;
-    final reviewController = TextEditingController();
     double rating = 0.0;
 
     if (myReview == null) return const SizedBox.shrink();
