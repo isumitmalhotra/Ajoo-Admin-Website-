@@ -104,6 +104,18 @@ class ListingWizardController extends GetxController {
 
   bool get isLastStep => step.value == kListingSteps.length - 1;
 
+  /// Whether this listing is ALREADY approved and on the site.
+  ///
+  /// Editing a live listing is an update, not an application: it keeps its
+  /// verification tier, stays live, and the admin is told to take a look
+  /// rather than asked to approve it from scratch. The wording has to match,
+  /// or a host correcting a typo believes they have taken their own property
+  /// off the market.
+  bool get isLive {
+    final p = readiness['published'];
+    return p is Map && p['approved'] == true;
+  }
+
   /// The category flow for the chosen category, if the schema defines one.
   CategoryFlow? get flow {
     final cat = f['property_category']?.toString();

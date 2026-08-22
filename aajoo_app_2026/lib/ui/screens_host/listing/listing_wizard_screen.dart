@@ -326,7 +326,12 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(last ? 'Submit for review' : 'Continue',
+                          Text(
+                              last
+                                  ? (c.isLive
+                                      ? 'Update listing'
+                                      : 'Submit for review')
+                                  : 'Continue',
                               style: inter(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700)),
@@ -1112,7 +1117,9 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
         ),
         ListingSection(
           title: 'Declaration',
-          sub: 'All of these are required before we can verify your listing.',
+          sub: c.isLive
+              ? 'Confirm these still hold for the updated listing.'
+              : 'All of these are required before we can verify your listing.',
           children: [
             for (final d in kListingDeclarations)
               _DeclarationRow(
