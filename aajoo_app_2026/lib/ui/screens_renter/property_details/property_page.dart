@@ -3,6 +3,7 @@ import 'package:rent_home/ui/screens_renter/property_details/components/booking_
 import 'package:rent_home/ui/screens_renter/property_details/components/property_tabs.dart';
 import 'package:rent_home/ui/screens_renter/blog/blog_screens.dart';
 import 'package:rent_home/ui/screens_renter/home/components/home_blog_strip.dart';
+import 'package:rent_home/ui/screens_renter/property_details/widgets/traveller_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/cupertino.dart';
@@ -309,6 +310,9 @@ class _PropertyPageState extends State<PropertyPage>
   final TextEditingController _couponController = TextEditingController();
   final DealsService _dealsSvc = DealsService();
   String? _appliedCoupon; // code currently applied to the booking
+  /// Who the stay is for. null = the account holder, which is the usual case
+  /// and what every booking meant before saved travellers existed.
+  int? _travellerId;
   double _couponDiscount = 0;
   int _couponPercent = 0;
   String _couponMsg = '';
@@ -1156,6 +1160,11 @@ class _PropertyPageState extends State<PropertyPage>
                 ),
               ),
               const SizedBox(height: 16),
+              TravellerPicker(
+                value: _travellerId,
+                onChanged: (id) => setState(() => _travellerId = id),
+              ),
+              const SizedBox(height: 16),
               ElevatedButton(
 onPressed: () async {
                   // Nothing in here may fail silently. Before this, an
@@ -1190,6 +1199,10 @@ onPressed: () async {
 
                     final bookingData = {
                       "propertyId": widget.id,
+                      // Who is actually staying. Omitted when it is the
+                      // account holder; the server re-checks the traveller
+                      // belongs to this account before attaching it.
+                      if (_travellerId != null) "guestProfileId": _travellerId,
                       // `price` is the PRE-TAX room subtotal. The backend adds
                       // GST itself (calculateBookingtax) and stores the result
                       // as book_total_amt, so sending the taxed total made it
@@ -1701,11 +1714,15 @@ onPressed: () async {
                       const SizedBox(height: 8),
                       _buildImageGallery(),
                       const SizedBox(height: 24),
-                      // A-36 — the blog, from the property page.
+                      // Posts written about THIS stay, matching the web. No
+                      // "See all": these are not in the platform blog, so a
+                      // link to it would go somewhere they cannot be found.
+                      // Absent on most stays, and the strip renders nothing
+                      // when there are none.
                       HomeBlogStrip(
-                        max: 3,
-                        title: 'From the blog',
-                        onSeeAll: () => Get.to(() => const BlogListScreen()),
+                        max: 6,
+                        title: 'Guides & stories',
+                        propertyId: widget.id,
                         onOpen: (post) => Get.to(() => BlogPostScreen(post: post)),
                       ),
                       const SizedBox(height: 90),

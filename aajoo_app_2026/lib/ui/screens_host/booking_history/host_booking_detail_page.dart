@@ -17,6 +17,7 @@ import 'package:rent_home/ui/screens_host/support/host_support_screen.dart';
 import 'package:rent_home/ui/screens_renter/property_details/components/property_tabs.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/utils/booking_status.dart';
+import 'package:rent_home/ui/screens_host/booking_history/widgets/staying_guest_card.dart';
 
 /// One of the host's bookings, opened from the Bookings list (A-68/A-69).
 ///
@@ -299,6 +300,9 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Who is actually turning up, when the booking was made for somebody
+        // other than the account holder. Renders nothing otherwise.
+        StayingGuestCard(bookingId: b.bookId),
         if (_canCheckIn) ...[
           // The arrival control the host portal never had: one tap says
           // "the guest is here", flips the booking to Check In everywhere

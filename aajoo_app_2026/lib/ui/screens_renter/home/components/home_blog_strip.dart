@@ -24,12 +24,22 @@ class HomeBlogStrip extends StatefulWidget {
   /// exists to keep both callers on one widget rather than growing a copy.
   final String title;
 
+  /// Set to show posts written about ONE stay instead of the platform blog.
+  ///
+  /// The property page used to show the same general posts under every
+  /// listing, which is filler: nothing on the strip had anything to do with
+  /// the place being looked at. With this set it asks for that property's own
+  /// posts, and most properties have none — so the strip renders nothing,
+  /// which it already did correctly for an empty list.
+  final int? propertyId;
+
   const HomeBlogStrip({
     super.key,
     this.onSeeAll,
     this.onOpen,
     this.max = 5,
     this.title = 'From the blog',
+    this.propertyId,
   });
 
   @override
@@ -48,7 +58,10 @@ class _HomeBlogStripState extends State<HomeBlogStrip> {
   }
 
   Future<void> _load() async {
-    final list = await _service.getBlogs(limit: widget.max);
+    final id = widget.propertyId;
+    final list = id != null && id > 0
+        ? await _service.getPropertyBlogs(id, limit: widget.max)
+        : await _service.getBlogs(limit: widget.max);
     if (!mounted) return;
     _posts.assignAll(list);
     _loading.value = false;

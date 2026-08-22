@@ -270,7 +270,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
     }
   }
 
-  Future<void> _bookProperty(double price, {required bool isCod}) async {
+  Future<void> _bookProperty(double price, {required bool isCod, int? travellerId}) async {
     _showLoadingDialog();
     final bookingController = Get.put(BookingController());
     final authController = Get.find<AuthController>();
@@ -283,6 +283,9 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
 
     final bookingData = {
       "propertyId": property.propertyId,
+      // Who is actually staying. Omitted when it is the account holder; the
+      // server re-checks the traveller belongs to this account.
+      if (travellerId != null) "guestProfileId": travellerId,
       // The negotiated offer, pre-GST. The backend adds the tax — do not add
       // it here as well. (The "add gst" note that used to sit above this was
       // the start of exactly that mistake; the property page did make it, and
@@ -414,8 +417,8 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
       ),
       builder: (_) => AcceptOfferBottomSheet(
         price: price,
-        onPay: (totalAmount, isCod) async {
-          await _bookProperty(totalAmount, isCod: isCod);
+        onPay: (totalAmount, isCod, travellerId) async {
+          await _bookProperty(totalAmount, isCod: isCod, travellerId: travellerId);
         },
       ),
     );

@@ -18,15 +18,34 @@ class BlogService {
     DioConfig.apply(_dio, Apiconstants.baseUrl);
   }
 
-  /// Published posts, newest first. Returns an empty list rather than throwing:
-  /// a blog outage should cost the home screen one section, not the screen.
-  Future<List<BlogPost>> getBlogs({int limit = 5}) async {
-    try {
-      final response = await _dio.post('/blog/search', data: {});
-      final body = response.data;
-      if (body is! Map || body['success'] != true) return const [];
+  /// Published PLATFORM posts, newest first — the home screen strip.
+  ///
+  /// Returns an empty list rather than throwing: a blog outage should cost the
+  /// home screen one section, not the screen.
+  ///
+  /// Sends the scope explicitly. Omitting it also yields platform posts today,
+  /// because that is the server's default, but relying on a default to mean
+  /// "not the other kind" is how the property posts would eventually leak in
+  /// here after someone changes it.
+  Future<List<BlogPost>> getBlogs({int limit = 5}) =>
+      _search(const {'scope': 'platform'}, limit);
 
-      final data = body['data'];
+  /// Posts written about ONE stay, shown on that property's page.
+  ///
+  /// Empty for most properties, and that is the normal case — the section is
+  /// left out entirely rather than rendered as an empty heading.
+  Future<List<BlogPost>> getPropertyBlogs(int propertyId, {int limit = 6}) {
+    if (propertyId <= 0) return Future.value(const []);
+    return _search({'scope': 'property', 'propertyId': propertyId}, limit);
+  }
+
+  Future<List<BlogPost>> _search(Map<String, dynamic> body, int limit) async {
+    try {
+      final response = await _dio.post('/blog/search', data: body);
+      final payload = response.data;
+      if (payload is! Map || payload['success'] != true) return const [];
+
+      final data = payload['data'];
       if (data is! List) return const [];
 
       return data

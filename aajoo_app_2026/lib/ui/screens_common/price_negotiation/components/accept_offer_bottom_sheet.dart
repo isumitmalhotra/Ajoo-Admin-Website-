@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:rent_home/ui/screens_renter/property_details/widgets/traveller_picker.dart';
 
-class AcceptOfferBottomSheet extends StatelessWidget {
+/// Confirming a negotiated booking.
+///
+/// Stateful now only so the sheet can remember who the stay is for. This is
+/// the negotiated path's equivalent of the property page's picker — without
+/// it, a deal struck in chat could only ever be booked in the account
+/// holder's own name, while the same stay booked at list price could not.
+class AcceptOfferBottomSheet extends StatefulWidget {
   const AcceptOfferBottomSheet({
     super.key,
     required this.price,
@@ -8,7 +15,16 @@ class AcceptOfferBottomSheet extends StatelessWidget {
   });
 
   final double price;
-  final Future<void> Function(double totalAmount, bool isCod) onPay;
+  final Future<void> Function(double totalAmount, bool isCod, int? travellerId) onPay;
+
+  @override
+  State<AcceptOfferBottomSheet> createState() => _AcceptOfferBottomSheetState();
+}
+
+class _AcceptOfferBottomSheetState extends State<AcceptOfferBottomSheet> {
+  int? _travellerId;
+
+  double get price => widget.price;
 
   // ≤₹7500 => 5%, >₹7500 => 18% (matches backend tariff GST)
   double get _gstRate => price <= 7500 ? 0.05 : 0.18;
@@ -19,8 +35,14 @@ class AcceptOfferBottomSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
+    return SingleChildScrollView(
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 24,
+        // The picker adds height and can open a keyboard behind this sheet.
+        bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -50,6 +72,11 @@ class AcceptOfferBottomSheet extends StatelessWidget {
           const SizedBox(height: 24),
 
           /// COD
+          TravellerPicker(
+            value: _travellerId,
+            onChanged: (id) => setState(() => _travellerId = id),
+          ),
+          const SizedBox(height: 16),
           ElevatedButton.icon(
             icon: const Icon(Icons.money),
             label: const Text("Pay on Arrival (COD)"),
@@ -60,7 +87,7 @@ class AcceptOfferBottomSheet extends StatelessWidget {
             ),
             onPressed: () async {
               Navigator.pop(context);
-              await onPay(_totalAmount, true);
+              await widget.onPay(_totalAmount, true, _travellerId);
             },
           ),
 
@@ -76,7 +103,7 @@ class AcceptOfferBottomSheet extends StatelessWidget {
             ),
             onPressed: () async {
               Navigator.pop(context);
-              await onPay(_totalAmount, false);
+              await widget.onPay(_totalAmount, false, _travellerId);
             },
           ),
         ],
