@@ -213,6 +213,15 @@ class ListingWizardController extends GetxController {
     if (prop is Map) {
       f['property_name'] = prop['property_name'];
       f['is_luxury'] = prop['is_luxury'] == 1 || prop['is_luxury'] == true;
+      // merge() above already pulls pf_description in as `description`. This is
+      // the fallback for listings that predate that column — seeded rows, and
+      // anything the admin property form wrote straight to property_desc —
+      // so editing an older listing shows its real text instead of an empty
+      // box that then fails validation.
+      if ((f['description'] ?? '').toString().trim().isEmpty &&
+          (prop['property_desc'] ?? '').toString().trim().isNotEmpty) {
+        f['description'] = prop['property_desc'];
+      }
     }
     if (d['amenities'] is Map) {
       amenities.assignAll((d['amenities'] as Map).map((k, v) => MapEntry(
@@ -342,6 +351,14 @@ class ListingWizardController extends GetxController {
       final problem = rules.validate(name);
       if (problem != null) errs['property_name'] = problem;
     }
+    final desc = _s(f['description']);
+    if (desc.isEmpty) {
+      errs['description'] =
+          'Describe the place — this is what guests read first';
+    } else if (desc.length < 40) {
+      errs['description'] =
+          'Say a little more — at least 40 characters (${desc.length} so far)';
+    }
     if (_s(f['property_category']).isEmpty) {
       errs['property_category'] = 'Choose a property category';
     } else if (_s(f['accommodation_type']).isEmpty) {
@@ -357,6 +374,13 @@ class ListingWizardController extends GetxController {
       final em = _s(f['manager_email']);
       if (em.isNotEmpty && !_email.hasMatch(em)) {
         errs['manager_email'] = "This email doesn't look right";
+      }
+      // "Authorization = No -> Cannot Continue". The server has always
+      // rejected this; neither client did, so the host waited for a round
+      // trip to be told.
+      if (f['manager_authorization_available'] != true) {
+        errs['manager_authorization_available'] =
+            "You need the owner's written authorisation before this listing can continue";
       }
     }
     if (_s(f['state']).isEmpty) errs['state'] = 'State is required';

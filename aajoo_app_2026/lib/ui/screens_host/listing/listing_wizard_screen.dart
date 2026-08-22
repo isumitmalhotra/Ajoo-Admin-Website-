@@ -421,6 +421,10 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
                 onChanged: (v) =>
                     c.setF('manager_authorization_available', v),
               ),
+              // Without an anchor here the rejection had nowhere to appear:
+              // the toggle stayed plain and the host was left guessing.
+              if (c.fieldErrors['manager_authorization_available'] != null)
+                _fieldError(c.fieldErrors['manager_authorization_available']!),
             ],
           ),
 
@@ -469,6 +473,26 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
           sub: s.propertyNameRules.message,
           children: [
             _text('property_name', 'Property name', required: true),
+          ],
+        ),
+
+        // The paragraph the property page prints as "About this stay". The
+        // wizard never asked for it, so listings showed the SEO meta
+        // description generated at step 5 instead.
+        ListingSection(
+          title: 'About this place',
+          sub: 'A short description guests read first. What is the stay like, '
+              'who is it for, what is nearby?',
+          children: [
+            _text(
+              'description',
+              'Description',
+              required: true,
+              maxLines: 6,
+              maxLength: 5000,
+              help: 'At least 40 characters. This appears as '
+                  '“About this stay” on your listing.',
+            ),
           ],
         ),
 
@@ -1147,6 +1171,8 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
     bool required = false,
     bool numeric = false,
     int? maxLength,
+    int maxLines = 1,
+    String? help,
   }) {
     return _KeyedField(
       // Rebuilt when a draft loads over an empty form, not on every keystroke.
@@ -1156,6 +1182,8 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
       required: required,
       numeric: numeric,
       maxLength: maxLength,
+      maxLines: maxLines,
+      help: help,
       error: c.fieldErrors[key],
       onChanged: (v) => c.setF(key, v),
     );
@@ -1226,6 +1254,7 @@ class _KeyedField extends StatefulWidget {
     this.required = false,
     this.numeric = false,
     this.maxLength,
+    this.maxLines = 1,
     this.help,
     this.formatters,
     this.error,
@@ -1238,6 +1267,7 @@ class _KeyedField extends StatefulWidget {
   final bool required;
   final bool numeric;
   final int? maxLength;
+  final int maxLines;
   final String? help;
   /// Overrides the default numeric/length formatters when a field needs its
   /// own rule — a bank name that takes letters but not digits, say.
@@ -1276,6 +1306,7 @@ class _KeyedFieldState extends State<_KeyedField> {
       label: widget.label,
       required: widget.required,
       numeric: widget.numeric,
+      maxLines: widget.maxLines,
       help: widget.help,
       error: widget.error,
       keyboardType:
