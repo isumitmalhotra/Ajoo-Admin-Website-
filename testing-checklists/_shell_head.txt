@@ -1,0 +1,195 @@
+<title>Aajoo Host Readiness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+  :root{
+    --ground:#F7F8F8; --panel:#FFFFFF; --panel-2:#F1F4F3;
+    --ink:#16211F; --ink-2:#4A5654; --ink-3:#7C8886;
+    --rule:#DCE3E1; --rule-2:#EAEFEE;
+    --accent:#0E7C6B; --accent-soft:#E3F1EE;
+    --pass:#2F7D4F; --pass-soft:#E6F2EA;
+    --fail:#B4342B; --fail-soft:#FBE9E7;
+    --block:#B07207; --block-soft:#FCF1DE;
+    --shadow:0 1px 2px rgba(22,33,31,.05), 0 8px 24px rgba(22,33,31,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#11181A; --panel:#182124; --panel-2:#1E282B;
+      --ink:#E8EDEC; --ink-2:#A6B2B0; --ink-3:#75817F;
+      --rule:#2A3538; --rule-2:#222C2F;
+      --accent:#4FBFA8; --accent-soft:#12312C;
+      --pass:#5FBF85; --pass-soft:#152C1F;
+      --fail:#E8776B; --fail-soft:#331A17;
+      --block:#E0A73F; --block-soft:#2E2312;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#11181A; --panel:#182124; --panel-2:#1E282B;
+    --ink:#E8EDEC; --ink-2:#A6B2B0; --ink-3:#75817F;
+    --rule:#2A3538; --rule-2:#222C2F;
+    --accent:#4FBFA8; --accent-soft:#12312C;
+    --pass:#5FBF85; --pass-soft:#152C1F;
+    --fail:#E8776B; --fail-soft:#331A17;
+    --block:#E0A73F; --block-soft:#2E2312;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:Archivo,system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  code,.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+  .tnum{font-variant-numeric:tabular-nums}
+
+  /* ── top bar ─────────────────────────────────────────────── */
+  .bar{
+    position:sticky; top:0; z-index:20; background:var(--panel);
+    border-bottom:1px solid var(--rule); box-shadow:var(--shadow);
+  }
+  .bar-in{max-width:1180px; margin:0 auto; padding:12px 22px;
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap}
+  .brand{font-weight:700; letter-spacing:-.01em; font-size:15.5px; white-space:nowrap}
+  .brand span{color:var(--accent)}
+  .meter{flex:1; min-width:190px; display:flex; align-items:center; gap:11px}
+  .track{flex:1; height:7px; border-radius:99px; background:var(--panel-2); overflow:hidden; display:flex}
+  .track i{display:block; height:100%; transition:width .25s ease}
+  .t-pass{background:var(--pass)} .t-fail{background:var(--fail)} .t-block{background:var(--block)}
+  .count{font-size:12.5px; color:var(--ink-2); white-space:nowrap}
+  .tools{display:flex; gap:7px; flex-wrap:wrap}
+
+  button{font:inherit; cursor:pointer}
+  .btn{
+    border:1px solid var(--rule); background:var(--panel); color:var(--ink);
+    border-radius:9px; padding:7px 13px; font-size:13px; font-weight:500;
+    transition:background .12s ease, border-color .12s ease;
+  }
+  .btn:hover{background:var(--panel-2)}
+  .btn:focus-visible,.seg button:focus-visible,.note:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+  .btn.primary:hover{filter:brightness(1.06)}
+
+  /* ── layout ──────────────────────────────────────────────── */
+  .wrap{max-width:1180px; margin:0 auto; padding:26px 22px 90px;
+    display:grid; grid-template-columns:212px 1fr; gap:34px; align-items:start}
+  @media (max-width:900px){ .wrap{grid-template-columns:1fr; gap:20px} .rail{position:static!important} }
+
+  .rail{position:sticky; top:74px; display:flex; flex-direction:column; gap:2px}
+  .rail a{
+    display:flex; align-items:baseline; gap:9px; padding:7px 10px; border-radius:8px;
+    color:var(--ink-2); text-decoration:none; font-size:13.2px; line-height:1.35;
+  }
+  .rail a:hover{background:var(--panel-2); color:var(--ink)}
+  .rail a b{font-family:"JetBrains Mono",monospace; font-size:11px; font-weight:500; color:var(--ink-3)}
+  .rail .done{color:var(--ink-3)}
+
+  .lede{
+    font-family:"Source Serif 4",Georgia,serif; font-size:17px; line-height:1.62;
+    color:var(--ink-2); max-width:64ch; margin:0 0 8px;
+  }
+  .lede strong{color:var(--ink); font-weight:600}
+  h1{font-size:29px; letter-spacing:-.022em; margin:0 0 10px; text-wrap:balance}
+
+  section{margin-top:34px; scroll-margin-top:82px}
+  .head{display:flex; align-items:baseline; gap:11px; margin-bottom:5px}
+  .num{font-family:"JetBrains Mono",monospace; font-size:12px; color:var(--accent); font-weight:500}
+  h2{font-size:18.5px; letter-spacing:-.015em; margin:0; text-wrap:balance}
+  .sub{font-family:"Source Serif 4",Georgia,serif; font-size:14.6px; color:var(--ink-2); margin:0 0 13px; max-width:62ch}
+
+  .rows{display:flex; flex-direction:column; gap:8px}
+  .row{
+    background:var(--panel); border:1px solid var(--rule); border-left:3px solid var(--rule);
+    border-radius:11px; padding:12px 14px; box-shadow:var(--shadow);
+    transition:border-color .14s ease;
+  }
+  .row[data-s="pass"]{border-left-color:var(--pass)}
+  .row[data-s="fail"]{border-left-color:var(--fail); background:var(--fail-soft)}
+  .row[data-s="block"]{border-left-color:var(--block); background:var(--block-soft)}
+  .row-top{display:flex; gap:13px; align-items:flex-start}
+  .what{flex:1; min-width:0}
+  .title{font-weight:600; font-size:14.4px; line-height:1.4}
+  .exp{font-size:13.2px; color:var(--ink-2); margin-top:3px}
+  .eps{display:flex; flex-wrap:wrap; gap:5px; margin-top:7px}
+  .ep{
+    font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--ink-2);
+    background:var(--panel-2); border:1px solid var(--rule-2);
+    padding:2px 6px; border-radius:5px; white-space:nowrap;
+  }
+  .where{
+    display:inline-block; font-size:11px; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--accent); background:var(--accent-soft); border-radius:5px;
+    padding:2px 7px; margin-bottom:6px; font-weight:600;
+  }
+
+  .seg{display:flex; gap:0; flex-shrink:0; border:1px solid var(--rule); border-radius:9px; overflow:hidden}
+  .seg button{
+    border:0; background:var(--panel); color:var(--ink-3);
+    padding:6px 11px; font-size:12.2px; font-weight:600; line-height:1.2;
+    border-right:1px solid var(--rule);
+  }
+  .seg button:last-child{border-right:0}
+  .seg button:hover{background:var(--panel-2); color:var(--ink-2)}
+  .seg button[aria-pressed="true"][data-v="pass"]{background:var(--pass); color:#fff}
+  .seg button[aria-pressed="true"][data-v="fail"]{background:var(--fail); color:#fff}
+  .seg button[aria-pressed="true"][data-v="block"]{background:var(--block); color:#fff}
+
+  .note{
+    width:100%; margin-top:9px; resize:vertical; min-height:56px;
+    font-family:Archivo,sans-serif; font-size:13.2px; color:var(--ink);
+    background:var(--panel-2); border:1px solid var(--rule); border-radius:8px; padding:8px 10px;
+  }
+  .note::placeholder{color:var(--ink-3)}
+  .note.hide{display:none}
+
+  .toast{
+    position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
+    background:var(--ink); color:var(--ground); padding:10px 18px; border-radius:10px;
+    font-size:13.4px; font-weight:500; opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:40;
+  }
+  .toast.on{opacity:1}
+  @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+
+<div class="bar">
+  <div class="bar-in">
+    <div class="brand">aajoo <span>host readiness</span></div>
+    <div class="meter">
+      <div class="track" aria-hidden="true">
+        <i class="t-pass" id="bp"></i><i class="t-fail" id="bf"></i><i class="t-block" id="bb"></i>
+      </div>
+      <div class="count tnum" id="cnt">0 / 0</div>
+    </div>
+    <div class="tools">
+      <button class="btn" id="filter">Show: all</button>
+      <button class="btn primary" id="copy">Copy report</button>
+      <button class="btn" id="reset">Reset</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <nav class="rail" id="rail" aria-label="Phases"></nav>
+  <main>
+    <h1>Host system readiness</h1>
+    <p class="lede">
+      Every host-facing feature on Aajoo, in the order a real host meets them — from creating an
+      account to being paid. Mark each one <strong>Pass</strong>, <strong>Fail</strong> or
+      <strong>Blocked</strong>, and write what you saw in the note box. Your answers save in this
+      browser as you go, so you can stop and come back.
+    </p>
+    <p class="lede">
+      When you're done, or whenever you want me to look at something, press
+      <strong>Copy report</strong> — it puts every failure and blocker on your clipboard, with your
+      notes, ready to paste back to me.
+    </p>
+    <div id="out"></div>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>

@@ -1,0 +1,434 @@
+<title>Aajoo Host Readiness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+  :root{
+    --ground:#F7F8F8; --panel:#FFFFFF; --panel-2:#F1F4F3;
+    --ink:#16211F; --ink-2:#4A5654; --ink-3:#7C8886;
+    --rule:#DCE3E1; --rule-2:#EAEFEE;
+    --accent:#0E7C6B; --accent-soft:#E3F1EE;
+    --pass:#2F7D4F; --pass-soft:#E6F2EA;
+    --fail:#B4342B; --fail-soft:#FBE9E7;
+    --block:#B07207; --block-soft:#FCF1DE;
+    --shadow:0 1px 2px rgba(22,33,31,.05), 0 8px 24px rgba(22,33,31,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#11181A; --panel:#182124; --panel-2:#1E282B;
+      --ink:#E8EDEC; --ink-2:#A6B2B0; --ink-3:#75817F;
+      --rule:#2A3538; --rule-2:#222C2F;
+      --accent:#4FBFA8; --accent-soft:#12312C;
+      --pass:#5FBF85; --pass-soft:#152C1F;
+      --fail:#E8776B; --fail-soft:#331A17;
+      --block:#E0A73F; --block-soft:#2E2312;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#11181A; --panel:#182124; --panel-2:#1E282B;
+    --ink:#E8EDEC; --ink-2:#A6B2B0; --ink-3:#75817F;
+    --rule:#2A3538; --rule-2:#222C2F;
+    --accent:#4FBFA8; --accent-soft:#12312C;
+    --pass:#5FBF85; --pass-soft:#152C1F;
+    --fail:#E8776B; --fail-soft:#331A17;
+    --block:#E0A73F; --block-soft:#2E2312;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:Archivo,system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  code,.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+  .tnum{font-variant-numeric:tabular-nums}
+
+  /* ── top bar ─────────────────────────────────────────────── */
+  .bar{
+    position:sticky; top:0; z-index:20; background:var(--panel);
+    border-bottom:1px solid var(--rule); box-shadow:var(--shadow);
+  }
+  .bar-in{max-width:1180px; margin:0 auto; padding:12px 22px;
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap}
+  .brand{font-weight:700; letter-spacing:-.01em; font-size:15.5px; white-space:nowrap}
+  .brand span{color:var(--accent)}
+  .meter{flex:1; min-width:190px; display:flex; align-items:center; gap:11px}
+  .track{flex:1; height:7px; border-radius:99px; background:var(--panel-2); overflow:hidden; display:flex}
+  .track i{display:block; height:100%; transition:width .25s ease}
+  .t-pass{background:var(--pass)} .t-fail{background:var(--fail)} .t-block{background:var(--block)}
+  .count{font-size:12.5px; color:var(--ink-2); white-space:nowrap}
+  .tools{display:flex; gap:7px; flex-wrap:wrap}
+
+  button{font:inherit; cursor:pointer}
+  .btn{
+    border:1px solid var(--rule); background:var(--panel); color:var(--ink);
+    border-radius:9px; padding:7px 13px; font-size:13px; font-weight:500;
+    transition:background .12s ease, border-color .12s ease;
+  }
+  .btn:hover{background:var(--panel-2)}
+  .btn:focus-visible,.seg button:focus-visible,.note:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+  .btn.primary:hover{filter:brightness(1.06)}
+
+  /* ── layout ──────────────────────────────────────────────── */
+  .wrap{max-width:1180px; margin:0 auto; padding:26px 22px 90px;
+    display:grid; grid-template-columns:212px 1fr; gap:34px; align-items:start}
+  @media (max-width:900px){ .wrap{grid-template-columns:1fr; gap:20px} .rail{position:static!important} }
+
+  .rail{position:sticky; top:74px; display:flex; flex-direction:column; gap:2px}
+  .rail a{
+    display:flex; align-items:baseline; gap:9px; padding:7px 10px; border-radius:8px;
+    color:var(--ink-2); text-decoration:none; font-size:13.2px; line-height:1.35;
+  }
+  .rail a:hover{background:var(--panel-2); color:var(--ink)}
+  .rail a b{font-family:"JetBrains Mono",monospace; font-size:11px; font-weight:500; color:var(--ink-3)}
+  .rail .done{color:var(--ink-3)}
+
+  .lede{
+    font-family:"Source Serif 4",Georgia,serif; font-size:17px; line-height:1.62;
+    color:var(--ink-2); max-width:64ch; margin:0 0 8px;
+  }
+  .lede strong{color:var(--ink); font-weight:600}
+  h1{font-size:29px; letter-spacing:-.022em; margin:0 0 10px; text-wrap:balance}
+
+  section{margin-top:34px; scroll-margin-top:82px}
+  .head{display:flex; align-items:baseline; gap:11px; margin-bottom:5px}
+  .num{font-family:"JetBrains Mono",monospace; font-size:12px; color:var(--accent); font-weight:500}
+  h2{font-size:18.5px; letter-spacing:-.015em; margin:0; text-wrap:balance}
+  .sub{font-family:"Source Serif 4",Georgia,serif; font-size:14.6px; color:var(--ink-2); margin:0 0 13px; max-width:62ch}
+
+  .rows{display:flex; flex-direction:column; gap:8px}
+  .row{
+    background:var(--panel); border:1px solid var(--rule); border-left:3px solid var(--rule);
+    border-radius:11px; padding:12px 14px; box-shadow:var(--shadow);
+    transition:border-color .14s ease;
+  }
+  .row[data-s="pass"]{border-left-color:var(--pass)}
+  .row[data-s="fail"]{border-left-color:var(--fail); background:var(--fail-soft)}
+  .row[data-s="block"]{border-left-color:var(--block); background:var(--block-soft)}
+  .row-top{display:flex; gap:13px; align-items:flex-start}
+  .what{flex:1; min-width:0}
+  .title{font-weight:600; font-size:14.4px; line-height:1.4}
+  .exp{font-size:13.2px; color:var(--ink-2); margin-top:3px}
+  .eps{display:flex; flex-wrap:wrap; gap:5px; margin-top:7px}
+  .ep{
+    font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--ink-2);
+    background:var(--panel-2); border:1px solid var(--rule-2);
+    padding:2px 6px; border-radius:5px; white-space:nowrap;
+  }
+  .where{
+    display:inline-block; font-size:11px; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--accent); background:var(--accent-soft); border-radius:5px;
+    padding:2px 7px; margin-bottom:6px; font-weight:600;
+  }
+
+  .seg{display:flex; gap:0; flex-shrink:0; border:1px solid var(--rule); border-radius:9px; overflow:hidden}
+  .seg button{
+    border:0; background:var(--panel); color:var(--ink-3);
+    padding:6px 11px; font-size:12.2px; font-weight:600; line-height:1.2;
+    border-right:1px solid var(--rule);
+  }
+  .seg button:last-child{border-right:0}
+  .seg button:hover{background:var(--panel-2); color:var(--ink-2)}
+  .seg button[aria-pressed="true"][data-v="pass"]{background:var(--pass); color:#fff}
+  .seg button[aria-pressed="true"][data-v="fail"]{background:var(--fail); color:#fff}
+  .seg button[aria-pressed="true"][data-v="block"]{background:var(--block); color:#fff}
+
+  .note{
+    width:100%; margin-top:9px; resize:vertical; min-height:56px;
+    font-family:Archivo,sans-serif; font-size:13.2px; color:var(--ink);
+    background:var(--panel-2); border:1px solid var(--rule); border-radius:8px; padding:8px 10px;
+  }
+  .note::placeholder{color:var(--ink-3)}
+  .note.hide{display:none}
+
+  .toast{
+    position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
+    background:var(--ink); color:var(--ground); padding:10px 18px; border-radius:10px;
+    font-size:13.4px; font-weight:500; opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:40;
+  }
+  .toast.on{opacity:1}
+  @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+
+<div class="bar">
+  <div class="bar-in">
+    <div class="brand">aajoo <span>host readiness</span></div>
+    <div class="meter">
+      <div class="track" aria-hidden="true">
+        <i class="t-pass" id="bp"></i><i class="t-fail" id="bf"></i><i class="t-block" id="bb"></i>
+      </div>
+      <div class="count tnum" id="cnt">0 / 0</div>
+    </div>
+    <div class="tools">
+      <button class="btn" id="filter">Show: all</button>
+      <button class="btn primary" id="copy">Copy report</button>
+      <button class="btn" id="reset">Reset</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <nav class="rail" id="rail" aria-label="Phases"></nav>
+  <main>
+    <h1>Host system readiness</h1>
+    <p class="lede">
+      Every host-facing feature on Aajoo, in the order a real host meets them — from creating an
+      account to being paid. Mark each one <strong>Pass</strong>, <strong>Fail</strong> or
+      <strong>Blocked</strong>, and write what you saw in the note box. Your answers save in this
+      browser as you go, so you can stop and come back.
+    </p>
+    <p class="lede">
+      When you're done, or whenever you want me to look at something, press
+      <strong>Copy report</strong> — it puts every failure and blocker on your clipboard, with your
+      notes, ready to paste back to me.
+    </p>
+    <div id="out"></div>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const DATA = [
+  { t:"Account & access", d:"Getting into a host account at all — the first thing that has to work.", items:[
+    ["Host signup","Create a brand-new host account from the public site.","/host/register","/user/signup","Account is created and you're asked to verify."],
+    ["Email OTP on signup","The code arrives, and entering it activates the account.","/user/otp-again","/user/verify-otp","Wrong code is refused; correct code signs you in."],
+    ["Host login","Sign in with the Host tab selected.","/user/login","","Lands on the host dashboard, not the guest one."],
+    ["Wrong password","Sign in with a deliberately wrong password.","/user/login","","Says the password is wrong — not \"no record found\", and no database text."],
+    ["Google sign-in","Use Continue with Google.","/user/auth/google","","Signs in and lands in the right portal."],
+    ["Forgot password","Full reset: request, code, new password, sign in with it.","/user/forget-password","/user/forget/verify-otp","New password works; old one is refused."],
+    ["Switch guest ↔ host","Swap modes from the account menu.","/switch-mode","","Both portals reachable without signing out."],
+    ["Logout","Sign out, then press Back.","/user/logout","","Session is gone; protected pages don't render stale data."],
+  ]},
+  { t:"Identity verification", d:"The DIDIT check that gates publishing. This is where the stuck-'pending' bug lived.", items:[
+    ["Start verification","From Settings, begin identity verification.","/verify/create-session","","DIDIT opens with a QR to finish on your phone."],
+    ["Finish on phone","Complete ID + selfie on the phone, then return to the desktop tab.","/verify/check-session/:id","","Desktop notices on its own and flips to verified."],
+    ["Status is remembered","Reload Settings after verifying.","/verify/my-session","/user/detail","Reads \"Identity verified\" — NOT \"Verification in review\"."],
+    ["Not asked twice","Open Settings again the next day, and start a booking.","/verify/create-session","","A verified host is never re-asked. This was the reported bug."],
+    ["Abandoned attempt","Start a verification and close it without finishing.","/verify/my-session","","You stay verified. An unfinished attempt must not revoke a good one."],
+    ["Unverified cannot publish","With an unverified host, try to submit a listing.","/listing/submit","","Refused with a clear reason and a way to verify."],
+  ]},
+  { t:"Listing a property", d:"The five-step wizard — the longest and most bug-prone flow in the product.", items:[
+    ["Form loads","Open Add Property.","/listing/schema","","All five steps render; no blank sections."],
+    ["Typing holds focus","Type a full sentence into Property name and other fields.","","","Focus never jumps. You should never have to click between letters."],
+    ["Required markers","Check every mandatory field.","","","Each shows an asterisk, including Property name."],
+    ["Name validation","Enter a 2-character name, then one with symbols.","/listing/step1","","Refused, and THAT field turns red and scrolls into view."],
+    ["Category rules","Pick each category and check accommodation types.","/listing/step1","","Impossible combinations (PG as entire property) are not offered."],
+    ["Manager authorisation","Choose Property Manager and answer No to authorisation.","/listing/step1","","Blocked from continuing, with the reason."],
+    ["Capacity rule","Set maximum adults higher than total guests.","/listing/step1","","Refused with the adults/total message."],
+    ["State → city","Pick a state, pick a city, then change the state.","/public/locations/cities","","City clears but stays a DROPDOWN of the new state's cities."],
+    ["Map search","Open the map, type a town, press Enter.","/public/geocode/search","","Map flies there and drops a pin."],
+    ["Map fallback","Search your exact society or building name.","/public/geocode/search","","If unmapped, it pins the nearest sector and says so."],
+    ["My location","Press My location.","","","Either pins you, or explains (permission / accuracy). Never silent."],
+    ["Step 2 details","Fill built-up area, year, and the type-specific questions.","/listing/step2","","Saves and advances; values survive going Back."],
+    ["Step 3 amenities","Tick amenities, experiences, views, house rules.","/listing/step3","","All groups save."],
+    ["Step 4 pricing","Set nightly price, minimum (floor) and ideal price.","/listing/step4","","Saves. The floor is never shown to guests anywhere."],
+    ["Step 5 identity","Document type + number, ownership proof, bank, GST.","/listing/step5","","See the next row for the Aadhaar check."],
+    ["Aadhaar accepts digits only","Choose Aadhaar, then try typing letters.","","","Letters are refused as you type; hint says 12 digits."],
+    ["Photo upload","Upload several photos; delete one; set a cover.","/listing/media/upload","/listing/media/:id","All appear, deletion sticks, cover is honoured."],
+    ["Readiness score","Watch the readiness panel on step 5.","/listing/readiness/:id","","Score reflects what you've actually filled in."],
+    ["Submit","Accept declarations and submit.","/listing/submit","","Confirms, and the listing shows as submitted."],
+    ["Resume a draft","Leave halfway, come back later.","/listing/draft/:id","","Reopens where you left off with everything intact."],
+    ["Edit an existing property","Open a live listing from Properties and edit it.","/listing/draft/:id","","Opens the SAME five-step form, every field and photo populated."],
+  ]},
+  { t:"Property management", d:"Everything a host does to a listing once it exists.", items:[
+    ["Properties list","Open My Properties.","/host/property-search","","All listings, correct status, correct photos."],
+    ["Take offline / put live","Toggle a listing inactive, then active.","/host/property/update-status","","Disappears from public search when off; returns when on."],
+    ["Change cover photo","Set a different cover.","/host/update-property-cover","","Changes on the card and the detail page."],
+    ["Cancellation policy","Set a policy; check the pending-policy prompt.","/host/properties/cancellation-policy","/host/properties/policy-pending","Saves and shows on the public page."],
+    ["Delete a property","Delete a test listing.","/host/delete-property","","Asks first; disappears from search afterwards."],
+  ]},
+  { t:"Calendar & availability", d:"The dates a host can and can't be booked on.", items:[
+    ["View calendar","Open the calendar for a property.","/host/calendar","","Existing bookings show as taken."],
+    ["Block dates","Block a range.","/host/calendar/block","","Marked blocked immediately."],
+    ["Unblock","Release that range.","/host/calendar/unblock","","Bookable again."],
+    ["Blocked dates really block","As a guest, try to book blocked dates.","/booking/property-availability","","Greyed out in the guest date picker."],
+  ]},
+  { t:"Negotiations", d:"The heart of the product. Test as host AND guest — use two browsers.", items:[
+    ["Offer arrives","As a guest, offer BELOW the floor.","/host/negotiations/list","/user/negotiations/offer","Appears in the host's Negotiations with dates and amount."],
+    ["Live update","Keep Negotiations open while the guest offers.","","","Appears without a refresh."],
+    ["Accept","Accept the offer.","/host/negotiations/respond","","Marked accepted; guest sees the deal and a coupon."],
+    ["Counter","Counter with a different price.","/host/negotiations/respond","","Guest sees the counter and can accept it."],
+    ["Decline","Decline an offer.","/host/negotiations/respond","","Marked declined; guest is told."],
+    ["Auto-accept","As a guest, offer AT or ABOVE the floor.","","","Accepted instantly with no host action. Host is told, not asked."],
+    ["Offer expiry","Leave an offer untouched for 30+ minutes.","","","Expires; guest is told the host was unavailable."],
+    ["Agreed price is charged","Guest completes checkout after a deal.","/booking/create","","Charged the negotiated price, never the list price."],
+    ["Floor never leaks","Check the guest-side property page and offer dialog.","","","Your minimum price appears nowhere."],
+  ]},
+  { t:"Bookings", d:"From a confirmed booking to the guest arriving and leaving.", items:[
+    ["Bookings list","Open Bookings.","/host/bookings/search","","Filters by status; totals look right."],
+    ["Booking detail","Expand a booking.","/host/bookings/detail/:id","","Guest, dates, nights, amount, payment state."],
+    ["Staying guest & ID","Open a booking made FOR someone else.","/guest-profiles/for-booking/:id","","Shows the traveller; View ID opens their document."],
+    ["Confirm a booking","Confirm a pending booking.","/host/confirm-book","","Status changes; guest is notified."],
+    ["Check-in","Mark a guest checked in.","/host/booking/check-in","","Recorded against the booking."],
+    ["No-show","Mark a no-show.","/host/booking/no-show","","Recorded; refund rules apply correctly."],
+    ["Cancel","Cancel a booking as host.","/host/cancel-booking","","Reason captured; refund follows the policy."],
+    ["History","Open past bookings.","/host/booking-history","","Completed and cancelled stays listed."],
+  ]},
+  { t:"Money", d:"Earnings, payouts and paperwork. Check the arithmetic, not just that pages load.", items:[
+    ["Dashboard","Open the host dashboard.","/host/dashboard/summary","","Tiles match reality — no placeholder numbers."],
+    ["Earnings","Open Earnings.","/host/earnings/summary","","Totals reconcile with your bookings."],
+    ["Payout account","Add or change bank details.","/host/payout-account/update","/host/payout-account/get","Saves; account number is masked when shown back."],
+    ["Payout history","Open payout history.","/host/payout/history","","Past payouts with dates and amounts."],
+    ["Statements","Open and download a statement.","/host/statements/search","/host/statements/download/:id","File downloads and opens."],
+    ["Invoice","Download an invoice for a paid booking.","/host/invoice/:payId/download","","PDF has correct amounts and GST."],
+    ["Transactions","Open transaction history.","/host/transaction-history","","Every movement accounted for."],
+  ]},
+  { t:"Growth", d:"The optional tools hosts use to get more bookings.", items:[
+    ["Boost catalogue","Open Boost & Promotions.","/host/boost/list","","Plans and prices render."],
+    ["Buy a boost","Order and pay for a boost.","/host/boost/order","/host/boost/verify","Payment completes and activates."],
+    ["Boost is visible","Check the boosted listing in guest search.","/host/boost/activate","","Marked sponsored and ranks higher."],
+    ["Refer & earn","Open Refer, copy the code, redeem on a new account.","/user/referrals/summary","","Credit lands after the referred booking."],
+    ["Performance","Open Performance.","/host/performance/summary","","Views, conversion and rating look plausible."],
+    ["Reviews","Check reviews on your listing.","/user/reviews/list","","Guest reviews appear; ratings average correctly."],
+  ]},
+  { t:"Messages & support", d:"How a host talks to guests and to Aajoo.", items:[
+    ["Guest messages","Open a thread and reply.","/user/messages/threads","","Message sends; guest receives it."],
+    ["Notifications","Open notifications; mark one read.","/host/notifications/search","/host/notifications/:id/read","Unread count decreases."],
+    ["Raise a ticket","Create a support ticket.","/host/support/tickets/create","","Ticket appears with a reference."],
+    ["Reply to a ticket","Reply on an open ticket.","/host/support/tickets/reply","/host/support/tickets/search","Thread updates."],
+  ]},
+  { t:"Profile & account", d:"The host's own details, and the security around changing them.", items:[
+    ["View profile","Open Profile.","/host/profile/get","","Your details, correct."],
+    ["Edit profile","Change name and address.","/host/profile/update","","Saves and persists after reload."],
+    ["Profile photo","Upload and remove a photo.","/user/add/profile-pic","/user/delete/profile-pic","Updates everywhere it appears."],
+    ["Change password","Change it, then sign in with the new one.","/user/update-password","","Old password refused afterwards."],
+    ["Change phone","Change your mobile number.","/user/security/otp","","Requires an emailed code first."],
+    ["Email is read-only","Try to change your email.","","","Not editable — by design."],
+    ["Delete account","Only on a throwaway account.","/user/delete","","Asks for confirmation; access ends."],
+  ]},
+  { t:"Regression — today's fixes", d:"The specific things fixed today. If any of these fail, tell me immediately.", items:[
+    ["No database errors","Force failures: bad input, submit twice, go offline mid-save.","","","You NEVER see SQL, column or table names. Plain English only."],
+    ["Errors mark the field","Trigger any validation failure.","","","The offending field turns red and scrolls into view."],
+    ["Form doesn't save per keystroke","Open the network tab and type in the wizard.","","","No requests fire while typing. Saving happens on Continue."],
+    ["Admin lists for a host","As ADMIN, add a property for an UNVERIFIED host.","/listing/submit","","Admin is never asked to verify. Listing saves."],
+    ["Held until verified","Check that listing on the public site.","","","Not visible. Host gets an email explaining how to verify."],
+    ["Goes live on verification","Have that host complete verification.","/verify/create-session","","The listing turns on by itself."],
+  ]},
+];
+
+const KEY="aajoo-host-qa-v1";
+let state=JSON.parse(localStorage.getItem(KEY)||"{}");
+let filter="all";
+const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
+const id=(s,i)=>s+"|"+i;
+
+const toast=(m)=>{const t=document.getElementById("toast");t.textContent=m;t.classList.add("on");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("on"),1900);};
+
+function render(){
+  const out=document.getElementById("out"), rail=document.getElementById("rail");
+  out.innerHTML=""; rail.innerHTML="";
+  let total=0,pass=0,fail=0,block=0;
+
+  DATA.forEach((sec,si)=>{
+    let sDone=0;
+    const section=document.createElement("section");
+    section.id="s"+si;
+    const rows=document.createElement("div"); rows.className="rows";
+
+    sec.items.forEach((it,ii)=>{
+      const [title,exp,e1,e2,expect]=it;
+      const k=id(si,ii); const st=state[k]||{};
+      total++;
+      if(st.v==="pass")pass++; else if(st.v==="fail")fail++; else if(st.v==="block")block++;
+      if(st.v)sDone++;
+      if(filter==="todo"&&st.v) return;
+      if(filter==="bad"&&st.v!=="fail"&&st.v!=="block") return;
+
+      const row=document.createElement("div");
+      row.className="row"; if(st.v)row.dataset.s=st.v;
+      const eps=[e1,e2].filter(Boolean).map(e=>`<span class="ep">${e}</span>`).join("");
+      row.innerHTML=`
+        <div class="row-top">
+          <div class="what">
+            <div class="title">${title}</div>
+            <div class="exp">${exp}</div>
+            <div class="exp" style="margin-top:5px"><strong style="color:var(--ink)">Expect:</strong> ${expect}</div>
+            ${eps?`<div class="eps">${eps}</div>`:""}
+          </div>
+          <div class="seg" role="group" aria-label="Result for ${title}">
+            <button data-v="pass" aria-pressed="${st.v==="pass"}">Pass</button>
+            <button data-v="fail" aria-pressed="${st.v==="fail"}">Fail</button>
+            <button data-v="block" aria-pressed="${st.v==="block"}">Blocked</button>
+          </div>
+        </div>
+        <textarea class="note ${st.v==="fail"||st.v==="block"||st.n?"":"hide"}"
+          placeholder="What did you see? Steps, message, anything odd.">${st.n||""}</textarea>`;
+
+      row.querySelectorAll(".seg button").forEach(b=>{
+        b.onclick=()=>{
+          const v=b.dataset.v;
+          state[k]={...(state[k]||{}), v: st.v===v? null : v};
+          if(!state[k].v && !state[k].n) delete state[k];
+          save(); render();
+        };
+      });
+      const ta=row.querySelector(".note");
+      ta.oninput=()=>{ state[k]={...(state[k]||{}), n:ta.value}; if(!state[k].v&&!state[k].n)delete state[k]; save(); updateBar(); };
+      rows.appendChild(row);
+    });
+
+    section.innerHTML=`<div class="head"><span class="num">${String(si+1).padStart(2,"0")}</span><h2>${sec.t}</h2></div><p class="sub">${sec.d}</p>`;
+    section.appendChild(rows);
+    if(rows.children.length) out.appendChild(section);
+
+    const a=document.createElement("a");
+    a.href="#s"+si;
+    a.className=sDone===sec.items.length?"done":"";
+    a.innerHTML=`<b class="tnum">${String(sDone).padStart(2,"0")}/${String(sec.items.length).padStart(2,"0")}</b><span>${sec.t}</span>`;
+    rail.appendChild(a);
+  });
+
+  window._tot={total,pass,fail,block};
+  updateBar();
+}
+
+function updateBar(){
+  const {total,pass,fail,block}=window._tot;
+  document.getElementById("bp").style.width=(pass/total*100)+"%";
+  document.getElementById("bf").style.width=(fail/total*100)+"%";
+  document.getElementById("bb").style.width=(block/total*100)+"%";
+  document.getElementById("cnt").textContent=`${pass+fail+block} / ${total} · ${fail} failed · ${block} blocked`;
+}
+
+document.getElementById("filter").onclick=(e)=>{
+  filter = filter==="all" ? "todo" : filter==="todo" ? "bad" : "all";
+  e.target.textContent = "Show: " + (filter==="all"?"all":filter==="todo"?"not done":"problems");
+  render();
+};
+
+document.getElementById("copy").onclick=()=>{
+  let out="# Aajoo host testing — findings\n\n";
+  let n=0;
+  DATA.forEach((sec,si)=>{
+    const bad=sec.items.map((it,ii)=>({it,st:state[id(si,ii)]||{}}))
+      .filter(x=>x.st.v==="fail"||x.st.v==="block");
+    if(!bad.length) return;
+    out+=`## ${sec.t}\n\n`;
+    bad.forEach(({it,st})=>{
+      n++;
+      out+=`**${st.v==="fail"?"FAILED":"BLOCKED"} — ${it[0]}**\n`;
+      out+=`- Expected: ${it[4]}\n`;
+      if(it[2]||it[3]) out+=`- Endpoints: ${[it[2],it[3]].filter(Boolean).join(", ")}\n`;
+      out+=`- What happened: ${st.n?st.n:"(no note)"}\n\n`;
+    });
+  });
+  const {total,pass,fail,block}=window._tot;
+  out = `Tested ${pass+fail+block} of ${total} — ${pass} passed, ${fail} failed, ${block} blocked.\n\n` + (n?out:"No failures recorded.\n");
+  navigator.clipboard.writeText(out).then(
+    ()=>toast(n?`Copied ${n} problem${n>1?"s":""} — paste it to Claude`:"Copied — nothing failing yet"),
+    ()=>toast("Couldn't copy — select the page and copy manually")
+  );
+};
+
+document.getElementById("reset").onclick=()=>{
+  if(!confirm("Clear every answer and note? This cannot be undone.")) return;
+  state={}; save(); render(); toast("Checklist cleared");
+};
+
+render();
+</script>

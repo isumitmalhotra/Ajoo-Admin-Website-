@@ -1,0 +1,480 @@
+<title>Aajoo Admin Readiness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+  :root{
+    --ground:#F7F8F8; --panel:#FFFFFF; --panel-2:#F1F4F3;
+    --ink:#16211F; --ink-2:#4A5654; --ink-3:#7C8886;
+    --rule:#DCE3E1; --rule-2:#EAEFEE;
+    --accent:#0E7C6B; --accent-soft:#E3F1EE;
+    --pass:#2F7D4F; --pass-soft:#E6F2EA;
+    --fail:#B4342B; --fail-soft:#FBE9E7;
+    --block:#B07207; --block-soft:#FCF1DE;
+    --shadow:0 1px 2px rgba(22,33,31,.05), 0 8px 24px rgba(22,33,31,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#11181A; --panel:#182124; --panel-2:#1E282B;
+      --ink:#E8EDEC; --ink-2:#A6B2B0; --ink-3:#75817F;
+      --rule:#2A3538; --rule-2:#222C2F;
+      --accent:#4FBFA8; --accent-soft:#12312C;
+      --pass:#5FBF85; --pass-soft:#152C1F;
+      --fail:#E8776B; --fail-soft:#331A17;
+      --block:#E0A73F; --block-soft:#2E2312;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#11181A; --panel:#182124; --panel-2:#1E282B;
+    --ink:#E8EDEC; --ink-2:#A6B2B0; --ink-3:#75817F;
+    --rule:#2A3538; --rule-2:#222C2F;
+    --accent:#4FBFA8; --accent-soft:#12312C;
+    --pass:#5FBF85; --pass-soft:#152C1F;
+    --fail:#E8776B; --fail-soft:#331A17;
+    --block:#E0A73F; --block-soft:#2E2312;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:Archivo,system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  code,.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+  .tnum{font-variant-numeric:tabular-nums}
+
+  /* ── top bar ─────────────────────────────────────────────── */
+  .bar{
+    position:sticky; top:0; z-index:20; background:var(--panel);
+    border-bottom:1px solid var(--rule); box-shadow:var(--shadow);
+  }
+  .bar-in{max-width:1180px; margin:0 auto; padding:12px 22px;
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap}
+  .brand{font-weight:700; letter-spacing:-.01em; font-size:15.5px; white-space:nowrap}
+  .brand span{color:var(--accent)}
+  .meter{flex:1; min-width:190px; display:flex; align-items:center; gap:11px}
+  .track{flex:1; height:7px; border-radius:99px; background:var(--panel-2); overflow:hidden; display:flex}
+  .track i{display:block; height:100%; transition:width .25s ease}
+  .t-pass{background:var(--pass)} .t-fail{background:var(--fail)} .t-block{background:var(--block)}
+  .count{font-size:12.5px; color:var(--ink-2); white-space:nowrap}
+  .tools{display:flex; gap:7px; flex-wrap:wrap}
+
+  button{font:inherit; cursor:pointer}
+  .btn{
+    border:1px solid var(--rule); background:var(--panel); color:var(--ink);
+    border-radius:9px; padding:7px 13px; font-size:13px; font-weight:500;
+    transition:background .12s ease, border-color .12s ease;
+  }
+  .btn:hover{background:var(--panel-2)}
+  .btn:focus-visible,.seg button:focus-visible,.note:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+  .btn.primary:hover{filter:brightness(1.06)}
+
+  /* ── layout ──────────────────────────────────────────────── */
+  .wrap{max-width:1180px; margin:0 auto; padding:26px 22px 90px;
+    display:grid; grid-template-columns:212px 1fr; gap:34px; align-items:start}
+  @media (max-width:900px){ .wrap{grid-template-columns:1fr; gap:20px} .rail{position:static!important} }
+
+  .rail{position:sticky; top:74px; display:flex; flex-direction:column; gap:2px}
+  .rail a{
+    display:flex; align-items:baseline; gap:9px; padding:7px 10px; border-radius:8px;
+    color:var(--ink-2); text-decoration:none; font-size:13.2px; line-height:1.35;
+  }
+  .rail a:hover{background:var(--panel-2); color:var(--ink)}
+  .rail a b{font-family:"JetBrains Mono",monospace; font-size:11px; font-weight:500; color:var(--ink-3)}
+  .rail .done{color:var(--ink-3)}
+
+  .lede{
+    font-family:"Source Serif 4",Georgia,serif; font-size:17px; line-height:1.62;
+    color:var(--ink-2); max-width:64ch; margin:0 0 8px;
+  }
+  .lede strong{color:var(--ink); font-weight:600}
+  h1{font-size:29px; letter-spacing:-.022em; margin:0 0 10px; text-wrap:balance}
+
+  section{margin-top:34px; scroll-margin-top:82px}
+  .head{display:flex; align-items:baseline; gap:11px; margin-bottom:5px}
+  .num{font-family:"JetBrains Mono",monospace; font-size:12px; color:var(--accent); font-weight:500}
+  h2{font-size:18.5px; letter-spacing:-.015em; margin:0; text-wrap:balance}
+  .sub{font-family:"Source Serif 4",Georgia,serif; font-size:14.6px; color:var(--ink-2); margin:0 0 13px; max-width:62ch}
+
+  .rows{display:flex; flex-direction:column; gap:8px}
+  .row{
+    background:var(--panel); border:1px solid var(--rule); border-left:3px solid var(--rule);
+    border-radius:11px; padding:12px 14px; box-shadow:var(--shadow);
+    transition:border-color .14s ease;
+  }
+  .row[data-s="pass"]{border-left-color:var(--pass)}
+  .row[data-s="fail"]{border-left-color:var(--fail); background:var(--fail-soft)}
+  .row[data-s="block"]{border-left-color:var(--block); background:var(--block-soft)}
+  .row-top{display:flex; gap:13px; align-items:flex-start}
+  .what{flex:1; min-width:0}
+  .title{font-weight:600; font-size:14.4px; line-height:1.4}
+  .exp{font-size:13.2px; color:var(--ink-2); margin-top:3px}
+  .eps{display:flex; flex-wrap:wrap; gap:5px; margin-top:7px}
+  .ep{
+    font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--ink-2);
+    background:var(--panel-2); border:1px solid var(--rule-2);
+    padding:2px 6px; border-radius:5px; white-space:nowrap;
+  }
+  .where{
+    display:inline-block; font-size:11px; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--accent); background:var(--accent-soft); border-radius:5px;
+    padding:2px 7px; margin-bottom:6px; font-weight:600;
+  }
+
+  .seg{display:flex; gap:0; flex-shrink:0; border:1px solid var(--rule); border-radius:9px; overflow:hidden}
+  .seg button{
+    border:0; background:var(--panel); color:var(--ink-3);
+    padding:6px 11px; font-size:12.2px; font-weight:600; line-height:1.2;
+    border-right:1px solid var(--rule);
+  }
+  .seg button:last-child{border-right:0}
+  .seg button:hover{background:var(--panel-2); color:var(--ink-2)}
+  .seg button[aria-pressed="true"][data-v="pass"]{background:var(--pass); color:#fff}
+  .seg button[aria-pressed="true"][data-v="fail"]{background:var(--fail); color:#fff}
+  .seg button[aria-pressed="true"][data-v="block"]{background:var(--block); color:#fff}
+
+  .note{
+    width:100%; margin-top:9px; resize:vertical; min-height:56px;
+    font-family:Archivo,sans-serif; font-size:13.2px; color:var(--ink);
+    background:var(--panel-2); border:1px solid var(--rule); border-radius:8px; padding:8px 10px;
+  }
+  .note::placeholder{color:var(--ink-3)}
+  .note.hide{display:none}
+
+  .toast{
+    position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
+    background:var(--ink); color:var(--ground); padding:10px 18px; border-radius:10px;
+    font-size:13.4px; font-weight:500; opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:40;
+  }
+  .toast.on{opacity:1}
+  @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+
+<div class="bar">
+  <div class="bar-in">
+    <div class="brand">aajoo <span>admin readiness</span></div>
+    <div class="meter">
+      <div class="track" aria-hidden="true">
+        <i class="t-pass" id="bp"></i><i class="t-fail" id="bf"></i><i class="t-block" id="bb"></i>
+      </div>
+      <div class="count tnum" id="cnt">0 / 0</div>
+    </div>
+    <div class="tools">
+      <button class="btn" id="filter">Show: all</button>
+      <button class="btn primary" id="copy">Copy report</button>
+      <button class="btn" id="reset">Reset</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <nav class="rail" id="rail" aria-label="Phases"></nav>
+  <main>
+    <h1>Admin system readiness</h1>
+    <p class="lede">
+      Every admin capability on Aajoo, grouped the way the panel is actually used — access, oversight, the catalogue, the money, and the content. Mark each one <strong>Pass</strong>, <strong>Fail</strong> or
+      <strong>Blocked</strong>, and write what you saw in the note box. Your answers save in this
+      browser as you go, so you can stop and come back.
+    </p>
+    <p class="lede">
+      When you're done, or whenever you want me to look at something, press
+      <strong>Copy report</strong> — it puts every failure and blocker on your clipboard, with your
+      notes, ready to paste back to me.
+    </p>
+    <div id="out"></div>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const DATA = [
+  { t:"Access & staff", d:"Who can get into the panel at all, and what they may do once inside.", items:[
+    ["Admin login","Sign in at /admin/login.","/admin/login","","Lands on the dashboard."],
+    ["Wrong password","Try a wrong password.","/admin/login","","Refused plainly. No database text, no hint about which field was wrong."],
+    ["Session survives reload","Refresh a deep admin page.","/admin/verify-token","","Stays signed in; no bounce to login."],
+    ["Guest token is useless","Sign in as a guest, then open /admin/dashboard.","","","Refused. A renter token must never open the panel."],
+    ["Staff list","Open staff members.","/admin/members/list","","All admins with roles and status."],
+    ["Create an admin","Add a new staff member.","/admin/create","","Only a super admin may. Created and can sign in."],
+    ["Change a role","Change someone's role.","/admin/members/role","","Their permissions change on their next load."],
+    ["Suspend a member","Set a member inactive.","/admin/members/status","","They can no longer sign in."],
+    ["Roles list","Open roles.","/admin/roles/list","","Roles and their permissions render."],
+    ["Logout","Sign out, then press Back.","/admin/logout","","No admin data renders from cache."],
+  ]},
+  { t:"Dashboard & analytics", d:"The numbers leadership will quote. Check they reconcile, not just that they render.", items:[
+    ["Dashboard","Open the dashboard.","/admin/dashboard","","Every tile has a real number — no zeros standing in for missing data."],
+    ["Analytics summary","Open Analytics.","/admin/analytics/summary","","Totals match the bookings and users lists."],
+    ["Graphs","Change the date range.","/admin/analytics/graph","","Chart redraws for the range chosen."],
+    ["Locations","Open location analytics.","/admin/analytics/locations","","Cities ranked sensibly."],
+    ["Booking analytics","Open Booking Analytics.","/admin/bookings/analytics","","Trends and totals agree with the bookings list."],
+    ["Geo bookings","Open Geo Bookings.","","","Map plots bookings in the right places."],
+    ["Property analytics","Open Property Analytics, then one property.","/admin/properties/analytic/search","/admin/property/analytic/detail","Views and conversion per listing."],
+    ["Reports","Open Reports.","","","Generates without error; export downloads."],
+  ]},
+  { t:"Users", d:"Guest accounts and their identity records.", items:[
+    ["User list","Open Users; search and page through.","/admin/user/search","","Search finds by name, email and phone."],
+    ["User detail","Open one user.","/admin/user/single","","Profile, bookings and verification state."],
+    ["Create a user","Add a user manually.","/admin/user/create","","Aadhaar field accepts digits only. Account is created."],
+    ["Suspend a user","Set a user inactive.","/admin/user/update/status","","They can no longer sign in."],
+    ["Verification queue","Open the verification list.","/admin/user/verification","","Pending identity checks listed."],
+    ["Approve identity","Manually verify a user.","/admin/user/verify","","Marked verified; the change shows on their account."],
+    ["Delete a user","Delete a throwaway account.","/admin/user/delete","","Confirms first; bookings history survives."],
+  ]},
+  { t:"Hosts & KYC", d:"The people taking money. This is where verification decisions are made.", items:[
+    ["Host list","Open Hosts.","/admin/host/search","","All hosts with property counts and status."],
+    ["Host detail","Open one host.","/admin/host/detail/:hostId","","Properties, bookings, payouts and KYC state."],
+    ["KYC detail","Open a host's identity check.","/admin/host/kyc/detail/:hostId","","Documents and the decision evidence are visible."],
+    ["Approve KYC","Approve a pending host.","/admin/host/kyc/approve","","Marked verified; any held listings go live by themselves."],
+    ["Reject KYC","Reject one.","/admin/host/kyc/reject","","Reason captured; host is told; listings stay off."],
+    ["Host performance","Open a host's performance.","/admin/host/performance/summary","","Ratings and conversion look plausible."],
+    ["Hold a payout","Place a payout on hold.","/admin/host/payout/hold","","Held and visible as held."],
+    ["Release a payout","Release it.","/admin/host/payout/release","","Returns to the queue."],
+    ["Assign a property","Assign a listing to a host.","/admin/host/search/assign-property","","Moves to that host's portal."],
+  ]},
+  { t:"Properties & listing queue", d:"The catalogue, and approving what goes into it.", items:[
+    ["Property list","Open Properties; search and sort.","/admin/properties/search","","29,000+ listings page and search without hanging."],
+    ["Property detail","Review one listing.","/admin/properties/load","","Everything the host entered."],
+    ["Add a property","Add one for a host.","/listing/submit","","Five-step wizard; admin is never asked to verify their own identity."],
+    ["Edit a property","Press Edit on a listing.","/listing/draft/:propertyId","","Opens the SAME five-step wizard, all fields and photos restored."],
+    ["Take a listing off","Toggle a listing inactive.","/admin/properties/update-status","","Disappears from public search."],
+    ["Verify a listing","Approve a submitted listing.","/admin/properties/verify","","Marked verified; visible to guests."],
+    ["Listing queue","Open Listing Verification.","/admin/listing/queue","/admin/listing/detail/:propertyId","Submitted listings awaiting review."],
+    ["Review a listing","Approve or reject from the queue.","/admin/listing/review","","Decision sticks; host is told."],
+    ["Nearby distances","Set airport and station distances.","/admin/property/nearby","/admin/property/nearby/save","Appear on the public property page."],
+    ["Delete an image","Remove one photo.","/admin/properties/delete/image","","Gone from the gallery; others unaffected."],
+    ["Delete a property","Delete a test listing.","/admin/property/delete","","Confirms first; removed from search."],
+  ]},
+  { t:"Bookings", d:"Every stay on the platform, and intervening when something goes wrong.", items:[
+    ["Booking list","Open Bookings; filter by status.","/admin/booking/search","","Guest names populate — not blank."],
+    ["Booking detail","Open one.","/admin/booking/detail","","Guest, host, property, money, history."],
+    ["Staying guest","Open a booking made for someone else.","/admin/guest-profiles/for-booking/:bookingId","","Traveller shown; their ID opens."],
+    ["Change status","Move a booking's status.","/admin/booking/status/update","/admin/booking/status/list","Both sides are notified."],
+    ["Edit a booking","Amend a booking.","/admin/booking/update","","Saves and the change is auditable."],
+  ]},
+  { t:"Negotiations & disputes", d:"Oversight of the product's core mechanic, and cleaning up after it.", items:[
+    ["Negotiations list","Open Negotiations.","/admin/negotiations/list","","Every offer with its state and property."],
+    ["Message thread","Open the thread behind an offer.","/admin/negotiations/messages","","What was actually said."],
+    ["Disputes","Open Disputes.","/admin/disputes/list","","KYC flags and payout variances listed."],
+    ["Resolve a dispute","Resolve one.","/admin/disputes/resolve","","Closed with a reason; disappears from the open list."],
+  ]},
+  { t:"Finance", d:"Real money. Check arithmetic against source records, not just that pages load.", items:[
+    ["Finance dashboard","Open Financial Overview.","/admin/finance/dashboard","","Revenue, commission and payable reconcile."],
+    ["Ledger","Open Ledgers; search.","/admin/finance/ledger/search","/admin/finance/ledger/:ledgerId","Entries balance; each traces to a booking."],
+    ["Host ledger","Open one host's ledger.","/admin/finance/ledger/host/:hostId","","Matches what that host sees in their portal."],
+    ["Export ledger","Export it.","/admin/finance/ledger/export","","File downloads and opens with the same figures."],
+    ["Invoices","Open Invoices; open one.","/admin/finance/invoice/search","/admin/finance/invoice/:invoiceId","GST correct; totals match the booking."],
+    ["Download invoice","Download the PDF.","/admin/finance/invoice/:invoiceId/download","","Opens; figures match the screen."],
+    ["Void an invoice","Void a test invoice.","/admin/finance/invoice/void/:invoiceId","","Marked void; excluded from revenue."],
+    ["Payout queue","Open Payout Queue.","/admin/finance/payout/search","/admin/finance/payout/:payoutId","Pending payouts with the right hosts and amounts."],
+    ["Approve a payout","Approve one.","/admin/finance/payout/:payoutId/approve","","Moves to approved; host sees it."],
+    ["Reject a payout","Reject one.","/admin/finance/payout/:payoutId/reject","","Reason captured; host is told."],
+    ["Initiate a payout","Initiate a transfer.","/admin/finance/payout/initiate","","NOTE: needs the 4 RazorpayX env vars. Blocked if unset — mark Blocked, not Failed."],
+    ["Payout schedule","Create and view a schedule.","/admin/finance/payout/schedule/create","/admin/finance/payout/schedule/search","Saves and lists."],
+    ["Reconciliation","Run reconciliation.","/admin/finance/reconciliation/run","/admin/finance/reconciliation/search","Mismatches surfaced rather than hidden."],
+    ["Resolve a mismatch","Resolve one.","/admin/finance/reconciliation/:reconId/resolve","","Closed with a note."],
+    ["Revenue report","Open the revenue report.","/admin/finance/reports/revenue","","Agrees with the dashboard."],
+    ["Commission report","Open commission.","/admin/finance/reports/commission","","Rate applied consistently."],
+    ["Tax report","Open tax.","/admin/finance/reports/tax","","GST totals match the invoices."],
+    ["Cashflow","Open cashflow.","/admin/finance/reports/cashflow","","In and out over the period."],
+    ["Export a report","Export any report.","/admin/finance/reports/export","","Downloads with the same numbers as the screen."],
+  ]},
+  { t:"Catalogue", d:"The vocabulary every listing is built from. A mistake here shows on thousands of pages.", items:[
+    ["Categories","Open Categories; add one.","/admin/categories","/admin/category/create","Appears in the listing wizard and guest filters."],
+    ["Category status","Turn one off.","/admin/category/update-status","","Disappears from guest-facing filters."],
+    ["Delete a category","Delete a test one.","/admin/categories/delete","","Removed; listings using it are handled sensibly."],
+    ["Amenities","Add and edit an amenity.","/admin/amenity/create","/admin/amenity/search","Appears in the wizard for hosts."],
+    ["Amenity status","Turn one off.","/admin/amenity/update-status","","No longer offered."],
+    ["Tags","Add, edit and delete a tag.","/admin/tag/create","/admin/tag/search","Appears where tags are used."],
+    ["Dropdowns stay in sync","Open the listing wizard after editing.","/admin/category/list/dropdowns","/admin/amenity/list/dropdowns","New entries appear without a redeploy."],
+  ]},
+  { t:"Content & CMS", d:"Everything a visitor reads. Check on the live site after each save.", items:[
+    ["Homepage CMS","Change hero copy and featured stays.","/admin/cms/homepage/update","/admin/cms/homepage/get","Live home page changes."],
+    ["Homepage image","Replace and delete a homepage image.","/admin/cms/homepage/delete/image","","Updates; deletion doesn't break the layout."],
+    ["Featured pickers","Use the property and testimonial pickers.","/admin/cms/homepage/property/dropdown","/admin/cms/homepage/testimonial/dropdown","Choices appear on the home page."],
+    ["Sections","Add a CMS section.","/admin/cms/section/add","/admin/cms/section/search","Renders where intended."],
+    ["Blog list","Open Blog; use the scope and state filters.","/admin/blog/listing","","Platform and Property filter correctly; Where names the property."],
+    ["New platform post","Write and publish one.","/blog/create","","Appears on Explore and /blog."],
+    ["New property post","Write one against a property.","/blog/create","","Appears ONLY on that stay's page, never in the main blog."],
+    ["Save as draft","Save a post with only a title.","/blog/create","","Accepted. Shows as Draft, invisible publicly."],
+    ["Publish a draft","Publish it from the list.","/admin/blog/status","","Goes live."],
+    ["Back to draft","Send a live post back to drafts.","/admin/blog/status","","Hidden publicly and reopened for editing."],
+    ["Hide a post","Toggle a published post to Hidden.","/admin/blog/status","","Off the site but still Published, not Draft."],
+    ["Delete a post","Delete one.","/admin/blog/delete","","Gone from the site."],
+    ["FAQs","Add, edit, delete an FAQ.","/admin/faq/add","/admin/faq/listing","Appears on the public FAQ page."],
+    ["FAQ page CMS","Edit the FAQ page copy.","/admin/cms/faq-page/update","/admin/cms/FaqPage/get","Live page changes."],
+    ["Terms & conditions","Edit terms.","/admin/terms-condition/add","/admin/cms/tc-page/update","Live page changes."],
+    ["Contact messages","Open the inbox; read and delete.","/admin/contact/messages","/admin/contact/delete","Messages from the public form arrive here."],
+  ]},
+  { t:"Marketing", d:"Coupons, boosts and referrals — the levers that cost money.", items:[
+    ["Coupon list","Open Coupons.","/admin/coupon/search","/admin/coupon/detail","All coupons with usage counts."],
+    ["Create a coupon","Add a percentage and a flat coupon.","/admin/coupon/add","","Both apply correctly at guest checkout."],
+    ["Coupon limits","Set a usage limit of 1 and redeem twice.","/admin/coupon/status/update","","Second attempt refused."],
+    ["Delete a coupon","Delete a test coupon.","/admin/coupon/delete","","No longer redeemable."],
+    ["Boost list","Open Boost & Promotions.","/admin/boost/list","","Active boosts with hosts and expiry."],
+    ["Referrals","Open Refer.","/admin/referrals/list","","Referrals and credits, with anything suspicious visible."],
+  ]},
+  { t:"Reviews & moderation", d:"What guests say in public, and the ability to intervene.", items:[
+    ["Review list","Open Reviews & Ratings.","/admin/property/review/search","","All reviews with property and guest."],
+    ["Review detail","Open one.","/admin/property/review/detail","","Full text and rating."],
+    ["Moderate","Hide or restore a review.","/admin/property/review/update","","Change reflects on the public page and the average."],
+  ]},
+  { t:"Operations", d:"Notifications, audit trail and platform settings.", items:[
+    ["Notifications","Open notifications; mark one read.","/admin/notifications/search","/admin/notifications/:id/read","Unread count drops."],
+    ["Activity log","Open Logs.","/admin/logs/list","","Admin actions recorded with who and when."],
+    ["Settings","Open Settings; change something.","","","Saves and takes effect."],
+    ["Test email","Send a test email.","/admin/mail/test","","Arrives. If it doesn't, mark Failed — email underpins bookings and KYC."],
+  ]},
+  { t:"Regression — today's fixes", d:"Shipped today. If any fails, tell me before continuing.", items:[
+    ["No database errors","Force failures across the panel: bad input, double submit, offline.","","","Plain English only — never SQL, column or table names."],
+    ["Typing holds focus","Type in the add-property wizard and every admin form.","","","No focus loss between characters."],
+    ["Errors mark the field","Trigger a validation failure in the wizard.","","","The offending field turns red and scrolls into view."],
+    ["Host search auto-selects","In Add Property, type a host's exact name and press Search.","","","Selects them and opens the wizard. No dropdown needed."],
+    ["State change keeps a dropdown","Pick a state and city, then change the state.","","","City clears but stays a dropdown of the new state's cities."],
+    ["Map search works","Open the map, type a place, press Enter.","/public/geocode/search","","Pin drops. An unmapped building pins the nearest sector and says so."],
+    ["Edit = Add","Press Edit on any listing.","","","Same five-step wizard, everything populated, photos visible."],
+    ["Admin never asked to verify","Add a property for an unverified host.","/listing/submit","","No identity demand. Listing saves and is held off the site."],
+    ["Held listing emails the host","Check that host's inbox.","","","Told what was added and how to verify."],
+    ["Verification releases it","Approve that host's KYC.","/admin/host/kyc/approve","","The held listing goes live on its own."],
+  ]},
+];
+const KEY="aajoo-admin-qa-v1";
+let state=JSON.parse(localStorage.getItem(KEY)||"{}");
+let filter="all";
+const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
+// MIGRATED_TO_STABLE_KEYS — see stable_keys.py.
+// Keys are the section and check titles, not their positions, so
+// adding a row no longer moves everyone's answers down one.
+const id=(s,i)=>DATA[s].t+"::"+DATA[s].items[i][0];
+// One-time remap of anything saved under the old positional keys,
+// through the ordering those keys were recorded against.
+const LEGACY_KEYS={"0|0": "Access & staff::Admin login", "0|1": "Access & staff::Wrong password", "0|2": "Access & staff::Session survives reload", "0|3": "Access & staff::Guest token is useless", "0|4": "Access & staff::Staff list", "0|5": "Access & staff::Create an admin", "0|6": "Access & staff::Change a role", "0|7": "Access & staff::Suspend a member", "0|8": "Access & staff::Roles list", "0|9": "Access & staff::Logout", "1|0": "Dashboard & analytics::Dashboard", "1|1": "Dashboard & analytics::Analytics summary", "1|2": "Dashboard & analytics::Graphs", "1|3": "Dashboard & analytics::Locations", "1|4": "Dashboard & analytics::Booking analytics", "1|5": "Dashboard & analytics::Geo bookings", "1|6": "Dashboard & analytics::Property analytics", "1|7": "Dashboard & analytics::Reports", "2|0": "Users::User list", "2|1": "Users::User detail", "2|2": "Users::Create a user", "2|3": "Users::Suspend a user", "2|4": "Users::Verification queue", "2|5": "Users::Approve identity", "2|6": "Users::Delete a user", "3|0": "Hosts & KYC::Host list", "3|1": "Hosts & KYC::Host detail", "3|2": "Hosts & KYC::KYC detail", "3|3": "Hosts & KYC::Approve KYC", "3|4": "Hosts & KYC::Reject KYC", "3|5": "Hosts & KYC::Host performance", "3|6": "Hosts & KYC::Hold a payout", "3|7": "Hosts & KYC::Release a payout", "3|8": "Hosts & KYC::Assign a property", "4|0": "Properties & listing queue::Property list", "4|1": "Properties & listing queue::Property detail", "4|2": "Properties & listing queue::Add a property", "4|3": "Properties & listing queue::Edit a property", "4|4": "Properties & listing queue::Take a listing off", "4|5": "Properties & listing queue::Verify a listing", "4|6": "Properties & listing queue::Listing queue", "4|7": "Properties & listing queue::Review a listing", "4|8": "Properties & listing queue::Nearby distances", "4|9": "Properties & listing queue::Delete an image", "4|10": "Properties & listing queue::Delete a property", "5|0": "Bookings::Booking list", "5|1": "Bookings::Booking detail", "5|2": "Bookings::Staying guest", "5|3": "Bookings::Change status", "5|4": "Bookings::Edit a booking", "6|0": "Negotiations & disputes::Negotiations list", "6|1": "Negotiations & disputes::Message thread", "6|2": "Negotiations & disputes::Disputes", "6|3": "Negotiations & disputes::Resolve a dispute", "7|0": "Finance::Finance dashboard", "7|1": "Finance::Ledger", "7|2": "Finance::Host ledger", "7|3": "Finance::Export ledger", "7|4": "Finance::Invoices", "7|5": "Finance::Download invoice", "7|6": "Finance::Void an invoice", "7|7": "Finance::Payout queue", "7|8": "Finance::Approve a payout", "7|9": "Finance::Reject a payout", "7|10": "Finance::Initiate a payout", "7|11": "Finance::Payout schedule", "7|12": "Finance::Reconciliation", "7|13": "Finance::Resolve a mismatch", "7|14": "Finance::Revenue report", "7|15": "Finance::Commission report", "7|16": "Finance::Tax report", "7|17": "Finance::Cashflow", "7|18": "Finance::Export a report", "8|0": "Catalogue::Categories", "8|1": "Catalogue::Category status", "8|2": "Catalogue::Delete a category", "8|3": "Catalogue::Amenities", "8|4": "Catalogue::Amenity status", "8|5": "Catalogue::Tags", "8|6": "Catalogue::Dropdowns stay in sync", "9|0": "Content & CMS::Homepage CMS", "9|1": "Content & CMS::Homepage image", "9|2": "Content & CMS::Featured pickers", "9|3": "Content & CMS::Sections", "9|4": "Content & CMS::Blog list", "9|5": "Content & CMS::New platform post", "9|6": "Content & CMS::New property post", "9|7": "Content & CMS::Save as draft", "9|8": "Content & CMS::Publish a draft", "9|9": "Content & CMS::Back to draft", "9|10": "Content & CMS::Hide a post", "9|11": "Content & CMS::Delete a post", "9|12": "Content & CMS::FAQs", "9|13": "Content & CMS::FAQ page CMS", "9|14": "Content & CMS::Terms & conditions", "9|15": "Content & CMS::Contact messages", "10|0": "Marketing::Coupon list", "10|1": "Marketing::Create a coupon", "10|2": "Marketing::Coupon limits", "10|3": "Marketing::Delete a coupon", "10|4": "Marketing::Boost list", "10|5": "Marketing::Referrals", "11|0": "Reviews & moderation::Review list", "11|1": "Reviews & moderation::Review detail", "11|2": "Reviews & moderation::Moderate", "12|0": "Operations::Notifications", "12|1": "Operations::Activity log", "12|2": "Operations::Settings", "12|3": "Operations::Test email", "13|0": "Regression — today's fixes::No database errors", "13|1": "Regression — today's fixes::Typing holds focus", "13|2": "Regression — today's fixes::Errors mark the field", "13|3": "Regression — today's fixes::Host search auto-selects", "13|4": "Regression — today's fixes::State change keeps a dropdown", "13|5": "Regression — today's fixes::Map search works", "13|6": "Regression — today's fixes::Edit = Add", "13|7": "Regression — today's fixes::Admin never asked to verify", "13|8": "Regression — today's fixes::Held listing emails the host", "13|9": "Regression — today's fixes::Verification releases it"};
+(function(){
+  let moved=0;
+  for(const k of Object.keys(state)){
+    if(!k.includes("|")) continue;
+    const to=LEGACY_KEYS[k];
+    if(to && state[to]===undefined){ state[to]=state[k]; moved++; }
+    delete state[k];
+  }
+  if(moved) save();
+})();
+
+const toast=(m)=>{const t=document.getElementById("toast");t.textContent=m;t.classList.add("on");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("on"),1900);};
+
+function render(){
+  const out=document.getElementById("out"), rail=document.getElementById("rail");
+  out.innerHTML=""; rail.innerHTML="";
+  let total=0,pass=0,fail=0,block=0;
+
+  DATA.forEach((sec,si)=>{
+    let sDone=0;
+    const section=document.createElement("section");
+    section.id="s"+si;
+    const rows=document.createElement("div"); rows.className="rows";
+
+    sec.items.forEach((it,ii)=>{
+      const [title,exp,e1,e2,expect]=it;
+      const k=id(si,ii); const st=state[k]||{};
+      total++;
+      if(st.v==="pass")pass++; else if(st.v==="fail")fail++; else if(st.v==="block")block++;
+      if(st.v)sDone++;
+      if(filter==="todo"&&st.v) return;
+      if(filter==="bad"&&st.v!=="fail"&&st.v!=="block") return;
+
+      const row=document.createElement("div");
+      row.className="row"; if(st.v)row.dataset.s=st.v;
+      const eps=[e1,e2].filter(Boolean).map(e=>`<span class="ep">${e}</span>`).join("");
+      row.innerHTML=`
+        <div class="row-top">
+          <div class="what">
+            <div class="title">${title}</div>
+            <div class="exp">${exp}</div>
+            <div class="exp" style="margin-top:5px"><strong style="color:var(--ink)">Expect:</strong> ${expect}</div>
+            ${eps?`<div class="eps">${eps}</div>`:""}
+          </div>
+          <div class="seg" role="group" aria-label="Result for ${title}">
+            <button data-v="pass" aria-pressed="${st.v==="pass"}">Pass</button>
+            <button data-v="fail" aria-pressed="${st.v==="fail"}">Fail</button>
+            <button data-v="block" aria-pressed="${st.v==="block"}">Blocked</button>
+          </div>
+        </div>
+        <textarea class="note ${st.v==="fail"||st.v==="block"||st.n?"":"hide"}"
+          placeholder="What did you see? Steps, message, anything odd.">${st.n||""}</textarea>`;
+
+      row.querySelectorAll(".seg button").forEach(b=>{
+        b.onclick=()=>{
+          const v=b.dataset.v;
+          state[k]={...(state[k]||{}), v: st.v===v? null : v};
+          if(!state[k].v && !state[k].n) delete state[k];
+          save(); render();
+        };
+      });
+      const ta=row.querySelector(".note");
+      ta.oninput=()=>{ state[k]={...(state[k]||{}), n:ta.value}; if(!state[k].v&&!state[k].n)delete state[k]; save(); updateBar(); };
+      rows.appendChild(row);
+    });
+
+    section.innerHTML=`<div class="head"><span class="num">${String(si+1).padStart(2,"0")}</span><h2>${sec.t}</h2></div><p class="sub">${sec.d}</p>`;
+    section.appendChild(rows);
+    if(rows.children.length) out.appendChild(section);
+
+    const a=document.createElement("a");
+    a.href="#s"+si;
+    a.className=sDone===sec.items.length?"done":"";
+    a.innerHTML=`<b class="tnum">${String(sDone).padStart(2,"0")}/${String(sec.items.length).padStart(2,"0")}</b><span>${sec.t}</span>`;
+    rail.appendChild(a);
+  });
+
+  window._tot={total,pass,fail,block};
+  updateBar();
+}
+
+function updateBar(){
+  const {total,pass,fail,block}=window._tot;
+  document.getElementById("bp").style.width=(pass/total*100)+"%";
+  document.getElementById("bf").style.width=(fail/total*100)+"%";
+  document.getElementById("bb").style.width=(block/total*100)+"%";
+  document.getElementById("cnt").textContent=`${pass+fail+block} / ${total} · ${fail} failed · ${block} blocked`;
+}
+
+document.getElementById("filter").onclick=(e)=>{
+  filter = filter==="all" ? "todo" : filter==="todo" ? "bad" : "all";
+  e.target.textContent = "Show: " + (filter==="all"?"all":filter==="todo"?"not done":"problems");
+  render();
+};
+
+document.getElementById("copy").onclick=()=>{
+  let out="# Aajoo admin testing — findings\n\n";
+  let n=0;
+  DATA.forEach((sec,si)=>{
+    const bad=sec.items.map((it,ii)=>({it,st:state[id(si,ii)]||{}}))
+      .filter(x=>x.st.v==="fail"||x.st.v==="block");
+    if(!bad.length) return;
+    out+=`## ${sec.t}\n\n`;
+    bad.forEach(({it,st})=>{
+      n++;
+      out+=`**${st.v==="fail"?"FAILED":"BLOCKED"} — ${it[0]}**\n`;
+      out+=`- Expected: ${it[4]}\n`;
+      if(it[2]||it[3]) out+=`- Endpoints: ${[it[2],it[3]].filter(Boolean).join(", ")}\n`;
+      out+=`- What happened: ${st.n?st.n:"(no note)"}\n\n`;
+    });
+  });
+  const {total,pass,fail,block}=window._tot;
+  out = `Tested ${pass+fail+block} of ${total} — ${pass} passed, ${fail} failed, ${block} blocked.\n\n` + (n?out:"No failures recorded.\n");
+  navigator.clipboard.writeText(out).then(
+    ()=>toast(n?`Copied ${n} problem${n>1?"s":""} — paste it to Claude`:"Copied — nothing failing yet"),
+    ()=>toast("Couldn't copy — select the page and copy manually")
+  );
+};
+
+document.getElementById("reset").onclick=()=>{
+  if(!confirm("Clear every answer and note? This cannot be undone.")) return;
+  state={}; save(); render(); toast("Checklist cleared");
+};
+
+render();
+</script>

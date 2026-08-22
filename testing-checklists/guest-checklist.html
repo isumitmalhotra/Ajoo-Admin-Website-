@@ -1,0 +1,462 @@
+<title>Aajoo Guest Readiness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+  :root{
+    --ground:#F7F8F8; --panel:#FFFFFF; --panel-2:#F1F4F3;
+    --ink:#16211F; --ink-2:#4A5654; --ink-3:#7C8886;
+    --rule:#DCE3E1; --rule-2:#EAEFEE;
+    --accent:#0E7C6B; --accent-soft:#E3F1EE;
+    --pass:#2F7D4F; --pass-soft:#E6F2EA;
+    --fail:#B4342B; --fail-soft:#FBE9E7;
+    --block:#B07207; --block-soft:#FCF1DE;
+    --shadow:0 1px 2px rgba(22,33,31,.05), 0 8px 24px rgba(22,33,31,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#11181A; --panel:#182124; --panel-2:#1E282B;
+      --ink:#E8EDEC; --ink-2:#A6B2B0; --ink-3:#75817F;
+      --rule:#2A3538; --rule-2:#222C2F;
+      --accent:#4FBFA8; --accent-soft:#12312C;
+      --pass:#5FBF85; --pass-soft:#152C1F;
+      --fail:#E8776B; --fail-soft:#331A17;
+      --block:#E0A73F; --block-soft:#2E2312;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#11181A; --panel:#182124; --panel-2:#1E282B;
+    --ink:#E8EDEC; --ink-2:#A6B2B0; --ink-3:#75817F;
+    --rule:#2A3538; --rule-2:#222C2F;
+    --accent:#4FBFA8; --accent-soft:#12312C;
+    --pass:#5FBF85; --pass-soft:#152C1F;
+    --fail:#E8776B; --fail-soft:#331A17;
+    --block:#E0A73F; --block-soft:#2E2312;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:Archivo,system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  code,.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+  .tnum{font-variant-numeric:tabular-nums}
+
+  /* ── top bar ─────────────────────────────────────────────── */
+  .bar{
+    position:sticky; top:0; z-index:20; background:var(--panel);
+    border-bottom:1px solid var(--rule); box-shadow:var(--shadow);
+  }
+  .bar-in{max-width:1180px; margin:0 auto; padding:12px 22px;
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap}
+  .brand{font-weight:700; letter-spacing:-.01em; font-size:15.5px; white-space:nowrap}
+  .brand span{color:var(--accent)}
+  .meter{flex:1; min-width:190px; display:flex; align-items:center; gap:11px}
+  .track{flex:1; height:7px; border-radius:99px; background:var(--panel-2); overflow:hidden; display:flex}
+  .track i{display:block; height:100%; transition:width .25s ease}
+  .t-pass{background:var(--pass)} .t-fail{background:var(--fail)} .t-block{background:var(--block)}
+  .count{font-size:12.5px; color:var(--ink-2); white-space:nowrap}
+  .tools{display:flex; gap:7px; flex-wrap:wrap}
+
+  button{font:inherit; cursor:pointer}
+  .btn{
+    border:1px solid var(--rule); background:var(--panel); color:var(--ink);
+    border-radius:9px; padding:7px 13px; font-size:13px; font-weight:500;
+    transition:background .12s ease, border-color .12s ease;
+  }
+  .btn:hover{background:var(--panel-2)}
+  .btn:focus-visible,.seg button:focus-visible,.note:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+  .btn.primary:hover{filter:brightness(1.06)}
+
+  /* ── layout ──────────────────────────────────────────────── */
+  .wrap{max-width:1180px; margin:0 auto; padding:26px 22px 90px;
+    display:grid; grid-template-columns:212px 1fr; gap:34px; align-items:start}
+  @media (max-width:900px){ .wrap{grid-template-columns:1fr; gap:20px} .rail{position:static!important} }
+
+  .rail{position:sticky; top:74px; display:flex; flex-direction:column; gap:2px}
+  .rail a{
+    display:flex; align-items:baseline; gap:9px; padding:7px 10px; border-radius:8px;
+    color:var(--ink-2); text-decoration:none; font-size:13.2px; line-height:1.35;
+  }
+  .rail a:hover{background:var(--panel-2); color:var(--ink)}
+  .rail a b{font-family:"JetBrains Mono",monospace; font-size:11px; font-weight:500; color:var(--ink-3)}
+  .rail .done{color:var(--ink-3)}
+
+  .lede{
+    font-family:"Source Serif 4",Georgia,serif; font-size:17px; line-height:1.62;
+    color:var(--ink-2); max-width:64ch; margin:0 0 8px;
+  }
+  .lede strong{color:var(--ink); font-weight:600}
+  h1{font-size:29px; letter-spacing:-.022em; margin:0 0 10px; text-wrap:balance}
+
+  section{margin-top:34px; scroll-margin-top:82px}
+  .head{display:flex; align-items:baseline; gap:11px; margin-bottom:5px}
+  .num{font-family:"JetBrains Mono",monospace; font-size:12px; color:var(--accent); font-weight:500}
+  h2{font-size:18.5px; letter-spacing:-.015em; margin:0; text-wrap:balance}
+  .sub{font-family:"Source Serif 4",Georgia,serif; font-size:14.6px; color:var(--ink-2); margin:0 0 13px; max-width:62ch}
+
+  .rows{display:flex; flex-direction:column; gap:8px}
+  .row{
+    background:var(--panel); border:1px solid var(--rule); border-left:3px solid var(--rule);
+    border-radius:11px; padding:12px 14px; box-shadow:var(--shadow);
+    transition:border-color .14s ease;
+  }
+  .row[data-s="pass"]{border-left-color:var(--pass)}
+  .row[data-s="fail"]{border-left-color:var(--fail); background:var(--fail-soft)}
+  .row[data-s="block"]{border-left-color:var(--block); background:var(--block-soft)}
+  .row-top{display:flex; gap:13px; align-items:flex-start}
+  .what{flex:1; min-width:0}
+  .title{font-weight:600; font-size:14.4px; line-height:1.4}
+  .exp{font-size:13.2px; color:var(--ink-2); margin-top:3px}
+  .eps{display:flex; flex-wrap:wrap; gap:5px; margin-top:7px}
+  .ep{
+    font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--ink-2);
+    background:var(--panel-2); border:1px solid var(--rule-2);
+    padding:2px 6px; border-radius:5px; white-space:nowrap;
+  }
+  .where{
+    display:inline-block; font-size:11px; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--accent); background:var(--accent-soft); border-radius:5px;
+    padding:2px 7px; margin-bottom:6px; font-weight:600;
+  }
+
+  .seg{display:flex; gap:0; flex-shrink:0; border:1px solid var(--rule); border-radius:9px; overflow:hidden}
+  .seg button{
+    border:0; background:var(--panel); color:var(--ink-3);
+    padding:6px 11px; font-size:12.2px; font-weight:600; line-height:1.2;
+    border-right:1px solid var(--rule);
+  }
+  .seg button:last-child{border-right:0}
+  .seg button:hover{background:var(--panel-2); color:var(--ink-2)}
+  .seg button[aria-pressed="true"][data-v="pass"]{background:var(--pass); color:#fff}
+  .seg button[aria-pressed="true"][data-v="fail"]{background:var(--fail); color:#fff}
+  .seg button[aria-pressed="true"][data-v="block"]{background:var(--block); color:#fff}
+
+  .note{
+    width:100%; margin-top:9px; resize:vertical; min-height:56px;
+    font-family:Archivo,sans-serif; font-size:13.2px; color:var(--ink);
+    background:var(--panel-2); border:1px solid var(--rule); border-radius:8px; padding:8px 10px;
+  }
+  .note::placeholder{color:var(--ink-3)}
+  .note.hide{display:none}
+
+  .toast{
+    position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
+    background:var(--ink); color:var(--ground); padding:10px 18px; border-radius:10px;
+    font-size:13.4px; font-weight:500; opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:40;
+  }
+  .toast.on{opacity:1}
+  @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+
+<div class="bar">
+  <div class="bar-in">
+    <div class="brand">aajoo <span>guest readiness</span></div>
+    <div class="meter">
+      <div class="track" aria-hidden="true">
+        <i class="t-pass" id="bp"></i><i class="t-fail" id="bf"></i><i class="t-block" id="bb"></i>
+      </div>
+      <div class="count tnum" id="cnt">0 / 0</div>
+    </div>
+    <div class="tools">
+      <button class="btn" id="filter">Show: all</button>
+      <button class="btn primary" id="copy">Copy report</button>
+      <button class="btn" id="reset">Reset</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <nav class="rail" id="rail" aria-label="Phases"></nav>
+  <main>
+    <h1>Guest system readiness</h1>
+    <p class="lede">
+      Every guest-facing feature on Aajoo, in the order a real guest meets them — from landing on the site to reviewing the stay afterwards. Mark each one <strong>Pass</strong>, <strong>Fail</strong> or
+      <strong>Blocked</strong>, and write what you saw in the note box. Your answers save in this
+      browser as you go, so you can stop and come back.
+    </p>
+    <p class="lede">
+      When you're done, or whenever you want me to look at something, press
+      <strong>Copy report</strong> — it puts every failure and blocker on your clipboard, with your
+      notes, ready to paste back to me.
+    </p>
+    <div id="out"></div>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const DATA = [
+  { t:"Finding a stay", d:"Everything before a guest cares who you are — search has to work signed out.", items:[
+    ["Home loads","Open the site signed out.","/homepage/content","","Hero, categories and every rail render. No empty sections."],
+    ["Search by place","Type a destination in the header search and go.","/properties/search","","Results are near that place, not the whole country."],
+    ["Dates narrow results","Add check-in and check-out.","/booking/property-availability","","Stays already booked for those nights disappear."],
+    ["Guest count filters","Set 6 guests.","/properties/search","","Only stays that sleep 6 remain."],
+    ["Category rails","Open Villas, Cottages, Farm Stays from Find Your Perfect Stay.","/common/categories","","Each shows stays of that type."],
+    ["Map on search","Switch to the map view and click a pin.","","","Pin opens the right stay."],
+    ["LUXE mode","Turn LUXE on.","/properties/search","","Only luxury-marked stays; the whole page restyles."],
+    ["Pre-booking","Open Pre-Booking.","/pre-booking","","Upcoming/advance stays list correctly."],
+    ["Empty search","Search somewhere with nothing listed.","","","Says so helpfully — not a blank screen or a spinner forever."],
+  ]},
+  { t:"The property page", d:"Where a guest decides. Check the facts are real, not placeholders.", items:[
+    ["Gallery","Open a stay with photos; open the gallery.","/properties/detail","","All photos load; cover is first."],
+    ["No photos","Open a stay without photos.","","","Branded placeholder, never a broken image."],
+    ["Tabs","Click About, Amenities, House Rules, Location, Host, Policies.","","","Each scrolls to real content the host entered."],
+    ["Amenities","Compare against what the host ticked.","","","Only what was ticked; nothing invented."],
+    ["Nearby distances","Check the nearby section.","","","Absent when the host never entered them — not zeros."],
+    ["Map","Check the location map.","","","Correct area; exact pin only if the host allowed it."],
+    ["Reviews","Read the reviews.","/properties/reviews/list","","Real reviews; average matches."],
+    ["Guides & stories","Open a stay that has posts (id 29250).","/blog/search","","Shows that stay's posts. Absent on stays without any."],
+    ["Price rail","Set dates and guests.","","","Nights, taxes and total add up."],
+    ["Floor never shown","Look everywhere on the page.","","","The host's minimum price appears nowhere."],
+  ]},
+  { t:"Account & access", d:"Signing up and getting back in.", items:[
+    ["Signup","Create a new guest account.","/user/signup","","Created, then asked to verify."],
+    ["Email OTP","Enter the emailed code.","/user/verify-otp","/user/otp-again","Wrong code refused; right one signs you in."],
+    ["Login","Sign in with the Guest tab.","/user/login","","Lands on the guest dashboard."],
+    ["Wrong password","Try a wrong password.","/user/login","","Says the password is wrong. No database text."],
+    ["Google sign-in","Continue with Google.","/user/auth/google","","Signs in correctly."],
+    ["Forgot password","Request, code, new password, sign in.","/user/forget-password","/user/forget/verify-otp","New password works; old one refused."],
+    ["Logout","Sign out then press Back.","/user/logout","","No stale data on protected pages."],
+  ]},
+  { t:"Identity verification", d:"The check that stands between a guest and a confirmed booking.", items:[
+    ["Prompted at checkout","As an unverified guest, try to book.","/verify/create-session","","Told clearly, with a way to verify from that screen."],
+    ["Complete the check","Finish ID and selfie.","/verify/check-session/:id","","Returns verified without re-entering the booking."],
+    ["Stays verified","Reload Settings the next day.","/verify/my-session","/user/detail","Reads Identity verified — never back to review."],
+    ["Not re-asked","Book again as a verified guest.","","","No verification step at all. This was the reported bug."],
+    ["Abandoned attempt","Start verification and close it.","","","You remain verified."],
+  ]},
+  { t:"Negotiating a price", d:"The feature the product is built around. Use a second browser as the host.", items:[
+    ["Send an offer","Offer below the listed price with dates.","/user/negotiations/offer","","Confirms it went to the host, with the 30-minute window."],
+    ["Above the floor","Offer at or above the host's minimum.","","","Accepted instantly, with a coupon code."],
+    ["Host accepts","Have the host accept a low offer.","","","You see the deal and the percentage saved."],
+    ["Host counters","Have the host counter.","","","Counter shown; you can accept it."],
+    ["Host declines","Have the host decline.","","","Told plainly; can still book at list price."],
+    ["Offer expires","Leave an offer unanswered 30+ minutes.","","","Told the host was unavailable."],
+    ["Deal reaches checkout","Book after a deal.","/user/coupons/validate","","Discount applied automatically at the agreed rate."],
+    ["Above list price","Try offering more than the listed price.","","","Refused — nothing to negotiate."],
+    ["Deal expires","Wait 24 hours after a deal, then book.","","","Coupon no longer applies; full price. Correct behaviour."],
+  ]},
+  { t:"Booking & payment", d:"From Book Now to a confirmation. Money is involved — check every number.", items:[
+    ["Review page","Press Book Now.","","","Stay, dates, nights, guests all correct."],
+    ["Contact details","Check the prefilled name, phone, email.","/user/detail","","Filled from your profile, editable."],
+    ["Guest picker","Change the number of guests.","","","Same control as the header search; total updates."],
+    ["Dates still free","Book dates someone took while you browsed.","/booking/property-availability","","Told before payment, not after."],
+    ["Pay at property","Choose Reserve now, pay on arrival.","/booking/create","","Booking confirms with a reference."],
+    ["Pay online","Pay by card or UPI in test mode.","/create/payment-verify","","Payment completes and the booking confirms."],
+    ["Wallet","Apply wallet credit.","/user/wallet","","Split shown before paying; balance drops by that much."],
+    ["Coupon","Apply a coupon code.","/user/coupons/validate","","Discount matches; a bad code is refused clearly."],
+    ["Failure is visible","Force a refusal (e.g. an unpaid pay-at-property booking).","","","Reason stays on the page. Not a button that does nothing."],
+    ["Confirmation","Reach the confirmed screen.","/booking/confirmation","","Reference, map, directions, invoice note."],
+    ["Confirmation email","Check your inbox.","","","Arrives with the right amounts."],
+  ]},
+  { t:"Booking for someone else", d:"New. A verified guest booking on behalf of family, a colleague or a child.", items:[
+    ["Who is this for","Open the review page.","","","Asks who is staying. I'm staying is the default."],
+    ["Add a traveller","Add name, phone, email, age, gender.","/guest-profiles","","Saved and selected."],
+    ["Upload their ID","Attach a government ID.","/guest-profiles/document","","Shows ID on file afterwards."],
+    ["Reused next time","Start another booking.","/guest-profiles","","They're already in the list — no retyping."],
+    ["Booking carries them","Complete the booking.","/booking/create","","Booking is attached to that traveller."],
+    ["Host can see them","As the host, open that booking.","/guest-profiles/for-booking/:id","","Sees the staying guest and can open the ID."],
+    ["Remove a traveller","Delete one from the list.","/guest-profiles/delete","","Asks first, then removes."],
+  ]},
+  { t:"My bookings", d:"Everything after paying.", items:[
+    ["Dashboard","Open your account.","/user/ongoing/bookings","","Next stay and recent activity are right."],
+    ["Upcoming","Open Upcoming.","/user/booking-history","","Future stays with correct dates."],
+    ["Ongoing","During a stay, open Ongoing.","","","Current stay with host contact."],
+    ["Next booking","Open Next Booking.","","","The soonest stay, with directions."],
+    ["Directions","Press Get directions.","","","Opens maps at the right place."],
+    ["Past stays","Open Past Stays.","","","Completed stays, with a prompt to review."],
+    ["Cancel — see the refund first","Start a cancellation.","/user/cancel/quote","","Refund amount shown BEFORE you confirm."],
+    ["Cancel","Confirm it.","/user/cancel/booking","","Cancelled; host notified; refund matches the quote."],
+    ["Cancelled list","Open Cancelled.","/account/cancelled","","Shows there with the refund state."],
+    ["Invoice","Download an invoice.","/user/invoice/:bookId/download","","Opens with correct amounts and GST."],
+  ]},
+  { t:"After the stay", d:"Reviews and the things guests come back for.", items:[
+    ["Write a review","Review a completed stay.","/user/review-add","","Saves; appears on the property."],
+    ["Edit a review","Change it.","","","Text stays put while you type — this was broken in the app."],
+    ["My reviews","Open your reviews.","/user/reviews/list","","All of them listed."],
+    ["Saved stays","Save and unsave from a card and a detail page.","/user/saved-properties","","Both stay in sync."],
+    ["Refer & earn","Copy your code; redeem on a new account.","/user/referrals/summary","","Credit lands after the referred booking."],
+    ["Transactions","Open Transactions.","/user/history","","Every payment and refund accounted for."],
+  ]},
+  { t:"Messages & support", d:"Reaching a host, or reaching Aajoo.", items:[
+    ["Message a host","Open a thread and send.","/user/messages/threads","","Host receives it."],
+    ["Notifications","Open notifications; mark one read.","/user/notification/Listing","/user/notification/mark-read","Unread count drops."],
+    ["Support","Open Support and submit a question.","/contact/message","","Confirms it was sent."],
+    ["Chatbot","Open the chat widget.","/bp/session/start","","Recognises you and answers about your booking."],
+  ]},
+  { t:"Profile & settings", d:"The guest's own details and the security around them.", items:[
+    ["Profile","Open and edit your profile.","/user/detail","","Saves and persists."],
+    ["Profile photo","Upload and remove.","/user/add/profile-pic","/user/delete/profile-pic","Updates everywhere."],
+    ["Change password","Change it, then sign in again.","/user/update-password","","Old one refused."],
+    ["Change phone","Change your mobile.","/user/security/otp","","Requires an emailed code first."],
+    ["Email read-only","Try to change your email.","","","Not editable, by design."],
+    ["Delete account","On a throwaway account only.","/user/delete","","Confirms first; access ends."],
+  ]},
+  { t:"Content pages", d:"The pages that sell the platform. Check for placeholder text.", items:[
+    ["Blog index","Open the blog.","/blog/search","","Real posts, not \"blog one\"."],
+    ["Blog post","Open one.","/blog/:id","","Full article; More from the blog rails on a phone."],
+    ["Explore blog rail","Scroll the home page.","","","From the blog scrolls sideways, six posts."],
+    ["About","Open About.","","","Illustrations on every Values and Different card."],
+    ["FAQ","Open FAQ; open one question by its own link.","/public/faqs","/public/faqs/feedback","Answers expand; the was-this-helpful vote records."],
+    ["Contact","Send a contact message.","/contact/message","","Confirms; admin receives it."],
+    ["Newsletter","Subscribe from the footer.","/newsletter/subscribe","","Confirms; a bad email is refused."],
+    ["Help centre & policies","Open Help Centre, Terms, Privacy.","","","Real content, no lorem, no overflow on a phone."],
+  ]},
+  { t:"On a phone", d:"Most guests are on a phone. Test at 390–412px wide.", items:[
+    ["Search sheet","Open search on a phone.","","","Full-screen sheet; X closes it; nothing overflows."],
+    ["Cards two-up","Check the home and search grids.","","","Two across, not one tall column."],
+    ["Rails scroll","Swipe the stay and blog rails.","","","Scroll sideways smoothly."],
+    ["Sticky Book Now","Scroll a property page.","","","Book bar follows; doesn't cover content."],
+    ["Nothing overflows","Scroll every page top to bottom.","","","No horizontal scrollbar anywhere."],
+  ]},
+  { t:"Regression — today's fixes", d:"Shipped today. If any fails, tell me before continuing.", items:[
+    ["No database errors","Force failures anywhere.","","","Plain English only — never SQL, columns or table names."],
+    ["Old property links","Open /property/detail/29250 directly.","","","Redirects to the new page with negotiation intact."],
+    ["Payment errors persist","Trigger a refused booking.","","","Reason stays on screen with a way forward."],
+    ["Property posts hide","Open a stay with no posts (29251).","","","No empty Guides & stories heading."],
+  ]},
+];
+const KEY="aajoo-guest-qa-v1";
+let state=JSON.parse(localStorage.getItem(KEY)||"{}");
+let filter="all";
+const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
+// MIGRATED_TO_STABLE_KEYS — see stable_keys.py.
+// Keys are the section and check titles, not their positions, so
+// adding a row no longer moves everyone's answers down one.
+const id=(s,i)=>DATA[s].t+"::"+DATA[s].items[i][0];
+// One-time remap of anything saved under the old positional keys,
+// through the ordering those keys were recorded against.
+const LEGACY_KEYS={"0|0": "Finding a stay::Home loads", "0|1": "Finding a stay::Search by place", "0|2": "Finding a stay::Dates narrow results", "0|3": "Finding a stay::Guest count filters", "0|4": "Finding a stay::Category rails", "0|5": "Finding a stay::Map on search", "0|6": "Finding a stay::LUXE mode", "0|7": "Finding a stay::Pre-booking", "0|8": "Finding a stay::Empty search", "1|0": "The property page::Gallery", "1|1": "The property page::No photos", "1|2": "The property page::Tabs", "1|3": "The property page::Amenities", "1|4": "The property page::Nearby distances", "1|5": "The property page::Map", "1|6": "The property page::Reviews", "1|7": "The property page::Guides & stories", "1|8": "The property page::Price rail", "1|9": "The property page::Floor never shown", "2|0": "Account & access::Signup", "2|1": "Account & access::Email OTP", "2|2": "Account & access::Login", "2|3": "Account & access::Wrong password", "2|4": "Account & access::Google sign-in", "2|5": "Account & access::Forgot password", "2|6": "Account & access::Logout", "3|0": "Identity verification::Prompted at checkout", "3|1": "Identity verification::Complete the check", "3|2": "Identity verification::Stays verified", "3|3": "Identity verification::Not re-asked", "3|4": "Identity verification::Abandoned attempt", "4|0": "Negotiating a price::Send an offer", "4|1": "Negotiating a price::Above the floor", "4|2": "Negotiating a price::Host accepts", "4|3": "Negotiating a price::Host counters", "4|4": "Negotiating a price::Host declines", "4|5": "Negotiating a price::Offer expires", "4|6": "Negotiating a price::Deal reaches checkout", "4|7": "Negotiating a price::Above list price", "4|8": "Negotiating a price::Deal expires", "5|0": "Booking & payment::Review page", "5|1": "Booking & payment::Contact details", "5|2": "Booking & payment::Guest picker", "5|3": "Booking & payment::Dates still free", "5|4": "Booking & payment::Pay at property", "5|5": "Booking & payment::Pay online", "5|6": "Booking & payment::Wallet", "5|7": "Booking & payment::Coupon", "5|8": "Booking & payment::Failure is visible", "5|9": "Booking & payment::Confirmation", "5|10": "Booking & payment::Confirmation email", "6|0": "Booking for someone else::Who is this for", "6|1": "Booking for someone else::Add a traveller", "6|2": "Booking for someone else::Upload their ID", "6|3": "Booking for someone else::Reused next time", "6|4": "Booking for someone else::Booking carries them", "6|5": "Booking for someone else::Host can see them", "6|6": "Booking for someone else::Remove a traveller", "7|0": "My bookings::Dashboard", "7|1": "My bookings::Upcoming", "7|2": "My bookings::Ongoing", "7|3": "My bookings::Next booking", "7|4": "My bookings::Directions", "7|5": "My bookings::Past stays", "7|6": "My bookings::Cancel — see the refund first", "7|7": "My bookings::Cancel", "7|8": "My bookings::Cancelled list", "7|9": "My bookings::Invoice", "8|0": "After the stay::Write a review", "8|1": "After the stay::Edit a review", "8|2": "After the stay::My reviews", "8|3": "After the stay::Saved stays", "8|4": "After the stay::Refer & earn", "8|5": "After the stay::Transactions", "9|0": "Messages & support::Message a host", "9|1": "Messages & support::Notifications", "9|2": "Messages & support::Support", "9|3": "Messages & support::Chatbot", "10|0": "Profile & settings::Profile", "10|1": "Profile & settings::Profile photo", "10|2": "Profile & settings::Change password", "10|3": "Profile & settings::Change phone", "10|4": "Profile & settings::Email read-only", "10|5": "Profile & settings::Delete account", "11|0": "Content pages::Blog index", "11|1": "Content pages::Blog post", "11|2": "Content pages::Explore blog rail", "11|3": "Content pages::About", "11|4": "Content pages::FAQ", "11|5": "Content pages::Contact", "11|6": "Content pages::Newsletter", "11|7": "Content pages::Help centre & policies", "12|0": "On a phone::Search sheet", "12|1": "On a phone::Cards two-up", "12|2": "On a phone::Rails scroll", "12|3": "On a phone::Sticky Book Now", "12|4": "On a phone::Nothing overflows", "13|0": "Regression — today's fixes::No database errors", "13|1": "Regression — today's fixes::Old property links", "13|2": "Regression — today's fixes::Payment errors persist", "13|3": "Regression — today's fixes::Property posts hide"};
+(function(){
+  let moved=0;
+  for(const k of Object.keys(state)){
+    if(!k.includes("|")) continue;
+    const to=LEGACY_KEYS[k];
+    if(to && state[to]===undefined){ state[to]=state[k]; moved++; }
+    delete state[k];
+  }
+  if(moved) save();
+})();
+
+const toast=(m)=>{const t=document.getElementById("toast");t.textContent=m;t.classList.add("on");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("on"),1900);};
+
+function render(){
+  const out=document.getElementById("out"), rail=document.getElementById("rail");
+  out.innerHTML=""; rail.innerHTML="";
+  let total=0,pass=0,fail=0,block=0;
+
+  DATA.forEach((sec,si)=>{
+    let sDone=0;
+    const section=document.createElement("section");
+    section.id="s"+si;
+    const rows=document.createElement("div"); rows.className="rows";
+
+    sec.items.forEach((it,ii)=>{
+      const [title,exp,e1,e2,expect]=it;
+      const k=id(si,ii); const st=state[k]||{};
+      total++;
+      if(st.v==="pass")pass++; else if(st.v==="fail")fail++; else if(st.v==="block")block++;
+      if(st.v)sDone++;
+      if(filter==="todo"&&st.v) return;
+      if(filter==="bad"&&st.v!=="fail"&&st.v!=="block") return;
+
+      const row=document.createElement("div");
+      row.className="row"; if(st.v)row.dataset.s=st.v;
+      const eps=[e1,e2].filter(Boolean).map(e=>`<span class="ep">${e}</span>`).join("");
+      row.innerHTML=`
+        <div class="row-top">
+          <div class="what">
+            <div class="title">${title}</div>
+            <div class="exp">${exp}</div>
+            <div class="exp" style="margin-top:5px"><strong style="color:var(--ink)">Expect:</strong> ${expect}</div>
+            ${eps?`<div class="eps">${eps}</div>`:""}
+          </div>
+          <div class="seg" role="group" aria-label="Result for ${title}">
+            <button data-v="pass" aria-pressed="${st.v==="pass"}">Pass</button>
+            <button data-v="fail" aria-pressed="${st.v==="fail"}">Fail</button>
+            <button data-v="block" aria-pressed="${st.v==="block"}">Blocked</button>
+          </div>
+        </div>
+        <textarea class="note ${st.v==="fail"||st.v==="block"||st.n?"":"hide"}"
+          placeholder="What did you see? Steps, message, anything odd.">${st.n||""}</textarea>`;
+
+      row.querySelectorAll(".seg button").forEach(b=>{
+        b.onclick=()=>{
+          const v=b.dataset.v;
+          state[k]={...(state[k]||{}), v: st.v===v? null : v};
+          if(!state[k].v && !state[k].n) delete state[k];
+          save(); render();
+        };
+      });
+      const ta=row.querySelector(".note");
+      ta.oninput=()=>{ state[k]={...(state[k]||{}), n:ta.value}; if(!state[k].v&&!state[k].n)delete state[k]; save(); updateBar(); };
+      rows.appendChild(row);
+    });
+
+    section.innerHTML=`<div class="head"><span class="num">${String(si+1).padStart(2,"0")}</span><h2>${sec.t}</h2></div><p class="sub">${sec.d}</p>`;
+    section.appendChild(rows);
+    if(rows.children.length) out.appendChild(section);
+
+    const a=document.createElement("a");
+    a.href="#s"+si;
+    a.className=sDone===sec.items.length?"done":"";
+    a.innerHTML=`<b class="tnum">${String(sDone).padStart(2,"0")}/${String(sec.items.length).padStart(2,"0")}</b><span>${sec.t}</span>`;
+    rail.appendChild(a);
+  });
+
+  window._tot={total,pass,fail,block};
+  updateBar();
+}
+
+function updateBar(){
+  const {total,pass,fail,block}=window._tot;
+  document.getElementById("bp").style.width=(pass/total*100)+"%";
+  document.getElementById("bf").style.width=(fail/total*100)+"%";
+  document.getElementById("bb").style.width=(block/total*100)+"%";
+  document.getElementById("cnt").textContent=`${pass+fail+block} / ${total} · ${fail} failed · ${block} blocked`;
+}
+
+document.getElementById("filter").onclick=(e)=>{
+  filter = filter==="all" ? "todo" : filter==="todo" ? "bad" : "all";
+  e.target.textContent = "Show: " + (filter==="all"?"all":filter==="todo"?"not done":"problems");
+  render();
+};
+
+document.getElementById("copy").onclick=()=>{
+  let out="# Aajoo guest testing — findings\n\n";
+  let n=0;
+  DATA.forEach((sec,si)=>{
+    const bad=sec.items.map((it,ii)=>({it,st:state[id(si,ii)]||{}}))
+      .filter(x=>x.st.v==="fail"||x.st.v==="block");
+    if(!bad.length) return;
+    out+=`## ${sec.t}\n\n`;
+    bad.forEach(({it,st})=>{
+      n++;
+      out+=`**${st.v==="fail"?"FAILED":"BLOCKED"} — ${it[0]}**\n`;
+      out+=`- Expected: ${it[4]}\n`;
+      if(it[2]||it[3]) out+=`- Endpoints: ${[it[2],it[3]].filter(Boolean).join(", ")}\n`;
+      out+=`- What happened: ${st.n?st.n:"(no note)"}\n\n`;
+    });
+  });
+  const {total,pass,fail,block}=window._tot;
+  out = `Tested ${pass+fail+block} of ${total} — ${pass} passed, ${fail} failed, ${block} blocked.\n\n` + (n?out:"No failures recorded.\n");
+  navigator.clipboard.writeText(out).then(
+    ()=>toast(n?`Copied ${n} problem${n>1?"s":""} — paste it to Claude`:"Copied — nothing failing yet"),
+    ()=>toast("Couldn't copy — select the page and copy manually")
+  );
+};
+
+document.getElementById("reset").onclick=()=>{
+  if(!confirm("Clear every answer and note? This cannot be undone.")) return;
+  state={}; save(); render(); toast("Checklist cleared");
+};
+
+render();
+</script>

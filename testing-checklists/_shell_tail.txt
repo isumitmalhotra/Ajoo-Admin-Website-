@@ -1,0 +1,121 @@
+const KEY="aajoo-host-qa-v1";
+let state=JSON.parse(localStorage.getItem(KEY)||"{}");
+let filter="all";
+const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
+const id=(s,i)=>s+"|"+i;
+
+const toast=(m)=>{const t=document.getElementById("toast");t.textContent=m;t.classList.add("on");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("on"),1900);};
+
+function render(){
+  const out=document.getElementById("out"), rail=document.getElementById("rail");
+  out.innerHTML=""; rail.innerHTML="";
+  let total=0,pass=0,fail=0,block=0;
+
+  DATA.forEach((sec,si)=>{
+    let sDone=0;
+    const section=document.createElement("section");
+    section.id="s"+si;
+    const rows=document.createElement("div"); rows.className="rows";
+
+    sec.items.forEach((it,ii)=>{
+      const [title,exp,e1,e2,expect]=it;
+      const k=id(si,ii); const st=state[k]||{};
+      total++;
+      if(st.v==="pass")pass++; else if(st.v==="fail")fail++; else if(st.v==="block")block++;
+      if(st.v)sDone++;
+      if(filter==="todo"&&st.v) return;
+      if(filter==="bad"&&st.v!=="fail"&&st.v!=="block") return;
+
+      const row=document.createElement("div");
+      row.className="row"; if(st.v)row.dataset.s=st.v;
+      const eps=[e1,e2].filter(Boolean).map(e=>`<span class="ep">${e}</span>`).join("");
+      row.innerHTML=`
+        <div class="row-top">
+          <div class="what">
+            <div class="title">${title}</div>
+            <div class="exp">${exp}</div>
+            <div class="exp" style="margin-top:5px"><strong style="color:var(--ink)">Expect:</strong> ${expect}</div>
+            ${eps?`<div class="eps">${eps}</div>`:""}
+          </div>
+          <div class="seg" role="group" aria-label="Result for ${title}">
+            <button data-v="pass" aria-pressed="${st.v==="pass"}">Pass</button>
+            <button data-v="fail" aria-pressed="${st.v==="fail"}">Fail</button>
+            <button data-v="block" aria-pressed="${st.v==="block"}">Blocked</button>
+          </div>
+        </div>
+        <textarea class="note ${st.v==="fail"||st.v==="block"||st.n?"":"hide"}"
+          placeholder="What did you see? Steps, message, anything odd.">${st.n||""}</textarea>`;
+
+      row.querySelectorAll(".seg button").forEach(b=>{
+        b.onclick=()=>{
+          const v=b.dataset.v;
+          state[k]={...(state[k]||{}), v: st.v===v? null : v};
+          if(!state[k].v && !state[k].n) delete state[k];
+          save(); render();
+        };
+      });
+      const ta=row.querySelector(".note");
+      ta.oninput=()=>{ state[k]={...(state[k]||{}), n:ta.value}; if(!state[k].v&&!state[k].n)delete state[k]; save(); updateBar(); };
+      rows.appendChild(row);
+    });
+
+    section.innerHTML=`<div class="head"><span class="num">${String(si+1).padStart(2,"0")}</span><h2>${sec.t}</h2></div><p class="sub">${sec.d}</p>`;
+    section.appendChild(rows);
+    if(rows.children.length) out.appendChild(section);
+
+    const a=document.createElement("a");
+    a.href="#s"+si;
+    a.className=sDone===sec.items.length?"done":"";
+    a.innerHTML=`<b class="tnum">${String(sDone).padStart(2,"0")}/${String(sec.items.length).padStart(2,"0")}</b><span>${sec.t}</span>`;
+    rail.appendChild(a);
+  });
+
+  window._tot={total,pass,fail,block};
+  updateBar();
+}
+
+function updateBar(){
+  const {total,pass,fail,block}=window._tot;
+  document.getElementById("bp").style.width=(pass/total*100)+"%";
+  document.getElementById("bf").style.width=(fail/total*100)+"%";
+  document.getElementById("bb").style.width=(block/total*100)+"%";
+  document.getElementById("cnt").textContent=`${pass+fail+block} / ${total} · ${fail} failed · ${block} blocked`;
+}
+
+document.getElementById("filter").onclick=(e)=>{
+  filter = filter==="all" ? "todo" : filter==="todo" ? "bad" : "all";
+  e.target.textContent = "Show: " + (filter==="all"?"all":filter==="todo"?"not done":"problems");
+  render();
+};
+
+document.getElementById("copy").onclick=()=>{
+  let out="# Aajoo host testing — findings\n\n";
+  let n=0;
+  DATA.forEach((sec,si)=>{
+    const bad=sec.items.map((it,ii)=>({it,st:state[id(si,ii)]||{}}))
+      .filter(x=>x.st.v==="fail"||x.st.v==="block");
+    if(!bad.length) return;
+    out+=`## ${sec.t}\n\n`;
+    bad.forEach(({it,st})=>{
+      n++;
+      out+=`**${st.v==="fail"?"FAILED":"BLOCKED"} — ${it[0]}**\n`;
+      out+=`- Expected: ${it[4]}\n`;
+      if(it[2]||it[3]) out+=`- Endpoints: ${[it[2],it[3]].filter(Boolean).join(", ")}\n`;
+      out+=`- What happened: ${st.n?st.n:"(no note)"}\n\n`;
+    });
+  });
+  const {total,pass,fail,block}=window._tot;
+  out = `Tested ${pass+fail+block} of ${total} — ${pass} passed, ${fail} failed, ${block} blocked.\n\n` + (n?out:"No failures recorded.\n");
+  navigator.clipboard.writeText(out).then(
+    ()=>toast(n?`Copied ${n} problem${n>1?"s":""} — paste it to Claude`:"Copied — nothing failing yet"),
+    ()=>toast("Couldn't copy — select the page and copy manually")
+  );
+};
+
+document.getElementById("reset").onclick=()=>{
+  if(!confirm("Clear every answer and note? This cannot be undone.")) return;
+  state={}; save(); render(); toast("Checklist cleared");
+};
+
+render();
+</script>

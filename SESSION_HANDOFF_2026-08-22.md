@@ -89,7 +89,7 @@ issues, plus two standing instructions:
 
 > "after making the changes update the host readliness testing doc if needed"
 
-All twelve are done. The de-duplication analysis is in §5.
+All twelve are done. The de-duplication analysis is in §4.
 
 ### 3a. The two actual bugs
 
@@ -330,14 +330,16 @@ added rows mid-section, so:
   this again if you add checks, because a duplicate title silently merges two
   checks' answers.
 
-**Build tooling** (session scratchpad —
-`C:\Users\Asus\AppData\Local\Temp\claude\D--Projects-ajoo-admin-website\98ff0efb-3190-4f8f-bdec-7a413a69a1db\scratchpad\`):
-`_shell_head.txt`, `_shell_tail.txt`, `_renter_data.js`, `_admin_data.js`,
-`build.js`, plus `stable_keys.py`, `fix_legacy_map.py`, `test_migration.js`.
-Host data is inline in `host-checklist.html` (there is no `_host_data.js`);
-`host-checklist.bak.html` is the pre-edit copy the migration was built from.
-**Scratchpad is session-scoped and will be gone next session** — if these
-matter, copy them into the repo.
+**Build tooling is committed at `testing-checklists/`** with its own README
+— it was previously only in a session scratchpad, which does not survive.
+Read that README before editing any checklist: it carries the title-uniqueness
+rule, the rename hazard, and the duplicate-key check to run afterwards.
+
+Host data is inline in `host-checklist.html` (there is no `_host_data.js`), so
+`build.cjs` does not build it — edit the `const DATA` array in the HTML.
+Scripts are `.cjs` because the repo root `package.json` sets
+`"type": "module"`, which would otherwise parse them as ES modules and break
+`require`.
 
 ---
 
