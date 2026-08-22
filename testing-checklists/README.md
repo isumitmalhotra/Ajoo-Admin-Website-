@@ -6,9 +6,14 @@ they were previously only in a session scratchpad, which does not survive.
 
 | Doc | Published at | Size |
 |---|---|---|
-| Host readiness | https://claude.ai/code/artifact/34df640c-ea5a-45b3-8c90-e65768b595f7 | 13 phases, 125 checks |
-| Guest readiness | https://claude.ai/code/artifact/20985523-4e8d-4d14-b76e-195e0633f9e7 | 14 phases, 101 checks |
-| Admin readiness | https://claude.ai/code/artifact/9801e05e-06d3-4012-a843-3761533d440e | 14 phases, 119 checks |
+| Host readiness | https://claude.ai/code/artifact/36484046-f358-47db-b9cf-f1457f1ce86d | 13 phases, 125 checks |
+| Guest readiness | https://claude.ai/code/artifact/3923b696-df3b-4b67-b3be-4124f11827ab | 14 phases, 101 checks |
+| Admin readiness | https://claude.ai/code/artifact/9e0ffc5f-76e2-450c-aa90-22d8c7819a7d | 14 phases, 119 checks |
+
+> The original 2026-08-22 artifacts (34df640c… / 20985523… / 9801e05e…) were
+> found deleted later that day and could not be reclaimed — these are fresh
+> publishes of the same committed HTML. If a link here ever 404s again,
+> republish from these files and update this table plus the latest handoff.
 
 Each page keeps its answers in the browser's `localStorage`, colour-codes
 pass / fail / blocked, and has a **Copy report** button that emits markdown of

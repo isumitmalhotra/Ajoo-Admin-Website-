@@ -209,6 +209,9 @@ const DATA = [
     ["Forgot password","Full reset: request, code, new password, sign in with it.","/user/forget-password","/user/forget/verify-otp","New password works; old one is refused."],
     ["Switch guest ↔ host","Swap modes from the account menu.","/switch-mode","","Both portals reachable without signing out."],
     ["Logout","Sign out, then press Back.","/user/logout","","Session is gone; protected pages don't render stale data."],
+    ["Admin login page with a host signed in","Stay signed in as host, open /admin/login in the same browser.","","","The form sits still and takes typing. It used to reload itself every second until the host session was destroyed."],
+    ["Admin sign-in leaves the host alone","Sign into the admin panel, then refresh a host-portal tab.","/admin/login","","The host tab is still the host portal. It used to turn into the admin panel."],
+    ["Host sign-in leaves the admin alone","With the admin panel open in one tab, sign in as host in another.","/user/login","","The admin panel still works after a refresh. It used to be logged out."],
   ]},
   { t:"Identity verification", d:"The DIDIT check that gates publishing. This is where the stuck-'pending' bug lived.", items:[
     ["Start verification","From Settings, begin identity verification.","/verify/create-session","","DIDIT opens with a QR to finish on your phone."],
