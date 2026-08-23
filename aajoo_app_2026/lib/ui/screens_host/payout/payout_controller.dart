@@ -64,6 +64,8 @@ class PayoutController extends GetxController {
   Future<bool> saveAccountDetails({
     required String accountNumber,
     required String accountIfsc,
+    required String accountHolderName,
+    String? bankName,
     int? accountId,
   }) async {
     isSavingAccount.value = true;
@@ -71,6 +73,8 @@ class PayoutController extends GetxController {
       final ok = await _payoutService.saveHostAccountDetails(
         accountNumber: accountNumber,
         accountIfsc: accountIfsc,
+        accountHolderName: accountHolderName,
+        bankName: bankName,
         accountId: accountId,
       );
       if (ok) {

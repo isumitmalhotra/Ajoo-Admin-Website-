@@ -97,6 +97,9 @@ class _AddPayoutAccountPageState extends State<AddPayoutAccountPage> {
     final ok = await _controller.saveAccountDetails(
       accountNumber: _accountNumberCtrl.text.trim(),
       accountIfsc: _ifscCtrl.text.trim().toUpperCase(),
+      // Collected by this form since it was written, and dropped on the way
+      // out until now. Without it no transfer can be initiated at all.
+      accountHolderName: _holderNameCtrl.text.trim(),
       accountId: acc?.hadId,
     );
 
@@ -160,12 +163,21 @@ class _AddPayoutAccountPageState extends State<AddPayoutAccountPage> {
                 _headerCard(isEdit),
                 const SizedBox(height: 20),
                 _field(
+                  // NOT optional. RazorpayX cannot initiate a transfer without
+                  // the name on the account, and the penny drop compares it to
+                  // the name the bank holds — which is the check that catches
+                  // a host entering somebody else's account.
                   controller: _holderNameCtrl,
-                  label: 'Account Holder Name (optional)',
+                  label: 'Account Holder Name *',
                   icon: Icons.person_outline,
                   textCapitalization: TextCapitalization.words,
                   inputFormatters: AppInputFormatters.name,
-                  validator: null,
+                  validator: (v) {
+                    final t = (v ?? '').trim();
+                    if (t.isEmpty) return 'Account holder name is required';
+                    if (t.length < 3) return 'Enter the full name on the account';
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 14),
                 _field(

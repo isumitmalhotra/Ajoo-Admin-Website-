@@ -76,6 +76,11 @@ class HostPayoutService {
   Future<bool> saveHostAccountDetails({
     required String accountNumber,
     required String accountIfsc,
+    /// REQUIRED for a transfer. RazorpayX cannot initiate one without the
+    /// name on the account, and the server now refuses a bank account that
+    /// arrives without it — the form collected this and never sent it.
+    required String accountHolderName,
+    String? bankName,
     int? accountId,
   }) async {
     const endpoint = "payout/account/details-add";
@@ -85,6 +90,8 @@ class HostPayoutService {
       final payload = <String, dynamic>{
         'accountNumber': accountNumber,
         'accountIfsc': accountIfsc,
+        'accountHolderName': accountHolderName,
+        if (bankName != null && bankName.isNotEmpty) 'bankName': bankName,
       };
       if (accountId != null) payload['accountId'] = accountId;
 
