@@ -208,8 +208,25 @@ document.getElementById("copy").onclick=()=>{
   });
   const {total,pass,fail,block}=window._tot;
   out = `Tested ${pass+fail+block} of ${total} — ${pass} passed, ${fail} failed, ${block} blocked.\n\n` + (n?out:"No failures recorded.\n");
+
+  // Then the whole run, one line per answered check. The failures above are
+  // what needs fixing; this is the record that the rest were actually tested,
+  // which is the half a Claude session cannot obtain any other way — this
+  // document's saved answers are private to your signed-in browser.
+  const MARK={pass:"PASS ",fail:"FAIL ",block:"BLOCK"};
+  let done="";
+  DATA.forEach((sec,si)=>{
+    const marked=sec.items.map((it,ii)=>({it,st:state[id(si,ii)]||{}})).filter(x=>x.st.v);
+    if(!marked.length) return;
+    done+=`\n### ${sec.t}\n`;
+    marked.forEach(({it,st})=>{ done+=`${MARK[st.v]||st.v} — ${it[0]}${st.n?`  · ${st.n.replace(/\s+/g," ").slice(0,160)}`:""}\n`; });
+  });
+  const untested=total-(pass+fail+block);
+  out += `\n---\n\n## Full run\n${done||"\nNothing marked yet.\n"}`;
+  if(untested) out += `\n${untested} check${untested>1?"s":""} not marked.\n`;
+
   navigator.clipboard.writeText(out).then(
-    ()=>toast(n?`Copied ${n} problem${n>1?"s":""} — paste it to Claude`:"Copied — nothing failing yet"),
+    ()=>toast(n?`Copied ${n} problem${n>1?"s":""} + the full run — paste it to Claude`:"Copied the full run — paste it to Claude"),
     ()=>toast("Couldn't copy — select the page and copy manually")
   );
 };

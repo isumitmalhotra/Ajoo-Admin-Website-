@@ -6,17 +6,34 @@ they were previously only in a session scratchpad, which does not survive.
 
 | Doc | Published at | Size |
 |---|---|---|
-| Host readiness | https://claude.ai/code/artifact/36484046-f358-47db-b9cf-f1457f1ce86d | 13 phases, 125 checks |
-| Guest readiness | https://claude.ai/code/artifact/3923b696-df3b-4b67-b3be-4124f11827ab | 14 phases, 101 checks |
-| Admin readiness | https://claude.ai/code/artifact/9e0ffc5f-76e2-450c-aa90-22d8c7819a7d | 14 phases, 119 checks |
+| Host readiness | https://claude.ai/code/artifact/36484046-f358-47db-b9cf-f1457f1ce86d | 13 phases, 128 checks |
+| Guest readiness | https://claude.ai/code/artifact/3923b696-df3b-4b67-b3be-4124f11827ab | 15 phases, 121 checks |
+| Admin readiness | https://claude.ai/code/artifact/9e0ffc5f-76e2-450c-aa90-22d8c7819a7d | 14 phases, 120 checks |
 
 > The original 2026-08-22 artifacts (34df640c… / 20985523… / 9801e05e…) were
 > found deleted later that day and could not be reclaimed — these are fresh
 > publishes of the same committed HTML. If a link here ever 404s again,
 > republish from these files and update this table plus the latest handoff.
 
-Each page colour-codes pass / fail / blocked and has a **Copy report** button
-that emits markdown of everything failing.
+> **2026-08-23 — host and admin are BUILT but NOT REPUBLISHED.** The shared
+> tail gained the full-run report below, so `host-checklist.html` and
+> `admin-checklist.html` in this folder are ahead of what is live. They were
+> deliberately not pushed: a host run was in progress and it is not proven that
+> republishing the page leaves the separately-published `data/state.json`
+> alone. Capture the run first (press Copy report, paste it to a session,
+> commit the snapshot), THEN republish these two. The guest doc had no answers
+> yet, so it was safe to republish and is live and current.
+
+Each page colour-codes pass / fail / blocked and has a **Copy report** button.
+It emits markdown of everything failing, and then — since 2026-08-23 — a
+**Full run** appendix: one `PASS`/`FAIL`/`BLOCK` line per answered check.
+
+That appendix exists because a Claude session **cannot read a run's results**.
+Answers live in the artifact's `data/state.json`, which is private to the
+owner's signed-in browser: `WebFetch` on it returns the page, the versioned
+`/_f/…/data/state.json` path 403s, and the in-app browser is not signed in to
+claude.ai. Copy report is the only channel. Emitting failures alone meant a run
+where 120 checks passed left no record that they had been tested at all.
 
 **Answers save into the artifact itself** (since 2026-08-22). `localStorage`
 is only a cache — the viewer's sandboxing kept resetting it and the user kept
