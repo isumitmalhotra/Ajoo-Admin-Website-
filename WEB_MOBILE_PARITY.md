@@ -181,6 +181,23 @@ what it does today. Choosing between those is not a bugfix — it needs an
 `advanceAmount` the backend understands. The path keeps its existing behaviour
 rather than silently changing what a guest is charged.
 
+## Property page — stacked, on both (2026-08-23)
+
+The website moved its property page from a tab switcher to one stacked
+scroller; the app kept the switcher for a day and has now followed. Both
+platforms render the same seven sections in the same order — About, Amenities,
+House Rules, Location, Guest experiences, Host, Things to know — with the row
+above them acting as a jump nav rather than a switch.
+
+Amenities and "What's nearby" are trimmed against the same budget of 8 on
+both, with the same never-split-a-group rule, so a 42-amenity villa does not
+bury the host and the reviews under it.
+
+The one deliberate difference: the web jump nav is sticky, the app's scrolls
+away with the content. The app page is a `CustomScrollView` whose body is a
+single `SliverToBoxAdapter`, so making the nav sticky means splitting that
+sliver — and Airbnb's own app has no sticky section nav on a phone either.
+
 ## Known open parity gaps
 
 1. **No messages inbox on mobile.** The only conversation surface is the
