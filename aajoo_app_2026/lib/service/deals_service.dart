@@ -40,6 +40,8 @@ class DealsService {
   Future<String?> respondToNegotiation({
     required int offerId,
     required String action,
+    double? counterPrice,
+    String? message,
   }) async {
     final token = await const FlutterSecureStorage().read(key: "user_token");
     if (token == null || token.isEmpty) return 'Please sign in again.';
@@ -47,7 +49,12 @@ class DealsService {
     try {
       final res = await _dio.post(
         '${Apiconstants.baseUrl}/user/negotiations/respond',
-        data: {'offerId': offerId, 'action': action},
+        data: {
+          'offerId': offerId,
+          'action': action,
+          if (counterPrice != null) 'counterPrice': counterPrice,
+          if (message != null && message.isNotEmpty) 'message': message,
+        },
       );
       final ok = res.data is Map && res.data['success'] == true;
       return ok ? null : (res.data is Map ? res.data['message']?.toString() : null) ?? 'Could not send that.';

@@ -60,8 +60,16 @@ class GuestNegotiation {
   final String status;
   final bool awaitingYou;
 
-  /// The offer this guest can accept or decline right now, if any.
+  /// The offer this guest can accept, decline or counter right now, if any.
   final int? actionableOfferId;
+
+  /// Offers each side has sent, and the ceiling both are held to. A
+  /// negotiation used to be one round each way and then stuck.
+  final int roundsYou;
+  final int maxRounds;
+
+  /// Whether this guest may send another price into the thread right now.
+  final bool canCounter;
   final String? bookFrom;
   final String? bookTo;
 
@@ -77,6 +85,9 @@ class GuestNegotiation {
     required this.status,
     required this.awaitingYou,
     this.actionableOfferId,
+    this.roundsYou = 0,
+    this.maxRounds = 3,
+    this.canCounter = false,
     this.bookFrom,
     this.bookTo,
   });
@@ -102,6 +113,9 @@ class GuestNegotiation {
       awaitingYou: j['awaitingYou'] == true,
       actionableOfferId:
           j['actionableOfferId'] == null ? null : _i(j['actionableOfferId']),
+      roundsYou: _i(j['roundsYou']),
+      maxRounds: j['maxRounds'] == null ? 3 : _i(j['maxRounds']),
+      canCounter: j['canCounter'] == true,
       bookFrom: _s(j['bookFrom']),
       bookTo: _s(j['bookTo']),
     );

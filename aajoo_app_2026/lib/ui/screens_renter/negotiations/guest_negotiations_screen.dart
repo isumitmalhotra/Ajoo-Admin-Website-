@@ -92,6 +92,173 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
     }
   }
 
+  /// Counter back. A negotiation used to be one round each way and then
+  /// stuck — the only answers to a host's counter were yes and no.
+  Future<void> _openCounter(GuestNegotiation n) async {
+    final id = n.actionableOfferId;
+    if (id == null) return;
+    final priceCtl = TextEditingController();
+    final msgCtl = TextEditingController();
+    final err = RxnString();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+            left: 18,
+            right: 18,
+            top: 18,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Counter this offer',
+                style: inter(
+                    fontSize: 17, fontWeight: FontWeight.w700, color: kInk)),
+            const SizedBox(height: 3),
+            Text(
+                '${n.hostName} · ${n.propertyName} · '
+                '${n.maxRounds - n.roundsYou} of ${n.maxRounds} offers left',
+                style: inter(fontSize: 12.5, color: kMuted)),
+            const SizedBox(height: 14),
+            Row(children: [
+              Expanded(child: _tile('Host offered', n.latestPrice, kClay)),
+              const SizedBox(width: 10),
+              Expanded(child: _tile('Listed at', n.listedPrice, kInk)),
+            ]),
+            const SizedBox(height: 14),
+            Text('Your counter price per night (₹) *',
+                style: inter(
+                    fontSize: 13, fontWeight: FontWeight.w600, color: kInk)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: priceCtl,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: (n.latestPrice * 0.92).round().toString(),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(11)),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 12),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text('Message to the host (optional)',
+                style: inter(
+                    fontSize: 13, fontWeight: FontWeight.w600, color: kInk)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: msgCtl,
+              maxLines: 3,
+              maxLength: 500,
+              decoration: InputDecoration(
+                hintText: "e.g. That's a little over my budget.",
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(11)),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 12),
+              ),
+            ),
+            Obx(() => err.value == null
+                ? const SizedBox.shrink()
+                : Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(err.value!,
+                        style: inter(fontSize: 12.5, color: kDanger)),
+                  )),
+            Row(children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    side: const BorderSide(color: kLine),
+                    foregroundColor: kInk2,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(11)),
+                  ),
+                  child: Text('Cancel',
+                      style: inter(
+                          fontSize: 13.5, fontWeight: FontWeight.w600)),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    final v = double.tryParse(priceCtl.text.trim());
+                    if (v == null || v <= 0) {
+                      err.value =
+                          'Enter the price per night you want to counter with.';
+                      return;
+                    }
+                    // A guest counters DOWN. Going up is arguing against
+                    // yourself, and it is irreversible once sent.
+                    if (v >= n.latestPrice) {
+                      err.value =
+                          'That is at or above the ${_inr(n.latestPrice)} the host offered — accept it instead.';
+                      return;
+                    }
+                    Navigator.pop(ctx);
+                    _sendCounter(id, v, msgCtl.text.trim());
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kIndigo,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(11)),
+                  ),
+                  child: Text('Send counter',
+                      style: inter(
+                          fontSize: 13.5, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ]),
+          ],
+        ),
+      ),
+    );
+    priceCtl.dispose();
+    msgCtl.dispose();
+  }
+
+  static Widget _tile(String label, double value, Color fg) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+            color: kSand, borderRadius: BorderRadius.circular(10)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label.toUpperCase(),
+                style: inter(fontSize: 10.5, color: kMuted)),
+            Text('${_inr(value)} /night',
+                style: inter(
+                    fontSize: 15.5, fontWeight: FontWeight.w700, color: fg)),
+          ],
+        ),
+      );
+
+  Future<void> _sendCounter(int offerId, double price, String message) async {
+    busyOfferId.value = offerId;
+    try {
+      final err = await c.respond(offerId, 'counter',
+          counterPrice: price, message: message);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(err ?? 'Counter sent — the host has been told.'),
+        backgroundColor: err != null ? kDanger : kSuccess,
+      ));
+    } finally {
+      busyOfferId.value = null;
+    }
+  }
+
   Future<void> _respond(GuestNegotiation n, String action) async {
     final id = n.actionableOfferId;
     if (id == null) return;
@@ -337,7 +504,24 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
                                   fontWeight: FontWeight.w700)),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  if (n.canCounter) ...[
+                    const SizedBox(width: 8),
+                    OutlinedButton(
+                      onPressed: busy ? null : () => _openCounter(n),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: kIndigo,
+                        side: const BorderSide(color: kIndigo),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(11)),
+                      ),
+                      child: Text('Counter',
+                          style: inter(
+                              fontSize: 13.5, fontWeight: FontWeight.w600)),
+                    ),
+                  ],
+                  const SizedBox(width: 8),
                   OutlinedButton(
                     onPressed: busy ? null : () => _respond(n, 'decline'),
                     style: OutlinedButton.styleFrom(
@@ -355,6 +539,13 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
                 ],
               );
             }),
+            const SizedBox(height: 6),
+            Text(
+              n.canCounter
+                  ? '${n.maxRounds - n.roundsYou} of your ${n.maxRounds} offers left'
+                  : "You've used all ${n.maxRounds} of your offers",
+              style: inter(fontSize: 11.5, color: kMuted),
+            ),
           ] else if (n.status == 'accepted') ...[
             const Divider(height: 22, color: kLine),
             Text('Your deal is applied at checkout and is valid for 24 hours.',

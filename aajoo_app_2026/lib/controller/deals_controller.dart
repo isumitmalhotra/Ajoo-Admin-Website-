@@ -42,8 +42,14 @@ class DealsController extends GetxController {
   }
 
   /// Accept or decline a host counter. Returns null on success, else a message.
-  Future<String?> respond(int offerId, String action) async {
-    final err = await _service.respondToNegotiation(offerId: offerId, action: action);
+  Future<String?> respond(int offerId, String action,
+      {double? counterPrice, String? message}) async {
+    final err = await _service.respondToNegotiation(
+      offerId: offerId,
+      action: action,
+      counterPrice: counterPrice,
+      message: message,
+    );
     if (err == null) {
       await loadNegotiations();
       // An accepted counter mints a coupon, so the deals list is stale now.
