@@ -219,6 +219,65 @@
 - [ ] **G-2** · **Remove old duplicate Flutter app `aajoo_homes-main/`** from git — already empty on disk, still tracked (~300 files show as pending deletions).
 - [ ] **G-3** · **Run pending DB migrations on live** when backend schema changes ship (migrations don't auto-run on Render).
 
+## BLOCKED ON CLIENT — cash / UPI collection for pay-at-property bookings
+
+**Status 2026-08-23:** raised with the client, awaiting their decision. Do not
+build until they answer — the four questions below change the data model.
+
+### What is broken today
+
+Nothing records that a pay-at-property guest actually paid. Verified by reading
+every caller of `recordBookingFinance` (`utils/financeRecorder.js`):
+
+| Route | Ledger | Payout |
+|---|---|---|
+| Razorpay verified | COMPLETED | queued |
+| Wallet-paid | COMPLETED | queued |
+| **Pay at property** | **PENDING, forever** | **none** |
+
+- `/host/booking/check-in` does not touch finance.
+- No "mark collected" / "cash received" endpoint exists anywhere.
+- Consequence: **the platform never collects its commission on cash bookings.**
+  On host 151 alone that is ₹3,690 of PLATFORM_COMMISSION sitting PENDING
+  against ₹20,245 of uncollected HOST_EARNING.
+- The money also flows the *wrong way* for cash: the host owes the platform,
+  but `tbl_payouts` only models money going **out** to hosts. There is no
+  host-owes-platform rail at all.
+
+### The commission model that already exists (utils/financeRecorder.js)
+
+```
+COMMISSION_RATE     = 0.15   // 15% of room subtotal, charged to host
+COMMISSION_GST_RATE = 0.18   // 18% GST on that commission
+hostNet = subtotal - commission - commissionGst
+```
+
+Accommodation GST (5% ≤ ₹7,500/night, else 18%) is separate and collected from
+the guest. Four ledger rows per booking: GUEST_PAYMENT, HOST_EARNING,
+PLATFORM_COMMISSION, TAX_COLLECTED. `recordBookingFinance(..., collected: true)`
+already promotes PENDING rows and queues the payout — the promotion path is
+built, nothing calls it for cash.
+
+### The four decisions needed from the client
+
+1. **Who confirms collection** — the host marks "cash received", or an admin
+   reconciles it?
+2. **When** — at check-in, or at checkout?
+3. **How the platform recovers its 15% + GST** — net it off the host's next
+   ONLINE-booking payout (simplest; needs no new money rail), or invoice the
+   host separately (needs one)?
+4. **If the host never confirms** — auto-mark collected at checkout, or flag to
+   admin and chase?
+
+Recommendation given to the client: host marks collected at check-in;
+commission netted off their next online payout; unconfirmed stays auto-flag to
+admin 24h after checkout.
+
+### Already done, so not part of this
+
+- Earnings page now shows `expectedEarnings` — "₹X awaiting collection",
+  reported OUTSIDE the totals since it is not revenue (backend `94ebc8f`).
+
 ---
 
 _Update this file as the single tracker. Detailed context lives in `POST_25_PRIORITIZED_PLAN.md`, `CONTRACT_COMPLIANCE_CHECK.md`, `CLIENT_INPUTS_REQUIRED.md`, and `AAJOO_SECTION0_TASKLIST.md`._
