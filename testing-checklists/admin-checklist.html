@@ -227,6 +227,8 @@ const DATA = [
     ["Analytics can be acted on","In a property's booking table, click a booking code.","","","It opens Bookings with that booking already searched for. Analytics used to be read-only \u2014 you had to memorise the code, leave, and type it in again."],
     ["Reports","Open Reports.","","","Generates without error; export downloads."],
     ["An exported report reads like one","Export the revenue report and open the file.","/admin/finance/reports/export","","It names the report, the period, how it was grouped, the row count and the currency \u2014 then the rows under worded column headings, then a Totals block. It used to be raw JSON key names over three bare rows with the totals thrown away."],
+    ["The revenue report can be tallied","Read the columns in that file.","","","Gross collected, refunded, net collected, bookings, average value, commission, GST on commission, tax, host earnings, platform net, boost income and pending collection. It used to report ONE number — payments completed — and call it revenue, so refunds, commission, tax and everything pending were invisible."],
+    ["The report checks itself","Read the last two lines of the Totals block.","","","\"GST as % of commission\" should read 18 and \"unaccounted\" should read 0. If either drifts, the money split is being computed inconsistently somewhere and the report will say so rather than bury it in a total."],
   ]},
   { t:"Users", d:"Guest accounts and their identity records.", items:[
     ["User list","Open Users; search and page through.","/admin/user/search","","Search finds by name, email and phone."],
