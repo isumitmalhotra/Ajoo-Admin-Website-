@@ -8,7 +8,7 @@ they were previously only in a session scratchpad, which does not survive.
 |---|---|---|
 | Host readiness | https://claude.ai/code/artifact/36484046-f358-47db-b9cf-f1457f1ce86d | 13 phases, 128 checks |
 | Guest readiness | https://claude.ai/code/artifact/3923b696-df3b-4b67-b3be-4124f11827ab | 15 phases, 133 checks |
-| Admin readiness | https://claude.ai/code/artifact/9e0ffc5f-76e2-450c-aa90-22d8c7819a7d | 15 phases, 129 checks |
+| Admin readiness | https://claude.ai/code/artifact/9e0ffc5f-76e2-450c-aa90-22d8c7819a7d | 15 phases, 133 checks |
 
 > The original 2026-08-22 artifacts (34df640c… / 20985523… / 9801e05e…) were
 > found deleted later that day and could not be reclaimed — these are fresh

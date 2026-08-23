@@ -1,16 +1,20 @@
 const DATA = [
-  { t:"Access & staff", d:"Who can get into the panel at all, and what they may do once inside.", items:[
+  { t:"Access & staff", d:"Who can get into the panel at all, and what they may do once inside. The team screen is Team & roles \u2014 in the ACCOUNT MENU (top right, next to Sign out), and also near the bottom of the sidebar as Roles & Permissions.", items:[
     ["Admin login","Sign in at /admin/login.","/admin/login","","Lands on the dashboard."],
     ["Wrong password","Try a wrong password.","/admin/login","","Refused plainly. No database text, no hint about which field was wrong."],
     ["Session survives reload","Refresh a deep admin page.","/admin/verify-token","","Stays signed in; no bounce to login."],
     ["Guest token is useless","Sign in as a guest, then open /admin/dashboard.","","","Refused. A renter token must never open the panel."],
-    ["Staff list","Open staff members.","/admin/members/list","","All admins with roles and status."],
-    ["Create an admin","Add a new staff member.","/admin/create","","Only a super admin may. Created and can sign in."],
-    ["Change a role","Change someone's role.","/admin/members/role","","Their permissions change on their next load."],
-    ["Suspend a member","Set a member inactive.","/admin/members/status","","They can no longer sign in."],
-    ["Roles list","Open roles.","/admin/roles/list","","Roles and their permissions render."],
-    ["Logout","Sign out, then press Back.","/admin/logout","","No admin data renders from cache."],
-    ["Signing in doesn't end other sessions","Sign into the admin panel while a host is signed in elsewhere in the browser.","/admin/login","","Both live on: host tabs stay the host portal, admin tabs the panel. Each used to destroy the other."],
+    ["Your role is named correctly","Read the chip beside your avatar, top right.","","","Says Administrator (or Finance / Support). It called EVERY admin \"Staff\", including the super admin, because the claims parser rejects an admin token outright."],
+    ["Staff list","Account menu \u2192 Team & roles.","/admin/members/list","","Every admin with their role, last login and status. Your own row says you can't edit your own access."],
+    ["Create an admin","Press Add Member and fill it in. YOU MUST DO THIS SECOND CHECK FIRST \u2014 the three below need a member who is not you.","/admin/create","","Only a super admin may. Refuses a name under 3 characters, a malformed email, and a password under 8 characters or without a letter, a number and a symbol. Created, and the new member can sign in."],
+    ["Change a role","Change the role of the member you just created.","/admin/members/role","","Their permissions change on their next load. Changing your OWN says \"You cannot change your own role\"."],
+    ["Suspend a member","Set that member inactive.","/admin/members/status","","They can no longer sign in. Your OWN says \"You cannot change your own status\"."],
+    ["Last super admin is protected","Try to demote or deactivate the only remaining super admin.","/admin/members/role","","Refused. The platform must never be left with nobody who can manage the team."],
+    ["Roles list","Same screen \u2014 the roles table.","/admin/roles/list","","Roles and who holds them render."],
+    ["Logout","Sign out, then press Back. Then try the browser Back twice more.","/admin/logout","","The login screen, every time. The panel must NEVER come back \u2014 it used to be restored whole from the browser's back/forward cache with no session behind it."],
+    ["Logging out ends OTHER tabs","Open the panel in two tabs. Sign out in one, then switch to the other.","","","The second tab drops to the login screen too. It used to sit there showing data the session no longer authorised."],
+    ["Signing in doesn't end other sessions","Sign into the admin panel while a host is signed in elsewhere in the browser.","/admin/login","","Both live on: host tabs stay the host portal, admin tabs the panel."],
+    ["Admin can still reach the host portal","With the panel open, open /host/dashboard in another tab.","","","You get the HOST SIGN-IN, and signing in as a host lands you on the host dashboard. It used to throw you straight back into the admin panel, so an admin could never reach a host login in that browser at all."],
   ]},
   { t:"Dashboard & analytics", d:"The numbers leadership will quote. Check they reconcile, not just that they render.", items:[
     ["Dashboard","Open the dashboard.","/admin/dashboard","","Every tile has a real number — no zeros standing in for missing data."],
