@@ -209,6 +209,23 @@ class HostService {
     }
   }
 
+  /// GET /host/support/tickets/:id — the conversation.
+  ///
+  /// ticketSearch returns the ticket ROWS only, so a host could be told
+  /// "support replied" and have nowhere to read it. Returns null on failure so
+  /// the screen can say so rather than showing an empty thread.
+  Future<Map<String, dynamic>?> getSupportThread(int ticketId) async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final res = await _dio.get("/host/support/tickets/$ticketId");
+      final data = res.data is Map ? res.data['data'] : null;
+      return data is Map ? Map<String, dynamic>.from(data) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// POST /host/support/tickets/reply — add a message to an existing ticket.
   Future<String?> replySupportTicket({
     required int ticketId,

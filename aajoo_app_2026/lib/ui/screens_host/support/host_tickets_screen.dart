@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/service/host_service.dart';
+import 'package:rent_home/ui/screens_host/support/host_ticket_thread_screen.dart';
 import 'package:rent_home/utils/fonts.dart';
 
 /// Raise a support ticket, and see what came back.
@@ -233,7 +234,24 @@ class _HostTicketsScreenState extends State<HostTicketsScreen> {
   Widget _ticketCard(Map<String, dynamic> t) {
     final status = '${t['st_status'] ?? 'OPEN'}';
     final replied = status == 'PENDING';
-    return Container(
+    final id = int.tryParse('${t['st_id'] ?? ''}') ?? 0;
+    final subject = '${t['st_subject'] ?? 'Support ticket'}';
+    return InkWell(
+      // Opens the conversation. Without this the list said a ticket existed
+      // and gave no way to read what support had said back.
+      onTap: id == 0
+          ? null
+          : () async {
+              await Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) =>
+                    HostTicketThreadScreen(ticketId: id, subject: subject),
+              ));
+              // The thread may have moved the status on, and reading it clears
+              // the unread flag — so the list is stale on the way back.
+              if (mounted) _load();
+            },
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -280,9 +298,21 @@ class _HostTicketsScreenState extends State<HostTicketsScreen> {
             ],
           ),
           const SizedBox(height: 3),
-          Text('${t['st_category'] ?? ''}',
-              style: inter(fontSize: 11.5, color: kMuted)),
+          Row(
+            children: [
+              Text('${t['st_category'] ?? ''}',
+                  style: inter(fontSize: 11.5, color: kMuted)),
+              const Spacer(),
+              Text('View conversation',
+                  style: inter(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: kIndigo)),
+              const Icon(Icons.chevron_right_rounded, size: 16, color: kIndigo),
+            ],
+          ),
         ],
+      ),
       ),
     );
   }
