@@ -161,6 +161,28 @@ class HostService {
   /// so a host could only find an offer by catching its push notification.
   /// Returns an empty list rather than throwing — an empty negotiations
   /// section is a correct dashboard, an exception is a broken one.
+  /// GET /host/earnings/summary — the figures the web Earnings page shows.
+  ///
+  /// The app had no earnings reader at all: the home card summed
+  /// /host/transaction-history client-side, which is a different question
+  /// (payments received) answered with a different number. This is the same
+  /// endpoint and the same arithmetic the web uses, so the two platforms can
+  /// no longer disagree about what a host has earned.
+  ///
+  /// Returns an empty map rather than throwing — an empty earnings screen is
+  /// a correct one for a new host; an exception is a broken app.
+  Future<Map<String, dynamic>> getEarningsSummary() async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final response = await _dio.get("/host/earnings/summary");
+      final data = response.data is Map ? response.data['data'] : null;
+      return data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
+    } catch (err) {
+      return <String, dynamic>{};
+    }
+  }
+
   Future<List<HostNegotiation>> getNegotiations() async {
     final token = await const FlutterSecureStorage().read(key: "user_token");
     _dio.options.headers['Authorization'] = 'Bearer $token';

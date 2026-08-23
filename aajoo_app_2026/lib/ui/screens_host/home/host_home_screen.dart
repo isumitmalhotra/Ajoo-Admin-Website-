@@ -4,6 +4,7 @@ import 'package:ionicons/ionicons.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/ui/screens_common/notifications/notification_screen.dart';
 import 'package:rent_home/ui/screens_host/host_controller.dart';
+import 'package:rent_home/ui/screens_host/earnings/host_earnings_screen.dart';
 import 'package:rent_home/ui/widgets/verify_nudge.dart';
 import 'package:rent_home/ui/screens_host/listing/listing_wizard_screen.dart';
 import 'package:rent_home/ui/screens_host/booking_history/booking_history_screen.dart';
@@ -264,7 +265,9 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
           .where((t) => t.payStatusText.toLowerCase().contains('paid'))
           .fold<double>(0, (sum, t) => sum + (double.tryParse(t.payAmount) ?? 0));
       return InkWell(
-        onTap: () => Get.to(() => const PayoutPage()),
+        // Opens Earnings, not Payouts: the card is a summary of what was
+        // earned, and the screen behind it should answer the same question.
+        onTap: () => Get.to(() => const HostEarningsScreen()),
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.all(18),
