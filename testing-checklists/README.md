@@ -7,7 +7,7 @@ they were previously only in a session scratchpad, which does not survive.
 | Doc | Published at | Size |
 |---|---|---|
 | Host readiness | https://claude.ai/code/artifact/36484046-f358-47db-b9cf-f1457f1ce86d | 13 phases, 128 checks |
-| Guest readiness | https://claude.ai/code/artifact/3923b696-df3b-4b67-b3be-4124f11827ab | 15 phases, 121 checks |
+| Guest readiness | https://claude.ai/code/artifact/3923b696-df3b-4b67-b3be-4124f11827ab | 15 phases, 133 checks |
 | Admin readiness | https://claude.ai/code/artifact/9e0ffc5f-76e2-450c-aa90-22d8c7819a7d | 14 phases, 120 checks |
 
 > The original 2026-08-22 artifacts (34df640c… / 20985523… / 9801e05e…) were
@@ -48,6 +48,19 @@ local-only marks back up. The chip in the top bar says which mode the page is
 in: "Saved to doc ✓" / "Saving…" / "Local only" (outside claude.ai or on a
 read-only view). Copy report remains the sure way to hand failures to a
 Claude session.
+
+## Handing a copy to somebody
+
+```bash
+node build_standalone.cjs guest   # → dist/Aajoo-Renter-Testing-Guide.html
+```
+
+Also takes `host` and `admin`. The output is a complete standalone document —
+the artifact host supplies the doctype and `<head>`, which a file on disk has
+to carry itself — with a preamble covering what a handed-a-copy tester cannot
+know: their answers live in their own browser and nobody else sees them, Copy
+report is how findings travel back, and no real bank or card details go into
+any form. Rebuild it whenever the data files change.
 
 ## Files
 
