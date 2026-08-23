@@ -161,6 +161,75 @@ class HostService {
   /// so a host could only find an offer by catching its push notification.
   /// Returns an empty list rather than throwing — an empty negotiations
   /// section is a correct dashboard, an exception is a broken one.
+  /// POST /host/support/tickets/search — this host's own tickets.
+  ///
+  /// The app's Support screen was a WhatsApp/chat launcher only; the ticket
+  /// endpoints shipped with the web host portal and the app never called them,
+  /// so an issue raised in the app left no record anyone could track.
+  Future<List<Map<String, dynamic>>> getSupportTickets() async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final response = await _dio.post("/host/support/tickets/search", data: {});
+      final data = response.data is Map ? response.data['data'] : null;
+      final list = data is Map ? data['items'] : null;
+      if (list is! List) return const [];
+      return list
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    } catch (err) {
+      return const [];
+    }
+  }
+
+  /// POST /host/support/tickets/create.
+  ///
+  /// `category` is REQUIRED by the server and must be one of its enum values —
+  /// the web form omitted it for months, so every ticket was refused with a
+  /// bare "category is required". Returns null on success, else a message.
+  Future<String?> createSupportTicket({
+    required String subject,
+    required String category,
+    required String message,
+  }) async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final res = await _dio.post("/host/support/tickets/create",
+          data: {"subject": subject, "category": category, "message": message});
+      final ok = res.data is Map && res.data['success'] == true;
+      return ok ? null : 'Could not raise that ticket.';
+    } on DioException catch (e) {
+      final d = e.response?.data;
+      return (d is Map ? d['message']?.toString() : null) ??
+          'Could not raise that ticket.';
+    } catch (_) {
+      return 'Could not raise that ticket.';
+    }
+  }
+
+  /// POST /host/support/tickets/reply — add a message to an existing ticket.
+  Future<String?> replySupportTicket({
+    required int ticketId,
+    required String message,
+  }) async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final res = await _dio.post("/host/support/tickets/reply",
+          data: {"ticketId": ticketId, "message": message});
+      final ok = res.data is Map && res.data['success'] == true;
+      return ok ? null : 'Could not send that reply.';
+    } on DioException catch (e) {
+      final d = e.response?.data;
+      return (d is Map ? d['message']?.toString() : null) ??
+          'Could not send that reply.';
+    } catch (_) {
+      return 'Could not send that reply.';
+    }
+  }
+
   /// POST /host/statements/search — one entry per month a host earned in.
   ///
   /// The endpoint shipped with the finance sprint and neither client called

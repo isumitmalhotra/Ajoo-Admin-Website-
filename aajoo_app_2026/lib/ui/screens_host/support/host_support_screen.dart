@@ -16,6 +16,7 @@ import 'package:rent_home/constants.dart';
 import 'package:rent_home/service/device_service.dart';
 import 'package:rent_home/ui/responsive.dart';
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/ui/screens_host/support/host_tickets_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const String _hostLine = '+91 96252 36254';
@@ -59,6 +60,32 @@ class HostSupportScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 18),
                 const _HostChatCard(),
+                const SizedBox(height: 14),
+                // A tracked ticket, for anything chat cannot settle in one
+                // go. The endpoints shipped with the web host portal and the
+                // app never called them, so an issue raised from a phone left
+                // no record and no thread to follow.
+                Builder(
+                  builder: (ctx) => SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.of(ctx).push(MaterialPageRoute(
+                          builder: (_) => const HostTicketsScreen())),
+                      icon: const Icon(Icons.confirmation_number_outlined,
+                          size: 18),
+                      label: Text('Raise a support ticket',
+                          style:
+                              inter(fontSize: 14, fontWeight: FontWeight.w600)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: kIndigo,
+                        side: const BorderSide(color: kIndigo),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 14),
                 const _HostChannels(),
                 const SizedBox(height: 14),
