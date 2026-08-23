@@ -34,16 +34,34 @@ class BookingResponse {
 class Data {
   Booking booking;
 
+  /// The host chose "Approval Required": this is a REQUEST, not a booking.
+  ///
+  /// The server has returned this since the approval flow landed and this
+  /// model dropped it on the floor, so the app told every guest their stay was
+  /// confirmed even when the host had not yet seen it.
+  final bool requiresApproval;
+
+  /// How long the host has to respond, in hours — their own setting.
+  final int responseHours;
+
   Data({
     required this.booking,
+    this.requiresApproval = false,
+    this.responseHours = 24,
   });
 
   factory Data.fromJson(Map<String, dynamic> json) => Data(
         booking: Booking.fromJson(json["booking"]),
+        requiresApproval: json["requiresApproval"] == true,
+        responseHours: json["responseHours"] is num
+            ? (json["responseHours"] as num).toInt()
+            : int.tryParse('${json["responseHours"] ?? ''}') ?? 24,
       );
 
   Map<String, dynamic> toJson() => {
         "booking": booking.toJson(),
+        "requiresApproval": requiresApproval,
+        "responseHours": responseHours,
       };
 }
 

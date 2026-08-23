@@ -256,6 +256,10 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
       ended: hasEnded(booking.bookDetailsBtBookTo),
       started: isStaying(
           booking.bookDetailsBtBookFrom, booking.bookDetailsBtBookTo),
+      // So an online checkout that was never paid is not reported as a
+      // confirmed stay, and a booking awaiting the host says so.
+      isPaid: booking.bookIsPaid,
+      isCod: booking.bookIsCod,
     );
     final (badgeBg, badgeFg) = lifecycleColors(life);
     final pay = paymentBadge(

@@ -16,13 +16,14 @@ class PreBookingCard extends StatefulWidget {
 }
 
 class _PreBookingCardState extends State<PreBookingCard> {
-  static const List<String> defaultImageUrls = [
-    'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8aG90ZWx8ZW58MHx8MHx8fDA%3D',
-    'https://images.unsplash.com/photo-1455587734955-081b22074882?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8aG90ZWx8ZW58MHx8MHx8fDA%3D',
-    'https://images.unsplash.com/photo-1495365200479-c4ed1d35e1aa?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTl8fGhvdGVsfGVufDB8fDB8fHww',
-    'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTZ8fGhvdGVsfGVufDB8fDB8fHww',
-    'https://media.istockphoto.com/id/104731717/photo/luxury-resort.jpg?s=612x612&w=0&k=20&c=cODMSPbYyrn1FHake1xYz9M8r15iOfGz9Aosy9Db7mI=',
-  ];
+  // NO stock-photo pool. Five Unsplash hotel photographs and an iStock
+  // "luxury resort" used to play as a carousel whenever a listing had no cover
+  // image — so a property in Karnal advertised itself to guests with pictures
+  // of somewhere that does not exist, and the host believed their upload had
+  // worked because the card was full of pictures. The web page had the same
+  // pool and it was removed there; this is the app's copy.
+  //
+  // A listing with no photograph must look like a listing with no photograph.
 
   @override
   Widget build(BuildContext context) {
@@ -130,38 +131,23 @@ class _PreBookingCardState extends State<PreBookingCard> {
                                               "assets/aajoo_new_logo.png")
                                           as ImageProvider,
                                   fit: BoxFit.cover,
-                                  onError: (exception, stackTrace) =>
-                                      CarouselSlider(
-                                        items: defaultImageUrls
-                                            .map((url) => Image.network(
-                                                  url,
-                                                  fit: BoxFit.cover,
-                                                ))
-                                            .toList(),
-                                        options: CarouselOptions(
-                                          height: 400,
-                                          autoPlay: true,
-                                          aspectRatio: 16 / 9,
-                                          viewportFraction: 1.0,
-                                        ),
-                                      ))
+                                )
                               : null,
                         ),
                         child: property.coverImage == null
-                            ? CarouselSlider(
-                                items: defaultImageUrls
-                                    .map((url) => Image.network(
-                                          url,
-                                          fit: BoxFit.cover,
-                                        ))
-                                    .toList(),
-                                options: CarouselOptions(
-                                  height: 400,
-                                  autoPlay: true,
-                                  autoPlayInterval:
-                                      Duration(seconds: (1.4 * index).toInt()),
-                                  aspectRatio: 16 / 9,
-                                  viewportFraction: 1.0,
+                            ? const Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.image_not_supported_outlined,
+                                        size: 30, color: Colors.white70),
+                                    SizedBox(height: 8),
+                                    Text('No photos yet',
+                                        style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600)),
+                                  ],
                                 ),
                               )
                             : null,

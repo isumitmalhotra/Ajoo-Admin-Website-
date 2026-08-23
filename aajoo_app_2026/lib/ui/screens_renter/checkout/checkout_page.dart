@@ -255,7 +255,7 @@ class _HotelCheckoutPageState extends State<HotelCheckoutPage> {
     final imageUrl = widget.property.images?.isNotEmpty ?? false
         ? widget.property.images!.first
         : widget.booking.propertyImage ??
-            'https://images.unsplash.com/photo-1566073771259-6a8506099945';
+            '';
 
     return Scaffold(
       appBar: AppBar(
@@ -298,7 +298,7 @@ class _HotelCheckoutPageState extends State<HotelCheckoutPage> {
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
                               Image.network(
-                            'https://images.unsplash.com/photo-1566073771259-6a8506099945',
+                            '',
                             height: 200,
                             width: double.infinity,
                             fit: BoxFit.cover,

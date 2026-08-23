@@ -79,6 +79,12 @@ class SinglePropertyData {
   /// The host's Friday/Saturday/Sunday rates, when they set any. Null means
   /// "flat rate" — every night costs [propertyPrice].
   final PricingRule? pricing;
+
+  /// The host's chosen cancellation policy key — flexible | moderate | firm |
+  /// strict | non_refundable | custom. The API has always returned it and this
+  /// model never read it, which is why the Policies panel printed an invented
+  /// "free cancellation up to 48 hours" to every guest.
+  final String? cancellationPolicy;
   /// Real average rating and review count from the backend aggregate; null
   /// rating means nobody has reviewed this stay yet.
   final double? rating;
@@ -117,6 +123,7 @@ class SinglePropertyData {
     this.views = const [],
     this.specifications = const [],
     this.pricing,
+    this.cancellationPolicy,
     this.rating,
     this.reviewCount = 0,
     this.isLuxury,
@@ -203,6 +210,10 @@ class SinglePropertyData {
               .toList()
           : const [],
       pricing: PricingRule.fromJson(json['pricing']),
+      cancellationPolicy: (() {
+        final v = json['property_cancellation_policy']?.toString().trim() ?? '';
+        return v.isEmpty ? null : v;
+      })(),
       rating: json['rating'] == null
           ? null
           : double.tryParse(json['rating'].toString()),

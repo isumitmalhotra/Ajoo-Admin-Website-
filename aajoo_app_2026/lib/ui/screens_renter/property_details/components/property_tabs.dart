@@ -27,7 +27,7 @@ const _tabLabels = <PropertyTab, String>{
   // A-32 — "Guest experiences", not "Reviews".
   PropertyTab.experiences: 'Guest experiences',
   PropertyTab.host: 'Host',
-  PropertyTab.policies: 'Policies',
+  PropertyTab.policies: 'Things to know',
 };
 
 class PropertyTabBar extends StatelessWidget {
@@ -760,17 +760,42 @@ class _PropertyDetailPanelsState extends State<PropertyDetailPanels> {
     );
   }
 
+  /// The host's cancellation policy, in words — never an invented one.
+  ///
+  /// This panel used to state "Free cancellation up to 48 hours before
+  /// check-in" on EVERY listing, as a hardcoded line. It is a refund promise,
+  /// and on a non-refundable listing it was simply false. The API returns the
+  /// host's actual choice; the model just never read it.
+  static const _policyText = <String, String>{
+    'flexible':
+        'Flexible — free cancellation until 24 hours before check-in, then 50% refund.',
+    'moderate':
+        'Moderate — free cancellation until 5 days before check-in, then 50% refund.',
+    'firm':
+        'Firm — free cancellation within 48 hours of booking and at least 30 days before check-in.',
+    'strict':
+        'Strict — free cancellation within 48 hours of booking only; 50% refund up to 7 days before.',
+    'non_refundable': 'Non-refundable — this booking cannot be refunded.',
+    'custom': 'Custom policy — ask the host for the details before you book.',
+  };
+
   Widget _policies() {
     final inTime = _s?.propDetails?.inTime;
     final outTime = _s?.propDetails?.outTime;
     final security = _s?.propDetails?.monthlySecurity;
+    final policyKey = (_s?.cancellationPolicy ?? '').trim().toLowerCase();
+    final policyText = _policyText[policyKey];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const PanelTitle('Policies'),
-        const RuleLine(
-            ok: true,
-            text: 'Free cancellation up to 48 hours before check-in.'),
+        const PanelTitle('Things to know'),
+        RuleLine(
+          ok: policyKey != 'non_refundable',
+          text: policyText ??
+              (policyKey.isEmpty
+                  ? "The host hasn't set a cancellation policy yet — ask before you book."
+                  : 'Cancellation policy: $policyKey'),
+        ),
         if (inTime != null || outTime != null)
           RuleLine(
             ok: true,

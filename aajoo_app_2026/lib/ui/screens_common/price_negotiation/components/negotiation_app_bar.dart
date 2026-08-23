@@ -59,7 +59,7 @@ class NegotiationAppBar extends StatelessWidget {
                   child: Image.network(
                     property.coverImage != null
                         ? property.coverImage.toString()
-                        : 'https://images.unsplash.com/photo-1566073771259-6a8506099945',
+                        : '',
                     width: 120,
                     height: 120,
                     fit: BoxFit.cover,

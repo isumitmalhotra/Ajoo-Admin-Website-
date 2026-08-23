@@ -30,6 +30,13 @@ class BookingConfirmedScreen extends StatelessWidget {
   /// Pay-on-arrival bookings are confirmed but not paid; say which.
   final bool isPayOnArrival;
 
+  /// The host still has to approve this. Passed through from the booking
+  /// response's `requiresApproval`.
+  final bool awaitingApproval;
+
+  /// Hours the host has to respond — their own configured window.
+  final int responseHours;
+
   const BookingConfirmedScreen({
     super.key,
     required this.bookingId,
@@ -42,6 +49,8 @@ class BookingConfirmedScreen extends StatelessWidget {
     this.checkOut,
     this.amount,
     this.isPayOnArrival = false,
+    this.awaitingApproval = false,
+    this.responseHours = 24,
   });
 
   void _goHome() => Get.offAllNamed('/home');
@@ -80,15 +89,20 @@ class BookingConfirmedScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              Text('Booking Confirmed!',
+              // A host who chose "Approval Required" reviews the request
+              // first. Telling the guest their stay was "all set" while the
+              // host had not yet seen it was simply untrue.
+              Text(awaitingApproval ? 'Request sent!' : 'Booking Confirmed!',
                   textAlign: TextAlign.center,
                   style: fraunces(
                       fontSize: 23, fontWeight: FontWeight.w700, color: kInk)),
               const SizedBox(height: 6),
               Text(
-                isPayOnArrival
-                    ? 'Your stay is reserved. Pay when you arrive.'
-                    : 'Your stay is all set. A confirmation is on its way to your email.',
+                awaitingApproval
+                    ? 'Your request has gone to the host. They have $responseHours hours to respond, and you\'ll be told either way.'
+                    : isPayOnArrival
+                        ? 'Your stay is reserved. Pay when you arrive.'
+                        : 'Your stay is all set. A confirmation is on its way to your email.',
                 textAlign: TextAlign.center,
                 style: inter(fontSize: 13, color: kMuted, height: 1.45),
               ),

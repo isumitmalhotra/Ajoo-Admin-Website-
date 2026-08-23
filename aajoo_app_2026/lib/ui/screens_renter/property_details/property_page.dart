@@ -1370,7 +1370,16 @@ onPressed: () async {
                         debugPrint('Error: $e');
                       }
                     } else {
-                      successDialog("N/A", bookingResponse.data.booking.bookId);
+                      // Pay-at-property on an approval-required listing is a
+                      // REQUEST. The server says which; saying "confirmed"
+                      // regardless is what made the app disagree with the web.
+                      successDialog(
+                        "N/A",
+                        bookingResponse.data.booking.bookId,
+                        awaitingApproval:
+                            bookingResponse.data.requiresApproval,
+                        responseHours: bookingResponse.data.responseHours,
+                      );
                     }
                   } else {
                     Fluttertoast.showToast(
@@ -2449,7 +2458,13 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
   /// back, which is why the confirmation could fail to appear on a card
   /// payment — "booking confirm page is missing in real time booking". A route
   /// does not depend on that, and it has room for the map.
-  void successDialog(String paymentId, String bookingId) {
+  void successDialog(
+    String paymentId,
+    String bookingId, {
+    /// The host chose "Approval Required" — this is a request, not a booking.
+    bool awaitingApproval = false,
+    int responseHours = 24,
+  }) {
     Get.to(() => BookingConfirmedScreen(
           bookingId: bookingId,
           paymentId: paymentId,
@@ -2472,6 +2487,8 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
             discount: _discountOnRoom,
           ).total.toStringAsFixed(0)}',
           isPayOnArrival: isCod,
+          awaitingApproval: awaitingApproval,
+          responseHours: responseHours,
         ));
   }
 
