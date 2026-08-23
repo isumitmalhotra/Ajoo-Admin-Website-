@@ -140,24 +140,87 @@ class RuleLine extends StatelessWidget {
       );
 }
 
+/// "Show all 42 amenities" / "Show less".
+///
+/// Every section is on the page at once now, so a villa with 42 amenities and
+/// 20 landmarks would push the host, the reviews and everything below them out
+/// of reach. Long lists open trimmed here exactly as they do on the website.
+class ShowAllButton extends StatelessWidget {
+  const ShowAllButton({
+    super.key,
+    required this.open,
+    required this.total,
+    required this.noun,
+    required this.onTap,
+  });
+
+  final bool open;
+  final int total;
+  final String noun;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 4, bottom: 6),
+        child: OutlinedButton(
+          onPressed: onTap,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: kInk,
+            side: const BorderSide(color: kLine),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
+          ),
+          child: Text(open ? 'Show less' : 'Show all $total $noun',
+              style: inter(fontSize: 13.5, fontWeight: FontWeight.w600)),
+        ),
+      );
+}
+
+/// Trim grouped items to roughly [budget] entries, keeping groups whole so a
+/// heading never appears with nothing under it. The first group always shows,
+/// even when it alone is over budget.
+List<T> trimGroups<T>(List<T> groups, int Function(T) size, int budget) {
+  var used = 0;
+  final out = <T>[];
+  for (final g in groups) {
+    if (out.isNotEmpty && used + size(g) > budget) break;
+    out.add(g);
+    used += size(g);
+  }
+  return out;
+}
+
 /// A-34/A-35 — how far the airport, hospital, bus stand and the rest are.
 ///
 /// Renders nothing when the host entered no distances, which is every listing
 /// created before the listing wizard. Showing "0 km" for those would be
 /// inventing the answer.
-class NearbySection extends StatelessWidget {
+class NearbySection extends StatefulWidget {
   final List<NearbyGroup> groups;
   const NearbySection({super.key, required this.groups});
 
   @override
+  State<NearbySection> createState() => _NearbySectionState();
+}
+
+class _NearbySectionState extends State<NearbySection> {
+  bool _all = false;
+
+  @override
   Widget build(BuildContext context) {
+    final groups = widget.groups;
     if (groups.isEmpty) return const SizedBox.shrink();
+    final total = groups.fold<int>(0, (n, g) => n + g.places.length);
+    final shown =
+        _all ? groups : trimGroups<NearbyGroup>(groups, (g) => g.places.length, 8);
+    final hidden = total - shown.fold<int>(0, (n, g) => n + g.places.length);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 18),
         const PanelTitle("What's nearby"),
-        ...groups.map((g) => Padding(
+        ...shown.map((g) => Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,6 +257,13 @@ class NearbySection extends StatelessWidget {
                 ],
               ),
             )),
+        if (_all || hidden > 0)
+          ShowAllButton(
+            open: _all,
+            total: total,
+            noun: 'places',
+            onTap: () => setState(() => _all = !_all),
+          ),
       ],
     );
   }
@@ -407,42 +477,149 @@ class PropertyDetailPanels extends StatefulWidget {
 }
 
 class _PropertyDetailPanelsState extends State<PropertyDetailPanels> {
+  /// Which section the reader is currently in — drives the jump-nav
+  /// highlight. It is no longer "which tab is open": every section is on the
+  /// page at once.
   late PropertyTab _tab = _visible.first;
+
+  /// One key per section, so the nav can scroll to it and the spy can measure
+  /// where it sits.
+  final Map<PropertyTab, GlobalKey> _keys = {
+    for (final t in PropertyTab.values) t: GlobalKey(),
+  };
+
+  /// The amenity list opens trimmed; see [ShowAllButton].
+  bool _allAmenities = false;
+
+  /// How far down the viewport counts as "you are reading this one".
+  static const double _spyLine = 200;
+
+  ScrollPosition? _position;
+  bool _jumping = false;
 
   List<PropertyTab> get _visible =>
       PropertyTab.values.where((t) => !widget.hidden.contains(t)).toList();
 
   @override
+  void initState() {
+    super.initState();
+    // The scrollable is an ANCESTOR — these panels sit inside the property
+    // page's own scroll view — so a NotificationListener wrapped around this
+    // widget would never see it. Attach to the enclosing position instead,
+    // after the first frame when it exists.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _attachSpy());
+  }
+
+  void _attachSpy() {
+    if (!mounted) return;
+    final p = Scrollable.maybeOf(context)?.position;
+    if (p == null || identical(p, _position)) return;
+    _position?.removeListener(_onScroll);
+    _position = p;
+    _position!.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    // While a tap-to-jump animation is running the nearest section changes
+    // continuously; letting the spy fight it makes the chip flicker.
+    if (_jumping || !mounted) return;
+    // The section being read is the LAST one whose top has scrolled up past
+    // the header line. Sections below that line are still ahead of you.
+    PropertyTab? current;
+    for (final t in _visible) {
+      final ctx = _keys[t]?.currentContext;
+      if (ctx == null) continue;
+      final box = ctx.findRenderObject();
+      if (box is! RenderBox || !box.hasSize) continue;
+      if (box.localToGlobal(Offset.zero).dy <= _spyLine) current = t;
+    }
+    final next = current ?? _visible.first;
+    if (next != _tab) setState(() => _tab = next);
+  }
+
+  Future<void> _jumpTo(PropertyTab t) async {
+    final ctx = _keys[t]?.currentContext;
+    if (ctx == null) return;
+    setState(() {
+      _tab = t;
+      _jumping = true;
+    });
+    await Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOut,
+      alignment: 0.0,
+      alignmentPolicy: ScrollPositionAlignmentPolicy.explicit,
+    );
+    if (mounted) setState(() => _jumping = false);
+  }
+
+  @override
   void didUpdateWidget(covariant PropertyDetailPanels old) {
     super.didUpdateWidget(old);
     // A booking can flip to cancelled while this page is open, taking the Host
-    // tab with it. Sitting on a tab that no longer exists would render nothing.
+    // section with it. Highlighting one that no longer exists would strand the
+    // nav on a chip that is not drawn.
     if (widget.hidden.contains(_tab)) {
       setState(() => _tab = _visible.first);
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _attachSpy());
+  }
+
+  @override
+  void dispose() {
+    _position?.removeListener(_onScroll);
+    super.dispose();
   }
 
   SinglePropertyData? get _s => widget.single;
 
   @override
   Widget build(BuildContext context) {
+    // Every section, stacked, the way the website presents them. This used to
+    // draw ONE at a time behind a tab switcher: a host who had filled in
+    // amenities, house rules, distances and a full specification opened their
+    // live listing and saw a heading, one sentence and the price, because
+    // everything else was behind a tab nobody taps. The row above is now a
+    // jump nav, not a switch.
+    final sections = <Widget>[];
+    for (final t in _visible) {
+      final body = _panelFor(t);
+      if (body == null) continue;
+      sections.add(
+        Container(
+          key: _keys[t],
+          width: double.infinity,
+          padding: EdgeInsets.only(top: sections.isEmpty ? 0 : 22),
+          margin: EdgeInsets.only(top: sections.isEmpty ? 0 : 4),
+          decoration: sections.isEmpty
+              ? null
+              : const BoxDecoration(
+                  border: Border(top: BorderSide(color: kLine)),
+                ),
+          child: body,
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         PropertyTabBar(
           active: _tab,
           reviewCount: widget.reviewCount,
-          onChanged: (t) => setState(() => _tab = t),
+          onChanged: _jumpTo,
           only: _visible,
         ),
         const SizedBox(height: 16),
-        _panel(),
+        ...sections,
       ],
     );
   }
 
-  Widget _panel() {
-    switch (_tab) {
+  /// The body of one section, or null when there is nothing to draw.
+  Widget? _panelFor(PropertyTab t) {
+    switch (t) {
       case PropertyTab.about:
         return _about();
       case PropertyTab.amenities:
@@ -452,7 +629,7 @@ class _PropertyDetailPanelsState extends State<PropertyDetailPanels> {
       case PropertyTab.location:
         return _location();
       case PropertyTab.experiences:
-        return widget.experiencesBuilder?.call() ?? const SizedBox.shrink();
+        return widget.experiencesBuilder?.call();
       case PropertyTab.host:
         return _hostPanel();
       case PropertyTab.policies:
@@ -536,11 +713,16 @@ class _PropertyDetailPanelsState extends State<PropertyDetailPanels> {
     // legacy catalogue and only ever holds the picks that happen to have a
     // catalogue counterpart — 8 of one host's 42.
     if (groups.isNotEmpty) {
+      final total = groups.fold<int>(0, (n, g) => n + g.items.length);
+      final shown = _allAmenities
+          ? groups
+          : trimGroups<AmenityGroup>(groups, (g) => g.items.length, 8);
+      final hidden = total - shown.fold<int>(0, (n, g) => n + g.items.length);
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const PanelTitle('What this place offers'),
-          for (final g in groups) ...[
+          for (final g in shown) ...[
             Padding(
               padding: const EdgeInsets.only(top: 4, bottom: 8),
               child: Text(g.label.toUpperCase(),
@@ -553,6 +735,13 @@ class _PropertyDetailPanelsState extends State<PropertyDetailPanels> {
             _pickWrap(g.items),
             const SizedBox(height: 14),
           ],
+          if (_allAmenities || hidden > 0)
+            ShowAllButton(
+              open: _allAmenities,
+              total: total,
+              noun: 'amenities',
+              onTap: () => setState(() => _allAmenities = !_allAmenities),
+            ),
           if (views.isNotEmpty) ...[
             const PanelTitle("What you'll see"),
             _pickWrap(views),

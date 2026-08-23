@@ -1700,9 +1700,12 @@ onPressed: () async {
                       ],
                       const Divider(color: kLine, height: 1),
                       const SizedBox(height: 12),
-                      // A-29/A-30/A-31 — the seven sections as tabs, matching
-                      // the website. Everything below this used to render at
-                      // once down one very long scroll.
+                      // A-29/A-30/A-31 — the seven sections, stacked, matching
+                      // the website. These were behind a tab switcher, which
+                      // drew ONE at a time: a host who had filled in amenities,
+                      // rules, distances and a full specification opened their
+                      // own live listing and saw a heading, a sentence and the
+                      // price. The row is a jump nav now, not a switch.
                       PropertyDetailPanels(
                         single: _single,
                         host: _host,
