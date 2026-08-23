@@ -161,6 +161,44 @@ class HostService {
   /// so a host could only find an offer by catching its push notification.
   /// Returns an empty list rather than throwing — an empty negotiations
   /// section is a correct dashboard, an exception is a broken one.
+  /// POST /host/statements/search — one entry per month a host earned in.
+  ///
+  /// The endpoint shipped with the finance sprint and neither client called
+  /// it: on the web /host/statements redirected to Payouts, and the app had
+  /// no reader at all. A statement_id is a YYYY-MM period.
+  Future<List<Map<String, dynamic>>> getStatements() async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final response =
+          await _dio.post("/host/statements/search", data: {"page": 1, "limit": 50});
+      final data = response.data is Map ? response.data['data'] : null;
+      final list = data is Map ? (data['items'] ?? data['rows']) : null;
+      if (list is! List) return const [];
+      return list
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    } catch (err) {
+      return const [];
+    }
+  }
+
+  /// GET /host/statements/download/:id — the month's PDF, as bytes.
+  Future<List<int>?> downloadStatement(String statementId) async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final response = await _dio.get<List<int>>(
+        "/host/statements/download/$statementId",
+        options: Options(responseType: ResponseType.bytes),
+      );
+      return response.data;
+    } catch (err) {
+      return null;
+    }
+  }
+
   /// GET /host/earnings/summary — the figures the web Earnings page shows.
   ///
   /// The app had no earnings reader at all: the home card summed

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/service/host_service.dart';
+import 'package:rent_home/ui/screens_host/earnings/host_statements_screen.dart';
 import 'package:rent_home/ui/screens_host/payout/payout_page.dart';
 import 'package:rent_home/utils/fonts.dart';
 
@@ -216,6 +217,24 @@ class _HostEarningsScreenState extends State<HostEarningsScreen> {
                     )),
 
               const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => Get.to(() => const HostStatementsScreen()),
+                  icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                  label: Text('Monthly statements',
+                      style:
+                          inter(fontSize: 14, fontWeight: FontWeight.w600)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: kIndigo,
+                    side: const BorderSide(color: kIndigo),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
