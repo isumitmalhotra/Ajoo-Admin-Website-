@@ -8,21 +8,22 @@ they were previously only in a session scratchpad, which does not survive.
 |---|---|---|
 | Host readiness | https://claude.ai/code/artifact/36484046-f358-47db-b9cf-f1457f1ce86d | 13 phases, 128 checks |
 | Guest readiness | https://claude.ai/code/artifact/3923b696-df3b-4b67-b3be-4124f11827ab | 15 phases, 133 checks |
-| Admin readiness | https://claude.ai/code/artifact/9e0ffc5f-76e2-450c-aa90-22d8c7819a7d | 14 phases, 120 checks |
+| Admin readiness | https://claude.ai/code/artifact/9e0ffc5f-76e2-450c-aa90-22d8c7819a7d | 15 phases, 129 checks |
 
 > The original 2026-08-22 artifacts (34df640c… / 20985523… / 9801e05e…) were
 > found deleted later that day and could not be reclaimed — these are fresh
 > publishes of the same committed HTML. If a link here ever 404s again,
 > republish from these files and update this table plus the latest handoff.
 
-> **2026-08-23 — host and admin are BUILT but NOT REPUBLISHED.** The shared
-> tail gained the full-run report below, so `host-checklist.html` and
-> `admin-checklist.html` in this folder are ahead of what is live. They were
-> deliberately not pushed: a host run was in progress and it is not proven that
-> republishing the page leaves the separately-published `data/state.json`
-> alone. Capture the run first (press Copy report, paste it to a session,
-> commit the snapshot), THEN republish these two. The guest doc had no answers
-> yet, so it was safe to republish and is live and current.
+> **2026-08-23 — the HOST doc is BUILT but NOT REPUBLISHED.** The shared tail
+> gained the full-run report below, so `host-checklist.html` in this folder is
+> ahead of what is live. It was deliberately not pushed: a completed host run
+> is sitting in it, and while the runtime contract says a publish carries
+> unnamed paths over unchanged, that has not been proven here for the
+> separately-published `data/state.json`. Capture the run first (press Copy
+> report, paste it to a session, commit the snapshot), THEN republish it.
+>
+> Guest and admin were both republished — neither had a run in them.
 
 Each page colour-codes pass / fail / blocked and has a **Copy report** button.
 It emits markdown of everything failing, and then — since 2026-08-23 — a
