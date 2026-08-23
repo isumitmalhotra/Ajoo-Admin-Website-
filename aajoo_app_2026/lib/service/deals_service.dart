@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/models/negotiated_deal.dart';
+import 'package:rent_home/models/guest_negotiation.dart';
 
 /// Renter's personal negotiated deals (coupons from accepted price offers).
 /// GET /user/coupons/list → { data: { coupons: [...] } }. Mirrors the web
@@ -9,6 +10,54 @@ import 'package:rent_home/models/negotiated_deal.dart';
 /// and apply the coupon at checkout.
 class DealsService {
   final Dio _dio = Dio(BaseOptions(contentType: 'application/json'));
+
+  /// Every negotiation this guest is in, both directions.
+  ///
+  /// GET /user/negotiations/list. Added 2026-08-23 alongside the web page —
+  /// before it, an offer once sent vanished from the guest's view entirely,
+  /// and a host's counter reached them only as a live socket event.
+  Future<List<GuestNegotiation>> getMyNegotiations() async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    if (token == null || token.isEmpty) return [];
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final res = await _dio.get('${Apiconstants.baseUrl}/user/negotiations/list');
+      final data = res.data is Map ? res.data['data'] : null;
+      final list = (data is Map ? data['negotiations'] : null) ?? [];
+      if (list is! List) return [];
+      return list
+          .whereType<Map>()
+          .map((e) => GuestNegotiation.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Accept or decline a host's counter. Accepting mints the same 24h personal
+  /// coupon the host-accept path mints, so a deal struck either way checks out
+  /// identically. Returns null on success, or a message to show the guest.
+  Future<String?> respondToNegotiation({
+    required int offerId,
+    required String action,
+  }) async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    if (token == null || token.isEmpty) return 'Please sign in again.';
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final res = await _dio.post(
+        '${Apiconstants.baseUrl}/user/negotiations/respond',
+        data: {'offerId': offerId, 'action': action},
+      );
+      final ok = res.data is Map && res.data['success'] == true;
+      return ok ? null : (res.data is Map ? res.data['message']?.toString() : null) ?? 'Could not send that.';
+    } on DioException catch (e) {
+      final d = e.response?.data;
+      return (d is Map ? d['message']?.toString() : null) ?? 'Could not send that. Please try again.';
+    } catch (_) {
+      return 'Could not send that. Please try again.';
+    }
+  }
 
   Future<List<NegotiatedDeal>> getMyDeals() async {
     final token = await const FlutterSecureStorage().read(key: "user_token");

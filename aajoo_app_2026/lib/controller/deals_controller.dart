@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:rent_home/models/negotiated_deal.dart';
+import 'package:rent_home/models/guest_negotiation.dart';
 import 'package:rent_home/service/deals_service.dart';
 
 /// Holds the renter's live negotiated deals (accepted price offers → 24h dated
@@ -18,6 +19,37 @@ class DealsController extends GetxController {
       return av.compareTo(bv);
     });
     return list;
+  }
+
+  // ── Negotiations (the conversation, not just the resulting coupon) ──────
+  // A coupon is the OUTCOME of an accepted offer. Until 2026-08-23 that was
+  // the only thing the guest could see, so an offer still being argued over —
+  // or countered by the host — was invisible to them entirely.
+  final RxList<GuestNegotiation> negotiations = <GuestNegotiation>[].obs;
+  final RxBool negotiationsLoading = false.obs;
+
+  /// Threads where the host has countered and the guest holds the next move.
+  int get awaitingYouCount =>
+      negotiations.where((n) => n.awaitingYou).length;
+
+  Future<void> loadNegotiations() async {
+    negotiationsLoading.value = true;
+    try {
+      negotiations.value = await _service.getMyNegotiations();
+    } finally {
+      negotiationsLoading.value = false;
+    }
+  }
+
+  /// Accept or decline a host counter. Returns null on success, else a message.
+  Future<String?> respond(int offerId, String action) async {
+    final err = await _service.respondToNegotiation(offerId: offerId, action: action);
+    if (err == null) {
+      await loadNegotiations();
+      // An accepted counter mints a coupon, so the deals list is stale now.
+      await load();
+    }
+    return err;
   }
 
   Future<void> load() async {

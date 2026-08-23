@@ -7,6 +7,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/ui/screens_renter/guest_shell.dart';
+import 'package:rent_home/ui/screens_renter/negotiations/guest_negotiations_screen.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/ui/screens_common/about/about_page.dart';
 import 'package:rent_home/ui/screens_renter/bookmark_properties/bookmark_properties_page.dart';
@@ -1544,6 +1545,12 @@ class _ProfileScreenState extends State<ProfileScreen>
       }),
       _buildSettingItem('Bookmarks', Icons.bookmark_border, () {
         Get.to(() => const BookmarkedPropertiesPage());
+      }),
+      // The guest half of the product's whole point. There was no entry
+      // anywhere in the app, so an offer once sent vanished from the guest's
+      // view — including a host's counter.
+      _buildSettingItem('My Negotiations', Icons.handshake_outlined, () {
+        Get.to(() => const GuestNegotiationsScreen());
       }),
       // "Payment Methods" lived here and only raised a "coming soon"
       // snackbar. A row that answers nothing is worse than no row — it is out
