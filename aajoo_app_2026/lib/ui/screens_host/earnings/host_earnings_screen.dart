@@ -204,6 +204,22 @@ class _HostEarningsScreenState extends State<HostEarningsScreen> {
                                 Text('${p['reference_id'] ?? '-'}',
                                     style:
                                         inter(fontSize: 12, color: kMuted)),
+                                // Why a failed payout failed. "FAILED" on its
+                                // own tells a host nothing about whether to
+                                // fix their bank details or simply wait.
+                                if ((p['failure_reason'] ?? '')
+                                    .toString()
+                                    .trim()
+                                    .isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    p['failure_reason'].toString(),
+                                    style: inter(
+                                        fontSize: 12,
+                                        color: kDanger,
+                                        height: 1.35),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -211,7 +227,12 @@ class _HostEarningsScreenState extends State<HostEarningsScreen> {
                               style: inter(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: kInk2)),
+                                  // A failure should not read in the same
+                                  // neutral grey as "QUEUED".
+                                  color: '${p['status'] ?? ''}'.toUpperCase() ==
+                                          'FAILED'
+                                      ? kDanger
+                                      : kInk2)),
                         ],
                       ),
                     )),
