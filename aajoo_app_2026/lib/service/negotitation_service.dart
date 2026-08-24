@@ -1,8 +1,9 @@
 import 'dart:async';
+
+import 'package:collection/collection.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 import 'package:rent_home/controller/negotiation_controller.dart';
-import 'package:rent_home/widgets/negotitaion_page.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:rent_home/models/negotiation_model.dart';
 

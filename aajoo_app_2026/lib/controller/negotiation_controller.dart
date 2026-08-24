@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:collection/collection.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/models/negotiation_model.dart';
 import 'package:rent_home/service/negotitation_service.dart';
-import 'package:rent_home/widgets/negotitaion_page.dart';
 
 class NegotiationController extends GetxController {
   final NegotiationService _negotiationService;
