@@ -356,12 +356,19 @@ class ListingWizardController extends GetxController {
     final errs = <String, String>{};
     final name = _s(f['property_name']);
     final rules = schema.value?.propertyNameRules;
-    if (name.length < 3) {
-      errs['property_name'] =
-          'Give the property a name — at least 3 characters';
+    if (name.isEmpty) {
+      errs['property_name'] = 'Give the property a name';
     } else if (rules != null) {
+      // The SCHEMA's rule, not a hardcoded 3. The server requires 5 and the
+      // hint under the field says "Use 5–80 characters", so a 4-character
+      // name passed this check, contradicted the hint on screen, and was then
+      // refused by the server.
       final problem = rules.validate(name);
       if (problem != null) errs['property_name'] = problem;
+    } else if (name.length < 5) {
+      // No schema in hand (offline draft): fall back to the server's minimum
+      // rather than something more permissive than it.
+      errs['property_name'] = 'Give the property a name — at least 5 characters';
     }
     final desc = _s(f['description']);
     if (desc.isEmpty) {
