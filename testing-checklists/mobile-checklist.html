@@ -1,0 +1,608 @@
+<title>Aajoo on a Phone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+  :root{
+    --ground:#F7F8F8; --panel:#FFFFFF; --panel-2:#F1F4F3;
+    --ink:#16211F; --ink-2:#4A5654; --ink-3:#7C8886;
+    --rule:#DCE3E1; --rule-2:#EAEFEE;
+    --accent:#0E7C6B; --accent-soft:#E3F1EE;
+    --pass:#2F7D4F; --pass-soft:#E6F2EA;
+    --fail:#B4342B; --fail-soft:#FBE9E7;
+    --block:#B07207; --block-soft:#FCF1DE;
+    --shadow:0 1px 2px rgba(22,33,31,.05), 0 8px 24px rgba(22,33,31,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#11181A; --panel:#182124; --panel-2:#1E282B;
+      --ink:#E8EDEC; --ink-2:#A6B2B0; --ink-3:#75817F;
+      --rule:#2A3538; --rule-2:#222C2F;
+      --accent:#4FBFA8; --accent-soft:#12312C;
+      --pass:#5FBF85; --pass-soft:#152C1F;
+      --fail:#E8776B; --fail-soft:#331A17;
+      --block:#E0A73F; --block-soft:#2E2312;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#11181A; --panel:#182124; --panel-2:#1E282B;
+    --ink:#E8EDEC; --ink-2:#A6B2B0; --ink-3:#75817F;
+    --rule:#2A3538; --rule-2:#222C2F;
+    --accent:#4FBFA8; --accent-soft:#12312C;
+    --pass:#5FBF85; --pass-soft:#152C1F;
+    --fail:#E8776B; --fail-soft:#331A17;
+    --block:#E0A73F; --block-soft:#2E2312;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:Archivo,system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  code,.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+  .tnum{font-variant-numeric:tabular-nums}
+
+  /* ── top bar ─────────────────────────────────────────────── */
+  .bar{
+    position:sticky; top:0; z-index:20; background:var(--panel);
+    border-bottom:1px solid var(--rule); box-shadow:var(--shadow);
+  }
+  .bar-in{max-width:1180px; margin:0 auto; padding:12px 22px;
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap}
+  .brand{font-weight:700; letter-spacing:-.01em; font-size:15.5px; white-space:nowrap}
+  .brand span{color:var(--accent)}
+  .meter{flex:1; min-width:190px; display:flex; align-items:center; gap:11px}
+  .track{flex:1; height:7px; border-radius:99px; background:var(--panel-2); overflow:hidden; display:flex}
+  .track i{display:block; height:100%; transition:width .25s ease}
+  .t-pass{background:var(--pass)} .t-fail{background:var(--fail)} .t-block{background:var(--block)}
+  .count{font-size:12.5px; color:var(--ink-2); white-space:nowrap}
+  .tools{display:flex; gap:7px; flex-wrap:wrap}
+
+  button{font:inherit; cursor:pointer}
+  .btn{
+    border:1px solid var(--rule); background:var(--panel); color:var(--ink);
+    border-radius:9px; padding:7px 13px; font-size:13px; font-weight:500;
+    transition:background .12s ease, border-color .12s ease;
+  }
+  .btn:hover{background:var(--panel-2)}
+  .btn:focus-visible,.seg button:focus-visible,.note:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+  .btn.primary:hover{filter:brightness(1.06)}
+
+  /* ── layout ──────────────────────────────────────────────── */
+  .wrap{max-width:1180px; margin:0 auto; padding:26px 22px 90px;
+    display:grid; grid-template-columns:212px 1fr; gap:34px; align-items:start}
+  @media (max-width:900px){ .wrap{grid-template-columns:1fr; gap:20px} .rail{position:static!important} }
+
+  .rail{position:sticky; top:74px; display:flex; flex-direction:column; gap:2px}
+  .rail a{
+    display:flex; align-items:baseline; gap:9px; padding:7px 10px; border-radius:8px;
+    color:var(--ink-2); text-decoration:none; font-size:13.2px; line-height:1.35;
+  }
+  .rail a:hover{background:var(--panel-2); color:var(--ink)}
+  .rail a b{font-family:"JetBrains Mono",monospace; font-size:11px; font-weight:500; color:var(--ink-3)}
+  .rail .done{color:var(--ink-3)}
+
+  .lede{
+    font-family:"Source Serif 4",Georgia,serif; font-size:17px; line-height:1.62;
+    color:var(--ink-2); max-width:64ch; margin:0 0 8px;
+  }
+  .lede strong{color:var(--ink); font-weight:600}
+  h1{font-size:29px; letter-spacing:-.022em; margin:0 0 10px; text-wrap:balance}
+
+  section{margin-top:34px; scroll-margin-top:82px}
+  .head{display:flex; align-items:baseline; gap:11px; margin-bottom:5px}
+  .num{font-family:"JetBrains Mono",monospace; font-size:12px; color:var(--accent); font-weight:500}
+  h2{font-size:18.5px; letter-spacing:-.015em; margin:0; text-wrap:balance}
+  .sub{font-family:"Source Serif 4",Georgia,serif; font-size:14.6px; color:var(--ink-2); margin:0 0 13px; max-width:62ch}
+
+  .rows{display:flex; flex-direction:column; gap:8px}
+  .row{
+    background:var(--panel); border:1px solid var(--rule); border-left:3px solid var(--rule);
+    border-radius:11px; padding:12px 14px; box-shadow:var(--shadow);
+    transition:border-color .14s ease;
+  }
+  .row[data-s="pass"]{border-left-color:var(--pass)}
+  .row[data-s="fail"]{border-left-color:var(--fail); background:var(--fail-soft)}
+  .row[data-s="block"]{border-left-color:var(--block); background:var(--block-soft)}
+  .row-top{display:flex; gap:13px; align-items:flex-start}
+  .what{flex:1; min-width:0}
+  .title{font-weight:600; font-size:14.4px; line-height:1.4}
+  .exp{font-size:13.2px; color:var(--ink-2); margin-top:3px}
+  .eps{display:flex; flex-wrap:wrap; gap:5px; margin-top:7px}
+  .ep{
+    font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--ink-2);
+    background:var(--panel-2); border:1px solid var(--rule-2);
+    padding:2px 6px; border-radius:5px; white-space:nowrap;
+  }
+  .where{
+    display:inline-block; font-size:11px; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--accent); background:var(--accent-soft); border-radius:5px;
+    padding:2px 7px; margin-bottom:6px; font-weight:600;
+  }
+
+  .seg{display:flex; gap:0; flex-shrink:0; border:1px solid var(--rule); border-radius:9px; overflow:hidden}
+  .seg button{
+    border:0; background:var(--panel); color:var(--ink-3);
+    padding:6px 11px; font-size:12.2px; font-weight:600; line-height:1.2;
+    border-right:1px solid var(--rule);
+  }
+  .seg button:last-child{border-right:0}
+  .seg button:hover{background:var(--panel-2); color:var(--ink-2)}
+  .seg button[aria-pressed="true"][data-v="pass"]{background:var(--pass); color:#fff}
+  .seg button[aria-pressed="true"][data-v="fail"]{background:var(--fail); color:#fff}
+  .seg button[aria-pressed="true"][data-v="block"]{background:var(--block); color:#fff}
+
+  .note{
+    width:100%; margin-top:9px; resize:vertical; min-height:56px;
+    font-family:Archivo,sans-serif; font-size:13.2px; color:var(--ink);
+    background:var(--panel-2); border:1px solid var(--rule); border-radius:8px; padding:8px 10px;
+  }
+  .note::placeholder{color:var(--ink-3)}
+  .note.hide{display:none}
+
+  .chip{font-size:12px; color:var(--ink-3); align-self:center; padding:4px 2px; white-space:nowrap}
+  .chip[data-tone="ok"]{color:var(--pass)}
+  .chip[data-tone="warn"]{color:var(--block)}
+
+  .toast{
+    position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
+    background:var(--ink); color:var(--ground); padding:10px 18px; border-radius:10px;
+    font-size:13.4px; font-weight:500; opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:40;
+  }
+  .toast.on{opacity:1}
+  @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+
+<div class="bar">
+  <div class="bar-in">
+    <div class="brand">aajoo <span>guest readiness</span></div>
+    <div class="meter">
+      <div class="track" aria-hidden="true">
+        <i class="t-pass" id="bp"></i><i class="t-fail" id="bf"></i><i class="t-block" id="bb"></i>
+      </div>
+      <div class="count tnum" id="cnt">0 / 0</div>
+    </div>
+    <div class="tools">
+      <span class="chip" id="savechip">Checking saved answers…</span>
+      <button class="btn" id="filter">Show: all</button>
+      <button class="btn primary" id="copy">Copy report</button>
+      <button class="btn" id="reset">Reset</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <nav class="rail" id="rail" aria-label="Phases"></nav>
+  <main>
+    <h1>Aajoo on a phone</h1>
+    <p class="lede">
+      Every Aajoo feature on a phone, in the order a real person meets them &mdash; guest first, then
+      host. Each check names what the <strong>website</strong> does, so you can hold the two side by
+      side and see where the app falls short. Mark each one <strong>Pass</strong>, <strong>Fail</strong>
+      or <strong>Blocked</strong> and write what you saw. Your answers save into this document as you
+      go &mdash; stop anywhere, reopen anywhere, they will be here.
+    </p>
+    <p class="lede">
+      Two sections are worth reading before you begin. <strong>Before you start</strong> lists the
+      accounts and the four test properties &mdash; pricing and capacity are empty on almost every
+      other listing, so a randomly chosen stay will look broken when it is not.
+      <strong>Not built on mobile yet</strong> lists five things the website has and the app does not,
+      so you do not spend time reporting them as bugs.
+    </p>
+    <p class="lede">
+      When you are done, or whenever you want me to look at something, press
+      <strong>Copy report</strong> &mdash; it puts every failure and blocker on your clipboard, with
+      your notes, ready to paste back to me.
+    </p>
+    <div id="out"></div>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const DATA = [
+  { t:"Before you start", d:"Two minutes of setup. Everything below assumes these.", items:[
+    ["Install the build","Install the APK on a real Android phone or an emulator.","","","It installs and opens to the landing screen without a crash."],
+    ["Two accounts ready","Renter aajoo.renter1@mailinator.com / Renter@12345 · Host aajoo.host1@mailinator.com / Host@12345","","","Both sign in. The tab on the login screen decides WHICH side you enter — use the Host tab for the host account."],
+    ["Location set to India","Allow location. On an emulator set it to Manali (32.2432, 77.1892) in Extended controls, then restart the app.","","","The home screen names an Indian place. A foreign location makes every distance check meaningless."],
+    ["Know the test stays","29262 Malhotra Villa (weekend rates + extra-guest charge + capacity 8) · 29263 (extra guests, capacity 6) · 8 (legacy weekend rate) · 29253 (host blocked 25 and 27 Aug).","","","Pricing and capacity are EMPTY on almost every other listing, so a random stay looks broken when it is not. Use these."],
+  ]},
+
+  { t:"Signing in", d:"The app and the website must agree about who you are and what went wrong.", items:[
+    ["Renter signs in","Log in on the Renter tab.","/user/login","","Lands on the guest home with the map and the bottom tab bar."],
+    ["Host signs in","Log out, log in on the HOST tab.","/user/login","","Lands on the host dashboard, not the guest home."],
+    ["Wrong password says so","Type a wrong password.","/user/login","","Plain English. No database text, no error code."],
+    ["Wrong tab is explained","Sign in with the HOST account on the Renter tab.","/user/login","","It says this is a host account and to switch tabs — not “no record found”."],
+    ["Back from Sign up returns to Login","Tap Sign up, then press the Android back button.","","","You return to “Welcome back”. It used to close the app entirely."],
+    ["Session survives a restart","Force-stop the app and reopen it.","","","Still signed in, same account."],
+    ["Logout is clean","Log out, then reopen.","/user/logout","","Back at the landing screen, with no trace of the previous account’s name or photo."],
+  ]},
+
+  { t:"Finding a stay", d:"Guest side. Keep the website open beside you and compare.", items:[
+    ["Home loads","Open the guest home.","/properties/search","","Map, stay count and rails all render. “1 home near you” reads as ONE home, not “1 homes”."],
+    ["Map pins are priced","Look at the pins.","","","A pin reads ₹3,200 — comma, no .00, no paise."],
+    ["Search by place","Open the search sheet, pick a destination, Search.","/properties/search","","Results move to that place."],
+    ["Dates and guests are kept","In the search sheet set When and Who, search, then open any stay.","/properties/search","","The property page ALREADY has your dates and guest count. You are not asked twice. This is the biggest recent fix."],
+    ["Categories filter","Tap a category chip.","/common/categories","","Only stays of that type. The chips come from the admin catalogue, so Pool House should be among them."],
+    ["Nothing found says so","Search a remote spot, or set filters nothing matches.","","","It says nothing matched and offers to clear the filters. It must NOT say “Homes near you” over an empty list."],
+    ["LUXE mode","Turn LUXE on.","/properties/search","","Only luxury stays, and the transition plays."],
+  ]},
+
+  { t:"The property page", d:"Everything a guest reads before paying.", items:[
+    ["Gallery and details","Open 29262.","/properties/:id","","Photos, About, amenities, house rules, map and reviews all present."],
+    ["No invented rating","Open a stay with no reviews.","","","It says New — it does not show 4.5 out of thin air."],
+    ["Guest stepper is capped","On 29262 hold + on Adults.","","","Stops at 10: “This place sleeps 10 guests” — capacity 8 plus the 2 extra the host will take."],
+    ["Weekend nights cost more","On 29262 pick Fri 28 → Mon 31 Aug.","","","₹19,000 for 3 nights (6,000 + 6,500 + 6,500), NOT 3 × 5,000. The header shows the average per night."],
+    ["Guest count changes the price","With those dates, take guests from 8 to 10.","","","A line appears: 2 extra guests × ₹1,000 × 3 nights = ₹6,000. Total ₹19,950 → ₹26,250."],
+    ["Legacy weekend rate works too","Open property 8 and pick a weekend.","","","Fri/Sat/Sun cost ₹9,500 against a ₹8,500 base."],
+    ["Booked dates are blocked","Open 29253 and open the date picker.","/booking/property-availability","","25 and 27 August cannot be picked. 26 CAN — they are two separate one-day blocks."],
+    ["Dates are readable","Look at the check-in/check-out fields.","","","24/08/2026, zero-padded — not 24/8/2026."],
+    ["Prices are formatted","Look at every price, including the bottom bar.","","","₹2,000 with a comma. Never ₹2000, never paise."],
+    ["A story links to its stay","Open a stay with Guides & stories (29250), open a post.","/blog/search","","The post ends with “The stay in this story” naming the house, and it opens that stay."],
+  ]},
+
+  { t:"Booking and paying", d:"Real bookings in test mode. Use a Razorpay test card.", items:[
+    ["Review carries everything","Book 29262 with dates and 10 guests.","","","Checkout shows the same dates, party and ₹26,250."],
+    ["Changing the party re-prices","On checkout change the guest count.","","","The extra-guest line and the total both change — they must not stay stale."],
+    ["Coupon applies","Apply a coupon code.","/user/coupons/validate","","The saving shown matches what the booking actually charges."],
+    ["Approval-required stay says so","Book a normal listing.","/booking/create","","It tells you the host has to confirm. Almost every listing works this way."],
+    ["Pay at property","Book choosing pay-on-arrival.","/booking/create","","Confirmed, and the amount due on arrival is the FULL taxed total."],
+    ["Pay online","Book choosing online payment.","/create/payment-verify","","Razorpay opens, a test card completes, the booking shows as paid."],
+    ["A refusal explains itself","Force a failure with a bad card.","","","The reason stays on screen with a way forward — not a bare “failed”."],
+    ["Your own held dates stay yours","Start a booking, abandon it at payment, then book the SAME dates again.","","","It goes through. It used to refuse with “already booked” against your own unpaid hold."],
+    ["Verifying does not lose the booking","Book on an unverified account so it sends you to ID verification, finish, return.","","","The home screen offers to resume, and reopens the SAME stay with the same dates AND guest count."],
+  ]},
+
+  { t:"Negotiating a price", d:"The product’s whole point. Test both sides.", items:[
+    ["Send an offer","On a stay, Send an Offer below the asking price.","/user/negotiations/offer","","It sends and appears under My Negotiations."],
+    ["Offer above list is refused","Offer MORE than the asking price.","","","It tells you to just book it."],
+    ["Host sees it","Sign in as the host, open Negotiations.","/host/negotiations/list","","The offer is there with the amount and the guest."],
+    ["Host counters","Counter from the host side.","/host/negotiations/respond","","The guest sees the counter, with the amount and the round."],
+    ["Host accepts","Accept an offer.","/host/negotiations/respond","","The guest’s negotiation shows Accepted."],
+    ["Book at the agreed price","As the guest, tap “Book at the agreed price”.","","","The stay opens with the AGREED dates and the coupon applied. It must not open an empty listing."],
+    ["Accepted is not confirmed","Read the accepted deal.","","","It explains the price is agreed but the host still confirms the booking — so “Accepted” here and “Pending” in bookings do not contradict."],
+  ]},
+
+  { t:"My bookings", d:"After the money.", items:[
+    ["Bookings list","Open Booking History.","/user/booking-history","","Upcoming, ongoing, past and cancelled all under the right heading."],
+    ["Detail opens the right one","Tap View details on a specific booking.","","","It opens THAT booking, not a different one."],
+    ["Refund is shown BEFORE cancelling","Tap Cancel on a paid booking.","/user/cancel/quote","","It tells you what you get back and under which policy BEFORE you confirm. New — it used to just cancel."],
+    ["Unpaid booking says nothing to refund","Cancel a pay-at-property booking.","","","It says nothing has been charged so there is nothing to refund. It must not show ₹0."],
+    ["Cancel that cannot happen","Try to cancel a stay that has checked in.","","","It says why, instead of opening a dialog that fails."],
+    ["Invoice","Download an invoice.","/user/invoice/:id/download","","A real PDF with the right amount."],
+    ["Review after the stay","Leave a review on a completed stay.","/user/review-add","","It saves and shows on the property."],
+  ]},
+
+  { t:"Messages, profile and settings", d:"Guest account area.", items:[
+    ["Messages inbox","Profile → Messages.","/user/messages/threads","","Your conversations are listed with unread counts. This screen is NEW on mobile."],
+    ["A conversation loads and sends","Open a thread, send a message.","","","History loads, your message appears on the right and survives a reopen."],
+    ["Profile completion","Open Profile.","/user/detail","","If anything is missing it shows a percentage and names what to add. At 100% the card is not shown at all."],
+    ["Edit profile","Change your name or address and save.","/user/update","","It saves and shows the new value."],
+    ["Phone needs a code","Try to change your phone number.","/user/security/otp","","It asks for an emailed code first."],
+    ["Notifications","Open Notifications.","/user/notification/Listing","","Real notifications, and tapping one opens the thing it is about."],
+    ["Saved stays","Save a stay, open Bookmarks.","/properties/user-saveProp","","It is there, and unsaving removes it."],
+  ]},
+
+  { t:"Host — setting up", d:"Sign in on the HOST tab for everything below.", items:[
+    ["Host dashboard","Open the host home.","/host/home","","Earnings, bookings and property counts are real, and grouped Indian-style (₹1,10,678 — pairs above the last three digits)."],
+    ["Bank account","Menu → Bank Account.","/payout/account/details","","The saved account shows, masked. Do NOT type a real account number — check the form refuses an empty or malformed one."],
+  ]},
+
+  { t:"Host — listing a property", d:"The 5-step wizard, driven by the same schema as the website.", items:[
+    ["Wizard opens","Tap + Add on the host dashboard.","/listing/schema","","Step 1 of 5, with a progress bar."],
+    ["Categories come from admin","Look at the property types.","","","The same list the admin catalogue holds — Pool House included."],
+    ["Empty step is refused","Press Continue with nothing filled.","","","A banner at the top AND a red mark under each missing field, scrolled into view."],
+    ["Name rule matches its own hint","Type a 4-letter name.","","","Refused with “Use 5–80 characters…” — the same words as the hint under the field. It used to say “at least 3” and disagree with itself."],
+    ["Category changes the questions","Pick different property types.","","","The questions below change — each category has its own flow."],
+    ["Capacity is collected","Fill Guest capacity and Basic configuration.","/listing/step1","","Adults, children, total, bedrooms, beds and baths all save."],
+    ["Price limits","Enter a price of 5, then 99999999.","/listing/step4","","Both refused: must be between ₹100 and ₹1,000,000."],
+    ["Photos have a minimum","Reach step 5 without photos.","","","Readiness shows a percentage, lists what is missing, and Submit for review is DISABLED until it is complete."],
+    ["Identity is not asked twice","Look at step 5 as a verified host.","","","“Already done — nothing to fill in.”"],
+    ["Draft survives","Leave the wizard part-way and reopen it.","/listing/draft/:id","","Your answers are still there."],
+  ]},
+
+  { t:"Host — bookings", d:"The core loop. Nearly every booking needs the host to act.", items:[
+    ["Bookings list","Open Bookings.","/host/booking-history","","Upcoming / Ongoing / Completed / Cancelled all list correctly."],
+    ["The card does not contradict itself","Read a card for an unpaid ONLINE booking.","","","One status chip, not the same words twice. The line by the price names the METHOD (“Online payment”), never “Paid online” on something unpaid. Nothing is clipped at the card edge."],
+    ["Amounts are grouped","Look at the prices.","","","₹3,938 — comma, no paise. The detail page agrees with the list."],
+    ["CONFIRM a booking","Open one showing “Awaiting approval” and tap Confirm.","/host/confirm-book","","It becomes Confirmed, the button disappears, and the guest is told. THE MOST IMPORTANT CHECK HERE — it did not exist before."],
+    ["Cancel with a reason","Tap Cancel this booking.","/host/cancel-booking","","It insists on a reason, says the guest is refunded under the policy, and the guest is told why."],
+    ["Check in a guest","On a stay starting today, tap Mark guest as checked-in.","/host/booking/check-in","","It flips to Staying now and the GUEST gets a notification."],
+    ["Guest contact","Open a booking detail.","","","Call and Chat both work, and the staying-guest card shows when the booking was made for someone else."],
+  ]},
+
+  { t:"Host — calendar", d:"Where a host protects their own dates.", items:[
+    ["Calendar opens","Open Calendar and pick a listing.","/host/calendar","","The month renders with a legend; bookings and blocks are marked."],
+    ["The past is closed","Try to tap a date earlier than today.","","","It is dimmed and does nothing. You cannot start a range in the past."],
+    ["Block a range","Tap two future dates, give a reason, Block.","/host/calendar/block","","The dates show as blocked."],
+    ["Blocking reaches guests","As a GUEST, open that listing’s date picker.","/booking/property-availability","","Those dates cannot be booked."],
+    ["Unblock","Open a blocked range and remove it.","/host/calendar/unblock","","It clears, and the guest can book again."],
+  ]},
+
+  { t:"Host — money", d:"Earnings, payouts, statements.", items:[
+    ["Earnings","Open Earnings.","/host/earnings/summary","","Total, settled, pending and last payout are real and grouped (₹1,04,814)."],
+    ["Pay-at-property is explained","Read the awaiting-collection note.","","","It says that money is not counted as earnings until it reaches the platform, and no payout is scheduled against it."],
+    ["A failed payout says why","Find a FAILED payout.","","","The reason is printed under it, and FAILED is coloured as a problem — not the same grey as QUEUED. NEW."],
+    ["Request a payout","Request one.","/payout/request/create","","It is accepted and appears in the list."],
+    ["Statements","Open Statements.","/host/statements/search","","Periods list, and a statement downloads."],
+  ]},
+
+  { t:"Host — negotiations and support", d:"The two remaining host surfaces.", items:[
+    ["Offers list","Open Negotiations.","/host/negotiations/list","","Live offers with the guest, the amount and the round count."],
+    ["Respond","Accept, counter and decline.","/host/negotiations/respond","","Each reaches the guest, and the round count moves."],
+    ["Floor is respected","Check an offer at or above your minimum.","","","Accepted automatically. Anything below comes to you to decide."],
+    ["Raise a ticket","Host Support → new ticket.","/host/support/tickets/create","","It is created and appears in your list."],
+    ["Reply on a ticket","Reply to a ticket.","/host/support/tickets/reply","","Your reply is added and the admin sees it."],
+    ["Admin reply arrives","Have the admin reply from the panel.","/host/support/tickets/search","","It appears on the phone."],
+  ]},
+
+  { t:"Not built on mobile yet", d:"These exist on the website and are NOT in the app. Please do not report them as bugs — mark Blocked if you go looking.", items:[
+    ["Refer & Earn","Look for it on either side.","","","Absent on mobile. The web has /account/refer and /host/refer."],
+    ["Host Performance","Look for a performance screen.","","","Absent on mobile."],
+    ["Host Boost","Look for paid placement / Boost.","","","Absent on mobile — a host cannot buy placement from the phone."],
+    ["Host notifications list","Look for host notifications.","","","Absent on mobile. The GUEST side has one."],
+    ["State and City are typed, not picked","In the listing wizard look at State and City.","","","Free text on mobile; the website picks from the reference tables. Flagged, not yet changed."],
+  ]},
+
+  { t:"Regression — fixed this week", d:"Every one of these was broken and is meant to be fixed. If any fails, tell me before going further.", items:[
+    ["Search answers travel","Dates and guests from search reach the property page and checkout.","","","Asked once, not three times."],
+    ["Host can confirm","A host can accept a booking from the phone.","","","The single most important fix — without it every booking sat pending."],
+    ["Refund shown before cancelling","The guest sees the refund first.","","","Before, not after."],
+    ["Calendar refuses the past","Past dates are dimmed and inert.","","","You cannot block yesterday."],
+    ["Payout failure has a reason","FAILED payouts explain themselves.","","","On the app and the website."],
+    ["One rupee format","Every price on every screen.","","","₹1,10,678 — Indian grouping, no paise, identical everywhere."],
+    ["Booking card is consistent","Chips and the payment line agree.","","","No duplicated chip, nothing clipped, no “Paid online” on an unpaid booking."],
+    ["Wizard name rule","Matches its own hint.","","","5 characters, not 3."],
+    ["Back from signup","Returns to login.","","","Does not close the app."],
+    ["Blog post links to its stay","Property posts open and link back.","","","They used to show “That post isn’t available”."],
+  ]},
+];
+const LEGACY_KEYS={};
+const KEY="aajoo-mobile-qa-v1";
+const STATE_FILE="data/state.json";
+let state=JSON.parse(localStorage.getItem(KEY)||"{}");
+let filter="all";
+// localStorage is only a CACHE. The artifact viewer's sandboxing can
+// partition or reset it, and a republished document starts blank — answers
+// kept only there kept getting lost. The lasting copy lives in the document
+// itself: every change is debounced into artifact.publish({[STATE_FILE]:…}),
+// which saves a new version of this artifact carrying the answers. On open,
+// the served file and the cache are merged per answer by timestamp, and
+// anything the cache held that the document lacked is pushed back up.
+const cacheState=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} };
+// Keys are the section and check titles, not their positions, so adding a
+// row never moves anyone's answers onto the wrong check.
+const id=(s,i)=>DATA[s].t+"::"+DATA[s].items[i][0];
+// One-time remap of anything still saved under the old positional keys,
+// through the ordering those keys were recorded against (LEGACY_KEYS lives
+// beside each document's DATA).
+(function(){
+  let moved=0;
+  for(const k of Object.keys(state)){
+    if(!k.includes("|")) continue;
+    const to=LEGACY_KEYS[k];
+    if(to && state[to]===undefined){ state[to]=state[k]; moved++; }
+    delete state[k];
+  }
+  if(moved) cacheState();
+})();
+
+/* ── durable saves into the artifact ─────────────────────────── */
+let artifactNS=null, artifactReady=false, canPublish=true, saveTimer=null, saving=false, dirty=false;
+const chip=document.getElementById("savechip");
+const setChip=(txt,tone)=>{ if(chip){ chip.textContent=txt; if(tone){chip.dataset.tone=tone;}else{delete chip.dataset.tone;} } };
+const LOCAL_ONLY="Local only — answers stay in this browser";
+
+const publishState=async()=>{
+  if(!artifactReady||!canPublish) return;
+  if(saving){ dirty=true; return; }
+  saving=true; setChip("Saving…");
+  try{
+    await artifactNS.publish({[STATE_FILE]: JSON.stringify(state)});
+    setChip("Saved to doc ✓","ok");
+  }catch(err){
+    const code=err&&err.code;
+    if(code==="not_writer"||code==="not_granted"||code==="not_declared"||code==="capability_disabled"||code==="capability_removed"){
+      // Permanent for this view — say so once and fall back to the cache.
+      canPublish=false; setChip(LOCAL_ONLY,"warn");
+    }else if(code==="conflict"){
+      // Another view published first; the shell reloads to the winner and
+      // the merge on the next load reconciles. Nothing else to do here.
+      setChip("Syncing…");
+    }else if(code==="rate_limited"){
+      dirty=true; setTimeout(()=>{ if(dirty){dirty=false; publishState();} },15000);
+    }else{
+      setChip("Save failed — kept in this browser, retrying…","warn");
+      dirty=true; setTimeout(()=>{ if(dirty){dirty=false; publishState();} },8000);
+    }
+  }finally{
+    saving=false;
+    if(dirty&&canPublish){ dirty=false; publishState(); }
+  }
+};
+const save=()=>{
+  cacheState();
+  if(!artifactReady||!canPublish) return;
+  setChip("Saving…");
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(publishState,2000);
+};
+// Per-answer newest-wins, honouring the reset tombstone (__cleared): a Reset
+// must not be undone by an older cache on another device.
+const mergeStates=(server,local)=>{
+  const cleared=Math.max(Number(server.__cleared)||0, Number(local.__cleared)||0);
+  const out={};
+  if(cleared) out.__cleared=cleared;
+  let localAhead=(Number(local.__cleared)||0)>(Number(server.__cleared)||0);
+  const keys=new Set([...Object.keys(server),...Object.keys(local)]);
+  for(const k of keys){
+    if(k==="__cleared") continue;
+    const s=server[k]||null, l=local[k]||null;
+    const st=s?(Number(s.t)||0):-1, lt=l?(Number(l.t)||0):-1;
+    const useLocal=lt>st;
+    const win=useLocal?l:s;
+    if(!win) continue;
+    if(Math.max(useLocal?lt:st,0)<cleared) continue;
+    out[k]=win;
+    if(useLocal) localAhead=true;
+  }
+  return {merged:out, localAhead};
+};
+(async()=>{
+  try{
+    if(!(window.claude&&window.claude.use)){ setChip(LOCAL_ONLY,"warn"); return; }
+    artifactNS=await window.claude.use("artifact");
+    if(!artifactNS){ setChip(LOCAL_ONLY,"warn"); return; }
+    let server={};
+    try{
+      const res=await fetch(STATE_FILE,{cache:"no-store"});
+      if(res.ok) server=(await res.json())||{};
+    }catch(e){ /* no saved file yet — first run */ }
+    const {merged, localAhead}=mergeStates(server,state);
+    state=merged; cacheState(); artifactReady=true;
+    render();
+    if(localAhead){ publishState(); } else { setChip("Saved to doc ✓","ok"); }
+  }catch(e){ setChip(LOCAL_ONLY,"warn"); }
+})();
+window.addEventListener("pagehide",()=>{ if(saveTimer){ clearTimeout(saveTimer); publishState(); } });
+
+const toast=(m)=>{const t=document.getElementById("toast");t.textContent=m;t.classList.add("on");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("on"),1900);};
+
+function render(){
+  const out=document.getElementById("out"), rail=document.getElementById("rail");
+  out.innerHTML=""; rail.innerHTML="";
+  let total=0,pass=0,fail=0,block=0;
+
+  DATA.forEach((sec,si)=>{
+    let sDone=0;
+    const section=document.createElement("section");
+    section.id="s"+si;
+    const rows=document.createElement("div"); rows.className="rows";
+
+    sec.items.forEach((it,ii)=>{
+      const [title,exp,e1,e2,expect]=it;
+      const k=id(si,ii); const st=state[k]||{};
+      total++;
+      if(st.v==="pass")pass++; else if(st.v==="fail")fail++; else if(st.v==="block")block++;
+      if(st.v)sDone++;
+      if(filter==="todo"&&st.v) return;
+      if(filter==="bad"&&st.v!=="fail"&&st.v!=="block") return;
+
+      const row=document.createElement("div");
+      row.className="row"; if(st.v)row.dataset.s=st.v;
+      const eps=[e1,e2].filter(Boolean).map(e=>`<span class="ep">${e}</span>`).join("");
+      row.innerHTML=`
+        <div class="row-top">
+          <div class="what">
+            <div class="title">${title}</div>
+            <div class="exp">${exp}</div>
+            <div class="exp" style="margin-top:5px"><strong style="color:var(--ink)">Expect:</strong> ${expect}</div>
+            ${eps?`<div class="eps">${eps}</div>`:""}
+          </div>
+          <div class="seg" role="group" aria-label="Result for ${title}">
+            <button data-v="pass" aria-pressed="${st.v==="pass"}">Pass</button>
+            <button data-v="fail" aria-pressed="${st.v==="fail"}">Fail</button>
+            <button data-v="block" aria-pressed="${st.v==="block"}">Blocked</button>
+          </div>
+        </div>
+        <textarea class="note ${st.v==="fail"||st.v==="block"||st.n?"":"hide"}"
+          placeholder="What did you see? Steps, message, anything odd.">${st.n||""}</textarea>`;
+
+      row.querySelectorAll(".seg button").forEach(b=>{
+        b.onclick=()=>{
+          const v=b.dataset.v;
+          state[k]={...(state[k]||{}), v: st.v===v? null : v, t: Date.now()};
+          if(!state[k].v && !state[k].n) delete state[k];
+          save(); render();
+        };
+      });
+      const ta=row.querySelector(".note");
+      ta.oninput=()=>{ state[k]={...(state[k]||{}), n:ta.value, t: Date.now()}; if(!state[k].v&&!state[k].n)delete state[k]; save(); updateBar(); };
+      rows.appendChild(row);
+    });
+
+    section.innerHTML=`<div class="head"><span class="num">${String(si+1).padStart(2,"0")}</span><h2>${sec.t}</h2></div><p class="sub">${sec.d}</p>`;
+    section.appendChild(rows);
+    if(rows.children.length) out.appendChild(section);
+
+    const a=document.createElement("a");
+    a.href="#s"+si;
+    a.className=sDone===sec.items.length?"done":"";
+    a.innerHTML=`<b class="tnum">${String(sDone).padStart(2,"0")}/${String(sec.items.length).padStart(2,"0")}</b><span>${sec.t}</span>`;
+    rail.appendChild(a);
+  });
+
+  window._tot={total,pass,fail,block};
+  updateBar();
+}
+
+function updateBar(){
+  const {total,pass,fail,block}=window._tot;
+  document.getElementById("bp").style.width=(pass/total*100)+"%";
+  document.getElementById("bf").style.width=(fail/total*100)+"%";
+  document.getElementById("bb").style.width=(block/total*100)+"%";
+  document.getElementById("cnt").textContent=`${pass+fail+block} / ${total} · ${fail} failed · ${block} blocked`;
+}
+
+document.getElementById("filter").onclick=(e)=>{
+  filter = filter==="all" ? "todo" : filter==="todo" ? "bad" : "all";
+  e.target.textContent = "Show: " + (filter==="all"?"all":filter==="todo"?"not done":"problems");
+  render();
+};
+
+document.getElementById("copy").onclick=()=>{
+  let out="# Aajoo guest testing — findings\n\n";
+  let n=0;
+  DATA.forEach((sec,si)=>{
+    const bad=sec.items.map((it,ii)=>({it,st:state[id(si,ii)]||{}}))
+      .filter(x=>x.st.v==="fail"||x.st.v==="block");
+    if(!bad.length) return;
+    out+=`## ${sec.t}\n\n`;
+    bad.forEach(({it,st})=>{
+      n++;
+      out+=`**${st.v==="fail"?"FAILED":"BLOCKED"} — ${it[0]}**\n`;
+      out+=`- Expected: ${it[4]}\n`;
+      if(it[2]||it[3]) out+=`- Endpoints: ${[it[2],it[3]].filter(Boolean).join(", ")}\n`;
+      out+=`- What happened: ${st.n?st.n:"(no note)"}\n\n`;
+    });
+  });
+  const {total,pass,fail,block}=window._tot;
+  out = `Tested ${pass+fail+block} of ${total} — ${pass} passed, ${fail} failed, ${block} blocked.\n\n` + (n?out:"No failures recorded.\n");
+
+  // Then the whole run, one line per answered check. The failures above are
+  // what needs fixing; this is the record that the rest were actually tested,
+  // which is the half a Claude session cannot obtain any other way — this
+  // document's saved answers are private to your signed-in browser.
+  const MARK={pass:"PASS ",fail:"FAIL ",block:"BLOCK"};
+  let done="";
+  DATA.forEach((sec,si)=>{
+    const marked=sec.items.map((it,ii)=>({it,st:state[id(si,ii)]||{}})).filter(x=>x.st.v);
+    if(!marked.length) return;
+    done+=`\n### ${sec.t}\n`;
+    marked.forEach(({it,st})=>{ done+=`${MARK[st.v]||st.v} — ${it[0]}${st.n?`  · ${st.n.replace(/\s+/g," ").slice(0,160)}`:""}\n`; });
+  });
+  const untested=total-(pass+fail+block);
+  out += `\n---\n\n## Full run\n${done||"\nNothing marked yet.\n"}`;
+  if(untested) out += `\n${untested} check${untested>1?"s":""} not marked.\n`;
+
+  navigator.clipboard.writeText(out).then(
+    ()=>toast(n?`Copied ${n} problem${n>1?"s":""} + the full run — paste it to Claude`:"Copied the full run — paste it to Claude"),
+    ()=>toast("Couldn't copy — select the page and copy manually")
+  );
+};
+
+document.getElementById("reset").onclick=()=>{
+  if(!confirm("Clear every answer and note? This cannot be undone.")) return;
+  // The tombstone timestamp stops an older cache on another device from
+  // quietly resurrecting everything the reset removed.
+  state={__cleared: Date.now()}; save(); render(); toast("Checklist cleared");
+};
+
+render();
+</script>
