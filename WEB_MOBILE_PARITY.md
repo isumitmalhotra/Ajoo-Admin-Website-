@@ -241,6 +241,43 @@ Reachability for that deletion was computed from `main.dart` across **both**
 wrongly reported `init_binding.dart` as dead, which would have broken startup.
 Worth repeating if the dead-code question comes up again.
 
+## Host-side walk, 2026-08-24 — what a device found that code review had not
+
+Every host screen driven on the emulator turned up a defect the code read as fine:
+
+- **Confirm was missing entirely.** 29,244 of 29,252 listings have no
+  booking-rules row and default to "approval", so nearly every booking waits on
+  a host — and the app had no button. Added, then found it did not appear:
+  a waiting request carries the bare status "Booked" and "Awaiting approval" is
+  a DERIVED label. Both host buttons now read `lifecycleLabel`. (`bd5dc37`,
+  `26bc348`)
+- **Host cancel** did not exist. (`f0ea886`)
+- **Guest cancelled without seeing the refund** — `/user/cancel/quote` is now
+  fetched before the dialog. (`f0ea886`)
+- **The calendar offered to block the past** — 14 Aug selectable on the 24th.
+  (`20aa9a9`)
+- **A failed payout gave no reason** — `po_failure_reason` was written and
+  returned to nobody, on web AND app. (`c09ec98`, `9232037`, `cab6ec6`)
+- **The booking card contradicted itself** — "Payment pending" chip beside
+  "Paid online", a duplicated chip, a clipped chip, and paise in the price.
+  (`91af849`)
+- **The wizard's name rule** said 3 characters while its own hint and the
+  server said 5. (`59c31ca`)
+
+Wizard verified end to end: all five steps, draft persisted as property 29264
+with capacity, pricing, booking-rules and amenity rows written, and correctly
+hidden from public search. Submit is gated on readiness (photos, ownership
+document, bank details) — not completed, as that needs real documents.
+
 ## Known open parity gaps
 
-_None currently tracked._
+Absent from the app, present on web — a client will read these as missing
+features rather than bugs:
+
+1. **Refer & Earn** (guest and host).
+2. **Host Performance** screen.
+3. **Host Boost** — paid placement cannot be bought from the phone.
+4. **Host notifications list** (the guest side has one).
+5. **State/City are free text** in the app wizard; the web picks from the
+   reference tables, which are the canonical address vocabulary. The app can
+   therefore write values that do not match them.
