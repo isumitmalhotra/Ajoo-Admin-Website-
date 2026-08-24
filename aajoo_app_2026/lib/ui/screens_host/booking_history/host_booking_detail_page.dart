@@ -87,6 +87,89 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
     }
   }
 
+  /// A booking this host can still call off: live, not already checked in,
+  /// not already cancelled.
+  bool get _canHostCancel {
+    if (_isCancelled || _isCheckedIn) return false;
+    final t = b.bookingStatusBsTitle.toLowerCase();
+    return t.contains('confirm') || t.contains('booked') ||
+        t.contains('paid') || t.contains('pending');
+  }
+
+  Future<void> _hostCancel() async {
+    if (_cancelling) return;
+    final reason = await _askCancelReason();
+    // Empty means they backed out — the backend requires a reason anyway.
+    if (reason == null || reason.trim().isEmpty) return;
+    setState(() => _cancelling = true);
+    try {
+      await HostService().cancelBooking(b.bookId, reason.trim());
+      setState(() => b.bookingStatusBsTitle = 'Cancelled');
+      Fluttertoast.showToast(
+          msg: "Booking cancelled — the guest has been told why.");
+    } catch (e) {
+      Fluttertoast.showToast(
+          msg: e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _cancelling = false);
+    }
+  }
+
+  /// The guest is told this verbatim, so it is typed rather than picked from
+  /// presets — a host's reason for calling off a stay is specific.
+  Future<String?> _askCancelReason() {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        title: Text('Cancel this booking?',
+            style: fraunces(fontSize: 17, fontWeight: FontWeight.w700)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'The guest is refunded under the property policy and told why. '
+              'Please give them a reason.',
+              style: inter(fontSize: 13, color: kMuted, height: 1.45),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: controller,
+              maxLength: 255,
+              maxLines: 3,
+              minLines: 2,
+              decoration: const InputDecoration(
+                hintText: 'e.g. an unexpected repair has made the place unusable',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Keep booking'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: kDanger, foregroundColor: Colors.white),
+            onPressed: () {
+              if (controller.text.trim().isEmpty) {
+                Fluttertoast.showToast(
+                    msg: 'Please give the guest a reason.');
+                return;
+              }
+              Navigator.of(ctx).pop(controller.text);
+            },
+            child: const Text('Cancel booking'),
+          ),
+        ],
+      ),
+    );
+  }
+
   bool get _canCheckIn {
     if (_isCancelled || _isCheckedIn) return false;
     final from = parseStayDate(b.bookDetailsBtBookFrom);
@@ -99,6 +182,7 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
 
   bool _checkingIn = false;
   bool _confirming = false;
+  bool _cancelling = false;
 
   Future<void> _markCheckedIn() async {
     if (_checkingIn) return;
@@ -377,6 +461,18 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
                 style: inter(fontSize: 14, fontWeight: FontWeight.w700)),
           ),
           const SizedBox(height: 10),
+        ],
+        // Calling off a stay — the counterpart of Confirm. The web has had it
+        // all along; the app could only check a guest in.
+        if (_canHostCancel) ...[
+          const SizedBox(height: 4),
+          TextButton.icon(
+            onPressed: _cancelling ? null : _hostCancel,
+            style: TextButton.styleFrom(foregroundColor: kDanger),
+            icon: const Icon(Icons.cancel_outlined, size: 18),
+            label: Text(_cancelling ? 'Cancelling…' : 'Cancel this booking',
+                style: inter(fontSize: 13.5, fontWeight: FontWeight.w600)),
+          ),
         ],
         _actionsRow(),
       ],

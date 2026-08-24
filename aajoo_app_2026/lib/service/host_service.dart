@@ -368,6 +368,35 @@ class HostService {
 
   /// The mirror of no-show: the guest DID arrive, and the host says so.
   /// Returns the server's message on failure via exception.
+  /// Cancel a booking as the host, with a reason the guest is told.
+  ///
+  /// The reason is REQUIRED by the backend and included in the guest's
+  /// cancellation notice — a host calling off a stay without saying why is
+  /// the version of this that generates a support ticket.
+  ///
+  /// Takes the string book_id ("B..."), unlike confirm which takes the
+  /// numeric primary id. They are different identifiers; mixing them up
+  /// silently targets the wrong booking.
+  Future<void> cancelBooking(String bookingId, String reason) async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final response = await _dio.post("/host/cancel-booking",
+          data: {"bookingId": bookingId, "reason": reason});
+      final body = response.data;
+      if (body is! Map || body['success'] != true) {
+        throw Exception((body is Map ? body['message'] : null)?.toString() ??
+            'Could not cancel this booking.');
+      }
+    } on DioException catch (err) {
+      final data = err.response?.data;
+      final msg = data is Map ? data['message'] : null;
+      throw Exception(msg is List
+          ? msg.join(', ')
+          : (msg?.toString() ?? 'Could not cancel this booking.'));
+    }
+  }
+
   /// Approve a pending booking request.
   ///
   /// Nearly every listing needs this: 29,244 of 29,252 properties have no

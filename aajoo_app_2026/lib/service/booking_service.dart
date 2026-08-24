@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:rent_home/models/cancellation_quote.dart';
 import 'package:get/get.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:rent_home/controller/user_controller.dart';
@@ -171,6 +172,25 @@ class BookingService {
       throw _handleError(err);
     } catch (e) {
       throw _handleError(e);
+    }
+  }
+
+  /// What cancelling this booking would refund, and whether it is even
+  /// allowed. Shown before the confirm dialog — see CancellationQuote.
+  Future<CancellationQuote?> cancellationQuote(String bookingId) async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = "Bearer $token";
+    try {
+      final response = await _dio
+          .post("$baseUrl/user/cancel/quote", data: {"bookingId": bookingId});
+      final body = response.data;
+      final data = body is Map ? body['data'] : null;
+      if (data is! Map) return null;
+      return CancellationQuote.fromJson(Map<String, dynamic>.from(data));
+    } catch (_) {
+      // A quote we could not fetch must not block the cancel — the guest can
+      // still proceed, they simply do not get the figure up front.
+      return null;
     }
   }
 

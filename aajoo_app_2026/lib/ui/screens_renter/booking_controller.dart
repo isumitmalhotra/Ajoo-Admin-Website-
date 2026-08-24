@@ -3,6 +3,7 @@ import 'package:rent_home/controller/alert_dialog.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/data/models/create_booking_response.dart';
 import 'package:rent_home/service/booking_service.dart';
+import 'package:rent_home/models/cancellation_quote.dart';
 
 class BookingController extends GetxController {
   RxBool isLoading = false.obs;
@@ -82,6 +83,11 @@ class BookingController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  /// What cancelling would refund. Null when the quote could not be fetched —
+  /// the cancel still proceeds, the guest just does not get the figure first.
+  Future<CancellationQuote?> cancellationQuote(String bookingId) =>
+      _bookingService.cancellationQuote(bookingId);
 
   Future<bool> cancelBooking(String bookingId, String reason) async {
     isLoading.value = true;

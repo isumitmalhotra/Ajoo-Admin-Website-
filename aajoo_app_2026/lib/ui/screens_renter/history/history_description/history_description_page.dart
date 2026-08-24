@@ -26,6 +26,8 @@ import 'package:rent_home/ui/screens_renter/history/history_description/property
 import 'package:rent_home/ui/screens_renter/history/history_description/review/property_review_section.dart';
 import 'package:rent_home/ui/screens_renter/property_details/components/property_tabs.dart';
 import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';
+import 'package:rent_home/models/cancellation_quote.dart';
+import 'package:rent_home/utils/money.dart';
 
 class HistoryDescriptionPage extends StatefulWidget {
   const HistoryDescriptionPage({
@@ -682,7 +684,25 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
 
   // ── Cancel ────────────────────────────────────────────────────────────────
 
-  void _showCancelDialog() {
+  Future<void> _showCancelDialog() async {
+    // Ask what this would refund BEFORE the dialog, so the figure is on the
+    // screen where the decision is made. The app used to cancel and only then
+    // let the guest discover what they got back.
+    final bookId = widget.bookingData.bookId;
+    CancellationQuote? quote;
+    if (bookId != null) {
+      quote = await _bookingController.cancellationQuote(bookId);
+    }
+    if (!mounted) return;
+
+    // The server says a cancel is impossible (checked in, completed, past the
+    // window). Say so instead of opening a dialog that cannot succeed.
+    if (quote != null && !quote.canCancel) {
+      Fluttertoast.showToast(
+          msg: quote.reason ?? 'This booking can no longer be cancelled.');
+      return;
+    }
+
     String? selectedReason;
     final otherReasonController = TextEditingController();
     // Same presets as the website, so the stored reasons stay comparable.
@@ -726,8 +746,51 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
                         hintText: 'Please specify the reason'),
                   ),
                 const SizedBox(height: 10),
-                Text('Refunds follow the property\'s cancellation policy.',
-                    style: inter(fontSize: 12, color: kMuted)),
+                if (quote == null)
+                  // The quote call failed. Do not invent a number.
+                  Text('Refunds follow the cancellation policy for this stay.',
+                      style: inter(fontSize: 12, color: kMuted))
+                else
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: kCream,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: kInk.withOpacity(.08)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (quote.policyLabel != null)
+                          Text(quote.policyLabel!,
+                              style: inter(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: kInk)),
+                        const SizedBox(height: 4),
+                        Text(
+                          !quote.isPaid
+                              ? 'Nothing has been charged for this booking yet, so there is nothing to refund.'
+                              : quote.manualReview
+                                  ? 'Your refund will be reviewed by our team and confirmed to you.'
+                                  : 'You would get back ${rupees(quote.refundAmount)}'
+                                      '${quote.refundPercent > 0 ? ' (${quote.refundPercent}% of what you paid)' : ''}.',
+                          style: inter(fontSize: 13, color: kInk, height: 1.45),
+                        ),
+                        if (quote.policySummary != null) ...[
+                          const SizedBox(height: 4),
+                          Text(quote.policySummary!,
+                              style: inter(fontSize: 12, color: kMuted, height: 1.4)),
+                        ],
+                        if (quote.refundNote != null) ...[
+                          const SizedBox(height: 4),
+                          Text(quote.refundNote!,
+                              style: inter(fontSize: 12, color: kMuted, height: 1.4)),
+                        ],
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
