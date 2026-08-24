@@ -216,15 +216,31 @@ sliver — and Airbnb's own app has no sticky section nav on a phone either.
 
 Commit: `771ad19`. flutter analyze clean (pre-existing infos only); 36/36 tests pass.
 
+## 2026-08-24 — the four known gaps, closed
+
+1. ~~No messages inbox on mobile.~~ **Built.** `MessagesService` speaks the same
+   socket contract as the web's `useChat.ts`; the inbox lists threads with
+   unread counts and the conversation loads history and sends. Chat
+   notifications without a property now deep-link into it instead of falling
+   back to home. Logout disposes the socket. (`2d5f305`)
+2. ~~Search empty state~~ **Fixed** — the hero card said "Homes near you" over
+   zero results; it now says nothing matched and clears the filters on tap
+   (the fetch already retries at 20,000km, so distance is not the cause).
+   **Map recentring already existed** — `map_screen` animates the camera on
+   every `currentPosition` change. (`ef80758`)
+3. ~~Profile completion tracker web-only.~~ **Built**, mirroring the web's
+   fields, weights and wording, unit-tested against them. (`ef80758`)
+4. ~~Two classes named `AuthController`.~~ **Deleted, and it was four, not
+   one** — `AuthController`, `MapController`, `BookingController` and
+   `HostController` each existed twice. The legacy copies stayed compiled
+   because two live files imported `widgets/negotitaion_page.dart` for a model
+   that lives elsewhere. 33 dead files removed. (`e444d97`)
+
+Reachability for that deletion was computed from `main.dart` across **both**
+`package:` and relative imports — a first pass that handled only `package:`
+wrongly reported `init_binding.dart` as dead, which would have broken startup.
+Worth repeating if the dead-code question comes up again.
+
 ## Known open parity gaps
 
-1. **No messages inbox on mobile.** The only conversation surface is the
-   per-property negotiation thread, so a chat notification can only be opened
-   when the payload names a property. Without one it lands on home rather than
-   a route that does not exist.
-2. **Search empty state and map recentring** have no mobile equivalent.
-3. **Profile completion tracker** is web-only.
-4. **Two classes named `AuthController`** (`lib/controller/` and
-   `lib/ui/screens_common/auth/`). `Get.find` keys on the name, so importing the
-   wrong one hands back the live instance typed as a class it is not — one file
-   was already doing this. The legacy tree is dead and should be deleted.
+_None currently tracked._
