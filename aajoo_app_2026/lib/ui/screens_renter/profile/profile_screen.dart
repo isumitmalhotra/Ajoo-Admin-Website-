@@ -8,6 +8,7 @@ import 'package:rent_home/constants.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/ui/screens_renter/guest_shell.dart';
 import 'package:rent_home/ui/screens_renter/negotiations/guest_negotiations_screen.dart';
+import 'package:rent_home/ui/screens_renter/messages/messages_screen.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/ui/screens_common/about/about_page.dart';
 import 'package:rent_home/ui/screens_renter/bookmark_properties/bookmark_properties_page.dart';
@@ -1555,6 +1556,11 @@ class _ProfileScreenState extends State<ProfileScreen>
       // "Payment Methods" lived here and only raised a "coming soon"
       // snackbar. A row that answers nothing is worse than no row — it is out
       // until there is a screen behind it.
+      // The web has /account/messages; the app had no inbox at all, so any
+      // conversation that was not about a specific property was unreachable.
+      _buildSettingItem('Messages', Icons.forum_outlined, () {
+        Get.to(() => const MessagesScreen());
+      }),
       _buildSettingItem('Notifications', Icons.notifications, () {
         Get.toNamed('/notifications');
       }),

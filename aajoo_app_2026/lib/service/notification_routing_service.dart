@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 // .dart, which shares the class name. Get.find keys on the name, so importing
 // the wrong one type-casts the live instance to a class it is not.
 import '../ui/screens_common/auth/auth_controller.dart';
+import '../ui/screens_renter/messages/messages_screen.dart';
 import '../controller/user_controller.dart';
 import '../models/properties_response_model.dart';
 import '../utils/notification_link.dart';
@@ -106,6 +107,24 @@ class NotificationRoutingService extends GetxService {
         data['hostId'] != null;
     if (canOpenThread) {
       _navigateToNegotiation(data);
+      return;
+    }
+
+    // A chat notification with no property: open the inbox, deep-linked to
+    // whoever sent it.
+    //
+    // These used to fall through to the home screen, because the only
+    // conversation surface was the property-scoped negotiation thread and
+    // these messages carry no property. There is an inbox now, so the
+    // notification can land on the actual conversation.
+    if (kind == NotifKind.message) {
+      final sender = (data['senderId'] ?? data['userId'] ?? '').toString();
+      Get.to(() => MessagesScreen(
+            openWith: sender.isEmpty ? null : sender,
+            openWithName: (data['senderName'] ?? data['name'] ?? '').toString().isEmpty
+                ? null
+                : (data['senderName'] ?? data['name']).toString(),
+          ));
       return;
     }
 

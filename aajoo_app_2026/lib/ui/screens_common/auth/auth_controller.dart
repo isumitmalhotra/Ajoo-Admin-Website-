@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/controller/alert_dialog.dart';
+import 'package:rent_home/service/messages_service.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/data/models/action_result.dart';
 import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
@@ -683,6 +684,11 @@ class AuthController extends GetxController {
       isLoggedIn.value = false;
       userData.value = null;
       await authService.logout();
+
+      // Drop the chat socket with the session. It is keyed to this user's room,
+      // so leaving it open would deliver the previous account's messages into
+      // the next one's inbox.
+      MessagesService.instance.dispose();
 
       // Best-effort cleanup. Neither of these is allowed to decide whether the
       // user gets signed out: deleteToken() throws when Firebase has no token
