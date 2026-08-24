@@ -723,6 +723,11 @@ class _HostCalendarScreenState extends State<HostCalendarScreen> {
               stay: stay,
               block: block,
               isToday: key == todayKey,
+              // A day that has already gone cannot be blocked — closing
+              // yesterday changes nothing, and the guest calendar has always
+              // greyed the past out. Compared as ISO strings, which sort
+              // chronologically, so no timezone maths is involved.
+              isPast: key.compareTo(todayKey) < 0,
               picked: c.isInSelection(key),
             );
           },
@@ -737,6 +742,7 @@ class _HostCalendarScreenState extends State<HostCalendarScreen> {
     required HostCalendarStay? stay,
     required HostCalendarBlock? block,
     required bool isToday,
+    required bool isPast,
     required bool picked,
   }) {
     final Color background = stay != null
@@ -757,12 +763,14 @@ class _HostCalendarScreenState extends State<HostCalendarScreen> {
         borderRadius: BorderRadius.circular(8),
         onTap: () {
           // A booked or blocked day explains itself; only free days feed the
-          // range picker.
+          // range picker. A past day feeds nothing — but a past day that HELD
+          // a stay is still worth opening, because the host may be looking
+          // one up.
           if (stay != null) {
             _showStaySheet(stay);
           } else if (block != null) {
             _showBlockSheet(block);
-          } else {
+          } else if (!isPast) {
             c.tapFreeDay(iso);
           }
         },
@@ -784,7 +792,15 @@ class _HostCalendarScreenState extends State<HostCalendarScreen> {
                       fontSize: 12,
                       fontWeight:
                           isToday ? FontWeight.w800 : FontWeight.w600,
-                      color: isToday ? kIndigo600 : kInk)),
+                      // Dimmed so a past day LOOKS unavailable rather than
+                      // just failing to respond — a tap that silently does
+                      // nothing reads as a broken control. A day that held a
+                      // stay keeps full contrast: it is still worth reading.
+                      color: isToday
+                          ? kIndigo600
+                          : (isPast && stay == null && block == null)
+                              ? kMuted.withOpacity(0.55)
+                              : kInk)),
               const Spacer(),
               if (stay != null)
                 _dayBar(kIndigo)
