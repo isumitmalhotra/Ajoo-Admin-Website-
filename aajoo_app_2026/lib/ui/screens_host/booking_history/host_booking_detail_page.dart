@@ -61,12 +61,21 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
   /// accepts it — and nearly every listing needs accepting, because only 8 of
   /// 29,252 properties carry booking rules and the backend defaults the rest
   /// to approval.
-  bool get _needsApproval {
-    if (_isCancelled || _isCheckedIn) return false;
-    if (b.bookPriId == null) return false;
-    final t = b.bookingStatusBsTitle.toLowerCase();
-    return t.contains('pending');
-  }
+  /// The lifecycle label this booking is showing right now.
+  ///
+  /// Derived, not raw: a request waiting on the host carries the bare status
+  /// "Booked" (5) and only lifecycleLabel turns that into "Awaiting approval"
+  /// — see utils/booking_status.dart, which documents "Booked" as the state a
+  /// request waits in FOR that approval. Matching the raw title instead is how
+  /// the first version of this button never appeared.
+  String get _stage => lifecycleLabel(
+        b.bookingStatusBsTitle,
+        ended: hasEnded(b.bookDetailsBtBookTo),
+        started: isStaying(b.bookDetailsBtBookFrom, b.bookDetailsBtBookTo),
+      );
+
+  bool get _needsApproval =>
+      b.bookPriId != null && _stage == 'Awaiting approval';
 
   Future<void> _confirmBooking() async {
     final id = b.bookPriId;
@@ -89,11 +98,11 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
 
   /// A booking this host can still call off: live, not already checked in,
   /// not already cancelled.
+  /// A live booking the host can still call off. Uses the same derived stage,
+  /// so the two buttons can never disagree about what state this is in.
   bool get _canHostCancel {
-    if (_isCancelled || _isCheckedIn) return false;
-    final t = b.bookingStatusBsTitle.toLowerCase();
-    return t.contains('confirm') || t.contains('booked') ||
-        t.contains('paid') || t.contains('pending');
+    const live = {'Awaiting approval', 'Confirmed', 'Payment pending'};
+    return live.contains(_stage);
   }
 
   Future<void> _hostCancel() async {
