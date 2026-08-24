@@ -174,6 +174,25 @@ class MapController extends GetxController {
     }
   }
 
+  /// Drop every search narrowing and look again.
+  ///
+  /// The empty state offers this because the fetch ALREADY retries at a
+  /// 20,000km radius — so when nothing comes back, distance is not what is
+  /// excluding the stays, the filters are. Widening the radius again would
+  /// change nothing and look broken.
+  Future<void> clearSearchFilters() async {
+    stayFrom.value = null;
+    stayTo.value = null;
+    stayGuests.value = 0;
+    await getProperties(
+      currentPosition.value.latitude,
+      currentPosition.value.longitude,
+    );
+    // Price is a client-side narrowing of what came back, so it is cleared
+    // after the refetch rather than before.
+    applyPriceFilter();
+  }
+
   // Frontend price filter (min/max) without new API calls
   void applyPriceFilter({double? minPrice, double? maxPrice}) {
     if (minPrice == null && maxPrice == null) {

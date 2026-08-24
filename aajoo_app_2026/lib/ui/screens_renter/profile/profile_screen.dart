@@ -9,6 +9,7 @@ import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/ui/screens_renter/guest_shell.dart';
 import 'package:rent_home/ui/screens_renter/negotiations/guest_negotiations_screen.dart';
 import 'package:rent_home/ui/screens_renter/messages/messages_screen.dart';
+import 'package:rent_home/utils/profile_completion.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/ui/screens_common/about/about_page.dart';
 import 'package:rent_home/ui/screens_renter/bookmark_properties/bookmark_properties_page.dart';
@@ -1058,6 +1059,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
         ),
         const SizedBox(height: 12),
+        _buildProfileCompletion(),
         _buildKycSection(),
       ],
     );
@@ -1170,6 +1172,104 @@ class _ProfileScreenState extends State<ProfileScreen>
               _buildUpdateButton(),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// How complete this profile is — the mobile counterpart of the web's
+  /// ProfileCompletion card.
+  ///
+  /// Same weights and the same wording, so the two never quote different
+  /// numbers for one account (see utils/profile_completion.dart). It hides
+  /// itself once the profile is complete: a permanent 100% bar is furniture.
+  Widget _buildProfileCompletion() {
+    final user = authController.userData.value;
+    if (user == null) return const SizedBox.shrink();
+    final score = profileScore(user.toJson());
+    if (score.isComplete) return const SizedBox.shrink();
+
+    final missing = score.missing;
+    return Card(
+      color: kCream,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text('Your profile is ${score.percent}% complete',
+                      style: const TextStyle(
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w700,
+                          color: kprimaryColor)),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                  decoration: BoxDecoration(
+                      color: kprimaryColor.withOpacity(.10),
+                      borderRadius: BorderRadius.circular(999)),
+                  child: Text(score.strength,
+                      style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: kprimaryColor)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: score.percent / 100,
+                minHeight: 7,
+                backgroundColor: kprimaryColor.withOpacity(.12),
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(kprimaryColor),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Name what is missing rather than only scoring it — a bar with no
+            // next step is a scold, not a prompt.
+            ...missing.take(3).map((f) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.radio_button_unchecked,
+                          size: 15, color: Colors.grey),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(f.label,
+                                style: const TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600)),
+                            Text(f.hint,
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                    height: 1.4)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+            if (missing.length > 3)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text('and ${missing.length - 3} more',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+              ),
+          ],
         ),
       ),
     );

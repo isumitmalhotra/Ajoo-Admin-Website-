@@ -285,6 +285,9 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                                     duration: const Duration(milliseconds: 280),
                                     curve: Curves.easeOutCubic,
                                   ),
+                                  // Nothing found: the card offers a way on
+                                  // instead of expanding an empty list.
+                                  onWiden: mapController.clearSearchFilters,
                                 )),
                           ),
 

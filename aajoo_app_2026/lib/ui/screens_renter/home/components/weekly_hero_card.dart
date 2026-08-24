@@ -40,11 +40,16 @@ class WeeklyHeroCard extends StatelessWidget {
   /// placed somewhere with nothing to open.
   final VoidCallback? onTap;
 
+  /// Widen the search when nothing was found. Without it the empty state is a
+  /// dead end — see the headline below.
+  final VoidCallback? onWiden;
+
   const WeeklyHeroCard({
     super.key,
     this.homesNearby = 0,
     this.region = '',
     this.onTap,
+    this.onWiden,
   });
 
   String get _formattedCount {
@@ -60,7 +65,10 @@ class WeeklyHeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final card = _card();
-    if (onTap == null) return card;
+    // With no results, tapping should widen the search — expanding a sheet
+    // that has nothing in it is the one thing that definitely does not help.
+    final action = homesNearby == 0 ? (onWiden ?? onTap) : onTap;
+    if (action == null) return card;
     // Ink splash rather than a bare GestureDetector so the tap is visibly
     // acknowledged; the card paints its own gradient, so the ripple has to go
     // in front of it rather than behind.
@@ -72,7 +80,7 @@ class WeeklyHeroCard extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(18),
-              onTap: onTap,
+              onTap: action,
               child: const SizedBox.expand(),
             ),
           ),
@@ -119,7 +127,9 @@ class WeeklyHeroCard extends StatelessWidget {
             homesNearby > 0
                 // "1 homes near you" — the count is real, the noun was not.
                 ? '$_formattedCount ${homesNearby == 1 ? 'home' : 'homes'} near you.'
-                : 'Homes near you.',
+                // Nothing found. Saying "Homes near you." over an empty list
+                // claims stays exist that do not, and offered no way on.
+                : 'No stays here yet.',
             style: fraunces(
               fontSize: 22,
               fontWeight: FontWeight.w500,
@@ -128,7 +138,7 @@ class WeeklyHeroCard extends StatelessWidget {
             ),
           ),
           Text(
-            'No booking fee.',
+            homesNearby > 0 ? 'No booking fee.' : 'Try a wider search.',
             style: fraunces(
               fontSize: 22,
               fontWeight: FontWeight.w500,
@@ -148,9 +158,13 @@ class WeeklyHeroCard extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  region.isEmpty
-                      ? 'Finding stays around you…'
-                      : 'Showing stays around $region',
+                  homesNearby == 0
+                      ? (region.isEmpty
+                          ? 'Nothing matched. Widen the radius or clear your filters.'
+                          : 'Nothing around $region matched. Widen the radius or clear your filters.')
+                      : region.isEmpty
+                          ? 'Finding stays around you…'
+                          : 'Showing stays around $region',
                   style: inter(
                     fontSize: 13,
                     color: kCream.withOpacity(0.85),
