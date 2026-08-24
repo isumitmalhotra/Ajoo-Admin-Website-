@@ -10,6 +10,7 @@ import 'package:rent_home/ui/screens_host/calendar/host_calendar_screen.dart';
 import 'package:rent_home/ui/motion/aajoo_motion.dart';
 import 'package:rent_home/utils/stay_clock.dart';
 import '../../../utils/booking_status.dart';
+import 'package:rent_home/utils/money.dart';
 
 /// Host Bookings — re-skinned to the new design (scaffold host_bookings): teal
 /// app bar + 4 status tabs (Upcoming/Ongoing/Completed/Cancelled) filtering the
@@ -232,19 +233,6 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
   }
 
   /// 6300.0 -> "6,300"; 6300.5 -> "6,300.50".
-  static String _money(num v) {
-    final whole = v == v.roundToDouble();
-    final s = whole ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
-    final parts = s.split('.');
-    final digits = parts[0];
-    final buf = StringBuffer();
-    for (var i = 0; i < digits.length; i++) {
-      if (i > 0 && (digits.length - i) % 3 == 0) buf.write(',');
-      buf.write(digits[i]);
-    }
-    return parts.length > 1 ? '${buf.toString()}.${parts[1]}' : buf.toString();
-  }
-
   Widget _buildCard(
       HostBookingHistory booking, HostBookingHistoryController controller) {
     // One chip could only ever answer one of two questions, and the stored
@@ -278,15 +266,20 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: booking id + status
-          Row(
+          // Header: booking id, then the two chips on their own line.
+          //
+          // They used to sit beside the id in one Row behind a Spacer, which
+          // has no give: "Booking #B043926" plus two long labels overflowed
+          // the card and the second chip was clipped at its edge. A Wrap can
+          // always fall to a second line instead.
+          Text("Booking #${booking.bookId}",
+              style: fraunces(
+                  fontSize: 15.5, fontWeight: FontWeight.w700, color: kInk)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
             children: [
-              Text("Booking #${booking.bookId}",
-                  style: fraunces(
-                      fontSize: 15.5,
-                      fontWeight: FontWeight.w700,
-                      color: kInk)),
-              const Spacer(),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -298,18 +291,22 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                         fontWeight: FontWeight.w700,
                         color: badgeFg)),
               ),
-              const SizedBox(width: 6),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                    color: pay.bg, borderRadius: BorderRadius.circular(20)),
-                child: Text(pay.label,
-                    style: inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: pay.fg)),
-              ),
+              // The two chips answer different questions — what stage the
+              // booking is at, and how it is being paid — but for an unpaid
+              // ONLINE booking both resolve to "Payment pending", and the card
+              // printed the same words twice side by side. One is enough.
+              if (pay.label != life)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                      color: pay.bg, borderRadius: BorderRadius.circular(20)),
+                  child: Text(pay.label,
+                      style: inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: pay.fg)),
+                ),
             ],
           ),
           const SizedBox(height: 4),
@@ -323,12 +320,20 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
               // The TOTAL the guest owes, not the room subtotal — and without
               // the raw double's trailing ".0". The detail page always showed
               // the total, so the two screens disagreed about one booking.
-              Text("₹ ${_money(booking.bookTotalAmt > 0 ? booking.bookTotalAmt : booking.bookPrice)}",
+              // rupees() rather than a local helper: that one printed paise
+              // ("3,937.50") and grouped in western threes, so a lakh read
+              // "110,678" here and "1,10,678" on the dashboard.
+              Text(rupees(booking.bookTotalAmt > 0
+                  ? booking.bookTotalAmt
+                  : booking.bookPrice),
                   style: fraunces(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: kIndigo600)),
-              Text(booking.bookIsCod ? "Pay at property" : "Paid online",
+              // The METHOD, not a claim about payment. This said "Paid online"
+              // for an online booking that was never paid — contradicting the
+              // "Payment pending" chip directly above it on the same card.
+              Text(booking.bookIsCod ? "Pay at property" : "Online payment",
                   style: inter(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,

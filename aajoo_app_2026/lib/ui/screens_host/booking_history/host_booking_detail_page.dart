@@ -18,6 +18,7 @@ import 'package:rent_home/ui/screens_renter/property_details/components/property
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/utils/booking_status.dart';
 import 'package:rent_home/ui/screens_host/booking_history/widgets/staying_guest_card.dart';
+import 'package:rent_home/utils/money.dart';
 
 /// One of the host's bookings, opened from the Bookings list (A-68/A-69).
 ///
@@ -328,8 +329,13 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
           Row(
             children: [
               Expanded(
-                  child: _fact('AMOUNT',
-                      '₹ ${(b.bookTotalAmt > 0 ? b.bookTotalAmt : b.bookPrice).toStringAsFixed(0)}')),
+                  child: _fact(
+                      'AMOUNT',
+                      // Grouped like every other price in the app: this read
+                      // "₹ 5250" beside a list card saying "₹ 5,250".
+                      rupees(b.bookTotalAmt > 0
+                          ? b.bookTotalAmt
+                          : b.bookPrice))),
               const SizedBox(width: 10),
               Expanded(
                   // The METHOD, not the state. This said "Paid online" on a
