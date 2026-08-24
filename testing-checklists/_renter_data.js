@@ -177,5 +177,11 @@ const DATA = [
     ["View Details opens THAT booking","From Upcoming, and again from Past stays, press View Details.","","","Each opens the booking you pressed it on. No hop to Ongoing or to Next Booking."],
     ["A wrong password says so, where you are","Sign in with a bad password without scrolling.","/user/login","","The message finds you. You do not have to scroll up to discover it."],
     ["Blog search finds an id","Search the blog by a post’s id, and again by a phrase from its body.","/blog/search","","Both find the post. Only the title used to match."],
+    ["Guest count changes the price","On 29262, take the party from 8 to 10 with Fri 28 → Mon 31 Aug.","","","A line appears: 2 extra guests × ₹1,000 × 3 nights = ₹6,000. Total goes ₹19,950 → ₹26,250. It used to ignore the guest count entirely."],
+    ["The stepper reaches the chargeable extras","On 29262, hold + on Adults.","","","It stops at 10 — capacity 8 plus the 2 extra the host will take — not at 8."],
+    ["That price survives to checkout","Book that 10-guest stay and read the review page, then the payment page.","/booking/add","","The same ₹26,250, with the extra-guest line still named. It is not refused as ‘the price for these dates has changed’."],
+    ["Changing the party at checkout re-prices","On the review page, change 10 guests to 8.","","","The extra-guest line disappears and the total falls back to ₹19,950."],
+    ["The app charges the same","Open 29262 in the Android app, set 10 guests, same dates.","","","Same ₹26,250, and the booking stores the guest count. The app never used to ask, or send it."],
+    ["Another tab signing in is announced","Sign in as a guest in one tab, then sign in as a host in a second. Return to the first.","","","The first tab says ‘You signed in somewhere else’ with a Reload button — it does not silently become the host."],
   ]},
 ];
