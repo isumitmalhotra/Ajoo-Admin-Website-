@@ -117,7 +117,8 @@ class WeeklyHeroCard extends StatelessWidget {
           // Headline — two lines, Fraunces
           Text(
             homesNearby > 0
-                ? '$_formattedCount homes near you.'
+                // "1 homes near you" — the count is real, the noun was not.
+                ? '$_formattedCount ${homesNearby == 1 ? 'home' : 'homes'} near you.'
                 : 'Homes near you.',
             style: fraunces(
               fontSize: 22,

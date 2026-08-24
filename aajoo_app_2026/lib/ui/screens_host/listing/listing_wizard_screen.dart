@@ -1427,10 +1427,15 @@ class _PhotoStep extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final count = controller.media.length;
-      final ready = count >= rules.minimum;
+      // The minimum an admin set for THIS category, if any — the flow editor
+      // can require more (or fewer) photos of a villa than of a room. Read
+      // inside the Obx so switching category re-evaluates it live.
+      final minimum = rules
+          .minimumFor(controller.f['property_category']?.toString());
+      final ready = count >= minimum;
       return ListingSection(
         title: 'Photos',
-        sub: 'At least ${rules.minimum}, ${rules.recommended} recommended. '
+        sub: 'At least $minimum, ${rules.recommended} recommended. '
             'The first one becomes your cover.',
         children: [
           Container(
@@ -1451,7 +1456,7 @@ class _PhotoStep extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    '$count of ${rules.minimum} required photos added',
+                    '$count of $minimum required photos added',
                     style: inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,

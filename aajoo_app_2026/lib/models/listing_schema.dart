@@ -196,6 +196,7 @@ class PhotoRules {
     this.categories = const [],
     this.required = const [],
     this.videoMaxMinutes = 0,
+    this.byCategory = const {},
   });
 
   final int minimum;
@@ -204,15 +205,40 @@ class PhotoRules {
   final List<String> required;
   final int videoMaxMinutes;
 
-  factory PhotoRules.fromJson(Map<String, dynamic> j) => PhotoRules(
-        minimum: _int(j['minimum']),
-        recommended: _int(j['recommended']),
-        categories: Option.listFrom(j['categories']),
-        required: (j['required'] is List)
-            ? (j['required'] as List).map((e) => e.toString()).toList()
-            : const [],
-        videoMaxMinutes: _int(j['videoMaxMinutes']),
-      );
+  /// Per-category overrides, when an admin set one in the flow editor —
+  /// a villa can be required to show more photos than a room. Keyed by the
+  /// category value stored in `property_category`. This arrived in the schema
+  /// and was dropped here, so the app quoted the platform default for every
+  /// category while the web enforced the category's own number.
+  final Map<String, int> byCategory;
+
+  /// The minimum for THIS category — its own rule when the admin set one,
+  /// the platform default otherwise. Same resolution as the web wizard.
+  int minimumFor(String? category) {
+    if (category == null || category.isEmpty) return minimum;
+    return byCategory[category] ?? minimum;
+  }
+
+  factory PhotoRules.fromJson(Map<String, dynamic> j) {
+    final byCat = <String, int>{};
+    final raw = j['byCategory'];
+    if (raw is Map) {
+      raw.forEach((k, v) {
+        final min = (v is Map) ? _int(v['minimum']) : _int(v);
+        if (min > 0) byCat[k.toString()] = min;
+      });
+    }
+    return PhotoRules(
+      minimum: _int(j['minimum']),
+      recommended: _int(j['recommended']),
+      categories: Option.listFrom(j['categories']),
+      required: (j['required'] is List)
+          ? (j['required'] as List).map((e) => e.toString()).toList()
+          : const [],
+      videoMaxMinutes: _int(j['videoMaxMinutes']),
+      byCategory: byCat,
+    );
+  }
 }
 
 class PricingRules {

@@ -11,12 +11,22 @@ class BlogPost {
   final String longDesc;
   final String? imageUrl;
 
+  /// The stay a property post is about.
+  ///
+  /// The API sends both — blog_property_id, and the name resolved alongside it
+  /// — and this model dropped them, so a guide written about a particular
+  /// house had no way to reach the house. Same gap the web had.
+  final int? propertyId;
+  final String? propertyName;
+
   const BlogPost({
     required this.id,
     required this.title,
     required this.shortDesc,
     required this.longDesc,
     this.imageUrl,
+    this.propertyId,
+    this.propertyName,
   });
 
   factory BlogPost.fromJson(Map<String, dynamic> json) {
@@ -29,6 +39,10 @@ class BlogPost {
       shortDesc: (json['blog_short_desc'] ?? '').toString().trim(),
       longDesc: (json['blog_long_desc'] ?? '').toString().trim(),
       imageUrl: (url == null || url.isEmpty) ? null : url,
+      propertyId: int.tryParse(json['blog_property_id']?.toString() ?? ''),
+      propertyName: (json['blog_property_name']?.toString().trim().isEmpty ?? true)
+          ? null
+          : json['blog_property_name'].toString().trim(),
     );
   }
 }

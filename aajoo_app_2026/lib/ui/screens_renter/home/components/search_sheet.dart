@@ -23,9 +23,12 @@ import 'package:rent_home/utils/fonts.dart';
 ///   - Where & Suggested → re-centers map via `fetchPropertiesAt(LatLng)`
 ///   - Price sliders → `applyPriceFilter(minPrice, maxPrice)`
 ///   - Radius → passed through to fetch
-///   - When/Who → captured in local state but NOT yet wired to the property
-///     fetch endpoint (no date / guest params exist on the API today).
-///     Surfaces a friendly chip label so users see their choice.
+///   - When/Who → recorded on MapController (setStay) and sent with every
+///     fetch as `from`/`to`/`guests`, and carried onto the property page so
+///     checkout is not asked the same two questions again.
+///     (This comment used to say the API had no date or guest params. It has
+///     had all three for a while — see schema/properties.schema.js — so the
+///     answers were being collected from the guest and thrown away.)
 Future<void> showSearchSheet(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
@@ -251,8 +254,26 @@ class _SearchSheetState extends State<SearchSheet> {
     });
   }
 
+  /// DD-MM-YYYY — the shape the API and the web client both use.
+  String _dmy(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}-${d.month.toString().padLeft(2, '0')}-${d.year}';
+
   Future<void> _onSearch() async {
     final radiusStr = _radius > 0 ? _radius.round().toString() : '';
+
+    // Record what the guest actually asked for BEFORE fetching.
+    //
+    // "When" and "Who" were captured into local state here and never used —
+    // the fetch ignored them, so a stay already booked for those nights still
+    // appeared and a party of six was offered places that sleep two; and
+    // opening a stay asked for both all over again. The controller holds them
+    // now, so they narrow the search and travel to the property page.
+    mapController.setStay(
+      from: _dateRange == null ? null : _dmy(_dateRange!.start),
+      to: _dateRange == null ? null : _dmy(_dateRange!.end),
+      guests: _guests,
+    );
+
     if (_selected != null) {
       await mapController.fetchPropertiesAt(_selected!.position,
           radius: radiusStr);

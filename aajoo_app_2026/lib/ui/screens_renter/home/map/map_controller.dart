@@ -73,14 +73,40 @@ class MapController extends GetxController {
     return await Geolocator.getCurrentPosition();
   }
 
+  /// The stay the guest is searching for, held so it can travel.
+  ///
+  /// The search sheet collected "When" and "Who" and dropped them: the fetch
+  /// ignored them, and opening a stay asked for both again. Kept on the
+  /// controller because the property page, the map and the sheet all need the
+  /// same answer, and because it must survive the sheet being closed.
+  /// Dates are DD-MM-YYYY, the shape the API and both clients use.
+  final Rxn<String> stayFrom = Rxn<String>();
+  final Rxn<String> stayTo = Rxn<String>();
+  final RxInt stayGuests = 0.obs;
+
+  void setStay({String? from, String? to, int? guests}) {
+    stayFrom.value = (from != null && from.isNotEmpty) ? from : null;
+    stayTo.value = (to != null && to.isNotEmpty) ? to : null;
+    stayGuests.value = (guests != null && guests > 0) ? guests : 0;
+  }
+
   Future<void> getProperties(
     double lat,
     double long, {
     int category = 0,
     String radius = "", // default to empty string
   }) async {
-    PropertiesResponse? response = await mapService
-        .getProperties(lat, long, category: category, radius: radius);
+    PropertiesResponse? response = await mapService.getProperties(
+      lat,
+      long,
+      category: category,
+      radius: radius,
+      // Whatever the guest last asked for narrows every fetch, so paging the
+      // map or changing the category cannot quietly drop their dates.
+      guests: stayGuests.value > 0 ? stayGuests.value : null,
+      from: stayFrom.value,
+      to: stayTo.value,
+    );
 
     // Nothing within the default radius does not mean we have nothing. The
     // search is location-based, so a guest in any city we do not cover yet —
@@ -88,8 +114,15 @@ class MapController extends GetxController {
     // an app that looks broken rather than merely far away. Retry once, wide,
     // exactly as the web client does.
     if (response != null && response.data.property.isEmpty && radius.isEmpty) {
-      final PropertiesResponse? wider = await mapService
-          .getProperties(lat, long, category: category, radius: "20000");
+      final PropertiesResponse? wider = await mapService.getProperties(
+        lat,
+        long,
+        category: category,
+        radius: "20000",
+        guests: stayGuests.value > 0 ? stayGuests.value : null,
+        from: stayFrom.value,
+        to: stayTo.value,
+      );
       if (wider != null && wider.data.property.isNotEmpty) {
         response = wider;
       }

@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/controller/deals_controller.dart';
 import 'package:rent_home/models/guest_negotiation.dart';
+import 'package:rent_home/models/negotiated_deal.dart';
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/ui/screens_renter/property_details/open_property.dart';
 
 /// The guest's own view of every price negotiation they are in.
 ///
@@ -24,6 +26,37 @@ class GuestNegotiationsScreen extends StatefulWidget {
 }
 
 class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
+  /// Book an accepted deal — the stay opens with the agreed nights and the
+  /// deal's coupon pre-filled, exactly like tapping the home-screen banner.
+  ///
+  /// The coupon lives on DealsController (it is minted server-side when the
+  /// host accepts); the negotiation row itself only knows the dates. When the
+  /// coupon has already expired the stay still opens on the agreed dates —
+  /// the server would refuse the dead code anyway, and an open listing beats
+  /// a dead button.
+  Future<void> _bookDeal(GuestNegotiation n) async {
+    final deals = Get.isRegistered<DealsController>()
+        ? Get.find<DealsController>()
+        : null;
+    NegotiatedDeal? deal;
+    if (deals != null) {
+      for (final d in deals.activeDeals) {
+        if (d.propertyId == n.propertyId) {
+          deal = d;
+          break;
+        }
+      }
+    }
+    await openPropertyById(
+      n.propertyId,
+      dealCode: deal?.code,
+      dealFrom: deal?.bookFrom ?? n.bookFrom,
+      dealTo: deal?.bookTo ?? n.bookTo,
+      dealPercent: deal?.percent,
+      errorTitle: 'Deal',
+    );
+  }
+
   final DealsController c = Get.isRegistered<DealsController>()
       ? Get.find<DealsController>()
       : Get.put(DealsController());
@@ -548,8 +581,40 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
             ),
           ] else if (n.status == 'accepted') ...[
             const Divider(height: 22, color: kLine),
+            // The web's accepted state books the deal from right here; this
+            // screen only SAID the deal existed and left the guest to go find
+            // the listing again by hand.
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: kInk,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () => _bookDeal(n),
+                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                label: Text('Book at the agreed price',
+                    style: inter(fontSize: 13.5, fontWeight: FontWeight.w600)),
+              ),
+            ),
+            const SizedBox(height: 8),
             Text('Your deal is applied at checkout and is valid for 24 hours.',
                 style: inter(fontSize: 12, color: kMuted)),
+            const SizedBox(height: 4),
+            // An accepted PRICE is not a confirmed BOOKING — most hosts still
+            // review the request — and "Accepted" here next to "Pending" in
+            // bookings read as the two screens disagreeing about one thing.
+            // Same wording as the web.
+            Text(
+              'This is the price agreed, not a confirmed stay. You still book it, '
+              'and unless the host has instant booking on, they confirm the dates '
+              'afterwards — so a booking can read "Pending" for a while with the '
+              'deal already accepted.',
+              style: inter(fontSize: 11.5, color: kMuted, height: 1.5),
+            ),
           ],
         ],
       ),

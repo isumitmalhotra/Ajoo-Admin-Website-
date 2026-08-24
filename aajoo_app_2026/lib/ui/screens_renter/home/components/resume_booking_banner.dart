@@ -4,6 +4,7 @@ import 'package:rent_home/constants.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/models/properties_response_model.dart';
 import 'package:rent_home/service/pending_booking.dart';
+import 'package:rent_home/ui/screens_renter/home/map/map_controller.dart';
 import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';
 import 'package:rent_home/utils/fonts.dart';
 
@@ -87,6 +88,12 @@ class _ResumeBookingBannerState extends State<ResumeBookingBanner> {
         categories: pd.categories?.map((e) => e.toString()).toList(),
         amenities: pd.amenities?.map((e) => e.toString()).toList(),
       );
+      // The party size travels through MapController — the property page
+      // falls back to it when no deal dictates one — so a resumed booking
+      // reopens for the same number of people it was being made for.
+      if (intent.guests > 0 && Get.isRegistered<MapController>()) {
+        Get.find<MapController>().setStay(guests: intent.guests);
+      }
       // dealFrom/dealTo is the page's existing "open with these dates already
       // chosen" input, so the guest lands on their own stay, not a blank sheet.
       Get.to(() => PropertyPage(

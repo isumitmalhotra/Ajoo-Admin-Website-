@@ -27,6 +27,11 @@ class PendingBooking {
   final bool isCod;
   final DateTime savedAt;
 
+  /// How many people the stay was for. 0 = never chosen. Restored on resume
+  /// because the price now depends on it — a listing that charges beyond an
+  /// included headcount would re-quote a resumed booking for a party of one.
+  final int guests;
+
   const PendingBooking({
     required this.propertyId,
     required this.propertyName,
@@ -35,6 +40,7 @@ class PendingBooking {
     this.bookTo,
     this.couponCode,
     this.isCod = false,
+    this.guests = 0,
   });
 
   /// Dates go stale. A week-old intent is more likely to confuse than help,
@@ -48,6 +54,7 @@ class PendingBooking {
         'bookTo': bookTo,
         'couponCode': couponCode,
         'isCod': isCod,
+        'guests': guests,
         'savedAt': savedAt.toIso8601String(),
       };
 
@@ -61,6 +68,7 @@ class PendingBooking {
       bookTo: j['bookTo']?.toString(),
       couponCode: j['couponCode']?.toString(),
       isCod: j['isCod'] == true,
+      guests: (j['guests'] as num?)?.toInt() ?? 0,
       savedAt: DateTime.tryParse(j['savedAt']?.toString() ?? '') ?? DateTime.now(),
     );
   }

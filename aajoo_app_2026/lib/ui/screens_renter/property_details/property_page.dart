@@ -1,3 +1,4 @@
+import 'package:rent_home/ui/screens_renter/home/map/map_controller.dart';
 import 'package:rent_home/service/pending_booking.dart';
 import 'package:rent_home/ui/screens_renter/property_details/components/booking_confirmed_screen.dart';
 import 'package:rent_home/ui/screens_renter/property_details/components/property_tabs.dart';
@@ -267,8 +268,28 @@ class _PropertyPageState extends State<PropertyPage>
       return DateTime(y, m, d);
     }
 
-    final from = parse(widget.dealFrom);
-    final to = parse(widget.dealTo);
+    var from = parse(widget.dealFrom);
+    var to = parse(widget.dealTo);
+
+    // What the guest already told the search sheet. "When" and "Who" used to
+    // be collected there and dropped — opening a stay asked both again.
+    final searched = Get.isRegistered<MapController>()
+        ? Get.find<MapController>()
+        : null;
+
+    // The party size is independent of where the dates came from: a resumed
+    // booking arrives with deal dates AND a remembered party, so reading the
+    // guests only when dates were missing silently shrank the party to one.
+    final g = searched?.stayGuests.value ?? 0;
+    if (g > 0) _guests = g;
+
+    // No deal? Fall back to the dates the guest searched for. A deal still
+    // wins, because those are the nights the price was agreed for.
+    if (searched != null) {
+      from ??= parse(searched.stayFrom.value);
+      to ??= parse(searched.stayTo.value);
+    }
+
     if (from != null && to != null && to.isAfter(from)) {
       selectedDate = from;
       selectedDateTo = to;
@@ -361,7 +382,10 @@ class _PropertyPageState extends State<PropertyPage>
   double get _discountOnRoom {
     if (_appliedCoupon == null || _appliedCoupon!.isEmpty) return 0;
     if (_couponDiscount > 0) return _couponDiscount;
-    final base = double.tryParse(currentPriceString) ?? 0;
+    // Percent of what is actually charged — room PLUS the party charge, which
+    // is the base the server discounts. Percent-of-room-only showed a smaller
+    // saving here than the server would grant at booking.
+    final base = (double.tryParse(currentPriceString) ?? 0) + _partyFee;
     return _couponPercent > 0 ? base * _couponPercent / 100 : 0;
   }
 
@@ -375,7 +399,11 @@ class _PropertyPageState extends State<PropertyPage>
       });
       return;
     }
-    final base = double.tryParse(currentPriceString) ?? 0;
+    // Validate against room + party charge — the figure the server discounts
+    // (booking.controller applies the coupon to the whole chargeable amount).
+    // Testing against the room alone could refuse a coupon whose minimum-spend
+    // the real booking actually clears, or show a discount capped short.
+    final base = (double.tryParse(currentPriceString) ?? 0) + _partyFee;
     setState(() => _couponBusy = true);
     final res = await _dealsSvc.validateCoupon(
         code: code, propertyId: widget.id, amount: base);
@@ -1380,6 +1408,7 @@ onPressed: () async {
                         bookTo: formattedDateTo,
                         couponCode: _appliedCoupon,
                         isCod: isCod,
+                        guests: _guests,
                         savedAt: DateTime.now(),
                       ));
                       final verified = await Get.toNamed('/kyc', arguments: {

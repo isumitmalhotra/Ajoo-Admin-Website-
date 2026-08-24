@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/models/blog_model.dart';
+import 'package:rent_home/ui/screens_renter/property_details/open_property.dart';
 import 'package:rent_home/service/blog_service.dart';
 import 'package:rent_home/utils/fonts.dart';
 
@@ -206,6 +207,61 @@ class BlogPostScreen extends StatelessWidget {
                 child: Text(p,
                     style: inter(fontSize: 14.5, color: kInk, height: 1.7)),
               )),
+
+          // The stay this post is about — same card the web shows.
+          //
+          // A guide written about a particular house ended at the last
+          // paragraph with the house named in the prose and unreachable from
+          // it; the reader had to go back to search and hope to find it by
+          // name.
+          if (post.propertyId != null && post.propertyId! > 0) ...[
+            const SizedBox(height: 10),
+            Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () =>
+                    openPropertyById(post.propertyId!, errorTitle: 'Blog'),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: kInk.withOpacity(0.08)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('THE STAY IN THIS STORY',
+                                style: inter(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: kMuted,
+                                    letterSpacing: 1.2)),
+                            const SizedBox(height: 4),
+                            Text(post.propertyName ?? 'View the property',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: fraunces(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: kInk)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Icon(Icons.arrow_forward_rounded,
+                          size: 20, color: kInk),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

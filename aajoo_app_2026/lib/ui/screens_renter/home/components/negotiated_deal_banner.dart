@@ -3,10 +3,8 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/controller/deals_controller.dart';
-import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/models/negotiated_deal.dart';
-import 'package:rent_home/models/properties_response_model.dart';
-import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';
+import 'package:rent_home/ui/screens_renter/property_details/open_property.dart';
 
 /// Compact "you have a negotiated deal" banner for the renter home — the mobile
 /// mirror of the web dashboard "Your negotiated deals" card. Shows the most
@@ -29,69 +27,16 @@ class NegotiatedDealBanner extends StatelessWidget {
 
   Future<void> _openDeal(NegotiatedDeal deal) async {
     if (deal.propertyId == null) return;
-    Get.dialog(const Center(child: CircularProgressIndicator()),
-        barrierDismissible: false);
-    try {
-      final userController = Get.find<UserController>();
-      await userController.getProperty(deal.propertyId!);
-      final resp = userController.property.value;
-      if (Get.isDialogOpen ?? false) Get.back();
-      final pd = resp?.data;
-      if (pd == null) {
-        Get.snackbar('Deal', 'Could not open this property. Please try again.',
-            snackPosition: SnackPosition.TOP);
-        return;
-      }
-      final property = Property(
-        propertyId: pd.propertyId ?? deal.propertyId!,
-        propertyName: pd.propertyName ?? deal.propertyName ?? 'Property',
-        propertyAddress: pd.propertyAddress ?? '',
-        propertyDesc: pd.propertyDesc ?? '',
-        propertyPrice: pd.propertyPrice ?? '0',
-        propertyCity: pd.propertyCity ?? '',
-        propertyLongitude: pd.propertyLongitude ?? '0.0',
-        propertyLatitude: pd.propertyLatitude ?? '0.0',
-        propertyHostId: pd.propertyHostId ?? 0,
-        propertyZip: pd.propertyZip,
-        propertyContact: pd.propertyContact,
-        propDetailsPropDetailIsPetFriendly: pd.propDetails?.isPetFriendly,
-        propDetailsPropDetailIsSmoke: pd.propDetails?.isSmoke,
-        propDetailsPropDetailInTime: pd.propDetails?.inTime,
-        propDetailsPropDetailOutTime: pd.propDetails?.outTime,
-        propDetailsPropDetailExtra: pd.propDetails?.extra,
-        coverImage: (pd.images != null && pd.images!.isNotEmpty)
-            ? pd.images!.first.toString()
-            : null,
-        images: (pd.images ?? const []).map((e) => e.toString()).toList(),
-        categoryTitles: const [],
-        tags: pd.tags?.map((e) => e.toString()).toList(),
-        categories: pd.categories?.map((e) => e.toString()).toList(),
-        amenities: pd.amenities?.map((e) => e.toString()).toList(),
-      );
-      Get.to(() => PropertyPage(
-            property: property,
-            price: property.propertyPrice,
-            name: property.propertyName,
-            location: property.propertyAddress,
-            image: property.coverImage ?? '',
-            id: property.propertyId,
-            rating: '4.5',
-            description: property.propertyDesc,
-            lat: property.propertyLatitude,
-            long: property.propertyLongitude,
-            galleryImages: property.images.map((e) => e.toString()).toList(),
-            inTime: property.propDetailsPropDetailInTime,
-            outTime: property.propDetailsPropDetailOutTime,
-            dealCode: deal.code,
-            dealFrom: deal.bookFrom,
-            dealTo: deal.bookTo,
-            dealPercent: deal.percent,
-          ));
-    } catch (_) {
-      if (Get.isDialogOpen ?? false) Get.back();
-      Get.snackbar('Deal', 'Could not open this property. Please try again.',
-          snackPosition: SnackPosition.TOP);
-    }
+    // Fetch + shape + navigate lives in openPropertyById — the same sequence
+    // the blog's "stay in this story" card uses, so the two cannot drift.
+    await openPropertyById(
+      deal.propertyId!,
+      dealCode: deal.code,
+      dealFrom: deal.bookFrom,
+      dealTo: deal.bookTo,
+      dealPercent: deal.percent,
+      errorTitle: 'Deal',
+    );
   }
 
   @override
