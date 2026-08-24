@@ -198,6 +198,24 @@ away with the content. The app page is a `CustomScrollView` whose body is a
 single `SliverToBoxAdapter`, so making the nav sticky means splitting that
 sliver — and Airbnb's own app has no sticky section nav on a phone either.
 
+## 2026-08-24 — renter-flow parity sweep (matching the web's guest-errors fixes)
+
+| Web fix | Mobile state after this pass |
+|---|---|
+| Search carries dates+guests to property & checkout | **Added** — search sheet records When/Who on MapController.setStay; sent as `guests`/`from`/`to` on /properties/search; property page seeds from it |
+| Accepted deal books from negotiations | **Added** — "Book at the agreed price" via shared `openPropertyById` (open_property.dart); accepted-vs-pending explainer copy matches web |
+| Blog post links to its stay | **Added** — BlogPost model carries propertyId/name; post ends with "The stay in this story" |
+| Coupon validated vs room+party charge | **Fixed** — was room-only |
+| Per-category photo minimums (flow editor) | **Fixed** — PhotoRules.byCategory + minimumFor(); wizard step quotes/enforces the category's own number |
+| Booking survives ID verification | Already existed (PendingBookingStore); **extended** to record/restore the party size the price now depends on |
+| Google-lockout login message | Pass-through already worked (server message shown verbatim) |
+| Catalogue-driven wizard (flow editor) | Automatic — app fetches /listing/schema, which categoriesForWizard() serves |
+| LUXE skin on non-lux listing | N/A — app property page never wears the lux skin |
+| Session guard / tablet sticky bar / sidebar scroll / map z-index | N/A — no mobile equivalent |
+| Also: "1 homes near you" pluralised; map pin prints ₹3,200 not ₹3200.00 |  |
+
+Commit: `771ad19`. flutter analyze clean (pre-existing infos only); 36/36 tests pass.
+
 ## Known open parity gaps
 
 1. **No messages inbox on mobile.** The only conversation surface is the
