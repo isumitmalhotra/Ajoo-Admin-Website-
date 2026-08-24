@@ -100,10 +100,22 @@ class _PropertyPageState extends State<PropertyPage>
   /// and a listing that charges beyond an included headcount could not bill it.
   int _guests = 1;
 
-  /// The ceiling the host set, or null when the listing does not say.
+  /// The ceiling the host set, plus any extras they are willing to charge for.
+  ///
+  /// On the live data a listing can have capacity 8 and "guests included" 8
+  /// while allowing 2 more at a price. Stopping at 8 would put those two out of
+  /// reach and the charge with them, so the stepper reaches what the host is
+  /// actually prepared to take.
   int? get _guestCeiling {
     final n = _single?.propDetails?.noOfGuests;
-    return (n != null && n > 0) ? n : null;
+    final base = (n != null && n > 0) ? n : null;
+    final rule = _single?.pricing;
+    if (rule != null && rule.chargeExtraGuests && rule.maxExtraGuests > 0) {
+      final included = rule.guestsIncluded > 0 ? rule.guestsIncluded : (base ?? 0);
+      final withExtras = included + rule.maxExtraGuests;
+      return withExtras > (base ?? 0) ? withExtras : base;
+    }
+    return base;
   }
 
   /// What this party adds, per extra guest per night. Mirrors the web and the
