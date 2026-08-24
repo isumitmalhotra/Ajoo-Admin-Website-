@@ -92,6 +92,24 @@ class _PropertyPageState extends State<PropertyPage>
     with SingleTickerProviderStateMixin {
   late Razorpay razorpay;
   late double currentPrice;
+
+  /// How many people the stay is for.
+  ///
+  /// The app never asked, and never sent `no_of_guests`, so every booking made
+  /// from the phone stored NULL and no host could see how many were coming —
+  /// and a listing that charges beyond an included headcount could not bill it.
+  int _guests = 1;
+
+  /// The ceiling the host set, or null when the listing does not say.
+  int? get _guestCeiling {
+    final n = _single?.propDetails?.noOfGuests;
+    return (n != null && n > 0) ? n : null;
+  }
+
+  /// What this party adds, per extra guest per night. Mirrors the web and the
+  /// server; the server recomputes it and refuses a price that disagrees.
+  double get _partyFee =>
+      _single?.pricing?.extraGuestFee(_guests, totalDays) ?? 0;
   int totalDays = 1;
 
   /// Midnight of the same calendar day.
@@ -827,6 +845,7 @@ class _PropertyPageState extends State<PropertyPage>
                                       double.parse(currentPriceString),
                                   perNightTariff: currentPrice,
                                   discount: _discountOnRoom,
+                                  extraGuestFee: _partyFee,
                                 );
 
                                 return Text(
@@ -846,6 +865,55 @@ class _PropertyPageState extends State<PropertyPage>
 
                       const SizedBox(height: 16),
 
+                      // Who is coming. Capped at the host's stated capacity so
+                      // the count cannot climb past what the place sleeps.
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Guests',
+                                  style: TextStyle(
+                                      fontSize: 14, fontWeight: FontWeight.w600)),
+                              if (_guestCeiling != null)
+                                Text('This place sleeps up to $_guestCeiling',
+                                    style: TextStyle(
+                                        fontSize: 11.5, color: Colors.grey[600])),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove_circle_outline),
+                                iconSize: 26,
+                                onPressed: _guests > 1
+                                    ? () => setState(() => _guests -= 1)
+                                    : null,
+                              ),
+                              SizedBox(
+                                width: 28,
+                                child: Text('$_guests',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700)),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add_circle_outline),
+                                iconSize: 26,
+                                onPressed: (_guestCeiling == null ||
+                                        _guests < _guestCeiling!)
+                                    ? () => setState(() => _guests += 1)
+                                    : null,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 8),
+
                       // Price breakdown
                       Container(
                         padding: const EdgeInsets.all(12),
@@ -863,6 +931,7 @@ class _PropertyPageState extends State<PropertyPage>
                               roomSubtotal: double.parse(currentPriceString),
                               perNightTariff: currentPrice,
                               discount: _discountOnRoom,
+                              extraGuestFee: _partyFee,
                             );
 
                             return Column(
@@ -888,6 +957,30 @@ class _PropertyPageState extends State<PropertyPage>
                                     ),
                                   ],
                                 ),
+                                if (p.extraGuestFee > 0) ...[
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Extra guests',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey[700],
+                                        ),
+                                      ),
+                                      Text(
+                                        '₹${p.extraGuestFee.toStringAsFixed(0)}',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.grey[700],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                                 if (p.discount > 0) ...[
                                   const SizedBox(height: 8),
                                   Row(
@@ -1196,6 +1289,7 @@ onPressed: () async {
                       roomSubtotal: double.parse(currentPriceString),
                       perNightTariff: currentPrice,
                       discount: _discountOnRoom,
+                      extraGuestFee: _partyFee,
                     );
                     final double finalAmount =
                         double.parse(p.total.toStringAsFixed(0));
@@ -1232,7 +1326,11 @@ onPressed: () async {
                       // backend actually understands. Until then this path
                       // keeps its existing behaviour rather than silently
                       // changing what a guest is charged.
-                      "price": isPrebooking ? advanceAmount : p.roomSubtotal,
+                      // Room + the party charge. The backend recomputes this
+                      // from `no_of_guests` and refuses a price that disagrees,
+                      // so the two must be sent together or not at all.
+                      "price": isPrebooking ? advanceAmount : p.chargeable,
+                      "no_of_guests": _guests,
                       "bookFrom": formattedDate,
                       "bookTo": formattedDateTo,
                       "isCod": isCod,
@@ -2488,6 +2586,7 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
             roomSubtotal: double.tryParse(currentPriceString) ?? 0,
             perNightTariff: currentPrice,
             discount: _discountOnRoom,
+            extraGuestFee: _partyFee,
           ).total.toStringAsFixed(0)}',
           isPayOnArrival: isCod,
           awaitingApproval: awaitingApproval,

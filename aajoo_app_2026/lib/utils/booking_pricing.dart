@@ -37,7 +37,17 @@ class StayPrice {
   /// discounted figure would take the discount twice.
   final double roomSubtotal;
 
-  /// The coupon or negotiated-deal reduction applied to [roomSubtotal].
+  /// What guests beyond the host's included headcount add for the whole stay.
+  ///
+  /// Shown as its own line, but it is part of what is charged: the backend
+  /// discounts and taxes room + party charge, and validates the `price` the app
+  /// sends against that sum. Send [chargeable], not [roomSubtotal].
+  final double extraGuestFee;
+
+  /// Room + party charge — the figure to send as `price`.
+  final double chargeable;
+
+  /// The coupon or negotiated-deal reduction applied to [chargeable].
   final double discount;
 
   /// [roomSubtotal] less [discount] — the base GST is actually charged on.
@@ -54,6 +64,8 @@ class StayPrice {
 
   const StayPrice({
     required this.roomSubtotal,
+    required this.extraGuestFee,
+    required this.chargeable,
     required this.discount,
     required this.discountedRoom,
     required this.taxPct,
@@ -77,17 +89,25 @@ StayPrice priceStay({
   required double roomSubtotal,
   required double perNightTariff,
   double discount = 0,
+  double extraGuestFee = 0,
 }) {
   final subtotal = roomSubtotal.isFinite && roomSubtotal > 0 ? roomSubtotal : 0.0;
+  final party =
+      extraGuestFee.isFinite && extraGuestFee > 0 ? extraGuestFee : 0.0;
+  // The party charge rides with the room through discount and tax, because
+  // that is what the backend does with it.
+  final chargeable = subtotal + party;
   final off = discount.isFinite && discount > 0 ? discount : 0.0;
-  final discountedRoom = (subtotal - off).clamp(0.0, subtotal).toDouble();
+  final discountedRoom = (chargeable - off).clamp(0.0, chargeable).toDouble();
   final taxPct = perNightTariff > 7500 ? 18 : 5;
   // Rounded to paise, the same way the backend rounds, so the total shown here
   // equals the Razorpay order amount exactly rather than being a rupee out.
   final taxes = (discountedRoom * taxPct).roundToDouble() / 100;
   return StayPrice(
     roomSubtotal: subtotal,
-    discount: subtotal - discountedRoom,
+    extraGuestFee: party,
+    chargeable: chargeable,
+    discount: chargeable - discountedRoom,
     discountedRoom: discountedRoom,
     taxPct: taxPct,
     taxes: taxes,
