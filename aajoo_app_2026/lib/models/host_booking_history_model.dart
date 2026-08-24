@@ -42,6 +42,12 @@ class HostBookingHistoryResponse {
 
 class HostBookingHistory {
   String bookId;
+
+  /// The NUMERIC primary id. Distinct from [bookId], which is the human
+  /// reference ("B618787"): /host/confirm-book takes this one, and the API has
+  /// always returned it — the model simply dropped it, which is why the app
+  /// could not approve a booking.
+  int? bookPriId;
   String bookInvoice;
   double bookPrice; // supports decimal values
   bool bookIsPaid;
@@ -70,6 +76,7 @@ class HostBookingHistory {
 
   HostBookingHistory({
     required this.bookId,
+    this.bookPriId,
     required this.bookInvoice,
     required this.bookPrice,
     required this.bookIsPaid,
@@ -128,6 +135,11 @@ class HostBookingHistory {
 
     return HostBookingHistory(
       bookId: json['book_id']?.toString() ?? '',
+      // 0 means the field was absent — keep that as null so the UI can tell
+      // "cannot confirm this" apart from "confirm booking 0".
+      bookPriId: parseInt(json['book_pri_id']) == 0
+          ? null
+          : parseInt(json['book_pri_id']),
       bookInvoice: json['book_invoice']?.toString() ?? '',
       bookPrice: parsedPrice,
       bookIsPaid: parseBool(json['book_is_paid']),
@@ -154,6 +166,7 @@ class HostBookingHistory {
 
   Map<String, dynamic> toJson() => {
         'book_id': bookId,
+        'book_pri_id': bookPriId,
         'book_invoice': bookInvoice,
         'book_price': bookPrice,
         'book_is_paid': bookIsPaid,

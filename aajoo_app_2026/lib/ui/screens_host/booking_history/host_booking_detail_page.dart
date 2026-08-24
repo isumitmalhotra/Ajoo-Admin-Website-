@@ -55,6 +55,38 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
   /// hour: a guest who arrives at noon could then be checked in from the
   /// website (which allows it from midnight) and from the API (same rule), but
   /// not from the phone in the host's hand. Same rule everywhere.
+  /// A booking still waiting on this host.
+  ///
+  /// "Pending"/"Payment Pending" is what a request looks like before the host
+  /// accepts it — and nearly every listing needs accepting, because only 8 of
+  /// 29,252 properties carry booking rules and the backend defaults the rest
+  /// to approval.
+  bool get _needsApproval {
+    if (_isCancelled || _isCheckedIn) return false;
+    if (b.bookPriId == null) return false;
+    final t = b.bookingStatusBsTitle.toLowerCase();
+    return t.contains('pending');
+  }
+
+  Future<void> _confirmBooking() async {
+    final id = b.bookPriId;
+    if (_confirming || id == null) return;
+    setState(() => _confirming = true);
+    try {
+      await HostService().confirmBooking(id);
+      // Same trick as check-in: update the chip so the page tells the truth
+      // without a refetch.
+      setState(() => b.bookingStatusBsTitle = 'Booking Confirmed');
+      Fluttertoast.showToast(
+          msg: "Booking confirmed — the guest has been told.");
+    } catch (e) {
+      Fluttertoast.showToast(
+          msg: e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _confirming = false);
+    }
+  }
+
   bool get _canCheckIn {
     if (_isCancelled || _isCheckedIn) return false;
     final from = parseStayDate(b.bookDetailsBtBookFrom);
@@ -66,6 +98,7 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
   }
 
   bool _checkingIn = false;
+  bool _confirming = false;
 
   Future<void> _markCheckedIn() async {
     if (_checkingIn) return;
@@ -303,6 +336,26 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
         // Who is actually turning up, when the booking was made for somebody
         // other than the account holder. Renders nothing otherwise.
         StayingGuestCard(bookingId: b.bookId),
+        // Approve the request. The web has always had this; the app had no
+        // way to accept a booking at all, so a host working from the phone
+        // could not complete the loop.
+        if (_needsApproval) ...[
+          ElevatedButton.icon(
+            onPressed: _confirming ? null : _confirmBooking,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kIndigo,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            icon: const Icon(Icons.check_circle_outline, size: 18),
+            label: Text(_confirming ? 'Confirming…' : 'Confirm this booking',
+                style: inter(fontSize: 14, fontWeight: FontWeight.w700)),
+          ),
+          const SizedBox(height: 10),
+        ],
         if (_canCheckIn) ...[
           // The arrival control the host portal never had: one tap says
           // "the guest is here", flips the booking to Check In everywhere

@@ -368,6 +368,36 @@ class HostService {
 
   /// The mirror of no-show: the guest DID arrive, and the host says so.
   /// Returns the server's message on failure via exception.
+  /// Approve a pending booking request.
+  ///
+  /// Nearly every listing needs this: 29,244 of 29,252 properties have no
+  /// booking-rules row and the backend defaults those to "approval", so a
+  /// guest's booking waits for the host. The web has always had a Confirm
+  /// button and the app never did, which meant a host working from the phone
+  /// could not complete the core loop at all.
+  ///
+  /// Takes the NUMERIC book_pri_id, not the "B…" reference — the endpoint
+  /// scopes by host id as well, so one host cannot confirm another's booking.
+  Future<void> confirmBooking(int bookPriId) async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final response = await _dio
+          .post("/host/confirm-book", data: {"bookPriId": bookPriId});
+      final body = response.data;
+      if (body is! Map || body['success'] != true) {
+        throw Exception((body is Map ? body['message'] : null)?.toString() ??
+            'Could not confirm this booking.');
+      }
+    } on DioException catch (err) {
+      final data = err.response?.data;
+      final msg = data is Map ? data['message'] : null;
+      throw Exception(msg is List
+          ? msg.join(', ')
+          : (msg?.toString() ?? 'Could not confirm this booking.'));
+    }
+  }
+
   Future<void> markBookingCheckIn(String bookingId) async {
     final token = await const FlutterSecureStorage().read(key: "user_token");
     _dio.options.headers['Authorization'] = 'Bearer $token';
