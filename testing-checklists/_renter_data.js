@@ -183,5 +183,9 @@ const DATA = [
     ["Changing the party at checkout re-prices","On the review page, change 10 guests to 8.","","","The extra-guest line disappears and the total falls back to ₹19,950."],
     ["The app charges the same","Open 29262 in the Android app, set 10 guests, same dates.","","","Same ₹26,250, and the booking stores the guest count. The app never used to ask, or send it."],
     ["Another tab signing in is announced","Sign in as a guest in one tab, then sign in as a host in a second. Return to the first.","","","The first tab says ‘You signed in somewhere else’ with a Reload button — it does not silently become the host."],
+    ["A Google account says it is one","Sign up with Google, then try to sign in with that email and any password.","/user/login","","It says the account was created with Google and points at Forgot Password. It used to say ‘Incorrect password’ on an account that never had one — a permanent lockout."],
+    ["Edit Profile stays on your profile","Open My Profile and press Edit profile.","/user/update","","The same page becomes editable — name, address, state, city, picture. It does not jump to Settings. Email is read-only and phone points to Settings, which needs an emailed code."],
+    ["The side nav keeps its place","Scroll the account side nav down, then click between My Profile and Settings.","","","It stays where you left it and the entry you are on is visible. It used to jump back to the top on every click."],
+    ["Booked dates are greyed out","Open 29262 and 29253 and read the calendar.","/booking/property-availability","","29262 blocks 26–27 Aug and 1–3 Sep (its two confirmed stays; checkout days stay bookable, cancelled ones do not block). 29253 blocks 25 and 27 Aug — the host’s own blocks — and leaves 26 open."],
   ]},
 ];
