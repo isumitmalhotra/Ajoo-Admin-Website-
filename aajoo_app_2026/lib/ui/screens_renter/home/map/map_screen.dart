@@ -10,39 +10,10 @@ import 'package:rent_home/ui/screens_renter/home/map/map_controller.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/widgets/hotel_dialog.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:rent_home/utils/money.dart';
 
-/// "3200.00" -> "3,200". Indian grouping: last three digits, then pairs.
-///
-/// Falls back to the original string when it is not a number at all, so a
-/// pin can never end up blank because a price arrived in an odd shape.
-String _rupees(String raw) {
-  final cleaned = raw.replaceAll('₹', '').replaceAll(',', '').trim();
-  final value = double.tryParse(cleaned);
-  if (value == null) return cleaned;
-  final digits = value.round().abs().toString();
-  if (digits.length <= 3) return '${value < 0 ? '-' : ''}$digits';
-  final last3 = digits.substring(digits.length - 3);
-  var rest = digits.substring(0, digits.length - 3);
-  final buf = StringBuffer();
-  while (rest.length > 2) {
-    buf.write('${rest.substring(0, rest.length - 2)},');
-    rest = rest.substring(rest.length - 2);
-    break;
-  }
-  // Re-group any remaining leading digits in pairs (lakh, crore ...).
-  var head = buf.toString().isEmpty ? rest : '';
-  if (head.isEmpty) {
-    final parts = <String>[];
-    var r = digits.substring(0, digits.length - 3);
-    while (r.length > 2) {
-      parts.insert(0, r.substring(r.length - 2));
-      r = r.substring(0, r.length - 2);
-    }
-    if (r.isNotEmpty) parts.insert(0, r);
-    head = parts.join(',');
-  }
-  return '${value < 0 ? '-' : ''}$head,$last3';
-}
+/// The pin draws its own ₹ glyph, so it wants the digits alone.
+String _pinPrice(String raw) => rupeesFrom(raw).replaceAll('₹', '');
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -206,7 +177,7 @@ class _MapScreenState extends State<MapScreen> {
     // separator, next to a web card reading "₹3,200". Rounded to whole rupees
     // and grouped the Indian way, which is what every other price on both
     // platforms does.
-    final cleanPrice = _rupees(price);
+    final cleanPrice = _pinPrice(price);
 
     // Main price text with modern typography
     final TextPainter textPainter = TextPainter(

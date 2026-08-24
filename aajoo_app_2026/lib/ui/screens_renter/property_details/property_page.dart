@@ -34,6 +34,7 @@ import 'package:rent_home/service/deals_service.dart';
 import 'package:rent_home/ui/screens_renter/bookmark_properties/bookmark_properties_page.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/negotitaion_page.dart';
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/utils/money.dart';
 import 'package:rent_home/widgets/amenity_row.dart';
 import 'package:rent_home/widgets/host_card.dart';
 import 'package:rent_home/widgets/verified_pill.dart';
@@ -257,6 +258,13 @@ class _PropertyPageState extends State<PropertyPage>
     _fetchSingleProperty().then((_) => _fetchHost());
   }
 
+  /// DD/MM/YYYY, zero-padded — the field labels promise that shape and the
+  /// raw parts gave "24/8/2026" next to a label reading "Book To (DD/MM/YYYY)".
+  static String _dmy(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}/'
+      '${d.month.toString().padLeft(2, '0')}/'
+      '${d.year}';
+
   // Parse the deal's DD-MM-YYYY window into the date pickers + totals.
   void _applyDealDates() {
     DateTime? parse(String? s) {
@@ -416,8 +424,8 @@ class _PropertyPageState extends State<PropertyPage>
         _couponPercent = res.percent;
         _couponOk = true;
         _couponMsg = res.percent > 0
-            ? 'Applied — ${res.percent}% off (₹${res.discount.toStringAsFixed(0)})'
-            : 'Applied — ₹${res.discount.toStringAsFixed(0)} off';
+            ? 'Applied — ${res.percent}% off (${rupees(res.discount)})'
+            : 'Applied — ${rupees(res.discount)} off';
       } else {
         _appliedCoupon = null;
         _couponOk = false;
@@ -539,7 +547,7 @@ class _PropertyPageState extends State<PropertyPage>
                     text: TextSpan(
                       children: [
                         TextSpan(
-                          text: '₹$perNight',
+                          text: rupeesFrom(perNight),
                           style: fraunces(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
@@ -565,7 +573,7 @@ class _PropertyPageState extends State<PropertyPage>
                       style: inter(fontSize: 12, color: kMuted),
                       children: [
                         TextSpan(
-                          text: '₹$currentPriceString total',
+                          text: '${rupeesFrom(currentPriceString)} total',
                           style: inter(
                             fontSize: 12,
                             color: kMuted,
@@ -686,7 +694,7 @@ class _PropertyPageState extends State<PropertyPage>
               ListTile(
                 leading: const Icon(Icons.calendar_today),
                 title: Text(
-                  '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                  _dmy(selectedDate),
                 ),
                 onTap: () async {
                   final DateTime? picked = await showDatePicker(
@@ -736,7 +744,7 @@ class _PropertyPageState extends State<PropertyPage>
                 leading: const Icon(Icons.calendar_month),
                 title: Text(
                   selectedDateTo != null
-                      ? '${selectedDateTo!.day}/${selectedDateTo!.month}/${selectedDateTo!.year}'
+                      ? _dmy(selectedDateTo!)
                       : 'Book To (DD/MM/YYYY)',
                 ),
                 onTap: () async {
@@ -889,7 +897,7 @@ class _PropertyPageState extends State<PropertyPage>
                                 );
 
                                 return Text(
-                                  '₹${p.total.toStringAsFixed(0)}',
+                                  rupees(p.total),
                                   style: const TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
@@ -988,7 +996,7 @@ class _PropertyPageState extends State<PropertyPage>
                                       ),
                                     ),
                                     Text(
-                                      '₹${p.roomSubtotal.toStringAsFixed(0)}',
+                                      rupees(p.roomSubtotal),
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -1011,7 +1019,7 @@ class _PropertyPageState extends State<PropertyPage>
                                         ),
                                       ),
                                       Text(
-                                        '₹${p.extraGuestFee.toStringAsFixed(0)}',
+                                        rupees(p.extraGuestFee),
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
@@ -1037,7 +1045,7 @@ class _PropertyPageState extends State<PropertyPage>
                                         ),
                                       ),
                                       Text(
-                                        '− ₹${p.discount.toStringAsFixed(0)}',
+                                        '− ${rupees(p.discount)}',
                                         style: const TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
@@ -1060,7 +1068,7 @@ class _PropertyPageState extends State<PropertyPage>
                                       ),
                                     ),
                                     Text(
-                                      '₹${p.taxes.toStringAsFixed(0)}',
+                                      rupees(p.taxes),
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -1094,7 +1102,7 @@ class _PropertyPageState extends State<PropertyPage>
                                       ),
                                     ),
                                     Text(
-                                      '₹${p.total.toStringAsFixed(0)}',
+                                      rupees(p.total),
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
@@ -1127,7 +1135,7 @@ class _PropertyPageState extends State<PropertyPage>
                                         ),
                                       ),
                                       Text(
-                                        '₹${(p.total * 0.10).toStringAsFixed(0)}',
+                                        rupees(p.total * 0.10),
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
@@ -1149,7 +1157,7 @@ class _PropertyPageState extends State<PropertyPage>
                                         ),
                                       ),
                                       Text(
-                                        '₹${(p.total * 0.90).toStringAsFixed(0)}',
+                                        rupees(p.total * 0.90),
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
@@ -1201,7 +1209,7 @@ class _PropertyPageState extends State<PropertyPage>
                     ),
                     Expanded(
                       child: Text(
-                        'Use wallet balance (₹${_walletBalance.toStringAsFixed(0)} available)',
+                        'Use wallet balance (${rupees(_walletBalance)} available)',
                         style: const TextStyle(fontSize: 15),
                       ),
                     ),
@@ -2032,7 +2040,7 @@ onPressed: () async {
 Check out this amazing property on Aajoo!
 Name: ${widget.name}
 Location: ${widget.location}
-Price: ₹${widget.price}/night
+Price: ${rupeesFrom(widget.price)}/night
 $ratingLine
 Description: ${widget.description}
 Book now: https://www.aajoohomes.com/property?id=${widget.id}
@@ -2623,12 +2631,12 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
           // owes the taxed amount on arrival, and that is what the server
           // stored. Saying "Rs 6000 due" after quoting Rs 6300 is a different
           // number for the same booking.
-          amount: '₹${priceStay(
+          amount: rupees(priceStay(
             roomSubtotal: double.tryParse(currentPriceString) ?? 0,
             perNightTariff: currentPrice,
             discount: _discountOnRoom,
             extraGuestFee: _partyFee,
-          ).total.toStringAsFixed(0)}',
+          ).total),
           isPayOnArrival: isCod,
           awaitingApproval: awaitingApproval,
           responseHours: responseHours,
