@@ -38,15 +38,37 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
     final deals = Get.isRegistered<DealsController>()
         ? Get.find<DealsController>()
         : null;
-    NegotiatedDeal? deal;
-    if (deals != null) {
-      for (final d in deals.activeDeals) {
-        if (d.propertyId == n.propertyId) {
-          deal = d;
-          break;
-        }
+
+    // Make sure the coupons are actually loaded before reading them.
+    //
+    // This screen's initState loads the negotiations and nothing else, while
+    // the deal — the coupon that MAKES it the agreed price — lives in the
+    // deals list, which only the home screen's banner ever fetched. Reached
+    // from a notification or straight after a cold start, `deals` was empty,
+    // so the button dropped the coupon and opened the stay at the full asking
+    // price with only the dates filled in. The guest could not tell: the
+    // listing looked right, the total simply was not the one they had agreed.
+    if (deals != null && deals.deals.isEmpty) {
+      try {
+        await deals.load();
+      } catch (_) {
+        // Fall through: the fallback below explains an absent deal.
       }
     }
+
+    final deal = deals?.forProperty(n.propertyId);
+
+    // Still nothing? Say so rather than silently opening at full price — the
+    // deal is 24-hour, so an expired one is a real and explainable outcome.
+    if (deal == null && mounted) {
+      Get.snackbar(
+        'Deal',
+        "We couldn't find the coupon for this stay — it may have expired. "
+        'Opening the listing so you can check the dates.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+
     await openPropertyById(
       n.propertyId,
       dealCode: deal?.code,
