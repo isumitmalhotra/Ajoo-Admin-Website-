@@ -12,6 +12,7 @@ import 'package:rent_home/service/bookmark_service.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/ui/screens_renter/home/components/negotiated_deal_banner.dart';
 import 'package:rent_home/ui/screens_renter/guest_shell.dart';
+import 'package:rent_home/ui/screens_renter/negotiations/guest_negotiations_screen.dart';
 
 /// Renter account dashboard — the mobile mirror of the web GuestDashboard.
 /// Welcome header, negotiated-deal banner, at-a-glance stats (Upcoming / Saved /
@@ -82,6 +83,9 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
     userController.getUserHistory();
     userController.getUserReviews();
     dealsController.load();
+    // The conversation, not just the coupon it may become. Without this the
+    // Negotiations entry below could not say whether the host had answered.
+    dealsController.loadNegotiations();
     try {
       final saved = await BookmarkService().getBookmarks();
       if (mounted) setState(() => _savedCount = saved.length);
@@ -276,6 +280,29 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
                 () => _openTabOrRoute(3, '/bookmarkProperties')),
             _quickAction(Icons.receipt_long, 'Booking history',
                 'Past & current bookings', () => _openTabOrRoute(2, '/history')),
+            // Negotiating is the whole point of the product, and the only way
+            // in was a row buried in Profile — so a guest who sent an offer had
+            // nowhere to go and look at it. The website carries it in the guest
+            // dashboard, which is this screen; it goes in the same place, with
+            // the count of threads waiting on the guest so a host's counter
+            // cannot sit unanswered unseen.
+            Obx(() {
+              final waiting = dealsController.awaitingYouCount;
+              final total = dealsController.negotiations.length;
+              return _quickAction(
+                Icons.handshake_outlined,
+                'My Negotiations',
+                waiting > 0
+                    ? (waiting == 1
+                        ? 'The host countered — your move'
+                        : '$waiting need your reply')
+                    : total > 0
+                        ? 'Your price offers'
+                        : 'Offer your price on a stay',
+                () => Get.to(() => const GuestNegotiationsScreen()),
+                badge: waiting,
+              );
+            }),
             _quickAction(Icons.support_agent, 'Help & Support',
                 'Get help, raise a ticket', () => Get.toNamed('/support')),
           ],
@@ -410,7 +437,8 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
       child: const Icon(Icons.home, color: kMuted));
 
   Widget _quickAction(
-      IconData icon, String title, String sub, VoidCallback onTap) {
+      IconData icon, String title, String sub, VoidCallback onTap,
+      {int badge = 0}) {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: onTap,
@@ -444,6 +472,20 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
                 ],
               ),
             ),
+            if (badge > 0) ...[
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                    color: kIndigo, borderRadius: BorderRadius.circular(999)),
+                child: Text('$badge',
+                    style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white)),
+              ),
+              const SizedBox(width: 6),
+            ],
             const Icon(Icons.chevron_right, color: kMuted),
           ],
         ),

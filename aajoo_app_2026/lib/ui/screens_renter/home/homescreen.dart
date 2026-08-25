@@ -35,6 +35,7 @@ import 'package:rent_home/ui/screens_renter/bookmark_properties/bookmark_propert
 import 'package:rent_home/ui/screens_common/notifications/notification_screen.dart';
 import 'package:rent_home/service/notification_service.dart';
 import 'package:rent_home/ui/screens_renter/home/components/negotiated_deal_banner.dart';
+import 'package:rent_home/ui/screens_renter/home/components/counter_offer_banner.dart';
 import 'package:rent_home/controller/deals_controller.dart';
 import 'package:rent_home/ui/screens_renter/home/components/featured_destinations.dart';
 // Removed unused imports
@@ -110,6 +111,9 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
       userController.getUserReviews();
       searchController.getPreBooking();
       dealsController.load();
+      // The banner below needs the conversation, not just the coupon it may
+      // eventually become.
+      dealsController.loadNegotiations();
     }
   }
 
@@ -217,6 +221,12 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                     // interrupted; renders nothing when there isn't one.
                     const ResumeBookingBanner(),
                     const NegotiatedDealBanner(),
+                    // A host's counter had nowhere to surface: the deal banner
+                    // above only appears once an offer is ACCEPTED, so the step
+                    // in between was invisible unless the guest went looking in
+                    // Profile. Renders nothing unless a thread is actually
+                    // waiting on them.
+                    const CounterOfferBanner(),
                   ],
                 ),
               ),
