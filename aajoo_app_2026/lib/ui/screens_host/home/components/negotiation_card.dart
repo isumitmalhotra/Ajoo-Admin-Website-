@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/models/host_negotiation.dart';
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/utils/money.dart';
 
 /// One negotiation, as the host sees it (A-70).
 ///
@@ -21,20 +22,9 @@ class NegotiationCard extends StatelessWidget {
 
   const NegotiationCard({super.key, required this.n, this.onTap, this.onRespond});
 
-  static String _money(double v) {
-    final s = v.round().toString();
-    final buf = StringBuffer();
-    final len = s.length;
-    for (int i = 0; i < len; i++) {
-      buf.write(s[i]);
-      final remaining = len - i - 1;
-      if (remaining > 0 &&
-          (remaining == 3 || (remaining > 3 && (remaining - 3) % 2 == 0))) {
-        buf.write(',');
-      }
-    }
-    return buf.toString();
-  }
+  /// Digits only — the callers below supply the symbol. Grouping itself
+  /// lives in utils/money.dart.
+  static String _money(double v) => rupeeDigits(v);
 
   (Color, Color, String) get _status {
     switch (n.status.toLowerCase()) {

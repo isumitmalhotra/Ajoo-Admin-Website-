@@ -22,6 +22,7 @@ import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/widgets/social_row.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:rent_home/utils/support_chat.dart';
 
 /// One definition, so the mailto link and the address on screen cannot
 /// disagree again.
@@ -166,10 +167,15 @@ class _ChatCard extends StatelessWidget {
               Expanded(
                 flex: 3,
                 child: ElevatedButton.icon(
-                  onPressed: () => Get.toNamed(
-                    '/webview',
-                    arguments: {'url': _chatUrl, 'title': 'Support Chat'},
-                  ),
+                  // Opened as whoever is signed in — see utils/support_chat.
+                  // A bare URL made the bot ask a logged-in guest for their
+                  // phone number and another OTP, which the website has never
+                  // done.
+                  onPressed: () async {
+                    final url = await supportChatUrl();
+                    Get.toNamed('/webview',
+                        arguments: {'url': url, 'title': 'Support Chat'});
+                  },
                   icon: const Icon(Icons.chat_bubble_rounded, size: 18),
                   label: Text(
                     'Start chat',

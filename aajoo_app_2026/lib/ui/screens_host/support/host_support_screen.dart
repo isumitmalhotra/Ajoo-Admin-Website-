@@ -18,6 +18,7 @@ import 'package:rent_home/ui/responsive.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/ui/screens_host/support/host_tickets_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:rent_home/utils/support_chat.dart';
 
 const String _hostLine = '+91 96252 36254';
 const String _emergencyLine = '+91 93172 36254';
@@ -172,10 +173,11 @@ class _HostChatCard extends StatelessWidget {
               Expanded(
                 flex: 3,
                 child: ElevatedButton.icon(
-                  onPressed: () => Get.toNamed(
-                    '/webview',
-                    arguments: {'url': _chatUrl, 'title': 'Support Chat'},
-                  ),
+                  onPressed: () async {
+                    final url = await supportChatUrl();
+                    Get.toNamed('/webview',
+                        arguments: {'url': url, 'title': 'Support Chat'});
+                  },
                   icon: const Icon(Icons.chat_bubble_rounded, size: 18),
                   label: Text('Start chat',
                       style: inter(fontSize: 15, fontWeight: FontWeight.w700)),

@@ -6,6 +6,7 @@ import 'package:printing/printing.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/service/host_service.dart';
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/utils/money.dart';
 
 /// A host's monthly statements.
 ///
@@ -52,19 +53,8 @@ class _HostStatementsScreenState extends State<HostStatementsScreen> {
     return double.tryParse('${v ?? ''}') ?? 0;
   }
 
-  static String _inr(num v) {
-    final s = v.round().toString();
-    if (s.length <= 3) return '₹$s';
-    final head = s.substring(0, s.length - 3);
-    final tail = s.substring(s.length - 3);
-    final buf = StringBuffer();
-    for (var i = 0; i < head.length; i++) {
-      final fromEnd = head.length - i;
-      buf.write(head[i]);
-      if (fromEnd > 1 && fromEnd.isOdd) buf.write(',');
-    }
-    return '₹$buf,$tail';
-  }
+  /// Indian grouping lives in utils/money.dart — one rule for the product.
+  static String _inr(num v) => rupees(v);
 
   static const _months = [
     'January', 'February', 'March', 'April', 'May', 'June',

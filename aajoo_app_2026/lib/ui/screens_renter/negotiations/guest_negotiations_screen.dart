@@ -6,6 +6,7 @@ import 'package:rent_home/models/guest_negotiation.dart';
 import 'package:rent_home/models/negotiated_deal.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/ui/screens_renter/property_details/open_property.dart';
+import 'package:rent_home/utils/money.dart';
 
 /// The guest's own view of every price negotiation they are in.
 ///
@@ -110,20 +111,8 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
     });
   }
 
-  static String _inr(num n) {
-    final s = n.round().toString();
-    // Indian grouping: last three, then pairs.
-    if (s.length <= 3) return '₹$s';
-    final head = s.substring(0, s.length - 3);
-    final tail = s.substring(s.length - 3);
-    final buf = StringBuffer();
-    for (var i = 0; i < head.length; i++) {
-      final fromEnd = head.length - i;
-      buf.write(head[i]);
-      if (fromEnd > 1 && fromEnd.isOdd) buf.write(',');
-    }
-    return '₹$buf,$tail';
-  }
+  /// Indian grouping lives in utils/money.dart — one rule for the product.
+  static String _inr(num n) => rupees(n);
 
   static const _months = [
     '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',

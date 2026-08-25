@@ -13,6 +13,7 @@ import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/data/models/ongoing_reponse.dart';
 import 'package:rent_home/ui/screens_renter/checkout/checkout_page.dart';
 import 'package:rent_home/service/device_service.dart';
+import 'package:rent_home/utils/support_chat.dart';
 
 // Assuming BookingHistoryData is defined as provided
 class OngoingBookingView extends StatefulWidget {
@@ -554,12 +555,16 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
                                     child: SizedBox(
                                       height: 50,
                                       child: ElevatedButton.icon(
-                                        onPressed: () {
+                                        onPressed: () async {
+                                          // Same signed-in chat as the Support
+                                          // screen, and the URL lives in one
+                                          // place rather than being pasted here
+                                          // a third time.
+                                          final url = await supportChatUrl();
                                           Get.toNamed(
                                             '/webview',
                                             arguments: {
-                                              'url':
-                                                  'https://window-2.botpenguin.com/69803a093817049868bf064f/696f4cdf88f4a8046c67188e',
+                                              'url': url,
                                               'title': 'Support Chat',
                                             },
                                           );

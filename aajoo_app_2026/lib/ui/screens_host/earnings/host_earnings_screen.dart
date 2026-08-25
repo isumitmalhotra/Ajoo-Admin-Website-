@@ -5,6 +5,7 @@ import 'package:rent_home/service/host_service.dart';
 import 'package:rent_home/ui/screens_host/earnings/host_statements_screen.dart';
 import 'package:rent_home/ui/screens_host/payout/payout_page.dart';
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/utils/money.dart';
 
 /// What a host has earned — the same figures, from the same endpoint, as the
 /// web Earnings page.
@@ -49,19 +50,8 @@ class _HostEarningsScreenState extends State<HostEarningsScreen> {
     return double.tryParse('${v ?? ''}') ?? 0;
   }
 
-  static String _inr(num v) {
-    final s = v.round().toString();
-    if (s.length <= 3) return '₹$s';
-    final head = s.substring(0, s.length - 3);
-    final tail = s.substring(s.length - 3);
-    final buf = StringBuffer();
-    for (var i = 0; i < head.length; i++) {
-      final fromEnd = head.length - i;
-      buf.write(head[i]);
-      if (fromEnd > 1 && fromEnd.isOdd) buf.write(',');
-    }
-    return '₹$buf,$tail';
-  }
+  /// Indian grouping lives in utils/money.dart — one rule for the product.
+  static String _inr(num v) => rupees(v);
 
   @override
   Widget build(BuildContext context) {

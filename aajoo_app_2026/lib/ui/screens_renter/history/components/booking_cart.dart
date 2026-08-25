@@ -20,6 +20,7 @@ import 'package:rent_home/ui/screens_renter/history/history_description/history_
 import 'package:rent_home/utils/fonts.dart';
 import '../../../../utils/booking_status.dart';
 import '../../../../utils/stay_clock.dart';
+import 'package:rent_home/utils/money.dart';
 
 /// A number out of whatever the API sent — 9600, "9600.00", or nothing.
 num _asNum(dynamic v) {
@@ -28,18 +29,13 @@ num _asNum(dynamic v) {
 }
 
 /// 6300.0 -> "6,300"; keeps paise only when they exist.
-String _money(num v) {
-  final whole = v == v.roundToDouble();
-  final str = whole ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
-  final parts = str.split('.');
-  final digits = parts[0];
-  final buf = StringBuffer();
-  for (var i = 0; i < digits.length; i++) {
-    if (i > 0 && (digits.length - i) % 3 == 0) buf.write(',');
-    buf.write(digits[i]);
-  }
-  return parts.length > 1 ? '${buf.toString()}.${parts[1]}' : buf.toString();
-}
+/// Digits only; the caller supplies the symbol.
+///
+/// This grouped every THREE digits — US style — so a stay costing ₹1,04,814
+/// rendered as "₹104,814" on the booking card while the same figure read
+/// "₹1,04,814" everywhere else in the app. It also printed paise on any amount
+/// that was not whole. utils/money.dart does both correctly, once.
+String _money(num v) => rupeeDigits(v);
 
 /// "19 Aug" from the DD-MM-YYYY the booking API speaks.
 ///
