@@ -20,7 +20,7 @@ Future<void> openPropertyById(
   String? dealCode,
   String? dealFrom,
   String? dealTo,
-  int? dealPercent,
+  double? dealPercent,
   String errorTitle = 'Property',
 }) async {
   if (propertyId <= 0) return;

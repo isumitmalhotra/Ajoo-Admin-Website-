@@ -9,7 +9,16 @@ import 'package:rent_home/models/guest_negotiation.dart';
 /// getMyCoupons() so mobile can show the same "Your negotiated deals" surface
 /// and apply the coupon at checkout.
 class DealsService {
-  final Dio _dio = Dio(BaseOptions(contentType: 'application/json'));
+  // Timeouts, because a stalled request here freezes a button for ever.
+  // Accepting a counter shows a per-offer spinner and awaits this call; with no
+  // deadline the spinner had no way to stop. Same omission MapService carried
+  // behind the search.
+  final Dio _dio = Dio(BaseOptions(
+    contentType: 'application/json',
+    connectTimeout: const Duration(seconds: 20),
+    sendTimeout: const Duration(seconds: 20),
+    receiveTimeout: const Duration(seconds: 30),
+  ));
 
   /// Every negotiation this guest is in, both directions.
   ///
@@ -109,7 +118,7 @@ class DealsService {
         code: d['code']?.toString(),
         discount: double.tryParse((d['discount'] ?? 0).toString()) ?? 0,
         finalPrice: double.tryParse((d['finalPrice'] ?? 0).toString()) ?? 0,
-        percent: int.tryParse((d['percent'] ?? 0).toString()) ?? 0,
+        percent: double.tryParse((d['percent'] ?? 0).toString()) ?? 0,
         type: d['type']?.toString() ?? 'percent',
       );
     } catch (e) {
@@ -124,7 +133,8 @@ class CouponValidation {
   final String? code;
   final double discount;
   final double finalPrice;
-  final int percent;
+  /// Percentage off. Double for the same reason NegotiatedDeal.percent is.
+  final double percent;
   final String type;
   CouponValidation({
     required this.valid,

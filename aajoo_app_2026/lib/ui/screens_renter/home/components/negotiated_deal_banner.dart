@@ -14,6 +14,12 @@ import 'package:rent_home/ui/screens_renter/property_details/open_property.dart'
 class NegotiatedDealBanner extends StatelessWidget {
   const NegotiatedDealBanner({super.key});
 
+  /// A percentage as a person would write it — "10", not "10.0".
+  static String _pctLabel(double v) {
+    final r = (v * 100).round() / 100;
+    return r == r.roundToDouble() ? r.toStringAsFixed(0) : r.toString();
+  }
+
   static String _pretty(String? dmy) {
     if (dmy == null || dmy.isEmpty) return '';
     try {
@@ -72,7 +78,7 @@ class NegotiatedDealBanner extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
-                    deal.isPercent ? '${deal.percent}% OFF' : '₹${deal.amount.toStringAsFixed(0)} OFF',
+                    deal.isPercent ? '${_pctLabel(deal.percent)}% OFF' : '₹${deal.amount.toStringAsFixed(0)} OFF',
                     style: const TextStyle(
                         color: kCream,
                         fontSize: 11,

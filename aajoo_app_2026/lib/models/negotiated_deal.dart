@@ -7,7 +7,15 @@
 class NegotiatedDeal {
   final String code;
   final String title;
-  final int percent;
+  /// The agreed reduction, as a percentage of the room total.
+  ///
+  /// A DOUBLE, and it has to be. This was an int parsed with int.tryParse, and
+  /// int.tryParse("9.38") is null — so every negotiated percentage that was not
+  /// a whole number became 0, the banner read "0% OFF", and "Book at the agreed
+  /// price" opened checkout at the FULL price with the coupon showing no
+  /// discount at all. A negotiated price almost never lands on a whole
+  /// percentage: ₹3,200 down to ₹2,900 is 9.375%.
+  final double percent;
   final double amount;
   final String type; // "percent" | "amount"
   final int? propertyId;
@@ -34,7 +42,7 @@ class NegotiatedDeal {
     return NegotiatedDeal(
       code: (json['code'] ?? '').toString(),
       title: (json['title'] ?? '').toString(),
-      percent: asInt(json['percent']) ?? 0,
+      percent: double.tryParse((json['percent'] ?? 0).toString()) ?? 0,
       amount: double.tryParse((json['amount'] ?? 0).toString()) ?? 0,
       type: (json['type'] ?? 'percent').toString(),
       propertyId: asInt(json['propertyId']),

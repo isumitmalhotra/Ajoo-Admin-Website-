@@ -60,13 +60,21 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
 
     // Still nothing? Say so rather than silently opening at full price — the
     // deal is 24-hour, so an expired one is a real and explainable outcome.
+    //
+    // ScaffoldMessenger, NOT Get.snackbar. openPropertyById opens a loading
+    // dialog and closes it with Get.back(), and GetX's back() closes the
+    // current snackbar on its way past. Raising a GetX snackbar immediately
+    // before that call meant back() reached a snackbar still animating in and
+    // threw LateInitializationError out of SnackbarController — so the loading
+    // dialog was never dismissed and its barrier sat over the whole screen,
+    // swallowing every tap after it.
     if (deal == null && mounted) {
-      Get.snackbar(
-        'Deal',
-        "We couldn't find the coupon for this stay — it may have expired. "
-        'Opening the listing so you can check the dates.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text(
+            "We couldn't find the coupon for this stay — it may have expired. "
+            'Opening the listing so you can check the dates.'),
+        backgroundColor: kInk,
+      ));
     }
 
     await openPropertyById(

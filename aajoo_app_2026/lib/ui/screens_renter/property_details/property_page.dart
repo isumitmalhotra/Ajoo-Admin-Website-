@@ -64,7 +64,7 @@ class PropertyPage extends StatefulWidget {
   final String? dealCode;
   final String? dealFrom; // DD-MM-YYYY
   final String? dealTo; // DD-MM-YYYY
-  final int? dealPercent;
+  final double? dealPercent;
 
   const PropertyPage({
     super.key,
@@ -289,7 +289,7 @@ class _PropertyPageState extends State<PropertyPage>
       _couponPercent = widget.dealPercent ?? 0;
       _couponOk = true;
       _couponMsg = widget.dealPercent != null
-          ? 'Negotiated deal — ${widget.dealPercent}% off'
+          ? 'Negotiated deal — ${_pct(widget.dealPercent!)}% off'
           : 'Negotiated deal applied';
     }
 
@@ -415,7 +415,16 @@ class _PropertyPageState extends State<PropertyPage>
   /// and what every booking meant before saved travellers existed.
   int? _travellerId;
   double _couponDiscount = 0;
-  int _couponPercent = 0;
+  double _couponPercent = 0;
+
+  /// A percentage as a person would write it: "10", not "10.0"; "9.38", not
+  /// "9.375000000001".
+  static String _pct(double v) {
+    final rounded = (v * 100).round() / 100;
+    return rounded == rounded.roundToDouble()
+        ? rounded.toStringAsFixed(0)
+        : rounded.toString();
+  }
   String _couponMsg = '';
   bool _couponOk = false;
   bool _couponBusy = false;
@@ -502,7 +511,7 @@ class _PropertyPageState extends State<PropertyPage>
         _couponPercent = res.percent;
         _couponOk = true;
         _couponMsg = res.percent > 0
-            ? 'Applied — ${res.percent}% off (${rupees(res.discount)})'
+            ? 'Applied — ${_pct(res.percent)}% off (${rupees(res.discount)})'
             : 'Applied — ${rupees(res.discount)} off';
       } else {
         _appliedCoupon = null;
@@ -1123,7 +1132,7 @@ class _PropertyPageState extends State<PropertyPage>
                                     children: [
                                       Text(
                                         _couponPercent > 0
-                                            ? 'Discount ($_couponPercent% — $_appliedCoupon)'
+                                            ? 'Discount (${_pct(_couponPercent)}% — $_appliedCoupon)'
                                             : 'Discount ($_appliedCoupon)',
                                         style: const TextStyle(
                                           fontSize: 14,
