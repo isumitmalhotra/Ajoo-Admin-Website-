@@ -108,6 +108,17 @@ class NegotiationCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                         color: kInk)),
                 const SizedBox(width: 8),
+                if (n.roundLabel != null) ...[
+                  const SizedBox(width: 8),
+                  // Which exchange this is. The guest's screen counts their
+                  // offers down; the host had no sense of whether this was an
+                  // opening bid or the last word before the thread runs out.
+                  Text(n.roundLabel!,
+                      style: inter(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: kMuted)),
+                ],
                 if (n.originalPrice > 0)
                   Text('was ₹${_money(n.originalPrice)}',
                       style: inter(fontSize: 12.5, color: kMuted).copyWith(
