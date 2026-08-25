@@ -3,6 +3,9 @@ import 'package:rent_home/constants.dart';
 import 'package:rent_home/models/properties_response_model.dart';
 import 'package:rent_home/service/homepage_cms_service.dart';
 import 'package:rent_home/ui/screens_renter/home/components/property_slider.dart';
+import 'package:rent_home/ui/screens_renter/blog/blog_screens.dart';
+import 'package:rent_home/ui/screens_renter/nearby_bookings/pre_booking_screen.dart';
+import 'package:rent_home/ui/screens_renter/property_details/open_property.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -41,23 +44,70 @@ class _HomeCmsSectionsState extends State<HomeCmsSections> {
     setState(() => _content = c);
   }
 
-  /// The website's own origin, for resolving relative links.
-  static const _siteOrigin = 'https://www.aajoohomes.com';
+  /// Hosts that are US — a link to one of these is a link to a screen we have.
+  static const _ownHosts = {
+    'aajoohomes.com',
+    'www.aajoohomes.com',
+  };
 
   Future<void> _openBannerLink(String url) async {
-    // An admin editing a website naturally types "/search". Left as-is that
-    // parses fine, has no scheme, and launches nothing — a button that
-    // renders and does nothing, which is the exact defect this sprint has
-    // been removing. Resolve it against the site instead, which is what the
-    // admin meant.
     final raw = url.trim();
-    final full = raw.startsWith('/') ? '$_siteOrigin$raw' : raw;
-    final uri = Uri.tryParse(full);
-    if (uri == null || !uri.hasScheme) return;
+    if (raw.isEmpty) return;
+
+    // Our own content opens IN the app.
+    //
+    // An admin editing a website types "/search", meaning the browse page.
+    // This used to resolve that against https://www.aajoohomes.com and hand it
+    // to the system browser, so tapping "Browse stays" threw the guest out of
+    // the app and onto the website — which is the opposite of why the app
+    // exists. (It was written to fix the button doing nothing at all; it
+    // replaced silence with ejection.)
+    //
+    // A relative path is ours by definition. An absolute one is ours when the
+    // host is. Anything genuinely elsewhere still opens in the browser.
+    final uri = Uri.tryParse(raw.startsWith('/') ? 'https://x$raw' : raw);
+    if (uri == null) return;
+    final isOurs = raw.startsWith('/') || _ownHosts.contains(uri.host);
+
+    if (isOurs && _openInApp(uri)) return;
+
+    if (!uri.hasScheme) return;
     // Not gated on canLaunchUrl: on Android 11+ that resolves against a
     // package-visibility list and answers false for apps this one hasn't
     // declared, which is how several buttons in this app came to do nothing.
     await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  /// Send a website path to the screen that shows the same thing.
+  ///
+  /// Returns false when we have no equivalent, so the caller can fall back
+  /// rather than land the guest somewhere that is not what they tapped.
+  bool _openInApp(Uri uri) {
+    final path = uri.path.toLowerCase().replaceAll(RegExp(r'/+$'), '');
+    switch (path) {
+      case '':
+      case '/':
+      case '/search':
+      case '/explore':
+      case '/properties':
+      case '/stays':
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => const PreBookingScreen(),
+        ));
+        return true;
+      case '/property':
+        final id = int.tryParse(uri.queryParameters['id'] ?? '');
+        if (id == null || id <= 0) return false;
+        openPropertyById(id, errorTitle: 'Stay');
+        return true;
+      case '/blog':
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => const BlogListScreen(),
+        ));
+        return true;
+      default:
+        return false;
+    }
   }
 
   @override
