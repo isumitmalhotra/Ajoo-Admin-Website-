@@ -131,6 +131,23 @@ class ListingWizardController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+
+    // Readiness follows the step, not the act of pressing Continue.
+    //
+    // It used to be fetched in one place only: the handler that ADVANCES a
+    // step, when the new step happened to be the last one. Resume a draft from
+    // "unfinished listings" and the wizard opens straight on step 5 without
+    // that handler ever running, so `readiness` stayed empty — and an empty
+    // readiness renders as no completion percentage, no list of what is
+    // missing, and an identity section asking a already-verified host to
+    // upload their documents again.
+    //
+    // The website has always keyed this on [step, propertyId]; this is the
+    // same rule, so arriving at the step by any route loads it.
+    everAll([step, propertyId], (_) {
+      if (step.value == 4 && propertyId.value != null) refreshReadiness();
+    });
+
     _load();
   }
 

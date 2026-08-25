@@ -131,57 +131,85 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
     final controller = TextEditingController();
     return showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        title: Text('Cancel this booking?',
-            style: fraunces(fontSize: 17, fontWeight: FontWeight.w700)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'The guest is refunded under the property policy and told why. '
-              'Please give them a reason.',
-              style: inter(fontSize: 13, color: kMuted, height: 1.45),
+      builder: (ctx) {
+        // The refusal is shown UNDER the field, not thrown as a toast.
+        //
+        // An empty reason used to be refused with a Fluttertoast, which on
+        // Android renders behind the dialog scrim and is gone in two seconds —
+        // so pressing "Cancel booking" looked like a dead button. Every other
+        // form in this app marks the field itself; this one does now too.
+        String? problem;
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
+            backgroundColor: Colors.white,
+            title: Text('Cancel this booking?',
+                style: fraunces(fontSize: 17, fontWeight: FontWeight.w700)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'The guest is refunded under the property policy and told why. '
+                  'Please give them a reason.',
+                  style: inter(fontSize: 13, color: kMuted, height: 1.45),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: controller,
+                  maxLength: 255,
+                  maxLines: 3,
+                  minLines: 2,
+                  onChanged: (_) {
+                    if (problem != null) setDialogState(() => problem = null);
+                  },
+                  decoration: InputDecoration(
+                    hintText:
+                        'e.g. an unexpected repair has made the place unusable',
+                    border: const OutlineInputBorder(),
+                    errorText: problem,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: controller,
-              maxLength: 255,
-              maxLines: 3,
-              minLines: 2,
-              decoration: const InputDecoration(
-                hintText: 'e.g. an unexpected repair has made the place unusable',
-                border: OutlineInputBorder(),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Keep booking'),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Keep booking'),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: kDanger, foregroundColor: Colors.white),
+                onPressed: () {
+                  if (controller.text.trim().isEmpty) {
+                    setDialogState(() =>
+                        problem = 'Please give the guest a reason.');
+                    return;
+                  }
+                  Navigator.of(ctx).pop(controller.text);
+                },
+                child: const Text('Cancel booking'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: kDanger, foregroundColor: Colors.white),
-            onPressed: () {
-              if (controller.text.trim().isEmpty) {
-                Fluttertoast.showToast(
-                    msg: 'Please give the guest a reason.');
-                return;
-              }
-              Navigator.of(ctx).pop(controller.text);
-            },
-            child: const Text('Cancel booking'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
+  /// The states the SERVER will accept a check-in for.
+  ///
+  /// markBookingCheckIn refuses anything outside paid / booked / confirmed —
+  /// you cannot walk a guest in on a booking nobody has paid for and no host
+  /// has approved. The button used to be offered on the dates alone, so it
+  /// appeared on a Payment Pending stay and answered a tap with "Booking not
+  /// found or not eligible for check-in" in a toast the host would not catch.
+  /// Better not to offer the action than to offer one that cannot work.
+  static const _checkInStatuses = {'paid', 'booked', 'booking confirmed'};
+
   bool get _canCheckIn {
     if (_isCancelled || _isCheckedIn) return false;
+    final title = (b.bookingStatusBsTitle ?? '').trim().toLowerCase();
+    if (!_checkInStatuses.contains(title)) return false;
     final from = parseStayDate(b.bookDetailsBtBookFrom);
     if (from == null) return false;
     final today = DateTime.now();
@@ -205,8 +233,27 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
       Fluttertoast.showToast(
           msg: "Guest checked in — they've been sent a welcome note.");
     } catch (e) {
-      Fluttertoast.showToast(
-          msg: e.toString().replaceFirst('Exception: ', ''));
+      // A failure here is worth reading — it names a state the host has to act
+      // on — so it does not go out as a toast.
+      if (mounted) {
+        showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            title: Text("Couldn't check the guest in",
+                style: fraunces(fontSize: 17, fontWeight: FontWeight.w700)),
+            content: Text(e.toString().replaceFirst('Exception: ', ''),
+                style: inter(fontSize: 13.5, height: 1.45)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _checkingIn = false);
     }

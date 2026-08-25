@@ -1,3 +1,4 @@
+import 'package:rent_home/utils/money.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -635,7 +636,9 @@ class _HostProfilePageState extends State<HostProfilePage> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(999)),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Text('₹${property.propertyPrice}',
+                      // The raw column, so a host's own card read "₹2500.00"
+                      // where every guest-facing card reads "₹2,500".
+                      Text(rupeesFrom(property.propertyPrice),
                           style: fraunces(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
