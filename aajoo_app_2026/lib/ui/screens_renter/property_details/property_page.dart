@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:rent_home/ui/screens_renter/home/map/map_controller.dart';
 import 'package:rent_home/service/pending_booking.dart';
 import 'package:rent_home/ui/screens_renter/property_details/components/booking_confirmed_screen.dart';
@@ -35,6 +36,7 @@ import 'package:rent_home/ui/screens_renter/bookmark_properties/bookmark_propert
 import 'package:rent_home/ui/screens_common/price_negotiation/negotitaion_page.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/utils/money.dart';
+import 'package:rent_home/utils/rzp_error.dart';
 import 'package:rent_home/widgets/amenity_row.dart';
 import 'package:rent_home/widgets/host_card.dart';
 import 'package:rent_home/widgets/verified_pill.dart';
@@ -109,8 +111,13 @@ class _PropertyPageState extends State<PropertyPage>
   /// reach and the charge with them, so the stepper reaches what the host is
   /// actually prepared to take.
   int? get _guestCeiling {
-    final n = _single?.propDetails?.noOfGuests;
-    final base = (n != null && n > 0) ? n : null;
+    // The wizard's capacity record first, the legacy table second — the same
+    // order the spec row and the web use. Reading only propDetails left a
+    // wizard listing with no stated ceiling at all, so the stepper ran away
+    // to any number the guest cared to tap while the host had plainly said
+    // how many the place sleeps.
+    final stated = _single?.capacity?.totalGuests ?? _single?.propDetails?.noOfGuests;
+    final base = (stated != null && stated > 0) ? stated : null;
     final rule = _single?.pricing;
     if (rule != null && rule.chargeExtraGuests && rule.maxExtraGuests > 0) {
       final included = rule.guestsIncluded > 0 ? rule.guestsIncluded : (base ?? 0);
@@ -125,6 +132,9 @@ class _PropertyPageState extends State<PropertyPage>
   double get _partyFee =>
       _single?.pricing?.extraGuestFee(_guests, totalDays) ?? 0;
   int totalDays = 1;
+
+  /// The Razorpay options last opened, so a refusal can offer "Try again".
+  Map<String, dynamic>? _lastPaymentOptions;
 
   /// Midnight of the same calendar day.
   ///
@@ -421,12 +431,48 @@ class _PropertyPageState extends State<PropertyPage>
   /// the fallback.
   double get _discountOnRoom {
     if (_appliedCoupon == null || _appliedCoupon!.isEmpty) return 0;
-    if (_couponDiscount > 0) return _couponDiscount;
-    // Percent of what is actually charged — room PLUS the party charge, which
-    // is the base the server discounts. Percent-of-room-only showed a smaller
-    // saving here than the server would grant at booking.
+    // Percent first. The server-computed absolute was checked BEFORE this and
+    // therefore won every time, freezing a percentage coupon's saving at
+    // whatever the stay cost when it was applied. A percentage has to follow
+    // the stay; only a flat-amount coupon has no percentage to follow it with.
     final base = (double.tryParse(currentPriceString) ?? 0) + _partyFee;
-    return _couponPercent > 0 ? base * _couponPercent / 100 : 0;
+    if (_couponPercent > 0) {
+      return (base * _couponPercent / 100).clamp(0, base).toDouble();
+    }
+    if (_couponDiscount > 0) return _couponDiscount.clamp(0, base).toDouble();
+    return 0;
+  }
+
+  Timer? _couponRecheck;
+
+
+  /// The stay changed, so anything priced against it has to be re-priced.
+  ///
+  /// A coupon is validated server-side against a specific amount, and the
+  /// figure that comes back was cached and shown unchanged for the rest of the
+  /// session. Add a guest or move the dates and the saving on screen was the
+  /// saving for the OLD stay, while /booking/create recomputes against the new
+  /// one — so the guest was shown one number and charged another. Re-checking
+  /// keeps the two the same, and drops the coupon honestly if the new stay no
+  /// longer qualifies (a smaller party can fall under a minimum spend).
+  ///
+  /// Debounced because the guest stepper fires on every tap.
+  /// [_restayed], deferred out of a setState callback.
+  ///
+  /// The date handlers do their work inside setState; starting a timer that
+  /// can call setState again from in there is asking for trouble.
+  void _restayedAfterFrame() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _restayed());
+  }
+
+  void _restayed() {
+    final code = _appliedCoupon;
+    if (code == null || code.isEmpty) return;
+    _couponRecheck?.cancel();
+    _couponRecheck = Timer(const Duration(milliseconds: 450), () {
+      if (!mounted) return;
+      _applyCoupon();
+    });
   }
 
   Future<void> _applyCoupon() async {
@@ -748,6 +794,7 @@ class _PropertyPageState extends State<PropertyPage>
                   if (picked != null) {
                     setState(() {
                       selectedDate = picked;
+                      _restayedAfterFrame();
                       selectedDateTo ??= picked.add(const Duration(days: 1));
                       // Nights, not calendar days. This was `.inDays + 1`,
                       // which billed a 12th-to-13th stay as two nights — one
@@ -800,6 +847,7 @@ class _PropertyPageState extends State<PropertyPage>
                   if (picked != null) {
                     setState(() {
                       selectedDateTo = picked;
+                      _restayedAfterFrame();
                       // selectedDate is non-null by design
                       // Nights, not calendar days. This was `.inDays + 1`,
                       // which billed a 12th-to-13th stay as two nights — one
@@ -968,7 +1016,10 @@ class _PropertyPageState extends State<PropertyPage>
                                 icon: const Icon(Icons.remove_circle_outline),
                                 iconSize: 26,
                                 onPressed: _guests > 1
-                                    ? () => setState(() => _guests -= 1)
+                                    ? () {
+                                        setState(() => _guests -= 1);
+                                        _restayed();
+                                      }
                                     : null,
                               ),
                               SizedBox(
@@ -984,7 +1035,10 @@ class _PropertyPageState extends State<PropertyPage>
                                 iconSize: 26,
                                 onPressed: (_guestCeiling == null ||
                                         _guests < _guestCeiling!)
-                                    ? () => setState(() => _guests += 1)
+                                    ? () {
+                                        setState(() => _guests += 1);
+                                        _restayed();
+                                      }
                                     : null,
                               ),
                             ],
@@ -1543,6 +1597,10 @@ onPressed: () async {
                         'prefill': {'email': email, 'contact': contact},
                         'theme': {'color': '#3399cc'}
                       };
+                      // Kept so a refused payment can be retried against the
+                      // same order rather than making the guest start over —
+                      // the booking already exists at this point.
+                      _lastPaymentOptions = options;
                       try {
                         razorpay.open(options);
                       } catch (e) {
@@ -1666,6 +1724,7 @@ onPressed: () async {
 
   @override
   void dispose() {
+    _couponRecheck?.cancel();
     _animationController.dispose();
     _priceController.dispose();
     _couponController.dispose();
@@ -2692,16 +2751,95 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
       final userController = Get.find<UserController>();
       userController.fetchOngoingBookings();
     } else {
-      bookingController.showSnackbar(
-        "Payment Failed",
-        "Payment has been failed",
-        true,
+      // The charge went through and OUR verification did not. Telling the
+      // guest "Payment has been failed" is not just unhelpful, it is wrong —
+      // their money may well have left. Say what we actually know.
+      _showPaymentProblem(
+        title: "We couldn't confirm your payment",
+        reason: 'Your bank may still have taken it. Do not pay again — check '
+            'My Bookings in a few minutes, and contact us if it still looks '
+            'unpaid.',
       );
     }
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
-    Fluttertoast.showToast(msg: "Payment Failed: ${response.message}");
+    // A toast carrying the plugin's raw JSON envelope, for two seconds.
+    //
+    // The guest was told "Payment Failed: {"error":{"code":...}}" and it was
+    // gone before they could read it, with nothing to do next — while the
+    // booking sat unpaid and they had no idea it still existed. Razorpay's own
+    // sentence goes on screen instead, and it stays there with two ways on.
+    _showPaymentProblem(
+      title: 'Payment not completed',
+      reason: rzpReason(response),
+      canRetry: _lastPaymentOptions != null,
+    );
+  }
+
+  /// Why a payment did not go through, and what to do about it.
+  ///
+  /// The booking already exists by the time Razorpay opens — it is held,
+  /// unpaid — so "try again" and "pay later from My Bookings" are both real
+  /// options, and saying so is the difference between a dead end and a detour.
+  void _showPaymentProblem({
+    required String title,
+    required String reason,
+    bool canRetry = false,
+  }) {
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(title,
+            style: fraunces(
+                fontSize: 18, fontWeight: FontWeight.w600, color: kInk)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(reason,
+                style: inter(fontSize: 14, color: kInk, height: 1.45)),
+            const SizedBox(height: 12),
+            Text(
+              'Your booking is held and nothing has been charged. You can pay '
+              'for it any time from My Bookings.',
+              style: inter(fontSize: 13, color: kMuted, height: 1.45),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('Not now',
+                style: inter(fontSize: 14, color: kMuted)),
+          ),
+          if (canRetry)
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                final options = _lastPaymentOptions;
+                if (options == null) return;
+                try {
+                  razorpay.open(options);
+                } catch (e) {
+                  debugPrint('Retry failed: $e');
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kIndigo,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text('Try again',
+                  style: inter(fontSize: 14, fontWeight: FontWeight.w600)),
+            ),
+        ],
+      ),
+    );
   }
 
   void _handleExternalWallet(ExternalWalletResponse response) {
