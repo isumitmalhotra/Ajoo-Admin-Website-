@@ -226,14 +226,42 @@ class _AuthPageState extends State<AuthPage> {
                                 controller: emailController,
                                 keyboardType: TextInputType.emailAddress,
                                 inputFormatters: AppInputFormatters.email,
-                                decoration: _dec('Email', Icons.mail_outline),
+                                // Signing IN accepts an email OR a mobile
+                                // number — the backend resolves either (see
+                                // loginUser, which looks a phone up in
+                                // tbl_users and then finds its credentials)
+                                // and the website's field is labelled "Email
+                                // or Mobile Number". Only this app insisted on
+                                // an email, so anyone who had signed up with a
+                                // phone could not get in at all.
+                                //
+                                // Signing UP still requires an email: the
+                                // account needs somewhere to send the
+                                // verification code and the booking receipts.
+                                decoration: _dec(
+                                    isLogin ? 'Email or mobile number' : 'Email',
+                                    Icons.mail_outline),
                                 validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter your email';
+                                  final v = (value ?? '').trim();
+                                  if (v.isEmpty) {
+                                    return isLogin
+                                        ? 'Please enter your email or mobile number'
+                                        : 'Please enter your email';
                                   }
                                   final emailRegex = RegExp(
                                       r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                                  if (!emailRegex.hasMatch(value)) {
+                                  if (isLogin) {
+                                    // Ten digits is an Indian mobile; anything
+                                    // with an "@" is meant to be an email.
+                                    final digits = v.replaceAll(RegExp(r'\D'), '');
+                                    final looksLikePhone =
+                                        !v.contains('@') && digits.length == 10;
+                                    if (looksLikePhone || emailRegex.hasMatch(v)) {
+                                      return null;
+                                    }
+                                    return 'Enter the email address or the 10-digit mobile number you signed up with';
+                                  }
+                                  if (!emailRegex.hasMatch(v)) {
                                     return 'Please enter a valid email address';
                                   }
                                   return null;
