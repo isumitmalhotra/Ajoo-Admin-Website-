@@ -177,6 +177,38 @@ class _PropertyPageState extends State<PropertyPage>
   /// Prefer the detail payload's aggregate; fall back to whatever the list
   /// already gave us so the rating does not flicker in on load.
   double? get _rating => _single?.rating ?? widget.property.rating;
+
+  /// Guests · Bedrooms · Beds · Baths, from whichever source recorded them.
+  ///
+  /// Wizard listings carry property_capacity; listings from the retired
+  /// add-property form carry tbl_property_details, and `bathrooms` lives on the
+  /// property row for both. A figure nobody recorded is omitted rather than
+  /// shown as zero — "0 bedrooms" is a claim about the stay, "nothing" is not.
+  List<Widget> get _specs {
+    final cap = _single?.capacity;
+    final legacy = _single?.propDetails;
+
+    int? positive(int? v) => (v != null && v > 0) ? v : null;
+
+    final guests = positive(cap?.totalGuests) ?? positive(legacy?.noOfGuests);
+    final bedrooms = positive(cap?.bedrooms);
+    final beds = positive(cap?.beds) ?? positive(legacy?.noOfBeds);
+    final baths = positive(cap?.bathrooms) ?? positive(_single?.bathrooms);
+
+    return [
+      if (guests != null)
+        _SpecChip(Icons.group_outlined,
+            '$guests ${guests == 1 ? "Guest" : "Guests"}'),
+      if (bedrooms != null)
+        _SpecChip(Icons.meeting_room_outlined,
+            '$bedrooms ${bedrooms == 1 ? "Bedroom" : "Bedrooms"}'),
+      if (beds != null)
+        _SpecChip(Icons.bed_outlined, '$beds ${beds == 1 ? "Bed" : "Beds"}'),
+      if (baths != null)
+        _SpecChip(Icons.bathtub_outlined,
+            '$baths ${baths == 1 ? "Bath" : "Baths"}'),
+    ];
+  }
   int get _reviewCount => _single?.reviewCount ?? widget.property.reviewCount;
 
   /// What this stay actually is, for the pill over the hero image. Null when
@@ -1734,24 +1766,24 @@ onPressed: () async {
                         ],
                       ),
                       // Specs row (real data from GET /properties/:id).
-                      if (_single != null &&
-                          (_single!.propDetails?.noOfGuests != null ||
-                              _single!.propDetails?.noOfBeds != null ||
-                              _single!.bathrooms != null)) ...[
+                      //
+                      // Read the wizard's capacity record FIRST and only fall
+                      // back to the legacy propDetails. A stay listed through
+                      // the 5-step wizard has no propDetails row at all, so
+                      // this row used to show a single lonely "2 Baths" — the
+                      // one figure that lives on the property row itself —
+                      // while its guests, bedrooms and beds sat in
+                      // property_capacity unread. Bedrooms was never shown on
+                      // either platform even though the form has always asked
+                      // for it.
+                      if (_specs.isNotEmpty) ...[
                         const SizedBox(height: 14),
-                        Row(
-                          children: [
-                            if (_single!.propDetails?.noOfGuests != null)
-                              _SpecChip(Icons.group_outlined,
-                                  '${_single!.propDetails!.noOfGuests} Guests'),
-                            if (_single!.propDetails?.noOfBeds != null)
-                              _SpecChip(Icons.bed_outlined,
-                                  '${_single!.propDetails!.noOfBeds} ${_single!.propDetails!.noOfBeds == 1 ? "Bed" : "Beds"}'),
-                            if (_single!.bathrooms != null)
-                              _SpecChip(Icons.bathtub_outlined,
-                                  '${_single!.bathrooms} ${_single!.bathrooms == 1 ? "Bath" : "Baths"}'),
-                          ],
-                        ),
+                        // A Row, not a Wrap: _SpecChip is an Expanded, which is
+                        // only legal inside a Flex and throws in a Wrap. Four
+                        // equal columns is also the layout this row was drawn
+                        // for — it only looked centred because one figure was
+                        // arriving and taking the whole width to itself.
+                        Row(children: _specs),
                       ],
                       const SizedBox(height: 14),
                       // M6-02 — meta row: VerifiedPill + inline rating

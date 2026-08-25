@@ -91,6 +91,17 @@ class SinglePropertyData {
   final int reviewCount;
   final int? isLuxury;
   final int? bathrooms;
+
+  /// How many people the stay sleeps, and in how many rooms — from the 5-step
+  /// listing wizard's own table.
+  ///
+  /// The wizard writes property_capacity; the legacy add-property form wrote
+  /// tbl_property_details. This model only ever read the legacy one, so a stay
+  /// created by the wizard showed a lone "2 Baths" (the one figure that lives
+  /// on the property row itself) while its guest count, bedrooms and beds sat
+  /// in the database unread.
+  final PropertyCapacity? capacity;
+
   final SinglePropertyDetails? propDetails;
   final List<String>? images;
   final List<dynamic>? tags;
@@ -128,6 +139,7 @@ class SinglePropertyData {
     this.reviewCount = 0,
     this.isLuxury,
     this.bathrooms,
+    this.capacity,
     this.propDetails,
     this.images,
     this.tags,
@@ -220,6 +232,7 @@ class SinglePropertyData {
       reviewCount: int.tryParse('${json['review_count'] ?? 0}') ?? 0,
       isLuxury: _parseIntSafely(json['is_luxury']),
       bathrooms: _parseIntSafely(json['bathrooms']),
+      capacity: PropertyCapacity.fromJson(json['capacity']),
       propDetails: details,
       images: json['images'] != null ? List<String>.from(json['images']) : [],
       tags: json['tags'] != null ? List<dynamic>.from(json['tags']) : null,
@@ -499,4 +512,62 @@ class PropertyHouseRules {
         quietHours: json['quietHours']?.toString(),
         damageDeposit: _b(json['damageDeposit']),
       );
+}
+
+
+/// The wizard's capacity record for one stay.
+///
+/// Every figure is nullable on purpose: a host who has not answered is not the
+/// same as a host who answered zero, and a stay that sleeps an unknown number
+/// must show nothing rather than "0 guests".
+class PropertyCapacity {
+  const PropertyCapacity({
+    this.totalGuests,
+    this.adults,
+    this.children,
+    this.infants,
+    this.bedrooms,
+    this.beds,
+    this.bathrooms,
+  });
+
+  final int? totalGuests;
+  final int? adults;
+  final int? children;
+  final int? infants;
+  final int? bedrooms;
+  final int? beds;
+  final int? bathrooms;
+
+  static int? _n(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toInt();
+    return int.tryParse(v.toString());
+  }
+
+  static PropertyCapacity? fromJson(dynamic json) {
+    if (json is! Map) return null;
+    final j = Map<String, dynamic>.from(json);
+    final c = PropertyCapacity(
+      totalGuests: _n(j['totalGuests']),
+      adults: _n(j['adults']),
+      children: _n(j['children']),
+      infants: _n(j['infants']),
+      bedrooms: _n(j['bedrooms']),
+      beds: _n(j['beds']),
+      bathrooms: _n(j['bathrooms']),
+    );
+    // An all-null record carries nothing; treat it as absent so callers can
+    // fall back to the legacy figures instead of showing an empty row.
+    return c.isEmpty ? null : c;
+  }
+
+  bool get isEmpty =>
+      totalGuests == null &&
+      adults == null &&
+      children == null &&
+      infants == null &&
+      bedrooms == null &&
+      beds == null &&
+      bathrooms == null;
 }
