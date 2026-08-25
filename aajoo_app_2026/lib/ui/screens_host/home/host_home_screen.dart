@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:rent_home/utils/money.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/ui/screens_common/notifications/notification_screen.dart';
 import 'package:rent_home/ui/screens_host/host_controller.dart';
@@ -84,20 +85,12 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
     ]);
   }
 
-  String _formatAmount(num v) {
-    // Indian-style grouping (₹24,680) without extra deps.
-    final s = v.round().toString();
-    final buf = StringBuffer();
-    final len = s.length;
-    for (int i = 0; i < len; i++) {
-      buf.write(s[i]);
-      final remaining = len - i - 1;
-      if (remaining > 0 && (remaining == 3 || (remaining > 3 && (remaining - 3) % 2 == 0))) {
-        buf.write(',');
-      }
-    }
-    return buf.toString();
-  }
+  /// Indian grouping lives in utils/money.dart.
+  ///
+  /// This screen carried its own copy of the last-three-then-pairs loop — the
+  /// third implementation of one convention in this app. They agree today;
+  /// they only have to disagree once.
+  String _formatAmount(num v) => rupeeDigits(v);
 
   @override
   Widget build(BuildContext context) {

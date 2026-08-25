@@ -16,6 +16,7 @@ import 'dart:io';
 import 'package:get/get.dart';
 import 'package:rent_home/models/listing_schema.dart';
 import 'package:rent_home/service/listing_service.dart';
+import 'package:rent_home/utils/money.dart';
 
 /// The seven declarations. All must be true before a listing can be submitted.
 const List<MapEntry<String, String>> kListingDeclarations = [
@@ -430,7 +431,12 @@ class ListingWizardController extends GetxController {
     } else if (rules != null &&
         (price < rules.minBasePrice || price > rules.maxBasePrice)) {
       errs['base_price'] =
-          'Price must be between ₹${rules.minBasePrice} and ₹${rules.maxBasePrice}';
+          // Grouped, like the website's own message — it renders the ceiling
+          // with toLocaleString("en-IN"), so printing the raw number here made
+          // the same rule read differently on the two platforms:
+          // "₹1000000" against "₹10,00,000".
+          'Price must be between ${rupees(rules.minBasePrice)} and '
+          '${rupees(rules.maxBasePrice)}';
     }
     return errs;
   }
