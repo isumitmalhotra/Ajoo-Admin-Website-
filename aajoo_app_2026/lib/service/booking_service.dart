@@ -207,6 +207,42 @@ class BookingService {
     }
   }
 
+  /// The invoice PDF for a booking, as bytes.
+  ///
+  /// GET /user/invoice/:bookId/download. The renter side never called this at
+  /// all — the model has carried `book_invoice` since booking history shipped
+  /// and nothing read it, so a guest could see that an invoice existed and had
+  /// no way to obtain one. The website downloads it from Transactions.
+  ///
+  /// Keyed on book_id ("B212765") or book_pri_id, NOT the invoice number
+  /// ("Inv_212765") — that answers "invoice not found", which is the trap the
+  /// web client documents.
+  ///
+  /// Returns null rather than throwing: a missing invoice is a normal state
+  /// (an unpaid booking has none), and the caller says so.
+  Future<List<int>?> invoicePdf(String bookId) async {
+    if (bookId.trim().isEmpty) return null;
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = "Bearer $token";
+    try {
+      final response = await _dio.get<List<int>>(
+        "$baseUrl/user/invoice/${Uri.encodeComponent(bookId.trim())}/download",
+        options: Options(responseType: ResponseType.bytes),
+      );
+      final bytes = response.data;
+      if (bytes == null || bytes.isEmpty) return null;
+      // A JSON error body comes back as bytes too. A real PDF starts %PDF-.
+      if (bytes.length < 5 ||
+          bytes[0] != 0x25 || bytes[1] != 0x50 ||
+          bytes[2] != 0x44 || bytes[3] != 0x46) {
+        return null;
+      }
+      return bytes;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<Map<String, dynamic>> cancelBooking(
       String bookingId, String reason) async {
     final url = "$baseUrl/user/cancel/booking";

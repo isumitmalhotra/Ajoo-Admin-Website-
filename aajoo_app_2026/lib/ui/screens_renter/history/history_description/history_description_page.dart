@@ -1,4 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:rent_home/service/booking_service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
@@ -100,6 +105,73 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
   bool get _stayOver => hasEnded(widget.bookingData.bookDetailsBtBookTo);
 
   bool get _canCancel => !_isCancelled && !_stayOver;
+
+  /// An invoice exists once the booking has been paid for.
+  bool get _hasInvoice =>
+      (widget.bookingData.bookInvoice ?? '').trim().isNotEmpty &&
+      !_isCancelled;
+
+  bool _invoiceBusy = false;
+
+  /// Fetch the SERVER's invoice and hand it to the guest.
+  ///
+  /// Deliberately not generated on the device: the host invoice screen builds
+  /// its own PDF locally, which can only ever be this app's idea of the
+  /// figures. The renter's invoice is a financial document and has to be the
+  /// one the platform issued, so this downloads it.
+  Future<void> _downloadInvoice() async {
+    // book_id, not the invoice number — /user/invoice keys off the booking and
+    // answers "invoice not found" for "Inv_…".
+    final bookId = widget.bookingData.bookId;
+    if (bookId == null || bookId.trim().isEmpty) return;
+    setState(() => _invoiceBusy = true);
+    try {
+      final bytes = await BookingService().invoicePdf(bookId);
+      if (!mounted) return;
+      if (bytes == null) {
+        _say('Invoice unavailable',
+            "We couldn't fetch the invoice for this booking. If it was paid "
+            'recently it may still be generating — try again shortly.');
+        return;
+      }
+      final dir = await getTemporaryDirectory();
+      final name = (widget.bookingData.bookInvoice ?? bookId).trim();
+      final file = File('${dir.path}/$name.pdf');
+      await file.writeAsBytes(bytes);
+      await Share.shareXFiles([XFile(file.path)],
+          text: 'Invoice $name');
+    } catch (_) {
+      if (mounted) {
+        _say('Invoice unavailable',
+            "We couldn't open the invoice. Please try again.");
+      }
+    } finally {
+      if (mounted) setState(() => _invoiceBusy = false);
+    }
+  }
+
+  /// Something the guest needs to read, rather than watch flash past.
+  void _say(String title, String body) {
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(title,
+            style: inter(
+                fontSize: 16, fontWeight: FontWeight.w700, color: kInk)),
+        content:
+            Text(body, style: inter(fontSize: 13.5, color: kInk, height: 1.45)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('OK', style: inter(fontSize: 14, color: kIndigo)),
+          ),
+        ],
+      ),
+    );
+  }
 
   /// A pay-at-property booking that hasn't been settled yet.
   ///
@@ -641,6 +713,19 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
               onTap: _showCancelDialog,
             ),
         ],
+        // The invoice. booking-history has carried book_invoice since it
+        // shipped and no renter screen ever read it, so a guest could see that
+        // an invoice existed and had no way to get one — the website downloads
+        // it from Transactions and the app offered nothing.
+        if (_hasInvoice) ...[
+          const SizedBox(height: 8),
+          _bookingActionButton(
+            label: _invoiceBusy ? 'Fetching invoice…' : 'Download invoice',
+            icon: Icons.receipt_long_outlined,
+            filled: false,
+            onTap: _invoiceBusy ? null : _downloadInvoice,
+          ),
+        ],
       ],
     );
   }
@@ -698,8 +783,11 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
     // The server says a cancel is impossible (checked in, completed, past the
     // window). Say so instead of opening a dialog that cannot succeed.
     if (quote != null && !quote.canCancel) {
-      Fluttertoast.showToast(
-          msg: quote.reason ?? 'This booking can no longer be cancelled.');
+      // Was a toast. The reason a stay cannot be cancelled — checked in,
+      // completed, past the window — is the whole answer the guest came for,
+      // and it vanished in two seconds.
+      _say('This booking cannot be cancelled',
+          quote.reason ?? 'This booking can no longer be cancelled.');
       return;
     }
 
