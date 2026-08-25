@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/negotiation_controller.dart';
+import 'package:rent_home/utils/money.dart';
 
 class NegotiationAppBar extends StatelessWidget {
   final Property property;
@@ -16,7 +17,6 @@ class NegotiationAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final formatter = NumberFormat.currency(locale: 'en_US', symbol: '₹');
     return SliverAppBar(
       expandedHeight: 280,
       floating: false,
@@ -102,7 +102,7 @@ class NegotiationAppBar extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          "Base: ${formatter.format(double.parse(property.propertyPrice))}",
+                          "Base: ${rupees(double.parse(property.propertyPrice))}",
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,

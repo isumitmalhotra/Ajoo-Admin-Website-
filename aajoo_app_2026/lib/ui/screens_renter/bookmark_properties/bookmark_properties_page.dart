@@ -27,6 +27,20 @@ class _BookmarkedPropertiesPageState extends State<BookmarkedPropertiesPage> {
   void initState() {
     super.initState();
     _loadBookmarks(forceRefresh: true);
+    // This screen is a shell TAB, so initState runs once and never again —
+    // arriving at it after saving a stay showed the list as it was at app
+    // start. The service says when the set changed.
+    _bookmarkService.revision.addListener(_onBookmarksChanged);
+  }
+
+  void _onBookmarksChanged() {
+    if (mounted) _loadBookmarks(forceRefresh: true);
+  }
+
+  @override
+  void dispose() {
+    _bookmarkService.revision.removeListener(_onBookmarksChanged);
+    super.dispose();
   }
 
   Future<void> _loadBookmarks({bool forceRefresh = false}) async {

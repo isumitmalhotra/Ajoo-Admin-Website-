@@ -233,7 +233,7 @@ class _ConversationScreenState extends State<_ConversationScreen> {
       _toBottom();
     });
     _incomingSub = _svc.incoming.listen((m) {
-      if (!mounted || !_belongsHere(m)) return;
+      if (!mounted || !_belongsHere(m) || _isOwnEcho(m)) return;
       setState(() => _messages.add(m));
       _toBottom();
     });
@@ -266,6 +266,42 @@ class _ConversationScreenState extends State<_ConversationScreen> {
     if (text.isEmpty) return;
     _svc.send(partnerId: widget.thread.partnerId, body: text);
     _input.clear();
+
+    // Show it immediately.
+    //
+    // The socket does not echo your own message back — only the OTHER side's
+    // arrive on `incoming` — so a sent message did not appear until the thread
+    // was reopened. It was reaching the server and being stored the whole time;
+    // the screen simply never showed it, which reads as "it didn't send" and
+    // invites sending it again.
+    setState(() {
+      _messages.add(ChatMessage(
+        senderId: widget.me,
+        receiverId: widget.thread.partnerId,
+        body: text,
+        sentAt: DateTime.now(),
+      ));
+    });
+    _toBottom();
+  }
+
+  /// True when [m] is one we already put on screen ourselves.
+  ///
+  /// Should the server ever start echoing our own messages back, the optimistic
+  /// bubble above would be joined by a real one saying the same thing. Matching
+  /// on sender, body and a few seconds of clock keeps that to one bubble
+  /// without needing an id the socket does not give us.
+  bool _isOwnEcho(ChatMessage m) {
+    if (m.senderId != widget.me) return false;
+    final at = m.sentAt;
+    return _messages.any((existing) {
+      if (existing.senderId != widget.me || existing.body != m.body) {
+        return false;
+      }
+      final theirs = existing.sentAt;
+      if (at == null || theirs == null) return true;
+      return at.difference(theirs).abs() < const Duration(seconds: 30);
+    });
   }
 
   @override

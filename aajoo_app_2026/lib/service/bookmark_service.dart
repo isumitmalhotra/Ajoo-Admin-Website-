@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:rent_home/models/properties_response_model.dart';
+import 'package:flutter/foundation.dart';
 
 /// Backend-synced bookmark store.
 ///
@@ -33,10 +34,28 @@ class BookmarkService {
   Set<int> _bookmarkedIds = {};
   bool _loaded = false;
 
+  /// Bumped every time a stay is saved or unsaved, from anywhere.
+  ///
+  /// The Saved tab lives inside the shell's IndexedStack, so its initState —
+  /// which does force-refresh — runs ONCE, at app start, when the list was
+  /// whatever it was then. Saving a stay and switching to the tab showed the
+  /// list from startup: "No saved stays yet" over a save that had reached the
+  /// server perfectly well. Listening to this means the tab reloads when the
+  /// set actually changes, wherever the heart was tapped.
+  final ValueNotifier<int> revision = ValueNotifier<int>(0);
+
   /// Returns the cached list (synchronously). Useful for sync UI like a
   /// property card that already called [getBookmarks] on mount.
   List<Property> get bookmarkedProperties =>
       List.unmodifiable(_bookmarkedProperties);
+
+  /// Saved right now, from the cache, with no round trip.
+  ///
+  /// [isBookmarked] is a Future despite what the class comment claims, so a
+  /// card could not ask during build — which is why every heart in the product
+  /// was drawn as an outline whether the stay was saved or not.
+  bool isSavedNow(int? propertyId) =>
+      propertyId != null && _bookmarkedIds.contains(propertyId);
 
   Future<void> _attachAuth() async {
     final token = await _storage.read(key: 'user_token');
@@ -76,6 +95,7 @@ class BookmarkService {
         _bookmarkedIds.add(property.propertyId);
         _bookmarkedProperties.insert(0, property);
       }
+      revision.value++;
       return true;
     } on DioException catch (e) {
       // ignore: avoid_print

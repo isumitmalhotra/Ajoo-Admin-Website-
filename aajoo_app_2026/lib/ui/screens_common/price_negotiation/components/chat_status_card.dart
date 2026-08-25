@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/negotiation_controller.dart';
 import 'package:get/get.dart';
+import 'package:rent_home/utils/money.dart';
 
 class ChatStatusCard extends StatelessWidget {
   final Property property;
@@ -35,7 +36,6 @@ class ChatStatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final formatter = NumberFormat.currency(locale: 'en_US', symbol: '₹');
 
     return SliverToBoxAdapter(
       child: Column(
@@ -164,7 +164,7 @@ class ChatStatusCard extends StatelessWidget {
                               onPressed: onAcceptOffer,
                               icon: const Icon(Icons.book_online),
                               label: Text(
-                                "Book Now at ${formatter.format(negotiationController.currentPrice.value)}",
+                                "Book Now at ${rupees(negotiationController.currentPrice.value)}",
                               ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,

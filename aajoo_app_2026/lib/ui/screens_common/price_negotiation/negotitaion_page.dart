@@ -436,7 +436,6 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final formatter = NumberFormat.currency(locale: 'en_US', symbol: '₹');
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -714,7 +713,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                                   icon: const Icon(
                                                       Icons.book_online),
                                                   label: Text(
-                                                      "Book Now at ${formatter.format(negotiationController.currentPrice.value)}"),
+                                                      "Book Now at ${rupees(negotiationController.currentPrice.value)}"),
                                                   style:
                                                       ElevatedButton.styleFrom(
                                                     backgroundColor: Colors.red,
@@ -800,7 +799,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                       ),
                                       const SizedBox(height: 4),
                                       Obx(() => Text(
-                                            formatter.format(
+                                            rupees(
                                                 negotiationController
                                                     .currentPrice.value),
                                             style: theme.textTheme.titleLarge
@@ -1008,7 +1007,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                                 senderId: widget.senderId,
                                                 receiverId: widget.receiverId,
                                                 messageText:
-                                                    'Offered: ${formatter.format(input)} per night.',
+                                                    'Offered: ${rupees(input)} per night.',
                                                 isOffer: true,
                                                 offerPrice: input,
                                                 context: context,
@@ -1388,7 +1387,6 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
 
   Widget _buildPriceChip(
       BuildContext context, String label, double adjustment, Color color) {
-    final formatter = NumberFormat.currency(locale: 'en_US', symbol: '₹');
 
     return Obx(() => FilterChip(
           label: Text(
@@ -1430,7 +1428,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                       senderId: widget.senderId,
                       receiverId: widget.receiverId,
                       messageText:
-                          'Offered: ${formatter.format(newPrice)} per night.',
+                          'Offered: ${rupees(newPrice)} per night.',
                       isOffer: true,
                       offerPrice: newPrice,
                       context: context,

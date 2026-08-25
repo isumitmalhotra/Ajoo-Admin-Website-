@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/service/bookmark_service.dart';
 import 'package:rent_home/utils/money.dart';
 
 /// AajooHomes property card — re-skinned to the new teal/orange design
@@ -134,8 +135,26 @@ class CuratedCard extends StatelessWidget {
                           decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.92),
                               shape: BoxShape.circle),
-                          child: const Icon(Icons.favorite_border,
-                              size: 16, color: kInk),
+                          // Filled when the stay IS saved. This was a constant
+                          // outline heart, so a saved stay looked unsaved
+                          // everywhere it appeared — including inside Saved
+                          // Stays, where every card is saved by definition.
+                          // Rebuilt on the service's revision so tapping one
+                          // heart updates every copy of that card on screen.
+                          child: ValueListenableBuilder<int>(
+                            valueListenable: BookmarkService().revision,
+                            builder: (_, __, ___) {
+                              final saved = BookmarkService()
+                                  .isSavedNow(property.propertyId);
+                              return Icon(
+                                saved
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                size: 16,
+                                color: saved ? kClay : kInk,
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ),
