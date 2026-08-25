@@ -16,6 +16,7 @@ import 'package:shimmer/shimmer.dart';
 // Same constructor, same Property model (data/models re-exports it), so this
 // is only a matter of pointing at the right screen.
 import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';
+import 'package:rent_home/utils/money.dart';
 
 class HotelDialog extends StatelessWidget {
   final String name;
@@ -198,7 +199,7 @@ class HotelDialog extends StatelessWidget {
                 );
               },
               child: Text(
-                "Price: ₹$price",
+                "Price: ${rupeesFrom(price)}",
                 style:
                     const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.left,

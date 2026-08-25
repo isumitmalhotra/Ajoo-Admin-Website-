@@ -445,7 +445,10 @@ class _MapScreenState extends State<MapScreen> {
 
     for (Property property in mapController.properties) {
       final BitmapDescriptor icon =
-          await _createCustomMarkerWithPrice("₹${property.propertyPrice}");
+          // The raw column, so a pin read "₹8000.00" wherever the host had
+          // typed decimals and "₹1700" wherever they had not — two formats on
+          // one map.
+          await _createCustomMarkerWithPrice(rupeesFrom(property.propertyPrice));
 
       final Marker marker = Marker(
         markerId: MarkerId(property.propertyId.toString()),

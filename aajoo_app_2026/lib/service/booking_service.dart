@@ -93,8 +93,21 @@ class BookingService {
       final out = <DateTimeRange>[];
       for (final r in ranges) {
         final from = parse(r['from']?.toString());
-        final to = parse(r['to']?.toString());
-        if (from != null && to != null) out.add(DateTimeRange(start: from, end: to));
+        var to = parse(r['to']?.toString());
+        if (from == null || to == null) continue;
+        // Every range is read half-open [from, to) — a stay's `to` is the
+        // checkout day, which the next guest may arrive on. A range whose end
+        // is not after its start therefore covers no nights at all and would
+        // silently block nothing, while the booking guard still refuses those
+        // dates. The web client has carried this guard since the availability
+        // calendar shipped; the app did not, so the two could disagree about
+        // whether a day was free. Nothing in the data produces one today —
+        // the backend already widens host blocks by a day before sending them
+        // — which is exactly why the divergence was invisible.
+        if (!to.isAfter(from)) {
+          to = DateTime(from.year, from.month, from.day + 1);
+        }
+        out.add(DateTimeRange(start: from, end: to));
       }
       return out;
     } catch (e) {

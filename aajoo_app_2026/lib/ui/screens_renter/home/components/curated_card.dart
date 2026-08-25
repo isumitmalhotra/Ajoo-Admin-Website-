@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/utils/money.dart';
 
 /// AajooHomes property card — re-skinned to the new teal/orange design
 /// (scaffold property_card.dart): white bordered card, image with a badge +
@@ -21,24 +22,13 @@ class CuratedCard extends StatelessWidget {
     this.rating = '4.5',
   });
 
-  String get _formattedPrice {
-    final raw = property.propertyPrice.split('.').first.trim();
-    if (raw.isEmpty || int.tryParse(raw) == null) {
-      return '₹${property.propertyPrice}';
-    }
-    final n = int.parse(raw);
-    final s = n.toString();
-    if (s.length <= 3) return '₹$s';
-    final last3 = s.substring(s.length - 3);
-    var rest = s.substring(0, s.length - 3);
-    final buf = StringBuffer();
-    while (rest.length > 2) {
-      buf.write(',');
-      buf.write(rest.substring(rest.length - 2));
-      rest = rest.substring(0, rest.length - 2);
-    }
-    return '₹$rest${buf.toString().split('').reversed.join('')},$last3';
-  }
+  /// Indian digit grouping lives in one place — utils/money.dart.
+  ///
+  /// This screen carried its own copy of the last-three-then-pairs rule. Two
+  /// implementations of the same convention is one waiting to disagree with
+  /// the other, and its fallback printed the raw column (paise included) when
+  /// the price would not parse.
+  String get _formattedPrice => rupeesFrom(property.propertyPrice);
 
   @override
   Widget build(BuildContext context) {

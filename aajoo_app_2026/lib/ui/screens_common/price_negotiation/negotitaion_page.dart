@@ -23,6 +23,7 @@ import 'package:rent_home/utils/availability_days.dart';
 
 import '../auth/auth_controller.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
+import 'package:rent_home/utils/money.dart';
 
 class PriceNegotiationPage extends StatefulWidget {
   final String userId;
@@ -540,7 +541,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                       const SizedBox(width: 4),
                                       Text(
                                         message.offerPrice != null
-                                            ? 'Offer: ₹${message.offerPrice!.toStringAsFixed(0)}'
+                                            ? 'Offer: ${rupees(message.offerPrice!)}'
                                             : 'Offer',
                                         style: TextStyle(
                                             fontSize: 12,
@@ -995,7 +996,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                               ScaffoldMessenger.of(context)
                                                   .showSnackBar(SnackBar(
                                                 content: Text(
-                                                    'This stay lists at ₹${listPrice.toStringAsFixed(0)} a night — offer less than that, or just book it.'),
+                                                    'This stay lists at ${rupees(listPrice)} a night — offer less than that, or just book it.'),
                                                 backgroundColor: Colors.red,
                                               ));
                                               return;
@@ -1093,7 +1094,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                                 CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                'Offer accepted at ₹${price.toStringAsFixed(0)}',
+                                                'Offer accepted at ${rupees(price)}',
                                                 style: theme
                                                     .textTheme.titleMedium
                                                     ?.copyWith(
@@ -1203,7 +1204,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      'Total with ${(gstRate * 100).toStringAsFixed(0)}% GST: ₹${totalWithGst.toStringAsFixed(2)}',
+                                      'Total with ${(gstRate * 100).toStringAsFixed(0)}% GST: ${rupees(totalWithGst)}',
                                       style: theme.textTheme.bodySmall
                                           ?.copyWith(color: Colors.grey[700]),
                                     ),
@@ -1347,7 +1348,9 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                     Text(
                                       negotiationController.acceptingOffer.value
                                           ? 'Accepting...'
-                                          : 'Accept Offer ₹${offer.offerPrice?.toStringAsFixed(0) ?? ''}',
+                                          : offer.offerPrice == null
+                                              ? 'Accept Offer'
+                                              : 'Accept Offer ${rupees(offer.offerPrice!)}',
                                       style:
                                           theme.textTheme.titleMedium?.copyWith(
                                         color: Colors.white,

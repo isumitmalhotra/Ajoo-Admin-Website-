@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rent_home/ui/screens_renter/property_details/widgets/traveller_picker.dart';
+import 'package:rent_home/utils/money.dart';
 
 /// Confirming a negotiated booking.
 ///
@@ -54,7 +55,9 @@ class _AcceptOfferBottomSheetState extends State<AcceptOfferBottomSheet> {
 
           /// GST info
           Text(
-            "GST (${(_gstRate * 100).toStringAsFixed(0)}%): ₹${_gstAmount.toStringAsFixed(2)}",
+            // Paise are never shown anywhere in the product; this printed
+            // "₹1440.00" while the same figure read "₹1,440" at checkout.
+            "GST (${(_gstRate * 100).toStringAsFixed(0)}%): ${rupees(_gstAmount)}",
             style: theme.textTheme.titleMedium?.copyWith(
               color: Colors.red,
               fontWeight: FontWeight.bold,
@@ -63,7 +66,7 @@ class _AcceptOfferBottomSheetState extends State<AcceptOfferBottomSheet> {
           const SizedBox(height: 8),
 
           Text(
-            "Total Price: ₹${_totalAmount.toStringAsFixed(2)} (including GST)",
+            "Total Price: ${rupees(_totalAmount)} (including GST)",
             style: theme.textTheme.titleMedium?.copyWith(
               color: Colors.green,
               fontWeight: FontWeight.bold,

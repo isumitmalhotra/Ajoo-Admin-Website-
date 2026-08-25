@@ -5,6 +5,7 @@ import 'package:rent_home/constants.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/data/models/search_property_model.dart';
 import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';
+import 'package:rent_home/utils/money.dart';
 
 class PreBookingCard extends StatefulWidget {
   const PreBookingCard({super.key, required this.property, this.index});
@@ -282,7 +283,13 @@ class _PreBookingCardState extends State<PreBookingCard> {
                             child: Row(
                               children: [
                                 Text(
-                                  "Rs. ${property.propertyPrice ?? 'N/A'}",
+                                  // Was "Rs. 8000.00" — the raw column, paise
+                                  // and all, with an abbreviation the rest of
+                                  // the product does not use. Every other price
+                                  // on this screen reads "₹8,000".
+                                  property.propertyPrice == null
+                                      ? 'Price on request'
+                                      : rupeesFrom(property.propertyPrice),
                                   style: const TextStyle(
                                     decoration: TextDecoration.underline,
                                     color: Colors.black,
