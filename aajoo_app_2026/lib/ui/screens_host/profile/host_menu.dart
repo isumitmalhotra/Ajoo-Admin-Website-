@@ -14,6 +14,10 @@ import 'package:rent_home/ui/screens_host/payout/add_payout_account_page.dart';
 import 'package:rent_home/ui/screens_host/payout/payout_page.dart';
 import 'package:rent_home/ui/screens_host/support/host_support_screen.dart';
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/ui/screens_host/performance/host_performance_screen.dart';
+import 'package:rent_home/ui/screens_host/boost/host_boost_screen.dart';
+import 'package:rent_home/ui/screens_host/notifications/host_notifications_screen.dart';
+import 'package:rent_home/ui/screens_common/refer/refer_screen.dart';
 
 /// Every page a host can reach, declared once (A-78).
 ///
@@ -68,6 +72,31 @@ List<HostMenuEntry> hostMenuEntries({VoidCallback? beforeNavigate}) {
       label: 'Negotiations',
       subtitle: 'Offers from guests',
       onTap: () => go(() => const HostNegotiationsScreen()),
+    ),
+    // The three surfaces the app was missing against the web portal.
+    HostMenuEntry(
+      icon: Icons.insights_outlined,
+      label: 'Performance',
+      subtitle: 'Occupancy, revenue and cancellations',
+      onTap: () => go(() => const HostPerformanceScreen()),
+    ),
+    HostMenuEntry(
+      icon: Icons.rocket_launch_outlined,
+      label: 'Boost',
+      subtitle: 'Put a listing at the top of search',
+      onTap: () => go(() => const HostBoostScreen()),
+    ),
+    HostMenuEntry(
+      icon: Icons.notifications_none_rounded,
+      label: 'Notifications',
+      subtitle: 'Requests, replies and payout updates',
+      onTap: () => go(() => const HostNotificationsScreen()),
+    ),
+    HostMenuEntry(
+      icon: Icons.card_giftcard_outlined,
+      label: 'Refer & Earn',
+      subtitle: 'Invite a host and you both earn',
+      onTap: () => go(() => const ReferScreen(isHost: true)),
     ),
     HostMenuEntry(
       icon: Iconsax.money_recive4,

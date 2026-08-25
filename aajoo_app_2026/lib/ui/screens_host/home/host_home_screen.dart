@@ -29,6 +29,7 @@ import '../../motion/aajoo_motion.dart';
 import 'package:rent_home/utils/booking_status.dart';
 import 'package:rent_home/ui/screens_host/host_tab_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:rent_home/ui/screens_host/notifications/host_notifications_screen.dart';
 
 /// Host Dashboard — re-skinned to the new teal/orange design (scaffold
 /// host_dashboard): in-body header, greeting, earnings card, stat grid,
@@ -204,9 +205,11 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
           onPressed: () => Get.to(() => const HostSupportScreen()),
         ),
         IconButton(
+          // The HOST list. This opened NotificationsScreen — the guest one —
+          // so a host's own bell showed them a feed that was never theirs.
           icon: const Icon(Ionicons.notifications_outline,
               size: 22, color: kInk2),
-          onPressed: () => Get.to(() => const NotificationsScreen()),
+          onPressed: () => Get.to(() => const HostNotificationsScreen()),
         ),
       ],
     );

@@ -25,6 +25,7 @@ import 'package:rent_home/ui/screens_host/listing/widgets/listing_section.dart';
 import 'package:rent_home/ui/screens_host/listing/widgets/schema_field_input.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
+import 'package:rent_home/ui/screens_host/listing/components/state_city_fields.dart';
 
 class ListingWizardScreen extends StatefulWidget {
   const ListingWizardScreen({super.key, this.propertyId});
@@ -505,8 +506,26 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
           title: 'Where is the property?',
           children: [
             _text('country', 'Country'),
-            _text('state', 'State', required: true),
-            _text('city', 'City', required: true),
+            // Picked from the reference tables, not typed. Free text here is
+            // how the catalogue filled with "KURUKSHETRA" and thousands of
+            // other junk labels — and a stay typed "hariyana" never appears
+            // when a guest searches Haryana. Same source and same behaviour as
+            // the website's StateCityFields.
+            Obx(() => StateCityFields(
+                  state: c.f['state']?.toString(),
+                  city: c.f['city']?.toString(),
+                  onState: (v) {
+                    c.f['state'] = v;
+                    c.fieldErrors.remove('state');
+                  },
+                  onCity: (v) {
+                    c.f['city'] = v;
+                    c.fieldErrors.remove('city');
+                  },
+                  stateError: c.fieldErrors['state'],
+                  cityError: c.fieldErrors['city'],
+                )),
+            const SizedBox(height: 14),
             _text('district', 'District'),
             _text('village', 'Village (optional)'),
             _text('pincode', 'PIN Code',

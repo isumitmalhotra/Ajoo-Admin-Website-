@@ -27,6 +27,7 @@ import '../../../controller/common_controller.dart';
 import '../../../data/models/update_user_model.dart';
 import '../../../data/models/user_models.dart';
 import 'package:rent_home/ui/screens_host/add_property/widgets/state_city_dropdowns.dart';
+import 'package:rent_home/ui/screens_common/refer/refer_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -1663,6 +1664,9 @@ class _ProfileScreenState extends State<ProfileScreen>
       }),
       _buildSettingItem('Notifications', Icons.notifications, () {
         Get.toNamed('/notifications');
+      }),
+      _buildSettingItem('Refer & Earn', Icons.card_giftcard_outlined, () {
+        Get.to(() => const ReferScreen());
       }),
       _buildSettingItem('Safety', Icons.security, () {
         Get.to(() => const SafetyPage());
