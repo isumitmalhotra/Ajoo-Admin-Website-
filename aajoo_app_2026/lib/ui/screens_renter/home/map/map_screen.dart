@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui' as ui;
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -24,6 +25,47 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   final Completer<GoogleMapController> _controller = Completer();
+
+  /// The map controller currently attached to a LIVE platform view.
+  ///
+  /// The Completer above can only ever be completed once, so the first
+  /// GoogleMapController it captured was kept for the rest of the session. When
+  /// the platform view was torn down and rebuilt — opening a stay and coming
+  /// back does it — onMapCreated handed us a fresh controller and the
+  /// `isCompleted` guard threw it away. Every camera move after that went to a
+  /// channel with nothing on the other end:
+  ///
+  ///   PlatformException(channel-error, Unable to establish connection on
+  ///   channel "…MapsApi.animateCamera.0")
+  ///
+  /// which is why searching a city updated the pill, the count and the pins but
+  /// left the map sitting on wherever it had been. The exception was unhandled
+  /// and async, so it also aborted the rest of that listener silently.
+  GoogleMapController? _liveMap;
+
+  /// Where the camera should be once a live map exists.
+  ///
+  /// A search can land while the view is being rebuilt; without this the move
+  /// is simply lost.
+  LatLng? _pendingCameraTarget;
+
+  /// Move the camera, tolerating a map that is missing or being replaced.
+  Future<void> _moveCamera(LatLng pos, {double zoom = 14.5}) async {
+    final controller = _liveMap;
+    if (controller == null) {
+      _pendingCameraTarget = pos;
+      return;
+    }
+    try {
+      await controller.animateCamera(
+        CameraUpdate.newCameraPosition(CameraPosition(target: pos, zoom: zoom)),
+      );
+    } on PlatformException {
+      // The view behind this controller has gone. Hold the target so the next
+      // onMapCreated applies it rather than dropping it.
+      _pendingCameraTarget = pos;
+    }
+  }
   final MapController mapController = Get.find<MapController>();
   Map<String, Marker> markers = {};
   LatLng? _initialPosition;
@@ -42,13 +84,13 @@ class _MapScreenState extends State<MapScreen> {
 
     // React to external location updates (e.g., from location picker): animate only
     ever(mapController.currentPosition, (LatLng pos) async {
-      if (_controller.isCompleted) {
-        final controller = await _controller.future;
-        controller.animateCamera(CameraUpdate.newCameraPosition(
-          CameraPosition(target: pos, zoom: 14.5),
-        ));
-      }
-      // Update selected location marker whenever the position changes
+      // Wider than the 14.5 used for "back to me". Searching a town and
+      // arriving at street zoom put a single pin in frame with the rest of the
+      // results off-screen, which reads as "the search found one place".
+      await _moveCamera(pos, zoom: 11.5);
+      // Update selected location marker whenever the position changes.
+      // Runs unconditionally: it used to sit after an un-guarded animateCamera,
+      // so once that started throwing the marker stopped updating too.
       _updateSelectedLocationMarker(pos);
     });
 
@@ -550,9 +592,6 @@ class _MapScreenState extends State<MapScreen> {
   /// GPS off — it falls back to the last known position instead of doing
   /// nothing.
   Future<void> _recenter() async {
-    if (!_controller.isCompleted) return;
-    final controller = await _controller.future;
-
     LatLng target = mapController.currentPosition.value;
     try {
       final pos = await Geolocator.getCurrentPosition(
@@ -564,10 +603,7 @@ class _MapScreenState extends State<MapScreen> {
       // keep the last known position
     }
 
-    await controller.animateCamera(
-      CameraUpdate.newCameraPosition(
-          CameraPosition(target: target, zoom: 14.5)),
-    );
+    await _moveCamera(target);
   }
 
   @override
@@ -621,15 +657,36 @@ class _MapScreenState extends State<MapScreen> {
                             //
                             // It falls back to the SAME position the properties
                             // were fetched around, so the two can never diverge.
+                            // Where the app currently thinks it is looking —
+                            // NOT the device's GPS fix.
+                            //
+                            // _initialPosition is written once, from the first
+                            // location read, and never again. Every rebuild of
+                            // the platform view therefore reset the camera to
+                            // where the phone was, so returning from the search
+                            // results threw away the searched place and put the
+                            // map back on the device. currentPosition is what
+                            // the properties were fetched around, which is the
+                            // only position the pins can agree with.
                             initialCameraPosition: CameraPosition(
-                              target: _initialPosition ??
-                                  mapController.currentPosition.value,
+                              target: mapController.currentPosition.value,
                               zoom: 14.4746,
                             ),
                             onMapCreated: (GoogleMapController controller) {
+                              _liveMap = controller;
                               if (!_controller.isCompleted) {
                                 _controller.complete(controller);
                               }
+                              // Land on wherever the app is currently looking.
+                              // A move that arrived while the view was being
+                              // rebuilt takes precedence; otherwise the search
+                              // centre does, so a map created after a search
+                              // never opens somewhere else.
+                              final pending = _pendingCameraTarget;
+                              _pendingCameraTarget = null;
+                              _moveCamera(
+                                  pending ?? mapController.currentPosition.value,
+                                  zoom: 11.5);
                             },
                             onCameraMove: (CameraPosition p) =>
                                 _cameraTarget = p.target,

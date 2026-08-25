@@ -274,6 +274,8 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                             child: Obx(() => WeeklyHeroCard(
                                   homesNearby: mapController.properties.length,
                                   region: mapController.currentPlace.value,
+                                  unreachable:
+                                      mapController.lastSearchFailed.value,
                                   // The card lives inside this sheet, and the
                                   // sheet is the list of the very homes it is
                                   // counting — so "N homes near you ↗" opens

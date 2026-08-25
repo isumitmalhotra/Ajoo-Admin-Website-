@@ -42,13 +42,30 @@ class HomePageSearchService {
     }
   }
 
-  Future<SearchResponse> getPreBooking({bool isLuxury = false}) async {
+  /// [latitude]/[longitude]/[radiusKm] narrow the list to one place.
+  ///
+  /// This used to post empty strings for both coordinates, so the "Pre-booking
+  /// near <place>" screen ignored the place entirely and returned the newest
+  /// listings anywhere in the country — a guest who searched Karnal was shown
+  /// stays in Vidisha under a heading that said Karnal.
+  Future<SearchResponse> getPreBooking({
+    bool isLuxury = false,
+    double? latitude,
+    double? longitude,
+    int radiusKm = 10,
+    int? guests,
+    String? from,
+    String? to,
+  }) async {
     final token = await const FlutterSecureStorage().read(key: "user_token");
     _dio.options.headers['Authorization'] = 'Bearer $token';
     final data = {
       "query": "",
-      "longitude": "",
-      "latitude": "",
+      // Omitted rather than sent empty when we have no fix: the endpoint only
+      // applies its distance filter when BOTH are present, and an empty string
+      // is not a coordinate.
+      if (longitude != null) "longitude": longitude,
+      if (latitude != null) "latitude": latitude,
       "sort_by": "property_id",
       "order": "desc",
       // Was 10. Ten rows is a preview, not a catalogue: with sort and filter
@@ -59,7 +76,12 @@ class HomePageSearchService {
       // the controls something real to work on.
       "limit": 60,
       "offset": 0,
-      "radius": 10,
+      "radius": radiusKm,
+      // The stay being searched for. Omitted when unset rather than sent
+      // empty — an empty string is not a date and not a guest count.
+      if (guests != null && guests > 0) "guests": guests,
+      if (from != null && from.isNotEmpty) "from": from,
+      if (to != null && to.isNotEmpty) "to": to,
       "isLuxury": isLuxury
     };
     try {

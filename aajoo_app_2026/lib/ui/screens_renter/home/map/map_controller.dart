@@ -9,6 +9,12 @@ import 'package:rent_home/service/map_service.dart';
 class MapController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxString error = ''.obs;
+
+  /// The last search could not reach the server at all.
+  ///
+  /// Distinct from "found nothing": the home screen used to tell a guest with
+  /// no signal that there were no stays where they stood.
+  final RxBool lastSearchFailed = false.obs;
   final RxList<Property> properties = <Property>[].obs;
   final RxList<Property> allProperties = <Property>[].obs;
 
@@ -90,6 +96,14 @@ class MapController extends GetxController {
     stayGuests.value = (guests != null && guests > 0) ? guests : 0;
   }
 
+  /// Widening steps for a search that came back empty, nearest first.
+  ///
+  /// Measured against the live database from Karnal: 50km answers in ~4s with
+  /// a full page, 500km in ~24s with the same page, 20000km in ~92s. So the
+  /// walk stops as early as it can, and only reaches for the last one when
+  /// there is genuinely nothing on this side of the world.
+  static const List<String> _searchRings = ['50', '500', '20000'];
+
   Future<void> getProperties(
     double lat,
     double long, {
@@ -109,32 +123,66 @@ class MapController extends GetxController {
     );
 
     // Nothing within the default radius does not mean we have nothing. The
-    // search is location-based, so a guest in any city we do not cover yet —
-    // or an emulator still reporting Mountain View — gets an empty result and
-    // an app that looks broken rather than merely far away. Retry once, wide,
-    // exactly as the web client does.
-    if (response != null && response.data.property.isEmpty && radius.isEmpty) {
-      final PropertiesResponse? wider = await mapService.getProperties(
-        lat,
-        long,
-        category: category,
-        radius: "20000",
-        guests: stayGuests.value > 0 ? stayGuests.value : null,
-        from: stayFrom.value,
-        to: stayTo.value,
-      );
-      if (wider != null && wider.data.property.isNotEmpty) {
-        response = wider;
+    // search is location-based, so a guest in a town whose listings sit a
+    // district away — Karnal's are ~37km from its centre — gets an empty
+    // result and an app that looks broken rather than merely far away.
+    //
+    // This used to retry ONCE at radius 20000, which is not "wide", it is the
+    // whole planet: that single query takes ~92 SECONDS against the live
+    // database and returns the same first page that a 50km query returns in
+    // ~4. That was the endless search. Step outwards instead, and stop at the
+    // first ring that actually has stays in it — the rings that find nothing
+    // cost well under a second each, because the time is spent on matching
+    // rows, not on the radius.
+    //
+    // The last ring is still planetary, deliberately: a tester on an emulator
+    // reporting Mountain View has nothing within any sane distance, and one
+    // slow answer beats an empty app.
+    bool failed(PropertiesResponse? r) =>
+        r == null || r.message == MapService.networkFailure;
+
+    if (!failed(response) &&
+        response!.data.property.isEmpty &&
+        radius.isEmpty) {
+      for (final ring in _searchRings) {
+        final PropertiesResponse? wider = await mapService.getProperties(
+          lat,
+          long,
+          category: category,
+          radius: ring,
+          guests: stayGuests.value > 0 ? stayGuests.value : null,
+          from: stayFrom.value,
+          to: stayTo.value,
+          // The planetary ring genuinely takes longer than the default
+          // receive timeout allows.
+          receiveTimeout: ring == _searchRings.last
+              ? const Duration(minutes: 3)
+              : null,
+        );
+        // A ring we could not reach ends the walk — the next one would only
+        // spend another timeout to fail the same way.
+        if (failed(wider)) {
+          response = wider;
+          break;
+        }
+        if (wider!.data.property.isNotEmpty) {
+          response = wider;
+          break;
+        }
       }
     }
 
+    final bool unreachable = failed(response);
+
     isLoading.value = false;
-    if (response != null) {
-      allProperties.assignAll(response.data.property);
-      properties.assignAll(response.data.property);
-    } else {
-      error.value = 'Failed to fetch properties';
+    lastSearchFailed.value = unreachable;
+    if (unreachable || response == null) {
+      error.value =
+          "We couldn't reach the server. Check your connection and try again.";
+      return;
     }
+    allProperties.assignAll(response.data.property);
+    properties.assignAll(response.data.property);
   }
 
   Future<void> fetchProperties({

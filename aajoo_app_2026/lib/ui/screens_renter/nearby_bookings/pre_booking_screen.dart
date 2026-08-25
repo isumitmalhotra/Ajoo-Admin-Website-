@@ -23,7 +23,30 @@ import 'package:rent_home/utils/fonts.dart';
 import 'package:shimmer/shimmer.dart';
 
 class PreBookingScreen extends StatefulWidget {
-  const PreBookingScreen({super.key});
+  /// Open showing the stays around one searched place.
+  ///
+  /// The search sheet used to close onto whatever screen you were on and
+  /// change the numbers in place, so a guest who typed a city and pressed
+  /// Search saw the sheet vanish and nothing obviously happen. Passing the
+  /// search here makes it land somewhere: a results screen headed by the place
+  /// searched, listing the stays around it, with the sort and filter controls
+  /// this screen already carries.
+  const PreBookingScreen({
+    super.key,
+    this.searchPlace,
+    this.searchCenter,
+    this.searchRadiusKm = 50,
+  });
+
+  /// Name of the place searched, for the header. Null = the old behaviour,
+  /// "near me".
+  final String? searchPlace;
+
+  /// Where to look. Null loads the generic list, as before.
+  final LatLng? searchCenter;
+
+  /// How far around [searchCenter] to look.
+  final int searchRadiusKm;
 
   @override
   State<PreBookingScreen> createState() => _PreBookingScreenState();
@@ -72,6 +95,9 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
 
   /// Stay dates chosen up here and carried into the property page, so the
   /// guest is not asked for them twice.
+  /// How many people the stay is for, carried in from the search sheet.
+  int _guests = 0;
+
   DateTime? _checkIn;
   DateTime? _checkOut;
 
@@ -103,7 +129,7 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
       onSwitch: (val) async {
         onSwitch(val);
         await Future.wait([
-          searchController.getPreBooking(isLuxury: val),
+          _loadResults(isLuxury: val),
           _areaRails.load(isLuxury: val),
         ]);
       },
@@ -789,8 +815,148 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
   void initState() {
     super.initState();
     _areaRails.load(isLuxury: isLuxury);
-    searchController.getPreBooking(isLuxury: isLuxury);
-    currentLocation = mapController.currentPosition.value;
+    currentLocation = widget.searchCenter ?? mapController.currentPosition.value;
+
+    // Carry the search's When and Who onto this screen.
+    //
+    // The dates bar kept its own state starting at null, and nothing ever
+    // seeded it, so a guest who picked 1–3 Sep and two guests in the search
+    // sheet arrived here at "Add dates" and was asked all over again — and the
+    // results underneath were not narrowed by either. The controller has held
+    // all three since the sheet ran setStay(); this reads them.
+    _checkIn = _parseDmy(mapController.stayFrom.value);
+    _checkOut = _parseDmy(mapController.stayTo.value);
+    _guests = mapController.stayGuests.value;
+
+    _loadResults();
+  }
+
+  /// Change the party size, then refetch with it.
+  Future<void> _pickGuests() async {
+    final chosen = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: isLuxury ? Lux.bg : kCream,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        int local = _guests < 1 ? 1 : _guests;
+        return StatefulBuilder(
+          builder: (ctx, setSheet) => Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Who',
+                    style: fraunces(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w500,
+                        color: isLuxury ? Lux.ink : kInk)),
+                const SizedBox(height: 4),
+                Text('How many guests are coming?',
+                    style: inter(
+                        fontSize: 13,
+                        color: isLuxury ? Lux.muted : kMuted)),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        local == 1 ? '1 guest' : '$local guests',
+                        style: inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: isLuxury ? Lux.ink : kInk),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed:
+                          local > 1 ? () => setSheet(() => local--) : null,
+                      icon: const Icon(Icons.remove_circle_outline),
+                    ),
+                    IconButton(
+                      onPressed:
+                          local < 20 ? () => setSheet(() => local++) : null,
+                      icon: const Icon(Icons.add_circle_outline),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(ctx).pop(local),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isLuxury ? Lux.gold : kIndigo,
+                      foregroundColor: isLuxury ? Lux.ink : kCream,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: Text('Apply',
+                        style: inter(
+                            fontSize: 15, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (chosen == null || chosen == _guests) return;
+    setState(() => _guests = chosen);
+    _syncStayAndReload();
+  }
+
+  /// Push this screen's stay back onto the controller and refetch.
+  ///
+  /// The controller is what the map, the property page and checkout all read,
+  /// so changing the dates here has to update them too — otherwise opening a
+  /// stay from this list would ask for dates the guest has already given twice.
+  void _syncStayAndReload() {
+    mapController.setStay(
+      from: _checkIn == null ? null : StayDatesBar.api(_checkIn!),
+      to: _checkOut == null ? null : StayDatesBar.api(_checkOut!),
+      guests: _guests > 0 ? _guests : null,
+    );
+    _loadResults();
+  }
+
+  /// DD-MM-YYYY, the shape the whole platform stores stay dates in.
+  static DateTime? _parseDmy(String? v) {
+    final s = (v ?? '').trim();
+    if (s.isEmpty) return null;
+    final parts = s.split('-');
+    if (parts.length != 3) return null;
+    final d = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    final y = int.tryParse(parts[2]);
+    if (d == null || m == null || y == null) return null;
+    return DateTime(y, m, d);
+  }
+
+  /// Load the list this screen is showing.
+  ///
+  /// With a searched place it asks for stays around THOSE coordinates; without
+  /// one it keeps the previous behaviour. Before this the request sent empty
+  /// coordinates either way, so the heading named a place the results had
+  /// nothing to do with.
+  Future<void> _loadResults({bool? isLuxury}) {
+    final centre = widget.searchCenter;
+    return searchController.getPreBooking(
+      isLuxury: isLuxury ?? this.isLuxury,
+      latitude: centre?.latitude,
+      longitude: centre?.longitude,
+      radiusKm: widget.searchRadiusKm,
+      // Narrow by the stay the guest actually asked for. Without these the
+      // list showed places already booked for those nights, and places too
+      // small for the party, and only refused at checkout.
+      guests: _guests > 0 ? _guests : null,
+      from: _checkIn == null ? null : StayDatesBar.api(_checkIn!),
+      to: _checkOut == null ? null : StayDatesBar.api(_checkOut!),
+    );
   }
 
   @override
@@ -835,13 +1001,17 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Pre-booking near',
+                      Text(
+                          widget.searchPlace != null
+                              ? 'Stays in'
+                              : 'Pre-booking near',
                           style: inter(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: isLuxury ? Lux.muted : kMuted)),
                       Text(
-                        place.isEmpty ? 'Nearby' : place,
+                        widget.searchPlace ??
+                            (place.isEmpty ? 'Nearby' : place),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: inter(
@@ -1002,12 +1172,66 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                         checkIn: _checkIn,
                         checkOut: _checkOut,
                         isLuxury: isLuxury,
-                        onChanged: (a, b) =>
-                            setState(() { _checkIn = a; _checkOut = b; }),
-                        onClear: () =>
-                            setState(() { _checkIn = null; _checkOut = null; }),
+                        onChanged: (a, b) {
+                          setState(() { _checkIn = a; _checkOut = b; });
+                          _syncStayAndReload();
+                        },
+                        onClear: () {
+                          setState(() { _checkIn = null; _checkOut = null; });
+                          _syncStayAndReload();
+                        },
                       ),
                     ),
+
+                    // Who, beside When. The search sheet asks for a party size
+                    // and this screen showed no sign of it, so a guest who said
+                    // "4 guests" could not tell whether the list in front of
+                    // them respected that. Tapping it changes the party and
+                    // refetches.
+                    if (_guests > 0)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8.0, vertical: 0),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: InkWell(
+                            onTap: _pickGuests,
+                            borderRadius: BorderRadius.circular(999),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: isLuxury ? Lux.bg : kCream,
+                                border: Border.all(
+                                    color: isLuxury
+                                        ? Lux.gold.withOpacity(.4)
+                                        : kLine),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.person_outline,
+                                      size: 16,
+                                      color: isLuxury ? Lux.gold : kIndigo),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _guests == 1 ? '1 guest' : '$_guests guests',
+                                    style: inter(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: isLuxury ? Lux.ink : kInk),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(Icons.keyboard_arrow_down,
+                                      size: 16,
+                                      color: isLuxury ? Lux.muted : kMuted),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
 
                     Padding(
                       padding: const EdgeInsets.symmetric(
@@ -1171,8 +1395,7 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                                 gold: true,
                                 onClear: () {
                                   setState(() => isLuxury = false);
-                                  searchController.getPreBooking(
-                                      isLuxury: false);
+                                  _loadResults(isLuxury: false);
                                   _areaRails.load(isLuxury: false);
                                 },
                               ),

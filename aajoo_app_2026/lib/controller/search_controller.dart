@@ -22,11 +22,26 @@ class HomeSearchController extends GetxController {
     }
   }
 
-  Future<void> getPreBooking({bool isLuxury = false}) async {
+  Future<void> getPreBooking({
+    bool isLuxury = false,
+    double? latitude,
+    double? longitude,
+    int radiusKm = 10,
+    int? guests,
+    String? from,
+    String? to,
+  }) async {
     isLoading.value = true;
     try {
-      final response =
-          await _homePageSearchService.getPreBooking(isLuxury: isLuxury);
+      final response = await _homePageSearchService.getPreBooking(
+        isLuxury: isLuxury,
+        latitude: latitude,
+        longitude: longitude,
+        radiusKm: radiusKm,
+        guests: guests,
+        from: from,
+        to: to,
+      );
       preBookingResponse.value = response;
     } catch (err) {
       print(err);

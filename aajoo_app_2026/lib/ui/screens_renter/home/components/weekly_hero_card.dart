@@ -44,12 +44,19 @@ class WeeklyHeroCard extends StatelessWidget {
   /// dead end — see the headline below.
   final VoidCallback? onWiden;
 
+  /// The last search never reached the server.
+  ///
+  /// Without this the card reported a timeout as "No stays here yet" — telling
+  /// the guest something about the place that was really about the network.
+  final bool unreachable;
+
   const WeeklyHeroCard({
     super.key,
     this.homesNearby = 0,
     this.region = '',
     this.onTap,
     this.onWiden,
+    this.unreachable = false,
   });
 
   String get _formattedCount {
@@ -126,10 +133,20 @@ class WeeklyHeroCard extends StatelessWidget {
           Text(
             homesNearby > 0
                 // "1 homes near you" — the count is real, the noun was not.
-                ? '$_formattedCount ${homesNearby == 1 ? 'home' : 'homes'} near you.'
-                // Nothing found. Saying "Homes near you." over an empty list
-                // claims stays exist that do not, and offered no way on.
-                : 'No stays here yet.',
+                // "near you" was true only until the guest searched somewhere
+                // else, after which the card counted stays in Karnal and told
+                // them the stays were near them in California. Naming the place
+                // is right in both cases — unsearched, the region IS where they
+                // are.
+                ? region.isEmpty
+                    ? '$_formattedCount ${homesNearby == 1 ? 'home' : 'homes'} near you.'
+                    : '$_formattedCount ${homesNearby == 1 ? 'home' : 'homes'} in $region.'
+                : unreachable
+                    ? "Couldn't load stays."
+                    // Nothing found. Saying "Homes near you." over an empty
+                    // list claims stays exist that do not, and offered no way
+                    // on.
+                    : 'No stays here yet.',
             style: fraunces(
               fontSize: 22,
               fontWeight: FontWeight.w500,
@@ -138,7 +155,11 @@ class WeeklyHeroCard extends StatelessWidget {
             ),
           ),
           Text(
-            homesNearby > 0 ? 'No booking fee.' : 'Try a wider search.',
+            homesNearby > 0
+                ? 'No booking fee.'
+                : unreachable
+                    ? 'Check your connection.'
+                    : 'Try a wider search.',
             style: fraunces(
               fontSize: 22,
               fontWeight: FontWeight.w500,
@@ -159,9 +180,11 @@ class WeeklyHeroCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   homesNearby == 0
-                      ? (region.isEmpty
-                          ? 'Nothing matched. Widen the radius or clear your filters.'
-                          : 'Nothing around $region matched. Widen the radius or clear your filters.')
+                      ? (unreachable
+                          ? 'The server did not respond. Tap to try again.'
+                          : region.isEmpty
+                              ? 'Nothing matched. Widen the radius or clear your filters.'
+                              : 'Nothing around $region matched. Widen the radius or clear your filters.')
                       : region.isEmpty
                           ? 'Finding stays around you…'
                           : 'Showing stays around $region',

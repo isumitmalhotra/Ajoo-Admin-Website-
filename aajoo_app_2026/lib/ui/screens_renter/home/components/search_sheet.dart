@@ -5,7 +5,11 @@ import 'package:intl/intl.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/ui/screens_renter/home/map/map_controller.dart';
+import 'dart:async';
+
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/service/geocode_service.dart';
+import 'package:rent_home/ui/screens_renter/nearby_bookings/pre_booking_screen.dart';
 
 /// AajooHomes search sheet — Airbnb-style search modal.
 ///
@@ -67,6 +71,16 @@ class _SearchSheetState extends State<SearchSheet> {
   final TextEditingController _whereController = TextEditingController();
   String _whereQuery = '';
 
+  // Places from the geocoder, for whatever is currently typed.
+  //
+  // Suggestions used to come only from the cities of listings already loaded,
+  // so typing a place we had not fetched answered "No matches" — and pressing
+  // Search then did nothing, because nothing had been selected and the fetch
+  // fell back to the current position. Both halves of that are fixed here.
+  List<GeoPlace> _places = const [];
+  bool _searchingPlaces = false;
+  Timer? _placeDebounce;
+
   // Selection state
   _Destination? _selected;
   DateTimeRange? _dateRange;
@@ -74,16 +88,67 @@ class _SearchSheetState extends State<SearchSheet> {
 
   // Advanced filter state (mirrors FilterDialogContent defaults)
   double _radius = 1.0;
+  /// Whether the guest actually moved the radius slider.
+  ///
+  /// 1km is the slider's resting position, not a decision. Sending it as a
+  /// real filter is why searching a town could return nothing: the geocoder
+  /// puts Karnal's centre ~37km from Karnal's listings, so a 1km ring around
+  /// it is empty. Untouched, the radius is left to the fetch, which already
+  /// retries wide when a search comes back empty.
+  bool _radiusTouched = false;
   double _weeklyPrice = 500.0;
   double _monthlyPrice = 2000.0;
   bool _weeklyAny = true;
   bool _monthlyAny = true;
   bool _advancedExpanded = false;
 
+  /// A search is in flight.
+  ///
+  /// Resolving a typed place and fetching the listings around it are two
+  /// network round trips, and until now the button stayed live and silent
+  /// through both — so a guest who saw nothing happen tapped again and
+  /// queued a second search behind the first.
+  bool _searching = false;
+
+  /// Derived destinations, cached against the size of the source list.
+  ///
+  /// Grouping every loaded listing by city ran inside build, so it ran again
+  /// on every keystroke in the Where box. The source only changes when the
+  /// map refetches.
+  List<_Destination>? _destCache;
+  int _destCacheKey = -1;
+
   @override
   void dispose() {
+    _placeDebounce?.cancel();
     _whereController.dispose();
     super.dispose();
+  }
+
+  /// Ask the geocoder, a beat after the guest stops typing — one request per
+  /// pause rather than one per keystroke.
+  void _queryPlaces(String q) {
+    _placeDebounce?.cancel();
+    final query = q.trim();
+    if (query.length < 2) {
+      setState(() {
+        _places = const [];
+        _searchingPlaces = false;
+      });
+      return;
+    }
+    setState(() => _searchingPlaces = true);
+    _placeDebounce = Timer(const Duration(milliseconds: 350), () async {
+      final found = await GeocodeService.instance.search(query);
+      if (!mounted) return;
+      // A slow reply for a query the guest has already moved on from must not
+      // overwrite the list they are looking at.
+      if (_whereController.text.trim() != query) return;
+      setState(() {
+        _places = found;
+        _searchingPlaces = false;
+      });
+    });
   }
 
   /// Group `allProperties` by city, count, take a representative lat/lng
@@ -92,6 +157,7 @@ class _SearchSheetState extends State<SearchSheet> {
     final all = mapController.allProperties.isEmpty
         ? mapController.properties
         : mapController.allProperties;
+    if (_destCache != null && _destCacheKey == all.length) return _destCache!;
     final Map<String, List<Property>> byCity = {};
     for (final p in all) {
       final c = p.propertyCity.trim();
@@ -111,6 +177,8 @@ class _SearchSheetState extends State<SearchSheet> {
       );
     }).toList()
       ..sort((a, b) => b.count.compareTo(a.count));
+    _destCache = destinations;
+    _destCacheKey = all.length;
     return destinations;
   }
 
@@ -247,6 +315,7 @@ class _SearchSheetState extends State<SearchSheet> {
       _dateRange = null;
       _guests = 1;
       _radius = 1.0;
+      _radiusTouched = false;
       _weeklyPrice = 500.0;
       _monthlyPrice = 2000.0;
       _weeklyAny = true;
@@ -259,7 +328,18 @@ class _SearchSheetState extends State<SearchSheet> {
       '${d.day.toString().padLeft(2, '0')}-${d.month.toString().padLeft(2, '0')}-${d.year}';
 
   Future<void> _onSearch() async {
-    final radiusStr = _radius > 0 ? _radius.round().toString() : '';
+    if (_searching) return;
+    setState(() => _searching = true);
+    try {
+      await _runSearch();
+    } finally {
+      if (mounted) setState(() => _searching = false);
+    }
+  }
+
+  Future<void> _runSearch() async {
+    final radiusStr =
+        (_radiusTouched && _radius > 0) ? _radius.round().toString() : '';
 
     // Record what the guest actually asked for BEFORE fetching.
     //
@@ -274,9 +354,64 @@ class _SearchSheetState extends State<SearchSheet> {
       guests: _guests,
     );
 
-    if (_selected != null) {
-      await mapController.fetchPropertiesAt(_selected!.position,
-          radius: radiusStr);
+    // A typed place with no suggestion tapped used to be ignored entirely:
+    // the search fell through to "near my current position", so pressing
+    // Search after typing "Karnal" closed the sheet and changed nothing.
+    // Resolve the text first, and only fall back to Nearby when the box is
+    // genuinely empty.
+    var target = _selected;
+    final typed = _whereController.text.trim();
+    if (target == null && typed.isNotEmpty) {
+      final place = await GeocodeService.instance.resolve(typed);
+      if (place == null) {
+        // Say so rather than silently searching somewhere else.
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                "We couldn't find “$typed”. Try a nearby town or city."),
+          ));
+        }
+        return;
+      }
+      target = _Destination(
+        city: place.shortName,
+        position: LatLng(place.lat, place.lng),
+        count: 0,
+        subtitle: place.context,
+      );
+    }
+
+    // Close as soon as we know WHERE to look, and let the destination screen
+    // show its own loading state for the fetch.
+    //
+    // Holding the sheet open across both round trips meant the guest stared at
+    // a "Searching…" button for as long as the network took — and, before the
+    // service had any timeouts, potentially forever. The place lookup above is
+    // the only part the sheet needs to stay for, because only it can fail in a
+    // way the sheet must report.
+    final navigator = Navigator.of(context);
+    if (mounted) navigator.pop();
+
+    // A search now LANDS somewhere.
+    //
+    // Pressing Search used to close the sheet onto whichever screen you started
+    // from and quietly change some numbers on it — so the honest description of
+    // what happened was "nothing". It opens the results screen instead: the
+    // place searched in the header, the stays around it beneath, and the sort
+    // and filter controls that screen already carries.
+    final chosen = target;
+    if (chosen != null) {
+      final radiusKm = (_radiusTouched && _radius > 0) ? _radius.round() : 50;
+      navigator.push(MaterialPageRoute(
+        builder: (_) => PreBookingScreen(
+          searchPlace: chosen.city,
+          searchCenter: chosen.position,
+          searchRadiusKm: radiusKm,
+        ),
+      ));
+      // The map underneath is moved to the same place, so closing the results
+      // does not drop the guest back where they started.
+      await mapController.fetchPropertiesAt(chosen.position, radius: radiusStr);
     } else {
       await mapController.fetchProperties(radius: radiusStr);
     }
@@ -284,7 +419,6 @@ class _SearchSheetState extends State<SearchSheet> {
       minPrice: _weeklyAny ? null : _weeklyPrice,
       maxPrice: _monthlyAny ? null : _monthlyPrice,
     );
-    if (mounted) Navigator.of(context).pop();
   }
 
   String get _whenLabel {
@@ -396,7 +530,10 @@ class _SearchSheetState extends State<SearchSheet> {
       ),
       child: TextField(
         controller: _whereController,
-        onChanged: (v) => setState(() => _whereQuery = v),
+        onChanged: (v) {
+          setState(() => _whereQuery = v);
+          _queryPlaces(v);
+        },
         style: inter(fontSize: 14, color: kInk, fontWeight: FontWeight.w500),
         decoration: InputDecoration(
           hintText: 'Search destinations',
@@ -441,7 +578,52 @@ class _SearchSheetState extends State<SearchSheet> {
               });
             },
           ),
-          if (destinations.isEmpty) ...[
+          // Real places, from the geocoder. These come first: a guest who
+          // typed "Karnal" means the town, whether or not we have loaded a
+          // listing there yet.
+          if (_places.isNotEmpty)
+            ..._places.take(6).map(
+              (p) => _suggestionTile(
+                icon: Icons.place_outlined,
+                title: p.shortName,
+                subtitle: p.context,
+                // Compared by position, not name. Four separate Karnal
+                // results all share the short name, so matching on it lit up
+                // every one of them and the guest could not see which they had
+                // actually picked.
+                isSelected: _selected != null &&
+                    _selected!.position.latitude == p.lat &&
+                    _selected!.position.longitude == p.lng,
+                onTap: () {
+                  setState(() {
+                    _selected = _Destination(
+                      city: p.shortName,
+                      position: LatLng(p.lat, p.lng),
+                      count: 0,
+                      subtitle: p.context,
+                    );
+                    _whereController.text = p.shortName;
+                    _whereQuery = p.shortName;
+                    // The list is deliberately KEPT. Clearing it left the
+                    // sheet saying "No matches for Karnal" about the very
+                    // place the guest had just chosen — the derived
+                    // destinations do not contain it, so the empty state took
+                    // over. Keeping the results lets the chosen row stay
+                    // visible and selected.
+                  });
+                },
+              ),
+            ),
+          if (_searchingPlaces) ...[
+            const SizedBox(height: 16),
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text('Looking for places…',
+                    style: inter(fontSize: 13, color: kMuted)),
+              ),
+            ),
+          ] else if (destinations.isEmpty && _places.isEmpty) ...[
             const SizedBox(height: 16),
             Center(
               child: Padding(
@@ -455,7 +637,7 @@ class _SearchSheetState extends State<SearchSheet> {
                 ),
               ),
             ),
-          ] else
+          ] else if (destinations.isNotEmpty)
             ...destinations.map(
               (d) => _suggestionTile(
                 icon: Icons.location_city_outlined,
@@ -599,7 +781,10 @@ class _SearchSheetState extends State<SearchSheet> {
             min: 1,
             max: 15,
             divisions: 14,
-            onChanged: (v) => setState(() => _radius = v),
+            onChanged: (v) => setState(() {
+              _radius = v;
+              _radiusTouched = true;
+            }),
           ),
           _sliderBlock(
             label: 'Weekly price',
@@ -724,10 +909,17 @@ class _SearchSheetState extends State<SearchSheet> {
           ),
           const Spacer(),
           ElevatedButton.icon(
-            onPressed: _onSearch,
-            icon: const Icon(Icons.search, size: 18, color: kCream),
+            onPressed: _searching ? null : _onSearch,
+            icon: _searching
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: kCream),
+                  )
+                : const Icon(Icons.search, size: 18, color: kCream),
             label: Text(
-              'Search',
+              _searching ? 'Searching…' : 'Search',
               style: inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -736,6 +928,8 @@ class _SearchSheetState extends State<SearchSheet> {
             style: ElevatedButton.styleFrom(
               backgroundColor: kClay,
               foregroundColor: kCream,
+              disabledBackgroundColor: kClay.withOpacity(0.75),
+              disabledForegroundColor: kCream,
               elevation: 0,
               padding: const EdgeInsets.symmetric(
                   horizontal: 24, vertical: 14),

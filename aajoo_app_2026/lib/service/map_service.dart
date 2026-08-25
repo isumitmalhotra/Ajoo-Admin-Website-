@@ -9,7 +9,22 @@ class MapService {
   MapService() {
     _dio.options.baseUrl = baseUrl;
     _dio.options.contentType = 'application/json';
+    // Without these, a stalled request never returns and every caller waits
+    // forever. Search is the one that showed it: the sheet's Search button sat
+    // on "Searching…" indefinitely because the await underneath it had no way
+    // to give up. Every other service in the app already sets them; this one,
+    // behind the main search, was the only Dio left bare.
+    _dio.options.connectTimeout = const Duration(seconds: 20);
+    _dio.options.sendTimeout = const Duration(seconds: 20);
+    _dio.options.receiveTimeout = const Duration(seconds: 45);
   }
+
+  /// A transport failure, as opposed to a search that genuinely found nothing.
+  ///
+  /// Both used to come back as "no properties", so a dead network was shown to
+  /// the guest as "No stays here yet" — and the wide-radius retry ran anyway,
+  /// doubling the wait before that wrong answer appeared.
+  static const String networkFailure = "__network_failure__";
 
   // ...existing code...
   /// Search stays.
@@ -28,7 +43,8 @@ class MapService {
       int? guests,
       String? from,
       String? to,
-      bool? isLuxury}) async {
+      bool? isLuxury,
+      Duration? receiveTimeout}) async {
     final Map<String, dynamic> data = {
       "latitude": lat,
       "longitude": long,
@@ -60,7 +76,13 @@ class MapService {
     print("Search payload: $data");
     try {
       print("Fetch Property !!!");
-      final response = await _dio.post("/properties/search", data: data);
+      final response = await _dio.post(
+        "/properties/search",
+        data: data,
+        options: receiveTimeout == null
+            ? null
+            : Options(receiveTimeout: receiveTimeout),
+      );
       print("Response for Fetch Property : ${response.data}");
 
       if (response.statusCode == 200 && response.data["success"] == true) {
@@ -90,14 +112,14 @@ class MapService {
       print(e.message);
       return PropertiesResponse(
         success: false,
-        message: "Failed to fetch properties",
+        message: networkFailure,
         data: Data(property: []),
       );
     } on Exception catch (e) {
       print(e);
       return PropertiesResponse(
         success: false,
-        message: "Failed to fetch properties",
+        message: networkFailure,
         data: Data(property: []),
       );
     }
