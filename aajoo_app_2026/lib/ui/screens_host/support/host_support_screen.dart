@@ -24,8 +24,6 @@ const String _hostLine = '+91 96252 36254';
 const String _emergencyLine = '+91 93172 36254';
 const String _hostEmail = 'aajoolive@gmail.com';
 const String _whatsappNumber = '7973918722';
-const String _chatUrl =
-    'https://window-2.botpenguin.com/69803a093817049868bf064f/696f4cdf88f4a8046c67188e';
 
 class HostSupportScreen extends StatelessWidget {
   const HostSupportScreen({super.key});

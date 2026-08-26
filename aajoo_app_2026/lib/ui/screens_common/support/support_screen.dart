@@ -29,8 +29,6 @@ import 'package:rent_home/utils/support_chat.dart';
 const String _supportEmail = 'aajoolive@gmail.com';
 const String _supportPhone = '+91 96252 36254';
 const String _whatsappNumber = '7973918722';
-const String _chatUrl =
-    'https://window-2.botpenguin.com/69803a093817049868bf064f/696f4cdf88f4a8046c67188e';
 
 class SupportScreen extends StatelessWidget {
   const SupportScreen({super.key});
