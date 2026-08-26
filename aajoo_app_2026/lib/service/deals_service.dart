@@ -43,6 +43,66 @@ class DealsService {
     }
   }
 
+  /// Send an opening offer on a property.
+  ///
+  /// POST /user/negotiations/offer — the same endpoint the website's "Send an
+  /// Offer" modal posts to (customerApi.sendPropertyOffer). The app used to
+  /// open a socket chat instead, which is why it grew a 30-second countdown
+  /// and quick-price chips the web never had: two clients negotiating through
+  /// two different transports against one engine.
+  ///
+  /// The server decides the outcome — at or above the host's floor it accepts
+  /// and mints the 24-hour coupon itself; below it, the host is asked. The
+  /// answer comes back here so the sheet can say which happened.
+  Future<OfferOutcome> sendOffer({
+    required int propertyId,
+    required double offerPrice,
+    String? message,
+    String? bookFrom,
+    String? bookTo,
+  }) async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    if (token == null || token.isEmpty) {
+      return const OfferOutcome.failed('Please sign in to negotiate.');
+    }
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final res = await _dio.post(
+        '${Apiconstants.baseUrl}/user/negotiations/offer',
+        data: {
+          'propertyId': propertyId,
+          'offerPrice': offerPrice,
+          if (message != null && message.trim().isNotEmpty)
+            'message': message.trim(),
+          if (bookFrom != null && bookFrom.isNotEmpty) 'bookFrom': bookFrom,
+          if (bookTo != null && bookTo.isNotEmpty) 'bookTo': bookTo,
+        },
+      );
+      final body = res.data;
+      if (body is! Map || body['success'] != true) {
+        return OfferOutcome.failed(
+          (body is Map ? body['message']?.toString() : null) ??
+              'Could not send that offer.',
+        );
+      }
+      final data = Map<String, dynamic>.from(body['data'] ?? const {});
+      return OfferOutcome(
+        action: data['action']?.toString() ?? 'escalate_to_host',
+        price: (data['price'] as num?)?.toDouble(),
+        couponCode: data['couponCode']?.toString(),
+        message: data['message']?.toString(),
+      );
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      return OfferOutcome.failed(
+        (body is Map ? body['message']?.toString() : null) ??
+            'Could not send that offer. Check your connection and try again.',
+      );
+    } catch (_) {
+      return const OfferOutcome.failed('Could not send that offer.');
+    }
+  }
+
   /// Accept or decline a host's counter. Accepting mints the same 24h personal
   /// coupon the host-accept path mints, so a deal struck either way checks out
   /// identically. Returns null on success, or a message to show the guest.
@@ -145,4 +205,33 @@ class CouponValidation {
     this.percent = 0,
     this.type = 'percent',
   });
+}
+
+/// What the server did with an offer.
+///
+/// `accept` means it cleared the host's floor and the 24-hour coupon already
+/// exists; anything else means the host has been asked and will answer.
+class OfferOutcome {
+  const OfferOutcome({
+    required this.action,
+    this.price,
+    this.couponCode,
+    this.message,
+    this.error,
+  });
+
+  const OfferOutcome.failed(String this.error)
+      : action = 'error',
+        price = null,
+        couponCode = null,
+        message = null;
+
+  final String action;
+  final double? price;
+  final String? couponCode;
+  final String? message;
+  final String? error;
+
+  bool get accepted => action == 'accept';
+  bool get failed => error != null;
 }

@@ -16,6 +16,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/screens_renter/property_details/widgets/send_offer_sheet.dart';
 import 'package:rent_home/utils/nightly_rates.dart';
 import 'package:rent_home/constants/payment_config.dart';
 import 'package:rent_home/utils/booking_pricing.dart';
@@ -1850,37 +1851,52 @@ onPressed: () async {
                       );
                       return;
                     }
-                    Navigator.push(
+                    // One sheet: your price, your dates, an optional message
+                    // — the website's "Send an Offer" modal.
+                    //
+                    // This used to push PriceNegotiationPage, a live socket
+                    // chat with a thirty-second countdown, six quick-price
+                    // chips and a running offer counter. The countdown implied
+                    // a host was about to answer within thirty seconds, which
+                    // is not how the server works: it escalates to the host,
+                    // notifies them, and waits. Two clients negotiating
+                    // through two transports against one engine is how they
+                    // came to disagree about the rules.
+                    //
+                    // An ongoing thread is still readable from the
+                    // negotiations list. This is the opening move, and on a
+                    // phone it should cost one sheet.
+                    final accepted = await showSendOfferSheet(
                       context,
-                      CupertinoPageRoute(
-                        builder: (context) => PriceNegotiationPage(
-                          userId: currentUserId.toString(),
-                          propertyId: widget.id.toString(),
-                          serverUrl: Apiconstants
-                              .serverUrl, //"https://aajaodev.onrender.com",
-                          receiverId: widget.property.propertyHostId.toString(),
-                          token: token,
-                          lat: widget.lat,
-                          senderId: currentUserId.toString(),
-                          long: widget.long,
-                          property: widget.property,
-                          hostId: widget.property.propertyHostId.toString(),
-                        ),
-                      ),
+                      propertyId: widget.id,
+                      propertyName: _single?.propertyName ?? widget.name,
+                      nightlyPrice: currentPrice,
+                      initialFrom: selectedDate,
+                      initialTo: selectedDateTo,
                     );
+                    if (!mounted) return;
+                    if (accepted) {
+                      // Accepted outright: the server has already minted the
+                      // 24-hour coupon, so reload the page's own price and
+                      // open the booking panel at it.
+                      await _fetchSingleProperty();
+                      if (!mounted) return;
+                      _toggleExpanded();
+                    }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[300],
-                    textStyle: const TextStyle(
-                      color: Colors.black87,
-                      fontSize: 16,
-                    ),
+                    backgroundColor: kSurface,
+                    foregroundColor: kIndigo,
+                    elevation: 0,
+                    side: const BorderSide(color: kIndigo, width: 1.5),
                     minimumSize: const Size(double.infinity, 50),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Negotiate'),
+                  child: Text('Negotiate',
+                      style: inter(
+                          fontSize: 15, fontWeight: FontWeight.w600)),
                 ),
               ),
             ],
