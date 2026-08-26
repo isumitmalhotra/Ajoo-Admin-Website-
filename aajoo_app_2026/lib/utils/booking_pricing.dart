@@ -50,6 +50,14 @@ class StayPrice {
   /// The coupon or negotiated-deal reduction applied to [chargeable].
   final double discount;
 
+  /// What the HOST takes off for a long stay, and what to call it.
+  ///
+  /// A different thing from [discount]: that is the guest's coupon or a
+  /// negotiated deal, this is the property's own weekly/monthly rate. Shown as
+  /// its own line so a guest can see the month-long rate they are getting.
+  final double longStayDiscount;
+  final String? longStayLabel;
+
   /// [roomSubtotal] less [discount] — the base GST is actually charged on.
   final double discountedRoom;
 
@@ -67,6 +75,8 @@ class StayPrice {
     required this.extraGuestFee,
     required this.chargeable,
     required this.discount,
+    this.longStayDiscount = 0,
+    this.longStayLabel,
     required this.discountedRoom,
     required this.taxPct,
     required this.taxes,
@@ -90,8 +100,19 @@ StayPrice priceStay({
   required double perNightTariff,
   double discount = 0,
   double extraGuestFee = 0,
+  double longStayDiscount = 0,
+  String? longStayLabel,
 }) {
-  final subtotal = roomSubtotal.isFinite && roomSubtotal > 0 ? roomSubtotal : 0.0;
+  final gross = roomSubtotal.isFinite && roomSubtotal > 0 ? roomSubtotal : 0.0;
+  // The host's weekly/monthly rate comes off the ROOM before anything else —
+  // an extra guest costs the host the same whether the stay is two nights or
+  // forty, so the discount never touches the party charge. Mirrors
+  // quoteRange in utils/nightlyRates.js, which the server re-runs and refuses
+  // a booking that disagrees with.
+  final longStay = longStayDiscount.isFinite && longStayDiscount > 0
+      ? (longStayDiscount > gross ? gross : longStayDiscount)
+      : 0.0;
+  final subtotal = gross - longStay;
   final party =
       extraGuestFee.isFinite && extraGuestFee > 0 ? extraGuestFee : 0.0;
   // The party charge rides with the room through discount and tax, because
@@ -104,7 +125,11 @@ StayPrice priceStay({
   // equals the Razorpay order amount exactly rather than being a rupee out.
   final taxes = (discountedRoom * taxPct).roundToDouble() / 100;
   return StayPrice(
+    // The room AFTER the host's long-stay rate: this is `price` on the
+    // booking, and the server computes the identical figure.
     roomSubtotal: subtotal,
+    longStayDiscount: longStay,
+    longStayLabel: longStay > 0 ? longStayLabel : null,
     extraGuestFee: party,
     chargeable: chargeable,
     discount: chargeable - discountedRoom,

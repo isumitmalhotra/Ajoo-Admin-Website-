@@ -16,6 +16,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/utils/nightly_rates.dart';
 import 'package:rent_home/constants/payment_config.dart';
 import 'package:rent_home/utils/booking_pricing.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
@@ -315,6 +316,18 @@ class _PropertyPageState extends State<PropertyPage>
 
     // Fetch full property details
     _fetchSingleProperty().then((_) => _fetchHost());
+  }
+
+  /// A host-set check-in or check-out time, or a sensible default.
+  ///
+  /// Treats the literal strings "null" and "" as absent: the callers stringify
+  /// nullable fields, so absence arrives here as text rather than as null.
+  static String _stayTime(String? detail, dynamic fallback) {
+    for (final v in [detail, fallback?.toString()]) {
+      final t = (v ?? '').trim();
+      if (t.isNotEmpty && t.toLowerCase() != 'null') return t;
+    }
+    return '12:00PM';
   }
 
   /// DD/MM/YYYY, zero-padded — the field labels promise that shape and the
@@ -929,7 +942,14 @@ class _PropertyPageState extends State<PropertyPage>
                 leading: const Icon(Icons.access_time),
                 title: const Text('Check-in/Check-out Time'),
                 subtitle: Text(
-                  "${_single?.propDetails?.inTime ?? widget.inTime ?? "12:00PM"} / ${_single?.propDetails?.outTime ?? widget.outTime ?? "12:00PM"} · set by the host",
+                  // `?? "12:00PM"` never fired, because every caller passes
+                  // these as `something.toString()` — and `null.toString()` is
+                  // the STRING "null", which is not null. So a listing with no
+                  // check-in time displayed "null / null · set by the host".
+                  '${_stayTime(_single?.propDetails?.inTime, widget.inTime)}'
+                  ' / '
+                  '${_stayTime(_single?.propDetails?.outTime, widget.outTime)}'
+                  ' · set by the host',
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 14,
@@ -1018,6 +1038,8 @@ class _PropertyPageState extends State<PropertyPage>
                                   perNightTariff: currentPrice,
                                   discount: _discountOnRoom,
                                   extraGuestFee: _partyFee,
+                                  longStayDiscount: _longStayOff,
+                                  longStayLabel: _longStay.label,
                                 );
 
                                 return Text(
@@ -1109,6 +1131,8 @@ class _PropertyPageState extends State<PropertyPage>
                               perNightTariff: currentPrice,
                               discount: _discountOnRoom,
                               extraGuestFee: _partyFee,
+                              longStayDiscount: _longStayOff,
+                              longStayLabel: _longStay.label,
                             );
 
                             return Column(
@@ -1154,6 +1178,31 @@ class _PropertyPageState extends State<PropertyPage>
                                           fontWeight: FontWeight.w500,
                                           color: kMuted,
                                         ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                                // The host's own long-stay rate, named, so a
+                                // guest can see WHY a month costs less than
+                                // thirty times a night.
+                                if (p.longStayDiscount > 0) ...[
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        '${p.longStayLabel} '
+                                        '(${_longStay.percent.toStringAsFixed(0)}%)',
+                                        style: inter(
+                                            fontSize: 14, color: kSuccess),
+                                      ),
+                                      Text(
+                                        '− ${rupees(p.longStayDiscount)}',
+                                        style: inter(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                            color: kSuccess),
                                       ),
                                     ],
                                   ),
@@ -1517,6 +1566,8 @@ onPressed: () async {
                       perNightTariff: currentPrice,
                       discount: _discountOnRoom,
                       extraGuestFee: _partyFee,
+                      longStayDiscount: _longStayOff,
+                      longStayLabel: _longStay.label,
                     );
                     final double finalAmount =
                         double.parse(p.total.toStringAsFixed(0));
@@ -2804,6 +2855,23 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
   /// back, which is why the confirmation could fail to appear on a card
   /// payment — "booking confirm page is missing in real time booking". A route
   /// does not depend on that, and it has room for the map.
+  /// The host's weekly/monthly rate for the nights currently chosen.
+  ///
+  /// Step 4 collects these and nothing read them, so "Monthly" priced a
+  /// 35-night stay at the full nightly rate times thirty-five — the host's own
+  /// long-stay rate ignored. The server applies the identical rule and refuses
+  /// a booking whose price disagrees, so this must match it exactly.
+  LongStayDiscount get _longStay =>
+      _single?.pricing?.longStayFor(totalDays) ?? const LongStayDiscount();
+
+  /// What that discount is worth in rupees on the room total.
+  double get _longStayOff {
+    final rule = _longStay;
+    if (!rule.applies) return 0;
+    final room = double.tryParse(currentPriceString) ?? 0;
+    return (room * rule.percent / 100).roundToDouble();
+  }
+
   /// The price this booking was made at — one computation, used for the
   /// headline figure and for every line of the breakdown beside it, so they
   /// cannot disagree.
@@ -2812,6 +2880,8 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
         perNightTariff: currentPrice,
         discount: _discountOnRoom,
         extraGuestFee: _partyFee,
+        longStayDiscount: _longStayOff,
+        longStayLabel: _longStay.label,
       );
 
   void successDialog(
