@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/unused_screens/chat/chat_page.dart';
 
 class NegotiationScreenLoadView extends StatelessWidget {
@@ -23,7 +24,7 @@ class NegotiationScreenLoadView extends StatelessWidget {
             padding: EdgeInsets.all(10.0),
             child: Text(
               "Negotiation lets you propose a custom price for this property. Both you and the host can make offers until you agree on a price.\n\nCaution: Only accept offers you are comfortable with. Once you accept, you will proceed to booking and payment. Never share sensitive information in chat.",
-              style: TextStyle(color: Colors.black87, fontSize: 10),
+              style: TextStyle(color: kInk, fontSize: 10),
               textAlign: TextAlign.center,
             ),
           ),

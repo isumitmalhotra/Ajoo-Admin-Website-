@@ -33,6 +33,17 @@ const kLine      = Color(0xFFEAE4DA); // warm borders / dividers
 const kSuccess   = Color(0xFF15803D); // verified badges / success text
 const kDanger    = Color(0xFFDC2626); // errors only
 
+// --- Status tints ---
+// The pale ground a status message sits on. Named so a screen never reaches
+// for Colors.red[50] again: the negotiation screens carried 97 raw Material
+// colours, including a BLUE panel on a teal-and-amber product, because there
+// was no token to reach for instead.
+const kSuccessBg = Color(0xFFEAF6EE);
+const kDangerBg  = Color(0xFFFDECEC);
+const kWarningBg = Color(0xFFFDF3E2);
+/// Readable amber text — the raw Golden Amber is too light on white.
+const kWarningText = Color(0xFF92650F);
+
 // --- Elevation / surface system (premium depth) ---
 // Cards use a WHITE surface so they lift off the cream background, with a soft
 // 2-layer navy-tinted shadow.

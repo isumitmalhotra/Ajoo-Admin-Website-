@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rent_home/constants.dart';
 import 'package:get/get.dart';
 import 'negotitaion_page.dart';
 import '../../../data/models/properties_response_model.dart';
@@ -18,7 +19,7 @@ class NegotiationPageWrapper extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 64, color: Colors.red),
+              Icon(Icons.error_outline, size: 64, color: kDanger),
               SizedBox(height: 16),
               Text(
                 'Invalid navigation data',
@@ -59,7 +60,7 @@ class NegotiationPageWrapper extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.warning_amber_outlined,
-                  size: 64, color: Colors.orange),
+                  size: 64, color: kWarningText),
               const SizedBox(height: 16),
               const Text(
                 'Missing Required Data',

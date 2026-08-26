@@ -35,10 +35,9 @@ import 'package:rent_home/ui/screens_host/notifications/host_notifications_scree
 /// host_dashboard): in-body header, greeting, earnings card, stat grid,
 /// ongoing-stays list, boost banner, recent transactions. All figures are wired
 /// to real HostController data (ongoing / properties / booking-history /
-/// transactions). `onMenuTap` opens the shell's drawer.
+/// transactions).
 class HostHomeScreen extends StatefulWidget {
-  final VoidCallback? onMenuTap;
-  const HostHomeScreen({super.key, this.onMenuTap});
+  const HostHomeScreen({super.key});
 
   @override
   State<HostHomeScreen> createState() => _HostHomeScreenState();
@@ -183,15 +182,11 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
   Widget _header() {
     return Row(
       children: [
-        InkWell(
-          onTap: widget.onMenuTap,
-          borderRadius: BorderRadius.circular(10),
-          child: const Padding(
-            padding: EdgeInsets.all(4),
-            child: Icon(Ionicons.grid_outline, size: 22, color: kInk),
-          ),
-        ),
-        const SizedBox(width: 12),
+        // The grid icon opened the side drawer, which is gone: everything it
+        // held is on the Profile tab, which the bottom bar already reaches in
+        // one tap. An unlabelled icon whose only job was to duplicate that is
+        // the same trap the guest side had — a drawer behind a logo nothing
+        // marked as tappable.
         Text('aajoo',
             style: fraunces(
                 fontSize: 22, fontWeight: FontWeight.w700, color: kClay)),

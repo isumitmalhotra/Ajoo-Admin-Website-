@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rent_home/constants.dart';
 import 'package:intl/intl.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/negotiation_controller.dart';
@@ -67,13 +68,13 @@ class NegotiationAppBar extends StatelessWidget {
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: Colors.grey[300],
+                        color: kLine,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
                         Icons.broken_image,
                         size: 60,
-                        color: Colors.grey,
+                        color: kMuted,
                       ),
                     ),
                   ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rent_home/constants.dart';
 import 'package:intl/intl.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/negotiation_controller.dart';
@@ -57,14 +58,14 @@ class ChatStatusCard extends StatelessWidget {
               return Card(
                 elevation: 2,
                 color: negotiationController.chatLimitReached.value
-                    ? Colors.red[50]
-                    : Colors.blue[50],
+                    ? kDangerBg
+                    : kIndigo50,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
                     color: negotiationController.chatLimitReached.value
-                        ? Colors.red
-                        : Colors.blue,
+                        ? kDanger
+                        : kIndigo,
                   ),
                 ),
                 child: Padding(
@@ -79,8 +80,8 @@ class ChatStatusCard extends StatelessWidget {
                                 ? Icons.chat_bubble_outline_rounded
                                 : Icons.chat,
                             color: negotiationController.chatLimitReached.value
-                                ? Colors.red
-                                : Colors.blue,
+                                ? kDanger
+                                : kIndigo,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -114,7 +115,7 @@ class ChatStatusCard extends StatelessWidget {
                           child: Text(
                             '⚠️ Chat limit reached! Accept the offer to proceed.',
                             style: TextStyle(
-                              color: Colors.red[700],
+                              color: kDanger,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -132,11 +133,11 @@ class ChatStatusCard extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: Card(
                 elevation: 2,
-                color: showBookingOption ? Colors.red[50] : Colors.orange[50],
+                color: showBookingOption ? kDangerBg : kWarningBg,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
-                    color: showBookingOption ? Colors.red : Colors.orange,
+                    color: showBookingOption ? kDanger : kWarningText,
                   ),
                 ),
                 child: Padding(
@@ -147,7 +148,7 @@ class ChatStatusCard extends StatelessWidget {
                           children: [
                             const Row(
                               children: [
-                                Icon(Icons.access_time, color: Colors.red),
+                                Icon(Icons.access_time, color: kDanger),
                                 SizedBox(width: 8),
                                 Text(
                                   "Host not responding",
@@ -167,7 +168,7 @@ class ChatStatusCard extends StatelessWidget {
                                 "Book Now at ${rupees(negotiationController.currentPrice.value)}",
                               ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
+                                backgroundColor: kDanger,
                                 foregroundColor: Colors.white,
                                 minimumSize: const Size(double.infinity, 45),
                               ),
@@ -176,7 +177,7 @@ class ChatStatusCard extends StatelessWidget {
                         )
                       : Row(
                           children: [
-                            const Icon(Icons.timer, color: Colors.orange),
+                            const Icon(Icons.timer, color: kWarningText),
                             const SizedBox(width: 8),
                             Text(
                               "Waiting: ${_formatTime(remainingTime)}",

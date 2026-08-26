@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/screens_renter/property_details/widgets/traveller_picker.dart';
 import 'package:rent_home/utils/money.dart';
 
@@ -59,7 +60,7 @@ class _AcceptOfferBottomSheetState extends State<AcceptOfferBottomSheet> {
             // "₹1440.00" while the same figure read "₹1,440" at checkout.
             "GST (${(_gstRate * 100).toStringAsFixed(0)}%): ${rupees(_gstAmount)}",
             style: theme.textTheme.titleMedium?.copyWith(
-              color: Colors.red,
+              color: kDanger,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -68,7 +69,7 @@ class _AcceptOfferBottomSheetState extends State<AcceptOfferBottomSheet> {
           Text(
             "Total Price: ${rupees(_totalAmount)} (including GST)",
             style: theme.textTheme.titleMedium?.copyWith(
-              color: Colors.green,
+              color: kSuccess,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -85,7 +86,7 @@ class _AcceptOfferBottomSheetState extends State<AcceptOfferBottomSheet> {
             label: const Text("Pay on Arrival (COD)"),
             style: ElevatedButton.styleFrom(
               foregroundColor: Colors.white,
-              backgroundColor: Colors.green,
+              backgroundColor: kSuccess,
               minimumSize: const Size(double.infinity, 50),
             ),
             onPressed: () async {

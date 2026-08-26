@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:rent_home/constants.dart';
 import 'package:rent_home/service/pending_booking.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -438,7 +439,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: kCream,
       body: Obx(() {
         if (negotiationController.isLoading.value) {
           return const NegotiationScreenLoadView();
@@ -495,7 +496,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                         if (isAccepted) {
                           bubbleColor = isUser
                               ? theme.primaryColor.withOpacity(0.85)
-                              : Colors.green.shade50;
+                              : kSuccessBg;
                         } else {
                           bubbleColor =
                               isUser ? theme.primaryColor : Colors.white;
@@ -513,11 +514,11 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                               color: bubbleColor,
                               borderRadius: BorderRadius.circular(12),
                               border: isAccepted
-                                  ? Border.all(color: Colors.green, width: 2)
+                                  ? Border.all(color: kSuccess, width: 2)
                                   : null,
                               boxShadow: const [
                                 BoxShadow(
-                                  color: Colors.black12,
+                                  color: kLine,
                                   blurRadius: 4,
                                   offset: Offset(0, 2),
                                 ),
@@ -556,7 +557,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
-                                            color: Colors.green,
+                                            color: kSuccess,
                                             borderRadius:
                                                 BorderRadius.circular(8),
                                           ),
@@ -574,7 +575,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                   message.messageText,
                                   style: TextStyle(
                                     color:
-                                        isUser ? Colors.white : Colors.black87,
+                                        isUser ? Colors.white : kInk,
                                     fontSize: 16,
                                   ),
                                 ),
@@ -586,7 +587,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                   style: TextStyle(
                                     color: isUser
                                         ? Colors.white70
-                                        : Colors.grey[600],
+                                        : kMuted,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -613,7 +614,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: kInk.withOpacity(0.1),
                     blurRadius: 10,
                     offset: const Offset(0, -5),
                   ),
@@ -633,7 +634,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                       gradient: LinearGradient(
                         colors: [
                           Colors.white,
-                          Colors.grey.shade50,
+                          kCream,
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -658,14 +659,14 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                   child: Card(
                                     elevation: 2,
                                     color: _showBookingOption.value
-                                        ? Colors.red[50]
-                                        : Colors.orange[50],
+                                        ? kDangerBg
+                                        : kWarningBg,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       side: BorderSide(
                                         color: _showBookingOption.value
-                                            ? Colors.red
-                                            : Colors.orange,
+                                            ? kDanger
+                                            : kWarningText,
                                         width: 1,
                                       ),
                                     ),
@@ -678,7 +679,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                                   children: [
                                                     const Icon(
                                                         Icons.access_time,
-                                                        color: Colors.red,
+                                                        color: kDanger,
                                                         size: 20),
                                                     const SizedBox(width: 8),
                                                     Text(
@@ -686,7 +687,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                                       style: theme
                                                           .textTheme.titleMedium
                                                           ?.copyWith(
-                                                        color: Colors.red,
+                                                        color: kDanger,
                                                         fontWeight:
                                                             FontWeight.bold,
                                                       ),
@@ -699,7 +700,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                                   style: theme
                                                       .textTheme.bodyMedium
                                                       ?.copyWith(
-                                                    color: Colors.red[700],
+                                                    color: kDanger,
                                                   ),
                                                 ),
                                                 const SizedBox(height: 12),
@@ -716,7 +717,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                                       "Book Now at ${rupees(negotiationController.currentPrice.value)}"),
                                                   style:
                                                       ElevatedButton.styleFrom(
-                                                    backgroundColor: Colors.red,
+                                                    backgroundColor: kDanger,
                                                     foregroundColor:
                                                         Colors.white,
                                                     minimumSize: const Size(
@@ -734,7 +735,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                           : Row(
                                               children: [
                                                 const Icon(Icons.timer,
-                                                    color: Colors.orange,
+                                                    color: kWarningText,
                                                     size: 20),
                                                 const SizedBox(width: 8),
                                                 Expanded(
@@ -743,7 +744,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                                     style: theme
                                                         .textTheme.titleMedium
                                                         ?.copyWith(
-                                                      color: Colors.orange[700],
+                                                      color: kWarningText,
                                                       fontWeight:
                                                           FontWeight.w600,
                                                     ),
@@ -793,7 +794,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                         "Current Offer",
                                         style: theme.textTheme.bodyMedium
                                             ?.copyWith(
-                                          color: Colors.grey[600],
+                                          color: kMuted,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
@@ -822,7 +823,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                             "Quick Price Adjustments",
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: Colors.grey[700],
+                              color: kMuted,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -831,17 +832,17 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                             runSpacing: 8,
                             children: [
                               _buildPriceChip(
-                                  context, "-₹200", -200, Colors.red),
+                                  context, "-₹200", -200, kDanger),
                               _buildPriceChip(
-                                  context, "-₹100", -100, Colors.red),
+                                  context, "-₹100", -100, kDanger),
                               _buildPriceChip(
-                                  context, "-₹50", -50, Colors.orange),
+                                  context, "-₹50", -50, kWarningText),
                               _buildPriceChip(
-                                  context, "+₹50", 50, Colors.green),
+                                  context, "+₹50", 50, kSuccess),
                               _buildPriceChip(
-                                  context, "+₹100", 100, Colors.green),
+                                  context, "+₹100", 100, kSuccess),
                               _buildPriceChip(
-                                  context, "+₹200", 200, Colors.green),
+                                  context, "+₹200", 200, kSuccess),
                             ],
                           ),
                           const SizedBox(height: 20),
@@ -851,7 +852,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                             "Custom Offer",
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: Colors.grey[700],
+                              color: kMuted,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -865,10 +866,10 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 14, vertical: 12),
                               decoration: BoxDecoration(
-                                color: Colors.grey[50],
+                                color: kCream,
                                 borderRadius: BorderRadius.circular(12),
                                 border:
-                                    Border.all(color: Colors.grey.shade300),
+                                    Border.all(color: kLine),
                               ),
                               child: Row(
                                 children: [
@@ -885,8 +886,8 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                         fontWeight: FontWeight.w600,
                                         color: (_offerFrom != null &&
                                                 _offerTo != null)
-                                            ? Colors.grey[800]
-                                            : Colors.grey[500],
+                                            ? kInk2
+                                            : kMuted,
                                       ),
                                     ),
                                   ),
@@ -897,7 +898,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                         _offerTo = null;
                                       }),
                                       child: Icon(Icons.close,
-                                          size: 18, color: Colors.grey[500]),
+                                          size: 18, color: kMuted),
                                     )
                                   else
                                     Text("Select",
@@ -911,9 +912,9 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                           ),
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.grey[50],
+                              color: kCream,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey.shade300),
+                              border: Border.all(color: kLine),
                             ),
                             child: Row(
                               children: [
@@ -943,7 +944,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                                       ? "Wait for response"
                                                       : "Enter your price",
                                           hintStyle: TextStyle(
-                                              color: Colors.grey[500]),
+                                              color: kMuted),
                                           prefixIcon: Icon(
                                             Icons.currency_rupee,
                                             color: theme.primaryColor,
@@ -996,7 +997,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                                   .showSnackBar(SnackBar(
                                                 content: Text(
                                                     'This stay lists at ${rupees(listPrice)} a night — offer less than that, or just book it.'),
-                                                backgroundColor: Colors.red,
+                                                backgroundColor: kDanger,
                                               ));
                                               return;
                                             }
@@ -1076,16 +1077,16 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(16),
-                                      color: Colors.green.shade50,
+                                      color: kSuccessBg,
                                       border: Border.all(
-                                          color: Colors.green, width: 1.5),
+                                          color: kSuccess, width: 1.5),
                                     ),
                                     child: Row(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
                                         const Icon(Icons.check_circle,
-                                            color: Colors.green),
+                                            color: kSuccess),
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: Column(
@@ -1097,7 +1098,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                                 style: theme
                                                     .textTheme.titleMedium
                                                     ?.copyWith(
-                                                  color: Colors.green[800],
+                                                  color: kSuccess,
                                                   fontWeight: FontWeight.w700,
                                                 ),
                                               ),
@@ -1115,7 +1116,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                                     : 'GST will be added during payment.',
                                                 style: theme.textTheme.bodySmall
                                                     ?.copyWith(
-                                                  color: Colors.green[700],
+                                                  color: kSuccess,
                                                   fontWeight: FontWeight.w500,
                                                 ),
                                               ),
@@ -1145,7 +1146,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                                       fontWeight:
                                                           FontWeight.w700,
                                                       letterSpacing: 0.6,
-                                                      color: Colors.green[900],
+                                                      color: kSuccess,
                                                     ),
                                                   ),
                                                 ),
@@ -1170,7 +1171,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                             icon: const Icon(Icons.money),
                                             label: const Text('Pay on Arrival'),
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.green,
+                                              backgroundColor: kSuccess,
                                               foregroundColor: Colors.white,
                                               padding:
                                                   const EdgeInsets.symmetric(
@@ -1205,7 +1206,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                     Text(
                                       'Total with ${(gstRate * 100).toStringAsFixed(0)}% GST: ${rupees(totalWithGst)}',
                                       style: theme.textTheme.bodySmall
-                                          ?.copyWith(color: Colors.grey[700]),
+                                          ?.copyWith(color: kMuted),
                                     ),
                                   ],
                                 ],
@@ -1267,8 +1268,8 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                   colors: negotiationController
                                           .chatLimitReached.value
                                       ? [
-                                          Colors.red,
-                                          Colors.red.withOpacity(0.8)
+                                          kDanger,
+                                          kDanger.withOpacity(0.8)
                                         ]
                                       : [
                                           theme.primaryColor,
@@ -1281,7 +1282,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                   BoxShadow(
                                     color: negotiationController
                                             .chatLimitReached.value
-                                        ? Colors.red.withOpacity(0.4)
+                                        ? kDanger.withOpacity(0.4)
                                         : theme.primaryColor.withOpacity(0.3),
                                     blurRadius: negotiationController
                                             .chatLimitReached.value
@@ -1395,7 +1396,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
               color: negotiationController.canUserSendMessage(
                       widget.userId, widget.hostId)
                   ? color
-                  : Colors.grey,
+                  : kMuted,
               fontWeight: FontWeight.bold,
               fontSize: 14,
             ),
@@ -1403,13 +1404,13 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
           backgroundColor: negotiationController.canUserSendMessage(
                   widget.userId, widget.hostId)
               ? color.withOpacity(0.1)
-              : Colors.grey.withOpacity(0.1),
+              : kMuted.withOpacity(0.1),
           selectedColor: color.withOpacity(0.2),
           side: BorderSide(
               color: negotiationController.canUserSendMessage(
                       widget.userId, widget.hostId)
                   ? color
-                  : Colors.grey,
+                  : kMuted,
               width: 1),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),

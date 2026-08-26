@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/negotiation_controller.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/negotitaion_page.dart';
 
@@ -22,7 +23,7 @@ class NegotiationScreenLoadErrorView extends StatelessWidget {
         children: [
           const Text(
             "Negotiation lets you propose a custom price for this property. Both you and the host can make offers until you agree on a price.\n\nCaution: Only accept offers you are comfortable with. Once you accept, you will proceed to booking and payment. Never share sensitive information in chat.",
-            style: TextStyle(color: Colors.black87, fontSize: 16),
+            style: TextStyle(color: kInk, fontSize: 16),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),

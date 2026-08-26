@@ -4,10 +4,8 @@ import 'package:ionicons/ionicons.dart';
 import 'package:provider/provider.dart';
 import 'package:rent_home/ui/screens_host/host_tab_provider.dart';
 import 'package:rent_home/ui/screens_host/host_controller.dart';
-import 'package:rent_home/ui/screens_host/home/host_home_drawer.dart';
 import 'package:rent_home/ui/screens_host/listing/listing_wizard_screen.dart';
 import 'package:rent_home/ui/screens_host/booking_history/booking_history_screen.dart';
-import 'package:rent_home/ui/screens_host/invoices/invoice_page.dart';
 import 'package:rent_home/ui/screens_host/profile/host_profile.dart';
 import 'package:rent_home/ui/screens_host/support/host_messages_screen.dart';
 import 'package:rent_home/service/notification_service.dart';
@@ -36,29 +34,24 @@ class _MainScreenState extends State<MainScreen> {
   final authController = Get.find<AuthController>();
 
   late final List<Widget> _screens = [
-    HostHomeScreen(onMenuTap: _openDrawer), // slot 0 · tab 2
+    const HostHomeScreen(), // slot 0 · tab 2
     const BookingHistoryScreen(), // slot 1 · tab 3
     // A-75 — Messages, not Support. Support is still here, pinned at the top
     // of it; the guest conversations that had no home in the app are below.
     const HostMessagesScreen(), // slot 2 · tab 6
     const HostProfilePage(), // slot 3 · tab 5
-    InvoicePage(), // slot 4 · tab 7 (drawer only)
   ];
 
-  static const Map<int, int> _tabToIndex = {2: 0, 3: 1, 6: 2, 5: 3, 7: 4};
+  // Invoices used to be slot 4 / tab 7, reachable from the side drawer and
+  // nowhere else. The drawer is gone and Invoices is a pushed page on the
+  // Profile menu now, so a tab with no way into it and no way back would be
+  // dead weight in the stack.
+  static const Map<int, int> _tabToIndex = {2: 0, 3: 1, 6: 2, 5: 3};
 
   @override
   void initState() {
     super.initState();
     NotificationService().init();
-  }
-
-  void _openDrawer() {
-    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
-      _scaffoldKey.currentState?.closeDrawer();
-    } else {
-      _scaffoldKey.currentState?.openDrawer();
-    }
   }
 
   @override
@@ -79,8 +72,6 @@ class _MainScreenState extends State<MainScreen> {
       child: Scaffold(
         key: _scaffoldKey,
         backgroundColor: kscaffoldColor,
-        drawer: HostHomeDrawer(
-            authController: authController, hostTabProvider: hostTabProvider),
         body: IndexedStack(
           index: _tabToIndex[currentTab] ?? 0,
           children: _screens,

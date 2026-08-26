@@ -12,6 +12,7 @@ import 'package:rent_home/ui/screens_host/calendar/host_calendar_screen.dart';
 import 'package:rent_home/ui/screens_host/negotiations/host_negotiations_screen.dart';
 import 'package:rent_home/ui/screens_host/payout/add_payout_account_page.dart';
 import 'package:rent_home/ui/screens_host/payout/payout_page.dart';
+import 'package:rent_home/ui/screens_host/invoices/invoice_page.dart';
 import 'package:rent_home/ui/screens_host/support/host_support_screen.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/ui/screens_host/performance/host_performance_screen.dart';
@@ -116,6 +117,18 @@ List<HostMenuEntry> hostMenuEntries({VoidCallback? beforeNavigate}) {
     // HostSupportScreen — while the shell's bottom bar has its own Messages
     // tab, which goes to HostMessagesScreen. Two entries called Messages, one
     // of them support, and no way to reach Host Support by name from here.
+    // Invoices was reachable from the side drawer and NOWHERE else — the
+    // shell's own comment said "drawer only". Deleting the drawer without
+    // this would have taken a host's invoices out of the app entirely.
+    //
+    // Pushed as a page rather than switched to as a tab: it has no slot in
+    // the bottom bar, so a tab it can never return from is the wrong shape.
+    HostMenuEntry(
+      icon: Iconsax.receipt_item,
+      label: 'Invoices',
+      subtitle: 'Payment records for your bookings',
+      onTap: () => go(() => InvoicePage()),
+    ),
     HostMenuEntry(
       icon: Icons.support_agent,
       label: 'Host Support',
