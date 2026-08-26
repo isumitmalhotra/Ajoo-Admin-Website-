@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/screens_renter/home/components/home_banner_rail.dart';
 import 'package:rent_home/ui/design/aajoo_skin.dart';
 import 'package:rent_home/utils/lux_mode.dart';
 import 'package:rent_home/ui/screens_renter/home/components/pre_booking_button.dart';
@@ -243,26 +244,20 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                           // suggested destinations + advanced filters).
                           onTap: () => showSearchSheet(context),
                         )),
-                    const SizedBox(height: 8),
-                    Obx(() => userController.isLoading.value ||
-                            userController.ongoingBookings.value == null
-                        ? const SizedBox.shrink()
-                        : OngoingBookingWidget(
-                            userController: userController,
-                          )),
-                    // Negotiated-deal banner (24h coupon from an accepted offer)
-                    // — one tap opens the sanctioned property, dates + coupon
-                    // pre-filled. Hidden when there are no active deals.
-                    // Offers to reopen a booking that a KYC detour
-                    // interrupted; renders nothing when there isn't one.
-                    const ResumeBookingBanner(),
-                    const NegotiatedDealBanner(),
-                    // A host's counter had nowhere to surface: the deal banner
-                    // above only appears once an offer is ACCEPTED, so the step
-                    // in between was invisible unless the guest went looking in
-                    // Profile. Renders nothing unless a thread is actually
-                    // waiting on them.
-                    const CounterOfferBanner(),
+                    // Everything this guest needs told, as one swipeable rail:
+                    // their stay, a negotiated deal, a host's counter, a
+                    // booking a KYC detour interrupted.
+                    //
+                    // These were four separate full-width cards stacked in a
+                    // column over the map. Two of them at once buried the map
+                    // the screen is built around, and the fourth was off the
+                    // bottom of the fold. More importantly the stay card only
+                    // appeared while the guest was PHYSICALLY IN the property
+                    // (OngoingBookingWidget filters on isStaying), so booking
+                    // somewhere for next week put nothing here at all — see
+                    // StayBanner, which shows the stay in progress or the next
+                    // one coming.
+                    HomeBannerRail(userController: userController),
                   ],
                 ),
               ),

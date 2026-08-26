@@ -6,6 +6,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/utils/money.dart';
 import 'package:rent_home/constants/payment_config.dart';
 import 'package:rent_home/ui/screens_renter/booking_controller.dart';
 import 'package:rent_home/controller/user_controller.dart';
@@ -723,159 +724,170 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
     }
   }
 
-  void _showCancelBookingDialog() {
+  Future<void> _showCancelBookingDialog() async {
+    // Ask the server what this would refund BEFORE the dialog, so the figure
+    // is on screen where the decision is made — the same thing the booking
+    // history's dialog has always done.
+    final quote =
+        await bookingController.cancellationQuote(widget.booking.bookId);
+    if (!mounted) return;
+
+    // The server says a cancel is impossible (checked in, completed, past the
+    // window). Say so rather than opening a dialog that cannot succeed — and
+    // refresh, because the reason is usually that it is already cancelled.
+    if (quote != null && !quote.canCancel) {
+      userController.getUserHistory();
+      bookingController.showSnackbar(
+        'This booking cannot be cancelled',
+        quote.reason ?? 'This booking can no longer be cancelled.',
+        true,
+      );
+      return;
+    }
+
     String? selectedReason;
-    final TextEditingController otherReasonController = TextEditingController();
-    final List<String> reasons = [
-      "Changed my mind",
-      "Found a better price",
-      "Driver is taking too long",
-      "Booked by mistake",
-      "Other"
+    final otherReasonController = TextEditingController();
+    // The SAME presets as the booking-history dialog and the website, so a
+    // reason means one thing wherever it was picked.
+    const reasons = [
+      'Plans changed',
+      'Found somewhere else',
+      'Booked by mistake',
+      'Trip cancelled',
+      'Other',
     ];
 
+    if (!mounted) return;
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(builder: (context, setState) {
-          return AlertDialog(
-            title: const Row(
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          backgroundColor: kSurface,
+          title: Text('Cancel this booking?',
+              style: fraunces(
+                  fontSize: 18, fontWeight: FontWeight.w700, color: kInk)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.warning, color: kDanger, size: 28),
-                SizedBox(width: 10),
-                Text(
-                  'Cancel Booking',
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Please select a reason for cancellation:',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  ...reasons.map((reason) {
-                    return RadioListTile<String>(
-                      title: Text(reason),
+                Text('Please tell us why — this is shared with the host.',
+                    style: inter(fontSize: 13, color: kMuted)),
+                const SizedBox(height: 6),
+                ...reasons.map((reason) => RadioListTile<String>(
+                      title: Text(reason, style: inter(fontSize: 14)),
                       value: reason,
                       groupValue: selectedReason,
-                      activeColor: kprimaryColor,
+                      activeColor: kIndigo,
                       contentPadding: EdgeInsets.zero,
-                      onChanged: (value) {
-                        setState(() {
-                          selectedReason = value;
-                        });
-                      },
-                    );
-                  }),
-                  if (selectedReason == "Other")
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: TextField(
-                        controller: otherReasonController,
-                        decoration: InputDecoration(
-                          hintText: "Please specify the reason",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 12),
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 16),
+                      dense: true,
+                      onChanged: (value) =>
+                          setDialogState(() => selectedReason = value),
+                    )),
+                if (selectedReason == 'Other')
+                  TextField(
+                    controller: otherReasonController,
+                    decoration: const InputDecoration(
+                        hintText: 'Please specify the reason'),
+                  ),
+                const SizedBox(height: 10),
+                if (quote == null)
+                  // The quote call failed. Do not invent a number, and do not
+                  // invent a refusal either.
+                  Text('Refunds follow the cancellation policy for this stay.',
+                      style: inter(fontSize: 12, color: kMuted))
+                else
                   Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.shade200),
+                      color: kCream,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: kLine),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.info_outline, color: kDanger, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Important: You will not be refunded as the booking is confirmed.',
-                            style: TextStyle(
-                              color: Colors.red.shade700,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                        if (quote.policyLabel != null)
+                          Text(quote.policyLabel!,
+                              style: inter(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: kInk)),
+                        const SizedBox(height: 4),
+                        Text(
+                          !quote.isPaid
+                              ? 'Nothing has been charged for this booking yet, so there is nothing to refund.'
+                              : quote.manualReview
+                                  ? 'Your refund will be reviewed by our team and confirmed to you.'
+                                  : 'You would get back ${rupees(quote.refundAmount)}'
+                                      '${quote.refundPercent > 0 ? ' (${quote.refundPercent}% of what you paid)' : ''}.',
+                          style: inter(fontSize: 13, color: kInk, height: 1.45),
                         ),
+                        if (quote.policySummary != null) ...[
+                          const SizedBox(height: 4),
+                          Text(quote.policySummary!,
+                              style: inter(
+                                  fontSize: 12, color: kMuted, height: 1.4)),
+                        ],
                       ],
                     ),
                   ),
-                ],
-              ),
+              ],
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: const Text(
-                  'Keep Booking',
-                  style: TextStyle(
-                    color: kprimaryColor,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  if (selectedReason == null) {
-                    Fluttertoast.showToast(msg: "Please select a reason");
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text('Keep booking', style: inter(color: kIndigo)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: kDanger, foregroundColor: Colors.white),
+              onPressed: () async {
+                if (selectedReason == null) {
+                  Fluttertoast.showToast(msg: 'Please select a reason');
+                  return;
+                }
+                var finalReason = selectedReason!;
+                if (selectedReason == 'Other') {
+                  if (otherReasonController.text.trim().isEmpty) {
+                    Fluttertoast.showToast(msg: 'Please specify the reason');
                     return;
                   }
-                  String finalReason = selectedReason!;
-                  if (selectedReason == "Other") {
-                    if (otherReasonController.text.trim().isEmpty) {
-                      Fluttertoast.showToast(msg: "Please specify the reason");
-                      return;
-                    }
-                    finalReason = otherReasonController.text.trim();
-                  }
-
-                  Navigator.of(context).pop();
-                  await _cancelBooking(finalReason);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kDanger,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Cancel Anyway'),
-              ),
-            ],
-          );
-        });
-      },
+                  finalReason = otherReasonController.text.trim();
+                }
+                Navigator.of(dialogContext).pop();
+                await _cancelBooking(finalReason);
+              },
+              child: const Text('Cancel booking'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Future<void> _cancelBooking(String reason) async {
     final success =
         await bookingController.cancelBooking(widget.booking.bookId, reason);
+    // BOTH lists, not just the ongoing one.
+    //
+    // This refreshed `fetchOngoingBookings` alone, and My Bookings reads
+    // `getUserHistory`. So cancelling from here took the stay out of Ongoing
+    // and never put it under Cancelled: the tab kept serving the copy it had
+    // loaded, and the guest was told the booking was cancelled by a screen
+    // that then failed to show it anywhere. That is "I cancelled the stay and
+    // it is not updated in the cancelled stays".
     userController.fetchOngoingBookings();
+    userController.getUserHistory();
     if (success) {
       // Back to the guest bottom-nav shell (/home) after cancelling.
       Get.offAllNamed('/home');
-    } else {
-      bookingController.showSnackbar("Error", "Failed to cancel booking", true);
     }
+    // No second error here. The controller already raised one for the same
+    // failure, so this added a duplicate dialog behind it and one refusal
+    // read as two.
   }
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {

@@ -260,6 +260,11 @@ class _PropertyPageState extends State<PropertyPage>
   /// old page's offset and landed you halfway down a listing you had never
   /// seen, past the photographs and the price. Its own controller, told not
   /// to keep the offset, means a stay always opens where it starts.
+  /// Set when Book Now was pressed with no check-out date, so the date row
+  /// can show itself as the thing standing in the way. Cleared once one is
+  /// chosen.
+  bool _needsCheckout = false;
+
   final ScrollController _pageScroll =
       ScrollController(keepScrollOffset: false);
 
@@ -841,12 +846,27 @@ class _PropertyPageState extends State<PropertyPage>
               ),
               const SizedBox(height: 16),
               ListTile(
-                leading: const Icon(Icons.calendar_month),
+                leading: Icon(Icons.calendar_month,
+                    color: _needsCheckout ? kDanger : null),
+                tileColor: _needsCheckout ? const Color(0xFFFDECEC) : null,
+                shape: _needsCheckout
+                    ? RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: const BorderSide(color: kDanger),
+                      )
+                    : null,
                 title: Text(
                   selectedDateTo != null
                       ? _dmy(selectedDateTo!)
                       : 'Book To (DD/MM/YYYY)',
+                  style: _needsCheckout
+                      ? inter(fontWeight: FontWeight.w600, color: kDanger)
+                      : null,
                 ),
+                subtitle: _needsCheckout
+                    ? Text('Pick a check-out date to book',
+                        style: inter(fontSize: 11.5, color: kDanger))
+                    : null,
                 onTap: () async {
                   final DateTime? picked = await showDatePicker(
                     context: context,
@@ -868,6 +888,7 @@ class _PropertyPageState extends State<PropertyPage>
                   if (picked != null) {
                     setState(() {
                       selectedDateTo = picked;
+                      _needsCheckout = false;
                       _restayedAfterFrame();
                       // selectedDate is non-null by design
                       // Nights, not calendar days. This was `.inDays + 1`,
@@ -1683,12 +1704,22 @@ onPressed: () async {
                       );
                     }
                   } else {
-                    Fluttertoast.showToast(
-                      msg: "Please select valid dates",
-                      toastLength: Toast.LENGTH_SHORT,
-                      gravity: ToastGravity.BOTTOM,
-                      backgroundColor: Colors.red,
-                      textColor: Colors.white,
+                    // "Please select valid dates", as a two-second toast, was
+                    // the whole of the feedback here — on the last step of a
+                    // checkout, for the one field the guest has to fill and
+                    // nothing fills by default. It named neither which date
+                    // was missing nor where to set it, and it was gone before
+                    // a slow reader finished it, leaving Book Now looking like
+                    // a button that does nothing.
+                    //
+                    // The check-out row marks itself instead, and stays marked
+                    // until a date is chosen.
+                    setState(() => _needsCheckout = true);
+                    bookingController.showSnackbar(
+                      'Choose your check-out date',
+                      'Pick the date you are leaving — the total updates '
+                          'before you book.',
+                      true,
                     );
                   }
                   } catch (e) {

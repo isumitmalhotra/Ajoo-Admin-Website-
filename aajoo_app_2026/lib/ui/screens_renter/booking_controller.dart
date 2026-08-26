@@ -96,7 +96,26 @@ class BookingController extends GetxController {
       return true;
     } catch (e) {
       error.value = e.toString();
-      showAlert("Error", "Failed to cancel booking: ${e.toString()}", true);
+      final reasonText = e.toString().replaceFirst('Exception: ', '');
+
+      // A stay that is ALREADY cancelled answers "Not allowed to cancel this
+      // booking" — the same sentence an unowned booking gets. Shown raw, a
+      // guest who tapped Cancel twice (because the first tap looked like it
+      // did nothing) was told the app had failed, twice, for something that
+      // had in fact worked. Say what actually happened and refresh, so the
+      // lists catch up with the server.
+      if (reasonText.toLowerCase().contains('not allowed to cancel')) {
+        userController.getUserHistory();
+        showAlert(
+          'Already cancelled',
+          'This booking is no longer active — it may already have been '
+              'cancelled, or the stay has started.',
+          true,
+        );
+        return false;
+      }
+
+      showAlert("Couldn't cancel this booking", reasonText, true);
       return false;
     } finally {
       // No `return` here: a return inside finally overrides the catch's

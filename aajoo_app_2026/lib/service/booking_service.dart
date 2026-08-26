@@ -256,6 +256,18 @@ class BookingService {
     try {
       final response = await _dio.post(url, data: data);
       print("Cancel booking response: ${response.data}");
+      // A 200 with `success: false` is still a refusal.
+      //
+      // This returned response.data whatever it said, so the controller
+      // reported success, the page flipped its badge to "Cancelled" and
+      // toasted "Booking cancelled" — while the server had cancelled nothing.
+      // The booking then failed to appear under Cancelled, because it never
+      // was. Same swallow as the traveller delete.
+      final body = response.data;
+      if (body is Map && body['success'] == false) {
+        throw Exception(body['message']?.toString() ??
+            'This booking could not be cancelled.');
+      }
       userController?.fetchOngoingBookings();
       return response.data;
     } on DioException catch (err) {

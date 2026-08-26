@@ -23,7 +23,12 @@ import 'package:rent_home/utils/fonts.dart';
 /// itself when there is nothing pending, and the intent expires after two days
 /// because stale dates help nobody.
 class ResumeBookingBanner extends StatefulWidget {
-  const ResumeBookingBanner({super.key});
+  const ResumeBookingBanner({super.key, this.onResolved});
+
+  /// Called once the pending booking is gone — resumed or dismissed — so a
+  /// parent holding it as one page of a rail can drop that page rather than
+  /// swiping onto an empty one.
+  final VoidCallback? onResolved;
 
   @override
   State<ResumeBookingBanner> createState() => _ResumeBookingBannerState();
@@ -49,6 +54,7 @@ class _ResumeBookingBannerState extends State<ResumeBookingBanner> {
     await PendingBookingStore.clear();
     if (!mounted) return;
     setState(() => _intent = null);
+    widget.onResolved?.call();
   }
 
   Future<void> _resume() async {
