@@ -98,7 +98,10 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
     for (final b in hist) {
       final s = (b.bookingStatusBsTitle ?? '').toLowerCase();
       if (s.contains('cancel') || s.contains('pending')) continue;
-      sum += double.tryParse(b.book_price?.toString() ?? '0') ?? 0;
+      // What the guest actually SPENT is the total, tax included. This summed
+      // book_price — the pre-tax room subtotal — so "Total Spent" was short by
+      // every rupee of GST the guest had paid.
+      sum += b.payableTotal;
     }
     return sum;
   }
@@ -417,7 +420,9 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
                           color: kSuccess)),
                 ),
                 const SizedBox(height: 6),
-                Text(_fmt.format(b.bookPrice),
+                Text(_fmt.format(b.bookTotalAmt > 0
+                        ? b.bookTotalAmt
+                        : b.bookPrice),
                     style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,

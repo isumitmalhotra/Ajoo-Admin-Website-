@@ -676,14 +676,22 @@ class _PropertyPageState extends State<PropertyPage>
                     text: TextSpan(
                       style: inter(fontSize: 12, color: kMuted),
                       children: [
+                        // The word "total" has to mean the total.
+                        //
+                        // This printed `currentPriceString` — the PRE-TAX room
+                        // subtotal — and labelled it "total", so the bar
+                        // pinned to the bottom of every property page said
+                        // "₹4,000 total" for a stay the panel above it priced
+                        // at ₹4,200. `_confirmedPrice` is the same computation
+                        // the booking itself is made with.
                         TextSpan(
-                          text: '${rupeesFrom(currentPriceString)} total',
+                          text: '${rupees(_confirmedPrice.total)} total',
                           style: inter(
                             fontSize: 12,
                             color: kMuted,
                           ).copyWith(decoration: TextDecoration.underline),
                         ),
-                        TextSpan(text: ' · $nights'),
+                        TextSpan(text: ' · incl. taxes · $nights'),
                       ],
                     ),
                   ),
@@ -2796,6 +2804,16 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
   /// back, which is why the confirmation could fail to appear on a card
   /// payment — "booking confirm page is missing in real time booking". A route
   /// does not depend on that, and it has room for the map.
+  /// The price this booking was made at — one computation, used for the
+  /// headline figure and for every line of the breakdown beside it, so they
+  /// cannot disagree.
+  StayPrice get _confirmedPrice => priceStay(
+        roomSubtotal: double.tryParse(currentPriceString) ?? 0,
+        perNightTariff: currentPrice,
+        discount: _discountOnRoom,
+        extraGuestFee: _partyFee,
+      );
+
   void successDialog(
     String paymentId,
     String bookingId, {
@@ -2819,12 +2837,14 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
           // owes the taxed amount on arrival, and that is what the server
           // stored. Saying "Rs 6000 due" after quoting Rs 6300 is a different
           // number for the same booking.
-          amount: rupees(priceStay(
-            roomSubtotal: double.tryParse(currentPriceString) ?? 0,
-            perNightTariff: currentPrice,
-            discount: _discountOnRoom,
-            extraGuestFee: _partyFee,
-          ).total),
+          amount: rupees(_confirmedPrice.total),
+          // ...and the parts that make it up, so the confirmation shows a
+          // breakdown rather than one figure the guest has to trust.
+          roomCharge: _confirmedPrice.roomSubtotal,
+          extras: _confirmedPrice.extraGuestFee,
+          taxes: _confirmedPrice.taxes,
+          discount: _confirmedPrice.discount,
+          total: _confirmedPrice.total,
           isPayOnArrival: isCod,
           awaitingApproval: awaitingApproval,
           responseHours: responseHours,

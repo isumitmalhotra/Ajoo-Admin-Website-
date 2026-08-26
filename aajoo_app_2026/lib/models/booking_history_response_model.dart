@@ -49,10 +49,36 @@ class BookingHistoryData {
   String? bookDetailsBtBookFrom;
   String? bookDetailsBtBookTo;
   dynamic book_price;
+
+  /// The room subtotal as a number, whatever shape the DECIMAL arrived in.
+  double get roomCharge => _toDouble(book_price) ?? 0;
+
+  /// What the guest owes — tax included. Falls back to the subtotal only when
+  /// the server sent no total, which is the case that produced two different
+  /// prices for one booking across two screens.
+  double get payableTotal {
+    final t = bookTotalAmt ?? 0;
+    return t > 0 ? t : roomCharge;
+  }
+
+  /// Taxes and fees inside [payableTotal] — stored when we have it, derived
+  /// otherwise, because total − subtotal + discount IS the tax.
+  double get taxesAndFees {
+    final t = bookTax ?? 0;
+    if (t > 0) return t;
+    final derived = payableTotal - roomCharge + (bookDiscountAmt ?? 0);
+    return derived > 0 ? derived : 0;
+  }
   // /user/booking-history has always returned these four; the model dropped
   // them, so a guest's own booking could show dates and a status but never
   // what they actually paid or how many guests it was for.
   double? bookTotalAmt;
+
+  /// GST on this booking, when the server sent it.
+  double? bookTax;
+
+  /// Any coupon or negotiated saving already off the subtotal.
+  double? bookDiscountAmt;
   bool bookIsPaid;
   bool bookIsCod;
   int? bookNoOfGuests;
@@ -78,6 +104,8 @@ class BookingHistoryData {
       this.bookDetailsBtBookTo,
       required this.book_price,
       this.bookTotalAmt,
+      this.bookTax,
+      this.bookDiscountAmt,
       this.bookIsPaid = false,
       this.bookIsCod = false,
       this.bookNoOfGuests,
@@ -99,6 +127,8 @@ class BookingHistoryData {
           bookDetailsBtBookTo: json["bookDetails.bt_book_to"],
           book_price: json["book_price"],
           bookTotalAmt: _toDouble(json["book_total_amt"]),
+          bookTax: _toDouble(json["book_tax"]),
+          bookDiscountAmt: _toDouble(json["book_discount_amt"]),
           // MySQL sends these as 1/0, so a plain cast to bool would throw.
           bookIsPaid: _toBool(json["book_is_paid"]),
           bookIsCod: _toBool(json["book_is_cod"]),
@@ -119,6 +149,8 @@ class BookingHistoryData {
         "bookDetails.bt_book_to": bookDetailsBtBookTo,
         "book_price": book_price,
         "book_total_amt": bookTotalAmt,
+        "book_tax": bookTax,
+        "book_discount_amt": bookDiscountAmt,
         "book_is_paid": bookIsPaid,
         "book_is_cod": bookIsCod,
         "book_no_of_guests": bookNoOfGuests,

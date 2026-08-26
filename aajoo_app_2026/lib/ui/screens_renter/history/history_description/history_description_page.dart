@@ -10,6 +10,7 @@ import 'package:get/get.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/constants/payment_config.dart';
+import 'package:rent_home/ui/design/amount_breakdown.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/ui/screens_renter/booking_controller.dart';
 import 'package:rent_home/utils/stay_clock.dart';
@@ -986,60 +987,31 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
         msg: 'Payment failed: ${response.message ?? 'cancelled'}');
   }
 
-  String _rupees(num? v) => v == null
-      ? '—'
-      : '₹${v.toStringAsFixed(v % 1 == 0 ? 0 : 2).replaceAllMapped(RegExp(r'(\d)(?=(\d{2})+(\d)(?!\d))'), (m) => '${m[1]},')}';
-
+  /// The charges for this stay.
+  ///
+  /// One implementation, shared with the booking detail and the checkout —
+  /// see ui/design/amount_breakdown.dart. This file used to carry its own
+  /// rupee formatter and its own breakdown, and derived the tax by
+  /// subtracting the subtotal from the total because "tax is not sent on this
+  /// endpoint". It is sent now (book_tax), so the figure is the real one and
+  /// a coupon discount shows as its own line rather than silently widening
+  /// what looked like tax.
   Widget _charges(BookingHistoryData booking) {
-    final room = booking.book_price is num
-        ? (booking.book_price as num)
-        : double.tryParse('${booking.book_price ?? ''}');
-    final total = booking.bookTotalAmt;
-    // Tax is not sent on this endpoint; derive it only when both ends are
-    // known, so nothing is invented.
-    final tax = (total != null && room != null) ? total - room : null;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: kSand,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          _chargeRow('Room charge', _rupees(room)),
-          if (tax != null && tax > 0) ...[
-            const SizedBox(height: 6),
-            _chargeRow('Taxes & fees', _rupees(tax)),
-          ],
-          if (booking.bookNoOfGuests != null) ...[
-            const SizedBox(height: 6),
-            _chargeRow('Guests', '${booking.bookNoOfGuests}'),
-          ],
-          const SizedBox(height: 8),
-          const Divider(color: kLine, height: 1),
-          const SizedBox(height: 8),
-          _chargeRow('Total', _rupees(total ?? room), bold: true),
-        ],
-      ),
-    );
-  }
-
-  Widget _chargeRow(String label, String value, {bool bold = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label,
-            style: inter(
-                fontSize: bold ? 13 : 12.5,
-                fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-                color: bold ? kInk : kMuted)),
-        Text(value,
-            style: inter(
-                fontSize: bold ? 14 : 12.5,
-                fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
-                color: kInk)),
-      ],
+    return AmountBreakdown(
+      roomCharge: booking.roomCharge,
+      taxes: booking.taxesAndFees,
+      discount: booking.bookDiscountAmt ?? 0,
+      total: booking.payableTotal,
+      totalLabel: booking.bookIsPaid
+          ? 'Total paid'
+          : (booking.bookIsCod ? 'Total due' : 'Total'),
+      footnote: [
+        if (booking.bookNoOfGuests != null)
+          '${booking.bookNoOfGuests} guest'
+              '${booking.bookNoOfGuests == 1 ? '' : 's'}',
+        if (!booking.bookIsPaid && booking.bookIsCod) 'Due at the property',
+        if (!booking.bookIsPaid && !booking.bookIsCod) 'Payment pending',
+      ].join(' · '),
     );
   }
 

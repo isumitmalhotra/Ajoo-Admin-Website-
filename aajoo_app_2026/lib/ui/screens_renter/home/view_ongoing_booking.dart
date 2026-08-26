@@ -6,6 +6,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/design/amount_breakdown.dart';
 import 'package:rent_home/utils/money.dart';
 import 'package:rent_home/constants/payment_config.dart';
 import 'package:rent_home/ui/screens_renter/booking_controller.dart';
@@ -243,25 +244,34 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
                               ),
                               const SizedBox(height: 16),
 
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildMinimalDetailItem(
-                                      'Invoice',
-                                      widget.booking.bookInvoice,
-                                      Icons.receipt_outlined,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: _buildMinimalDetailItem(
-                                      'Amount',
-                                      '₹${widget.booking.bookPrice}',
-                                      Icons.currency_rupee,
-                                      isPrice: true,
-                                    ),
-                                  ),
-                                ],
+                              _buildMinimalDetailItem(
+                                'Invoice',
+                                widget.booking.bookInvoice,
+                                Icons.receipt_outlined,
+                              ),
+                              const SizedBox(height: 14),
+                              // The total, with the breakdown that makes it
+                              // checkable.
+                              //
+                              // This was a tile reading "Amount ₹4,000" —
+                              // `book_price`, the PRE-TAX room subtotal — for
+                              // a booking whose confirmation screen had just
+                              // said ₹4,200. Same stay, two numbers, neither
+                              // labelled, and no way for the guest to tell
+                              // which one they owed.
+                              AmountBreakdown(
+                                roomCharge: widget.booking.bookPrice.toDouble(),
+                                taxes: widget.booking.taxesAndFees,
+                                discount: widget.booking.bookDiscountAmt,
+                                total: widget.booking.bookTotalAmt,
+                                totalLabel: widget.booking.bookIsPaid
+                                    ? 'Total paid'
+                                    : 'Total due',
+                                footnote: widget.booking.bookIsPaid
+                                    ? null
+                                    : (widget.booking.bookIsCod
+                                        ? 'Due at the property'
+                                        : 'Payment pending'),
                               ),
                             ],
                           ),
@@ -417,7 +427,7 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
                                     }
                                     final amountInPaise = order['data']
                                             ?['order']?['amount'] ??
-                                        (widget.booking.bookPrice * 100)
+                                        (widget.booking.bookTotalAmt * 100)
                                             .round();
                                     razorpay.open({
                                       'key': PaymentConfig.razorpayKey,

@@ -214,10 +214,15 @@ class BookingCard extends StatelessWidget {
                                 // "Total paid" only when it has been. On a
                                 // pay-at-property booking that money has not
                                 // moved yet, and the badge beside it says so.
+                                // Say that the figure is tax-inclusive. A
+                                // list card has no room for a breakdown, but
+                                // it can at least stop the reader wondering
+                                // whether tax is still to come — the detail
+                                // one tap away itemises it.
                                 Text(
                                     booking.bookIsPaid
-                                        ? 'Total paid'
-                                        : 'Total due',
+                                        ? 'Total paid · incl. taxes'
+                                        : 'Total due · incl. taxes',
                                     style:
                                         inter(fontSize: 11.5, color: kMuted)),
                                 const SizedBox(height: 1),

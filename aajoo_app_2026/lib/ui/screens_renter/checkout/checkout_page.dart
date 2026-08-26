@@ -5,6 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:rent_home/data/models/ongoing_reponse.dart';
+import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/design/amount_breakdown.dart';
+import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/data/models/single_property_response.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:image_picker/image_picker.dart';
@@ -244,12 +247,24 @@ class _HotelCheckoutPageState extends State<HotelCheckoutPage> {
     final theme = Theme.of(context);
     final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
 
-    // Calculate price breakdown
+    // The charges, taken from the booking the SERVER created.
+    //
+    // This recomputed GST here — subtotal x 5% or 18% depending on the band —
+    // which made the client a second authority on the price. The moment the
+    // backend's rule and this line disagree (a slab change, a fee, a rounding
+    // rule) the checkout quotes one number and the booking stores another,
+    // and nobody finds out until a guest is charged. The booking already
+    // carries book_tax and book_total_amt; use them, and keep the computation
+    // only as a fallback for rows that predate those fields.
     final roomCharges = widget.booking.bookPrice.toDouble();
-    // GST: ≤₹7500 => 5%, >₹7500 => 18% (matches backend tariff GST)
+    final serverTotal = widget.booking.bookTotalAmt;
+    final serverTax = widget.booking.taxesAndFees;
     final gstRate = roomCharges <= 7500 ? 0.05 : 0.18;
-    final taxesAndFees = roomCharges * gstRate;
-    final totalPrice = roomCharges + taxesAndFees;
+    final taxesAndFees =
+        serverTotal > roomCharges ? serverTax : roomCharges * gstRate;
+    final totalPrice = serverTotal > roomCharges
+        ? serverTotal
+        : roomCharges + taxesAndFees;
 
     // Determine image URL
     final imageUrl = widget.property.images?.isNotEmpty ?? false
@@ -446,23 +461,26 @@ class _HotelCheckoutPageState extends State<HotelCheckoutPage> {
                       children: [
                         Text(
                           "Price Breakdown",
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.primaryColor,
+                          style: fraunces(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: kInk,
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        _buildPriceRow(
-                            "Room Charges", formatter.format(roomCharges)),
-                        const SizedBox(height: 8),
-                        _buildPriceRow(
-                            "Taxes & Fees (${(gstRate * 100).toStringAsFixed(0)}%)",
-                            formatter.format(taxesAndFees)),
-                        const SizedBox(height: 8),
-                        const Divider(),
-                        const SizedBox(height: 8),
-                        _buildPriceRow("Total", formatter.format(totalPrice),
-                            isTotal: true),
+                        const SizedBox(height: 14),
+                        // The same breakdown object every other screen shows,
+                        // so a guest reading the checkout and then the booking
+                        // detail sees one set of numbers.
+                        AmountBreakdown(
+                          roomCharge: roomCharges,
+                          taxes: taxesAndFees,
+                          discount: widget.booking.bookDiscountAmt,
+                          total: totalPrice,
+                          totalLabel: 'Total',
+                          footnote: widget.booking.bookIsCod
+                              ? 'Due at the property'
+                              : null,
+                        ),
                       ],
                     ),
                   ),

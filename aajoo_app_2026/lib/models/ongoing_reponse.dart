@@ -74,11 +74,39 @@ class Data {
       };
 }
 
+/// DECIMAL columns arrive as a number OR a string depending on the driver, so
+/// every money field is parsed rather than cast. Null and unparseable both
+/// mean "not sent", which is 0 rather than a crash.
+double? _money(dynamic v) {
+  if (v == null) return null;
+  if (v is num) return v.toDouble();
+  return double.tryParse(v.toString());
+}
+
 class Booking {
   int bookPriId;
   String bookId;
   String bookInvoice;
+  /// The room subtotal, BEFORE tax. Never show this on its own — see
+  /// [bookTotalAmt]. It is the "Room charge" line of a breakdown, nothing
+  /// more.
   int bookPrice;
+
+  /// GST on this booking.
+  double bookTax;
+
+  /// What the guest actually owes: room + tax − any discount. This is the
+  /// number every screen leads with.
+  ///
+  /// Falls back to the subtotal only when the server sends no total at all,
+  /// which is what older responses did — and showing the subtotal labelled
+  /// "Amount" is exactly how the booking detail came to say Rs 4,000 for a
+  /// stay the confirmation had just called Rs 4,200.
+  double bookTotalAmt;
+
+  /// Any coupon or negotiated saving already taken off the subtotal.
+  double bookDiscountAmt;
+
   bool bookIsPaid;
   bool bookIsCod;
   int bookStatus;
@@ -96,6 +124,9 @@ class Booking {
     required this.bookId,
     required this.bookInvoice,
     required this.bookPrice,
+    this.bookTax = 0,
+    double? bookTotalAmt,
+    this.bookDiscountAmt = 0,
     required this.bookIsPaid,
     required this.bookIsCod,
     required this.bookStatus,
@@ -104,7 +135,19 @@ class Booking {
     this.bookingStatus,
     this.bookingProperty,
     this.propertyImage,
-  });
+  }) : bookTotalAmt = bookTotalAmt ?? bookPrice.toDouble();
+
+  /// Taxes and fees inside [bookTotalAmt].
+  ///
+  /// Uses the stored figure when the server sent one; otherwise derives it,
+  /// because total − subtotal + discount IS the tax by construction. Never
+  /// negative: a total that is somehow below the subtotal means the data is
+  /// odd, not that the guest is owed a negative tax.
+  double get taxesAndFees {
+    if (bookTax > 0) return bookTax;
+    final derived = bookTotalAmt - bookPrice + bookDiscountAmt;
+    return derived > 0 ? derived : 0;
+  }
 
   // Convenience getters for backward compatibility
   String get bookingStatusBsTitle => bookingStatus?.bsTitle ?? "";
@@ -132,6 +175,11 @@ class Booking {
         bookId: json["book_id"]?.toString() ?? "",
         bookInvoice: json["book_invoice"]?.toString() ?? "",
         bookPrice: (json["book_price"] as num?)?.toInt() ?? 0,
+        // Loosely parsed: these are DECIMAL columns and Sequelize hands some
+        // of them back as strings, so a blind cast drops them to zero.
+        bookTax: _money(json["book_tax"]) ?? 0,
+        bookTotalAmt: _money(json["book_total_amt"]),
+        bookDiscountAmt: _money(json["book_discount_amt"]) ?? 0,
         bookIsPaid: json["book_is_paid"] == true || json["book_is_paid"] == 1,
         bookIsCod: json["book_is_cod"] == true || json["book_is_cod"] == 1,
         bookStatus: (json["book_status"] as num?)?.toInt() ?? 0,

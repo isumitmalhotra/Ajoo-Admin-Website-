@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/design/amount_breakdown.dart';
 import 'package:rent_home/ui/screens_renter/property_details/components/stay_map.dart';
 import 'package:rent_home/utils/fonts.dart';
 
@@ -27,6 +28,16 @@ class BookingConfirmedScreen extends StatelessWidget {
   final String? checkOut;
   final String? amount;
 
+  /// The charges behind [amount]. When these are supplied the screen shows the
+  /// breakdown rather than a bare figure — a guest reading "₹4,200 due at the
+  /// property" on the one screen that confirms their booking should be able to
+  /// see what the ₹4,200 is made of without going looking for it.
+  final double? roomCharge;
+  final double? extras;
+  final double? taxes;
+  final double? discount;
+  final double? total;
+
   /// Pay-on-arrival bookings are confirmed but not paid; say which.
   final bool isPayOnArrival;
 
@@ -48,6 +59,11 @@ class BookingConfirmedScreen extends StatelessWidget {
     this.checkIn,
     this.checkOut,
     this.amount,
+    this.roomCharge,
+    this.extras,
+    this.taxes,
+    this.discount,
+    this.total,
     this.isPayOnArrival = false,
     this.awaitingApproval = false,
     this.responseHours = 24,
@@ -171,7 +187,22 @@ class BookingConfirmedScreen extends StatelessWidget {
                       if (checkIn != null || checkOut != null)
                         _row(Icons.calendar_today_outlined,
                             [checkIn, checkOut].whereType<String>().join('  →  ')),
-                      if (amount != null) ...[
+                      if (total != null && roomCharge != null) ...[
+                        const SizedBox(height: 12),
+                        AmountBreakdown(
+                          roomCharge: roomCharge!,
+                          extras: extras ?? 0,
+                          taxes: taxes,
+                          discount: discount ?? 0,
+                          total: total!,
+                          dense: true,
+                          totalLabel:
+                              isPayOnArrival ? 'Total due' : 'Total paid',
+                          footnote: isPayOnArrival
+                              ? 'Due at the property on arrival'
+                              : null,
+                        ),
+                      ] else if (amount != null) ...[
                         const SizedBox(height: 8),
                         _row(
                             Icons.currency_rupee,
