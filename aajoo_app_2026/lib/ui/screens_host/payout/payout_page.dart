@@ -220,7 +220,7 @@ class _PayoutPageState extends State<PayoutPage> {
               label: const Text('Add Bank Account'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: kClay,
-                foregroundColor: Colors.white,
+                foregroundColor: kAccentInk,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),

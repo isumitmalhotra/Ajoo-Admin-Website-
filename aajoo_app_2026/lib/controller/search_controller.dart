@@ -31,6 +31,9 @@ class HomeSearchController extends GetxController {
     String? from,
     String? to,
     int? categoryId,
+    double? minPrice,
+    double? maxPrice,
+    double? minRating,
   }) async {
     isLoading.value = true;
     try {
@@ -43,6 +46,9 @@ class HomeSearchController extends GetxController {
         from: from,
         to: to,
         categoryId: categoryId,
+        minPrice: minPrice,
+        maxPrice: maxPrice,
+        minRating: minRating,
       );
       preBookingResponse.value = response;
     } catch (err) {

@@ -658,7 +658,7 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
             onPressed: () => Get.to(() => const ListingWizardScreen()),
             style: ElevatedButton.styleFrom(
                 backgroundColor: kClay,
-                foregroundColor: Colors.white,
+                foregroundColor: kAccentInk,
                 elevation: 0,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

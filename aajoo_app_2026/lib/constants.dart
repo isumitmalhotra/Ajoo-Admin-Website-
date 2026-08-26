@@ -22,6 +22,10 @@ const kSand      = Color(0xFFFAF8F4); // Warm Ivory background
 const kCream     = Color(0xFFFAF8F4); // card / sheet surface (Warm Ivory)
 const kClay      = Color(0xFFE8A317); // ACCENT — Golden Amber, one pop-CTA / "New" badges
 const kClay600   = Color(0xFFD4930F); // amber pressed
+/// What is legible ON kClay. White on Golden Amber is 2.17:1 — unreadable in
+/// daylight — where this navy is 6.77:1. The note above has always said so;
+/// the token itself was missing, so every amber button used white regardless.
+const kAccentInk = Color(0xFF1F2937);
 const kInk       = Color(0xFF1F2937); // primary text — Charcoal Navy
 const kInk2      = Color(0xFF334155); // secondary text — slate
 const kMuted     = Color(0xFF64748B); // captions, placeholders

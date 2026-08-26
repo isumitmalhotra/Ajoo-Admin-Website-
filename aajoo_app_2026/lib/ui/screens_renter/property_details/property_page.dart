@@ -251,6 +251,18 @@ class _PropertyPageState extends State<PropertyPage>
   }
 
 
+  /// Owns this page's scroll, with `keepScrollOffset: false`.
+  ///
+  /// A Scrollable with no controller stores its offset in PageStorage, keyed
+  /// by its position in the widget tree — and every property page has the
+  /// same shape, so the bucket is shared. Open a stay, scroll down to the
+  /// house rules, go back, open a different stay: the new page restored the
+  /// old page's offset and landed you halfway down a listing you had never
+  /// seen, past the photographs and the price. Its own controller, told not
+  /// to keep the offset, means a stay always opens where it starts.
+  final ScrollController _pageScroll =
+      ScrollController(keepScrollOffset: false);
+
   @override
   void initState() {
     super.initState();
@@ -679,7 +691,7 @@ class _PropertyPageState extends State<PropertyPage>
               onPressed: _toggleExpanded,
               style: ElevatedButton.styleFrom(
                 backgroundColor: kClay,
-                foregroundColor: kCream,
+                foregroundColor: kAccentInk,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(
                     horizontal: 24, vertical: 14),
@@ -899,12 +911,13 @@ class _PropertyPageState extends State<PropertyPage>
               const SizedBox(height: 16),
 
               const SizedBox(height: 16),
-              Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
+              Container(
+                decoration: BoxDecoration(
+                  color: kSurface,
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: kLine),
+                  boxShadow: kSoftShadow,
                 ),
-                color: Colors.white,
                 child: Padding(
                   padding:
                       const EdgeInsets.symmetric(vertical: 18, horizontal: 0),
@@ -930,12 +943,12 @@ class _PropertyPageState extends State<PropertyPage>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'Booking Price',
-                                  style: TextStyle(
+                                  style: fraunces(
                                     fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: kIndigo,
+                                    fontWeight: FontWeight.w700,
+                                    color: kInk,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -943,15 +956,15 @@ class _PropertyPageState extends State<PropertyPage>
 
                                 Text(
                                   'Total for selected dates',
-                                  style: TextStyle(
+                                  style: inter(
                                     fontSize: 14,
-                                    color: Colors.grey[600],
+                                    color: kMuted,
                                   ),
                                 ),
                                 Text("Nights: $totalDays",
-                                    style: const TextStyle(
+                                    style: inter(
                                       fontSize: 12,
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight: FontWeight.w700,
                                     )),
                               ],
                             ),
@@ -964,13 +977,6 @@ class _PropertyPageState extends State<PropertyPage>
                             decoration: BoxDecoration(
                               color: kIndigo,
                               borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.pink.withOpacity(0.08),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
                             ),
                             child: Builder(
                               builder: (context) {
@@ -987,11 +993,10 @@ class _PropertyPageState extends State<PropertyPage>
 
                                 return Text(
                                   rupees(p.total),
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
+                                  style: fraunces(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
                                     color: Colors.white,
-                                    letterSpacing: 1.2,
                                   ),
                                 );
                               },
@@ -1010,13 +1015,13 @@ class _PropertyPageState extends State<PropertyPage>
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Guests',
-                                  style: TextStyle(
+                              Text('Guests',
+                                  style: inter(
                                       fontSize: 14, fontWeight: FontWeight.w600)),
                               if (_guestCeiling != null)
                                 Text('This place sleeps up to $_guestCeiling',
-                                    style: TextStyle(
-                                        fontSize: 11.5, color: Colors.grey[600])),
+                                    style: inter(
+                                        fontSize: 11.5, color: kMuted)),
                             ],
                           ),
                           Row(
@@ -1035,7 +1040,7 @@ class _PropertyPageState extends State<PropertyPage>
                                 width: 28,
                                 child: Text('$_guests',
                                     textAlign: TextAlign.center,
-                                    style: const TextStyle(
+                                    style: inter(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w700)),
                               ),
@@ -1061,10 +1066,10 @@ class _PropertyPageState extends State<PropertyPage>
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
+                          color: kCream,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.grey.shade200,
+                            color: kLine,
                             width: 1,
                           ),
                         ),
@@ -1085,17 +1090,17 @@ class _PropertyPageState extends State<PropertyPage>
                                   children: [
                                     Text(
                                       'Base Price',
-                                      style: TextStyle(
+                                      style: inter(
                                         fontSize: 14,
-                                        color: Colors.grey[700],
+                                        color: kMuted,
                                       ),
                                     ),
                                     Text(
                                       rupees(p.roomSubtotal),
-                                      style: TextStyle(
+                                      style: inter(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
-                                        color: Colors.grey[700],
+                                        color: kMuted,
                                       ),
                                     ),
                                   ],
@@ -1108,17 +1113,17 @@ class _PropertyPageState extends State<PropertyPage>
                                     children: [
                                       Text(
                                         'Extra guests',
-                                        style: TextStyle(
+                                        style: inter(
                                           fontSize: 14,
-                                          color: Colors.grey[700],
+                                          color: kMuted,
                                         ),
                                       ),
                                       Text(
                                         rupees(p.extraGuestFee),
-                                        style: TextStyle(
+                                        style: inter(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
-                                          color: Colors.grey[700],
+                                          color: kMuted,
                                         ),
                                       ),
                                     ],
@@ -1134,17 +1139,17 @@ class _PropertyPageState extends State<PropertyPage>
                                         _couponPercent > 0
                                             ? 'Discount (${_pct(_couponPercent)}% — $_appliedCoupon)'
                                             : 'Discount ($_appliedCoupon)',
-                                        style: const TextStyle(
+                                        style: inter(
                                           fontSize: 14,
-                                          color: Colors.green,
+                                          color: kSuccess,
                                         ),
                                       ),
                                       Text(
                                         '− ${rupees(p.discount)}',
-                                        style: const TextStyle(
+                                        style: inter(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
-                                          color: Colors.green,
+                                          color: kSuccess,
                                         ),
                                       ),
                                     ],
@@ -1157,17 +1162,17 @@ class _PropertyPageState extends State<PropertyPage>
                                   children: [
                                     Text(
                                       'GST (${p.taxPct}%)',
-                                      style: TextStyle(
+                                      style: inter(
                                         fontSize: 14,
-                                        color: Colors.grey[700],
+                                        color: kMuted,
                                       ),
                                     ),
                                     Text(
                                       rupees(p.taxes),
-                                      style: TextStyle(
+                                      style: inter(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
-                                        color: Colors.grey[700],
+                                        color: kMuted,
                                       ),
                                     ),
                                   ],
@@ -1180,7 +1185,7 @@ class _PropertyPageState extends State<PropertyPage>
                                   padding:
                                       const EdgeInsets.symmetric(vertical: 8.0),
                                   child: Divider(
-                                    color: Colors.grey.shade300,
+                                    color: kLine,
                                     thickness: 1,
                                   ),
                                 ),
@@ -1188,19 +1193,19 @@ class _PropertyPageState extends State<PropertyPage>
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Total Amount',
-                                      style: TextStyle(
+                                      style: fraunces(
                                         fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: kIndigo,
+                                        fontWeight: FontWeight.w700,
+                                        color: kInk,
                                       ),
                                     ),
                                     Text(
                                       rupees(p.total),
-                                      style: const TextStyle(
+                                      style: inter(
                                         fontSize: 16,
-                                        fontWeight: FontWeight.bold,
+                                        fontWeight: FontWeight.w700,
                                         color: kIndigo,
                                       ),
                                     ),
@@ -1224,17 +1229,17 @@ class _PropertyPageState extends State<PropertyPage>
                                     children: [
                                       Text(
                                         'Advance (10%)',
-                                        style: TextStyle(
+                                        style: inter(
                                           fontSize: 14,
-                                          color: Colors.grey[700],
+                                          color: kMuted,
                                         ),
                                       ),
                                       Text(
                                         rupees(p.total * 0.10),
-                                        style: TextStyle(
+                                        style: inter(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
-                                          color: Colors.grey[700],
+                                          color: kMuted,
                                         ),
                                       ),
                                     ],
@@ -1246,17 +1251,17 @@ class _PropertyPageState extends State<PropertyPage>
                                     children: [
                                       Text(
                                         'Due at Check-in (90%)',
-                                        style: TextStyle(
+                                        style: inter(
                                           fontSize: 14,
-                                          color: Colors.grey[700],
+                                          color: kMuted,
                                         ),
                                       ),
                                       Text(
                                         rupees(p.total * 0.90),
-                                        style: TextStyle(
+                                        style: inter(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
-                                          color: Colors.grey[700],
+                                          color: kMuted,
                                         ),
                                       ),
                                     ],
@@ -1738,6 +1743,7 @@ onPressed: () async {
     _priceController.dispose();
     _couponController.dispose();
     razorpay.clear();
+    _pageScroll.dispose();
     super.dispose();
   }
 
@@ -1748,6 +1754,7 @@ onPressed: () async {
       body: Stack(
         children: [
           CustomScrollView(
+            controller: _pageScroll,
             slivers: [
               SliverAppBar(
                 expandedHeight: 400,

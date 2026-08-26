@@ -122,14 +122,33 @@ class MyApp extends StatelessWidget {
         ),
       ],
       initialBinding: InitBinding(),
+      // The app's ambient typeface.
+      //
+      // This was Montserrat — a THIRD family, on top of the Poppins and
+      // Manrope the design system actually specifies, and registered at one
+      // weight only. It matters far more than it looks: a `Text` merges its
+      // style onto the ambient one, so every `TextStyle(fontSize: 18,
+      // fontWeight: bold)` written without a font — and there are around 250
+      // of them, 42 on the property page alone — rendered in Montserrat
+      // Regular. Bold never came out bold, and the booking panel sat in a
+      // different face from the heading directly above it. That is the font
+      // difference visible between the top and the bottom of a property page.
+      //
+      // Poppins rather than Manrope for the ambient default because Poppins
+      // ships as four static weights: `fontWeight` on a bare TextStyle picks
+      // a real file. Manrope is a variable font and needs `fontVariations`
+      // (see utils/fonts.dart), which a bare TextStyle cannot carry, so bold
+      // would silently stay at 400 — swapping one weight bug for another.
+      // Screens that use fraunces()/inter() are unaffected and keep the
+      // proper Poppins-display / Manrope-body pairing.
       theme: themeService.lightTheme.copyWith(
         textTheme: themeService.lightTheme.textTheme.apply(
-          fontFamily: 'Montserrat',
+          fontFamily: 'Poppins',
         ),
       ),
       darkTheme: themeService.darkTheme.copyWith(
         textTheme: themeService.darkTheme.textTheme.apply(
-          fontFamily: 'Montserrat',
+          fontFamily: 'Poppins',
         ),
       ),
       themeMode:

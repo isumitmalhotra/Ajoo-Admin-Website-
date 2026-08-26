@@ -451,10 +451,18 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                   _selectedHotelIndex = categoryIndex;
                   _selectedCategoryTitle =
                       categoryIndex == -1 ? '' : cats[categoryIndex].catTitle;
+                  _activeCategoryId =
+                      categoryIndex == -1 ? null : cats[categoryIndex].catId;
                 }
               });
-              _applySorting();
               Navigator.pop(context);
+              // Re-ask, rather than narrowing the sixty rows already here.
+              // The price band and the rating floor are the API's job now, so
+              // "under ₹1,000" searches the catalogue instead of searching
+              // whatever this screen happened to have fetched.
+              _loadResults().then((_) {
+                if (mounted) _applySorting();
+              });
             }
 
             return SafeArea(
@@ -1064,10 +1072,14 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
       latitude: centre?.latitude,
       longitude: centre?.longitude,
       radiusKm: widget.searchRadiusKm,
-      // The API narrows by type now, so the list that comes back IS the
-      // filtered list. `_activeCategoryId` is the pill's own id, which is why
-      // changing the pill re-asks rather than sieving what is already here.
+      // The API narrows by type, price band and rating now, so the list that
+      // comes back IS the filtered list. `_activeCategoryId` is the pill's own
+      // id, which is why changing any of these re-asks rather than sieving
+      // what is already here.
       categoryId: categoryId ?? _activeCategoryId,
+      minPrice: _priceMin,
+      maxPrice: _priceMax,
+      minRating: _minRating > 0 ? _minRating : null,
       // Narrow by the stay the guest actually asked for. Without these the
       // list showed places already booked for those nights, and places too
       // small for the party, and only refused at checkout.

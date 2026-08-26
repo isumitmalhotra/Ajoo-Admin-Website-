@@ -57,6 +57,9 @@ class HomePageSearchService {
     String? from,
     String? to,
     int? categoryId,
+    double? minPrice,
+    double? maxPrice,
+    double? minRating,
   }) async {
     final token = await const FlutterSecureStorage().read(key: "user_token");
     _dio.options.headers['Authorization'] = 'Bearer $token';
@@ -89,6 +92,12 @@ class HomePageSearchService {
       // a small share of the catalogue is categorised, so narrowing 60 nearby
       // rows by "Villas" almost always produced nothing.
       if (categoryId != null && categoryId > 0) "category": categoryId,
+      // Price band and rating floor, narrowed by the API rather than over the
+      // sixty rows it returns. Filtering the fetched page meant "under
+      // ₹1,000" searched sixty listings instead of the catalogue.
+      if (minPrice != null && minPrice > 0) "minPrice": minPrice,
+      if (maxPrice != null && maxPrice > 0) "maxPrice": maxPrice,
+      if (minRating != null && minRating > 0) "minRating": minRating,
       "isLuxury": isLuxury
     };
     try {

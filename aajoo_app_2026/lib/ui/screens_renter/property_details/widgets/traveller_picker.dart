@@ -1,6 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/models/traveller_model.dart';
 import 'package:rent_home/service/traveller_service.dart';
 
@@ -107,19 +108,20 @@ class _TravellerPickerState extends State<TravellerPicker> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: kSurface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: kLine),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Who is this stay for?',
-              style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700)),
+          Text('Who is this stay for?',
+              style: fraunces(
+                  fontSize: 15, fontWeight: FontWeight.w700, color: kInk)),
           const SizedBox(height: 4),
           Text(
             "Hosts keep a record of who is staying. Booking for someone else? Add their details.",
-            style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+            style: inter(fontSize: 12, color: kMuted, height: 1.4),
           ),
           const SizedBox(height: 12),
           Row(
@@ -165,7 +167,7 @@ class _TravellerPickerState extends State<TravellerPicker> {
           ],
           if (_note != null) ...[
             const SizedBox(height: 6),
-            Text(_note!, style: const TextStyle(fontSize: 11.5, color: Colors.red)),
+            Text(_note!, style: inter(fontSize: 11.5, color: kDanger)),
           ],
         ],
       ),
@@ -179,9 +181,9 @@ class _TravellerPickerState extends State<TravellerPicker> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: picked ? kIndigo.withValues(alpha: .07) : Colors.white,
+        color: picked ? kIndigo50 : kSurface,
         border: Border.all(
-          color: picked ? kIndigo : Colors.grey.shade300,
+          color: picked ? kIndigo : kLine,
           width: picked ? 1.5 : 1,
         ),
       ),
@@ -196,7 +198,7 @@ class _TravellerPickerState extends State<TravellerPicker> {
                   Text(t.fullName,
                       style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
                   Text(t.summary,
-                      style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                      style: TextStyle(fontSize: 11, color: kMuted)),
                 ],
               ),
             ),
@@ -224,7 +226,7 @@ class _TravellerPickerState extends State<TravellerPicker> {
           IconButton(
             onPressed: _busy ? null : () => _remove(t),
             icon: const Icon(Icons.delete_outline, size: 18),
-            color: Colors.grey.shade600,
+            color: kMuted,
             visualDensity: VisualDensity.compact,
           ),
         ],
@@ -249,14 +251,14 @@ class _Choice extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? kIndigo : Colors.white,
+          color: selected ? kIndigo : kSurface,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: selected ? kIndigo : Colors.grey.shade300),
+          border: Border.all(color: selected ? kIndigo : kLine),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 16, color: selected ? Colors.white : Colors.grey.shade700),
+            Icon(icon, size: 16, color: selected ? Colors.white : kMuted),
             const SizedBox(width: 6),
             Flexible(
               child: Text(
@@ -265,7 +267,7 @@ class _Choice extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
-                  color: selected ? Colors.white : Colors.grey.shade800,
+                  color: selected ? Colors.white : kInk,
                 ),
               ),
             ),
@@ -375,7 +377,7 @@ class _AddTravellerSheetState extends State<_AddTravellerSheet> {
                 child: Container(
                   width: 42, height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: kLine,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -416,12 +418,12 @@ class _AddTravellerSheetState extends State<_AddTravellerSheet> {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  Icon(Icons.lock_outline, size: 12, color: Colors.grey.shade600),
+                  Icon(Icons.lock_outline, size: 12, color: kMuted),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       'Stored privately. Only you, the host of this stay, and Aajoo support can open it.',
-                      style: TextStyle(fontSize: 10.5, color: Colors.grey.shade600),
+                      style: TextStyle(fontSize: 10.5, color: kMuted),
                     ),
                   ),
                 ],

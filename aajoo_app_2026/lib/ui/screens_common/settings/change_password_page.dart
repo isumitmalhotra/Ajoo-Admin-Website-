@@ -178,7 +178,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                         : _submit,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: kClay,
-                      foregroundColor: Colors.white,
+                      foregroundColor: kAccentInk,
                       disabledBackgroundColor: kMuted,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(

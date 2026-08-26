@@ -136,7 +136,7 @@ class DiditKycScreen extends StatelessWidget {
         onPressed: onTap,
         style: ElevatedButton.styleFrom(
           backgroundColor: kClay,
-          foregroundColor: Colors.white,
+          foregroundColor: kAccentInk,
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
