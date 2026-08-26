@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/design/aajoo_skin.dart';
 import 'package:rent_home/utils/fonts.dart';
 
 /// AajooHomes search pill — matches the POC mobile search row.
@@ -33,53 +34,61 @@ class SearchPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: kSurface,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: kLine),
-            boxShadow: kSoftShadow,
-          ),
-          padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-          child: Row(
-            children: [
-              const Icon(Icons.location_on_outlined, color: kIndigo, size: 20),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(location,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: kInk)),
-                    if (details != null && details!.isNotEmpty)
-                      Text(details!,
+    // The pill is the brightest object on the map, so in LUX a white capsule
+    // with a teal button was the first thing that said the mode had not
+    // taken. Skinned like the site's own search bar: the near-black surface,
+    // a gold hairline, and the mode's own placeholder ink.
+    return LuxBuilder(
+      builder: (context, skin) => Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Ink(
+            decoration: BoxDecoration(
+              color: skin.isLux ? skin.surface : kSurface,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: skin.line),
+              boxShadow: skin.shadow,
+            ),
+            padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+            child: Row(
+              children: [
+                Icon(Icons.location_on_outlined,
+                    color: skin.primary, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(location,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: inter(fontSize: 12, color: kMuted)),
-                  ],
+                          style: inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: skin.ink)),
+                      if (details != null && details!.isNotEmpty)
+                        Text(details!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: inter(
+                                fontSize: 12, color: skin.placeholder)),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              // Teal search button (scaffold search-card CTA)
-              Container(
-                width: 42,
-                height: 42,
-                decoration:
-                    const BoxDecoration(color: kIndigo, shape: BoxShape.circle),
-                child: const Icon(Icons.search, color: Colors.white, size: 20),
-              ),
-            ],
+                const SizedBox(width: 10),
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                      color: skin.primary, shape: BoxShape.circle),
+                  child: Icon(Icons.search,
+                      color: skin.onPrimary, size: 20),
+                ),
+              ],
+            ),
           ),
         ),
       ),

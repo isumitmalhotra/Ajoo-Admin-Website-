@@ -1,8 +1,11 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:rent_home/ui/screens_common/web_view/chat_web_view.dart';
+import 'package:rent_home/utils/lux_mode.dart';
 import 'package:rent_home/ui/screens_host/host_tab_provider.dart';
 import 'package:rent_home/ui/screens_common/faq/faq_page.dart';
 import 'package:rent_home/firebase_options.dart';
@@ -52,6 +55,14 @@ void main() async {
   }
 
   Get.put(ThemeService());
+
+  // The stored LUXE preference, read alongside startup rather than in front of
+  // it. Not awaited on purpose: a wedged Keystore must not hold the first
+  // frame, and the screens listen to LuxMode, so a `true` arriving a beat late
+  // re-skins them rather than being missed. Same order the website resolves
+  // it in.
+  unawaited(LuxMode.instance.load());
+
   runApp(const MyApp());
 }
 

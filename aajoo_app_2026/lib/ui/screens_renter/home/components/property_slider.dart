@@ -38,7 +38,7 @@ class PropertySlider extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionHeader(title: title, onSeeAll: onSeeAll),
+        SectionHeader(title: title, onViewAll: onSeeAll),
         const SizedBox(height: 12),
         SizedBox(
           height: 268,

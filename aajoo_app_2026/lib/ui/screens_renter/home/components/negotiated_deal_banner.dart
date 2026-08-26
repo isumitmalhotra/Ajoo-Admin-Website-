@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/ui/design/aajoo_skin.dart';
 import 'package:rent_home/controller/deals_controller.dart';
 import 'package:rent_home/models/negotiated_deal.dart';
 import 'package:rent_home/ui/screens_renter/property_details/open_property.dart';
@@ -56,7 +58,10 @@ class NegotiatedDealBanner extends StatelessWidget {
       final dates = deal.hasDates
           ? '${_pretty(deal.bookFrom)} → ${_pretty(deal.bookTo)}'
           : null;
-      return Padding(
+      // Floats over the map, so in LUX a Warm Ivory bar was a white slab
+      // hanging in the middle of a black screen. The green rule stays — it is
+      // status, not brand, and a live deal reads the same in both modes.
+      return LuxBuilder(builder: (context, skin) => Padding(
         padding: const EdgeInsets.only(top: 8),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
@@ -64,7 +69,7 @@ class NegotiatedDealBanner extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: kCream,
+              color: skin.isLux ? skin.surface : kCream,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: kSuccess),
             ),
@@ -94,8 +99,8 @@ class NegotiatedDealBanner extends StatelessWidget {
                         deal.propertyName ?? 'Your negotiated deal',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            color: kInk,
+                        style: inter(
+                            color: skin.ink,
                             fontSize: 13,
                             fontWeight: FontWeight.w700),
                       ),
@@ -133,7 +138,7 @@ class NegotiatedDealBanner extends StatelessWidget {
             ),
           ),
         ),
-      );
+      ));
     });
   }
 }

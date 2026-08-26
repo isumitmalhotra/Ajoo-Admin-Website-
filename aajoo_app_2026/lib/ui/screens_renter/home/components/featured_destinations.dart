@@ -13,6 +13,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/design/aajoo_skin.dart';
+import 'package:rent_home/utils/lux_mode.dart';
 import 'package:rent_home/models/destination_model.dart';
 import 'package:rent_home/service/property_service.dart';
 import 'package:rent_home/utils/fonts.dart';
@@ -50,6 +52,7 @@ class _FeaturedDestinationsState extends State<FeaturedDestinations> {
 
   @override
   Widget build(BuildContext context) {
+    final skin = AajooSkin.of(LuxMode.instance.isOn);
     // Nothing to show → show nothing. A heading over an empty shelf promises
     // something the catalogue cannot deliver.
     if (!_loading && _items.isEmpty) return const SizedBox.shrink();
@@ -66,20 +69,20 @@ class _FeaturedDestinationsState extends State<FeaturedDestinations> {
               style: fraunces(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: kInk,
+                color: skin.ink,
               ),
             ),
             if (!_loading)
               Text(
                 '${_items.length} places',
-                style: inter(fontSize: 12, color: kMuted),
+                style: inter(fontSize: 12, color: skin.muted),
               ),
           ],
         ),
         const SizedBox(height: 4),
         Text(
           'Where our hosts are, right now.',
-          style: inter(fontSize: 13, color: kMuted),
+          style: inter(fontSize: 13, color: skin.muted),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -123,6 +126,7 @@ class _DestinationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final skin = AajooSkin.of(LuxMode.instance.isOn);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -130,9 +134,9 @@ class _DestinationTile extends StatelessWidget {
         width: 168,
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: kSurface,
+          color: skin.isLux ? skin.surface : kSurface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: kLine),
+          border: Border.all(color: skin.line),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,7 +161,7 @@ class _DestinationTile extends StatelessWidget {
                   style: fraunces(
                     fontSize: 15.5,
                     fontWeight: FontWeight.w700,
-                    color: kInk,
+                    color: skin.ink,
                   ),
                 ),
                 const SizedBox(height: 2),

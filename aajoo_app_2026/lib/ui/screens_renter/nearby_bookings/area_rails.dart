@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/screens_renter/home/components/section_header.dart';
 import 'package:rent_home/models/search_property_model.dart';
 import 'package:rent_home/service/home_page_search_service.dart';
 import 'package:rent_home/ui/screens_renter/home/components/lux_theme.dart';
@@ -95,32 +96,13 @@ class AreaRail extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isLuxury)
-            LuxSectionHeader(title: area, onSeeAll: onSeeAll)
-          else
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(area,
-                      style: fraunces(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          color: kInk)),
-                  if (onSeeAll != null)
-                    TextButton(
-                      onPressed: onSeeAll,
-                      style: TextButton.styleFrom(
-                          foregroundColor: kIndigo,
-                          visualDensity: VisualDensity.compact),
-                      child: Text('See all',
-                          style: inter(
-                              fontSize: 12.5, fontWeight: FontWeight.w700)),
-                    ),
-                ],
-              ),
-            ),
+          // One header in both modes. This used to fork — a gold LuxSectionHeader
+          // when luxury was on and a hand-rolled Row when it wasn't — so the
+          // same rail wore two different type scales and two different link
+          // labels depending on the mode. SectionHeader resolves the skin
+          // itself, so there is one shape and one "View all".
+          SectionHeader(title: area, onViewAll: onSeeAll),
+          const SizedBox(height: 10),
           SizedBox(
             height: 232,
             child: ListView.separated(

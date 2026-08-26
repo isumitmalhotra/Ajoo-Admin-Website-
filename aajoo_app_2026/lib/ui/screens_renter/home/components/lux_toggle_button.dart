@@ -10,8 +10,13 @@ const Color kGoldDeep = Color(0xFFB8860B);
 /// Animated **LUX** toggle — a premium pill with a continuous gold sheen sweep
 /// and a soft glow pulse, mirroring the web's luxury-mode flourish.
 ///
-/// • Inactive (normal mode): light surface, gold border, indigo "LUX".
-/// • Active (luxury mode):   deep-indigo gradient, gold glow, gold "NOR".
+/// • Inactive (normal mode): light surface, gold border, teal "LUX".
+/// • Active (luxury mode):   near-black surface, gold rule and glow, "NOR".
+///
+/// The active state used to be a TEAL gradient — the brand primary — which is
+/// the one colour LUX does not contain. On a black-and-gold screen it was the
+/// only teal object left, so the control that turns the mode on was itself
+/// dressed for the mode it turns off.
 class LuxToggleButton extends StatefulWidget {
   final bool isLuxury;
   final VoidCallback onTap;
@@ -66,12 +71,12 @@ class _LuxToggleButtonState extends State<LuxToggleButton>
             height: widget.height,
             width: widget.width,
             decoration: BoxDecoration(
-              color: lux ? null : kSurface,
+              color: lux ? const Color(0xFF1A1A1D) : kSurface,
               gradient: lux
                   ? const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [kIndigo600, kIndigo],
+                      colors: [Color(0xFF1A1A1D), Color(0xFF0F0F11)],
                     )
                   : null,
               borderRadius: BorderRadius.circular(14),

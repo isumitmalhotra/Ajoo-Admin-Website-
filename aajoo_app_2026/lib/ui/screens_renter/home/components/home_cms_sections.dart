@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/design/aajoo_skin.dart';
 import 'package:rent_home/models/properties_response_model.dart';
 import 'package:rent_home/service/homepage_cms_service.dart';
 import 'package:rent_home/ui/screens_renter/home/components/property_slider.dart';
@@ -126,8 +127,18 @@ class _HomeCmsSectionsState extends State<HomeCmsSections> {
                 : 'Featured stays',
             properties: featured,
             onOpen: widget.onOpen,
-            // No "See all": these are a fixed hand-picked set, not the head of
-            // a longer list, so there is nowhere for it to lead.
+            // "View all" opens browse.
+            //
+            // This rail deliberately had no link, on the reasoning that a
+            // hand-picked set is not the head of a longer list. The website
+            // disagrees and always has: its Featured rail carries the same
+            // "See all" as every other, pointing at /search. A guest reading
+            // the editor's picks is being shown a taste of the catalogue, and
+            // the useful next step is the rest of it — so the rail leads
+            // where the site's does.
+            onSeeAll: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PreBookingScreen()),
+            ),
           ),
           const SizedBox(height: 24),
         ],
@@ -148,13 +159,8 @@ class _Banner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: kSurface,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: kSoftShadow,
-        border: Border.all(color: kLine),
-      ),
+    return LuxBuilder(builder: (context, skin) => Container(
+      decoration: skin.card(),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,7 +184,7 @@ class _Banner extends StatelessWidget {
                   style: fraunces(
                     fontSize: 19,
                     fontWeight: FontWeight.w600,
-                    color: kInk,
+                    color: skin.ink,
                     height: 1.25,
                   ),
                 ),
@@ -186,8 +192,8 @@ class _Banner extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     banner.desc,
-                    style: const TextStyle(
-                        fontSize: 13.5, color: kMuted, height: 1.5),
+                    style: inter(
+                        fontSize: 13.5, color: skin.muted, height: 1.5),
                   ),
                 ],
                 if (banner.hasButton) ...[
@@ -195,8 +201,8 @@ class _Banner extends StatelessWidget {
                   ElevatedButton(
                     onPressed: () => onTapLink(banner.buttonUrl),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: kIndigo,
-                      foregroundColor: Colors.white,
+                      backgroundColor: skin.primary,
+                      foregroundColor: skin.onPrimary,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 12),
@@ -205,8 +211,8 @@ class _Banner extends StatelessWidget {
                     ),
                     child: Text(
                       banner.buttonTitle,
-                      style: const TextStyle(
-                          fontSize: 13.5, fontWeight: FontWeight.w600),
+                      style: inter(
+                          fontSize: 14.5, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -215,6 +221,6 @@ class _Banner extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }

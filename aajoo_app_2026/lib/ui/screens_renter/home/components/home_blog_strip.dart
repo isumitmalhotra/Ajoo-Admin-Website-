@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/design/aajoo_skin.dart';
+import 'package:rent_home/utils/lux_mode.dart';
 import 'package:rent_home/models/blog_model.dart';
 import 'package:rent_home/service/blog_service.dart';
 import 'package:rent_home/ui/screens_renter/home/components/section_header.dart';
@@ -69,6 +71,7 @@ class _HomeBlogStripState extends State<HomeBlogStrip> {
 
   @override
   Widget build(BuildContext context) {
+    final skin = AajooSkin.of(LuxMode.instance.isOn);
     return Obx(() {
       if (_loading.value) return const SizedBox(height: 0);
       if (_posts.isEmpty) return const SizedBox.shrink();
@@ -78,7 +81,7 @@ class _HomeBlogStripState extends State<HomeBlogStrip> {
         children: [
           SectionHeader(
             title: widget.title,
-            onSeeAll: widget.onSeeAll,
+            onViewAll: widget.onSeeAll,
           ),
           const SizedBox(height: 10),
           SizedBox(
@@ -106,6 +109,7 @@ class _BlogCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final skin = AajooSkin.of(LuxMode.instance.isOn);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -147,14 +151,14 @@ class _BlogCard extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: inter(
-                  fontSize: 13.5, fontWeight: FontWeight.w700, color: kInk),
+                  fontSize: 13.5, fontWeight: FontWeight.w700, color: skin.ink),
             ),
             const SizedBox(height: 3),
             Text(
               post.shortDesc,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: inter(fontSize: 12, color: kMuted, height: 1.35),
+              style: inter(fontSize: 12, color: skin.muted, height: 1.35),
             ),
           ],
         ),

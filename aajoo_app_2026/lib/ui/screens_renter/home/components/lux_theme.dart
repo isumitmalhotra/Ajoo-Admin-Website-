@@ -21,25 +21,43 @@ class Lux {
   const Lux._();
 
   // ── Palette ───────────────────────────────────────────────────────────────
-  /// Page background — near-black with a warm cast, not a flat grey.
-  static const Color bg = Color(0xFF12100C);
+  //
+  // These are the website's LUXE values, read out of the `html[data-lux]`
+  // block in styles/aajoo-system.css. They used to be a warmer set of browns
+  // chosen here independently (#12100C / #1C1813 / #F5EFE2), which meant the
+  // two platforms shipped two different luxury modes. The site had already
+  // moved off the browns and left the reason in the stylesheet — against gold
+  // they read muddy rather than luxe — so the app follows.
+  //
+  // Anything new should prefer AajooSkin (ui/design/aajoo_skin.dart), which
+  // carries the same values plus their classic counterparts; these stay
+  // because the LUX loader and switch dialog below are LUX-only and have no
+  // classic side to resolve against.
+
+  /// Page background — neutral near-black.
+  static const Color bg = Color(0xFF0A0A0C);
 
   /// Raised surfaces (cards, sheets, rails).
-  static const Color surface = Color(0xFF1C1813);
+  static const Color surface = Color(0xFF141416);
 
   /// One step up again, for controls sitting on a surface.
-  static const Color surfaceHigh = Color(0xFF272119);
+  static const Color surfaceHigh = Color(0xFF1A1A1D);
 
-  /// Hairlines. Gold at low opacity reads richer than grey on this background.
-  static const Color line = Color(0x33D4AF37);
+  /// Hairlines — rgba(212,175,55,.24). Gold at low opacity reads richer than
+  /// grey on this background.
+  static const Color line = Color(0x3DD4AF37);
 
   static const Color gold = Color(0xFFD4AF37);
   static const Color goldLight = Color(0xFFF6E5A8);
   static const Color goldDeep = Color(0xFFB8860B);
 
+  /// What is legible ON gold. White on #D4AF37 is 1.9:1 — unreadable — so
+  /// every filled gold control takes its foreground from here.
+  static const Color onGold = Color(0xFF1A1508);
+
   /// Text on the dark ground.
-  static const Color ink = Color(0xFFF5EFE2);
-  static const Color muted = Color(0xFF9C9280);
+  static const Color ink = Color(0xFFF2F0EA);
+  static const Color muted = Color(0xFFA6A39C);
 
   /// The gold used for headings and rules — a gradient, so a heading catches
   /// light across its width the way foil stamping does.
@@ -335,7 +353,7 @@ Future<void> showLuxSwitchDialog(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: goingLux ? Lux.gold : kIndigo,
                       foregroundColor:
-                          goingLux ? const Color(0xFF12100C) : Colors.white,
+                          goingLux ? Lux.onGold : Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(

@@ -54,7 +54,7 @@ class StayDatesBar extends StatelessWidget {
             colorScheme: isLuxury
                 ? const ColorScheme.dark(
                     primary: Lux.gold,
-                    onPrimary: Color(0xFF12100C),
+                    onPrimary: Lux.onGold,
                     surface: Lux.surface,
                     onSurface: Lux.ink,
                   )

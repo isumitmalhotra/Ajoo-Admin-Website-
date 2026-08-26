@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/design/aajoo_skin.dart';
+import 'package:rent_home/utils/lux_mode.dart';
 import 'package:rent_home/controller/deals_controller.dart';
 import 'package:rent_home/ui/screens_renter/negotiations/guest_negotiations_screen.dart';
 import 'package:rent_home/utils/fonts.dart';
@@ -22,6 +24,7 @@ class CounterOfferBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final skin = AajooSkin.of(LuxMode.instance.isOn);
     final DealsController c = Get.isRegistered<DealsController>()
         ? Get.find<DealsController>()
         : Get.put(DealsController());
@@ -47,7 +50,7 @@ class CounterOfferBanner extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: kCream,
+              color: skin.isLux ? skin.surface : kCream,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: kIndigo.withOpacity(0.35)),
             ),
@@ -71,14 +74,14 @@ class CounterOfferBanner extends StatelessWidget {
                           style: inter(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
-                              color: kInk)),
+                              color: skin.ink)),
                       const SizedBox(height: 2),
                       Text('Answer it before it expires',
-                          style: inter(fontSize: 11.5, color: kMuted)),
+                          style: inter(fontSize: 11.5, color: skin.muted)),
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: kMuted),
+                Icon(Icons.chevron_right, color: skin.muted),
               ],
             ),
           ),

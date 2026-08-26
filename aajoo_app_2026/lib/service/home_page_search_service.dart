@@ -56,6 +56,7 @@ class HomePageSearchService {
     int? guests,
     String? from,
     String? to,
+    int? categoryId,
   }) async {
     final token = await const FlutterSecureStorage().read(key: "user_token");
     _dio.options.headers['Authorization'] = 'Bearer $token';
@@ -82,6 +83,12 @@ class HomePageSearchService {
       if (guests != null && guests > 0) "guests": guests,
       if (from != null && from.isNotEmpty) "from": from,
       if (to != null && to.isNotEmpty) "to": to,
+      // Browse by property type, filtered in SQL by the API rather than over
+      // the page this returns — see propertyListing in the backend. Filtering
+      // the fetched page client-side is what made the category row look dead:
+      // a small share of the catalogue is categorised, so narrowing 60 nearby
+      // rows by "Villas" almost always produced nothing.
+      if (categoryId != null && categoryId > 0) "category": categoryId,
       "isLuxury": isLuxury
     };
     try {

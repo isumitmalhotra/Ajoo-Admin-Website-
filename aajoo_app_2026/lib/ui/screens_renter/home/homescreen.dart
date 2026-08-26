@@ -3,6 +3,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/design/aajoo_skin.dart';
+import 'package:rent_home/utils/lux_mode.dart';
+import 'package:rent_home/ui/screens_renter/home/components/pre_booking_button.dart';
 import 'package:rent_home/controller/common_controller.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/ui/screens_renter/home/map/map_controller.dart';
@@ -63,7 +66,11 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final DraggableScrollableController _dragController =
       DraggableScrollableController();
-  bool isLuxury = false;
+  // `bool isLuxury` used to live here, and a second copy lived on the
+  // pre-booking screen. Neither was persisted and neither could see the
+  // other, which is why turning LUX on changed the pill and nothing else.
+  // The preference is LuxMode now and this screen reads it through
+  // LuxBuilder — see utils/lux_mode.dart.
   // final _queryController = TextEditingController(); // unused
   final searchController = Get.put(HomeSearchController());
 
@@ -100,7 +107,16 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
     // category, so a first-time visitor's home screen asked for stays exactly
     // never and sat on "No stays available yet" while the website showed the
     // same catalogue fine.
-    mapController.fetchProperties();
+    //
+    // Which listings depends on the mode. Now that LUX is a remembered
+    // preference rather than a per-screen boolean, a guest who left in LUX
+    // comes back to a black-and-gold home — and it would be showing the whole
+    // catalogue underneath, because the fetch on this line never asked. The
+    // preference may also still be reading from storage at this point, hence
+    // the listener: whichever way round they land, the listings match the skin.
+    mapController.isLuxury.value = LuxMode.instance.isOn;
+    _fetchForMode();
+    LuxMode.instance.on.addListener(_onLuxChanged);
 
     // User-scoped boot-up calls — only fire if we have a real user.
     final hasRealUser = _authController.userData.value != null;
@@ -115,6 +131,20 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
       // eventually become.
       dealsController.loadNegotiations();
     }
+  }
+
+  /// Ask for the listings the current mode wants.
+  Future<void> _fetchForMode() => LuxMode.instance.isOn
+      ? mapController.fetchLuxuryProperties()
+      : mapController.fetchProperties();
+
+  /// The preference changed — here, or on any other screen.
+  void _onLuxChanged() {
+    if (!mounted) return;
+    final on = LuxMode.instance.isOn;
+    if (mapController.isLuxury.value == on) return;
+    mapController.isLuxury.value = on;
+    _fetchForMode();
   }
 
   /// The LUX switch. Was a bare Material AlertDialog — the same grey box in
@@ -138,6 +168,7 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    LuxMode.instance.on.removeListener(_onLuxChanged);
     _animationController.dispose();
     _timer.cancel();
     super.dispose();
@@ -149,8 +180,13 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    return LuxBuilder(builder: (context, skin) => _buildHome(context, skin));
+  }
+
+  Widget _buildHome(BuildContext context, AajooSkin skin) {
     return Scaffold(
       key: _scaffoldKey,
+      backgroundColor: skin.page,
       // POC mobile: no opaque AppBar — the branded header floats over the map.
       // A-64: the drawer that used to hang here is gone. Its entries live on
       // the profile screen, which is a tab, rather than behind a logo tap
@@ -241,19 +277,27 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
               snapSizes: const [0.28, 0.6, 0.99],
               builder: (context, scrollController) {
                 return Container(
-                  decoration: const BoxDecoration(
-                    color: kCream,
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    color: skin.sheet,
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(40),
                       topRight: Radius.circular(40),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0x0A0F172A),
-                        blurRadius: 8,
-                        offset: Offset(0, -4),
-                      ),
-                    ],
+                    boxShadow: skin.isLux
+                        ? const [
+                            BoxShadow(
+                              color: Color(0x2ED4AF37),
+                              blurRadius: 18,
+                              offset: Offset(0, -6),
+                            ),
+                          ]
+                        : const [
+                            BoxShadow(
+                              color: Color(0x0A0F172A),
+                              blurRadius: 8,
+                              offset: Offset(0, -4),
+                            ),
+                          ],
                   ),
                   child: SingleChildScrollView(
                     controller: scrollController,
@@ -269,7 +313,7 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                               height: 4,
                               width: 40,
                               decoration: BoxDecoration(
-                                color: kLine,
+                                color: skin.isLux ? skin.primary : kLine,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
@@ -345,9 +389,10 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                                 final cat = i == 0 ? null : cats[i - 1];
                                 setState(() => _propertyType = i);
                                 if (cat == null) {
+                                  // "All" is a reset, and resets in place.
                                   mapController.fetchProperties();
                                 } else {
-                                  _filterByCategoryId(cat.catId, cat.catTitle);
+                                  _browseCategory(cat.catId, cat.catTitle);
                                 }
                               },
                             );
@@ -359,75 +404,46 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                           // category row now. They were near the bottom of the
                           // page, below the property grids, which is past the
                           // point most people stop scrolling.
-                          /// 🔹 Action Buttons — Pre-Booking + animated LUX
+                          /// 🔹 Pre-Booking + the LUX switch.
+                          ///
+                          /// Pre-Booking was a full-bleed teal slab with its
+                          /// own drop shadow, sitting next to a glowing gold
+                          /// pill: two maximum-weight controls side by side,
+                          /// each shouting over the other, and neither
+                          /// matching the reference app's button — which is
+                          /// radius 12, a 1.5px brand rule, and Manrope
+                          /// 14.5/w600 on a plain surface.
+                          ///
+                          /// It is that button now. Only one thing in the row
+                          /// is loud, and it is the mode switch, because the
+                          /// mode switch is what changes the whole screen. The
+                          /// slab also stayed teal in LUX, where every other
+                          /// surface had gone black — it takes the skin now,
+                          /// like everything else here.
                           Row(
                             children: [
                               Expanded(
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(14),
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const PreBookingScreen(),
-                                        ),
-                                      );
-                                    },
-                                    child: Container(
-                                      height: 48,
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(
-                                        gradient: const LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [kIndigo600, kIndigo],
-                                        ),
-                                        borderRadius: BorderRadius.circular(14),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: kIndigo.withOpacity(0.28),
-                                            blurRadius: 14,
-                                            offset: const Offset(0, 6),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          const Icon(Icons.event_available,
-                                              color: kCream, size: 19),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'Pre-Booking',
-                                            style: inter(
-                                              fontSize: 15.5,
-                                              fontWeight: FontWeight.w700,
-                                              color: kCream,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                child: PreBookingButton(
+                                  skin: skin,
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const PreBookingScreen(),
                                     ),
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 12),
                               LuxToggleButton(
-                                isLuxury: isLuxury,
-                                onTap: () {
-                                  _showLuxuryModeDialog(
-                                    context,
-                                    isLuxury,
-                                    (val) {
-                                      setState(() => isLuxury = val);
-                                      mapController.isLuxury.value = isLuxury;
-                                    },
-                                  );
-                                },
+                                isLuxury: skin.isLux,
+                                onTap: () => _showLuxuryModeDialog(
+                                  context,
+                                  skin.isLux,
+                                  (val) {
+                                    LuxMode.instance.set(val);
+                                    mapController.isLuxury.value = val;
+                                  },
+                                ),
                               ),
                             ],
                           ),
@@ -439,20 +455,20 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                             padding: const EdgeInsets.symmetric(
                                 vertical: 14, horizontal: 6),
                             decoration: BoxDecoration(
-                                color: kCream,
+                                color: skin.isLux ? skin.surface : kCream,
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: kLine)),
-                            child: const Row(
+                                border: Border.all(color: skin.line)),
+                            child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
                                 _TrustItem(Icons.verified_user_outlined,
-                                    'Verified\nProperties'),
+                                    'Verified\nProperties', skin),
                                 _TrustItem(
-                                    Icons.lock_outline, 'Secure\nPayments'),
+                                    Icons.lock_outline, 'Secure\nPayments', skin),
                                 _TrustItem(Icons.sell_outlined,
-                                    'Best Price\nGuarantee'),
+                                    'Best Price\nGuarantee', skin),
                                 _TrustItem(Icons.headset_mic_outlined,
-                                    '24/7\nSupport'),
+                                    '24/7\nSupport', skin),
                               ],
                             ),
                           ),
@@ -502,33 +518,98 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                                 return score(b).compareTo(score(a));
                               });
 
+                            // Trending — the same cut the website makes on
+                            // the same single fetch: paid placement first,
+                            // then standing. It re-sorts by how a stay is
+                            // doing rather than how close it is, so it is a
+                            // genuinely different list from "near you" and not
+                            // the same twelve cards twice.
+                            final trending = [...all]..sort((a, b) {
+                                if (a.isBoosted != b.isBoosted) {
+                                  return a.isBoosted ? -1 : 1;
+                                }
+                                final ar = a.rating ?? 0;
+                                final br = b.rating ?? 0;
+                                if (br != ar) return br.compareTo(ar);
+                                return b.reviewCount.compareTo(a.reviewCount);
+                              });
+
+                            // One rail per property type, grouped from that
+                            // same fetch — the website's per-category
+                            // sections, which the phone did not have. Four is
+                            // the floor: a rail of one reads as a broken
+                            // section rather than a category, and the ring row
+                            // at the top still offers every category anyway.
+                            final byCategory = <String, List<Property>>{};
+                            for (final p in all) {
+                              for (final raw in (p.categoryTitles ?? const [])) {
+                                final label = raw.toString().trim();
+                                if (label.isEmpty) continue;
+                                if (kHiddenBrowseCategories
+                                    .contains(label.toLowerCase())) {
+                                  continue;
+                                }
+                                (byCategory[label] ??= <Property>[]).add(p);
+                              }
+                            }
+                            final categoryRails = byCategory.entries
+                                .where((e) => e.value.length >= 4)
+                                .toList()
+                              ..sort((a, b) =>
+                                  b.value.length.compareTo(a.value.length));
+
+                            void browse({int? categoryId, String? title}) =>
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => PreBookingScreen(
+                                      searchPlace: mapController
+                                              .currentPlace.value.isEmpty
+                                          ? null
+                                          : mapController.currentPlace.value,
+                                      searchCenter:
+                                          mapController.currentPosition.value,
+                                      categoryId: categoryId,
+                                      categoryTitle: title,
+                                    ),
+                                  ),
+                                );
+
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 PropertySlider(
-                                  title: 'Properties in your current location',
+                                  title: 'Stays near you',
                                   properties: nearby,
-                                  onSeeAll: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) =>
-                                            const PreBookingScreen()),
-                                  ),
+                                  onSeeAll: browse,
+                                  onOpen: _openProperty,
+                                ),
+                                const SizedBox(height: 24),
+                                PropertySlider(
+                                  title: 'Trending stays',
+                                  properties: trending,
+                                  onSeeAll: browse,
                                   onOpen: _openProperty,
                                 ),
                                 const SizedBox(height: 24),
                                 PropertySlider(
                                   title: 'Curated for you',
                                   properties: curated,
-                                  onSeeAll: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) =>
-                                            const PreBookingScreen()),
-                                  ),
+                                  onSeeAll: browse,
                                   onOpen: _openProperty,
                                 ),
                                 const SizedBox(height: 24),
+                                for (final entry in categoryRails.take(4)) ...[
+                                  PropertySlider(
+                                    title: entry.key,
+                                    properties: entry.value,
+                                    onSeeAll: () => browse(
+                                        categoryId: _categoryIdFor(entry.key),
+                                        title: entry.key),
+                                    onOpen: _openProperty,
+                                  ),
+                                  const SizedBox(height: 24),
+                                ],
                               ],
                             );
                           }),
@@ -612,6 +693,7 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
   }
 
   Widget buildReviewList() {
+    final skin = AajooSkin.of(LuxMode.instance.isOn);
     return Obx(
       () => userController.isLoading.value
           ? const CircularProgressIndicator()
@@ -632,13 +714,13 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                       style: fraunces(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: kInk,
+                        color: skin.ink,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       "Guest reviews will appear here",
-                      style: inter(fontSize: 12.5, color: kMuted),
+                      style: inter(fontSize: 12.5, color: skin.muted),
                     ),
                   ],
                 )
@@ -651,7 +733,7 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                         style: fraunces(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
-                          color: kInk,
+                          color: skin.ink,
                         ),
                       ),
                     ),
@@ -670,11 +752,7 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                             .userReviews.value!.data.review[index];
 
                         return Container(
-                          decoration: BoxDecoration(
-                            color: kSurface,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: kCardShadow,
-                          ),
+                          decoration: skin.card(radius: 16),
                           margin: const EdgeInsets.only(bottom: 12),
                           child: ListTile(
                             tileColor: Colors.transparent,
@@ -685,11 +763,12 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                                 style: fraunces(
                                     fontSize: 14.5,
                                     fontWeight: FontWeight.w700,
-                                    color: kInk)),
+                                    color: skin.ink)),
                             subtitle: Padding(
                               padding: const EdgeInsets.only(top: 2),
                               child: Text(review.hruDescription,
-                                  style: inter(fontSize: 12.5, color: kMuted)),
+                                  style: inter(
+                                      fontSize: 12.5, color: skin.muted)),
                             ),
                             trailing: Container(
                               padding: const EdgeInsets.symmetric(
@@ -783,19 +862,47 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
   /// searched the API for it, and fell back to the FIRST category when the
   /// name was not found — so a retired category quietly filtered by something
   /// else entirely instead of failing.
-  void _filterByCategoryId(int categoryId, String title) {
-    mapController.getProperties(
-      mapController.currentPosition.value.latitude,
-      mapController.currentPosition.value.longitude,
-      category: categoryId,
-    );
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Showing $title'),
-        duration: const Duration(seconds: 2),
-        backgroundColor: Theme.of(context).primaryColor,
+  /// A category title back to its id, so a per-category rail's "View all"
+  /// opens the same server-filtered browse the ring row does. Returns null
+  /// when the categories have not loaded, which browses unfiltered rather
+  /// than filtering by a wrong id.
+  int? _categoryIdFor(String title) {
+    final cats = commonController.cats.value?.data.categories ?? const [];
+    for (final c in cats) {
+      if (c.catTitle.trim().toLowerCase() == title.trim().toLowerCase()) {
+        return c.catId;
+      }
+    }
+    return null;
+  }
+
+  /// Open browse, narrowed to one property type.
+  ///
+  /// This was `_filterByCategoryId`, and it did two things that between them
+  /// made the category row read as dead. It re-fetched the map controller's
+  /// list — which feeds two rails most of the way down the page, below the
+  /// trust bar and the editor's picks, so nothing the guest could see changed
+  /// — and it said "Showing Villas" in a snackbar over the part of the screen
+  /// that had not changed. The website sends this tap to a filtered search
+  /// page; so does this.
+  void _browseCategory(int categoryId, String title) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PreBookingScreen(
+          searchPlace: mapController.currentPlace.value.isEmpty
+              ? null
+              : mapController.currentPlace.value,
+          searchCenter: mapController.currentPosition.value,
+          categoryId: categoryId,
+          categoryTitle: title,
+        ),
       ),
     );
+    // The row goes back to "All" on the way out: the home screen itself is not
+    // filtered — the screen we just opened is — and leaving a pill lit here
+    // would claim otherwise when the guest comes back.
+    setState(() => _propertyType = 0);
   }
 }
 
@@ -823,14 +930,15 @@ void showFilterDialog({
 class _TrustItem extends StatelessWidget {
   final IconData icon;
   final String label;
-  const _TrustItem(this.icon, this.label);
+  final AajooSkin skin;
+  const _TrustItem(this.icon, this.label, this.skin);
 
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 20, color: kIndigo600),
+        Icon(icon, size: 20, color: skin.isLux ? skin.primary : kIndigo600),
         const SizedBox(height: 5),
         Text(
           label,
@@ -839,7 +947,7 @@ class _TrustItem extends StatelessWidget {
               fontSize: 10.5,
               fontWeight: FontWeight.w600,
               height: 1.2,
-              color: kInk2),
+              color: skin.isLux ? skin.ink : kInk2),
         ),
       ],
     );

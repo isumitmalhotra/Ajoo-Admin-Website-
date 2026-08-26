@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/design/aajoo_skin.dart';
+import 'package:rent_home/utils/lux_mode.dart';
 import 'package:rent_home/models/faq_reponse_model.dart';
 import 'package:rent_home/service/static_page_service.dart';
 import 'package:rent_home/ui/screens_renter/home/components/section_header.dart';
@@ -47,6 +49,7 @@ class _HomeFaqStripState extends State<HomeFaqStrip> {
 
   @override
   Widget build(BuildContext context) {
+    final skin = AajooSkin.of(LuxMode.instance.isOn);
     return Obx(() {
       if (_loading.value || _items.isEmpty) return const SizedBox.shrink();
 
@@ -55,7 +58,7 @@ class _HomeFaqStripState extends State<HomeFaqStrip> {
         children: [
           SectionHeader(
             title: 'Frequently asked',
-            onSeeAll: widget.onSeeAll,
+            onViewAll: widget.onSeeAll,
           ),
           const SizedBox(height: 8),
           ...List.generate(_items.length, (i) {
@@ -64,9 +67,9 @@ class _HomeFaqStripState extends State<HomeFaqStrip> {
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
               decoration: BoxDecoration(
-                color: kSurface,
+                color: skin.isLux ? skin.surface : kSurface,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: kLine),
+                border: Border.all(color: skin.line),
               ),
               child: Theme(
                 // The default divider lines fight the card border.
@@ -83,17 +86,17 @@ class _HomeFaqStripState extends State<HomeFaqStrip> {
                     style: inter(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w600,
-                        color: kInk),
+                        color: skin.ink),
                   ),
-                  iconColor: kIndigo600,
-                  collapsedIconColor: kMuted,
+                  iconColor: skin.primary,
+                  collapsedIconColor: skin.muted,
                   children: [
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
                         item.description,
                         style: inter(
-                            fontSize: 12.5, color: kMuted, height: 1.5),
+                            fontSize: 12.5, color: skin.muted, height: 1.5),
                       ),
                     ),
                   ],

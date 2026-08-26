@@ -1,12 +1,19 @@
 // AajooHomes mobile — typography helpers.
 //
-// Design-system pairing (matches the web + the new mobile design):
-//   Plus Jakarta Sans (display) → headings, hero copy, property titles, wordmark
+// Design-system pairing — the client's reference app:
+//   Poppins (display) → headings, hero copy, property titles, wordmark
 //   Manrope (body)    → all body, UI text, captions, prices, meta
 //
+// The display face was Plus Jakarta Sans. The reference app the client shared
+// sets Poppins for display and Manrope for body (its core/app_theme.dart), and
+// asked for its typography rather than ours; Manrope already matched, so only
+// the display face moved. Both are geometric sans, so this is a change of
+// voice, not of metrics — nothing reflows.
+//
 // The helper NAMES (fraunces/inter/interTextTheme) are kept for backwards-compat
-// across the app; only the underlying faces changed. BR-2 pairs Plus Jakarta
-// Sans for display with Manrope for UI.
+// across the ~130 files that call them; only the underlying faces change, so
+// the whole app re-sets from this one file rather than 130 edits that can
+// drift.
 //
 // THE FONTS ARE BUNDLED, NOT DOWNLOADED.
 //
@@ -18,30 +25,35 @@
 // "Failed host lookup: fonts.gstatic.com" exceptions. On older handsets with
 // stale root certificates the request can fail outright, every time.
 //
-// Both families now ship inside the APK (~340 KB for the pair) and are chosen
+// Both families now ship inside the APK (~800 KB all told) and are chosen
 // with a weight axis, so typography is identical everywhere and needs nothing
-// from the network. They are variable fonts, hence `fontVariations`: naming a
-// weight alone would render every style at the default instance.
+// from the network. Manrope is a variable font, hence `fontVariations` on the
+// body helper: naming a weight alone would render every style at the default
+// instance. Poppins is static and takes plain `fontWeight` — see below.
 import 'package:flutter/material.dart';
 
-const String _display = 'PlusJakartaSans';
+const String _display = 'Poppins';
 const String _body = 'Manrope';
 
 /// The `wght` axis value for a Flutter FontWeight (w400 → 400).
 List<FontVariation> _wght(FontWeight w) => [FontVariation('wght', w.value.toDouble())];
 
-/// Plus Jakarta Sans — headings and brand text. (Helper name kept for compat.)
+/// Poppins — headings and brand text. (Helper name kept for compat.)
+///
+/// Poppins ships as static weights, so there is no `fontVariations` here:
+/// naming a wght axis on a font that has none is silently ignored, and the
+/// weight has to come from `fontWeight` picking the registered file. Passing
+/// both is how you end up with every heading rendering at 400.
 TextStyle fraunces({
   double? fontSize,
   FontWeight fontWeight = FontWeight.w600,
   Color? color,
-  double letterSpacing = -0.02,
+  double letterSpacing = 0,
   double? height,
   FontStyle? fontStyle,
 }) {
   return TextStyle(
     fontFamily: _display,
-    fontVariations: _wght(fontWeight),
     fontSize: fontSize,
     fontWeight: fontWeight,
     color: color,

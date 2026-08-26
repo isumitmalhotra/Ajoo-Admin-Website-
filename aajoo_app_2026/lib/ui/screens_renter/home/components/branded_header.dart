@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/design/aajoo_skin.dart';
 import 'package:rent_home/utils/fonts.dart';
 
 /// AajooHomes branded header — matches the POC mobile header.
@@ -23,7 +24,7 @@ class BrandedHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return LuxBuilder(builder: (context, skin) => Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       child: Row(
         children: [
@@ -36,15 +37,17 @@ class BrandedHeader extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _LogoMark(),
+                const _LogoMark(),
                 const SizedBox(width: 10),
-                // "aajoo" (indigo) + "homes" (clay italic) — POC pairing.
+                // "aajoo" + "homes" italic. Both take the skin — the wordmark
+                // sat in Charcoal Navy over the LUX header, which is nearly
+                // the header's own colour and read as a smudge.
                 RichText(
                   text: TextSpan(
                     style: fraunces(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: kInk,
+                      color: skin.ink,
                     ),
                     children: [
                       const TextSpan(text: 'aajoo'),
@@ -54,7 +57,7 @@ class BrandedHeader extends StatelessWidget {
                           fontSize: 18,
                           fontWeight: FontWeight.w400,
                           fontStyle: FontStyle.italic,
-                          color: kClay,
+                          color: skin.accent,
                         ),
                       ),
                     ],
@@ -68,29 +71,35 @@ class BrandedHeader extends StatelessWidget {
             icon: Icons.favorite_outline,
             onTap: onWishlistTap,
             tooltip: 'Wishlist',
+            skin: skin,
           ),
           const SizedBox(width: 8),
           _HeaderIconButton(
             icon: Icons.notifications_none,
             onTap: onNotificationsTap,
             tooltip: 'Notifications',
+            skin: skin,
           ),
         ],
       ),
-    );
+    ));
   }
 }
 
 /// 34×34 indigo-gradient square with "A" — matches POC exactly.
 class _LogoMark extends StatelessWidget {
+  const _LogoMark();
+
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return LuxBuilder(builder: (context, skin) => Container(
       width: 34,
       height: 34,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [kIndigo, kIndigo600],
+        gradient: LinearGradient(
+          colors: skin.isLux
+              ? const [Color(0xFFD4AF37), Color(0xFFB8860B)]
+              : const [kIndigo, kIndigo600],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -109,12 +118,12 @@ class _LogoMark extends StatelessWidget {
           style: fraunces(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: kCream,
+            color: skin.isLux ? skin.onPrimary : kCream,
             letterSpacing: -0.04,
           ),
         ),
       ),
-    );
+    ));
   }
 }
 
@@ -123,9 +132,11 @@ class _HeaderIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
   final String? tooltip;
+  final AajooSkin skin;
 
   const _HeaderIconButton({
     required this.icon,
+    required this.skin,
     this.onTap,
     this.tooltip,
   });
@@ -141,11 +152,11 @@ class _HeaderIconButton extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: kCream,
+            color: skin.isLux ? skin.surface : kCream,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: kLine),
+            border: Border.all(color: skin.line),
           ),
-          child: Icon(icon, color: kInk, size: 20),
+          child: Icon(icon, color: skin.ink, size: 20),
         ),
       ),
     );

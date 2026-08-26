@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/design/aajoo_skin.dart';
 import 'package:rent_home/utils/fonts.dart';
 
 /// AajooHomes category circles — re-skinned to the new teal/orange design
@@ -97,39 +98,50 @@ class _CategoryCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: SizedBox(
-        width: 68,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: isActive ? kIndigo : kIndigo50,
-                shape: BoxShape.circle,
-                border: Border.all(
-                    color: isActive ? kIndigo : kLine, width: 1),
+    // The row stayed teal-on-white in LUX while the sheet under it went black,
+    // so the categories were the brightest thing on a near-black screen. It
+    // takes the skin now: gold on the faint card lift, the same way the site
+    // dresses its own type pills.
+    return LuxBuilder(
+      builder: (context, skin) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: SizedBox(
+          width: 68,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: isActive ? skin.primary : skin.primaryWash,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                      color: isActive ? skin.primary : skin.line, width: 1),
+                ),
+                child: Icon(icon,
+                    size: 24,
+                    color: isActive
+                        ? skin.onPrimary
+                        : (skin.isLux ? skin.primary : kIndigo600)),
               ),
-              child: Icon(icon,
-                  size: 24, color: isActive ? Colors.white : kIndigo600),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: inter(
-                fontSize: 11.5,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                color: isActive ? kInk : kInk2,
+              const SizedBox(height: 6),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: inter(
+                  fontSize: 11.5,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                  color: isActive
+                      ? skin.ink
+                      : (skin.isLux ? skin.muted : kInk2),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

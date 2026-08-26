@@ -30,6 +30,7 @@ class HomeSearchController extends GetxController {
     int? guests,
     String? from,
     String? to,
+    int? categoryId,
   }) async {
     isLoading.value = true;
     try {
@@ -41,6 +42,7 @@ class HomeSearchController extends GetxController {
         guests: guests,
         from: from,
         to: to,
+        categoryId: categoryId,
       );
       preBookingResponse.value = response;
     } catch (err) {

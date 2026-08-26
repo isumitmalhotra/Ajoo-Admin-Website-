@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'package:rent_home/ui/design/aajoo_skin.dart';
+import 'package:rent_home/ui/screens_renter/home/map/lux_map_style.dart';
+import 'package:rent_home/utils/lux_mode.dart';
 import 'dart:ui' as ui;
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -594,19 +597,33 @@ class _MapScreenState extends State<MapScreen> {
   /// the same coordinates. If the fix fails — permission revoked mid-session,
   /// GPS off — it falls back to the last known position instead of doing
   /// nothing.
+  /// Go back to where the guest actually is — and show what is there.
+  ///
+  /// This used to move the camera and stop. The listings underneath still
+  /// belonged to wherever the map had been panned to, so after tapping it the
+  /// sheet said "100 homes in Mountain View" while the map was over Kharar,
+  /// and every card in the rails was for the old place. Re-centring is a
+  /// change of where you are looking, so it re-asks.
   Future<void> _recenter() async {
     LatLng target = mapController.currentPosition.value;
+    bool moved = false;
     try {
       final pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       ).timeout(const Duration(seconds: 6));
       target = LatLng(pos.latitude, pos.longitude);
-      mapController.currentPosition.value = target;
+      moved = true;
     } catch (_) {
-      // keep the last known position
+      // No fix in six seconds: keep the last known position and still
+      // re-centre on it, which is what the guest asked for.
     }
 
     await _moveCamera(target);
+    if (moved) {
+      // fetchPropertiesAt writes currentPosition, refreshes the place name and
+      // re-runs the search — the same path a destination search takes.
+      await mapController.fetchPropertiesAt(target);
+    }
   }
 
   @override
@@ -630,23 +647,51 @@ class _MapScreenState extends State<MapScreen> {
                 width: double.infinity,
                 child: mapController.isLoading.value
                     ? Center(
-                        child: Shimmer.fromColors(
-                          baseColor: Colors.grey[300]!,
-                          highlightColor: Colors.grey[50]!,
-                          child: Container(
-                            height: double.infinity,
-                            width: double.infinity,
-                            color: Colors.grey[300],
+                        // A light-grey shimmer over the whole viewport is a
+                        // white flash on a LUX screen, every time the map
+                        // reloads. Same steps the site uses for its LUXE
+                        // skeletons (#141416 → #1D1D20).
+                        child: ValueListenableBuilder<bool>(
+                          valueListenable: LuxMode.instance.on,
+                          builder: (context, lux, _) => Shimmer.fromColors(
+                            baseColor: lux
+                                ? const Color(0xFF141416)
+                                : Colors.grey[300]!,
+                            highlightColor: lux
+                                ? const Color(0xFF1D1D20)
+                                : Colors.grey[50]!,
+                            child: Container(
+                              height: double.infinity,
+                              width: double.infinity,
+                              color: lux
+                                  ? const Color(0xFF141416)
+                                  : Colors.grey[300],
+                            ),
                           ),
                         ),
                       )
                     : Stack(
                         children: [
-                          GoogleMap(
+                          // The map is the biggest single surface on the home
+                          // screen, and in LUX it stayed a daylight street map
+                          // behind a black sheet — the loudest part of "LUX
+                          // changed nothing". Rebuilt on the preference so the
+                          // cartography follows the mode, the same way the
+                          // site filters its own tiles. Rebuilding here swaps
+                          // a parameter on the existing platform view; it does
+                          // not recreate the map or move the camera.
+                          ValueListenableBuilder<bool>(
+                            valueListenable: LuxMode.instance.on,
+                            builder: (context, lux, _) => GoogleMap(
+                            style: lux ? luxMapStyle : null,
                             zoomControlsEnabled: false,
                             indoorViewEnabled: true,
                             compassEnabled: false,
-                            trafficEnabled: true,
+                            // Traffic is drawn by the SDK on top of the style,
+                            // so on the LUX map its greens and reds are the
+                            // brightest thing on a near-black screen — the one
+                            // part of the mode the style array cannot reach.
+                            trafficEnabled: !lux,
                             buildingsEnabled: true,
                             myLocationButtonEnabled: false,
                             myLocationEnabled: true,
@@ -696,7 +741,7 @@ class _MapScreenState extends State<MapScreen> {
                             onCameraIdle: _onCameraIdle,
                             markers: markers.values.toSet(),
                             padding: const EdgeInsets.only(top: 50),
-                          ),
+                          )),
                           // Top-right, not bottom-right. This screen is only
                           // ever shown inside the renter home, which lays a
                           // draggable "N homes near you" sheet over the lower
@@ -752,24 +797,33 @@ class _RecenterButtonState extends State<_RecenterButton> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      shape: const CircleBorder(),
-      elevation: 4,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: _run,
-        child: SizedBox(
-          height: 46,
-          width: 46,
-          child: Center(
-            child: _busy
-                ? const SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.my_location, size: 22),
+    return LuxBuilder(
+      builder: (context, skin) => Tooltip(
+        message: 'Show stays where I am',
+        child: Material(
+          color: skin.isLux ? skin.surface : Colors.white,
+          shape: CircleBorder(
+              side: BorderSide(color: skin.isLux ? skin.line : kLine)),
+          elevation: skin.isLux ? 0 : 4,
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: _run,
+            child: SizedBox(
+              height: 46,
+              width: 46,
+              child: Center(
+                child: _busy
+                    ? SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: skin.primary),
+                      )
+                    : Icon(Icons.my_location,
+                        size: 22,
+                        color: skin.isLux ? skin.primary : kInk),
+              ),
+            ),
           ),
         ),
       ),

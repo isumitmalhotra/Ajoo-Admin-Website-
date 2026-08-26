@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/design/aajoo_skin.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/ui/screens_renter/home/homescreen.dart';
 import 'package:rent_home/ui/screens_renter/dashboard/dashboard_screen.dart';
@@ -62,17 +63,22 @@ class _GuestShellState extends State<GuestShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: kscaffoldColor,
+    // The tab bar is the one surface that is on screen no matter which tab you
+    // are on, so leaving it white was the last thing that gave LUX away: a
+    // bright strip pinned to the bottom of an otherwise black screen. It takes
+    // the skin like everything else, and its destinations are built rather
+    // than const so the icons can follow the mode.
+    return LuxBuilder(builder: (context, skin) => Scaffold(
+      backgroundColor: skin.page,
       body: GuestShellScope(
         goToTab: _goToTab,
         child: IndexedStack(index: _index, children: _screens),
       ),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: kLine)),
-          boxShadow: [
+        decoration: BoxDecoration(
+          color: skin.isLux ? skin.sheet : Colors.white,
+          border: Border(top: BorderSide(color: skin.line)),
+          boxShadow: const [
             BoxShadow(
                 color: Color(0x140F172A), blurRadius: 14, offset: Offset(0, -3)),
           ],
@@ -84,42 +90,44 @@ class _GuestShellState extends State<GuestShell> {
                   fontWeight: states.contains(WidgetState.selected)
                       ? FontWeight.w700
                       : FontWeight.w500,
-                  color: states.contains(WidgetState.selected) ? kInk : kMuted,
+                  color: states.contains(WidgetState.selected)
+                      ? skin.ink
+                      : skin.muted,
                 )),
           ),
           child: NavigationBar(
             selectedIndex: _index,
             onDestinationSelected: (i) => setState(() => _index = i),
-            backgroundColor: Colors.white,
+            backgroundColor: skin.isLux ? skin.sheet : Colors.white,
             elevation: 0,
             height: 64,
-            indicatorColor: kIndigo50,
+            indicatorColor: skin.primaryWash,
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            destinations: const [
-              NavigationDestination(
-                  icon: Icon(Icons.home_outlined, color: kMuted),
-                  selectedIcon: Icon(Icons.home_rounded, color: kIndigo),
-                  label: 'Home'),
-              NavigationDestination(
-                  icon: Icon(Icons.grid_view_outlined, color: kMuted),
-                  selectedIcon: Icon(Icons.grid_view_rounded, color: kIndigo),
-                  label: 'Dashboard'),
-              NavigationDestination(
-                  icon: Icon(Icons.calendar_today_outlined, color: kMuted),
-                  selectedIcon: Icon(Icons.calendar_today_rounded, color: kIndigo),
-                  label: 'Bookings'),
-              NavigationDestination(
-                  icon: Icon(Icons.favorite_border, color: kMuted),
-                  selectedIcon: Icon(Icons.favorite_rounded, color: kIndigo),
-                  label: 'Saved'),
-              NavigationDestination(
-                  icon: Icon(Icons.person_outline, color: kMuted),
-                  selectedIcon: Icon(Icons.person_rounded, color: kIndigo),
-                  label: 'Profile'),
+            destinations: [
+              _tab(skin, Icons.home_outlined, Icons.home_rounded, 'Home'),
+              _tab(skin, Icons.grid_view_outlined, Icons.grid_view_rounded,
+                  'Dashboard'),
+              _tab(skin, Icons.calendar_today_outlined,
+                  Icons.calendar_today_rounded, 'Bookings'),
+              _tab(skin, Icons.favorite_border, Icons.favorite_rounded,
+                  'Saved'),
+              _tab(skin, Icons.person_outline, Icons.person_rounded, 'Profile'),
             ],
           ),
         ),
       ),
-    );
+    ));
   }
+
+  NavigationDestination _tab(
+    AajooSkin skin,
+    IconData icon,
+    IconData selected,
+    String label,
+  ) =>
+      NavigationDestination(
+        icon: Icon(icon, color: skin.muted),
+        selectedIcon: Icon(selected, color: skin.primary),
+        label: label,
+      );
 }

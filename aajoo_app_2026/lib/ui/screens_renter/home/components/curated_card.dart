@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/design/aajoo_skin.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/service/bookmark_service.dart';
@@ -36,18 +37,19 @@ class CuratedCard extends StatelessWidget {
     final location = property.propertyCity.trim().isNotEmpty
         ? property.propertyCity
         : property.propertyAddress;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          decoration: BoxDecoration(
-            color: kSurface,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: kLine),
-            boxShadow: kSoftShadow,
-          ),
+    // The card is the surface a guest spends most of their time looking at,
+    // so it is the one that most gave away that LUX had not really happened:
+    // a wall of white cards on a black sheet. It resolves the skin now — in
+    // LUX that is the faint lift of light over the ground with a gold
+    // hairline that the site uses, not a painted panel.
+    return LuxBuilder(
+      builder: (context, skin) => Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            decoration: skin.card(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -65,15 +67,15 @@ class CuratedCard extends StatelessWidget {
                           ? Image.network(property.coverImage!,
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => Container(
-                                  color: kSand,
-                                  child: const Icon(
+                                  color: skin.surfaceHigh,
+                                  child: Icon(
                                       Icons.image_not_supported_outlined,
-                                      color: kMuted,
+                                      color: skin.muted,
                                       size: 30)))
                           : Container(
-                              color: kSand,
-                              child: const Icon(Icons.home_outlined,
-                                  color: kMuted, size: 30)),
+                              color: skin.surfaceHigh,
+                              child: Icon(Icons.home_outlined,
+                                  color: skin.muted, size: 30)),
                     ),
                   ),
                   // Verified badge (dark pill, top-left)
@@ -133,7 +135,9 @@ class CuratedCard extends StatelessWidget {
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.92),
+                              color: skin.isLux
+                                  ? const Color(0xD90E0E10)
+                                  : Colors.white.withOpacity(0.92),
                               shape: BoxShape.circle),
                           // Filled when the stay IS saved. This was a constant
                           // outline heart, so a saved stay looked unsaved
@@ -151,7 +155,9 @@ class CuratedCard extends StatelessWidget {
                                     ? Icons.favorite
                                     : Icons.favorite_border,
                                 size: 16,
-                                color: saved ? kClay : kInk,
+                                color: saved
+                                    ? skin.accent
+                                    : (skin.isLux ? skin.ink : kInk),
                               );
                             },
                           ),
@@ -168,14 +174,14 @@ class CuratedCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(children: [
-                      const Icon(Icons.location_on_outlined,
-                          size: 12, color: kMuted),
+                      Icon(Icons.location_on_outlined,
+                          size: 12, color: skin.muted),
                       const SizedBox(width: 3),
                       Expanded(
                         child: Text(location,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: inter(fontSize: 12, color: kMuted)),
+                            style: inter(fontSize: 12, color: skin.muted)),
                       ),
                     ]),
                     const SizedBox(height: 4),
@@ -185,7 +191,7 @@ class CuratedCard extends StatelessWidget {
                         style: fraunces(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: kInk)),
+                            color: skin.ink)),
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -194,23 +200,24 @@ class CuratedCard extends StatelessWidget {
                         // it. This showed a hardcoded 4.5 on every card.
                         if (property.rating != null)
                           Row(children: [
-                            const Icon(Icons.star_rounded,
-                                size: 14, color: kClay),
+                            Icon(Icons.star_rounded,
+                                size: 14, color: skin.accent),
                             const SizedBox(width: 3),
                             Text(property.ratingLabel,
                                 style: inter(
                                     fontSize: 12.5,
-                                    fontWeight: FontWeight.w700)),
+                                    fontWeight: FontWeight.w700,
+                                    color: skin.ink)),
                             const SizedBox(width: 3),
                             Text('(${property.reviewCount})',
-                                style: inter(fontSize: 11, color: kMuted)),
+                                style: inter(fontSize: 11, color: skin.muted)),
                           ])
                         else
                           Text('New',
                               style: inter(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w700,
-                                  color: kMuted)),
+                                  color: skin.muted)),
                         RichText(
                           text: TextSpan(children: [
                             TextSpan(
@@ -218,10 +225,10 @@ class CuratedCard extends StatelessWidget {
                                 style: fraunces(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,
-                                    color: kInk)),
+                                    color: skin.ink)),
                             TextSpan(
                                 text: '/night',
-                                style: inter(fontSize: 11, color: kMuted)),
+                                style: inter(fontSize: 11, color: skin.muted)),
                           ]),
                         ),
                       ],
@@ -230,6 +237,7 @@ class CuratedCard extends StatelessWidget {
                 ),
               ),
             ],
+            ),
           ),
         ),
       ),

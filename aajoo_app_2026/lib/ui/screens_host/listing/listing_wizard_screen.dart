@@ -18,6 +18,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/screens_renter/home/components/lux_theme.dart';
 import 'package:rent_home/models/listing_schema.dart';
 import 'package:rent_home/ui/responsive.dart';
 import 'package:rent_home/ui/screens_host/listing/listing_wizard_controller.dart';
@@ -1372,7 +1373,7 @@ class _LuxeCard extends StatelessWidget {
               ? const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF1C1813), Color(0xFF12100C)],
+                  colors: [Lux.surface, Lux.bg],
                 )
               : null,
           color: on ? null : kSurface,
@@ -1405,7 +1406,7 @@ class _LuxeCard extends StatelessWidget {
                       style: fraunces(
                           fontSize: 15.5,
                           fontWeight: FontWeight.w700,
-                          color: on ? const Color(0xFFF5EFE2) : kInk)),
+                          color: on ? Lux.ink : kInk)),
                   const SizedBox(height: 2),
                   Text(
                     on
@@ -1414,7 +1415,7 @@ class _LuxeCard extends StatelessWidget {
                             'and prime locations.',
                     style: inter(
                         fontSize: 12,
-                        color: on ? const Color(0xFF9C9280) : kMuted,
+                        color: on ? Lux.muted : kMuted,
                         height: 1.4),
                   ),
                 ],

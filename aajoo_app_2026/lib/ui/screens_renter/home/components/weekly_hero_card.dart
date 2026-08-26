@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/design/aajoo_skin.dart';
 import 'package:rent_home/utils/fonts.dart';
 
 /// AajooHomes home hero card.
@@ -70,8 +71,11 @@ class WeeklyHeroCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final card = _card();
+  Widget build(BuildContext context) =>
+      LuxBuilder(builder: (context, skin) => _build(context, skin));
+
+  Widget _build(BuildContext context, AajooSkin skin) {
+    final card = _card(skin);
     // With no results, tapping should widen the search — expanding a sheet
     // that has nothing in it is the one thing that definitely does not help.
     final action = homesNearby == 0 ? (onWiden ?? onTap) : onTap;
@@ -96,13 +100,20 @@ class WeeklyHeroCard extends StatelessWidget {
     );
   }
 
-  Widget _card() {
+  /// The card is a filled panel, so in LUX it cannot simply become another
+  /// black rectangle on a black sheet — it would vanish. It takes the gold
+  /// ramp instead, with near-black type on it, which is how the site paints
+  /// its own filled buttons in LUXE (`[data-lux] .btn-primary`).
+  Widget _card(AajooSkin skin) {
+    final onCard = skin.isLux ? skin.onPrimary : kCream;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [kIndigo, kIndigo600],
+        gradient: LinearGradient(
+          colors: skin.isLux
+              ? const [Color(0xFFD4AF37), Color(0xFFB8860B)]
+              : const [kIndigo, kIndigo600],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -124,7 +135,7 @@ class WeeklyHeroCard extends StatelessWidget {
             style: inter(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: kCream.withOpacity(0.7),
+              color: onCard.withOpacity(0.7),
               letterSpacing: 1.5,
             ),
           ),
@@ -150,7 +161,7 @@ class WeeklyHeroCard extends StatelessWidget {
             style: fraunces(
               fontSize: 22,
               fontWeight: FontWeight.w500,
-              color: kCream,
+              color: onCard,
               height: 1.2,
             ),
           ),
@@ -163,7 +174,7 @@ class WeeklyHeroCard extends StatelessWidget {
             style: fraunces(
               fontSize: 22,
               fontWeight: FontWeight.w500,
-              color: kCream,
+              color: onCard,
               height: 1.2,
             ),
           ),
@@ -174,7 +185,7 @@ class WeeklyHeroCard extends StatelessWidget {
               Icon(
                 Icons.north_east,
                 size: 16,
-                color: kCream.withOpacity(0.85),
+                color: onCard.withOpacity(0.85),
               ),
               const SizedBox(width: 6),
               Expanded(
@@ -190,7 +201,7 @@ class WeeklyHeroCard extends StatelessWidget {
                           : 'Showing stays around $region',
                   style: inter(
                     fontSize: 13,
-                    color: kCream.withOpacity(0.85),
+                    color: onCard.withOpacity(0.85),
                   ),
                 ),
               ),

@@ -5,6 +5,8 @@ import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/design/aajoo_skin.dart';
+import 'package:rent_home/utils/lux_mode.dart';
 import 'package:rent_home/controller/common_controller.dart';
 import 'package:rent_home/ui/screens_renter/home/map/map_controller.dart';
 import 'package:rent_home/controller/search_controller.dart';
@@ -36,6 +38,8 @@ class PreBookingScreen extends StatefulWidget {
     this.searchPlace,
     this.searchCenter,
     this.searchRadiusKm = 50,
+    this.categoryId,
+    this.categoryTitle,
   });
 
   /// Name of the place searched, for the header. Null = the old behaviour,
@@ -47,6 +51,18 @@ class PreBookingScreen extends StatefulWidget {
 
   /// How far around [searchCenter] to look.
   final int searchRadiusKm;
+
+  /// Open already narrowed to one property type.
+  ///
+  /// The home screen's category row used to call
+  /// `mapController.getProperties(category: id)` and show a snackbar. That
+  /// re-filtered two rails most of the way down the page — well below the
+  /// fold, under the trust bar and the editor's picks — so from where the
+  /// guest was standing, tapping "Villas" printed "Showing Villas" and
+  /// changed nothing they could see. The website sends the same tap to a
+  /// filtered search page; so does this now.
+  final int? categoryId;
+  final String? categoryTitle;
 
   @override
   State<PreBookingScreen> createState() => _PreBookingScreenState();
@@ -62,7 +78,14 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
   // Add these variables for search functionality
   List<SearchPropertyModel> _filteredProperties = [];
   bool _isSearching = false;
-  bool isLuxury = false; // Add luxury state
+  /// Mirrors the one preference, rather than being a second copy of it.
+  ///
+  /// This screen used to start at `false` whatever the guest had chosen on the
+  /// home screen, so walking from a LUX home into Pre-Booking landed you back
+  /// in the standard skin with the standard listings — the mode was per-screen
+  /// and lasted exactly as long as the screen did. It now seeds from LuxMode
+  /// and follows it, so the switch works from either end.
+  bool isLuxury = LuxMode.instance.isOn;
 
   // Sort & Filter, matching the website's Explore sidebar.
   //
@@ -197,6 +220,20 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
 
   int _selectedHotelIndex = -1;
 
+  /// The category the API is filtering on, or null for everything.
+  int? _activeCategoryId;
+
+  /// Which pill to light up, resolved by TITLE rather than by the index the
+  /// caller happened to pass — the screen can be opened with a category name
+  /// before the category list has loaded, and the two orders need not agree.
+  int _pillIndex(List<dynamic> cats) {
+    if (_selectedCategoryTitle.isEmpty) return 0;
+    final i = cats.indexWhere((c) =>
+        c.catTitle.toString().toLowerCase() ==
+        _selectedCategoryTitle.toLowerCase());
+    return i < 0 ? 0 : i + 1;
+  }
+
   // Add method to filter properties by category
   String _sortOption = 'default';
 
@@ -276,26 +313,14 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
           }).toList();
         }
 
-        // Apply category filter if a category is selected
-        if (_selectedHotelIndex != -1) {
-          final categoryName = _getCategoryNameByIndex(_selectedHotelIndex);
-          final categoryLower = categoryName.toLowerCase();
-
-          baseResults = baseResults.where((property) {
-            if (property.categoryTitles != null) {
-              if (property.categoryTitles is String) {
-                return property.categoryTitles
-                    .toString()
-                    .toLowerCase()
-                    .contains(categoryLower);
-              } else if (property.categoryTitles is List) {
-                return (property.categoryTitles as List).any((cat) =>
-                    cat.toString().toLowerCase().contains(categoryLower));
-              }
-            }
-            return false;
-          }).toList();
-        }
+        // NO category sieve here.
+        //
+        // The API narrows by category now (see _loadResults), so what is in
+        // `preBookingResponse` is already the chosen type. Filtering it again
+        // on `category_titles` would silently drop the matches: a row can come
+        // back from the type filter with its titles unpopulated, and this
+        // returned `false` for exactly that case — so the server would answer
+        // with twelve villas and the screen would show none of them.
 
         _filteredProperties = _sortProperties(_filterProperties(baseResults));
       }
@@ -309,8 +334,6 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
   /// hardcoded tile row AND with tbl_categories, and did not. The pills carry
   /// the real title now, so there is nothing to keep in step.
   String _selectedCategoryTitle = '';
-
-  String _getCategoryNameByIndex(int index) => _selectedCategoryTitle;
 
   /// Open a stay from an area rail, carrying the dates chosen up here.
   ///
@@ -811,9 +834,26 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
 
   LatLng currentLocation = const LatLng(28.495000, 77.40905397);
 
+  /// Re-skin and re-fetch when the preference changes anywhere in the app.
+  void _onLuxChanged() {
+    final on = LuxMode.instance.isOn;
+    if (!mounted || on == isLuxury) return;
+    setState(() => isLuxury = on);
+    _loadResults(isLuxury: on);
+    _areaRails.load(isLuxury: on);
+  }
+
   @override
   void initState() {
     super.initState();
+    // Opened from a category tap: show that pill as chosen, and ask the API
+    // for that type rather than filtering whatever happened to come back.
+    if ((widget.categoryTitle ?? '').isNotEmpty) {
+      _selectedCategoryTitle = widget.categoryTitle!;
+      _selectedHotelIndex = 0;
+      _activeCategoryId = widget.categoryId;
+    }
+    LuxMode.instance.on.addListener(_onLuxChanged);
     _areaRails.load(isLuxury: isLuxury);
     currentLocation = widget.searchCenter ?? mapController.currentPosition.value;
 
@@ -943,13 +983,91 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
   /// one it keeps the previous behaviour. Before this the request sent empty
   /// coordinates either way, so the heading named a place the results had
   /// nothing to do with.
-  Future<void> _loadResults({bool? isLuxury}) {
+  /// Nothing matched — said in terms of what the guest actually chose.
+  ///
+  /// "No PreBooking Properties Found" told them nothing: not which of their
+  /// four possible narrowings emptied the list, and not how to undo it.
+  Widget _noResults() {
+    final skin = AajooSkin.of(isLuxury);
+    final narrowings = <String>[
+      if (_selectedCategoryTitle.isNotEmpty) _selectedCategoryTitle,
+      if (_queryController.text.trim().isNotEmpty)
+        '"${_queryController.text.trim()}"',
+      if (_priceMin != null || _priceMax != null) 'your price range',
+      if (_minRating > 0) '${_minRating.toStringAsFixed(1)}★ and above',
+      if (isLuxury) 'LUX',
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+      child: Column(
+        children: [
+          Icon(Icons.search_off_rounded, size: 56, color: skin.muted),
+          const SizedBox(height: 14),
+          Text(
+            narrowings.isEmpty
+                ? 'No stays here yet'
+                : 'No stays match ${narrowings.join(' + ')}',
+            textAlign: TextAlign.center,
+            style: fraunces(
+                fontSize: 17, fontWeight: FontWeight.w600, color: skin.ink),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            narrowings.isEmpty
+                ? 'Try another destination, or widen the dates.'
+                : 'Try a wider search, or clear what you have narrowed by.',
+            textAlign: TextAlign.center,
+            style: inter(fontSize: 13.5, color: skin.muted, height: 1.5),
+          ),
+          if (narrowings.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _selectedHotelIndex = -1;
+                  _selectedCategoryTitle = '';
+                  _activeCategoryId = null;
+                  _queryController.clear();
+                  _priceMin = null;
+                  _priceMax = null;
+                  _minRating = 0;
+                  _sortOption = 'default';
+                  _isSearching = false;
+                  _filteredProperties.clear();
+                });
+                if (isLuxury) LuxMode.instance.set(false);
+                _loadResults(isLuxury: false, categoryId: null);
+              },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: skin.primary,
+                side: BorderSide(color: skin.primary),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              icon: const Icon(Icons.refresh_rounded, size: 17),
+              label: Text('Clear everything',
+                  style: inter(fontSize: 14, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _loadResults({bool? isLuxury, int? categoryId}) {
     final centre = widget.searchCenter;
     return searchController.getPreBooking(
       isLuxury: isLuxury ?? this.isLuxury,
       latitude: centre?.latitude,
       longitude: centre?.longitude,
       radiusKm: widget.searchRadiusKm,
+      // The API narrows by type now, so the list that comes back IS the
+      // filtered list. `_activeCategoryId` is the pill's own id, which is why
+      // changing the pill re-asks rather than sieving what is already here.
+      categoryId: categoryId ?? _activeCategoryId,
       // Narrow by the stay the guest actually asked for. Without these the
       // list showed places already booked for those nights, and places too
       // small for the party, and only refused at checkout.
@@ -961,6 +1079,7 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
 
   @override
   void dispose() {
+    LuxMode.instance.on.removeListener(_onLuxChanged);
     _queryController.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -1043,7 +1162,7 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
               height: 42,
               width: 96,
               onTap: () => _showLuxuryModeDialog(
-                  context, isLuxury, (val) => setState(() => isLuxury = val)),
+                  context, isLuxury, (val) => LuxMode.instance.set(val)),
             ),
           ),
         ],
@@ -1060,13 +1179,17 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                     itemCount: 10,
                     itemBuilder: (context, index) {
                       return Shimmer.fromColors(
-                        baseColor: Colors.grey[300]!,
-                        highlightColor: Colors.grey[100]!,
+                        baseColor: isLuxury
+                            ? const Color(0xFF141416)
+                            : Colors.grey[300]!,
+                        highlightColor: isLuxury
+                            ? const Color(0xFF1D1D20)
+                            : Colors.grey[100]!,
                         child: ListTile(
                           title: Container(
                             height: 100,
                             width: double.infinity,
-                            color: kCream,
+                            color: isLuxury ? Lux.surface : kCream,
                           ),
                         ),
                       );
@@ -1088,35 +1211,35 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                     itemCount: 7,
                     itemBuilder: (context, index) {
                       return Shimmer.fromColors(
-                        baseColor: Colors.grey[300]!,
-                        highlightColor: Colors.grey[100]!,
+                        baseColor: isLuxury
+                            ? const Color(0xFF141416)
+                            : Colors.grey[300]!,
+                        highlightColor: isLuxury
+                            ? const Color(0xFF1D1D20)
+                            : Colors.grey[100]!,
                         child: Card(
+                          color: isLuxury ? Lux.surface : kCream,
                           child: Container(
                             height: 400,
                             width: double.infinity,
-                            color: kCream,
+                            color: isLuxury ? Lux.surface : kCream,
                           ),
                         ),
                       );
                     },
                   );
                 }
-                if (searchController.preBookingResponse.value!.data.isEmpty) {
-                  return SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.8,
-                    width: double.infinity,
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-                        Icon(Icons.search_off, size: 100, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text("No PreBooking Properties Found",
-                            style: TextStyle(fontSize: 18, color: Colors.grey)),
-                      ],
-                    ),
-                  );
-                }
+                // NO early return for an empty result.
+                //
+                // This used to hand back a full-height "No PreBooking
+                // Properties Found" panel INSTEAD of the page, which took the
+                // category pills, the dates bar, the search field and the
+                // filter button off screen with it. So the one moment a guest
+                // most needs those controls — they have just narrowed to
+                // something with nothing in it — was the one moment the screen
+                // removed them, leaving Back as the only way out. The empty
+                // state is a message where the list goes, and the controls
+                // stay where they are.
 
                 final properties =
                     searchController.preBookingResponse.value!.data;
@@ -1151,12 +1274,24 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: TextCategoryPills(
                           categories: ['All', ...cats.map((c) => c.catTitle)],
-                          selectedIndex: _selectedHotelIndex + 1,
+                          selectedIndex: _pillIndex(cats),
                           onChanged: (i) {
-                            setState(() => _selectedHotelIndex = i - 1);
-                            _selectedCategoryTitle =
-                                i == 0 ? '' : cats[i - 1].catTitle;
-                            _searchProperties(_queryController.text);
+                            setState(() {
+                              _selectedHotelIndex = i - 1;
+                              _selectedCategoryTitle =
+                                  i == 0 ? '' : cats[i - 1].catTitle;
+                              _activeCategoryId =
+                                  i == 0 ? null : cats[i - 1].catId;
+                            });
+                            // Re-ask the API. Sieving the page we already hold
+                            // is what made this look broken: most of the
+                            // catalogue carries no category, so narrowing 60
+                            // rows by type returned nothing nearly every time.
+                            _loadResults().then((_) {
+                              if (mounted) {
+                                _searchProperties(_queryController.text);
+                              }
+                            });
                           },
                         ),
                       );
@@ -1378,14 +1513,21 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                             if (_selectedHotelIndex != -1)
                               _activeChip(
                                 icon: Icons.category_outlined,
-                                label: _getCategoryNameByIndex(
-                                    _selectedHotelIndex),
+                                label: _selectedCategoryTitle,
                                 onClear: () {
                                   setState(() {
                                     _selectedHotelIndex = -1;
                                     _selectedCategoryTitle = '';
+                                    _activeCategoryId = null;
                                   });
-                                  _searchProperties(_queryController.text);
+                                  // Clearing the type is a change of question,
+                                  // so it re-asks the API rather than sieving
+                                  // the narrowed page we are already holding.
+                                  _loadResults(categoryId: null).then((_) {
+                                    if (mounted) {
+                                      _searchProperties(_queryController.text);
+                                    }
+                                  });
                                 },
                               ),
                             if (isLuxury)
@@ -1393,11 +1535,7 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                                 icon: Icons.diamond_outlined,
                                 label: 'Luxury Mode',
                                 gold: true,
-                                onClear: () {
-                                  setState(() => isLuxury = false);
-                                  _loadResults(isLuxury: false);
-                                  _areaRails.load(isLuxury: false);
-                                },
+                                onClear: () => LuxMode.instance.set(false),
                               ),
                             if (_sortOption != 'default')
                               _activeChip(
@@ -1569,10 +1707,12 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                             ),
                           );
                         }),
+                      if (displayProperties.isEmpty)
+                        _noResults()
                       // One card per row on a phone, two or three across a
                       // tablet — the same cards, just not stretched to the
                       // full width of a 10" screen.
-                      if (context.gridColumns(target: 400, max: 3) == 1)
+                      else if (context.gridColumns(target: 400, max: 3) == 1)
                         ListView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
@@ -1592,12 +1732,12 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
                               SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount:
                                 context.gridColumns(target: 400, max: 3),
-                            mainAxisExtent: 330,
+                            mainAxisExtent: 340,
                           ),
                           itemBuilder: (context, index) {
                             final property = displayProperties[index];
                             return PreBookingCard(
-                                property: property, index: index);
+                                property: property, index: index, fill: true);
                           },
                         ),
                     ],

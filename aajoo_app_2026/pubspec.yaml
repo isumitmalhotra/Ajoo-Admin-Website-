@@ -143,6 +143,20 @@ flutter:
     - family: Manrope
       fonts:
         - asset: assets/google_fonts/Manrope-VF.ttf
+    # Poppins is the display face of the client's reference app. Static
+    # weights, not a variable file — Google Fonts does not publish a Poppins
+    # VF — so each weight is registered on its own and chosen with
+    # fontWeight rather than a wght axis.
+    - family: Poppins
+      fonts:
+        - asset: assets/google_fonts/Poppins-Regular.ttf
+          weight: 400
+        - asset: assets/google_fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: assets/google_fonts/Poppins-SemiBold.ttf
+          weight: 600
+        - asset: assets/google_fonts/Poppins-Bold.ttf
+          weight: 700
     - family: Mon
       fonts:
         - asset: assets/Montserrat-Regular.ttf

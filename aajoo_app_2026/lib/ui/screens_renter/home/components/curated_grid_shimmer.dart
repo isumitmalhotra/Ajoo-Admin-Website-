@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/design/aajoo_skin.dart';
+import 'package:rent_home/utils/lux_mode.dart';
 import 'package:shimmer/shimmer.dart';
 
 /// Skeleton placeholder for the "Curated for you" 2-col grid while the
@@ -16,9 +18,10 @@ class CuratedGridShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final skin = AajooSkin.of(LuxMode.instance.isOn);
     return Shimmer.fromColors(
-      baseColor: kLine,
-      highlightColor: kCream,
+      baseColor: skin.isLux ? const Color(0xFF141416) : kLine,
+      highlightColor: skin.isLux ? const Color(0xFF1D1D20) : kCream,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -49,11 +52,12 @@ class CuratedGridShimmer extends StatelessWidget {
   }
 
   static Widget _bar({required double width, required double height}) {
+    final skin = AajooSkin.of(LuxMode.instance.isOn);
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: kLine,
+        color: skin.isLux ? const Color(0xFF141416) : kLine,
         borderRadius: BorderRadius.circular(6),
       ),
     );
@@ -65,9 +69,10 @@ class _CardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final skin = AajooSkin.of(LuxMode.instance.isOn);
     return Container(
       decoration: BoxDecoration(
-        color: kSurface,
+        color: skin.isLux ? skin.surface : kSurface,
         borderRadius: BorderRadius.circular(18),
         boxShadow: kSoftShadow,
       ),
@@ -78,7 +83,8 @@ class _CardSkeleton extends StatelessWidget {
           // Photo block
           AspectRatio(
             aspectRatio: 16 / 11,
-            child: Container(color: kLine),
+            child: Container(
+                color: skin.isLux ? const Color(0xFF141416) : kLine),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),

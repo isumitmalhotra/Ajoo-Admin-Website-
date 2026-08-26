@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/design/aajoo_skin.dart';
+import 'package:rent_home/utils/lux_mode.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/models/properties_response_model.dart';
 import 'package:rent_home/service/pending_booking.dart';
@@ -124,6 +126,7 @@ class _ResumeBookingBannerState extends State<ResumeBookingBanner> {
 
   @override
   Widget build(BuildContext context) {
+    final skin = AajooSkin.of(LuxMode.instance.isOn);
     final intent = _intent;
     if (intent == null) return const SizedBox.shrink();
 
@@ -152,7 +155,7 @@ class _ResumeBookingBannerState extends State<ResumeBookingBanner> {
                     style: inter(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
-                        color: kInk)),
+                        color: skin.ink)),
                 const SizedBox(height: 2),
                 Text(
                   intent.propertyName.isEmpty
@@ -161,7 +164,7 @@ class _ResumeBookingBannerState extends State<ResumeBookingBanner> {
                           .join(' · '),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: inter(fontSize: 12, color: kMuted),
+                  style: inter(fontSize: 12, color: skin.muted),
                 ),
               ],
             ),
@@ -189,7 +192,7 @@ class _ResumeBookingBannerState extends State<ResumeBookingBanner> {
                       onPressed: _dismiss,
                       tooltip: 'Dismiss',
                       visualDensity: VisualDensity.compact,
-                      icon: const Icon(Icons.close, size: 16, color: kMuted),
+                      icon: Icon(Icons.close, size: 16, color: skin.muted),
                     ),
                   ],
                 ),

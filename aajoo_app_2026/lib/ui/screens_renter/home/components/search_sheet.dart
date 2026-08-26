@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/ui/design/aajoo_skin.dart';
+import 'package:rent_home/utils/lux_mode.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/ui/screens_renter/home/map/map_controller.dart';
 import 'dart:async';
@@ -429,14 +431,24 @@ class _SearchSheetState extends State<SearchSheet> {
 
   String get _whoLabel => _guests == 1 ? '1 guest' : '$_guests guests';
 
+  /// The sheet's colours for the mode that is on.
+  ///
+  /// This is a full-height modal, so in LUX it was a wall of Warm Ivory
+  /// dropped over a black screen every time someone tapped the search pill —
+  /// the mode's most jarring hole. Resolved once here rather than threaded
+  /// through the thirteen builders below.
+  AajooSkin get _skin => AajooSkin.of(LuxMode.instance.isOn);
+
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
+    final skin = _skin;
     return Container(
       constraints: BoxConstraints(maxHeight: media.size.height * 0.92),
-      decoration: const BoxDecoration(
-        color: kCream,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: skin.sheet,
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -453,7 +465,7 @@ class _SearchSheetState extends State<SearchSheet> {
                     style: fraunces(
                       fontSize: 28,
                       fontWeight: FontWeight.w500,
-                      color: kInk,
+                      color: skin.ink,
                       height: 1.15,
                     ),
                   ),
@@ -462,20 +474,20 @@ class _SearchSheetState extends State<SearchSheet> {
                   const SizedBox(height: 20),
                   _suggestedSection(),
                   const SizedBox(height: 20),
-                  const Divider(color: kLine, height: 1),
+                  Divider(color: skin.line, height: 1),
                   const SizedBox(height: 8),
                   _summaryRow(
                     label: 'When',
                     value: _whenLabel,
                     onTap: _pickDateRange,
                   ),
-                  const Divider(color: kLine, height: 1),
+                  Divider(color: skin.line, height: 1),
                   _summaryRow(
                     label: 'Who',
                     value: _whoLabel,
                     onTap: _pickGuests,
                   ),
-                  const Divider(color: kLine, height: 1),
+                  Divider(color: skin.line, height: 1),
                   const SizedBox(height: 8),
                   _advancedFilters(),
                 ],
@@ -489,12 +501,13 @@ class _SearchSheetState extends State<SearchSheet> {
   }
 
   Widget _header() {
+    final skin = _skin;
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 12, 12, 8),
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.close, color: kInk),
+            icon: Icon(Icons.close, color: skin.ink),
             onPressed: () => Navigator.of(context).pop(),
           ),
           Expanded(
@@ -504,7 +517,7 @@ class _SearchSheetState extends State<SearchSheet> {
               style: inter(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: kInk,
+                color: skin.ink,
               ),
             ),
           ),
@@ -515,10 +528,14 @@ class _SearchSheetState extends State<SearchSheet> {
   }
 
   Widget _whereInput() {
+    final skin = _skin;
     return Container(
       decoration: BoxDecoration(
-        color: kCream,
-        border: Border.all(color: kLine),
+        // The site gives its LUXE inputs their own step down from the sheet
+        // (#141416) with a gold rule, so the field reads as a well rather
+        // than a panel.
+        color: skin.isLux ? skin.surface : kCream,
+        border: Border.all(color: skin.line),
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -530,15 +547,17 @@ class _SearchSheetState extends State<SearchSheet> {
       ),
       child: TextField(
         controller: _whereController,
+        cursorColor: skin.primary,
         onChanged: (v) {
           setState(() => _whereQuery = v);
           _queryPlaces(v);
         },
-        style: inter(fontSize: 14, color: kInk, fontWeight: FontWeight.w500),
+        style:
+            inter(fontSize: 14, color: skin.ink, fontWeight: FontWeight.w500),
         decoration: InputDecoration(
           hintText: 'Search destinations',
-          hintStyle: inter(fontSize: 14, color: kMuted),
-          prefixIcon: const Icon(Icons.search, color: kInk, size: 20),
+          hintStyle: inter(fontSize: 14, color: skin.placeholder),
+          prefixIcon: Icon(Icons.search, color: skin.ink, size: 20),
           border: InputBorder.none,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
@@ -665,6 +684,7 @@ class _SearchSheetState extends State<SearchSheet> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
+    final skin = _skin;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -678,13 +698,18 @@ class _SearchSheetState extends State<SearchSheet> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: isSelected ? kIndigo : kSand,
+                  color: isSelected
+                      ? skin.primary
+                      : (skin.isLux ? skin.surface : kSand),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: isSelected ? kIndigo : kLine),
+                  border: Border.all(
+                      color: isSelected ? skin.primary : skin.line),
                 ),
                 child: Icon(
                   icon,
-                  color: isSelected ? kCream : kInk2,
+                  color: isSelected
+                      ? skin.onPrimary
+                      : (skin.isLux ? skin.muted : kInk2),
                   size: 22,
                 ),
               ),
@@ -700,7 +725,7 @@ class _SearchSheetState extends State<SearchSheet> {
                       style: inter(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: kInk,
+                        color: skin.ink,
                       ),
                     ),
                     if (subtitle.isNotEmpty) ...[
@@ -709,7 +734,7 @@ class _SearchSheetState extends State<SearchSheet> {
                         subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: inter(fontSize: 12, color: kMuted),
+                        style: inter(fontSize: 12, color: skin.muted),
                       ),
                     ],
                   ],
@@ -727,6 +752,7 @@ class _SearchSheetState extends State<SearchSheet> {
     required String value,
     required VoidCallback onTap,
   }) {
+    final skin = _skin;
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -739,16 +765,16 @@ class _SearchSheetState extends State<SearchSheet> {
                 style: inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
-                  color: kInk,
+                  color: skin.ink,
                 ),
               ),
             ),
             Text(
               value,
-              style: inter(fontSize: 14, color: kMuted),
+              style: inter(fontSize: 14, color: skin.muted),
             ),
             const SizedBox(width: 4),
-            const Icon(Icons.chevron_right, color: kMuted, size: 20),
+            Icon(Icons.chevron_right, color: skin.muted, size: 20),
           ],
         ),
       ),
@@ -756,6 +782,7 @@ class _SearchSheetState extends State<SearchSheet> {
   }
 
   Widget _advancedFilters() {
+    final skin = _skin;
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
@@ -768,11 +795,11 @@ class _SearchSheetState extends State<SearchSheet> {
           style: inter(
             fontSize: 15,
             fontWeight: FontWeight.w500,
-            color: kInk,
+            color: skin.ink,
           ),
         ),
-        iconColor: kInk,
-        collapsedIconColor: kInk,
+        iconColor: skin.ink,
+        collapsedIconColor: skin.ink,
         children: [
           _sliderBlock(
             label: 'Search radius',
@@ -881,10 +908,11 @@ class _SearchSheetState extends State<SearchSheet> {
   }
 
   Widget _bottomBar() {
+    final skin = _skin;
     return Container(
-      decoration: const BoxDecoration(
-        color: kCream,
-        border: Border(top: BorderSide(color: kLine, width: 1)),
+      decoration: BoxDecoration(
+        color: skin.sheet,
+        border: Border(top: BorderSide(color: skin.line, width: 1)),
       ),
       padding: EdgeInsets.fromLTRB(
         20,
@@ -896,13 +924,13 @@ class _SearchSheetState extends State<SearchSheet> {
         children: [
           TextButton(
             onPressed: _clearAll,
-            style: TextButton.styleFrom(foregroundColor: kInk),
+            style: TextButton.styleFrom(foregroundColor: skin.ink),
             child: Text(
               'Clear all',
               style: inter(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: kInk,
+                color: skin.ink,
                 // Add underline for visual cue without using a separate widget.
               ).copyWith(decoration: TextDecoration.underline),
             ),
@@ -910,26 +938,30 @@ class _SearchSheetState extends State<SearchSheet> {
           const Spacer(),
           ElevatedButton.icon(
             onPressed: _searching ? null : _onSearch,
+            // Foreground is the accent's ink, not cream. Cream on Golden
+            // Amber is 2.17:1 — constants.dart says so in as many words —
+            // so the sheet's primary action has been near-illegible in
+            // daylight the whole time. The token exists for exactly this.
             icon: _searching
-                ? const SizedBox(
+                ? SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: kCream),
+                        strokeWidth: 2, color: skin.onAccent),
                   )
-                : const Icon(Icons.search, size: 18, color: kCream),
+                : Icon(Icons.search, size: 18, color: skin.onAccent),
             label: Text(
               _searching ? 'Searching…' : 'Search',
               style: inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: kCream),
+                  color: skin.onAccent),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: kClay,
-              foregroundColor: kCream,
-              disabledBackgroundColor: kClay.withOpacity(0.75),
-              disabledForegroundColor: kCream,
+              backgroundColor: skin.accent,
+              foregroundColor: skin.onAccent,
+              disabledBackgroundColor: skin.accent.withOpacity(0.75),
+              disabledForegroundColor: skin.onAccent,
               elevation: 0,
               padding: const EdgeInsets.symmetric(
                   horizontal: 24, vertical: 14),
