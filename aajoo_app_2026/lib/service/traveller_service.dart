@@ -85,8 +85,25 @@ class TravellerService {
     return Traveller.fromJson(Map<String, dynamic>.from(body['data']['traveller']));
   }
 
+  /// Remove a saved traveller. Throws with the server's own reason.
+  ///
+  /// This used to fire the request and never look at the answer, so a refusal
+  /// — "Traveller not found", an expired token, a dropped connection — was
+  /// indistinguishable from success. The caller removed the row on screen
+  /// regardless and the traveller came back on the next load, with nothing
+  /// said. That is the "I removed them and they are still there" report.
   Future<void> remove(int id) async {
-    await _dio.post('/guest-profiles/delete', data: {'id': id}, options: await _auth());
+    final res = await _dio.post(
+      '/guest-profiles/delete',
+      data: {'id': id},
+      options: await _auth(),
+    );
+    final body = res.data;
+    if (body is! Map || body['success'] != true) {
+      throw Exception(body is Map
+          ? (body['message'] ?? 'Could not remove that guest')
+          : 'Could not remove that guest');
+    }
   }
 
   /// Attach a government ID. [filePath] is a local path from the file picker.

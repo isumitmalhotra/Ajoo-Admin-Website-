@@ -1278,56 +1278,106 @@ class _PropertyPageState extends State<PropertyPage>
               ),
 
               const SizedBox(height: 16),
-              // COD is not applicable in prebooking (10% must be paid now)
-              if (!isPrebooking)
-                Row(
-                  children: [
-                    Checkbox(
-                      value: isCod,
-                      onChanged: (value) {
-                        setState(() {
-                          isCod = value!;
-                        });
-                      },
-                    ),
-                    const Text('Make the payment upon arrival',
-                        style: TextStyle(fontSize: 16)),
-                  ],
-                )
-              else
-                const SizedBox.shrink(),
+              // How the stay gets paid for.
+              //
+              // This was a lone checkbox reading "Make the payment upon
+              // arrival": one option, phrased as an opt-out, with the thing it
+              // opts out OF never named. A guest could not see that paying
+              // online was a choice at all, only that there was a box they
+              // might tick. The website asks the same question as two
+              // selectable methods (redesign/pages/guest/Payment.tsx) — Pay
+              // online / Pay at property, each saying what it means — so this
+              // asks it the same way.
+              //
+              // Pre-booking still has no choice to offer: 10% has to clear
+              // online to hold the dates, so the pair is hidden rather than
+              // shown with one half disabled.
+              if (!isPrebooking) ...[
+                _PayMethod(
+                  icon: Icons.credit_card,
+                  title: 'Pay online',
+                  sub: 'UPI, Card, Net Banking · secured by Razorpay',
+                  selected: !isCod,
+                  onTap: () => setState(() => isCod = false),
+                ),
+                const SizedBox(height: 10),
+                _PayMethod(
+                  icon: Icons.payments_outlined,
+                  title: 'Pay at property',
+                  sub: 'Reserve now, pay on arrival',
+                  selected: isCod,
+                  onTap: () => setState(() => isCod = true),
+                ),
+                const SizedBox(height: 4),
+              ],
               // Wallet (audit C-9) — online payments only: cash handed over
               // at a front desk cannot be split against credit held here, so
               // the row disappears when pay-on-arrival is ticked rather than
               // offering something the booking cannot honour.
               if (_walletBalance > 0 && !isCod && !isPrebooking)
-                Row(
-                  children: [
-                    Checkbox(
-                      value: _useWallet,
-                      onChanged: (v) => setState(() => _useWallet = v!),
-                    ),
-                    Expanded(
-                      child: Text(
-                        'Use wallet balance (${rupees(_walletBalance)} available)',
-                        style: const TextStyle(fontSize: 15),
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: kCream,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: kLine),
+                  ),
+                  child: Row(
+                    children: [
+                      Checkbox(
+                        value: _useWallet,
+                        activeColor: kIndigo,
+                        onChanged: (v) => setState(() => _useWallet = v!),
                       ),
-                    ),
-                  ],
+                      const Icon(Icons.account_balance_wallet_outlined,
+                          size: 17, color: kInk),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Use wallet balance',
+                                style: inter(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: kInk)),
+                            Text('${rupees(_walletBalance)} available',
+                                style:
+                                    inter(fontSize: 11.5, color: kMuted)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               if (isPrebooking)
-                const Row(
-                  children: [
-                    Icon(Icons.lock_outline, color: kIndigo),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Advance required: Online payment of 10% to confirm prebooking',
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w500),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: kIndigo50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: kLine),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.lock_outline, size: 17, color: kIndigo),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Advance required — 10% online to confirm the '
+                          'pre-booking.',
+                          style: inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: kInk,
+                              height: 1.35),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               const SizedBox(height: 10),
               // add text showing you can cancel before 30 days without penalty or the advance is non-refundable
@@ -2881,6 +2931,79 @@ class _SpecChip extends StatelessWidget {
               style: inter(
                   fontSize: 12, fontWeight: FontWeight.w600, color: kInk2)),
         ],
+      ),
+    );
+  }
+}
+
+/// One payment method, selectable.
+///
+/// The website's `Method` (redesign/pages/guest/Payment.tsx): a 12px card that
+/// takes a 1.5px brand rule and the lightest brand wash when it is the chosen
+/// one, and a plain hairline when it is not — so which method is selected is
+/// readable without reading, and each says what it actually means rather than
+/// leaving the guest to infer it from a single unticked box.
+class _PayMethod extends StatelessWidget {
+  const _PayMethod({
+    required this.icon,
+    required this.title,
+    required this.sub,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title, sub;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          decoration: BoxDecoration(
+            color: selected ? kIndigo50 : kSurface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected ? kIndigo : kLine,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                selected
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+                size: 20,
+                color: selected ? kIndigo : kMuted,
+              ),
+              const SizedBox(width: 12),
+              Icon(icon, size: 20, color: selected ? kIndigo : kInk2),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: inter(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
+                            color: kInk)),
+                    const SizedBox(height: 2),
+                    Text(sub,
+                        style: inter(fontSize: 11.5, color: kMuted)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

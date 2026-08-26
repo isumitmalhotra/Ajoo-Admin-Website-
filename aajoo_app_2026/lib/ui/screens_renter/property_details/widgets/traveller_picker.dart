@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
@@ -42,6 +43,39 @@ class _TravellerPickerState extends State<TravellerPicker> {
     _load();
   }
 
+  /// What went wrong, in words a guest can act on.
+  ///
+  /// `e.toString()` on a Dio failure is four lines of "DioException
+  /// [connection error] … SocketFailed host lookup … errno = 7", which tells
+  /// somebody trying to remove a guest nothing at all. The server's own
+  /// message is good and is kept; everything below it becomes plain English.
+  String _reason(Object e, String fallback) {
+    if (e is DioException) {
+      final data = e.response?.data;
+      if (data is Map && data['message'] is String &&
+          (data['message'] as String).trim().isNotEmpty) {
+        return data['message'] as String;
+      }
+      switch (e.type) {
+        case DioExceptionType.connectionError:
+        case DioExceptionType.connectionTimeout:
+          return 'No connection. Check your internet and try again.';
+        case DioExceptionType.sendTimeout:
+        case DioExceptionType.receiveTimeout:
+          return 'That took too long. Try again in a moment.';
+        default:
+          break;
+      }
+      if (e.response?.statusCode == 401) {
+        return 'Your session has expired. Sign in again to make changes.';
+      }
+      return fallback;
+    }
+    final text = e.toString().replaceFirst('Exception: ', '');
+    // A stringified exception that still looks like one is not a message.
+    return text.contains('Exception') || text.contains('\n') ? fallback : text;
+  }
+
   Future<void> _load() async {
     final rows = await _service.list();
     if (!mounted) return;
@@ -78,7 +112,8 @@ class _TravellerPickerState extends State<TravellerPicker> {
       setState(() => _list = _list.map((x) => x.id == t.id ? updated : x).toList());
     } catch (e) {
       if (!mounted) return;
-      setState(() => _note = e.toString().replaceFirst('Exception: ', ''));
+      setState(() =>
+          _note = _reason(e, "That ID didn't upload. Please try again."));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -97,10 +132,27 @@ class _TravellerPickerState extends State<TravellerPicker> {
       ),
     );
     if (yes != true) return;
-    await _service.remove(t.id);
-    if (!mounted) return;
-    setState(() => _list = _list.where((x) => x.id != t.id).toList());
-    if (widget.value == t.id) widget.onChanged(null);
+
+    // The row is only taken off screen once the server has actually removed
+    // it. It used to go the moment the request was SENT, so a refusal left
+    // the guest looking at a list that said they were gone and a server that
+    // disagreed — and the next time the sheet opened, they were back.
+    setState(() {
+      _busy = true;
+      _note = null;
+    });
+    try {
+      await _service.remove(t.id);
+      if (!mounted) return;
+      setState(() => _list = _list.where((x) => x.id != t.id).toList());
+      if (widget.value == t.id) widget.onChanged(null);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() =>
+          _note = _reason(e, "Couldn't remove that guest. Please try again."));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
@@ -124,33 +176,37 @@ class _TravellerPickerState extends State<TravellerPicker> {
             style: inter(fontSize: 12, color: kMuted, height: 1.4),
           ),
           const SizedBox(height: 12),
-          Row(
+          // Wrap, not two Expandeds sharing a row.
+          //
+          // "Booking for someone else" is the website's wording and it does
+          // not fit half a phone's width — split down the middle it rendered
+          // as "Booking for someone …", which hides the one word that says
+          // whose stay it is. The site wraps these buttons; so does this, so
+          // a label that needs a full line gets one instead of being cut.
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              Expanded(
-                child: _Choice(
-                  label: "I'm staying",
-                  icon: Icons.person_outline,
-                  selected: _forSelf,
-                  onTap: () {
-                    setState(() { _forSelf = true; _note = null; });
-                    widget.onChanged(null);
-                  },
-                ),
+              _Choice(
+                label: "I'm staying",
+                icon: Icons.person_outline,
+                selected: _forSelf,
+                onTap: () {
+                  setState(() { _forSelf = true; _note = null; });
+                  widget.onChanged(null);
+                },
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _Choice(
-                  label: 'Someone else',
-                  icon: Icons.group_outlined,
-                  selected: !_forSelf,
-                  onTap: () {
-                    setState(() => _forSelf = false);
-                    // Nothing is silently adopted — an explicit pick, or the
-                    // form. Leaving the value null keeps Book honest about
-                    // what is still missing.
-                    if (_list.isEmpty) _openForm();
-                  },
-                ),
+              _Choice(
+                label: 'Booking for someone else',
+                icon: Icons.group_outlined,
+                selected: !_forSelf,
+                onTap: () {
+                  setState(() => _forSelf = false);
+                  // Nothing is silently adopted — an explicit pick, or the
+                  // form. Leaving the value null keeps Book honest about
+                  // what is still missing.
+                  if (_list.isEmpty) _openForm();
+                },
               ),
             ],
           ),
@@ -166,8 +222,29 @@ class _TravellerPickerState extends State<TravellerPicker> {
             ),
           ],
           if (_note != null) ...[
-            const SizedBox(height: 6),
-            Text(_note!, style: inter(fontSize: 11.5, color: kDanger)),
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFDECEC),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: kDanger.withOpacity(0.25)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.error_outline, size: 15, color: kDanger),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(_note!,
+                        style: inter(
+                            fontSize: 12, color: kDanger, height: 1.35)),
+                  ),
+                ],
+              ),
+            ),
           ],
         ],
       ),
@@ -196,9 +273,18 @@ class _TravellerPickerState extends State<TravellerPicker> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(t.fullName,
-                      style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
-                  Text(t.summary,
-                      style: TextStyle(fontSize: 11, color: kMuted)),
+                      style: inter(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: kInk)),
+                  const SizedBox(height: 1),
+                  Text(
+                    // "25 yrs · male · 8901717173", or a plain sentence when
+                    // the guest gave nothing but a name — the website's
+                    // wording, so the same row reads the same on both.
+                    t.summary.trim().isEmpty ? 'No other details' : t.summary,
+                    style: inter(fontSize: 11.5, color: kMuted),
+                  ),
                 ],
               ),
             ),
@@ -207,11 +293,19 @@ class _TravellerPickerState extends State<TravellerPicker> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(20),
+                color: const Color(0xFFEAF6EE),
+                borderRadius: BorderRadius.circular(999),
               ),
-              child: Text('ID on file',
-                  style: TextStyle(fontSize: 10.5, color: Colors.green.shade800, fontWeight: FontWeight.w600)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.verified_user_outlined,
+                    size: 11, color: kSuccess),
+                const SizedBox(width: 4),
+                Text('ID on file',
+                    style: inter(
+                        fontSize: 10.5,
+                        color: kSuccess,
+                        fontWeight: FontWeight.w600)),
+              ]),
             )
           else
             TextButton(
@@ -221,7 +315,9 @@ class _TravellerPickerState extends State<TravellerPicker> {
                 minimumSize: const Size(0, 32),
                 foregroundColor: kIndigo,
               ),
-              child: const Text('Add ID', style: TextStyle(fontSize: 12)),
+              child: Text('Add ID',
+                  style: inter(
+                      fontSize: 12, fontWeight: FontWeight.w600)),
             ),
           IconButton(
             onPressed: _busy ? null : () => _remove(t),
@@ -247,28 +343,26 @@ class _Choice extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(999),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
         decoration: BoxDecoration(
           color: selected ? kIndigo : kSurface,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(999),
           border: Border.all(color: selected ? kIndigo : kLine),
         ),
+        // Sizes to its label rather than to half the row, so nothing is cut.
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 16, color: selected ? Colors.white : kMuted),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: selected ? Colors.white : kInk,
-                ),
+            const SizedBox(width: 7),
+            Text(
+              label,
+              style: inter(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: selected ? Colors.white : kInk,
               ),
             ),
           ],
