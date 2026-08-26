@@ -1033,13 +1033,12 @@ class _PropertyPageState extends State<PropertyPage>
                                 // below and the submit handler. The band comes
                                 // from the nightly tariff, not the stay total.
                                 final p = priceStay(
-                                  roomSubtotal:
-                                      double.parse(currentPriceString),
+                                  roomSubtotal: _roomCharge,
                                   perNightTariff: currentPrice,
                                   discount: _discountOnRoom,
                                   extraGuestFee: _partyFee,
-                                  longStayDiscount: _longStayOff,
-                                  longStayLabel: _longStay.label,
+                                  nightlyTotal: _nightlyTotal,
+                                  longStayLabel: _longStay?.label,
                                 );
 
                                 return Text(
@@ -1127,12 +1126,12 @@ class _PropertyPageState extends State<PropertyPage>
                         child: Builder(
                           builder: (context) {
                             final p = priceStay(
-                              roomSubtotal: double.parse(currentPriceString),
+                              roomSubtotal: _roomCharge,
                               perNightTariff: currentPrice,
                               discount: _discountOnRoom,
                               extraGuestFee: _partyFee,
-                              longStayDiscount: _longStayOff,
-                              longStayLabel: _longStay.label,
+                              nightlyTotal: _nightlyTotal,
+                              longStayLabel: _longStay?.label,
                             );
 
                             return Column(
@@ -1182,29 +1181,44 @@ class _PropertyPageState extends State<PropertyPage>
                                     ],
                                   ),
                                 ],
-                                // The host's own long-stay rate, named, so a
-                                // guest can see WHY a month costs less than
-                                // thirty times a night.
-                                if (p.longStayDiscount > 0) ...[
+                                // What the host's weekly/monthly price saves
+                                // this guest, as a percentage and an amount.
+                                //
+                                // The room line above is ALREADY the long-stay
+                                // rate, so this is not another deduction — it
+                                // says what the rate is worth against paying
+                                // night by night, which is the thing a guest
+                                // booking a month actually wants to know.
+                                if (p.longStaySaving > 0) ...[
                                   const SizedBox(height: 8),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        '${p.longStayLabel} '
-                                        '(${_longStay.percent.toStringAsFixed(0)}%)',
-                                        style: inter(
-                                            fontSize: 14, color: kSuccess),
-                                      ),
-                                      Text(
-                                        '− ${rupees(p.longStayDiscount)}',
-                                        style: inter(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                            color: kSuccess),
-                                      ),
-                                    ],
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFEAF6EE),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.savings_outlined,
+                                            size: 15, color: kSuccess),
+                                        const SizedBox(width: 7),
+                                        Expanded(
+                                          child: Text(
+                                            "You saved "
+                                            "${p.longStaySavingPercent.toStringAsFixed(p.longStaySavingPercent % 1 == 0 ? 0 : 1)}%"
+                                            " — ${rupees(p.longStaySaving)}"
+                                            " with the ${p.longStayLabel?.toLowerCase() ?? 'long-stay rate'}",
+                                            style: inter(
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.w600,
+                                                color: kSuccess,
+                                                height: 1.35),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                                 if (p.discount > 0) ...[
@@ -1562,12 +1576,12 @@ onPressed: () async {
                         : "";
                     // Compute totals
                     final p = priceStay(
-                      roomSubtotal: double.parse(currentPriceString),
+                      roomSubtotal: _roomCharge,
                       perNightTariff: currentPrice,
                       discount: _discountOnRoom,
                       extraGuestFee: _partyFee,
-                      longStayDiscount: _longStayOff,
-                      longStayLabel: _longStay.label,
+                      nightlyTotal: _nightlyTotal,
+                      longStayLabel: _longStay?.label,
                     );
                     final double finalAmount =
                         double.parse(p.total.toStringAsFixed(0));
@@ -2855,33 +2869,42 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
   /// back, which is why the confirmation could fail to appear on a card
   /// payment — "booking confirm page is missing in real time booking". A route
   /// does not depend on that, and it has room for the map.
-  /// The host's weekly/monthly rate for the nights currently chosen.
+  /// The host's weekly/monthly rate for the nights currently chosen, or null.
   ///
-  /// Step 4 collects these and nothing read them, so "Monthly" priced a
-  /// 35-night stay at the full nightly rate times thirty-five — the host's own
-  /// long-stay rate ignored. The server applies the identical rule and refuses
-  /// a booking whose price disagrees, so this must match it exactly.
-  LongStayDiscount get _longStay =>
-      _single?.pricing?.longStayFor(totalDays) ?? const LongStayDiscount();
+  /// Step 4 now asks the host what a week and a month COST. Nothing read the
+  /// old long-stay fields at all, so a 35-night stay was quoted at the full
+  /// nightly rate times thirty-five. The server resolves the identical rate
+  /// and refuses a booking whose price disagrees, so this must match it.
+  LongStayRate? get _longStay => _single?.pricing?.longStayFor(totalDays);
 
-  /// What that discount is worth in rupees on the room total.
-  double get _longStayOff {
-    final rule = _longStay;
-    if (!rule.applies) return 0;
-    final room = double.tryParse(currentPriceString) ?? 0;
-    return (room * rule.percent / 100).roundToDouble();
+  /// What the same nights cost night by night — the comparison the saving is
+  /// measured against, and what a short stay pays.
+  double get _nightlyTotal => double.tryParse(currentPriceString) ?? 0;
+
+  /// What the room actually costs: the host's long-stay rate when the stay is
+  /// long enough to earn one, else the nightly total.
+  ///
+  /// Never MORE than nightly. A host could have saved a long-stay price above
+  /// their own nightly rate before the wizard started refusing it, and a guest
+  /// must not be charged extra for staying longer.
+  double get _roomCharge {
+    final rate = _longStay;
+    final nightly = _nightlyTotal;
+    if (rate == null || totalDays <= 0) return nightly;
+    final atLongStay = (rate.nightlyRate * totalDays * 100).roundToDouble() / 100;
+    return atLongStay < nightly ? atLongStay : nightly;
   }
 
   /// The price this booking was made at — one computation, used for the
   /// headline figure and for every line of the breakdown beside it, so they
   /// cannot disagree.
   StayPrice get _confirmedPrice => priceStay(
-        roomSubtotal: double.tryParse(currentPriceString) ?? 0,
+        roomSubtotal: _roomCharge,
         perNightTariff: currentPrice,
         discount: _discountOnRoom,
         extraGuestFee: _partyFee,
-        longStayDiscount: _longStayOff,
-        longStayLabel: _longStay.label,
+        nightlyTotal: _nightlyTotal,
+        longStayLabel: _longStay?.label,
       );
 
   void successDialog(

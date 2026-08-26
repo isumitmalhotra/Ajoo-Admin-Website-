@@ -890,16 +890,28 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
           ],
         ),
         ListingSection(
-          title: 'Long-stay discounts',
-          sub: 'Up to ${r.maxDiscountPercent}%.',
+          title: 'Weekly & monthly price',
+          sub: 'What a longer stay costs in total. Leave blank if you do not '
+              'offer one.',
           children: [
-            _p4Text('weekly_discount', 'Weekly discount (%)',
+            // The host states the PRICE, not a percentage.
+            //
+            // These fields replace "Weekly discount (%)" / "Monthly discount
+            // (%)" as the thing that sets a long-stay price. A host thinks in
+            // "a week costs 30,000", not "14.3% off"; the guest is shown the
+            // percentage, worked out from the two totals, so both get the
+            // number they care about. The discount fields still exist in the
+            // database and are simply not applied — a stay must not get two
+            // mechanisms at once.
+            _p4Text('weekly_price', 'Weekly price (₹)',
                 numeric: true,
-                help: 'Off the nightly rate for stays of 7 nights or more. '
-                    '5–15% is common.'),
-            _p4Text('monthly_discount', 'Monthly discount (%)',
+                help: 'Total for a 7-night stay. Must be less than 7 nights '
+                    'at your nightly rate — the guest is shown how much they '
+                    'save.'),
+            _p4Text('monthly_price', 'Monthly price (₹)',
                 numeric: true,
-                help: 'For 28 nights or more. 20–35% is common.'),
+                help: 'Total for a 28-night stay. Longer stays are charged '
+                    'pro rata at this rate.'),
           ],
         ),
         ListingSection(

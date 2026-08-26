@@ -19,12 +19,15 @@ const int kWeeklyNights = 7;
 /// booking that disagrees, so these must not drift.
 const int kMonthlyNights = 28;
 
-/// A host's long-stay discount, resolved for a given number of nights.
-class LongStayDiscount {
-  const LongStayDiscount({this.percent = 0, this.label});
-  final double percent;
-  final String? label;
-  bool get applies => percent > 0 && label != null;
+/// A host's long-stay rate, resolved for a given number of nights.
+class LongStayRate {
+  const LongStayRate({required this.nightlyRate, required this.label});
+
+  /// The stated period price divided by its own nights.
+  final double nightlyRate;
+
+  /// "Weekly rate" / "Monthly rate" — what to call it to the guest.
+  final String label;
 }
 
 class PricingRule {
@@ -40,6 +43,8 @@ class PricingRule {
     this.maxExtraGuests = 0,
     this.weeklyDiscountPercent = 0,
     this.monthlyDiscountPercent = 0,
+    this.weeklyPrice,
+    this.monthlyPrice,
   });
 
   final double base;
@@ -56,11 +61,15 @@ class PricingRule {
   final double extraGuestPrice;
   final int maxExtraGuests;
 
-  /// What the host takes off a long stay. Step 4 collects both and, until now,
-  /// nothing on any platform read them — a host offering 20% off a month was
-  /// still quoting the full nightly rate times thirty-five nights.
+  /// Still stored and round-tripped, deliberately NOT applied to a price: a
+  /// stay must not get both a percentage and a stated price.
   final double weeklyDiscountPercent;
   final double monthlyDiscountPercent;
+
+  /// What the host says a week and a month COST, in total. Null when they do
+  /// not offer one, in which case the stay is quoted night by night.
+  final double? weeklyPrice;
+  final double? monthlyPrice;
 
   /// Positive, finite money only — rejects null, "", 0 and rubbish, so a blank
   /// override falls back to base rather than producing a free night.
@@ -102,6 +111,8 @@ class PricingRule {
       maxExtraGuests: _count(j['maxExtraGuests']),
       weeklyDiscountPercent: _percent(j['weeklyDiscountPercent']),
       monthlyDiscountPercent: _percent(j['monthlyDiscountPercent']),
+      weeklyPrice: _money(j['weeklyPrice']),
+      monthlyPrice: _money(j['monthlyPrice']),
     );
   }
 
@@ -156,21 +167,29 @@ class PricingRule {
     return extra * extraGuestPrice * nightCount;
   }
 
-  /// The host's discount for a stay of [nights].
+  /// The host's long-stay rate for a stay of [nights], or null.
   ///
-  /// Monthly wins over weekly when both apply: it is the larger commitment,
-  /// and a host who set both meant the monthly rate for a month-long guest.
-  LongStayDiscount longStayFor(int nights) {
-    if (nights <= 0) return const LongStayDiscount();
-    if (nights >= kMonthlyNights && monthlyDiscountPercent > 0) {
-      return LongStayDiscount(
-          percent: monthlyDiscountPercent, label: 'Monthly discount');
+  /// The stated price is divided by its own night count into an effective
+  /// nightly rate, applied to every night. That is what makes it usable at any
+  /// length — a 9-night stay gets the weekly rate for all 9 nights, and there
+  /// is no cliff where one extra night costs a whole extra week.
+  ///
+  /// Monthly wins over weekly when both apply. Mirrors longStayRateFor in
+  /// utils/nightlyRates.js, which the server re-runs and refuses a booking
+  /// that disagrees with — so these must not drift.
+  LongStayRate? longStayFor(int nights) {
+    if (nights <= 0) return null;
+    final monthly = monthlyPrice ?? 0;
+    if (nights >= kMonthlyNights && monthly > 0) {
+      return LongStayRate(
+          nightlyRate: monthly / kMonthlyNights, label: 'Monthly rate');
     }
-    if (nights >= kWeeklyNights && weeklyDiscountPercent > 0) {
-      return LongStayDiscount(
-          percent: weeklyDiscountPercent, label: 'Weekly discount');
+    final weekly = weeklyPrice ?? 0;
+    if (nights >= kWeeklyNights && weekly > 0) {
+      return LongStayRate(
+          nightlyRate: weekly / kWeeklyNights, label: 'Weekly rate');
     }
-    return const LongStayDiscount();
+    return null;
   }
 
   /// True when this stay is priced differently from a flat base x nights, so
