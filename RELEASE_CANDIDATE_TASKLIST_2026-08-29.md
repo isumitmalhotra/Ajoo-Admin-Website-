@@ -152,7 +152,7 @@ Nearly all config, no product logic. Unblocks the client's "production/test sepa
 | Cancellation policy field on host form (Flexible/Moderate/Firm/Strict/Super Strict) | `Hii.docx` §8 |
 | Refund/ledger reconciliation | E2E-02, DB-05 |
 
-### W5 — Host listing 5-step + publish lifecycle ⚠️ **state machine DONE · live 2026-08-30; four items remain**
+### W5 — Host listing 5-step + publish lifecycle ✅ **DONE · live 2026-08-30**
 
 | Task | Finding IDs | Fix | Tested | Status |
 |---|---|---|---|---|
@@ -160,13 +160,22 @@ Nearly all config, no product logic. Unblocks the client's "production/test sepa
 | Backend completeness gate | LP-P0-01 | Readiness ≥ 70 was checked at submit only; it is now **re-checked at approval**, where it matters, since a listing can be edited for days in between | live: queue reports the score per row | ✅ Done |
 | Verification checked server-side | LP-P0-08, LP-31…LP-37 | Host identity gate at submit already existed; approval now refuses an incomplete listing regardless of who is clicking | live | ✅ Done |
 | Structured category attributes | LP-18, LP-19 | Already satisfied — `property_attributes` is key/value rows (`pa_group`/`pa_key`/`pa_value`), not a JSON blob, so search and SEO can filter on it | — | ✅ Already true |
-| Category switch clears incompatible attributes | LP-P0-03, LP-13 | Nothing clears them: switching a listing's category leaves the previous category's answers attached | — | ❌ **Not done** |
-| Capacity consistency + operational status rules | LP-P0-05, LP-P0-06, LP-P0-07, LP-27 | Required photos are covered by the readiness score. Capacity is not cross-checked (adults + children vs total guests, beds vs bedrooms) | — | ⚠️ **Partial** |
-| Draft resume without duplicate properties | LP-11, LP-12 | Step 1 creates a new property whenever no `property_id` is sent, so a client that loses the id mid-wizard starts a second draft. Needs a server-side "resume the host's open draft" rule | — | ❌ **Not done** |
+| Category switch clears incompatible attributes | LP-P0-03, LP-13 | Attributes are stored per category (`pa_group`); switching now drops the other categories' groups and only those — `step3` shares the table and is left alone | 21 tests; live: no listing currently carries a stale group | ✅ Done |
+| Capacity consistency + operational status rules | LP-P0-05, LP-P0-06, LP-P0-07, LP-27 | `utils/listingCapacity`: adults **plus children** against the total (infants excluded), a bed per bedroom, somewhere to sleep the guests advertised, no negatives. Seasonal properties must name their months — declared in the schema since it was written, enforced nowhere. Required photos were already covered by the readiness score | live: all 20 existing capacity rows pass; a 2-adult + 4-child party in a 2-guest place is refused | ✅ Done |
+| Draft resume without duplicate properties | LP-11, LP-12 | Two halves: a shell carrying nothing (still "Untitled listing", never past step 1) is recycled instead of duplicated, and `GET /listing/my-draft` reports the open draft so the wizard can offer **Continue it / Start a new one**. A reader, not a redirect | live | ✅ Done |
 
-**Behaviour change to flag:** an admin can no longer approve a listing the host
-has never submitted, and can no longer suspend one that is not on the site. The
-review panel now shows only the decisions the listing's state accepts.
+**Behaviour changes to flag for your tester:**
+
+- An admin can no longer approve a listing the host has never submitted, nor
+  suspend one that is not on the site. The review panel shows only the
+  decisions the listing's state accepts.
+- Step 1 now refuses a capacity that does not add up, and a seasonal property
+  with no months. Every listing already in the database passes these.
+- Changing a listing's category **deletes** the previous category's answers.
+  That is the point — they were invisible in the wizard and still being read by
+  search and SEO — but it is not reversible from the form.
+- A host opening the wizard with an unfinished listing is offered it rather
+  than silently starting a second one.
 
 ### W6 — SEO on approval `~2–3 days` · mostly done, needs the trigger
 
