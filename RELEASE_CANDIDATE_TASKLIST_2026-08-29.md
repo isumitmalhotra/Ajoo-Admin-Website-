@@ -192,16 +192,20 @@ Nearly all config, no product logic. Unblocks the client's "production/test sepa
 "already true" rather than quietly ticked, because each was verified against
 production before being called done.
 
-### W7 — Admin control plane `~1.5 weeks`
+### W7 — Admin control plane ⚠️ **audit + finance DONE · live 2026-08-30; two items remain**
 
-| Task | Finding IDs |
-|---|---|
-| Persistent mutation audit table (approvals, KYC, payouts, voids, roles) | ADM-P0-05, DB-02 |
-| Finance: payout eligibility, rejection reasons, invoice void reasons, idempotency | §9 Finance |
-| KPI ↔ list-screen population reconciliation | §8 Dashboard KPI |
-| Negotiation control plane: identity from ownership not last sender | §10 |
-| Support/dispute separation from compliance flags | DB-03, §11 |
-| Soft-delete consistency across admin + public queries | DB-04, E2E-12 |
+| Task | Finding IDs | Fix | Tested | Status |
+|---|---|---|---|---|
+| Persistent mutation audit table | ADM-P0-05, DB-02 | `logAdminMutation` was called from **58 places** and wrote a log line and nothing else — on Render that stream rotates away. New `tbl_admin_audit`; adding it made all 58 durable with no call site changed. Admin name/role denormalised (looked up once, cached) so a row stays readable after the account is renamed or deleted. Snapshots clipped at 8k by the writer. The write never throws — a gap in the ledger beats a refused refund | live: a real admin property update landed with its full before-snapshot | ✅ Done |
+| Finance: rejection reasons, void reasons, idempotency | §9 Finance | **Not one mutation in `adminFinance.controller` was audited**, in the file that handles payouts, refunds and voids. Voiding an invoice and rejecting a payout both took an `undefined` reason, answered "success" for an id that did not exist, and could be done twice — the second overwriting the first person's reason. Both now require a reason, check the record exists, are idempotent and are audited. A payout already **paid out** can no longer be rejected: the money has left, and marking it FAILED would make the ledger disagree with the bank | live: nonexistent invoice → "Invoice not found"; nonexistent payout → "Payout not found" | ✅ Done |
+| Soft-delete consistency across admin + public queries | DB-04, E2E-12 | All three delete paths wrote `is_deleted` and left `is_active = 1`. Nothing was leaking — every reader checks the pair — but the row sat one half-written query from visible. All three now write both; two production rows normalised | 25/25 tests; a test pins all three paths | ✅ Done |
+| Negotiation control plane: identity from ownership not last sender | §10 | Already correct — `adminNegotiationsList` decides guest/host by **who owns the property**, not who moved last, with a comment explaining that a haggle alternates. The W3 decision ledger sits under it now | ✅ | ✅ Already true |
+| KPI ↔ list-screen population reconciliation | §8 Dashboard KPI | Not addressed. The gaps that would show: 62 user rows vs 26 not-deleted, 58 bookings vs 56, 29,245 properties vs 29,230 live. Each KPI card needs its filter matched to the list it links to | — | ❌ **Not done** |
+| Support/dispute separation from compliance flags | DB-03, §11 | Not addressed | — | ❌ **Not done** |
+
+**Behaviour changes to flag:** voiding an invoice or rejecting a payout now
+requires a written reason (5+ characters) and cannot be repeated; a completed
+payout cannot be rejected at all. Deleting a listing now also deactivates it.
 
 ### W8 — Android APK `~1 week` · parallel, different team
 
