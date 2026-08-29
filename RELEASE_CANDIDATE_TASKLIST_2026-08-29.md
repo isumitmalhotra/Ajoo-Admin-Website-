@@ -152,17 +152,21 @@ Nearly all config, no product logic. Unblocks the client's "production/test sepa
 | Cancellation policy field on host form (Flexible/Moderate/Firm/Strict/Super Strict) | `Hii.docx` §8 |
 | Refund/ledger reconciliation | E2E-02, DB-05 |
 
-### W5 — Host listing 5-step + publish lifecycle `~1.5 weeks`
+### W5 — Host listing 5-step + publish lifecycle ⚠️ **state machine DONE · live 2026-08-30; four items remain**
 
-| Task | Finding IDs |
-|---|---|
-| Server-enforced state machine Draft → Submitted → Verification → Approved → Live | LP-P0-01, LP-P0-02 |
-| Backend completeness gate — direct API calls with missing modules must fail | LP-P0-01 |
-| Category switch clears incompatible attributes | LP-P0-03, LP-13 |
-| Capacity consistency, operational status rules, required photos | LP-P0-05, LP-P0-06, LP-P0-07, LP-27 |
-| Verification stored/checked server-side (identity, ownership, bank, compliance) | LP-P0-08, LP-31…LP-37 |
-| Structured category attributes (not one JSON blob) so search/SEO can filter | LP-18, LP-19 |
-| Draft resume across refresh/logout without duplicate properties | LP-11, LP-12 |
+| Task | Finding IDs | Fix | Tested | Status |
+|---|---|---|---|---|
+| Server-enforced state machine Draft → Submitted → Approved → Live | LP-P0-01, LP-P0-02 | `utils/listingLifecycle.js` — one reader over the four columns the state actually lives in, one transition table. `adminReview` and `submitListing` both ask before they write | 18 tests; live: the two genuine empty drafts are now refused approval | ✅ Done |
+| Backend completeness gate | LP-P0-01 | Readiness ≥ 70 was checked at submit only; it is now **re-checked at approval**, where it matters, since a listing can be edited for days in between | live: queue reports the score per row | ✅ Done |
+| Verification checked server-side | LP-P0-08, LP-31…LP-37 | Host identity gate at submit already existed; approval now refuses an incomplete listing regardless of who is clicking | live | ✅ Done |
+| Structured category attributes | LP-18, LP-19 | Already satisfied — `property_attributes` is key/value rows (`pa_group`/`pa_key`/`pa_value`), not a JSON blob, so search and SEO can filter on it | — | ✅ Already true |
+| Category switch clears incompatible attributes | LP-P0-03, LP-13 | Nothing clears them: switching a listing's category leaves the previous category's answers attached | — | ❌ **Not done** |
+| Capacity consistency + operational status rules | LP-P0-05, LP-P0-06, LP-P0-07, LP-27 | Required photos are covered by the readiness score. Capacity is not cross-checked (adults + children vs total guests, beds vs bedrooms) | — | ⚠️ **Partial** |
+| Draft resume without duplicate properties | LP-11, LP-12 | Step 1 creates a new property whenever no `property_id` is sent, so a client that loses the id mid-wizard starts a second draft. Needs a server-side "resume the host's open draft" rule | — | ❌ **Not done** |
+
+**Behaviour change to flag:** an admin can no longer approve a listing the host
+has never submitted, and can no longer suspend one that is not on the site. The
+review panel now shows only the decisions the listing's state accepts.
 
 ### W6 — SEO on approval `~2–3 days` · mostly done, needs the trigger
 
