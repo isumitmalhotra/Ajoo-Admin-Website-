@@ -177,18 +177,20 @@ Nearly all config, no product logic. Unblocks the client's "production/test sepa
 - A host opening the wizard with an unfinished listing is offered it rather
   than silently starting a second one.
 
-### W6 — SEO on approval `~2–3 days` · mostly done, needs the trigger
+### W6 — SEO on approval ✅ **DONE · live 2026-08-30**
 
-Phase 1 SEO (Tasks 0–4) is already live. What the fix spec adds:
+| Task | Finding IDs | Fix | Tested | Status |
+|---|---|---|---|---|
+| **Trigger generation on Admin approval** | SEO-01, SEO-02, LP-P0-10, LP-40 | One `writeSeoFor` serves submit AND approval; approval regenerates from the state as it stands then, wrapped so a slug clash cannot leave a host approved-but-not-live | live: 29262 was stored as "Malhotra Villa in Karnal" while actually renamed "Test Villa Manali" — approval rewrote it | ✅ Done |
+| Regenerate metadata + sitemap `lastmod` on edits to a live listing | SEO-12 | Checked rather than assumed, and already correct: the model writes `updated_at`, which is what the sitemap reads for `lastmod`, and a host editing a live listing re-runs the writer at submit | live | ✅ Already true |
+| Fallback meta title/description — never blank/undefined | SEO-06 | A nameless listing produced the meta title `undefined in India \| Aajoo`; it now falls back to what the listing IS ("Cottage in Jibhi"). An empty slug or path used to collapse to `/` — the homepage — and now falls back to the property id | 13 tests; no stored row carried the bug | ✅ Done |
+| Schema only from real data; no fabricated reviews/ratings | SEO-08 | Already clean — no `aggregateRating`, `ratingValue` or `review` anywhere in the generated schema. Pinned by a test so it stays that way | ✅ | ✅ Already true |
+| Image ALT from category + property, ≤125 chars | SEO-09 | Images went out as a bare URL, unlabelled to a screen reader and to image search alike. Each now carries category · name · place, capped at 125 and cut on a word | tested | ✅ Done |
+| Invalid property ID → real 404/410, never `undefined` in URL | WEB-P0-01, G-18 | Already handled: a missing or unpublished listing resolves as `noindex, follow` with its own copy rather than inheriting the homepage's title, and the page has a `loadFailed` state for people | live: id 9999999 → `found:false`, `noindex, follow` | ✅ Already true |
 
-| Task | Finding IDs |
-|---|---|
-| **Trigger generation on Admin approval** (currently generated at wizard submit) | SEO-01, SEO-02, LP-P0-10, LP-40 |
-| Regenerate metadata + sitemap `lastmod` on edits to a live listing | SEO-12 |
-| Fallback meta title/description — never blank/undefined | SEO-06 |
-| Schema only from real data; no fabricated reviews/ratings | SEO-08 |
-| Image ALT from category + property, ≤125 chars | SEO-09 |
-| Invalid property ID → real 404/410, never `undefined` in URL | WEB-P0-01, G-18 |
+**Worth knowing:** three of the six were already correct. They are marked
+"already true" rather than quietly ticked, because each was verified against
+production before being called done.
 
 ### W7 — Admin control plane `~1.5 weeks`
 
