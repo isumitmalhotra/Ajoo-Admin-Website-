@@ -192,7 +192,7 @@ Nearly all config, no product logic. Unblocks the client's "production/test sepa
 "already true" rather than quietly ticked, because each was verified against
 production before being called done.
 
-### W7 — Admin control plane ⚠️ **audit + finance DONE · live 2026-08-30; two items remain**
+### W7 — Admin control plane ✅ **DONE · live 2026-08-30**
 
 | Task | Finding IDs | Fix | Tested | Status |
 |---|---|---|---|---|
@@ -200,12 +200,23 @@ production before being called done.
 | Finance: rejection reasons, void reasons, idempotency | §9 Finance | **Not one mutation in `adminFinance.controller` was audited**, in the file that handles payouts, refunds and voids. Voiding an invoice and rejecting a payout both took an `undefined` reason, answered "success" for an id that did not exist, and could be done twice — the second overwriting the first person's reason. Both now require a reason, check the record exists, are idempotent and are audited. A payout already **paid out** can no longer be rejected: the money has left, and marking it FAILED would make the ledger disagree with the bank | live: nonexistent invoice → "Invoice not found"; nonexistent payout → "Payout not found" | ✅ Done |
 | Soft-delete consistency across admin + public queries | DB-04, E2E-12 | All three delete paths wrote `is_deleted` and left `is_active = 1`. Nothing was leaking — every reader checks the pair — but the row sat one half-written query from visible. All three now write both; two production rows normalised | 25/25 tests; a test pins all three paths | ✅ Done |
 | Negotiation control plane: identity from ownership not last sender | §10 | Already correct — `adminNegotiationsList` decides guest/host by **who owns the property**, not who moved last, with a comment explaining that a haggle alternates. The W3 decision ledger sits under it now | ✅ | ✅ Already true |
-| KPI ↔ list-screen population reconciliation | §8 Dashboard KPI | Not addressed. The gaps that would show: 62 user rows vs 26 not-deleted, 58 bookings vs 56, 29,245 properties vs 29,230 live. Each KPI card needs its filter matched to the list it links to | — | ❌ **Not done** |
-| Support/dispute separation from compliance flags | DB-03, §11 | Not addressed | — | ❌ **Not done** |
+| KPI ↔ list-screen population reconciliation | §8 Dashboard KPI | Users, hosts, properties and bookings were reconciled in an earlier pass — **verified against their list screens on production** rather than taken on trust: 26=26, 7=7, 29,245=29,245, 56=56. The fifth tile was wrong: "Pending review" counted `is_verify = 0`, a value that column never holds, so it was structurally always zero while the review queue had work in it. It now counts the queue's own population | live: tile reads 2, matching the queue | ✅ Done |
+| Support/dispute separation from compliance flags | DB-03, §11 | The Disputes screen was backed **entirely** by `tbl_admin_flags` — KYC holds written by the verification flow, none of them a customer dispute — so "resolving a dispute" lifted a regulatory hold on a host, and the resolution note **overwrote** the reason the hold was raised. The two populations are now returned and rendered separately (`compliance_flag` / `support_ticket`) with their own counts, the screen is retitled "Compliance & moderation", and resolving appends rather than erases. No customer-dispute table was invented: nothing raises one yet, and an empty table would only hide the gap | live: 5 open holds, 1 support ticket, counted apart | ✅ Done |
 
-**Behaviour changes to flag:** voiding an invoice or rejecting a payout now
-requires a written reason (5+ characters) and cannot be repeated; a completed
-payout cannot be rejected at all. Deleting a listing now also deactivates it.
+**Behaviour changes to flag for your tester:**
+
+- Voiding an invoice or rejecting a payout now requires a written reason (5+
+  characters) and cannot be repeated; a **completed** payout cannot be rejected
+  at all.
+- Deleting a listing now also deactivates it.
+- The "Disputes" screen is now "Compliance & moderation" and lists support
+  tickets separately beneath the holds.
+- The dashboard's pending-review tile now shows a real number (it was always 0).
+
+**Still missing, and worth naming:** there is no customer-dispute feature at
+all — no guest-facing way to raise one, and no table behind it. What existed
+was a compliance queue wearing the word. Building disputes properly is its own
+piece of work, not a W7 fix.
 
 ### W8 — Android APK `~1 week` · parallel, different team
 
