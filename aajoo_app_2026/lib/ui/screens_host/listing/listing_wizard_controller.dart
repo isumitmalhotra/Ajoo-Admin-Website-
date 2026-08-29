@@ -205,7 +205,12 @@ class ListingWizardController extends GetxController {
     merge(spec, d['specification'], 'ps_');
     merge(attrs, d['attributes']);
     merge(details, d['details']);
-    merge(p4, d['pricing'], 'pp_');
+    // 'ppr_', not 'pp_'. The pricing columns are ppr_base_price, ppr_weekly_
+    // price and so on, so a 'pp_' prefix matched nothing and every key stayed
+    // as ppr_* — meaning Step 4 opened EMPTY when editing a listing that
+    // already had prices, and a host re-typed the lot. Same fault below for
+    // booking rules, whose columns are pbr_*.
+    merge(p4, d['pricing'], 'ppr_');
     merge(p4, d['negotiation'], 'pn_');
     // The two negotiation tiers live on the flat property row, not in the
     // modular negotiation table, and the form keys are the ones the save
@@ -219,7 +224,20 @@ class ListingWizardController extends GetxController {
         p4['negotiation_ideal_price'] = tierRow['property_ideal_price'];
       }
     }
-    merge(p4, d['bookingRules'], 'pb_');
+    // The weekly and monthly tiers come off the pricing row under the names
+    // the save endpoint reads, which are not the column names.
+    const tierKeys = {
+      'weekly_min': 'weekly_minimum_price',
+      'weekly_ideal': 'weekly_ideal_price',
+      'monthly_min': 'monthly_minimum_price',
+      'monthly_ideal': 'monthly_ideal_price',
+      'advance_discount': 'advance_booking_discount',
+    };
+    tierKeys.forEach((column, formKey) {
+      final v = p4[column];
+      if (v != null) p4[formKey] = v;
+    });
+    merge(p4, d['bookingRules'], 'pbr_');
     merge(p4, d['settlement'], 'pst_');
     merge(p5, d['houseRules'], 'ph_');
 
@@ -439,10 +457,20 @@ class ListingWizardController extends GetxController {
     return errs;
   }
 
+  /// Step 4 — the nine-value pricing grid, every value required.
+  ///
+  /// Min / Ideal / Max across night, week and month. The server enforces
+  /// exactly this in utils/pricingGrid; this copy exists so the host is told
+  /// which field is wrong beside the field, rather than by one message about
+  /// whichever problem the server reached first.
   Map<String, String> validateStep4() {
     final errs = <String, String>{};
-    final price = num.tryParse(_s(p4['base_price']));
     final rules = schema.value?.pricingRules;
+
+    num? val(String k) => num.tryParse(_s(p4[k]));
+    bool set(String k) => (val(k) ?? 0) > 0;
+
+    final price = val('base_price');
     if (price == null || price <= 0) {
       errs['base_price'] = 'Enter the nightly price';
     } else if (rules != null &&
@@ -454,6 +482,43 @@ class ListingWizardController extends GetxController {
           // "₹1000000" against "₹10,00,000".
           'Price must be between ${rupees(rules.minBasePrice)} and '
           '${rupees(rules.maxBasePrice)}';
+    }
+
+    const periods = [
+      ['base_price', 'negotiation_minimum_price', 'negotiation_ideal_price', 'nightly', '0'],
+      ['weekly_price', 'weekly_minimum_price', 'weekly_ideal_price', 'weekly', '7'],
+      ['monthly_price', 'monthly_minimum_price', 'monthly_ideal_price', 'monthly', '28'],
+    ];
+    for (final period in periods) {
+      final priceKey = period[0];
+      final minKey = period[1];
+      final idealKey = period[2];
+      final label = period[3];
+      final nights = int.parse(period[4]);
+
+      if (!set(priceKey)) errs[priceKey] = 'Enter the $label price';
+      if (!set(minKey)) errs[minKey] = "Required — the least you'd accept";
+      if (!set(idealKey)) {
+        errs[idealKey] = 'Required — offers at or above this are accepted for you';
+      }
+      if (set(priceKey) && set(minKey) && val(minKey)! > val(priceKey)!) {
+        errs[minKey] = "Can't be above your $label price";
+      }
+      if (set(priceKey) && set(idealKey) && val(idealKey)! > val(priceKey)!) {
+        errs[idealKey] = "Can't be above your $label price";
+      }
+      if (set(minKey) && set(idealKey) && val(idealKey)! < val(minKey)!) {
+        errs[idealKey] = "Can't be below your minimum";
+      }
+      // A package must beat buying its nights one by one, or it is not one.
+      if (nights > 0 &&
+          set(priceKey) &&
+          price != null &&
+          val(priceKey)! > price * nights) {
+        errs[priceKey] =
+            'More than $nights nights at ${rupees(price)} — set it below '
+            '${rupees(price * nights)}';
+      }
     }
     return errs;
   }

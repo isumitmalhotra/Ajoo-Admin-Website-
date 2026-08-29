@@ -891,8 +891,8 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
         ),
         ListingSection(
           title: 'Weekly & monthly price',
-          sub: 'What a longer stay costs in total. Leave blank if you do not '
-              'offer one.',
+          sub: 'What a longer stay costs in total. A 12-night stay is charged '
+              'as one week plus 5 nights.',
           children: [
             // The host states the PRICE, not a percentage.
             //
@@ -904,14 +904,16 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             // database and are simply not applied — a stay must not get two
             // mechanisms at once.
             _p4Text('weekly_price', 'Weekly price (₹)',
+                required: true,
                 numeric: true,
                 help: 'Total for a 7-night stay. Must be less than 7 nights '
                     'at your nightly rate — the guest is shown how much they '
                     'save.'),
             _p4Text('monthly_price', 'Monthly price (₹)',
+                required: true,
                 numeric: true,
-                help: 'Total for a 28-night stay. Longer stays are charged '
-                    'pro rata at this rate.'),
+                help: 'Total for a 28-night stay. A longer stay is charged as '
+                    'whole months, then weeks, then the nights left over.'),
           ],
         ),
         ListingSection(
@@ -932,6 +934,48 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
           ],
         ),
         ListingSection(
+          title: 'Your price range',
+          sub: 'The least you would accept, and the price you are aiming for. '
+              'Guests never see either — only the prices above.',
+          children: [
+            // Min / Ideal per period. All required: the engine CAN derive a
+            // missing tier by scaling, but a derived number is a guess about
+            // the host's own money, and no stay should be quoted — nor an
+            // offer auto-accepted — on an assumption nobody made. Same rule
+            // server-side in utils/pricingGrid.
+            _p4Text('negotiation_minimum_price', 'Minimum per night (₹)',
+                required: true,
+                numeric: true,
+                help: 'Your floor. Offers under it still reach you, marked as '
+                    'below your minimum, so a quiet week stays yours to fill.'),
+            _p4Text('negotiation_ideal_price', 'Ideal per night (₹)',
+                required: true,
+                numeric: true,
+                help: 'Offers at or above this are accepted for you '
+                    'automatically; anything lower comes to you to decide.'),
+            _p4Text('weekly_minimum_price', 'Minimum for a week (₹)',
+                required: true,
+                numeric: true,
+                help: 'The least you would take for a full 7 nights.'),
+            _p4Text('weekly_ideal_price', 'Ideal for a week (₹)',
+                required: true,
+                numeric: true,
+                help: 'Week-long offers at or above this are accepted for you.'),
+            _p4Text('monthly_minimum_price', 'Minimum for a month (₹)',
+                required: true,
+                numeric: true,
+                help: 'The least you would take for 28 nights.'),
+            _p4Text('monthly_ideal_price', 'Ideal for a month (₹)',
+                required: true,
+                numeric: true,
+                help: 'Month-long offers at or above this are accepted for you.'),
+            _p4Text('advance_booking_discount', 'Pre-booking discount (%)',
+                numeric: true,
+                help: 'Optional. Off the total for stays booked well ahead. '
+                    'Leave blank for none.'),
+          ],
+        ),
+        ListingSection(
           title: 'Negotiation',
           sub: 'Aajoo is negotiation-first — guests can send you an offer.',
           children: [
@@ -942,28 +986,10 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             ),
             if (c.p4['negotiation_enabled'] != false) ...[
               const SizedBox(height: 8),
-              // The key is what the backend reads. It was
-              // 'min_acceptable_price', which nothing on the server looks at,
-              // so a host who set a floor here set nothing — and their listing
-              // then refused every offer, because an absent floor means "this
-              // stay does not negotiate".
-              _p4Text('negotiation_minimum_price',
-                  'Lowest price you will accept (₹)',
-                  numeric: true,
-                  // The old text said offers below this are declined
-                  // automatically. They are not: below the floor the offer
-                  // comes to you to accept, counter or decline. Nothing is
-                  // ever refused on your behalf.
-                  help: 'Guests never see this. Offers at or above it are '
-                      'accepted for you straight away; anything below comes to '
-                      'you to decide. Leave it blank and this stay takes no '
-                      'offers at all.'),
-              const SizedBox(height: 8),
-              _p4Text('negotiation_ideal_price', 'Your ideal price (₹)',
-                  numeric: true,
-                  help: 'Optional, and also never shown to guests. Recorded '
-                      'for future pricing guidance — it does not change what '
-                      'gets accepted today.'),
+              Text(
+                'Offers are judged against the price range you set above.',
+                style: inter(fontSize: 12, color: kMuted),
+              ),
             ],
           ],
         ),
