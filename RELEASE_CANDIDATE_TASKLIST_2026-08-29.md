@@ -1,0 +1,248 @@
+# AAJOO — Release Candidate Task List
+
+From the seven documents shared 2026-08-29 (`Hii.docx` + 6 PDFs). Written to answer the
+client's actual ask: **Finding ID → Fix implemented → Developer tested → Status**.
+
+| | |
+|---|---|
+| Finding IDs across all docs | ~200 |
+| Client's release position | 🔴 BLOCKED on all four surfaces (Web, Admin, Backend, APK) |
+| Repos | `aajao-frontend-vercel` (web + admin UI), `aajaoBackend-render` (API), `aajoo_app_2026` (Flutter) |
+
+---
+
+## 0. Read this first — what these documents actually are
+
+`Hii.docx` is explicit that these are **layers of one product**, not competing requirements.
+They fall into three different kinds, and conflating them is the main risk:
+
+| Kind | Documents | How to treat it |
+|---|---|---|
+| **Reference** (what the product *is*) | Business Model, POC/Design | Do not implement from these directly. Use to settle disputes. |
+| **QA findings** (what is *broken*) | Website Guest/Host, Admin QA, APK, Host List Property | The action list. Each has a finding ID. |
+| **Spec changes** (what must be *built differently*) | **Pricing Architecture**, Host Listing SEO Publish Fix | ⚠️ These are **new/changed scope**, not bug fixes. Sized separately below. |
+
+**The single most important thing in the pack is not a bug.** It is
+`Aajoo Homes Pricing Architecture.pdf`, which redefines pricing (§W2). Everything downstream —
+negotiation, booking, payment, refunds, host earnings, commission — computes off it. It has to
+be settled before the flows that consume it are "fixed", or they get fixed twice.
+
+---
+
+## 1. Findings I verified in code today
+
+Not restating the client's claims — these were checked against the actual source.
+
+| ID | Client's claim | Verified | Evidence |
+|---|---|---|---|
+| ADM-P0-01 | Finance routes lack RBAC | ✅ **True, worse than stated** | Only **3 of 27** routes in `adminFinance.routes.js` use `requireRole`. 24 are `adminAuth` only. |
+| ADM-P0-02 / PROD-01 | Razorpay TEST creds bundled | ✅ **True, in two places** | `rzp_test_XUTODhUdMAshi6` hardcoded as fallback in `config/db.config.js:64` **and** `config/payments.config.js:22`. |
+| ADM-P0-03 / PROD-02 | CORS allows all origins | ✅ **True** | `app.js:59` `origin: true` (HTTP); `app.js:295` `origin: "*"` (Socket.IO). Both carry a "consider restricting in production" comment. |
+| ADM-P0-04 / DB-01 | RBAC storage incomplete | ✅ **True** | `tbl_admins` has only `admin_isAdmin`, `admin_isActive`. No finance/support role column exists. |
+| ADM-P1-01 | Rate limiter reads wrong claim | ✅ **True** | `middleware/rateLimiter.js` uses `req.admin?.id` in 3 places; tokens carry `adminId`. Per-admin buckets silently fall back to per-IP. |
+| PROD-05 | `/db-test` exposed | ✅ **True** | `app.js:241` public. `/health/env` at `app.js:195`. |
+| WEB-P0-01 | `/property/detail/undefined` reachable | ✅ **True, root cause found** | Legacy components still emit these links: `FeaturedProperties.tsx:182`, `HomePropCard.tsx:291` (`id != null` guard is wrong — `undefined` string still routes), `HotelTooltip.tsx:39`. |
+
+**Read-across:** every one of the seven spot-checks was accurate. Treat the rest of the client's
+findings as credible-until-disproven rather than re-litigating them.
+
+---
+
+## 2. Already done — claim these against finding IDs
+
+Work completed in recent sessions that closes findings already. **Needs regression evidence, not
+new development.**
+
+| Finding IDs | What exists | Status |
+|---|---|---|
+| G-09, G-10, G-12 | Location search rebuilt on our own place index; date/guest params carried | ✅ Shipped 2026-08-29 (`a94b789`/`7cc46b3`) |
+| G-11 | Guest count validated against host capacity server-side | ✅ Shipped |
+| G-20 (partial) | Tax-inclusive totals, backend-computed | ✅ Shipped |
+| N-01…N-11 (partial) | REST negotiation engine: offer → host decide → coupon → checkout | ⚠️ Partial — see §W3 |
+| H-16…H-21 | Host calendar, block/unblock, occupancy rules | ✅ Shipped 2026-08-18 |
+| H-34…H-40 (partial) | Payouts: RazorpayX, penny-drop, AES-256-GCM | ⚠️ **Built, blocked on 4 env vars** |
+| SEO-03, SEO-10, SEO-11 | robots status rules, sitemap filtered to indexable | ✅ Shipped 2026-08-28 |
+| SEO-04, SEO-05 | Slug uniqueness at DB level; slug change auto-creates 301 | ✅ Shipped 2026-08-28 |
+| SEO-07 | Self-canonical absolute HTTPS | ✅ Shipped 2026-08-27 |
+| WEB bugs #1,#4,#5,#6,#7 | From `Aajoo Homes.xlsx` | ✅ Shipped 2026-08-29 |
+
+---
+
+## 3. Workstreams
+
+Ordered by **what unblocks what**, not by severity alone.
+
+### W0 — Production hardening `~2–3 days` · do first, cheapest risk reduction
+
+Nearly all config, no product logic. Unblocks the client's "production/test separation" gate.
+
+| Task | Finding IDs |
+|---|---|
+| Remove both hardcoded `rzp_test_` fallbacks; production **fails closed** without live keys | ADM-P0-02, PROD-01, P0-02, BE-01 |
+| Restrict CORS + Socket.IO origins to approved domains | ADM-P0-03, PROD-02, PROD-07, SEC-08 |
+| Remove/protect `/db-test`; restrict `/health/env` | PROD-04, PROD-05, SEC-10 |
+| Split liveness vs readiness; refuse traffic when DB/config unhealthy | ADM-P0-06, PROD-03 |
+| Fix admin rate limiter to use `adminId` | ADM-P1-01, PROD-08 |
+| Centralised log redaction (OTP, tokens, payment signatures, KYC, PII) | P0-05, SEC-06 |
+| Private uploads off public static; authorised retrieval only | P0-08, PROD-06, SEC-05, H-06 |
+| **Set the 4 missing Render env vars** (payouts already blocked on these) | — |
+
+> ⚠️ Memory flag: *Render env is NOT correctly set (verified)*. This is a standing blocker that
+> W0 finally forces to be resolved.
+
+### W1 — Authorization & RBAC `~1 week` · cross-cutting, blocks sign-off
+
+| Task | Finding IDs |
+|---|---|
+| Canonical role/permission storage (admin/finance/support/host/guest) replacing `admin_isAdmin` | ADM-P0-04, ADM-P1-02, DB-01 |
+| Apply RBAC to all 27 finance routes + negative tests per role | ADM-P0-01, ADM-P1-04 |
+| Admin creation route requires authenticated super-admin | ADM-P1-03 |
+| Object-level ownership on every guest/host/admin ID | SEC-01, SEC-02, G-21, H-09, H-15, H-22, H-36, BE-04, BE-05, ADM-P1-06 |
+| Server-side session revocation on logout + 60-min access token + 30-min inactivity | G-03, G-04, P0-06, P1-01, P1-02, SEC-04 |
+| **Deliverable: endpoint × role authorization matrix** (client asked for this explicitly) | — |
+
+### W2 — Pricing engine ✅ **DONE · live 2026-08-29** · see `W2_PRICING_ENGINE_COMPLETION_2026-08-29.md`
+
+`Aajoo Homes Pricing Architecture.pdf` is a redesign, not a fix:
+
+- **3 price levels × 3 periods** per property: Min/Ideal/Max × Night/Week/Month (9 values).
+  Today we store nightly + weekly + monthly rates — **not** the min/ideal/max triple.
+- **Composite period maths**: 12 nights = 1 week + 5 nights, computed at each of the three levels.
+- **Guest only ever sees Maximum/List.** Min and Ideal must never leave the server.
+- **Advance Booking is a second booking mode** — no negotiation, a discount instead, **10% deposit
+  after discount**, remainder later. This does not exist today at all.
+- **One engine, two experiences.** Frontend must never compute the final price.
+
+| Task | Finding IDs | Fix | Tested | Status |
+|---|---|---|---|---|
+| Schema: min/ideal/max × night/week/month + migration | LP-P0-09, H-11 | 4 tier columns on `property_pricing`; absent tiers derive by scaling the period Max by the nightly ratio, so no backfill | migration applied + columns verified on the live DB | ✅ Done |
+| Server pricing engine returning a full breakdown; UI renders only | G-20, SEC-03, P-01 | `utils/pricingEngine.js` (pure, composite months→weeks→nights) + public `POST /pricing/quote` | `tests/pricingEngine.test.js` pins the document's own worked example (45,000/53,000/62,000); endpoint verified live | ✅ Done |
+| Host Step 4 collects the 9 values with validation | LP-P0-09 | Weekly/monthly **prices** replace the inert percentage discounts; per-period min/ideal fields; `min ≤ ideal ≤ price` enforced server-side | `tsc -b` + production build; server rejects a tier for an unpriced package | ✅ Done |
+| Guest APIs never expose min/ideal | N-02, LP §6 | Internal tiers live under an `internal` block no response builder touches; quote response is built field-by-field | `tests/pricingQuote.test.js` fails the build if the controller ever mentions it; live payload checked | ✅ Done |
+| Negotiation threshold moved to the **ideal**; above-list refused server-side | (product decision) | `decideOffer` rewritten; dated offers judged against composite tiers for those dates; ledger snapshots the tiers used | `tests/negotiationEngine.test.js` 24/24; four decision branches verified against live data | ✅ Done |
+| 10% deposit + remaining balance, its own payment states | P1-09 | On **every** booking (product decision, wider than the doc): deposit order, balance endpoint, check-in gate, payout held PENDING, refunds against money received, reminders at 7/3/1 days | `tests/bookingDeposit.test.js` 14/14; live deposit booking on production produced a ₹1,575 order on a ₹15,750 stay and a ₹15,750 balance order | ✅ Done |
+| Advance Booking as a **separate discounted mode** | P1-09 (remainder) | Schema column + Step 4 field ship; nothing reads the discount yet | — | ⏸ Deferred — every future-dated booking already gets the deposit option |
+| Property page renders the quote endpoint's numbers | G-20 | Checkout is server-authoritative; the property page still draws its own breakdown | — | ⏸ Deferred — must not blank a price if the endpoint hiccups |
+
+> **Decision taken:** the 10% deposit shipped in *this* release, on every booking rather than only
+> Advance Booking. Advance Booking as a separate discounted mode is deferred.
+
+### W3 — Negotiation completion ✅ **DONE · live 2026-08-30**
+
+| Task | Finding IDs | Fix | Tested | Status |
+|---|---|---|---|---|
+| Auto-accept without host action | N-03, P1-06 | Shipped in W2 Phase C — threshold is the **ideal**, not the minimum (your correction) | 24/24 engine tests; live on 29262 | ✅ Done |
+| Below-threshold escalation → Accept/Counter/Decline | N-04, N-05 | Already existed; host mail now distinguishes below-target from below-floor | live | ✅ Done |
+| Negotiated price as the authoritative booking price | N-06, P1-08, E2E-05 | Already existed — accepted price becomes a personal coupon, recomputed server-side at checkout | live | ✅ Done |
+| Expiry honours the host's own window | N-07…N-10 | `pn_expiry_hours` was collected by Step 4 and read by nothing; every offer expired on one global 30-min timer | sweeper run live; 29262 now reads its real 24h window | ✅ Done |
+| Duplicate offers | N-07…N-10 | One live offer per guest per stay; a host's unanswered counter also blocks a fresh offer | live: 2nd offer → 409 | ✅ Done |
+| Attempt cap | H-32, H-33 | `pn_max_attempts` (default 3) was collected and never enforced — a guest could offer forever | live: 4th attempt → 429 | ✅ Done |
+| Concurrency | N-07…N-10 | Guards + round number now come from one `FOR UPDATE` read of the thread; degrades rather than fails if that read errors | source-pinned | ✅ Done |
+| Full audit with pricing snapshot | N-11, §10 Admin | `tbl_negotiation_log` was written from day one and **read by nothing**. New `GET /admin/negotiations/audit` + a decision-history panel under each negotiation | live: 31 events, snapshots intact | ✅ Done |
+| "If Minimum not configured → negotiation OFF" | Pricing §17 | Still true, **and** the host's own `pn_enabled` switch is now honoured — it had been read only inside the no-minimum branch, which the pricing backfill made dead code | live: switch flips off and back | ✅ Done |
+
+### W4 — Booking, payment, cancellation integrity `~1–1.5 weeks`
+
+| Task | Finding IDs |
+|---|---|
+| One authoritative transaction: availability → booking → payment → verify → confirm | WEB-P0-04 |
+| Idempotent payment verification; replay-safe webhooks | P-03, P-04, P-07, P0-09, E2E-10 |
+| Availability race — two guests cannot book the same dates | G-19 |
+| Cancellation: policy shown → **OTP** → server-side refund calc → state lock | WEB-P0-05, C-01…C-06, P1-04, P1-05 |
+| Cancellation policy field on host form (Flexible/Moderate/Firm/Strict/Super Strict) | `Hii.docx` §8 |
+| Refund/ledger reconciliation | E2E-02, DB-05 |
+
+### W5 — Host listing 5-step + publish lifecycle `~1.5 weeks`
+
+| Task | Finding IDs |
+|---|---|
+| Server-enforced state machine Draft → Submitted → Verification → Approved → Live | LP-P0-01, LP-P0-02 |
+| Backend completeness gate — direct API calls with missing modules must fail | LP-P0-01 |
+| Category switch clears incompatible attributes | LP-P0-03, LP-13 |
+| Capacity consistency, operational status rules, required photos | LP-P0-05, LP-P0-06, LP-P0-07, LP-27 |
+| Verification stored/checked server-side (identity, ownership, bank, compliance) | LP-P0-08, LP-31…LP-37 |
+| Structured category attributes (not one JSON blob) so search/SEO can filter | LP-18, LP-19 |
+| Draft resume across refresh/logout without duplicate properties | LP-11, LP-12 |
+
+### W6 — SEO on approval `~2–3 days` · mostly done, needs the trigger
+
+Phase 1 SEO (Tasks 0–4) is already live. What the fix spec adds:
+
+| Task | Finding IDs |
+|---|---|
+| **Trigger generation on Admin approval** (currently generated at wizard submit) | SEO-01, SEO-02, LP-P0-10, LP-40 |
+| Regenerate metadata + sitemap `lastmod` on edits to a live listing | SEO-12 |
+| Fallback meta title/description — never blank/undefined | SEO-06 |
+| Schema only from real data; no fabricated reviews/ratings | SEO-08 |
+| Image ALT from category + property, ≤125 chars | SEO-09 |
+| Invalid property ID → real 404/410, never `undefined` in URL | WEB-P0-01, G-18 |
+
+### W7 — Admin control plane `~1.5 weeks`
+
+| Task | Finding IDs |
+|---|---|
+| Persistent mutation audit table (approvals, KYC, payouts, voids, roles) | ADM-P0-05, DB-02 |
+| Finance: payout eligibility, rejection reasons, invoice void reasons, idempotency | §9 Finance |
+| KPI ↔ list-screen population reconciliation | §8 Dashboard KPI |
+| Negotiation control plane: identity from ownership not last sender | §10 |
+| Support/dispute separation from compliance flags | DB-03, §11 |
+| Soft-delete consistency across admin + public queries | DB-04, E2E-12 |
+
+### W8 — Android APK `~1 week` · parallel, different team
+
+| Task | Finding IDs |
+|---|---|
+| Production config: no `aajaodev.onrender.com`, no `rzp_test_` in release build | P0-01, P0-02 |
+| Remove mock/stub behaviour from guest critical flows | P0-10, FE-10 |
+| Secure token storage, TLS validation, no no-op buttons, stock images | FE-11…FE-18 |
+| API path/versioning reconciliation with the spec | P1-11 |
+
+### W9 — Cross-cutting verification `~1 week` · last
+
+Mobile web 320–412px · data integrity/indexes/DECIMAL · migrations from empty DB ·
+the 12 E2E scenarios (E2E-01…E2E-12) · security negative tests · the client's required evidence pack.
+
+---
+
+## 4. Sequencing
+
+```
+W0 hardening ──┬─> W1 RBAC ──┬─> W7 Admin ──┐
+               │             │              │
+               └─> W2 PRICING ─> W3 Negotiation ─> W4 Booking/Payment ─┼─> W9 E2E
+                            └─> W5 Host listing ─> W6 SEO ────────────┘
+W8 APK ─────────────────────────────────────────────────────────────────┘ (parallel)
+```
+
+**Rough total: 7–9 weeks of focused work**, less if W8 runs on a separate track. This is not a
+"fix a list of bugs" exercise — W2 alone is a pricing redesign.
+
+---
+
+## 5. Decisions needed from the client — these block real work
+
+| # | Question | Blocks |
+|---|---|---|
+| 1 | **Advance Booking (10% deposit) — this release or next?** New booking mode, new payment lifecycle. | W2, W4 |
+| 2 | **Delete the 29,226 seeded listings?** Their coordinates are wrong by up to 450 km. Map, "near me" and distance sort are all being judged against fabricated data. | W9, sitemap |
+| 3 | **Live Razorpay credentials** — production must fail closed without them. | W0 |
+| 4 | **Is monthly stay in scope, or removed from the UI?** Client's own doc says do not expose a misleading journey. | W2, W3 |
+| 5 | **Cash/pay-at-property collection** — unbuilt, blocked on client since 2026-08-23. | W4 |
+| 6 | Is the **APK in this release candidate**, or web+admin first? | W8 |
+
+---
+
+## 6. What we owe the client
+
+They asked for a specific artefact. Proposed format, one row per finding ID:
+
+| Finding ID | Fix implemented | Developer tested | Status |
+|---|---|---|---|
+| ADM-P0-01 | RBAC applied to 27 finance routes | Role matrix, 4 roles × 27 routes | Fixed |
+| … | … | … | Fixed / Partial / Deferred / Won't fix + reason |
+
+Plus: web build SHA, backend commit, DB migration version, APK version, known remaining issues.
+
+**Recommendation:** send W0 + W1 as an early partial response with the mapping filled in for those
+IDs. It is the fastest way to convert "🔴 BLOCKED" into visible progress, and it is the half of the
+pack that is cheapest to close.
