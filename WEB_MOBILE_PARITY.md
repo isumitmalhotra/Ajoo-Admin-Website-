@@ -319,6 +319,19 @@ the case for doing this sweep at all rather than assuming.
   Boost screen's order → checkout → verify path, so there is one payment sequence
   on the platform rather than two that drift. `test/host_dues_test.dart` pins the
   model against the payload the server actually sent.
+- **The settlement payment is proven on WEB only.** A real Razorpay test payment was
+  driven through the web checkout on 2026-08-30 — `pay_TW1vgIgPR2Ogw4`, netbanking,
+  captured, ten dues settled for ₹11,896.25. The **app's** checkout has *not* been
+  driven. Both platforms call the same three endpoints, and the server half is
+  therefore proven for both; what is untested on the app is the `razorpay_flutter`
+  leg — open checkout → `PaymentSuccessResponse` → `/host/dues/verify`. Different SDK,
+  different callback shape, so web passing does not carry it. `test/host_dues_test.dart`
+  pins the model parsing, not the payment. **Drive one from a device before release.**
+- **Prefill was missing on web and present on the app** — the reverse of the usual
+  direction. The Flutter screen passed `prefill` from `AuthController` from the start;
+  the web screen passed none, so Razorpay interrupted every host with a "Contact
+  details" step before they could pay. Fixed on web. Worth remembering that parity
+  gaps run both ways: the app is not always the one behind.
 - **`--dart-define=API_BASE_URL` now reaches the app.** W8 made `ApiConstants`
   overridable, but sixteen services each carried their own hardcoded copy of the
   host, so the flag moved a constant nobody read. All sixteen now refer to it.
