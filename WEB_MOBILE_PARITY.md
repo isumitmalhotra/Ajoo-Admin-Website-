@@ -349,10 +349,15 @@ the case for doing this sweep at all rather than assuming.
   not allow it — with a sentence saying why, rather than letting the server refuse
   it at the last step. `test/property_offer_test.dart` pins the model against the
   payload the server actually sent.
-  **Not yet seen on a device:** the emulator wedged (`mCurrentFocus=null`, stale
-  framebuffer) after the build. Analyzer is clean and 55/55 app tests pass, but the
-  three app surfaces have not been looked at. Worth ten minutes with a fresh
-  emulator before release.
+  **Verified by widget test rather than by eye.** The emulator's display pipeline
+  broke mid-verification — the app runs and adb responds, but the framebuffer never
+  updates, and a fresh boot restored the same frozen frame from a Quick Boot
+  snapshot. `test/offer_card_test.dart` renders the real card instead and asserts
+  what a guest would see: both prices, the "% off" chip, the original actually
+  struck through, and none of it on an undiscounted card. That is the durable
+  version of the check — a screenshot proves it once, this proves it every run.
+  Still worth one look on a working device before release, for the property page
+  and the checkout gate, which have no widget test yet.
 
 ### Still open on the app
 
