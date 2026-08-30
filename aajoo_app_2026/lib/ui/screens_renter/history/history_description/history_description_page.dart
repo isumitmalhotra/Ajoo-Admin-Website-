@@ -13,6 +13,8 @@ import 'package:rent_home/constants/payment_config.dart';
 import 'package:rent_home/ui/design/amount_breakdown.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/ui/screens_renter/booking_controller.dart';
+import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
+import 'package:rent_home/ui/widgets/email_otp_sheet.dart';
 import 'package:rent_home/utils/stay_clock.dart';
 import 'package:rent_home/utils/booking_status.dart';
 import 'package:rent_home/data/ApiConstants.dart';
@@ -919,7 +921,29 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
   Future<void> _cancelBooking(String reason) async {
     final bookId = widget.bookingData.bookId;
     if (bookId == null) return;
-    final ok = await _bookingController.cancelBooking(bookId, reason);
+
+    // Cancelling triggers a refund, so the server asks for the emailed code
+    // as well as the session (W4) — someone holding an unlocked phone knows
+    // neither the mailbox nor the code. Same two steps as the website, and the
+    // same sheet the password change uses.
+    final auth = Get.find<AuthController>();
+    final sent = await auth.authService.requestSecurityOtp('cancel');
+    if (!mounted) return;
+    if (!sent.success) {
+      Fluttertoast.showToast(msg: sent.message);
+      return;
+    }
+
+    final otp = await showEmailOtpSheet(
+      email: auth.userData.value?.email ?? 'your registered email',
+      title: 'Confirm cancellation',
+      resend: () => auth.authService.requestSecurityOtp('cancel'),
+    );
+    // Backing out of the code sheet abandons the cancellation entirely —
+    // nothing is sent, and the booking stands.
+    if (otp == null || !mounted) return;
+
+    final ok = await _bookingController.cancelBooking(bookId, reason, otp: otp);
     if (!mounted) return;
     if (ok) {
       // Flip the local model so the page redraws as cancelled (badge + Book
@@ -948,6 +972,14 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
           ((widget.bookingData.bookTotalAmt ?? 0) * 100).round();
       final amountInPaise = order['data']?['order']?['amount'] ?? fallbackPaise;
       final auth = Get.find<AuthController>();
+      // A release build carrying a TEST key takes no money while looking
+      // exactly as if it did (W8 · P0-02). Refuse rather than confirm a
+      // booking nobody paid for. Debug builds, and any build made with
+      // --dart-define=ALLOW_TEST_PAYMENTS=true, are unaffected.
+      if (!PaymentConfig.usableForPayments) {
+        Fluttertoast.showToast(msg: PaymentConfig.unavailableMessage);
+        return;
+      }
       _razorpay.open({
         'key': PaymentConfig.razorpayKey,
         'amount': amountInPaise,

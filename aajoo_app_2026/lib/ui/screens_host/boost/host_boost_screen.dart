@@ -1,3 +1,4 @@
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -119,6 +120,14 @@ class _HostBoostScreenState extends State<HostBoostScreen> {
         ? Get.find<AuthController>().userData.value
         : null;
     try {
+      // A release build carrying a TEST key takes no money while looking
+      // exactly as if it did (W8 · P0-02). Refuse rather than confirm a
+      // booking nobody paid for. Debug builds, and any build made with
+      // --dart-define=ALLOW_TEST_PAYMENTS=true, are unaffected.
+      if (!PaymentConfig.usableForPayments) {
+        Fluttertoast.showToast(msg: PaymentConfig.unavailableMessage);
+        return;
+      }
       _razorpay.open({
         'key': PaymentConfig.razorpayKey,
         // The ORDER's amount is what Razorpay actually charges when an order

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show kReleaseMode;
+
 /// Centralized payment-gateway config for the app.
 ///
 /// Single source of truth for the Razorpay publishable key. Every checkout
@@ -50,6 +52,46 @@ class PaymentConfig {
   /// True when the current key is a live key (`rzp_live_...`). Useful for
   /// suppressing "test mode" banners or guarding analytics events.
   static bool get isLiveMode => razorpayKey.startsWith('rzp_live_');
+
+  /// True when the app is carrying a TEST key.
+  ///
+  /// A test key does not fail — it succeeds and collects nothing. That is the
+  /// same failure the backend shipped with for months (W0-A: checkout opened,
+  /// the guest "paid", the booking confirmed, and no money ever moved), and it
+  /// is invisible unless something says so out loud.
+  static bool get isTestKey => razorpayKey.startsWith('rzp_test_');
+
+  /// The explicit escape hatch for the QA window, matching the backend's
+  /// `ALLOW_TEST_PAYMENTS` environment variable exactly:
+  ///
+  ///   flutter build apk --dart-define=ALLOW_TEST_PAYMENTS=true
+  ///
+  /// Deliberately its own flag rather than something inferred from the build
+  /// mode: "we are testing payments" and "this is a debug build" are different
+  /// statements, and conflating them is how a test key reaches real users.
+  static const bool allowTestPayments =
+      bool.fromEnvironment('ALLOW_TEST_PAYMENTS', defaultValue: false);
+
+  /// Whether checkout should open at all.
+  ///
+  /// Debug and profile builds always may — that is what they are for. A
+  /// RELEASE build carrying a test key may only if somebody said so at build
+  /// time. Otherwise the app refuses to open a payment sheet that would take
+  /// no money, instead of confirming bookings nobody paid for.
+  static bool get usableForPayments {
+    if (razorpayKey.isEmpty) return false;
+    if (!isTestKey) return true;
+    return !kReleaseMode || allowTestPayments;
+  }
+
+  /// True when money will actually be collected. The honest field: the backend
+  /// reports the same thing at /health/env as `collectsMoney`.
+  static bool get collectsMoney => isLiveMode;
+
+  /// What to tell somebody when [usableForPayments] is false.
+  static const String unavailableMessage =
+      'Payments are not available in this build. Please update the app or '
+      'contact support.';
 
   /// Call this once at app startup if you fetch the key from the backend.
   /// Pass `null` to clear the override and fall back to build-time / bundled.

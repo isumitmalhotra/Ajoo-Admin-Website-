@@ -89,10 +89,11 @@ class BookingController extends GetxController {
   Future<CancellationQuote?> cancellationQuote(String bookingId) =>
       _bookingService.cancellationQuote(bookingId);
 
-  Future<bool> cancelBooking(String bookingId, String reason) async {
+  Future<bool> cancelBooking(String bookingId, String reason,
+      {String? otp}) async {
     isLoading.value = true;
     try {
-      await _bookingService.cancelBooking(bookingId, reason);
+      await _bookingService.cancelBooking(bookingId, reason, otp: otp);
       return true;
     } catch (e) {
       error.value = e.toString();

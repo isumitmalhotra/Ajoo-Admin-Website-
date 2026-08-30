@@ -429,6 +429,14 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
                                             ?['order']?['amount'] ??
                                         (widget.booking.bookTotalAmt * 100)
                                             .round();
+                                    // A release build carrying a TEST key takes no money while looking
+                                    // exactly as if it did (W8 · P0-02). Refuse rather than confirm a
+                                    // booking nobody paid for. Debug builds, and any build made with
+                                    // --dart-define=ALLOW_TEST_PAYMENTS=true, are unaffected.
+                                    if (!PaymentConfig.usableForPayments) {
+                                      Fluttertoast.showToast(msg: PaymentConfig.unavailableMessage);
+                                      return;
+                                    }
                                     razorpay.open({
                                       'key': PaymentConfig.razorpayKey,
                                       'amount': amountInPaise,

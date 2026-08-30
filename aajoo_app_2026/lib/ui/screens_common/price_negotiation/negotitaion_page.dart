@@ -1,3 +1,4 @@
+import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:async';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/service/pending_booking.dart';
@@ -375,6 +376,14 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
         _hideLoadingDialog();
         try {
           Razorpay razorpay = Razorpay();
+          // A release build carrying a TEST key takes no money while looking
+          // exactly as if it did (W8 · P0-02). Refuse rather than confirm a
+          // booking nobody paid for. Debug builds, and any build made with
+          // --dart-define=ALLOW_TEST_PAYMENTS=true, are unaffected.
+          if (!PaymentConfig.usableForPayments) {
+            Fluttertoast.showToast(msg: PaymentConfig.unavailableMessage);
+            return;
+          }
           razorpay.open(options);
         } catch (e) {
           ScaffoldMessenger.of(context).showSnackBar(

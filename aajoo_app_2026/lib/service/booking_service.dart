@@ -243,15 +243,24 @@ class BookingService {
     }
   }
 
+  /// Cancel a booking.
+  ///
+  /// [otp] is the emailed one-time code. The server requires it (W4:
+  /// cancellation triggers a refund, and a session alone is not enough to
+  /// authorise that) and answers `otpRequired` without one — so a cancel
+  /// sent from here without a code is refused outright, which is exactly
+  /// what happened between the server change landing and this one.
   Future<Map<String, dynamic>> cancelBooking(
-      String bookingId, String reason) async {
+      String bookingId, String reason, {String? otp}) async {
     final url = "$baseUrl/user/cancel/booking";
     final token = await const FlutterSecureStorage().read(key: "user_token");
     _dio.options.headers['Authorization'] = "Bearer $token";
     final data = {
       "bookingId": bookingId,
       "reason": reason,
-      
+      // Omitted rather than sent empty: the schema treats an absent code and a
+      // blank one differently, and a blank one reads as a wrong code.
+      if (otp != null && otp.trim().isNotEmpty) "otp": otp.trim(),
     };
     try {
       final response = await _dio.post(url, data: data);
