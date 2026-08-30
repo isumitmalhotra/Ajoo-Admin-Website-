@@ -1037,8 +1037,6 @@ from an empty schema: 136/136. See the task list's W9 section.
   rather than assumed: there is no drift today, every paid booking reconciles, and
   nothing is over-credited. Migrating 14 columns on a live database mid-testing
   carries more risk than it removes — do it in a quiet window.
-- Nothing. The settlement flow has been driven end to end against the live gateway —
-  see W10-G.
 
 ## Standing actions on your side
 
