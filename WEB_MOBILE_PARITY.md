@@ -342,6 +342,18 @@ the case for doing this sweep at all rather than assuming.
   overridable, but sixteen services each carried their own hardcoded copy of the
   host, so the flag moved a constant nobody read. All sixteen now refer to it.
 
+- **Offers (2026-08-31) — shipped on both, same day.** A host/admin discount the
+  guest never types a code for. The app carries `PropertyOffer`, the struck-through
+  price and "% off" chip on the stay card, the discounted headline on the property
+  page, and the checkout gate that withdraws *Pay at property* when the offer does
+  not allow it — with a sentence saying why, rather than letting the server refuse
+  it at the last step. `test/property_offer_test.dart` pins the model against the
+  payload the server actually sent.
+  **Not yet seen on a device:** the emulator wedged (`mCurrentFocus=null`, stale
+  framebuffer) after the build. Analyzer is clean and 55/55 app tests pass, but the
+  three app surfaces have not been looked at. Worth ten minutes with a fresh
+  emulator before release.
+
 ### Still open on the app
 
 - **API path/versioning reconciliation with the spec** (P1-11).

@@ -44,6 +44,7 @@ import 'package:rent_home/widgets/host_card.dart';
 import 'package:rent_home/widgets/verified_pill.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
+import 'package:rent_home/models/property_offer.dart';
 
 class PropertyPage extends StatefulWidget {
   final String image;
@@ -552,6 +553,22 @@ class _PropertyPageState extends State<PropertyPage>
     });
   }
 
+  /// The discount running on this listing, if any. Read from the fetched
+  /// detail rather than held separately, so it cannot go stale against the
+  /// price beside it.
+  PropertyOffer? get _offer => _single?.offer;
+
+  /// Drop a pay-at-property selection the offer does not permit.
+  ///
+  /// The option can be ticked before the detail arrives, and withdrawing the
+  /// tile afterwards would leave `isCod` true with nothing on screen saying so
+  /// — a booking the server then refuses for a reason the guest cannot see.
+  void _reconcilePayMode() {
+    if (isCod && _offer != null && !_offer!.allowsCod) {
+      setState(() => isCod = false);
+    }
+  }
+
   Future<void> _fetchSingleProperty() async {
     try {
       final resp = await _propertyService.getSingleProperty(widget.id);
@@ -568,6 +585,7 @@ class _PropertyPageState extends State<PropertyPage>
     } catch (e) {
       // ignore error; fall back to widget data
     }
+    _reconcilePayMode();
   }
 
   /// Who actually hosts this place.
@@ -664,8 +682,21 @@ class _PropertyPageState extends State<PropertyPage>
                     overflow: TextOverflow.ellipsis,
                     text: TextSpan(
                       children: [
+                        // A running offer replaces the headline and strikes the
+                        // listed price. The figures come from the server —
+                        // recomputing a discount here would let this screen and
+                        // the checkout disagree about the same stay.
+                        if (_offer != null)
+                          TextSpan(
+                            text: '${rupees(_offer!.was)} ',
+                            style: inter(fontSize: 14, color: kMuted)
+                                .copyWith(
+                                    decoration: TextDecoration.lineThrough),
+                          ),
                         TextSpan(
-                          text: rupeesFrom(perNight),
+                          text: _offer != null
+                              ? rupees(_offer!.now)
+                              : rupeesFrom(perNight),
                           style: fraunces(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
@@ -1393,14 +1424,39 @@ class _PropertyPageState extends State<PropertyPage>
                   selected: !isCod,
                   onTap: () => setState(() => isCod = false),
                 ),
-                const SizedBox(height: 10),
-                _PayMethod(
-                  icon: Icons.payments_outlined,
-                  title: 'Pay at property',
-                  sub: 'Reserve now, pay on arrival',
-                  selected: isCod,
-                  onTap: () => setState(() => isCod = true),
-                ),
+                // Pay at property only where the offer allows it. A discounted
+                // stay is paid in full unless whoever created the offer ticked
+                // that box, and the server refuses anything else — so the
+                // option is withdrawn here with a reason rather than left to
+                // fail at the last step.
+                if (_offer == null || _offer!.allowsCod) ...[
+                  const SizedBox(height: 10),
+                  _PayMethod(
+                    icon: Icons.payments_outlined,
+                    title: 'Pay at property',
+                    sub: 'Reserve now, pay on arrival',
+                    selected: isCod,
+                    onTap: () => setState(() => isCod = true),
+                  ),
+                ] else
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.info_outline, size: 15, color: kMuted),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'This discounted price has to be paid in full — '
+                            'pay at property is not available on it.',
+                            style: inter(
+                                fontSize: 11.5, color: kMuted, height: 1.45),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: 4),
               ],
               // Wallet (audit C-9) — online payments only: cash handed over

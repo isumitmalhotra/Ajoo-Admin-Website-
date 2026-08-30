@@ -1,4 +1,5 @@
 import 'package:rent_home/utils/nightly_rates.dart';
+import 'package:rent_home/models/property_offer.dart';
 
 class SinglePropertyResponse {
   final bool? success;
@@ -40,6 +41,10 @@ class SinglePropertyData {
   final String? propertyDesc;
   final String? propertyPrice;
   final String? propertyMiniPrice;
+
+  /// A discount running on this listing right now, priced by the server.
+  /// Null when there is none — see [PropertyOffer].
+  final PropertyOffer? offer;
   final String? propertyCity;
   final String? propertyZip;
   final int? propertyState;
@@ -109,6 +114,7 @@ class SinglePropertyData {
   final List<dynamic>? amenities;
 
   SinglePropertyData({
+    this.offer,
     this.propertyId,
     this.propertyHostId,
     this.propertyName,
@@ -176,6 +182,7 @@ class SinglePropertyData {
     }
 
     return SinglePropertyData(
+      offer: PropertyOffer.fromJson(json['offer']),
       propertyId: _parseIntSafely(json['property_id']),
       propertyHostId: _parseIntSafely(json['property_host_id']),
       propertyName: json['property_name'],

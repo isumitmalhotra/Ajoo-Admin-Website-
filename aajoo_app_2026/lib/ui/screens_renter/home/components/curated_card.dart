@@ -122,6 +122,27 @@ class CuratedCard extends StatelessWidget {
                                 color: Colors.white)),
                       ),
                     ),
+                  // A running discount. Bottom-LEFT, away from Verified and
+                  // Sponsored at the top and the heart at top-right: a claim
+                  // about money must not be mistakable for a trust badge or
+                  // for paid placement. Same reasoning as the web card.
+                  if (property.offer != null)
+                    Positioned(
+                      bottom: 10,
+                      left: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 9, vertical: 4),
+                        decoration: BoxDecoration(
+                            color: const Color(0xF0DC2626),
+                            borderRadius: BorderRadius.circular(999)),
+                        child: Text('${property.offer!.percent}% off',
+                            style: inter(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white)),
+                      ),
+                    ),
                   // Heart (top-right)
                   Positioned(
                     top: 8,
@@ -220,8 +241,19 @@ class CuratedCard extends StatelessWidget {
                                   color: skin.muted)),
                         RichText(
                           text: TextSpan(children: [
+                            // The old price first, so the eye lands on the
+                            // saving before the number being charged.
+                            if (property.offer != null)
+                              TextSpan(
+                                  text: '${rupees(property.offer!.was)} ',
+                                  style: inter(fontSize: 12, color: skin.muted)
+                                      .copyWith(
+                                          decoration:
+                                              TextDecoration.lineThrough)),
                             TextSpan(
-                                text: _formattedPrice,
+                                text: property.offer != null
+                                    ? rupees(property.offer!.now)
+                                    : _formattedPrice,
                                 style: fraunces(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,

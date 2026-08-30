@@ -3,6 +3,7 @@
 //     final propertiesResponse = propertiesResponseFromJson(jsonString);
 
 import 'dart:convert';
+import 'package:rent_home/models/property_offer.dart';
 
 PropertiesResponse propertiesResponseFromJson(String str) =>
     PropertiesResponse.fromJson(json.decode(str));
@@ -92,6 +93,10 @@ class Property {
   /// from organic ranking.
   final bool isBoosted;
 
+  /// A discount running on this listing right now, priced by the server.
+  /// Null when there is none — see [PropertyOffer].
+  final PropertyOffer? offer;
+
   /// One decimal, for display: "4.6". Empty when unrated.
   String get ratingLabel => rating == null ? '' : rating!.toStringAsFixed(1);
 
@@ -123,6 +128,7 @@ class Property {
     this.rating,
     this.reviewCount = 0,
     this.isBoosted = false,
+    this.offer,
   });
 
   factory Property.fromJson(Map<String, dynamic> json) => Property(
@@ -174,6 +180,7 @@ class Property {
             : double.tryParse(json["rating"].toString()),
         reviewCount: int.tryParse('${json["review_count"] ?? 0}') ?? 0,
         isBoosted: json["isBoosted"] == true,
+        offer: PropertyOffer.fromJson(json["offer"]),
       );
 
   Map<String, dynamic> toJson() => {
