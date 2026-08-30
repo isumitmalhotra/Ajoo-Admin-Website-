@@ -52,6 +52,14 @@ class Homescreen extends StatefulWidget {
 }
 
 class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
+  /// Whether the reviews strip is showing everything or just the first two.
+  ///
+  /// "View All" used to be wired to an empty handler with a comment about a
+  /// screen that was never built (FE-13) — a button that looks like it works,
+  /// does nothing, and teaches a guest not to trust the next one. Every review
+  /// is already loaded, so the honest thing is to show them here.
+  bool _showAllReviews = false;
+
   // Which category pill is selected. 0 = "All"; anything higher indexes the
   // API category list. This used to be paired with a second _selectedHotelIndex
   // for the duplicate lower row, and the two could disagree about what was
@@ -736,12 +744,14 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                     ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount:
-                          userController.userReviews.value!.data.review.length >
+                      itemCount: _showAllReviews
+                          ? userController.userReviews.value!.data.review.length
+                          : (userController
+                                      .userReviews.value!.data.review.length >
                                   2
                               ? 2
                               : userController
-                                  .userReviews.value!.data.review.length,
+                                  .userReviews.value!.data.review.length),
                       itemBuilder: (context, index) {
                         final review = userController
                             .userReviews.value!.data.review[index];
@@ -807,10 +817,11 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          onPressed: () {
-                            // TODO: navigate to a full reviews screen when built
-                          },
-                          child: const Text("View All"),
+                          onPressed: () =>
+                              setState(() => _showAllReviews = !_showAllReviews),
+                          child: Text(_showAllReviews
+                              ? "Show fewer"
+                              : "View all ${userController.userReviews.value!.data.review.length} reviews"),
                         ),
                       ),
                   ],
