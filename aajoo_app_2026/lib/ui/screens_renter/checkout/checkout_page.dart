@@ -27,8 +27,15 @@ class HotelCheckoutPage extends StatefulWidget {
 class _HotelCheckoutPageState extends State<HotelCheckoutPage> {
   DateTime checkInDate = DateTime.now();
   DateTime checkOutDate = DateTime.now().add(const Duration(days: 1));
-  String roomType = "Deluxe Suite"; // Placeholder, update if available in model
-  int guests = 1; // Placeholder, update if available in model
+  /// What this guest actually booked.
+  ///
+  /// These were the literals "Deluxe Suite" and 1 — shown to every guest on
+  /// every booking, on a screen they reach from their own stay. A made-up room
+  /// type on a real booking is worse than no room type: it is a detail the
+  /// guest has no reason to disbelieve. Both come from the booking now, and
+  /// the row is hidden when there is nothing true to put in it.
+  String? roomType;
+  int? guests;
   double propertyRating = 3.0;
   double hostRating = 3.0;
   double platformRating = 3.0;
@@ -43,6 +50,24 @@ class _HotelCheckoutPageState extends State<HotelCheckoutPage> {
   @override
   void initState() {
     super.initState();
+
+    // The real party size, and the category the host listed the place under —
+    // which is the closest thing this platform has to a "room type". Both may
+    // legitimately be absent, and absent is rendered as absent.
+    // The category the host listed the place under — the closest thing this
+    // platform has to a "room type". Entries arrive as either a plain title or
+    // a map carrying one, so both shapes are read.
+    final categories = widget.property.categories;
+    if (categories != null && categories.isNotEmpty) {
+      final first = categories.first;
+      final title = first is Map
+          ? (first['category_title'] ?? first['title'])?.toString()
+          : first?.toString();
+      if (title != null && title.trim().isNotEmpty) roomType = title.trim();
+    }
+    // The party size is not on this booking model, so the row simply does not
+    // render. An absent detail is better than "1 Adult" on a booking for four.
+
     // Attempt to parse inTime and outTime if available
     if (widget.property.propDetails?.inTime != null) {
       try {
@@ -425,18 +450,22 @@ class _HotelCheckoutPageState extends State<HotelCheckoutPage> {
                               DateFormat('MMM dd, yyyy').format(checkOutDate),
                         ),
                         const SizedBox(height: 12),
-                        _buildDetailRow(
-                          icon: Icons.hotel,
-                          label: "Room Type",
-                          value: roomType,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildDetailRow(
-                          icon: Icons.person,
-                          label: "Guests",
-                          value: "$guests Adults",
-                        ),
-                        const SizedBox(height: 12),
+                        if (roomType != null && roomType!.isNotEmpty) ...[
+                          _buildDetailRow(
+                            icon: Icons.hotel,
+                            label: "Room Type",
+                            value: roomType!,
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        if (guests != null && guests! > 0) ...[
+                          _buildDetailRow(
+                            icon: Icons.person,
+                            label: "Guests",
+                            value: "$guests guest${guests == 1 ? '' : 's'}",
+                          ),
+                          const SizedBox(height: 12),
+                        ],
                         _buildDetailRow(
                           icon: Icons.info,
                           label: "Status",
