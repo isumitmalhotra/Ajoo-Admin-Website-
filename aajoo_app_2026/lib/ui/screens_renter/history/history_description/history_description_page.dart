@@ -188,8 +188,17 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
   /// expecting cash.
   bool get _owesOnline =>
       !_isCancelled &&
-      !widget.bookingData.bookIsPaid &&
-      widget.bookingData.bookIsCod;
+      (
+        // Pay-at-property, unsettled.
+        (!widget.bookingData.bookIsPaid && widget.bookingData.bookIsCod)
+        // ...or a deposit booking with a balance still to run (W2 Phase D).
+        // The same endpoint serves both; it charges the balance, not the
+        // total again. The host cannot check this guest in until it clears.
+        || widget.bookingData.balanceDue > 0
+      );
+
+  /// What is left to pay on a deposit booking, or 0.
+  double get _balanceDue => widget.bookingData.balanceDue;
 
   Future<void> _fetchHost() async {
     if (_isCancelled) return; // Nothing on this page will show it.
@@ -689,9 +698,14 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
           const SizedBox(height: 14),
           if (_owesOnline) ...[
             _bookingActionButton(
+              // A deposit booking names the figure, because "pay online
+              // instead" tells a guest who has already paid 10% nothing about
+              // what is left or why the host cannot check them in.
               label: _payBusy
                   ? 'Starting payment…'
-                  : (_stayOver ? 'Pay online now' : 'Pay online instead'),
+                  : (_balanceDue > 0
+                      ? 'Pay the remaining ${rupees(_balanceDue)}'
+                      : (_stayOver ? 'Pay online now' : 'Pay online instead')),
               icon: Icons.payment_rounded,
               filled: true,
               onTap: _payBusy ? null : _payNow,

@@ -81,6 +81,15 @@ class BookingHistoryData {
   double? bookDiscountAmt;
   bool bookIsPaid;
   bool bookIsCod;
+
+  /// What this booking still owes, in rupees (W2 Phase D).
+  ///
+  /// 0 on every ordinary booking: only a deposit booking — 10% paid to
+  /// confirm, the rest due before check-in — reports a positive number, and
+  /// the server derives it. A screen that shows a balance banner on any
+  /// positive value is therefore right by construction.
+  double balanceDue;
+  double amountPaid;
   int? bookNoOfGuests;
 
   /// The stay's cover photo. /user/booking-history has attached this for a
@@ -108,6 +117,8 @@ class BookingHistoryData {
       this.bookDiscountAmt,
       this.bookIsPaid = false,
       this.bookIsCod = false,
+      this.balanceDue = 0,
+      this.amountPaid = 0,
       this.bookNoOfGuests,
       this.coverImage});
 
@@ -127,6 +138,8 @@ class BookingHistoryData {
           bookDetailsBtBookTo: json["bookDetails.bt_book_to"],
           book_price: json["book_price"],
           bookTotalAmt: _toDouble(json["book_total_amt"]),
+          balanceDue: _toDouble(json["balanceDue"]) ?? 0,
+          amountPaid: _toDouble(json["amountPaid"]) ?? 0,
           bookTax: _toDouble(json["book_tax"]),
           bookDiscountAmt: _toDouble(json["book_discount_amt"]),
           // MySQL sends these as 1/0, so a plain cast to bool would throw.

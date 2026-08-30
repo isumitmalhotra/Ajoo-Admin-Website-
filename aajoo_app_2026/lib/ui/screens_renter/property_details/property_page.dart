@@ -1608,25 +1608,30 @@ onPressed: () async {
                       // always sent the subtotal; this makes every booking do
                       // what that branch already did.
                       //
-                      // Prebooking is left on its old footing on purpose. It
-                      // charges a 10% deposit, but the backend has no notion of
-                      // one: it reads `price` as the room subtotal whatever we
-                      // send. Sending the subtotal here would charge a deposit
-                      // guest the full stay; sending the deposit records the
-                      // room as costing 10% of its real price, which is what it
-                      // does today. Neither is right, and choosing between them
-                      // is not a bugfix — it needs an `advanceAmount` the
-                      // backend actually understands. Until then this path
-                      // keeps its existing behaviour rather than silently
-                      // changing what a guest is charged.
+                      // Prebooking now sends the REAL room subtotal, like every
+                      // other booking, and asks for the deposit through
+                      // `payMode` (W2 Phase D).
+                      //
+                      // It used to send the deposit AS the price, because the
+                      // backend had no notion of one — so a prebooked stay was
+                      // recorded as costing 10% of its real price, and the host
+                      // was owed a tenth of what the guest had agreed to. The
+                      // backend computes the deposit itself now, from the full
+                      // total, and remembers the balance; so the honest figure
+                      // is the one to send.
                       // Room + the party charge. The backend recomputes this
                       // from `no_of_guests` and refuses a price that disagrees,
                       // so the two must be sent together or not at all.
-                      "price": isPrebooking ? advanceAmount : p.chargeable,
+                      "price": p.chargeable,
                       "no_of_guests": _guests,
                       "bookFrom": formattedDate,
                       "bookTo": formattedDateTo,
                       "isCod": isCod,
+                      // "deposit" charges the confirming percentage now and
+                      // leaves the balance due before check-in; the server
+                      // works out the amount from its own total, so this only
+                      // says which of the two the guest chose.
+                      if (isPrebooking && !isCod) "payMode": "deposit",
                       "category": 1,
                       "bookingType": bookingType,
                       // Extra informational fields for server (safe to ignore if unsupported)
