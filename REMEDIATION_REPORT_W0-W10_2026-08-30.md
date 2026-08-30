@@ -1239,6 +1239,26 @@ passed no `prefill` — so a host had to type their own phone number in before t
 could pay us, on the one screen asking them for money. Every other payment surface on
 the platform prefills. Fixed; the step is gone.
 
+### And the same, from a phone
+
+The web run left one thing unproven: the app's checkout is a different SDK
+(`razorpay_flutter`, native sheet) with a different callback shape, so a passing web
+payment says nothing about it. Driven separately on an Android emulator, from a debug
+build signed in as the test host:
+
+| | |
+|---|---|
+| Order | `order_TW2kKbQzAcQJP6` — ₹1,453, server-summed |
+| Payment | `pay_TW2l6qSeY3Rddl`, netbanking, **captured** |
+| Due | `B794077` → PAID, ₹1,453, carrying that reference |
+| Screen | ₹0 payable, Settle button gone, the booking moved to "Settled · Paid by you" |
+
+Nothing was payable to begin with — every outstanding due belonged to a stay weeks
+away — so the test needed a booking that had started. Creating one proved a second
+thing for free: `hostDues.raiseFor` fires on booking creation. A ₹6,400 + ₹320 cash
+booking produced a due of ₹960 + ₹173 + ₹320 = **₹1,453**, host keeps ₹5,267 —
+the same split an online booking of that value gives.
+
 ## W10-F · Foreign keys, since they landed in the same window
 
 **What was wrong.** `20250101120004-add-foreign-key-constraints` declared all 64
