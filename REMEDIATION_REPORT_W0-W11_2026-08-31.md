@@ -1025,10 +1025,10 @@ from an empty schema: 136/136. See the task list's W9 section.
 
 ## Deferred by decision
 
-- **Advance Booking as a separate discounted mode.** The schema column
-  (`ppr_advance_discount`) and the Step 4 field ship; nothing reads the discount yet.
-  Every future-dated booking already gets the deposit option, which was the part you
-  specified.
+- ~~**Advance Booking as a separate discounted mode.**~~ **Answered 2026-08-31:**
+  pre-booking and advance booking are the same thing. The deposit option already
+  shipped is the whole feature; `ppr_advance_discount` was dead and is retired. What
+  you wanted from "discounts" is W11.
 - **The property page still renders its own price breakdown.** Checkout is
   server-authoritative and `/pricing/quote` is live, but switching that display over
   needs a fallback so a quote outage cannot blank a price.
