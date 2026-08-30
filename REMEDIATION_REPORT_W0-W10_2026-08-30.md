@@ -1037,9 +1037,10 @@ from an empty schema: 136/136. See the task list's W9 section.
   rather than assumed: there is no drift today, every paid booking reconciles, and
   nothing is over-credited. Migrating 14 columns on a live database mid-testing
   carries more risk than it removes — do it in a quiet window.
-- **A host/admin *screen* for pay-at-property settlement.** The endpoints are live
-  (PART 15); you asked for endpoints. The UI is a short follow-up once you say where
-  it belongs in the dashboard.
+- **A live payment through the settlement flow.** `POST /host/dues/verify` is
+  unit-tested and every refusal is verified against production, but no real rupee has
+  gone through it — that needs a Razorpay test payment from a host session, which is a
+  QA run rather than a request.
 
 ## Standing actions on your side
 
@@ -1175,7 +1176,41 @@ node tests/hostDues.test.js        # 23/23
 - Unauthenticated admin read refused; a due the host does not owe refused; a forged
   signature refused.
 
-## W10-E · Foreign keys, since they landed in the same window
+## W10-E · The screens
+
+The endpoints alone left a host being billed with no way to see the charge. Their
+first sight of it would have been a smaller payout — the worst possible way to learn
+about a deduction.
+
+| Where | What it does |
+|---|---|
+| Web host — `/host/settlements` | Payable now, what falls due later, each stay openable to its three components, and the settle button |
+| Web admin — `/admin/finance/host-dues` | Total outstanding, then who it is sitting with, then every due with its tax lines as separate columns |
+| App — host menu → Settlements | The same screen on the phone, paying through the same order → checkout → verify sequence as Boost |
+
+Three decisions worth keeping:
+
+- **The working is shown, not just the total.** "You owe ₹6,099" against cash the
+  host already holds is not something they can check. Each stay opens to commission,
+  GST on commission, and the accommodation GST — and states what they keep, with the
+  arithmetic beside it.
+- **The reassurance is explicit.** Every breakdown says the host keeps the same
+  rupees an online booking of that value would have left them, because the fear this
+  screen invites is that taking cash costs more. It does not.
+- **A failed request never renders as "nothing owed."** That is the one wrong answer
+  a settlement screen can give, and it is the reassuring one. All three surfaces say
+  the request failed instead. On the admin screen a 403 says the role is wrong rather
+  than showing an empty list.
+
+**Verified in a browser against production data**, not asserted: the host view reads
+₹11,896.25 payable and ₹10,465 upcoming over 17 bookings; the admin view ₹37,479.20
+across three hosts; both agree with the API. Checked at 375px — the amount column was
+scrolling out of sight on the one screen whose entire question is how much is owed,
+so it now sits beside the booking code. The app's model is pinned by
+`test/host_dues_test.dart` against the payload the server actually sent; 50/50 app
+tests pass.
+
+## W10-F · Foreign keys, since they landed in the same window
 
 **What was wrong.** `20250101120004-add-foreign-key-constraints` declared all 64
 relationships `ON DELETE CASCADE`. Deleting one user would have taken **29,248

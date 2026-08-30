@@ -357,9 +357,19 @@ bookings; the admin view agrees on the total. A rehearsed ₹5,000 payout
 withheld ₹4,760.28, cleared 4 dues in full, left the 5th whole, and was rolled
 back. `tests/hostDues.test.js` — 23/23.
 
-> **Not built, and deliberately:** no host or admin *screen* yet. The client
-> asked for endpoints; the UI is a small follow-up once they say where it sits
-> in the dashboard.
+**The screens, added the same day.** Web `/host/settlements` (beside Payouts),
+web `/admin/finance/host-dues` (under Finance), and the app's host menu →
+Settlements. All three lead with what is payable now, open each stay up to show
+the three components, and say what the host keeps — the same rupees an online
+booking of that value leaves them, because the fear the screen invites is that
+taking cash costs more. The consequence is stated rather than buried: anything
+unpaid comes out of the next payout.
+
+Verified in a browser against production data: the host view reads ₹11,896.25
+payable / ₹10,465 upcoming over 17 bookings, the admin view ₹37,479.20 across
+three hosts, and both agree with the API. Checked at 375px. The app model is
+pinned by `test/host_dues_test.dart`, which parses the payload the server
+actually sent.
 
 ---
 
@@ -386,7 +396,7 @@ W8 APK ────────────────────────�
 | 2 | **Delete the 29,226 seeded listings?** Their coordinates are wrong by up to 450 km. Map, "near me" and distance sort are all being judged against fabricated data. | W9, sitemap |
 | 3 | **Live Razorpay credentials** — production must fail closed without them. | W0 |
 | 4 | **Is monthly stay in scope, or removed from the UI?** Client's own doc says do not expose a misleading journey. | W2, W3 |
-| ~~5~~ | ~~**Cash/pay-at-property collection**~~ — **built and live 2026-08-30**, see W10. The platform now bills the host their commission + GST on cash bookings and recovers it from their next payout if unpaid. Remaining ask is cosmetic: where the settlement screen sits in the host dashboard. | ~~W4~~ |
+| ~~5~~ | ~~**Cash/pay-at-property collection**~~ — **done 2026-08-30**, see W10. The platform bills the host their commission + GST on cash bookings, recovers it from their next payout if unpaid, and the screens ship on web host, web admin and the app. Nothing outstanding. | ~~W4~~ |
 | 6 | Is the **APK in this release candidate**, or web+admin first? | W8 |
 
 ---

@@ -311,6 +311,18 @@ the case for doing this sweep at all rather than assuming.
 - **Token storage (FE-11).** Already `FlutterSecureStorage`, not SharedPreferences.
 - **W6 (SEO) and W7 (admin control plane)** have no app surface.
 
+- **Pay-at-property settlements (W10) — shipped on both, same day.** Web
+  `/host/settlements` and the app's host menu → Settlements. The app was not left
+  behind on this one deliberately: a host who works from their phone would still
+  have met Aajoo's share of a cash booking for the first time as a smaller payout,
+  which is precisely the outcome the screen exists to prevent. Payment reuses the
+  Boost screen's order → checkout → verify path, so there is one payment sequence
+  on the platform rather than two that drift. `test/host_dues_test.dart` pins the
+  model against the payload the server actually sent.
+- **`--dart-define=API_BASE_URL` now reaches the app.** W8 made `ApiConstants`
+  overridable, but sixteen services each carried their own hardcoded copy of the
+  host, so the flag moved a constant nobody read. All sixteen now refer to it.
+
 ### Still open on the app
 
 - **API path/versioning reconciliation with the spec** (P1-11).
