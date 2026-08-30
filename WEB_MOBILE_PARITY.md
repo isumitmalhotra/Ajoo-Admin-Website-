@@ -356,8 +356,15 @@ the case for doing this sweep at all rather than assuming.
   what a guest would see: both prices, the "% off" chip, the original actually
   struck through, and none of it on an undiscounted card. That is the durable
   version of the check — a screenshot proves it once, this proves it every run.
-  Still worth one look on a working device before release, for the property page
-  and the checkout gate, which have no widget test yet.
+  **Then seen on a device**, once the emulator recovered — and looking found three
+  things the tests could not. `/properties/list`, which is the endpoint the app
+  actually calls, had never been given the offer, so the app's search results showed
+  full price while the property page behind them showed the discount. The property
+  page's own total was computed from the undiscounted room subtotal — 2,560/night
+  above 3,360 total. And the savings line credited the whole discount to "the
+  long-stay rate" when it came from the host's offer. All three fixed and re-checked
+  on the device: card 3,200 -> 2,560, total 2,688, "You saved 20% — ₹640 with limited
+  time offer".
 
 ### Still open on the app
 

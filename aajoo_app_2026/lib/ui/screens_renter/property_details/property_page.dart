@@ -1238,10 +1238,16 @@ class _PropertyPageState extends State<PropertyPage>
                                         const SizedBox(width: 7),
                                         Expanded(
                                           child: Text(
-                                            "You saved "
-                                            "${p.longStaySavingPercent.toStringAsFixed(p.longStaySavingPercent % 1 == 0 ? 0 : 1)}%"
-                                            " — ${rupees(p.longStaySaving)}"
-                                            " with the ${p.longStayLabel?.toLowerCase() ?? 'long-stay rate'}",
+                                            // Names the RIGHT reason. A host
+                                            // offer and a long-stay rate both
+                                            // reduce the room subtotal, and
+                                            // crediting the saving to the wrong
+                                            // one tells the guest something
+                                            // untrue about why they saved.
+                                            'You saved '
+                                            '${p.longStaySavingPercent.toStringAsFixed(p.longStaySavingPercent % 1 == 0 ? 0 : 1)}%'
+                                            ' — ${rupees(p.longStaySaving)}'
+                                            '${_offer != null ? ' with ${_offer!.title.toLowerCase()}' : ' with the ${p.longStayLabel?.toLowerCase() ?? 'long-stay rate'}'}',
                                             style: inter(
                                                 fontSize: 12.5,
                                                 fontWeight: FontWeight.w600,
@@ -2975,9 +2981,24 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
   double get _roomCharge {
     final rate = _longStay;
     final nightly = _nightlyTotal;
-    if (rate == null || totalDays <= 0) return nightly;
-    final atLongStay = (rate.nightlyRate * totalDays * 100).roundToDouble() / 100;
-    return atLongStay < nightly ? atLongStay : nightly;
+    final base = (rate == null || totalDays <= 0)
+        ? nightly
+        : (() {
+            final atLongStay =
+                (rate.nightlyRate * totalDays * 100).roundToDouble() / 100;
+            return atLongStay < nightly ? atLongStay : nightly;
+          })();
+
+    // A running offer scales the ROOM subtotal — the same thing the server
+    // does, and the same ratio the headline above uses. Without this the page
+    // showed a discounted per-night rate and then a full-price total three
+    // lines below it: 2,560/night and 3,360 total for one night.
+    //
+    // The extra-guest fee is deliberately left alone; priceStay adds it after
+    // this, and the server does not discount it either.
+    final o = _offer;
+    if (o == null) return base;
+    return (base * o.ratio * 100).roundToDouble() / 100;
   }
 
   /// The price this booking was made at — one computation, used for the

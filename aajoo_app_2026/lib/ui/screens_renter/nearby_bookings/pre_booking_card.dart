@@ -356,10 +356,22 @@ class PreBookingCard extends StatelessWidget {
         const SizedBox(height: 10),
         RichText(
           text: TextSpan(children: [
+            // A running offer replaces the price and strikes the old one, the
+            // same as the home card and the web. Search results are where most
+            // guests meet a listing first, so a discount that shows on the
+            // detail page but not here is a discount nobody finds.
+            if (property.offer != null)
+              TextSpan(
+                text: '${rupees(property.offer!.was)} ',
+                style: inter(fontSize: 13, color: skin.muted)
+                    .copyWith(decoration: TextDecoration.lineThrough),
+              ),
             TextSpan(
-              text: property.propertyPrice == null
-                  ? 'Price on request'
-                  : rupeesFrom(property.propertyPrice),
+              text: property.offer != null
+                  ? rupees(property.offer!.now)
+                  : property.propertyPrice == null
+                      ? 'Price on request'
+                      : rupeesFrom(property.propertyPrice),
               style: fraunces(
                   fontSize: 18, fontWeight: FontWeight.w700, color: skin.ink),
             ),

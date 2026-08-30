@@ -3,6 +3,7 @@
 //     final searchResponse = searchResponseFromJson(jsonString);
 
 import 'dart:convert';
+import 'package:rent_home/models/property_offer.dart';
 
 SearchResponse searchResponseFromJson(String str) =>
     SearchResponse.fromJson(json.decode(str));
@@ -56,6 +57,10 @@ List<String>? _asStringList(dynamic v) {
 }
 
 class SearchPropertyModel {
+  /// A discount running on this listing right now, priced by the server.
+  /// Null when there is none — see [PropertyOffer].
+  PropertyOffer? offer;
+
   dynamic propertyId;
   dynamic propertyHostId;
   String? propertyName;
@@ -99,6 +104,7 @@ class SearchPropertyModel {
   List<String>? amenities;
 
   SearchPropertyModel({
+    this.offer,
     this.propertyId,
     this.propertyHostId,
     this.propertyName,
@@ -134,6 +140,7 @@ class SearchPropertyModel {
 
   factory SearchPropertyModel.fromJson(Map<String, dynamic> json) =>
       SearchPropertyModel(
+        offer: PropertyOffer.fromJson(json['offer']),
         propertyId: json["property_id"],
         propertyHostId: json["property_host_id"],
         propertyName: json["property_name"],
