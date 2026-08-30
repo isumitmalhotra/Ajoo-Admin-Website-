@@ -379,6 +379,56 @@ pointing its signature at another host's dues settled 0.
 
 ---
 
+### W11 — Discounts ✅ **DONE · live 2026-08-31**
+
+Asked as one question, it turned out to be three separate things. Two already
+existed; only the third needed building.
+
+| Form | State |
+|---|---|
+| **Negotiation** — a guest offers, a host accepts | Already live |
+| **Platform coupon** — admin issues a code, guest types it at checkout | Already live (`tbl_coupons` even carried per-property scoping and a usage counter) |
+| **A host or admin offer on a listing** | **New.** Not a coupon: nobody types anything |
+
+That third one is a *displayed* price, not a redeemed one — the old price
+struck through, the new one beside it, a "Limited time offer" tag, and a return
+to normal when the window closes or the bookings run out. It shares the word
+"discount" with a coupon and almost no behaviour, so it got its own table
+rather than a row in `tbl_coupons`.
+
+**The rules, as the client set them:**
+
+- **Offers and coupons never stack, and the offer wins on its own listing** —
+  whatever the coupon is worth. The guest is told, rather than silently given
+  the worse of two deals.
+- **A discounted listing is not negotiable**, both directions. An accepted
+  negotiation arrives as a `DEAL` coupon, so refusing coupons closes that door
+  from the other side too.
+- **Paid in full** unless whoever created the offer ticks the deposit or
+  pay-at-property box.
+- **The slot cap carries a buffer.** The cap is what the host advertises; the
+  buffer is headroom so a guest already on the payment sheet is honoured
+  instead of repriced when the hundredth completes.
+
+**One guard added on our own judgement:** an offer may not go below the
+minimum the host set in their own pricing grid — the number negotiation already
+refuses to cross — so a listing cannot be discounted into a loss its owner had
+already declined. Verified: ₹250 on a ₹2,500 listing was refused against a
+₹2,000 floor.
+
+**Where it shows:** search card and map pin, property page, checkout, host
+screen (`/host/offers`), admin screen (`/admin/offers`) — on web **and** the
+Android app.
+
+**Verified against production**, every rule exercised on the live API rather
+than only in tests: a discounted quote (₹6,400 → ₹5,120), a booking accepted at
+the discounted price and refused at the old one, a coupon refused, a
+negotiation refused, a deposit refused on a full-payment-only offer, the slot
+taken and the buffer holding past the advertised cap. `tests/propertyOffers.test.js`
+— 21 cases; whole backend suite 28 files green; 58/58 app tests.
+
+---
+
 ## 4. Sequencing
 
 ```
@@ -398,7 +448,7 @@ W8 APK ────────────────────────�
 
 | # | Question | Blocks |
 |---|---|---|
-| 1 | **Advance Booking (10% deposit) — this release or next?** New booking mode, new payment lifecycle. | W2, W4 |
+| ~~1~~ | ~~**Advance Booking — this release or next?**~~ — **answered 2026-08-31: pre-booking and advance booking are the same thing.** The deposit option already shipped is the whole feature; there is no second discounted mode. `ppr_advance_discount` was dead and has been retired. What the client wanted from "discounts" turned out to be three separate things — see W11. | ~~W2, W4~~ |
 | ~~2~~ | ~~**Delete the 29,226 seeded listings?**~~ — **the premise was wrong; fixed instead, 2026-08-30.** The coordinates were broadly sound; 7,653 of them were not, and in one specific way — the address was right and the coordinate was not ("ALMORA, Uttrakhand, 263601" pointed at Bihar). Repaired against OpenStreetMap coordinates for the town each listing names: **0 misplaced, median distance from own town 56km → 6km**. No listings deleted. | ~~W9~~ |
 | 3 | **Live Razorpay credentials** — production must fail closed without them. | W0 |
 | 4 | **Is monthly stay in scope, or removed from the UI?** Client's own doc says do not expose a misleading journey. | W2, W3 |

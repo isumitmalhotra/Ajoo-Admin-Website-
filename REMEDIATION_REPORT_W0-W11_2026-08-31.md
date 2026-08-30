@@ -1,12 +1,13 @@
-# Remediation Completion Report — W0 through W10
+# Remediation Completion Report — W0 through W11
 
-*(Originally the W0 + W1 report; extended 2026-08-30 to cover every workstream
-completed since, including pay-at-property settlement and the foreign keys.)*
+*(Originally the W0 + W1 report; extended through 2026-08-31 to cover every
+workstream completed since — pay-at-property settlement, the foreign keys, the
+seeded-listing coordinates, and discounts.)*
 
 | | |
 |---|---|
 | Period | 2026-08-29 → 2026-08-30 |
-| Workstreams complete | **W0 – W10** — every workstream on the client's list, plus pay-at-property settlement |
+| Workstreams complete | **W0 – W11** — every workstream on the client's list, plus pay-at-property settlement and discounts |
 | Backend commits | `00c1a69` → `a677588` (32 commits), all pushed and **deployed** |
 | Frontend commits | 7, all pushed and **deployed** |
 | Migrations applied to the live DB | `admin-roles`, `revoked-tokens`, `pricing-tiers`, `booking-deposit`, `admin-audit`, `payments-bookid-type`, `apply-foreign-keys` (39 constraints), `host-dues` |
@@ -1346,3 +1347,114 @@ property carrying financial history cannot be hard-deleted — the database itse
 refuses. Soft-delete, which is what the admin paths actually use, is unaffected. The
 full E2E suite still passes 22/22 with the constraints in place, and a real booking
 plus payment was written through them.
+
+
+---
+
+# PART 17 — W11: Discounts
+
+*Added 2026-08-31.*
+
+## W11-A · One question that was three
+
+"Discounts" arrived as a single item. Measured against what exists, it was
+three, and two were already built:
+
+1. **Negotiation** — live since W3.
+2. **A platform coupon** an admin issues and a guest types — live, and
+   `tbl_coupons` already carried per-property scoping, a validity window and a
+   usage counter.
+3. **An offer a host runs on their own listing** — nothing like it existed.
+
+Only the third was work. It is a *displayed* price rather than a redeemed one:
+the old price struck through, the new one beside it, a tag, and a quiet return
+to normal when the window closes or the slots run out. A coupon has a code and
+a per-user history; an offer has a slot count, a buffer, and a price that has
+to reach search results. They share the word and almost no behaviour, so it got
+`tbl_property_offers` rather than a row in `tbl_coupons`.
+
+## W11-B · The rules, and where each is enforced
+
+| Rule | Enforced |
+|---|---|
+| Offers and coupons never stack; **the offer wins on its own listing**, whatever the coupon is worth | `booking.controller` refuses the coupon outright |
+| A discounted listing is not negotiable | `negotiationService` refuses the offer; and because an accepted negotiation arrives as a `DEAL` coupon, the coupon refusal closes the other direction |
+| Paid in full unless the creator widened it | `payModeAllowed`, checked before any row is written |
+| The slot cap has a buffer | `isLive` counts cap + buffer; `slotsLeft` never advertises into it |
+| An offer may not go below the host's own minimum | `checkOffer` against `property_mini_price` |
+
+That last one we added ourselves. Negotiation already refuses to cross a host's
+minimum; an offer that could would let a listing be discounted into a loss its
+owner had explicitly declined.
+
+The slot is claimed **inside the booking transaction under a row lock**, so two
+guests paying at the same instant cannot both take the last one, and a
+cancelled pay-at-property booking hands it back — that being the only case
+where a slot is held before money arrives.
+
+## W11-C · What it took to make the price agree with itself
+
+Three bugs, all of the same shape: a surface showing the discount while another
+showed the full price. None was caught by a test; each was found by opening the
+thing and looking.
+
+- **The quote read the wrong field name.** `pricingRuleFor` returns `base`; the
+  quote asked for `basePrice`, got `undefined`, computed no discount and
+  returned the full total with `offer: null` — a silent wrong answer rather
+  than an error. Both the quote and the booking clamp now read the same
+  expression, because if one discounts and the other does not, every discounted
+  booking is refused as "the price for these dates has changed".
+- **The web booking draft carried the listed price.** The property page said
+  ₹2,560 and the checkout billed ₹3,200 × 2 nights. The server's clamp would
+  have refused the payment, so it was a dead checkout rather than an overcharge
+  — but the guest would only have discovered that at the final step.
+- **`/properties/list` never carried the offer.** That is the endpoint the
+  Android app calls; only `/properties/search` had been given it. The app's
+  search results showed full price while the property page behind them showed
+  the discount.
+
+Two more on the app alone: the property page discounted the headline and not
+the total (₹2,560/night above "₹3,360 total"), and the savings line credited
+the whole thing to "the long-stay rate" when it came from the host's offer.
+
+## W11-D · Verified against production
+
+Every rule exercised on the live API, not only in tests:
+
+| | |
+|---|---|
+| Quote on a discounted listing | ₹6,400 → **₹5,120** |
+| Booking at the discounted price | Accepted, ₹5,376 with GST, slot consumed |
+| Booking at the old full price | Refused — "the price for these dates has changed" |
+| Coupon on a discounted listing | Refused |
+| Negotiation on a discounted listing | Refused |
+| Deposit on a full-payment-only offer | Refused |
+| Floor guard | ₹250 refused against a ₹2,000 minimum |
+| Buffer | 3 slots + 2 buffer: live at 3 used with nothing advertised, closed at 5 |
+
+Seen in a browser and on an Android device: the card, the map pin beside it,
+the property page, the checkout, and both admin and host screens.
+
+`tests/propertyOffers.test.js` — 21 cases. Backend suite 28 files green.
+App suite 58/58, including a widget test that renders the real card and asserts
+the struck-through price is genuinely struck through.
+
+## W11-E · What the forms say out loud
+
+Both offer forms state the things that surprise people, at the point the
+decision is made rather than in a help page:
+
+- **The buffer**, explained next to the field that sets it — without a sentence
+  there it reads as a second limit rather than headroom for a guest already on
+  the payment screen.
+- **That negotiation stops and coupons stop applying**, before the offer is
+  started.
+- **That allowing pay-at-property means a booking holds a slot before any money
+  arrives.**
+- **Admin only:** that starting one *ends* whatever the host is running there.
+
+Two things were fixed by using the screens rather than reading them: the host
+picker was offering listings with no nightly price, which the server can only
+refuse; and the admin property search returns no price at all, so the form
+showed ₹0 and could not preview. It now fetches the price and the host's own
+minimum on selection and says plainly when a discount would fall below it.
