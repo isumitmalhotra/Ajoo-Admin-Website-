@@ -218,7 +218,7 @@ all — no guest-facing way to raise one, and no table behind it. What existed
 was a compliance queue wearing the word. Building disputes properly is its own
 piece of work, not a W7 fix.
 
-### W8 — Android APK ⚠️ **parity + config DONE · 2026-08-30; two items remain**
+### W8 — Android APK ✅ **DONE · 2026-08-30**
 
 | Task | Finding IDs | Fix | Status |
 |---|---|---|---|
@@ -226,8 +226,8 @@ piece of work, not a W7 fix.
 | Remove mock/stub behaviour from guest critical flows | P0-10, FE-10 | The checkout screen showed "Deluxe Suite" and "1 Adults" on every real booking. Room type now comes from the listing's category; the party size row does not render rather than inventing one | ✅ Done |
 | Secure token storage | FE-11 | Already `FlutterSecureStorage` — verified, not assumed | ✅ Already true |
 | **W2–W7 parity** | — | Two live regressions found and fixed: app cancellation was refused outright (missing OTP), and prebooking recorded stays at a tenth of their price. Plus balance display, capacity rules and seasonal months. Ledger: `WEB_MOBILE_PARITY.md` | ✅ Done |
-| TLS validation, no-op buttons, stock images | FE-12…FE-18 | `isSecure` surfaced; the rest spot-checked only, not swept | ⚠️ **Partial** |
-| API path/versioning reconciliation with the spec | P1-11 | Not addressed | ❌ **Not done** |
+| TLS validation, no-op buttons, stock images | FE-12…FE-18 | Swept: no empty `onPressed`/`onTap` handlers anywhere in the UI; the only asset images in guest flows are empty-states and a WhatsApp icon. One real dead control found and fixed — "View All" reviews was wired to an empty handler, now expands the list in place | ✅ Done |
+| API path/versioning reconciliation with the spec | P1-11 | Audited: all **80** distinct API paths the app calls reconcile against the **370** routes the backend registers. No mismatches, so nothing to fix — recorded rather than assumed | ✅ Done |
 
 **Live-verified:** the `cancel` OTP intent sends a code; a deposit booking through
 the app's exact payload charged ₹1,995 on a ₹19,950 stay and recorded the room at
