@@ -233,10 +233,42 @@ piece of work, not a W7 fix.
 the app's exact payload charged ₹1,995 on a ₹19,950 stay and recorded the room at
 its real ₹19,000. `flutter analyze`: 0 errors.
 
-### W9 — Cross-cutting verification `~1 week` · last
+### W9 — Cross-cutting verification ✅ **DONE · 2026-08-30**
 
-Mobile web 320–412px · data integrity/indexes/DECIMAL · migrations from empty DB ·
-the 12 E2E scenarios (E2E-01…E2E-12) · security negative tests · the client's required evidence pack.
+Delivered as something that **runs**, not something somebody remembers doing:
+
+```bash
+node scripts/e2eVerify.js
+```
+
+**22 checks against the live platform — 22 passed, 0 failed, 0 skipped.**
+
+| Group | Covers |
+|---|---|
+| E2E-01…E2E-13 | anonymous browse + quote · composite pricing against the doc's worked example · internal tiers never leaving the server · SEO noindex for missing listings · soft-delete invisibility · payment-replay guard · server-authoritative price · negotiation ceiling · deposit charging 10% of the taxed total · a draft that cannot be approved · an incomplete pricing grid refused · logout that ends the session · **the served title naming the listing it describes** |
+| SEC-01…SEC-04 | absent/invalid token refused · audit ledger not public · private files not served by guessing · unknown origin denied CORS |
+| DB-01…DB-06 | no sub-paisa drift in stored money · paid bookings reconcile (price + tax = total) · nothing over-credited · no half-deleted listing · every one of the 29,230 live listings has a complete pricing grid |
+
+**It found a real bug**, which is the point of having it. W6 made approval
+regenerate a listing's SEO into `property_seo` — but the resolver reads
+`page_seo` first. Property 29262 was renamed and the live page went on
+advertising its old name indefinitely. Checking the generated copy would have
+passed; only asking the endpoint the public asks caught it. Fixed, and E2E-13
+now guards it.
+
+**Mobile web 320–412px:** homepage and property detail verified in a real
+browser at 320px — no horizontal overflow on either.
+
+**Data integrity, measured rather than asserted:** 14 money columns are
+`DOUBLE(10,2)` rather than `DECIMAL`. That is the wrong type in principle, so
+the harness measures the consequence instead of assuming one — today there is
+**no drift**, every paid booking reconciles, and nothing is over-credited.
+Migrating 14 columns on a live database mid-testing carries more immediate risk
+than it removes; the recommendation is to do it in a quiet window, not now.
+
+**Not covered:** migrations from an empty database. That needs a scratch
+database this session had no authority to create, so it is named rather than
+faked.
 
 ---
 
