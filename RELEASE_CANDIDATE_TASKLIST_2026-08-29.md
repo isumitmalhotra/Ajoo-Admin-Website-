@@ -371,6 +371,12 @@ three hosts, and both agree with the API. Checked at 375px. The app model is
 pinned by `test/host_dues_test.dart`, which parses the payload the server
 actually sent.
 
+**And a payment was driven through it.** Razorpay test mode, real checkout, host
+signed in: order `order_TW1vETzTqLVPe7` → payment `pay_TW1vgIgPR2Ogw4`, netbanking,
+**captured**. Ten dues settled for ₹11,896.25; the host screen fell to ₹0 payable and
+the admin total from ₹37,479.20 to ₹25,582.95. Replaying that payment settled 0, and
+pointing its signature at another host's dues settled 0.
+
 ---
 
 ## 4. Sequencing

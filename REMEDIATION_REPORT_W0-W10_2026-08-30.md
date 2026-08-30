@@ -1037,10 +1037,8 @@ from an empty schema: 136/136. See the task list's W9 section.
   rather than assumed: there is no drift today, every paid booking reconciles, and
   nothing is over-credited. Migrating 14 columns on a live database mid-testing
   carries more risk than it removes — do it in a quiet window.
-- **A live payment through the settlement flow.** `POST /host/dues/verify` is
-  unit-tested and every refusal is verified against production, but no real rupee has
-  gone through it — that needs a Razorpay test payment from a host session, which is a
-  QA run rather than a request.
+- Nothing. The settlement flow has been driven end to end against the live gateway —
+  see W10-G.
 
 ## Standing actions on your side
 
@@ -1209,6 +1207,37 @@ scrolling out of sight on the one screen whose entire question is how much is ow
 so it now sits beside the booking code. The app's model is pinned by
 `test/host_dues_test.dart` against the payload the server actually sent; 50/50 app
 tests pass.
+
+## W10-G · A payment actually driven through it
+
+Everything above was verified by reading the database and calling the endpoints. This
+was the one claim that could not be made that way, so it was made properly: a payment
+taken through Razorpay's own checkout, in test mode, by a host signed into the real
+screen.
+
+| | |
+|---|---|
+| Order | `order_TW1vETzTqLVPe7` — ₹11,896.25, created by the server from its own sum of 10 dues |
+| Payment | `pay_TW1vgIgPR2Ogw4`, netbanking, **`status: captured`, `captured: true`** at Razorpay |
+| Order status at Razorpay | `paid`, `amount_paid` 11896.25 |
+| In `tbl_host_dues` | the same 10 rows PAID, totalling **₹11,896.25**, each carrying `pay_TW1vgIgPR2Ogw4` |
+| Host screen | payable now **₹0**, the Settle button gone, all 10 in "Settled" marked *Paid by you* with the real reference |
+| Admin screen | outstanding fell from ₹37,479.20 to **₹25,582.95** — exactly the amount paid — and the ten appear under *Paid by host* with their tax lines intact |
+
+Two refusals were then exercised against that genuine payment, which is the only way
+to test them honestly:
+
+- **Replayed** — the same payment, order and signature posted a second time returned
+  *"These settlements are already recorded"* and settled **0**. No second effect.
+- **Redirected** — the same valid signature aimed at another host's due ids settled
+  **0**. A verified payment cannot reach a balance that is not the payer's. The other
+  two hosts' rows (₹14,209.95 and ₹908) were untouched throughout.
+
+The run also surfaced a defect nothing else would have. Razorpay stops on a "Contact
+details" step when handed neither a contact nor an email, and the settlement checkout
+passed no `prefill` — so a host had to type their own phone number in before they
+could pay us, on the one screen asking them for money. Every other payment surface on
+the platform prefills. Fixed; the step is gone.
 
 ## W10-F · Foreign keys, since they landed in the same window
 
