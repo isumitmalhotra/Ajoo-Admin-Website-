@@ -1038,6 +1038,62 @@ from an empty schema: 136/136. See the task list's W9 section.
   nothing is over-credited. Migrating 14 columns on a live database mid-testing
   carries more risk than it removes — do it in a quiet window.
 
+## PART 16 — The seeded listings
+
+*Added 2026-08-30. This was open decision #2: delete all 29,226 of them?*
+
+**The premise did not survive measurement.** The claim was "coordinates wrong by
+up to 450km". In fact there were 27,012 distinct points, all inside India, and the
+per-state scatter tracked real geography — Punjab's listings sat 41km from Punjab's
+centre, Uttar Pradesh's 189km, both correct for their sizes.
+
+**What was actually wrong: 7,653 listings, in one specific way.** The address was
+right and the coordinate was not. "ALMORA, Uttrakhand, 263601" is a real, internally
+consistent address whose coordinate pointed at Bihar, 761km away. They arrived in
+batches — 157 towns whose listings agreed with each other to within 0–2km while
+sitting up to 972km from the place they name.
+
+So the answer was not to delete 29,000 rows. It was to move 7,653.
+
+**It took two attempts, and the first one was wrong.** Judging each listing against
+its own postal district's cluster looked independent — the PIN comes from a different
+column of the source CSV than the coordinate. It is not enough: where a whole district
+is wrong together, the cluster is wrong too. Almora and Bageshwar, both already in
+Bihar, outvoted their own district, and the repair dragged Udham Singh Nagar from
+196km out to **742km out**. 1,922 rows were moved, the error was caught by checking
+against real-world coordinates, and every row was rolled back.
+
+The lesson was already recorded for this corpus and under-applied: *do not let the
+dataset validate itself*. The second attempt judges every listing against a coordinate
+fetched from OpenStreetMap for the town it names — 507 places, rate-limited and
+cached, run locally because Nominatim blocks Render's IP range.
+
+| | before | after |
+|---|---|---|
+| misplaced (>100km from own town) | 7,653 | **0** |
+| median distance from own town | 56 km | **6 km** |
+| Almora | 761 km | 24 km |
+| Surat | 977 km | 4 km |
+| Kollam | 626 km | 3 km |
+| Kodagu | 445 km | 9 km |
+| Srikakulam *(was already correct)* | 1 km | 1 km |
+
+Those last figures are checked against coordinates known independently of the
+geocoder, so the fix is not merely agreeing with its own source.
+
+**This mattered beyond the map pin.** `utils/placeIndex.js` builds destination-search
+centroids from these same coordinates, so a wrong listing skewed search results too.
+Live: searching Almora now returns 51 stays in the Uttarakhand hills; before, it
+returned none anywhere near Almora.
+
+**Not fixed, and deliberately:** 4,262 listings carry no city or state, 1,112 name a
+place OpenStreetMap cannot find, and 6 have no coordinate at all. Two of those places
+— "Ekam Height, Punjab" and "Gharun, Punjab", 51 listings each — are a housing society
+and a village, real localities that are simply not indexed under those names. Nothing
+was invented for any of them.
+
+Reversible: `node scripts/fixSeedCoordinates.js --rollback`.
+
 ## Standing actions on your side
 
 1. **Rotate every credential** — the DB password, Cloudinary, the Gmail app password,

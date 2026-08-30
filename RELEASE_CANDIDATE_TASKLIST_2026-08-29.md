@@ -399,7 +399,7 @@ W8 APK ────────────────────────�
 | # | Question | Blocks |
 |---|---|---|
 | 1 | **Advance Booking (10% deposit) — this release or next?** New booking mode, new payment lifecycle. | W2, W4 |
-| 2 | **Delete the 29,226 seeded listings?** Their coordinates are wrong by up to 450 km. Map, "near me" and distance sort are all being judged against fabricated data. | W9, sitemap |
+| ~~2~~ | ~~**Delete the 29,226 seeded listings?**~~ — **the premise was wrong; fixed instead, 2026-08-30.** The coordinates were broadly sound; 7,653 of them were not, and in one specific way — the address was right and the coordinate was not ("ALMORA, Uttrakhand, 263601" pointed at Bihar). Repaired against OpenStreetMap coordinates for the town each listing names: **0 misplaced, median distance from own town 56km → 6km**. No listings deleted. | ~~W9~~ |
 | 3 | **Live Razorpay credentials** — production must fail closed without them. | W0 |
 | 4 | **Is monthly stay in scope, or removed from the UI?** Client's own doc says do not expose a misleading journey. | W2, W3 |
 | ~~5~~ | ~~**Cash/pay-at-property collection**~~ — **done 2026-08-30**, see W10. The platform bills the host their commission + GST on cash bookings, recovers it from their next payout if unpaid, and the screens ship on web host, web admin and the app. Nothing outstanding. | ~~W4~~ |
