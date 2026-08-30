@@ -218,14 +218,20 @@ all — no guest-facing way to raise one, and no table behind it. What existed
 was a compliance queue wearing the word. Building disputes properly is its own
 piece of work, not a W7 fix.
 
-### W8 — Android APK `~1 week` · parallel, different team
+### W8 — Android APK ⚠️ **parity + config DONE · 2026-08-30; two items remain**
 
-| Task | Finding IDs |
-|---|---|
-| Production config: no `aajaodev.onrender.com`, no `rzp_test_` in release build | P0-01, P0-02 |
-| Remove mock/stub behaviour from guest critical flows | P0-10, FE-10 |
-| Secure token storage, TLS validation, no no-op buttons, stock images | FE-11…FE-18 |
-| API path/versioning reconciliation with the spec | P1-11 |
+| Task | Finding IDs | Fix | Status |
+|---|---|---|---|
+| Production config: no dev host, no `rzp_test_` in a release build | P0-01, P0-02 | `ApiConstants` collapsed to one value with `--dart-define=API_BASE_URL`. `PaymentConfig` now reports `isTestKey` / `usableForPayments` / `collectsMoney`, and all five checkout paths refuse to open a sheet that takes no money; `--dart-define=ALLOW_TEST_PAYMENTS=true` is the same escape hatch the backend uses | ✅ Done |
+| Remove mock/stub behaviour from guest critical flows | P0-10, FE-10 | The checkout screen showed "Deluxe Suite" and "1 Adults" on every real booking. Room type now comes from the listing's category; the party size row does not render rather than inventing one | ✅ Done |
+| Secure token storage | FE-11 | Already `FlutterSecureStorage` — verified, not assumed | ✅ Already true |
+| **W2–W7 parity** | — | Two live regressions found and fixed: app cancellation was refused outright (missing OTP), and prebooking recorded stays at a tenth of their price. Plus balance display, capacity rules and seasonal months. Ledger: `WEB_MOBILE_PARITY.md` | ✅ Done |
+| TLS validation, no-op buttons, stock images | FE-12…FE-18 | `isSecure` surfaced; the rest spot-checked only, not swept | ⚠️ **Partial** |
+| API path/versioning reconciliation with the spec | P1-11 | Not addressed | ❌ **Not done** |
+
+**Live-verified:** the `cancel` OTP intent sends a code; a deposit booking through
+the app's exact payload charged ₹1,995 on a ₹19,950 stay and recorded the room at
+its real ₹19,000. `flutter analyze`: 0 errors.
 
 ### W9 — Cross-cutting verification `~1 week` · last
 

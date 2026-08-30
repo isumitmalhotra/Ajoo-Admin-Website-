@@ -281,3 +281,39 @@ features rather than bugs:
 5. **State/City are free text** in the app wizard; the web picks from the
    reference tables, which are the canonical address vocabulary. The app can
    therefore write values that do not match them.
+
+---
+
+## W2–W7 parity sweep — 2026-08-30
+
+Everything the backend changed across W2 to W7 was checked against the app.
+Two of them were **live regressions the server changes had created**, which is
+the case for doing this sweep at all rather than assuming.
+
+### Fixed
+
+| What | Why it mattered |
+|---|---|
+| **Cancellation OTP** (W4) | The server began requiring an emailed code before a cancellation triggers a refund. The app sent only `bookingId` and `reason`, so **every app-side cancellation was being refused**. It now asks for the code first, using the same sheet the password change uses; backing out abandons the cancellation. |
+| **Prebooking charged 10% by understating the price** (W2) | The app sent the deposit AS the room price, because the backend had no deposit concept — so a prebooked stay was recorded as costing a tenth of what the guest agreed to, and the host was owed that tenth. It now sends the true subtotal plus `payMode: "deposit"`, and the server computes the 10% itself. Verified live: a ₹19,000 room + tax = ₹19,950, gateway charged ₹1,995, and the row records ₹19,000 — not ₹1,995. |
+| **Balance display + pay-remaining** (W2) | A deposit booking now carries `balanceDue`/`amountPaid` on the model, the pay-now action is offered for an outstanding balance as well as pay-at-property, and the button names the figure — "Pay the remaining ₹25,488" — rather than telling somebody who has paid 10% to "pay online instead". |
+| **Capacity + seasonal rules** (W5) | The server began refusing adults + children over the total, a bedroom with no bed, and a seasonal property naming no months. The app sent all of it and got one unattached error back. Same rules client-side now, so the wrong field is the one that gets marked. |
+| **Nine-value pricing grid** (W2) | Already done — commit `390f085`, the same day. |
+| **Release builds could ship the TEST Razorpay key** (W8 · P0-02) | With no `--dart-define` the app fell back to the bundled test key, which does not fail — it succeeds and collects nothing, exactly the failure the backend carried for months. All five checkout paths now refuse to open a sheet that would take no money. `--dart-define=ALLOW_TEST_PAYMENTS=true` is the same explicit escape hatch the backend uses. |
+| **`ApiConstants` had three constants holding one string** (W8 · P0-01) | `baseUrl` was wired to the one named `_dev` — the appearance of a prod/dev split with none of the substance. One value now, overridable with `--dart-define=API_BASE_URL=…`. |
+| **Invented booking details** (W8 · P0-10, FE-10) | The checkout screen showed "Deluxe Suite" and "1 Adults" to every guest on every booking. Room type now comes from the listing's category; the party size is not on that screen's model, so the row does not render rather than lying. |
+
+### Checked, and already correct
+
+- **Negotiation guards (W3).** The app's offer service surfaces the server's own
+  message on failure, so the new 409 ("you already have an offer waiting") and
+  429 ("you have used all 3 offers") responses read correctly with no change.
+- **Token storage (FE-11).** Already `FlutterSecureStorage`, not SharedPreferences.
+- **W6 (SEO) and W7 (admin control plane)** have no app surface.
+
+### Still open on the app
+
+- **API path/versioning reconciliation with the spec** (P1-11).
+- **A full pass on FE-13…FE-18** (no-op buttons, stock imagery) — spot-checked
+  only; the guest flows named in P0-10 are done.
+- The five long-standing gaps listed above this section.
