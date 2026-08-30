@@ -454,6 +454,65 @@ class ListingWizardController extends GetxController {
       errs['street_address'] =
           'Enter the full address — house/flat, street and area';
     }
+
+    // ── Capacity has to add up (W5 · LP-P0-05/06, LP-27) ────────────────────
+    // Mirrors utils/listingCapacity on the server, which stays the authority.
+    // Here so the number that is wrong is marked, rather than the host being
+    // told about whichever problem the server reached first.
+    int? count(String k) {
+      final raw = _s(f[k]);
+      if (raw.isEmpty) return null;
+      return int.tryParse(raw);
+    }
+
+    final total = count('total_guests');
+    final adults = count('max_adults');
+    final children = count('max_children');
+    final bedrooms = count('bedrooms');
+    final beds = count('beds');
+
+    for (final k in const [
+      'total_guests', 'max_adults', 'max_children',
+      'max_infants', 'bedrooms', 'beds', 'bathrooms',
+    ]) {
+      final v = count(k);
+      if (v != null && v < 0) errs[k] = "This can't be negative";
+    }
+    if (total != null && total < 1) {
+      errs['total_guests'] = 'A listing has to sleep at least one guest';
+    }
+    if (total != null && adults != null && adults > total) {
+      errs['max_adults'] = 'More adults than the place sleeps in total';
+    }
+    // Infants are excluded — they share a bed, and every platform counts them
+    // apart from the party that has to fit.
+    if (total != null && adults != null && children != null &&
+        adults + children > total) {
+      errs['max_children'] =
+          '$adults adults and $children children is ${adults + children} — '
+          'more than the $total this place sleeps';
+    }
+    if (bedrooms != null && beds != null && bedrooms > 0 && beds < bedrooms) {
+      errs['beds'] = '$bedrooms bedrooms need at least $bedrooms beds between them';
+    }
+    if (total != null && beds != null && beds > 0 && total > beds * 4) {
+      errs['total_guests'] =
+          "$total guests in $beds bed${beds == 1 ? '' : 's'} won't work — "
+          'add beds, or lower the count';
+    }
+
+    // A seasonal property has to say which months it is open, or the calendar
+    // has no idea when it can be booked (W5 · LP-P0-07).
+    if (_s(f['property_status']) == 'seasonal') {
+      final months = f['seasonal_months'];
+      final named = months is Iterable
+          ? months.where((m) => _s(m).isNotEmpty).length
+          : 0;
+      if (named == 0) {
+        errs['seasonal_months'] = 'Choose the months this property is open';
+      }
+    }
+
     return errs;
   }
 
