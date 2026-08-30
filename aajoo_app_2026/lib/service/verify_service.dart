@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 /// KYC verification (DIDIT) API client — mirrors the web `/verify/*` flow.
 ///
@@ -10,7 +11,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class VerifyService {
   final Dio _dio = Dio();
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
-  final String baseUrl = 'https://aajaodev.onrender.com';
+  final String baseUrl = Apiconstants.baseUrl;
   final String _tokenKey = 'user_token';
 
   VerifyService() {

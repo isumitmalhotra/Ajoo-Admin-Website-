@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import 'package:rent_home/data/Apiconstants.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 /// The four surfaces the app was missing against the website: Refer & Earn,
 /// host Performance, host Boost and the host notification list.

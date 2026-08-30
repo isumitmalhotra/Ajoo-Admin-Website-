@@ -3,10 +3,11 @@ import 'package:rent_home/models/aajoo_about_model.dart';
 import 'package:rent_home/models/faq_reponse_model.dart';
 import 'package:rent_home/models/safety_data_model.dart';
 import 'package:rent_home/models/terms_condition_user_response_model.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 class StaticPageService {
   final Dio _dio = Dio();
-  final String baseUrl = 'https://aajaodev.onrender.com/';
+  final String baseUrl = '${Apiconstants.baseUrl}/';
   String? _token;
 
   StaticPageService() {

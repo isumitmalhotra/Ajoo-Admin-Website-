@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 
-import 'package:rent_home/data/Apiconstants.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 /// States and cities from the platform's reference tables.
 ///

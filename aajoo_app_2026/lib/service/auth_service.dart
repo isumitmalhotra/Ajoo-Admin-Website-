@@ -7,10 +7,11 @@ import '../data/source/remote/dio_config.dart';
 import '../models/update_user_model.dart';
 import '../models/user_models.dart';
 import 'package:rent_home/utils/secure_store.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 class AuthService {
   final Dio _dio = Dio();
-  final String baseUrl = 'https://aajaodev.onrender.com';
+  final String baseUrl = Apiconstants.baseUrl;
   final String TOKEN_KEY = 'user_token';
   final String USER_DATA_KEY = 'user_data';
   // The shared, hardened instance: reads on a device with a broken Keystore

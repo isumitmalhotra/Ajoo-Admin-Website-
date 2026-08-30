@@ -13,6 +13,7 @@ import 'package:dio/dio.dart' as dio;
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:lottie/lottie.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 class HotelCheckoutPage extends StatefulWidget {
   const HotelCheckoutPage(
@@ -190,7 +191,7 @@ class _HotelCheckoutPageState extends State<HotelCheckoutPage> {
     _showLoadingDialog();
 
     final token = await const FlutterSecureStorage().read(key: 'user_token');
-    const url = 'https://aajaodev.onrender.com/review/user/checkout';
+    const url = '${Apiconstants.baseUrl}/review/user/checkout';
     Logger().f("Submitting review to $url with token $token");
 
     try {

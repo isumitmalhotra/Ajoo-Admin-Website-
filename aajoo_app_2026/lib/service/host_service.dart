@@ -8,10 +8,11 @@ import 'package:rent_home/models/host_negotiation.dart';
 import 'package:rent_home/models/host_ongoing_response.dart';
 import 'package:rent_home/models/host_properties_reponse.dart' as hostResponse;
 import 'package:rent_home/models/transaction_model.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 class HostService {
   final Dio _dio = Dio();
-  final String baseUrl = 'https://aajaodev.onrender.com';
+  final String baseUrl = Apiconstants.baseUrl;
   String? _token;
 
   HostService() {

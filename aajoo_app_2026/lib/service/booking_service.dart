@@ -8,6 +8,7 @@ import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/models/create_booking_response.dart';
 import 'package:rent_home/models/single_property_response.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 class BookingService {
   final Dio _dio = Dio(
@@ -24,7 +25,7 @@ class BookingService {
       maxWidth: 90,
       enabled: kDebugMode,
     ));
-  final String baseUrl = 'https://aajaodev.onrender.com';
+  final String baseUrl = Apiconstants.baseUrl;
 
   UserController? get userController {
     try {

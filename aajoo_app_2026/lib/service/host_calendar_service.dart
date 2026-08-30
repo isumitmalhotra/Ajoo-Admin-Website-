@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:rent_home/models/host_calendar_model.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 /// The host calendar's three endpoints, all owner-scoped server-side by
 /// property_host_id — a host can only ever read or change their own listing.
@@ -11,7 +12,7 @@ import 'package:rent_home/models/host_calendar_model.dart';
 /// `user_token` every other call uses, and the host role is a claim inside it.
 class HostCalendarService {
   final Dio _dio = Dio();
-  final String baseUrl = 'https://aajaodev.onrender.com';
+  final String baseUrl = Apiconstants.baseUrl;
 
   HostCalendarService() {
     _dio.options.baseUrl = baseUrl;

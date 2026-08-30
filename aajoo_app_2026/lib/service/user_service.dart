@@ -8,6 +8,7 @@ import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:rent_home/models/booking_history_response_model.dart';
 import 'package:rent_home/models/ongoing_reponse.dart';
 import 'package:rent_home/models/user_review_model.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 class UserService {
   final _dio = Dio();
@@ -22,7 +23,7 @@ class UserService {
       maxWidth: 100,
     ));
   }
-  final String baseUrl = 'https://aajaodev.onrender.com';
+  final String baseUrl = Apiconstants.baseUrl;
   Future<BookingHistoryResponse> getBookingHistory() async {
     final url = '$baseUrl/user/booking-history';
     final token = await const FlutterSecureStorage().read(key: "user_token");

@@ -2,10 +2,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:rent_home/models/host_account_details_model.dart';
 import 'package:rent_home/models/payout_list_model.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 class HostPayoutService {
   final Dio _dio = Dio();
-  final String baseUrl = 'https://aajaodev.onrender.com/';
+  final String baseUrl = '${Apiconstants.baseUrl}/';
   HostPayoutService() {
     _dio.options.baseUrl = baseUrl;
     _dio.options.contentType = 'application/json';

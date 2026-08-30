@@ -7,6 +7,7 @@ import 'package:rent_home/models/property_review_response_model.dart';
 import 'package:rent_home/models/single_property_response.dart';
 import 'package:rent_home/models/host_profile.dart';
 import 'package:rent_home/models/destination_model.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 class PropertyService {
   /// Why the last addProperties call failed, straight from the server.
@@ -18,7 +19,7 @@ class PropertyService {
   String? lastAddError;
 
   final Dio dio = Dio();
-  final String baseUrl = "https://aajaodev.onrender.com/";
+  final String baseUrl = '${Apiconstants.baseUrl}/';
   PropertyService() {
     dio.options.baseUrl = baseUrl;
     // Dio defaults every timeout to null, which means WAIT FOREVER. Submitting

@@ -1,10 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 class ForgotPasswordService {
   final _dio = Dio();
-  final String baseUrl = 'https://aajaodev.onrender.com/';
+  final String baseUrl = '${Apiconstants.baseUrl}/';
   ForgotPasswordService() {
     _dio.options.baseUrl = baseUrl;
     _dio.interceptors.add(PrettyDioLogger(

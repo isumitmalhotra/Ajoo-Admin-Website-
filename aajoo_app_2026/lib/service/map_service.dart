@@ -1,9 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:rent_home/models/properties_response_model.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 class MapService {
-  final String baseUrl = "https://aajaodev.onrender.com";
+  final String baseUrl = Apiconstants.baseUrl;
   final Dio _dio = Dio();
 
   MapService() {

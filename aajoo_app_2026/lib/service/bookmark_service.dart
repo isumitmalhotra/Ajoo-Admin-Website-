@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:rent_home/models/properties_response_model.dart';
 import 'package:flutter/foundation.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 /// Backend-synced bookmark store.
 ///
@@ -21,7 +22,7 @@ class BookmarkService {
   BookmarkService._internal();
 
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'https://aajaodev.onrender.com',
+    baseUrl: Apiconstants.baseUrl,
     contentType: 'application/json',
     connectTimeout: const Duration(seconds: 10),
     receiveTimeout: const Duration(seconds: 12),

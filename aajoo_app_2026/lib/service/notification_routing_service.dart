@@ -10,6 +10,7 @@ import '../ui/screens_renter/messages/messages_screen.dart';
 import '../controller/user_controller.dart';
 import '../models/properties_response_model.dart';
 import '../utils/notification_link.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 class NotificationRoutingService extends GetxService {
   final _storage = const FlutterSecureStorage();
@@ -249,7 +250,7 @@ class NotificationRoutingService extends GetxService {
         "senderId":
             Get.find<AuthController>().userData.value?.userId.toString() ?? '',
         'propertyId': propertyId,
-        'serverUrl': 'https://aajaodev.onrender.com', // Your server URL
+        'serverUrl': Apiconstants.baseUrl, // Your server URL
         'token': Get.find<AuthController>().token.value,
         'property': property,
         'lat': lat,

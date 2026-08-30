@@ -15,6 +15,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:rent_home/models/listing_schema.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 /// What went wrong, in words the host can act on.
 class ListingException implements Exception {
@@ -38,7 +39,7 @@ class ListingService {
   }
 
   final Dio _dio = Dio();
-  final String baseUrl = 'https://aajaodev.onrender.com/';
+  final String baseUrl = '${Apiconstants.baseUrl}/';
   final _storage = const FlutterSecureStorage();
 
   Future<Options> _auth() async {

@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 
-import 'package:rent_home/data/Apiconstants.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 /// A place the guest can search from — a real geocoded location, not a city we
 /// happen to have a listing in.

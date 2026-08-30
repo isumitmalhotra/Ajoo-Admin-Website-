@@ -1,10 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:rent_home/models/search_property_model.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 class HomePageSearchService {
   final _dio = Dio();
-  final String baseUrl = 'https://aajaodev.onrender.com/';
+  final String baseUrl = '${Apiconstants.baseUrl}/';
   String? _token;
   HomePageSearchService() {
     _dio.options.baseUrl = baseUrl;

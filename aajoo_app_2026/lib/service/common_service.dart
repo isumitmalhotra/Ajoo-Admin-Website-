@@ -6,10 +6,11 @@ import 'package:rent_home/models/amenities_model.dart';
 import 'package:rent_home/models/category_response_model.dart';
 import 'package:rent_home/models/doc_type_response_model.dart';
 import 'package:rent_home/models/tags_model.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 
 class CommonService {
   final Dio _dio = Dio();
-  final String baseUrl = 'https://aajaodev.onrender.com/';
+  final String baseUrl = '${Apiconstants.baseUrl}/';
 
   CommonService() {
     _dio.options.baseUrl = baseUrl;

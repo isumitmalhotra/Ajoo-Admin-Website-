@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
-import 'package:rent_home/data/Apiconstants.dart';
+import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/models/chat_message.dart';
 import 'package:rent_home/models/message_thread.dart';
 import 'package:rent_home/service/auth_service.dart';
