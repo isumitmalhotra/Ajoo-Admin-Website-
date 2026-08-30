@@ -8,6 +8,16 @@ class LocationPermissionDeniedPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // No AppBar at all, and no other exit on the page — a guest who declined
+      // the location prompt landed here with nowhere to go. Transparent so the
+      // page's own layout is untouched; it exists only to carry the arrow, and
+      // Flutter draws that only when there is something to pop back to.
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: kInk,
+      ),
+      extendBodyBehindAppBar: true,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

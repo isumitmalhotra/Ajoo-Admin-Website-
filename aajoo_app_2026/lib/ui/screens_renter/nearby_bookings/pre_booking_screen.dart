@@ -1105,7 +1105,12 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
       appBar: AppBar(
         toolbarHeight: 76,
         elevation: 0,
-        automaticallyImplyLeading: false,
+        // Was `false`, which left the search results with no way back to the
+        // home screen they were opened from — and this screen is pushed from
+        // six places. `true` is not merely the default: Flutter draws the
+        // arrow only when the route can actually pop, so the one case where
+        // this is shown as a root still gets no stray button.
+        automaticallyImplyLeading: true,
         backgroundColor: isLuxury ? Lux.bg : kCream,
         foregroundColor: isLuxury ? Lux.ink : Colors.black87,
         // The location was a FutureBuilder that reverse-geocoded on every

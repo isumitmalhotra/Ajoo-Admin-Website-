@@ -31,7 +31,11 @@ class DiditKycScreen extends StatelessWidget {
         elevation: 0,
         foregroundColor: kInk,
         title: const Text('Identity verification'),
-        automaticallyImplyLeading: false,
+        // Was `false` with no other exit anywhere on the screen: a guest who
+        // opened identity verification could not leave it except by the OS
+        // gesture. Stopping somebody abandoning KYC is not worth trapping
+        // them in it — they can start it again from the same place.
+        automaticallyImplyLeading: true,
       ),
       body: SafeArea(
         child: Padding(
