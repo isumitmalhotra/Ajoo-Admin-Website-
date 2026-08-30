@@ -266,9 +266,34 @@ the harness measures the consequence instead of assuming one — today there is
 Migrating 14 columns on a live database mid-testing carries more immediate risk
 than it removes; the recommendation is to do it in a quiet window, not now.
 
-**Not covered:** migrations from an empty database. That needs a scratch
-database this session had no authority to create, so it is named rather than
-faked.
+**Migrations from an empty database:** covered, and it found a real defect.
+
+```bash
+node scripts/migrateDryRun.js
+```
+
+There is no scratch database to run them against — the Clever Cloud user holds
+ALL PRIVILEGES on one schema and cannot `CREATE DATABASE`, and the machine has
+neither a local MySQL nor Docker. So the harness *executes* every migration's
+`up()` against a queryInterface that keeps the schema in memory and answers
+`describeTable` / `showAllTables` / `information_schema` from it, so guarded
+migrations take the same branch they would take for real.
+
+**It found `20250101120004-add-foreign-key-constraints`:** `addConstraintIfPossible`
+called **itself** instead of `queryInterface.addConstraint`, and
+`removeConstraintIfExists` had the identical fault. On a fresh database it
+recurses until the heap dies — the set could not be replayed from zero at all.
+On the live database it "succeeded" because every table was still missing when
+it ran, so it is marked done and **added zero constraints**; the database has 2
+foreign keys, none of them from this migration.
+
+Fixed. Replay now: **136/136 migrations, 107 tables, 0 failures, 0 ordering
+problems, all 11 core tables present.** 96 raw SQL statements are reported
+UNVERIFIED rather than counted as passing.
+
+> **Open decision:** whether to add those foreign keys to the live database.
+> It needs an orphan-row check first and locks tables while it runs — not
+> something to slip in mid-testing.
 
 ---
 
