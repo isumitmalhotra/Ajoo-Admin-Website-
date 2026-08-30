@@ -1107,6 +1107,55 @@ was invented for any of them.
 
 Reversible: `node scripts/fixSeedCoordinates.js --rollback`.
 
+## PART 18 — Monthly stay
+
+*Added 2026-08-31. This was open decision #4.*
+
+**The rule conflated two questions.** `validateBookingDates` capped the
+CHECK-OUT at three months, which is really two different limits wearing one
+name: how far ahead somebody may book, and how long they may stay. A 28-night
+stay starting in ten weeks was priced by the engine — the composite pricer
+decomposes it into one month, and 29,241 listings carry a monthly rate — and
+then refused at the payment step. The platform was quoting a month it could not
+sell, which is exactly the misleading journey the client's document warned
+against.
+
+**The horizon now bounds the check-in.** What bounds the stay instead, in order
+of authority:
+
+1. **The host's own `pbr_min_stay_nights` / `pbr_max_stay_nights`.** The listing
+   wizard has written these since W5 and **nothing had ever read them**. They
+   are enforced now, where the listing is already loaded. Zero means "not set"
+   for both, so every host today is unaffected — no host has set a maximum.
+2. **`MAX_STAY_NIGHTS = 365`**, deliberately a guard against absurd input
+   rather than a product rule. Without some ceiling, removing the old one would
+   let a decade-long reservation lock a calendar.
+
+The two refusals say different things, because they are different problems —
+"cannot be made more than 3 months in advance" versus "a stay cannot be longer
+than 365 nights". A test asserts the horizon message never mentions the stay,
+so they cannot be conflated again.
+
+**The calendar had the same bug**, and its own comment said so: *"if the
+calendar offers it, the server should take it — change one, change the other."*
+It greyed out every day past the horizon, checkout included, so a monthly stay
+could not be picked even once the server would accept it. It bounds the start
+only now.
+
+**Verified against production:**
+
+| | |
+|---|---|
+| 28 nights starting in ten weeks | Accepted — was refused |
+| Quote for those dates | 1 month at **₹67,200** rather than ₹89,600 nightly — a ₹22,400 saving |
+| Booked | `B816062`, ₹70,560 with GST *(soft-deleted afterwards so it does not hold the test calendar)* |
+| Check-in four months out | Still refused |
+| 400-night stay | Refused, in its own words |
+| Calendar, no start chosen | Only days inside the horizon selectable; December greyed out |
+| Calendar, November start chosen | 25 December days open up |
+
+`tests/bookingHorizon.test.js` — 11 cases. Backend suite 28 files green.
+
 ## Standing actions on your side
 
 1. **Rotate every credential** — the DB password, Cloudinary, the Gmail app password,
