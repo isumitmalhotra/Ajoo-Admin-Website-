@@ -19,6 +19,7 @@ import 'package:rent_home/ui/screens_host/performance/host_performance_screen.da
 import 'package:rent_home/ui/screens_host/boost/host_boost_screen.dart';
 import 'package:rent_home/ui/screens_host/notifications/host_notifications_screen.dart';
 import 'package:rent_home/ui/screens_common/refer/refer_screen.dart';
+import 'package:rent_home/ui/screens_host/settlements/host_settlements_screen.dart';
 
 /// Every page a host can reach, declared once (A-78).
 ///
@@ -104,6 +105,14 @@ List<HostMenuEntry> hostMenuEntries({VoidCallback? beforeNavigate}) {
       label: 'Payouts',
       subtitle: 'What you have earned and been paid',
       onTap: () => go(() => const PayoutPage()),
+    ),
+    // Money owed the other way. Next to Payouts because it is the same
+    // pocket: an unsettled pay-at-property booking comes out of the next one.
+    HostMenuEntry(
+      icon: Iconsax.money_send,
+      label: 'Settlements',
+      subtitle: 'What you owe on pay-at-property bookings',
+      onTap: () => go(() => const HostSettlementsScreen()),
     ),
     HostMenuEntry(
       icon: Iconsax.bank,
