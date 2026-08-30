@@ -1086,8 +1086,20 @@ centroids from these same coordinates, so a wrong listing skewed search results 
 Live: searching Almora now returns 51 stays in the Uttarakhand hills; before, it
 returned none anywhere near Almora.
 
-**Not fixed, and deliberately:** 4,262 listings carry no city or state, 1,112 name a
-place OpenStreetMap cannot find, and 6 have no coordinate at all. Two of those places
+**The 4,262 with no city were then checked separately, and they are fine.** Their
+locality words were stripped by the 2026-08-17 label cleanup, so there is no town to
+check them against, and 4,260 of them carry PIN 110005 — the placeholder — so the
+postal test is meaningless for them too. Measuring them against that fake Delhi PIN
+returned "100% misplaced, median 986km", which is not a finding but an artefact; it
+was nearly reported as one. Anchored instead on the real extent of the state each one
+names, fetched from OpenStreetMap: Bihar's 1,891 sit 81km from centre against a
+307km radius, Assam's 1,296 at 222km against 381km, Chhattisgarh's 851 at 120km
+against 412km — all comfortably inside. **The one residue is 171 Daman & Diu rows**,
+median 202km against a 129km radius, and even that is confounded by the territory
+being two enclaves ~700km apart, which makes a bounding box a poor proxy.
+
+**Not fixed, and deliberately:** 1,112 listings name a place OpenStreetMap cannot
+find, and 6 have no coordinate at all. Two of those places
 — "Ekam Height, Punjab" and "Gharun, Punjab", 51 listings each — are a housing society
 and a village, real localities that are simply not indexed under those names. Nothing
 was invented for any of them.
@@ -1103,8 +1115,9 @@ Reversible: `node scripts/fixSeedCoordinates.js --rollback`.
 2. **At go-live:** delete `ALLOW_TEST_PAYMENTS` from Render and swap in `rzp_live_…`
    keys. That single change flips the platform from "test window" to "really
    collecting".
-3. **Do not drop `tbl_pricing_grid_backfill`** while you may still want to undo the
-   pricing backfill.
+3. **Do not drop `tbl_pricing_grid_backfill` or `tbl_seed_coord_backup`** while you
+   may still want to undo the pricing backfill or the coordinate repair. They are the
+   only way back.
 4. **A 60-minute token lifecycle with no refresh flow** — deliberately not changed
    mid-testing, but it means long admin sessions expire.
 
