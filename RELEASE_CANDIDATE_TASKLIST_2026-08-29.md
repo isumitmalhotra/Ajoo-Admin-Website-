@@ -291,9 +291,75 @@ Fixed. Replay now: **136/136 migrations, 107 tables, 0 failures, 0 ordering
 problems, all 11 core tables present.** 96 raw SQL statements are reported
 UNVERIFIED rather than counted as passing.
 
-> **Open decision:** whether to add those foreign keys to the live database.
-> It needs an orphan-row check first and locks tables while it runs — not
-> something to slip in mid-testing.
+**Foreign keys: decided and applied.** The orphan check ran first and found
+three rows — two payments pointing at bookings that no longer exist, one
+booking pointing at a deleted user. They were backed up, deleted, and the
+deletion recorded in `tbl_admin_audit`.
+
+The bigger finding was in the migration itself: **all 64 relationships were
+`CASCADE`**. Deleting one user would have taken 29,248 properties and 36
+payment rows with them, silently. Rewritten per table — `RESTRICT` for
+anything financial or historical (43 of them), `CASCADE` only where the child
+row has no meaning without its parent (21: join tables, derived rows, auth
+sessions). `pay_bookId` was `TEXT`, which no key can reference; it is now
+`VARCHAR(100)` with an index.
+
+**39 constraints active on the live database**, the full E2E suite still
+22/22 afterwards, and a real booking + payment written through them.
+
+---
+
+### W10 — Pay-at-property settlement ✅ **DONE · live 2026-08-30**
+
+The gap: on a cash booking the guest hands the whole amount to the host at the
+door, so **the platform collected nothing at all** — no commission, no GST on
+it, and not the accommodation GST it is liable to remit either. 23 such
+bookings already existed.
+
+**The rule, and why it is the only defensible one:** the split does not change
+between cash and online. Only the direction of the money does. A ₹27,000 stay
++ ₹1,320 GST leaves the host with ₹22,221 whichever way the guest paid —
+identical, to the rupee, to what `splitBooking` credits on an online booking.
+What changes is that on cash the host owes the difference back.
+
+| What the host owes | On a ₹28,320 stay |
+|---|---|
+| Commission, 15% of the room subtotal | ₹4,050 |
+| GST on that commission, 18% | ₹729 |
+| Accommodation GST the platform must remit | ₹1,320 |
+| **Due to the platform** | **₹6,099** |
+| Host keeps | ₹22,221 |
+
+**Endpoints** — `GET /host/dues` (what I owe and why, broken down per stay,
+plus a settled history), `POST /host/dues/pay`, `POST /host/dues/verify`,
+and `GET /admin/host-dues` behind the same finance gate as payouts.
+
+**Recovery, which is the part that actually collects.** A host who ignores the
+screen settles anyway: `approvePayout` withholds what they owe *before* the
+payout row is claimed and before any money leaves. Oldest dues first, and
+partial by design — a payout that cannot cover a due leaves it outstanding at
+full value rather than marking it settled for less. Fully-offset payouts are
+completed by the offset itself rather than sending a zero-rupee transfer no
+provider would accept. Both paths are audited (`payout_offset`,
+`payout_offset_in_full`).
+
+**Refusals that matter.** The amount is always the server's own sum of stored
+dues — nothing reads an amount from the request, or a host would decide what
+they owe. The signature is checked before anything is marked settled. A
+verified payment settles only that host's own `PENDING` rows, so it cannot be
+replayed onto someone else's balance or the same balance twice. A cancelled
+booking voids its due; a cash booking later settled online is not billed twice.
+
+**Verified against production, not asserted:** backfill raised dues on all 23
+existing cash bookings — **₹37,479.20 outstanding** across three hosts. The
+host view returns ₹11,896.25 payable now and ₹10,465 upcoming over 17
+bookings; the admin view agrees on the total. A rehearsed ₹5,000 payout
+withheld ₹4,760.28, cleared 4 dues in full, left the 5th whole, and was rolled
+back. `tests/hostDues.test.js` — 23/23.
+
+> **Not built, and deliberately:** no host or admin *screen* yet. The client
+> asked for endpoints; the UI is a small follow-up once they say where it sits
+> in the dashboard.
 
 ---
 
@@ -320,7 +386,7 @@ W8 APK ────────────────────────�
 | 2 | **Delete the 29,226 seeded listings?** Their coordinates are wrong by up to 450 km. Map, "near me" and distance sort are all being judged against fabricated data. | W9, sitemap |
 | 3 | **Live Razorpay credentials** — production must fail closed without them. | W0 |
 | 4 | **Is monthly stay in scope, or removed from the UI?** Client's own doc says do not expose a misleading journey. | W2, W3 |
-| 5 | **Cash/pay-at-property collection** — unbuilt, blocked on client since 2026-08-23. | W4 |
+| ~~5~~ | ~~**Cash/pay-at-property collection**~~ — **built and live 2026-08-30**, see W10. The platform now bills the host their commission + GST on cash bookings and recovers it from their next payout if unpaid. Remaining ask is cosmetic: where the settlement screen sits in the host dashboard. | ~~W4~~ |
 | 6 | Is the **APK in this release candidate**, or web+admin first? | W8 |
 
 ---

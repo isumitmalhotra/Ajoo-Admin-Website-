@@ -1,20 +1,20 @@
-# Remediation Completion Report — W0 through W7
+# Remediation Completion Report — W0 through W10
 
 *(Originally the W0 + W1 report; extended 2026-08-30 to cover every workstream
-completed since.)*
+completed since, including pay-at-property settlement and the foreign keys.)*
 
 | | |
 |---|---|
 | Period | 2026-08-29 → 2026-08-30 |
-| Workstreams complete | **W0, W1, W2, W3, W4, W5, W6, W7** |
-| Backend commits | `00c1a69` → `9f3b83d` (23 commits), all pushed and **deployed** |
+| Workstreams complete | **W0 – W10** — every workstream on the client's list, plus pay-at-property settlement |
+| Backend commits | `00c1a69` → `a677588` (32 commits), all pushed and **deployed** |
 | Frontend commits | 7, all pushed and **deployed** |
-| Migrations applied to the live DB | `admin-roles`, `revoked-tokens`, `pricing-tiers`, `booking-deposit`, `admin-audit` |
+| Migrations applied to the live DB | `admin-roles`, `revoked-tokens`, `pricing-tiers`, `booking-deposit`, `admin-audit`, `payments-bookid-type`, `apply-foreign-keys` (39 constraints), `host-dues` |
 | Data migration | 29,239 listings backfilled with a complete pricing grid (reversible) |
-| Test suite | **25/25 test files · 376 assertions**, all passing |
+| Test suite | **26/26 test files**, all passing · plus `scripts/e2eVerify.js` — **22/22 against the live platform** |
 | Production verification | Every claim in this document was checked against the live API on the day it was written, not remembered |
 | Source findings | `AAJOO_ADMIN_DASHBOARD_FULL_QA_AUDIT`, `AAJOO_APK_FINDINGS`, `AAJOO_WEBSITE_FINAL_GUEST_HOST_FINDINGS`, `Aajoo Homes Pricing Architecture.pdf`, `AAJOO HOST LISTING`, `SEO Publish Spec`, `Hii.docx` |
-| Still open | **W8 (Android APK)** and **W9 (cross-cutting E2E)** — see PART 14 |
+| Still open | Nothing on the workstream list. Remaining items are client decisions and credential rotation — see PART 14 |
 
 **How to read this document.** Each section answers four questions: *what was wrong*,
 *what we did*, *how the system behaves now*, and *how to check it yourself*. The check
@@ -999,7 +999,11 @@ the property**, not who moved last.
 
 ## Not started
 
-**W8 — Android APK.** A different codebase, and the largest remaining block.
+Nothing on the workstream list. W8 and W9 closed on 2026-08-30; the record of what
+W8 covered is kept below because the findings it answers are the client's own IDs.
+
+**W8 — Android APK ✅ done.** A different codebase, and the largest remaining block
+at the time this section was written.
 
 | Item | Findings |
 |---|---|
@@ -1009,8 +1013,14 @@ the property**, not who moved last.
 | API path/versioning reconciliation with the spec | P1-11 |
 | **Cancellation OTP** — the server now requires it; the app does not send it, so app-side cancellation is refused | P1-04 (app half) |
 
-**W9 — Cross-cutting E2E verification.** The full pass across web, app and admin,
-last in the order for a reason.
+Two of those were live regressions caused by earlier work in this same period: the
+app could not cancel a booking at all after W4 added the OTP requirement, and app
+pre-booking recorded stays at a tenth of their price after W2 added the deposit
+option. Both fixed.
+
+**W9 — Cross-cutting E2E verification ✅ done.** 22/22 against the live platform,
+and it found a real bug (SEO written to a table nobody serves). Migrations replay
+from an empty schema: 136/136. See the task list's W9 section.
 
 ## Deferred by decision
 
@@ -1023,8 +1033,13 @@ last in the order for a reason.
   needs a fallback so a quote outage cannot blank a price.
 - **Customer disputes.** No feature exists — no guest path, no table. What existed was
   a compliance queue wearing the word. Building it properly is its own piece of work.
-- **Cash / pay-at-property collection.** Blocked on you since 2026-08-23; the platform
-  collects no commission on cash bookings.
+- **Money columns are `DOUBLE(10,2)`, not `DECIMAL`.** Wrong in principle. Measured
+  rather than assumed: there is no drift today, every paid booking reconciles, and
+  nothing is over-credited. Migrating 14 columns on a live database mid-testing
+  carries more risk than it removes — do it in a quiet window.
+- **A host/admin *screen* for pay-at-property settlement.** The endpoints are live
+  (PART 15); you asked for endpoints. The UI is a short follow-up once you say where
+  it belongs in the dashboard.
 
 ## Standing actions on your side
 
@@ -1056,3 +1071,127 @@ last in the order for a reason.
 | A completed payout cannot be rejected at all | W7 |
 | "Disputes" is now "Compliance & moderation" | W7 |
 | Deleting a listing also deactivates it | W7 |
+| A cash booking now bills the host commission + GST; unpaid, it is withheld from their next payout | W10 |
+| A user or property with financial history can no longer be hard-deleted — the database refuses it | FKs |
+
+
+---
+
+# PART 15 — W10: Pay-at-property settlement
+
+*Added 2026-08-30, after W9.*
+
+## W10-A · The platform collected nothing on cash bookings
+
+**What was wrong.** On a pay-at-property booking the guest hands the entire amount
+to the host at the door. The booking recorded `book_is_cod = 1`, the finance row was
+written as uncollected — and that was the end of it. No commission, no GST on that
+commission, and not the accommodation GST the platform is itself liable to remit.
+23 such bookings already existed. This had been sitting as "blocked on client" since
+2026-08-23.
+
+**What we did.** Billed the host for the platform's share, and made it collectable.
+
+The rule the whole feature turns on: **the split does not change between cash and
+online — only the direction of the money does.** `utils/hostDues.js` computes it
+from the booking row alone:
+
+| | On a ₹28,320 stay (₹27,000 + ₹1,320 GST) |
+|---|---|
+| Commission — 15% of the room subtotal | ₹4,050 |
+| GST on the commission — 18% | ₹729 |
+| Accommodation GST the platform remits | ₹1,320 |
+| **Due from the host** | **₹6,099** |
+| Host keeps | ₹22,221 |
+
+That ₹22,221 is *identical, to the rupee*, to what `splitBooking` credits a host on
+an online booking of the same value — `27000 − 4050 − 729`. A test pins that
+equality, because it is the invariant that makes the feature defensible to a host:
+they are not being charged extra for taking cash, they are handing back the share
+the gateway would otherwise have kept.
+
+`tbl_host_dues` stores the three components separately rather than one total, so a
+host can see the working and an accountant can reconcile the GST line on its own.
+
+**How it behaves now.**
+
+| Endpoint | Who | What |
+|---|---|---|
+| `GET /host/dues` | host | what I owe, per stay, broken down — plus what I have already settled and how |
+| `POST /host/dues/pay` | host | starts a payment for what is currently payable |
+| `POST /host/dues/verify` | host | settles those dues once the signature checks out |
+| `GET /admin/host-dues` | finance | who owes what, by host and by booking |
+
+A due is raised the moment a cash booking is created, so it appears on the host's
+screen from the start rather than arriving later as a surprise. A cancelled booking
+voids its due. A cash booking later settled online is not billed a second time — the
+gateway already took the platform's cut.
+
+## W10-B · Collecting from a host who ignores the screen
+
+An invoice nobody has to pay is not collection. **`approvePayout` now withholds what
+a host owes before the payout row is claimed and before any money leaves.**
+
+- Oldest dues first.
+- **Partial by design.** A payout that cannot cover a due in full leaves it
+  outstanding at full value rather than marking it settled for less than it is worth.
+- A fully-offset payout is completed *by the offset*, not by sending a zero-rupee
+  transfer no provider would accept.
+- Both paths are audited — `payout_offset` and `payout_offset_in_full` in
+  `tbl_admin_audit`, with the amount withheld and the dues cleared.
+- If recovery cannot run at all, the payout goes out in full and the dues stay
+  outstanding for the next one. The host is owed that money either way; blocking
+  them over our own outage would be the wrong failure.
+
+The host screen says this in one line — *"Anything left unpaid is deducted from your
+next payout"* — because it is the consequence a host most needs to know before
+deciding whether to ignore the screen.
+
+## W10-C · What the endpoints refuse
+
+| Refusal | Why it matters |
+|---|---|
+| No amount is ever read from the request | otherwise a host decides what they owe |
+| Signature verified **before** anything is marked settled | otherwise an unpaid claim settles a real balance |
+| A verified payment settles only that host's own `PENDING` rows | otherwise it clears somebody else's balance, or the same one twice |
+| A replayed verify returns success and does nothing | a retried callback is normal, not an error |
+| Only `PENDING` dues can be voided | a settled due is money that has moved; reversing it is a person's decision |
+| `assertPayable()` on the pay path | no settlement can start with a broken payment configuration |
+| `requireRole("host")` / `requireRole(...FINANCE_READ)` | money owed to the platform is not visible to every admin role |
+
+## W10-D · Verified against production
+
+```bash
+node tests/hostDues.test.js        # 23/23
+```
+
+- Backfill raised dues on all 23 existing cash bookings: **₹37,479.20 outstanding**
+  across three hosts.
+- `GET /host/dues` for the test host: **₹11,896.25 payable now, ₹10,465 upcoming**,
+  17 bookings, each line showing commission + GST + stay GST.
+- `GET /admin/host-dues` agrees on the total and groups it by host.
+- A rehearsed ₹5,000 payout withheld **₹4,760.28**, cleared 4 dues in full, left the
+  5th whole at full value, and left ₹17,600.97 outstanding — then rolled back.
+- Unauthenticated admin read refused; a due the host does not owe refused; a forged
+  signature refused.
+
+## W10-E · Foreign keys, since they landed in the same window
+
+**What was wrong.** `20250101120004-add-foreign-key-constraints` declared all 64
+relationships `ON DELETE CASCADE`. Deleting one user would have taken **29,248
+properties and 36 payment rows** with them, silently and unrecoverably. The
+migration also recursed infinitely — `addConstraintIfPossible` called itself — so on
+a fresh database it never completed, and on the live database it was marked done
+having added **zero** constraints.
+
+**What we did.** Rewrote the semantics per table: `RESTRICT` for anything financial
+or historical (43), `CASCADE` only where a child row is meaningless without its
+parent (21 — join tables, derived rows, auth sessions). `pay_bookId` was `TEXT`,
+which no key can reference; it is now `VARCHAR(100)` with an index. Three orphan
+rows were backed up, deleted, and the deletion recorded in the audit ledger.
+
+**How it behaves now.** **39 constraints active on the live database.** A user or
+property carrying financial history cannot be hard-deleted — the database itself
+refuses. Soft-delete, which is what the admin paths actually use, is unaffected. The
+full E2E suite still passes 22/22 with the constraints in place, and a real booking
+plus payment was written through them.
