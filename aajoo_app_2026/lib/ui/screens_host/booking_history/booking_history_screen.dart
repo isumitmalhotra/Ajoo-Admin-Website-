@@ -275,6 +275,20 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
           Text("Booking #${booking.bookId}",
               style: fraunces(
                   fontSize: 15.5, fontWeight: FontWeight.w700, color: kInk)),
+          // WHICH listing this is for. The endpoint has carried
+          // bookingProperty.property_name all along and the model parses it;
+          // only the card left it out, so a host scrolling their bookings saw
+          // a reference number, a guest and an amount, and no way to tell
+          // which of their properties was booked without opening each one.
+          // The website has shown it as a column since the page existed.
+          if (booking.propertyName.trim().isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(booking.propertyName.trim(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: inter(
+                    fontSize: 13, fontWeight: FontWeight.w600, color: kInk2)),
+          ],
           const SizedBox(height: 8),
           Wrap(
             spacing: 6,

@@ -47,7 +47,14 @@ class SinglePropertyData {
   final PropertyOffer? offer;
   final String? propertyCity;
   final String? propertyZip;
-  final int? propertyState;
+  /// The state's NAME, e.g. "Haryana".
+  ///
+  /// This was typed `int?` and run through _parseIntSafely, but the column is
+  /// a STRING(255) and the server has always sent a name. Every property load
+  /// therefore threw the parse away and logged `Failed to parse "Haryana" to
+  /// int` — the field was null on every listing the app has ever shown.
+  /// host_properties_reponse.dart had it right as a String all along.
+  final String? propertyState;
   final String? propertyCountry;
   final String? propertyContact;
   final String? propertyEmail;
@@ -194,7 +201,7 @@ class SinglePropertyData {
       propertyMiniPrice: json['property_mini_price'],
       propertyCity: json['property_city'],
       propertyZip: json['property_zip'],
-      propertyState: _parseIntSafely(json['property_state']),
+      propertyState: json['property_state']?.toString(),
       propertyCountry: json['property_contry'],
       propertyContact: json['property_contact'],
       propertyEmail: json['property_email'],

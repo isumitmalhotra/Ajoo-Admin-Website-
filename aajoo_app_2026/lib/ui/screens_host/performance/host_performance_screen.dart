@@ -65,7 +65,13 @@ class _HostPerformanceScreenState extends State<HostPerformanceScreen> {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
                     children: [
-                      Text('Last six months, against the six before.',
+                      // The window the SERVER actually uses. /host/performance/
+                      // summary compares the last 90 days against the 90
+                      // before; this said "six months, against the six
+                      // before", so every figure on the screen was labelled
+                      // with a period twice as long as the one it covered.
+                      // The website says "last 90 days" for the same numbers.
+                      Text('Last 90 days, against the 90 before.',
                           style: inter(
                               fontSize: 13.5, color: kMuted, height: 1.4)),
                       const SizedBox(height: 16),

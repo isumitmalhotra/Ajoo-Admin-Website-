@@ -92,16 +92,27 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
     } catch (_) {}
   }
 
+  /// Money that has actually left the guest.
+  ///
+  /// This skipped bookings whose STATUS said "cancelled" or "pending", which
+  /// is a different question from whether they were paid. A pay-at-property
+  /// stay is "Booked" or "Confirmed" right up until the guest hands the money
+  /// over at the door, so every unsettled one was counted as spent: the app
+  /// read ₹34,845 where the website's dashboard and its Transactions page both
+  /// read ₹26,760, and the ₹8,085 between them was money nobody had paid yet.
+  ///
+  /// The rule is now the same one the website uses — paid in full counts its
+  /// total, anything else counts only what was actually collected, which is
+  /// what makes a part-paid deposit booking come out right.
   double _totalSpent() {
     final hist = userController.bookingHistory.value?.data ?? [];
     double sum = 0;
     for (final b in hist) {
       final s = (b.bookingStatusBsTitle ?? '').toLowerCase();
-      if (s.contains('cancel') || s.contains('pending')) continue;
-      // What the guest actually SPENT is the total, tax included. This summed
-      // book_price — the pre-tax room subtotal — so "Total Spent" was short by
-      // every rupee of GST the guest had paid.
-      sum += b.payableTotal;
+      if (s.contains('cancel')) continue;
+      // payableTotal is the total tax included — the room subtotal alone left
+      // "Total Spent" short by every rupee of GST the guest had paid.
+      sum += b.bookIsPaid ? b.payableTotal : b.amountPaid;
     }
     return sum;
   }
@@ -221,6 +232,16 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
             const SizedBox(height: 20),
 
             // Upcoming stays list
+            //
+            // The heading said "Upcoming Stays" and the list under it was the
+            // whole of /user/ongoing/bookings — which is anything not yet
+            // finished, a stay in progress included. So the tile above read
+            // "Upcoming Stays 0" while a stay sat listed directly beneath it,
+            // and the two were both right about different things.
+            //
+            // The list is split now, the way the website splits it: the stay
+            // you are on today under its own heading, and the ones still to
+            // come under theirs.
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -235,8 +256,11 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
             ),
             const SizedBox(height: 4),
             Obx(() {
-              final list =
+              final all =
                   userController.ongoingBookings.value?.data.bookings ?? [];
+              final list = all
+                  .where((b) => isUpcoming(b.bookDetails?.btBookFrom))
+                  .toList();
               if (userController.isLoading.value && list.isEmpty) {
                 return const Padding(
                     padding: EdgeInsets.all(20),
