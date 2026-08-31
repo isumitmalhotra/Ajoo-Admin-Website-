@@ -43,7 +43,20 @@ String lifecycleLabel(
   if (s.contains('no show') || s.contains('no-show')) return 'No show';
   if (ended) return 'Completed';
   if (s.contains('check out') || s.contains('check-out')) return 'Completed';
+  // An explicit check-in event means the guest really is there — the host
+  // recorded their arrival, so it outranks everything below.
   if (s.contains('check in') || s.contains('check-in')) return 'Staying now';
+  // A booking the host has NOT approved is not "Staying now", however the
+  // dates read. [started] is only "the check-in date has passed", and testing
+  // it first labelled a request still sitting in "Booked" as a guest in the
+  // property the moment its window opened — on the same row offering Confirm.
+  // Verified on production: B794077, status 5 "Booked", never approved.
+  //
+  // Same fault the note further down describes fixing for "Confirmed", one
+  // branch higher. "Booking Confirmed" also contains "book", hence the
+  // exclusion.
+  final awaitingApproval = s.contains('book') && !s.contains('confirm');
+  if (awaitingApproval) return 'Awaiting approval';
   if (started) return 'Staying now';
   if (s.contains('complet')) return 'Completed';
   if (s.contains('suspend')) return 'Suspended';
