@@ -432,13 +432,36 @@ Negotiations, Messages, Calendar, Statements, Boost, Support all agree; the
 Properties count question resolved as two correct answers under different labels
 (29,237 total vs 29,227 active).
 
-**Known and not fixed**, deliberately: the host dashboard's Upcoming Stays rows
-and the guest Reviews cards use a stock Unsplash photo, because neither
-`/host/bookings/search` nor `/user/reviews/list` returns a property image — the
-honest fix is to add one to those payloads, not to keep dressing the gap. And
-the dashboard's "Aajoo Commission (15%)" is a percentage of host earnings while
-Statements shows the real commission ledger; both are labelled, but they do not
-match and one of them should probably go.
+**Both of those were then fixed (2026-08-31, same day).**
+
+*Commission.* Worse than a mismatched label. The dashboard derived it as 15% of
+`thisMonth`, and `thisMonth` is the host's earnings AFTER commission — so the
+rate hit the wrong base, and the answer was subtracted from that same figure to
+make a "Platform Payout" of ₹73,981.16 against real earnings of ₹87,037.16. The
+host was being shown a payout ₹13,056 lower than what they are paid.
+`earningsSummary` returns `thisMonthCommission` from the PLATFORM_COMMISSION
+rows now — the ledger Statements already reads — and the card shows what guests
+paid, what Aajoo took (₹15,864, matching Statements), and what is queued.
+
+*Photos.* `/host/bookings/search` and `/user/reviews/list` both carry the
+listing's cover photo now, via `coverImagesFor()` in utils/methods — wizard
+`property_media` first, `tbl_attachments` as fallback, the same order
+`getAttachedPropertyImages` uses. A listing with no photograph returns **null**
+and every client draws a marked placeholder; substituting a picture of
+somewhere else is what made this wrong to begin with.
+
+> **The trap, worth keeping.** The first deploy of the photo fix *looked* right
+> — the stock cottage was gone and placeholders appeared everywhere — and was
+> completely broken. `const { coverImagesFor } = require("../utils/methods")` at
+> the top of hostV2.controller resolved to `undefined` in the deployed process,
+> because that controller and utils/methods reach each other through the require
+> graph; loading the file on its own, which is how it was checked, does not
+> reproduce it. Calling undefined threw into `bookingsSearch`'s catch, which
+> logs a warning and leaves `items` untouched, so the endpoint answered 200 with
+> no `property_image` key at all and the placeholder was the *absence* of the
+> feature rather than the feature working. Caught only by reading the API
+> response instead of the page: `'property_image' in items[0]` was false.
+> Require it at call time, as utils/methods already does with ../models.
 
 **Not confirmed:** a `�` appears in stored negotiation text. It may be data
 written badly in an earlier session rather than a live encoding fault — the
