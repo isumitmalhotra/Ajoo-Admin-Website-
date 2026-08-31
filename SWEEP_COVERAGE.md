@@ -194,4 +194,49 @@ in the validation pass was driven on the real New-schedule form —
 `NaN` / `undefined` / `[object Object]` / `Invalid Date` reaching the UI, and
 finance figures matching the database exactly.
 
-## Next: Web — Host (0 / 23), Web — Guest (0 / 18), Web — Public (0 / 42), App (0 / 146)
+---
+
+## Web — Host (18 / 18) — COMPLETE
+
+| # | Route | API | VIS | Notes |
+|---|---|---|---|---|
+| 1 | /host/dashboard | x | ~ | **FIXED**: Upcoming Stays badged from dates alone, ignoring approval |
+| 2 | /host/bookings | x | x | 30 rows; tabs reconcile 5+7+18 |
+| 3 | /host/earnings | x | ~ | **FIXED**: "Booking" column that could never fill; failure reason now shown |
+| 4 | /host/settlements | x | ~ | Shows the bad dues; backfill written, not run |
+| 5 | /host/statements | x | ~ | **FIXED** title (was the bare "Host"); totals reconcile with Earnings |
+| 6 | /host/properties | x | x | 29,237 = 29,227 active + 10 inactive. Prices real on active listings |
+| 7 | /host/calendar | x | x | |
+| 8 | /host/messages | x | x | 2 threads |
+| 9 | /host/negotiations | x | x | |
+| 10 | /host/offers | x | x | **Validation verified live**: -50 to 50, 999 to 90, 1e5 to 15 |
+| 11 | /host/payouts | x | x | 10 rows |
+| 12 | /host/performance | x | x | |
+| 13 | /host/profile | x | x | 15 inputs |
+| 14 | /host/settings | x | x | |
+| 15 | /host/support | x | x | 4 inputs |
+| 16 | /host/boost | x | x | |
+| 17 | /host/refer | x | x | |
+| 18 | /host/list-property | x | ~ | **FIXED** title (called itself "Your properties"); resumes a draft correctly |
+
+### Host sweep notes
+
+**The wizard called itself "Your properties".** HostShell derives the title from
+`active`, which also drives the sidebar highlight. The wizard passes
+`active="properties"` because that is where a host looks for it — and inherited
+the wrong title. The two answer different questions; `title` is now an optional
+override that moves one without the other.
+
+**Checked, not a bug:** two listings showed "₹0/night" on the Properties list.
+They are unpriced *inactive* test entries — 0 of 20 active listings are
+zero-priced.
+
+**Verified live rather than assumed:** the offer-percent clamp added in the
+validation pass. Typing `-50` now yields `50`, so the live preview can no
+longer show guests paying MORE than list price, which is what a negative
+discount produced before.
+
+**Clean:** no horizontal overflow on any of the 18, no broken images, no
+`NaN` / `undefined` / `[object Object]` / `Invalid Date`.
+
+## Next: Web — Guest (0 / 18), Web — Public (0 / 42), App (0 / 146)
