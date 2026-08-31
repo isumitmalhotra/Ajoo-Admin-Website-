@@ -239,4 +239,62 @@ discount produced before.
 **Clean:** no horizontal overflow on any of the 18, no broken images, no
 `NaN` / `undefined` / `[object Object]` / `Invalid Date`.
 
-## Next: Web — Guest (0 / 18), Web — Public (0 / 42), App (0 / 146)
+---
+
+## Web — Guest (18 / 18) — COMPLETE
+
+Signed in as user 101, the same guest whose bookings appear on the host side,
+so the screens had real data rather than empty states.
+
+| # | Route | API | VIS | Notes |
+|---|---|---|---|---|
+| 1 | /account/dashboard | x | x | |
+| 2 | /account/upcoming | x | x | |
+| 3 | /account/ongoing | x | x | |
+| 4 | /account/past-stays | x | x | |
+| 5 | /account/cancelled | x | x | |
+| 6 | /account/next-booking | x | x | |
+| 7 | /account/transactions | x | x | 14 rows |
+| 8 | /account/saved-stays | x | x | |
+| 9 | /account/messages | x | x | |
+| 10 | /account/negotiations | x | ~ | **FIXED**: the one guest screen still titled "Your account" |
+| 11 | /account/notifications | x | x | |
+| 12 | /account/reviews | x | x | |
+| 13 | /account/review | x | ~ | **FIXED**: titled "Your reviews" |
+| 14 | /account/profile | x | x | |
+| 15 | /account/settings | x | x | 11 inputs |
+| 16 | /account/support | x | x | |
+| 17 | /account/refer | x | x | |
+| 18 | /account/directions | x | ~ | **FIXED**: titled "Upcoming stays" |
+
+### Guest sweep notes
+
+**Three screens could not say what they were.** `"negotiations"` was missing
+from `GuestShell`'s `SCREEN_TITLES` outright. Directions and Write-a-review
+deliberately borrow another entry's `active` so the sidebar points where a
+guest expects — Directions under Upcoming stays, Write a review under Your
+reviews — and inherited that entry's *title* along with it.
+
+The highlight answers "where does this live"; the title answers "what is
+this". They are not the same question, so `GuestShell` now takes the same
+optional `title` override `HostShell` got for the listing wizard. Verified
+live: `/account/directions` now reads "Directions" while the sidebar still
+highlights Upcoming Stays.
+
+**Found by comparison, not by looking.** Only the negotiations one was visible
+from opening pages. Diffing all 18 routes against the title map turned up the
+other two, which looked perfectly fine on screen.
+
+**Clean:** no horizontal overflow on any of the 18, no broken images, no
+`NaN` / `undefined` / `[object Object]` / `Invalid Date`.
+
+### Deployment race, twice now
+
+Verifying a fix by fetching the bundle can catch an asset mid-swap. The first
+time it produced a total outage (HTML pointing at a 404ing asset); this time a
+bundle that served 200, contained the fix, and then 404d minutes later while
+the browser tab held it cached — so the pages read as unfixed when they were
+not. **Check the hash the page actually loaded against the hash the live HTML
+references before concluding anything about a deploy.**
+
+## Next: Web — Public (0 / 42), App (0 / 146)
