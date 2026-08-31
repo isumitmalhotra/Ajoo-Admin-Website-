@@ -479,7 +479,11 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
           title: 'Property name',
           sub: s.propertyNameRules.message,
           children: [
-            _text('property_name', 'Property name', required: true),
+            // Held to the rule printed directly above this field, which the
+            // server enforces anyway -- so a host cannot type something they
+            // will only be told about on submit.
+            _text('property_name', 'Property name',
+                required: true, formatters: AppInputFormatters.propertyName),
           ],
         ),
 
@@ -1265,6 +1269,7 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
     int? maxLength,
     int maxLines = 1,
     String? help,
+    List<TextInputFormatter>? formatters,
   }) {
     return _KeyedField(
       // Rebuilt when a draft loads over an empty form, not on every keystroke.
@@ -1276,6 +1281,7 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
       maxLength: maxLength,
       maxLines: maxLines,
       help: help,
+      formatters: formatters,
       error: c.fieldErrors[key],
       onChanged: (v) => c.setF(key, v),
     );

@@ -65,6 +65,24 @@ class AppInputFormatters {
         }),
       ];
 
+  /// A listing's name, held to exactly what the server accepts.
+  ///
+  /// config/listingSchema.js PROPERTY_NAME_RULES is /^[A-Za-z0-9 &-]+$/ with a
+  /// 5-80 length, and listingEngine.controller validatePropertyName() enforces
+  /// it. The wizard printed that rule above the field -- "Letters, numbers,
+  /// spaces and only \"&\" or \"-\"" -- and then accepted "Test@#Villa\&Co"
+  /// anyway, leaving the host to discover on submit that the sentence above
+  /// the box was true after all.
+  ///
+  /// Deliberately ASCII, unlike [name]: this mirrors a server rule rather than
+  /// a human name, and filtering to something the server will reject is worse
+  /// than not filtering. If that rule is ever widened to \p{L}, widen it here
+  /// in the same change.
+  static List<TextInputFormatter> get propertyName => [
+        FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9 &-]')),
+        LengthLimitingTextInputFormatter(80),
+      ];
+
   /// PIN code: 6 digits.
   static List<TextInputFormatter> get pincode => digits(6);
 

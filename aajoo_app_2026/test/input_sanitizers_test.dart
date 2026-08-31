@@ -22,6 +22,7 @@ String run(List<TextInputFormatter> fs, String input) {
 }
 
 void main() {
+  _propertyNameTests();
   group('names accept every script, not just Latin', () {
     test('a Devanagari name survives', () {
       // This returned "" before 2026-09-01: the filter was [A-Za-z] only, so
@@ -79,6 +80,38 @@ void main() {
 
     test('email drops whitespace but keeps the address', () {
       expect(run(AppInputFormatters.email, ' a@b.com '), 'a@b.com');
+    });
+  });
+}
+
+/// The listing name, held to what the server will actually accept.
+///
+/// The wizard prints the rule directly above the field — "Letters, numbers,
+/// spaces and only & or -" — and then took "Test@#Villa\&Co" anyway, so the
+/// host discovered on submit that the sentence above the box was true.
+void _propertyNameTests() {
+  group('propertyName', () {
+    test('the junk that was accepted on the device is now refused', () {
+      expect(run(AppInputFormatters.propertyName, r'Test@#Villa123-Pine\&Co'),
+          'TestVilla123-Pine&Co');
+    });
+
+    test('a normal name passes untouched', () {
+      expect(run(AppInputFormatters.propertyName, 'The Pine Valley Cottage'),
+          'The Pine Valley Cottage');
+    });
+
+    test('the two punctuation marks the rule allows survive', () {
+      expect(run(AppInputFormatters.propertyName, 'Bed & Breakfast - Manali'),
+          'Bed & Breakfast - Manali');
+    });
+
+    test('80 characters is the ceiling', () {
+      expect(run(AppInputFormatters.propertyName, 'A' * 100).length, 80);
+    });
+
+    test('emoji do not reach a listing name', () {
+      expect(run(AppInputFormatters.propertyName, 'Villa 😀 Rose'), 'Villa  Rose');
     });
   });
 }
