@@ -29,7 +29,22 @@ class NotificationRoutingService extends GetxService {
   /// Key under which the last cold-start notification we acted on is stored.
   static const _handledColdStartKey = 'last_handled_initial_message';
 
+  /// Push routing is a feature, not a prerequisite for opening the app.
+  ///
+  /// Every FirebaseMessaging call below throws `[core/no-app]` when Firebase
+  /// did not initialise, and unguarded that took the app down on exactly the
+  /// devices main() already works around with a timeout. Losing push there is
+  /// the intended trade; losing the app is not.
   void _setupNotificationHandlers() {
+    try {
+      _attachFirebaseHandlers();
+    } catch (e) {
+      // ignore: avoid_print
+      print('push routing unavailable, continuing without it: $e');
+    }
+  }
+
+  void _attachFirebaseHandlers() {
     // Handle notification when app is opened from notification (terminated
     // state).
     //

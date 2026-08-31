@@ -20,7 +20,23 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 
 class AuthController extends GetxController {
   final AuthService authService = AuthService();
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  /// Resolved on use, never at construction.
+  ///
+  /// As a field initializer this ran the moment the controller was built, and
+  /// `FirebaseMessaging.instance` throws `[core/no-app]` when Firebase did not
+  /// initialise -- so the app opened to a red error screen instead of a login
+  /// form. main() already guards initializeApp() with a timeout precisely
+  /// because it fails on devices with old or broken Play Services; guarding
+  /// the start and not the consumers left the same user just as stuck, one
+  /// screen further in. Verified on the emulator: init timed out after 10s and
+  /// this line was what actually broke the app.
+  FirebaseMessaging? get _firebaseMessaging {
+    try {
+      return FirebaseMessaging.instance;
+    } catch (_) {
+      return null;
+    }
+  }
   // State management
   final RxBool isLoading = false.obs;
   final RxString error = ''.obs;
@@ -698,7 +714,7 @@ class AuthController extends GetxController {
       // screen with the session already cleared. That is what "the logout
       // button does nothing" was.
       try {
-        await _firebaseMessaging.deleteToken();
+        await _firebaseMessaging?.deleteToken();
       } catch (e) {
         // ignore: avoid_print
         print('logout: could not delete the push token: $e');
@@ -740,7 +756,7 @@ class AuthController extends GetxController {
         isLoggedIn.value = false;
         userData.value = null;
         await authService.logout(); // Clear tokens and user data from storage
-        await _firebaseMessaging.deleteToken();
+        await _firebaseMessaging?.deleteToken();
         showAlert('Success', 'Account deleted successfully', false);
         Get.offAllNamed('/login');
         return true;

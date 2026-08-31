@@ -38,7 +38,17 @@ class NotificationService {
   factory NotificationService() => _instance;
   NotificationService._internal();
   var logger = Logger();
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  /// Resolved on use, never at construction -- see the note in AuthController.
+  /// `FirebaseMessaging.instance` throws when Firebase did not initialise, and
+  /// as a field initializer that took the whole app down rather than costing
+  /// it push notifications.
+  FirebaseMessaging? get _firebaseMessaging {
+    try {
+      return FirebaseMessaging.instance;
+    } catch (_) {
+      return null;
+    }
+  }
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
@@ -183,7 +193,12 @@ class NotificationService {
   /// **2️⃣ Get FCM Token**
   Future<String?> _getFCMToken() async {
     logger.w("Fetching FCM Token...");
-    return await _firebaseMessaging.getToken();
+    final messaging = _firebaseMessaging;
+    if (messaging == null) {
+      logger.w("Firebase unavailable — no FCM token, push is off this run.");
+      return null;
+    }
+    return await messaging.getToken();
   }
 
   /// **3️⃣ Initialize Local Notifications**
@@ -210,6 +225,16 @@ class NotificationService {
 
   /// **4️⃣ Setup Firebase Listeners**
   Future<void> _setupFirebaseListeners() async {
+    // Same reason as the lazy getter above: these throw when Firebase did not
+    // initialise, and an unguarded throw here costs the app rather than push.
+    try {
+      _attachListeners();
+    } catch (e) {
+      logger.w("Firebase listeners unavailable, push is off this run: $e");
+    }
+  }
+
+  void _attachListeners() {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       logger.w(
           "📲 Foreground Notification Received: ${message.notification?.title}");
