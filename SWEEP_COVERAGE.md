@@ -465,9 +465,37 @@ because it interpolated the API strings and those are not consistently padded.
 The guest list had a formatter privately all along; it now lives in
 utils/stay_clock.dart and both portals call it. 105/105 app tests pass.
 
+| host Calendar | ok; 1 Sep 2026 lands on Tuesday, legend and empty state correct |
+| host Invoices | **FIXED** — amounts printed raw |
+| host Performance | ok; every figure reconciles with the web |
+| host Offers | ok; discount arithmetic verifies exactly |
+
+**Performance reconciles with the web to the rupee**: Revenue ₹1,04,814 against
+the web Earnings page's ₹1,04,814.16, Cancellations 18 against the bookings
+tab's 18, and the booking-source total of 12 is the 30 bookings minus those 18.
+
+**Offers**: ₹2,250 from ₹2,500 is 10%, ₹2,560 from ₹3,200 is 20% — all four
+cards' arithmetic checks out, and admin-created offers are correctly marked
+"Run by Aajoo on your listing".
+
+### Host screens printed money raw where the guest side formats it
+
+`pay_amount`, `property_price`, `security_deposit` and the rest arrive as
+**strings** — "67200.00" — and nine sites interpolated them straight into a
+label. The host saw "Amount: ₹67200.00" and "Price / night ₹3200.00" while
+every other screen, and the guest side reading the very same field, shows
+₹67,200.
+
+The one that matters most is the **downloadable PDF invoice**, whose total read
+"Total: ₹67200.00". That is the single artefact a host may forward to a guest
+or hand to an accountant.
+
+Found by scanning for raw interpolation across the app rather than screen by
+screen, after the invoice list showed it. Most other hits were already fine.
+
 ### Still to sweep on the app
 
-Host: calendar, payouts, offers, boost, performance, notifications, invoices,
-bank account, support, settings, the listing wizard. Guest: saved, messages,
-negotiations, property detail, checkout, reviews, blog, safety. Common: about,
-faq, refer, settings, terms, privacy, update-profile.
+Host: payouts, boost, notifications, bank account, support, settings, the
+listing wizard. Guest: saved, messages, negotiations, property detail,
+checkout, reviews, blog, safety. Common: about, faq, refer, settings, terms,
+privacy, update-profile.
