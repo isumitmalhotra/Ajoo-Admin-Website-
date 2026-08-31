@@ -538,8 +538,45 @@ became "SumitMalhotra" and the account number took digits only.
   selected.
 - The test guest avatar is a real photo of the repo owner.
 
+| guest Reserve sheet | ok — the pricing engine, arithmetic verified below |
+
+### The booking maths, checked rather than assumed
+
+| line | shown | check |
+|---|---|---|
+| Base Price | ₹3,200 | — |
+| GST (5%) | ₹160 | 3,200 × 0.05 ✓ |
+| **Total Amount** | **₹3,360** | 3,200 + 160 ✓ |
+| Advance (10%) | ₹336 | 3,360 × 0.10 ✓ |
+| Due at Check-in (90%) | ₹3,024 | 3,360 × 0.90 ✓ |
+| | | 336 + 3,024 = 3,360 ✓ |
+
+The W2 pay-10%-now engine, working end to end, with the cancellation policy
+stated plainly on the same sheet ("free up to 30 days before check-in; the 10%
+advance is non-refundable after that").
+
+---
+
+## The 9 bad dues rows — corrected on production
+
+Run 2026-09-01 with `scripts/voidDuesForCancelledBookings.js --apply`.
+
+| | before | after |
+|---|---|---|
+| PENDING dues on a cancelled booking | 9 / ₹21,361 | **0** |
+| Host 100 outstanding | 7 rows / ₹10,465 | **1 row / ₹1,135** |
+| Hosts affected | 100 and 151 | — |
+
+All nine now carry `hd_status = VOID` with the reason recorded. The one row
+left for host 100 is the single genuinely confirmed booking. The code fix that
+stops new ones landing shipped earlier the same day.
+
+The script's own reporting was wrong — `const [, meta]` on a raw UPDATE is a
+driver object, not a count, so it printed "Voided [object Object] due(s)". It
+now re-counts what is actually left, which is the more useful answer anyway:
+it describes the database rather than our belief about it.
+
 ### Still to sweep on the app
 
-Host: boost, settings, refer. Guest: messages, negotiations, checkout,
-reviews, blog, safety. Common: about, faq, refer, settings, terms, privacy,
-update-profile.
+Host: boost, settings, refer. Guest: messages, negotiations, reviews, blog,
+safety. Common: about, faq, refer, settings, terms, privacy, update-profile.
