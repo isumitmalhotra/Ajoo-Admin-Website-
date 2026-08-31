@@ -469,6 +469,31 @@ connection sets no charset and `utf8mb4` was not verified, because the live DB
 is unreachable from this machine. Worth one look before go-live given Hindi
 content.
 
+## Verifying the reviews photo found three more (2026-08-31)
+
+Writing one review on the test account and looking at it — the only way to
+exercise a path nothing else reached — turned up three faults in a row, two of
+them server-side and none visible from the page before the review existed.
+
+- **`coverImagesFor` called `getOptimizedUrl` on the exported class.**
+  `utils/cloudinary` exports `{ CloudinaryManager }`; the working lookup in
+  `userBookingList` does `new CloudinaryManager()`. Calling it on the module is
+  calling `undefined`, which threw into the helper's own catch, so every
+  property whose photo lives in `tbl_attachments` came back without one —
+  `property_image: null` for a listing that booking-history resolved fine.
+- **`userCreateReview` answered 200 "no record found" while writing nothing**,
+  when the listing was inactive or deleted. A guest reviewing a stay at a
+  listing the host has since switched off was thanked and their review
+  discarded. It refuses and says why now.
+- **A five-star review rendered as five empty stars on the app.** `br_rating`
+  arrives as `"5.00"` — a DECIMAL serialised by mysql2 — and
+  `int.tryParse("5.00")` is null. JavaScript's `Number()` parses decimals and
+  Dart's `int.parse` does not, so the website was right and the app was not.
+  **Worth remembering as a class:** any DECIMAL column reaching the app as a
+  string needs `num.tryParse(...).round()`, never `int.tryParse`.
+
+The test review was deleted afterwards; `/user/reviews/list` is back to empty.
+
 ### Still open on the app
 
 - **API path/versioning reconciliation with the spec** (P1-11).
