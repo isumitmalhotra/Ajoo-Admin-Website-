@@ -29,7 +29,7 @@ per the standing parity rule.
 
 ---
 
-## Web — Admin (30 / 56)
+## Web — Admin (56 / 56) — COMPLETE
 
 | # | Route | API | VIS | Notes |
 |---|---|---|---|---|
@@ -63,6 +63,32 @@ per the standing parity rule.
 | 29 | /admin/contact-messages | x | x | 0 messages |
 | 30 | /admin/settings | x | x | renders |
 | 10 | /admin/property-analytics | x | x | **Re-tested: fine, 20 rows.** The earlier blank was the outage |
+| 31 | /admin/reports | x | x | |
+| 32 | /admin/faqs | x | x | 35 rows |
+| 33 | /admin/seo | x | ~ | **FIXED**: sidebar lit Global SEO AND Redirects together (duplicate nav key) |
+| 34 | /admin/seo/redirects | x | ~ | same fix; now exactly one active row per page |
+| 35 | /admin/seo/page | x | x | Correct empty state - tells you to open it from a Properties/Blog row |
+| 36 | /admin/boost | x | x | 4 rows |
+| 37 | /admin/refer | x | x | 2 rows |
+| 38 | /admin/cms-home | x | x | 54 inputs |
+| 39 | /admin/cms | x | x | 34 inputs |
+| 40 | /admin/terms | x | x | |
+| 41 | /admin/roles | x | x | 2 rows |
+| 42 | /admin/logs | x | x | |
+| 43 | /admin/status | x | ~ | **Legacy pre-redesign shell**, documented as deliberate. See note below |
+| 44 | /admin/finance/payouts/history | x | ~ | **FIXED** title (was "Payout Queue") |
+| 45 | /admin/finance/payouts/schedules | x | x | Empty state correct; **validation verified live** in the New-schedule form |
+| 46 | /admin/finance/reconciliation/records | x | x | 20 rows |
+| 47 | /admin/finance/reports/commission | x | ~ | **FIXED** title (was "Financial Overview") |
+| 48 | /admin/finance/reports/tax | x | ~ | same |
+| 49 | /admin/finance/reports/cashflow | x | ~ | same |
+| 50 | /admin/properties/new | x | x | |
+| 51 | /admin/properties/form | x | ~ | **FIXED** title |
+| 52 | /admin/properties/form/:id | x | x | 13 of 23 inputs hydrate from the listing |
+| 53 | /admin/finance/ledgers/host/:hostId | x | x | 10 rows |
+| 54 | /admin/finance/ledgers/guest/:userId | x | x | 10 rows |
+| 55 | /admin/finance/invoices/:invoiceId | x | x | reached by clicking a row |
+| 56 | /admin/finance/payouts/:payoutId | x | x | reached by clicking a row |
 
 ---
 
@@ -132,3 +158,40 @@ The honest placeholder is what makes the gap visible.
 
 Note for whoever sources the images: the last attempt to attach photos to the
 seeded corpus published a real person's CV as a property photo.
+
+---
+
+## Admin sweep complete — what it turned up
+
+**Two sidebar rows lit at once.** Global SEO and Redirects shared the nav key
+`"seo"`, and the sidebar marks active every item whose key equals `activeId` —
+so both highlighted on both pages and neither told you where you were. The only
+duplicate among the 40 entries.
+
+**Page titles.** All 56 shared the marketing `<title>`; now derived from the
+sidebar's own nav label. Four sub-routes needed explicit overrides: the
+commission, tax and cashflow reports were all titled "Financial Overview",
+because the nav links the reports section at its `/revenue` path and the other
+three do not start with it.
+
+**The listing-approval screen could not show the listing's photo** — and behind
+that, the finding that matters most: **18 of 29,248 properties have a photo**.
+
+**`/admin/status` is the last legacy screen.** Old wordmark, old sidebar, old
+header, outside `AdminShell` — and the code documents it as deliberate ("no
+redesigned equivalent yet"). It edits `tbl_book_statuses` titles, which every
+booking badge on web and app string-matches on. Not a defect today: all the
+matching is tolerant (`.trim().toLowerCase().includes(...)`), which is why the
+trailing space in the live value `"Check In "` is absorbed. It is a latent risk
+— renaming a status there would silently change badges platform-wide — and it
+is unreachable from the redesigned sidebar, so an admin cannot find it anyway.
+
+**Verified live, not just shipped:** the account-number and IFSC filtering added
+in the validation pass was driven on the real New-schedule form —
+`12 34-ab#56` became `123456`, `hdfc-0001@23` became `HDFC000123`.
+
+**Clean:** no horizontal overflow on any of the 56, no broken images, no
+`NaN` / `undefined` / `[object Object]` / `Invalid Date` reaching the UI, and
+finance figures matching the database exactly.
+
+## Next: Web — Host (0 / 23), Web — Guest (0 / 18), Web — Public (0 / 42), App (0 / 146)
