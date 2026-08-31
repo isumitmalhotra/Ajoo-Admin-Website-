@@ -16,6 +16,7 @@ seeded-listing coordinates, and discounts.)*
 | Production verification | Every claim in this document was checked against the live API on the day it was written, not remembered |
 | Source findings | `AAJOO_ADMIN_DASHBOARD_FULL_QA_AUDIT`, `AAJOO_APK_FINDINGS`, `AAJOO_WEBSITE_FINAL_GUEST_HOST_FINDINGS`, `Aajoo Homes Pricing Architecture.pdf`, `AAJOO HOST LISTING`, `SEO Publish Spec`, `Hii.docx` |
 | Still open | Nothing on the workstream list. Remaining items are client decisions and credential rotation — see PART 14 |
+| Parity | PART 19 — the endpoint audit and the screen-by-screen pass against the app, added 2026-08-31 |
 
 **How to read this document.** Each section answers four questions: *what was wrong*,
 *what we did*, *how the system behaves now*, and *how to check it yourself*. The check
@@ -23,8 +24,10 @@ commands are copy-paste ready and state the exact expected output. `$API` means
 `https://aajaodev.onrender.com`.
 
 **Parts 1–2** cover W0 and W1 as originally written. **Parts 7–12** cover everything
-since. **Part 13** maps every client finding ID to where it is answered, and **Part
-14** is the honest list of what is still outstanding.
+since. **Part 13** maps every client finding ID to where it is answered, **Part
+14** is the honest list of what is still outstanding, and **Part 19** is the
+web ⇄ mobile parity work — the one pass that was not on anybody's list and found
+the most.
 
 ---
 
@@ -1011,6 +1014,7 @@ at the time this section was written.
 | Production config: no `aajaodev.onrender.com`, no `rzp_test_` in a release build | P0-01, P0-02 |
 | Remove mock/stub behaviour from guest critical flows | P0-10, FE-10 |
 | Secure token storage, TLS validation, no no-op buttons, no stock images | FE-11…FE-18 |
+| *(The app was already clean of stock imagery. The **website** was not — see PART 19: two screens dealt stock photographs against real listings until 2026-08-31.)* | |
 | API path/versioning reconciliation with the spec | P1-11 |
 | **Cancellation OTP** — the server now requires it; the app does not send it, so app-side cancellation is refused | P1-04 (app half) |
 
@@ -1034,6 +1038,20 @@ from an empty schema: 136/136. See the task list's W9 section.
   needs a fallback so a quote outage cannot blank a price.
 - **Customer disputes.** No feature exists — no guest path, no table. What existed was
   a compliance queue wearing the word. Building it properly is its own piece of work.
+- **The app derives some host figures instead of asking for them.** Dashboard
+  counts come from `/host/booking-history` rather than `/host/dashboard/summary`,
+  and host bookings use the unpaginated list rather than `/host/bookings/search`.
+  The totals agree — that was checked — but the app pulls every booking to show
+  one number. Correct, wasteful, and worth tidying when the app is next opened.
+- **`switchMode` is dead on both platforms.** `/user/switch-mode` exists,
+  `AuthController.switchMode` exists, and nothing calls either. The website no
+  longer offers a mode switch. Consistent, so not a parity defect — but it is a
+  capability the product paid for and does not use.
+- **An encoding question, unresolved.** A `�` appears in stored negotiation
+  text. It may be data written badly in an earlier session rather than a live
+  fault: the Sequelize connection sets no charset, and whether the columns are
+  `utf8mb4` could not be verified because the live database is unreachable from
+  the development machine. One look before go-live, given Hindi content.
 - **Money columns are `DOUBLE(10,2)`, not `DECIMAL`.** Wrong in principle. Measured
   rather than assumed: there is no drift today, every paid booking reconciles, and
   nothing is over-credited. Migrating 14 columns on a live database mid-testing
@@ -1507,3 +1525,128 @@ picker was offering listings with no nightly price, which the server can only
 refuse; and the admin property search returns no price at all, so the form
 showed ₹0 and could not preview. It now fetches the price and the host's own
 minimum on selection and says plainly when a discount would fall below it.
+
+---
+
+# PART 19 — Web ⇄ mobile parity: the endpoint audit and the screen-by-screen pass
+
+Not a workstream on the client's list. It came out of a plainer question —
+*are the website and the app actually the same product?* — and the answer, at
+the start of the day, was no.
+
+Two passes, in this order, because the second only works once the first is done.
+
+## 19-A · The endpoint audit
+
+Every route the backend declares (**385** in `routes/`), every path the website
+requests, and every path the app requests, extracted and diffed three ways.
+
+**The app calls no dead endpoints.** All 116 of its request paths resolve to a
+live route. The website had exactly one — `getAdminCategoryIcon` posted to
+`/admin/category/get`, which has never existed. It 404'd, the `catch` swallowed
+it, and the icon came back `null`, which is indistinguishable from "no icon
+set". (It was also tree-shaken out of the shipped bundle for having no callers,
+so no user ever hit it. Worth saying plainly rather than counting it as a bug
+that mattered.)
+
+Four gaps were real, and one was serious.
+
+**Host Payouts read a different ledger on each platform.** The app called
+`/payout/request/list` — the old *ask us for your money* flow over
+`tbl_host_earnings` + `tbl_payout_req`. The payout engine writes to
+`tbl_financial_ledger` + `tbl_payouts`, which is what the website reads. Signed
+in as the same host at the same moment:
+
+| | Website | App (before) | App (now) |
+|---|---|---|---|
+| Pending payout | ₹30,333.16 | **₹0** | ₹30,333 |
+| Settled to date | ₹0 | **₹74,481** | ₹0 |
+| Payout history | 10 rows | **"No Payout History"** | same rows, same references |
+
+Nothing errored. It asked the wrong table and got a truthful zero, which is the
+hardest kind of wrong to see. "Settled to date" was separately being *derived*
+as `earned − pending` — arithmetic that treats every rupee not currently queued
+as money already in the host's bank.
+
+The other three: **Offers** existed only on the web, so a host could watch a
+discount run on their listing and needed a laptop to stop it; **no-show** could
+be displayed by the app and never set, because `booking_status.dart` maps the
+status for display and nothing could reach it; and **guest "Your reviews"** had
+no mobile equivalent. All three now exist on the app, on the same endpoints.
+
+Also fixed here: `GET /payout/account/details` returned the raw `had_acc_no`
+column, which has been AES-256-GCM ciphertext since the write path was unified.
+The app masks the last four characters of whatever arrives, so every host who
+saved a bank account from the phone was shown four bytes of an AES blob and told
+that was their account. It returns the same masked public shape the website
+reads now, repeated under the old column names so installed APKs are fixed
+without a store update.
+
+## 19-B · The screen-by-screen pass
+
+Same two accounts signed in on both platforms at the same time, every host and
+guest screen walked, with the browser's console and network panels open and
+`adb logcat` running.
+
+**The web portal is clean**: not one console error and not one failed request
+across the whole host portal and the guest account area.
+
+| Found | Where | Fix |
+|---|---|---|
+| Three places counted bookings three different ways — Bookings 18 cancelled, Performance 21, the app 57 total against the site's 30. `/host/bookings/search` had it right (exclude soft-deleted rows and abandoned online checkouts); the other two filtered on nothing | backend | One shared definition. The app's 57 became 30 with no app change |
+| "Total Spent" counted money nobody had paid — ₹34,845 / ₹28,125 / ₹26,760 across four surfaces | app + web | All four read ₹26,760 |
+| "Upcoming Stays 0" printed directly above a list containing a stay | app | The list matches its heading |
+| A failed fetch became a permanent zero — the guest dashboard loads once in `initState`, the shell keeps tabs alive, so an aborted request at sign-in left ₹0 for the session | app | Reloads when the tab becomes visible |
+| Having no reviews answered **HTTP 400** | backend | 200 with an empty array |
+| "Total Bookings" was the length of a 50-row page | web | Reads `totalRecords` |
+| `property_state` parsed as an int — the column is a STRING and the server sends "Haryana" | app | Typed as the name it is |
+| Host booking cards never said which listing | app | Shown |
+| Performance headed "Last six months" over 90-day figures; occupancy divided by every property row ever owned | app + backend | 90 days, active count |
+| **Commission the host was never charged.** Derived as 15% of `thisMonth` — earnings *after* commission — then subtracted from that same figure to make a "Platform Payout" of ₹73,981.16 against real earnings of ₹87,037.16 | backend + web | Reads the `PLATFORM_COMMISSION` ledger: ₹15,864, matching Statements |
+| Stock photographs standing in for real listings | backend + web | Both payloads carry the cover photo; **null** and a marked placeholder when a listing has none |
+
+## 19-C · How to check it yourself
+
+```bash
+# Host bookings now carry the listing's photo, and a real one where it exists.
+curl -s -X POST $API/host/bookings/search -H "Authorization: Bearer $HOST" \
+  -H 'Content-Type: application/json' -d '{"page":1,"limit":50}' |
+  python -c "import sys,json; d=json.load(sys.stdin)['data']['items']; \
+print('property_image present:', 'property_image' in d[0]); \
+print('with a real photo:', sum(1 for i in d if i.get('property_image')), 'of', len(d))"
+# expect: present True · 6 of 30 on the test host
+```
+
+```bash
+# Commission is the ledger's, not a percentage.
+curl -s $API/host/earnings/summary -H "Authorization: Bearer $HOST" |
+  python -c "import sys,json; d=json.load(sys.stdin)['data']; \
+print('commission:', d['thisMonthCommission'], '· earnings:', d['thisMonth'])"
+# expect the commission to equal the Statements page for the same month
+```
+
+## 19-D · The trap worth keeping
+
+The first deploy of the photo fix **looked right and was completely broken**.
+The stock cottage was gone and placeholders appeared on every row — which is
+exactly what success looks like when no listing has a photo.
+
+`const { coverImagesFor } = require("../utils/methods")` at the top of
+`hostV2.controller` resolved to `undefined` in the deployed process: that
+controller and `utils/methods` reach each other through the require graph, so
+the destructure ran against a half-initialised exports object. Loading the file
+on its own — which is how it was checked — does not reproduce it. Calling
+`undefined` threw into `bookingsSearch`'s `catch`, which logs a warning and
+leaves `items` as it found them, so the endpoint answered **200 with the rows
+intact and no `property_image` key at all**.
+
+Caught only by reading the API response instead of the page:
+`'property_image' in items[0]` was `false`. Required at call time now, the way
+`utils/methods` already requires `../models` for the same reason.
+
+Two rules came out of it, and both are cheap:
+
+1. **A caught error can make a broken feature look finished.** A `catch` that
+   logs and continues will happily serve a 200 that is missing everything the
+   change was for.
+2. **Verify a payload at the payload.** The rendered page agreed with the bug.

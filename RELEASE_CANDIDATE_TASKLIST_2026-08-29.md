@@ -453,7 +453,13 @@ W8 APK ────────────────────────�
 | 3 | **Live Razorpay credentials** — production must fail closed without them. | W0 |
 | ~~4~~ | ~~**Is monthly stay in scope?**~~ — **yes, and the rule is fixed, 2026-08-31.** The horizon capped the CHECK-OUT at three months, so a 28-night stay starting in ten weeks was priced and then refused at payment. It bounds the check-IN now, on the server and in the calendar. The stay is bounded instead by the host's own `pbr_max_stay_nights` — written since W5 and never once enforced — and, failing that, a 365-night sanity guard. | ~~W2, W3~~ |
 | ~~5~~ | ~~**Cash/pay-at-property collection**~~ — **done 2026-08-30**, see W10. The platform bills the host their commission + GST on cash bookings, recovers it from their next payout if unpaid, and the screens ship on web host, web admin and the app. Nothing outstanding. | ~~W4~~ |
-| 6 | Is the **APK in this release candidate**, or web+admin first? | W8 |
+| 6 | Is the **APK in this release candidate**, or web+admin first? — *a signed release build now exists either way:* **1.0.0 (build 6)**, `aajoo-homes-1.0.0-build6-release.apk`, installed and smoke-tested against production. The question left is distribution, not readiness. | W8 |
+
+> **Note on #6.** Pushing the monorepo stores the Flutter *source*; it does not
+> ship an app. Every app fix in this period — payouts reading the right ledger,
+> Offers, no-show, Your Reviews, the dashboard totals — reaches a host or guest
+> only when a build is actually distributed. Until then the website is fixed and
+> the phone in somebody's pocket is not.
 
 ---
 
@@ -467,6 +473,32 @@ They asked for a specific artefact. Proposed format, one row per finding ID:
 | … | … | … | Fixed / Partial / Deferred / Won't fix + reason |
 
 Plus: web build SHA, backend commit, DB migration version, APK version, known remaining issues.
+
+---
+
+## 7. Web ⇄ mobile parity (added 2026-08-31)
+
+Not on the client's list; it came from asking whether the website and the app
+are the same product. They were not. Two passes — an endpoint audit across all
+385 backend routes and both clients, then a screen-by-screen walk with both
+accounts signed in on both platforms at once, browser devtools and `adb logcat`
+open throughout.
+
+Fourteen defects, all fixed and verified against production. The full account is
+**PART 19** of the remediation report and the ledger in `WEB_MOBILE_PARITY.md`.
+The three worth knowing about here:
+
+- **Host Payouts read a different ledger on each platform.** The website showed
+  ₹30,333.16 pending across ten payouts; the app showed ₹0 and "No Payout
+  History". Nothing errored — it asked a table the platform stopped writing to.
+- **The dashboard showed a commission that was never charged**, and a payout
+  ₹13,056 lower than what the host is actually paid, because a 15% rate was
+  applied to a figure already net of commission and then subtracted from it.
+- **Two web screens dealt stock photographs against real listings** — a guest
+  reading back their own review saw a photograph of a different house.
+
+The web portal itself came through clean: no console errors and no failed
+requests anywhere in the host portal or the guest account area.
 
 **Recommendation:** send W0 + W1 as an early partial response with the mapping filled in for those
 IDs. It is the fastest way to convert "🔴 BLOCKED" into visible progress, and it is the half of the
