@@ -444,9 +444,30 @@ Properties 29,237 match the web exactly.
   the stuck task, and force-stopping Settings in a loop during launch holds it
   off.
 
+### Host portal on the app
+
+| screen | result |
+|---|---|
+| host Dashboard | **FIXED** — Ongoing Stays 0 with a guest in residence; now 1 |
+| host Bookings — Upcoming | ok; B104657 dates match the settlements data |
+| host Bookings — Ongoing | ok; B794077 "Staying now" at ₹6,720 |
+| host Profile | ok |
+| host Menu | ok — 15 destinations, matching the web's host areas |
+| host Settlements | ok; ₹0 payable, ₹10,465 due, same 7 rows as the web |
+
+**₹6,720 now agrees on all three surfaces** — guest app, host app, host web.
+Settlements agrees line for line with the web, including the 6 dues on
+cancelled bookings that the backfill still has to clear.
+
+**The host booking list printed raw dates.** One card read
+"06-10-2026 → 7-10-2026" — the two halves of one range written differently,
+because it interpolated the API strings and those are not consistently padded.
+The guest list had a formatter privately all along; it now lives in
+utils/stay_clock.dart and both portals call it. 105/105 app tests pass.
+
 ### Still to sweep on the app
 
-Host: bookings, calendar, earnings, payouts, settlements, offers, boost,
-performance, listing wizard, support, notifications. Guest: saved, messages,
+Host: calendar, payouts, offers, boost, performance, notifications, invoices,
+bank account, support, settings, the listing wizard. Guest: saved, messages,
 negotiations, property detail, checkout, reviews, blog, safety. Common: about,
 faq, refer, settings, terms, privacy, update-profile.
