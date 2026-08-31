@@ -371,4 +371,82 @@ as `noindex, nofollow`.
   the routing is deliberate (IntentGate documents the history), so it is a
   product decision rather than a defect.
 
-## Next: App (0 / 146)
+---
+
+## App — started (guest 5 screens, host dashboard)
+
+Emulator, fresh debug build of current `main` — the installed APK predated
+today's app commits by three hours, so sweeping it would have tested old code.
+
+| screen | result |
+|---|---|
+| launch | **FIXED — the app did not start at all** |
+| guest Home (map + search) | ok; loads 100 homes near Mountain View |
+| guest Dashboard | ok; Total Spent ₹26,760 matches the web's transactions |
+| guest Bookings — Upcoming | ok, correctly empty |
+| guest Bookings — Ongoing | ok; ₹6,720 matches host web exactly for B794077 |
+| guest Profile | ok |
+| host Dashboard | **FIXED — "Ongoing Stays 0" with a guest in residence** |
+
+### The app would not start
+
+`No Firebase App '[DEFAULT]' has been created` — a red error screen instead of
+the app.
+
+`main()` already wraps `Firebase.initializeApp()` in a timeout and a catch,
+with a note explaining that it throws or hangs on handsets with old or absent
+Play Services and the app must open anyway. It opened, and died one screen
+later: `FirebaseMessaging.instance` throws when Firebase did not initialise,
+and it sat in **field initializers** on `AuthController` and
+`NotificationService`, so constructing either threw during build. Guarding the
+start and not the consumers left the user exactly as stuck, slightly further
+in.
+
+Both are resolved on use now and return null when Firebase is absent; the call
+sites already tolerated that. The listener setup in both notification services
+is wrapped too.
+
+Honest scope: the trigger was the emulator, where init timed out after 10s. On
+a device with working Play Services none of this is reached. But the timeout
+`main()` defends against is real, and this is what happened when it fired.
+
+### A guest in the property counted as zero ongoing stays
+
+`getOngoingBook` filtered `book_status IN (4, 5, 6)` and missed **8 = "Booking
+Confirmed"** — what a booking becomes when a host approves it, and the most
+common live state. Of every booking whose window contained today, the only live
+one was status 8. Status 4 has never been used by a single booking.
+
+`5` ("Booked") dropped deliberately: awaiting approval is not a guest in
+residence — the same rule both badge paths already apply. Third place this
+week that this definition was wrong.
+
+**Found by cross-checking platforms**, not by reading one: the guest app showed
+the stay under Ongoing with "Staying now", the web host dashboard agreed, and
+only the app's host dashboard said zero. Verified on the device after deploy —
+the tile now reads 1.
+
+### Reconciles
+
+"Collected from guests" ₹1,10,678 against the web's Total Earnings
+₹1,04,814.16 — a ₹5,864 gap, which is the commission between gross collected
+and the host's share. Different quantities, both correct. Total Bookings 30 and
+Properties 29,237 match the web exactly.
+
+### Noted
+
+- The test guest account's avatar is a real photo of the repo owner, filename
+  and all. Not the third-party PII of the CV incident, but it is visible to
+  anyone testing.
+- The login screen reads "Log in to continue to your stays" even with **Host**
+  selected.
+- The emulator's Settings app steals focus after every install; a reboot clears
+  the stuck task, and force-stopping Settings in a loop during launch holds it
+  off.
+
+### Still to sweep on the app
+
+Host: bookings, calendar, earnings, payouts, settlements, offers, boost,
+performance, listing wizard, support, notifications. Guest: saved, messages,
+negotiations, property detail, checkout, reviews, blog, safety. Common: about,
+faq, refer, settings, terms, privacy, update-profile.
