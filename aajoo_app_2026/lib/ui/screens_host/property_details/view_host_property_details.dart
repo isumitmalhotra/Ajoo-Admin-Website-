@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:rent_home/utils/money.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rent_home/constants.dart';
 import 'dart:io';
@@ -281,11 +282,11 @@ class _HostPropertyDetailsState extends State<HostPropertyDetails> {
   Widget _priceRow(Property p) {
     return Row(children: [
       Expanded(
-          child: _statTile('Price / night', '₹${p.propertyPrice}', kSuccess)),
+          child: _statTile('Price / night', rupeesFrom(p.propertyPrice), kSuccess)),
       const SizedBox(width: 12),
       Expanded(
           child: _statTile(
-              'Min. price', '₹${p.propertyMiniPrice}', kIndigo)),
+              'Min. price', rupeesFrom(p.propertyMiniPrice), kIndigo)),
     ]);
   }
 
@@ -326,11 +327,11 @@ class _HostPropertyDetailsState extends State<HostPropertyDetails> {
   // ── Charges ──────────────────────────────────────────────────────────────────
   List<(String, String)> _charges(Property p) {
     final c = <(String, String)>[];
-    if (p.securityDeposit.isNotEmpty) c.add(('Security deposit', '₹${p.securityDeposit}'));
-    if (p.weekendPrice.isNotEmpty) c.add(('Weekend / night', '₹${p.weekendPrice}'));
-    if (p.cleaningFee.isNotEmpty) c.add(('Cleaning fee', '₹${p.cleaningFee}'));
-    if (p.extraGuestCharge.isNotEmpty) c.add(('Extra guest', '₹${p.extraGuestCharge}'));
-    if (p.minBookingAmount.isNotEmpty) c.add(('Min. booking', '₹${p.minBookingAmount}'));
+    if (p.securityDeposit.isNotEmpty) c.add(('Security deposit', rupeesFrom(p.securityDeposit)));
+    if (p.weekendPrice.isNotEmpty) c.add(('Weekend / night', rupeesFrom(p.weekendPrice)));
+    if (p.cleaningFee.isNotEmpty) c.add(('Cleaning fee', rupeesFrom(p.cleaningFee)));
+    if (p.extraGuestCharge.isNotEmpty) c.add(('Extra guest', rupeesFrom(p.extraGuestCharge)));
+    if (p.minBookingAmount.isNotEmpty) c.add(('Min. booking', rupeesFrom(p.minBookingAmount)));
     return c;
   }
 

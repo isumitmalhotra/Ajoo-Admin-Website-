@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:rent_home/utils/money.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
@@ -63,7 +64,12 @@ class _InvoicePageState extends State<InvoicePage> {
             row('Reference', t.payRazId),
             row('Status', t.paymentStatusBsTitle),
             pw.SizedBox(height: 16),
-            pw.Text('Total: ₹${t.payAmount}',
+            // rupeesFrom, not raw interpolation: pay_amount arrives as the
+            // string "67200.00", so this printed a downloadable invoice
+            // reading "Total: ₹67200.00" -- no grouping, trailing paise --
+            // while every other screen in the app shows ₹67,200. An invoice
+            // is the one artefact a host may forward to a guest.
+            pw.Text('Total: ${rupeesFrom(t.payAmount)}',
                 style:
                     pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
           ],
@@ -206,7 +212,7 @@ class _InvoicePageState extends State<InvoicePage> {
                     style: inter(fontSize: 12.5, color: kMuted)),
                 Text(date, style: inter(fontSize: 12, color: kMuted)),
                 const SizedBox(height: 6),
-                Text('₹${t.payAmount}',
+                Text(rupeesFrom(t.payAmount),
                     style: fraunces(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
