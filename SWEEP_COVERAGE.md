@@ -576,7 +576,46 @@ driver object, not a count, so it printed "Voided [object Object] due(s)". It
 now re-counts what is actually left, which is the more useful answer anyway:
 it describes the database rather than our belief about it.
 
+| guest Negotiations | ok; full offer thread, honest "agreed price, not a confirmed stay" copy |
+| guest Settings | ok; includes Delete My Account. **Version string is hardcoded** |
+| guest Safety | ok — and its claims check out, see below |
+
+### A safety claim, checked rather than believed
+
+The Safety page states: *"Guests complete an identity check before a booking
+is confirmed."* The profile meanwhile invites you to verify **later** for
+faster checkout, which reads like the opposite.
+
+The claim is **true**. `utils/kycGate.js` requires a *current* verification and
+`booking/create` calls it — unverified and pending are both refused, not just
+declined.
+
+But the gate's own comment said the opposite of what the code does. It still
+read "this refuses declined and nothing else" and warned that a hard gate
+"would lock every unverified app user out of booking with no way to become
+verified". Corrected in place, after checking the fear rather than assuming it:
+
+- the refusal message **does** reach the user — `booking_service._handleError`
+  lifts `message` off the response instead of swallowing it;
+- the app **does** carry a KYC screen, reachable from Profile.
+
+What is genuinely missing is the **deep link**: the app ignores the
+`verificationRequired` flag the endpoint returns, so a guest is told why they
+cannot book and then has to find Profile on their own. Friction at the exact
+moment of purchase — not a dead end, and not a launch blocker, but worth
+closing with the checkout KYC step.
+
+### Noted, not changed
+
+**The app reports "Version 1.0.0"** from a hardcoded string
+(`settings_page.dart:330`) while `pubspec.yaml` says `1.0.0+7`. The build
+number — the part that actually identifies a release — never reaches the
+screen, and the string will not move when the version does. Support cannot
+ask "which build are you on". The fix wants `package_info_plus`, which is not
+currently a dependency; adding one and re-locking immediately before a tester
+build is not a change to make casually, so it is left for a deliberate pass.
+
 ### Still to sweep on the app
 
-Host: boost, settings, refer. Guest: messages, negotiations, reviews, blog,
-safety. Common: about, faq, refer, settings, terms, privacy, update-profile.
+Host: boost, settings, refer. Guest: messages, reviews, blog. Common: about,
+faq, terms, privacy, update-profile.
