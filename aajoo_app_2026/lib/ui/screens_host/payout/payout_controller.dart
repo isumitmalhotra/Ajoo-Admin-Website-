@@ -9,7 +9,11 @@ class PayoutController extends GetxController {
   Rx<PayoutListResponse?> payoutListResponse = PayoutListResponse(
       success: false,
       message: "",
-      data: Data(hostTotalEarning: 0, earningLeft: 0, payoutRequests: [])).obs;
+      data: Data(
+          hostTotalEarning: 0,
+          earningLeft: 0,
+          settled: 0,
+          payoutRequests: [])).obs;
 
   Rx<HostAccountDetails?> accountDetails = Rx<HostAccountDetails?>(null);
 

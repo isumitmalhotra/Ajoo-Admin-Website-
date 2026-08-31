@@ -363,11 +363,18 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
                       // the earnings figure above. This tile printed the raw
                       // integer, so a host with 29,230 listings read "29230"
                       // directly under "₹72,940".
+                      // Opens the listings, not the form for making a new one.
+                      // Every other tile here opens the thing it counts; this
+                      // one counted the host's properties and launched the
+                      // five-step add-a-listing wizard, so tapping "29,230
+                      // Properties" started a 30th thousand instead of showing
+                      // them. The list lives on the Profile tab (tab 5).
                       child: _statCard(
                           Ionicons.home_outline,
                           _formatAmount(properties),
                           'Properties', _teal50, kIndigo600,
-                          onTap: () => Get.to(() => const ListingWizardScreen())))),
+                          onTap: () =>
+                              context.read<HostTabProvider>().setTab(5)))),
               const SizedBox(width: 12),
               Expanded(
                   child: Reveal(

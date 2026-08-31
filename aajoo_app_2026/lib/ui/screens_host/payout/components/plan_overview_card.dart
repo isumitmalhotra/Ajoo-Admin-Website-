@@ -51,8 +51,13 @@ class PlanOverviewCard extends StatelessWidget {
 
     final total = failed ? 0 : (data?.hostTotalEarning ?? 0);
     final pending = failed ? 0 : (data?.earningLeft ?? 0);
-    // What has actually been paid out. Never negative — see the note above.
-    final settled = (total - pending).clamp(0, total);
+    // What has actually been paid out, as the SERVER counts it.
+    //
+    // This was `total - pending`, which is not the same claim: it treats every
+    // rupee that is not currently queued as money already in the host's bank.
+    // For the test host that read "Settled to date ₹74,481" against the
+    // website's ₹0, and the website was right — no payout had completed.
+    final settled = failed ? 0 : (data?.settled ?? 0);
     final requests = failed ? 0 : (data?.payoutRequests.length ?? 0);
 
     return Column(

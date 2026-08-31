@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/models/host_account_details_model.dart';
 import 'package:rent_home/ui/screens_host/payout/add_payout_account_page.dart';
 import 'package:rent_home/ui/screens_host/payout/components/plan_overview_card.dart';
 import 'package:rent_home/ui/screens_host/payout/payout_controller.dart';
@@ -101,14 +102,23 @@ class _PayoutPageState extends State<PayoutPage> {
                               .data
                               .payoutRequests[index];
                           return _buildPayoutHistoryTile(
-                            // Reference first, same as the website's table —
-                            // it is what a host quotes to support when a
-                            // payout is queried.
-                            reference: 'PO-${payoutRequest.payReqId}',
+                            // The booking the payout is against, as on the
+                            // website's table — it is what a host quotes to
+                            // support when a payout is queried, and it means
+                            // something to them in a way an internal id does
+                            // not. Falls back to the id when there is no
+                            // booking on the row.
+                            reference: (payoutRequest.bookingId ?? '').isNotEmpty
+                                ? payoutRequest.bookingId!
+                                : 'PO-${payoutRequest.payReqId}',
                             date: DateFormat('MMM dd, yyyy')
                                 .format(payoutRequest.createdAt),
                             amount: '₹${inr(payoutRequest.payReqAmount)}',
                             status: payoutRequest.payoutStatusBsTitle,
+                            // Why it failed. Without it a host sees "FAILED"
+                            // and cannot tell whether to fix their bank
+                            // details or simply wait.
+                            note: payoutRequest.failureReason,
                             context: context,
                           );
                         },
@@ -163,7 +173,7 @@ class _PayoutPageState extends State<PayoutPage> {
         return _noAccountCard();
       }
 
-      return _accountSummaryCard(acc.accountNumber, acc.accountIfsc);
+      return _accountSummaryCard(acc);
     });
   }
 
@@ -233,8 +243,17 @@ class _PayoutPageState extends State<PayoutPage> {
     );
   }
 
-  Widget _accountSummaryCard(String accountNumber, String ifsc) {
-    final masked = _maskAccount(accountNumber);
+  Widget _accountSummaryCard(HostAccountDetails acc) {
+    final masked = _maskAccount(acc.accountNumber);
+    // The state of the penny drop, which the website has always shown and this
+    // screen never did. It is not decoration: the server REFUSES a payout to
+    // an unverified account, so an account card with no status on it tells a
+    // host everything is fine while their money cannot move.
+    final explanation = acc.verifyExplanation;
+    final tone = acc.isVerified
+        ? kIndigo600
+        : (acc.verifyStatus == 'pending' ? kClay : Colors.red.shade700);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -242,52 +261,85 @@ class _PayoutPageState extends State<PayoutPage> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: kLine),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: kIndigo.withOpacity(0.08),
-              shape: BoxShape.circle,
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: kIndigo.withOpacity(0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.account_balance_rounded, color: kIndigo),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          'Payout Account',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: kMuted,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: tone.withOpacity(0.10),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            acc.verifyLabel,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: tone,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      masked,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: kInk,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'IFSC · ${acc.accountIfsc.toUpperCase()}',
+                      style: const TextStyle(fontSize: 12.5, color: kInk2),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: _openAddAccount,
+                style: TextButton.styleFrom(foregroundColor: kIndigo),
+                child: const Text('Edit'),
+              ),
+            ],
+          ),
+          if (explanation != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              explanation,
+              style: TextStyle(fontSize: 11.5, height: 1.5, color: tone),
             ),
-            child: const Icon(Icons.account_balance_rounded, color: kIndigo),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Payout Account',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: kMuted,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  masked,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: kInk,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'IFSC · ${ifsc.toUpperCase()}',
-                  style: const TextStyle(fontSize: 12.5, color: kInk2),
-                ),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: _openAddAccount,
-            style: TextButton.styleFrom(foregroundColor: kIndigo),
-            child: const Text('Edit'),
-          ),
+          ],
         ],
       ),
     );
@@ -369,6 +421,9 @@ class _PayoutPageState extends State<PayoutPage> {
     required String amount,
     required String status,
     required BuildContext context,
+    /// Why a payout failed, when the server said. Optional: most rows have
+    /// nothing to add and a permanent empty line would just be noise.
+    String? note,
   }) {
     final s = status.toLowerCase();
     final bool isPending = s.contains('pending') || s.contains('process');
@@ -381,6 +436,8 @@ class _PayoutPageState extends State<PayoutPage> {
         ? const Color(0xFFFDECEC)
         : (isPending ? const Color(0xFFFFF6E5) : const Color(0xFFEAF6EE));
 
+    final trimmedNote = (note ?? '').trim();
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
@@ -389,7 +446,10 @@ class _PayoutPageState extends State<PayoutPage> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: kLine),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+      Row(
         children: [
           Container(
             width: 36,
@@ -440,6 +500,13 @@ class _PayoutPageState extends State<PayoutPage> {
               ),
             ],
           ),
+        ],
+      ),
+          if (trimmedNote.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(trimmedNote,
+                style: inter(fontSize: 11.5, color: statusFg, height: 1.45)),
+          ],
         ],
       ),
     );

@@ -366,9 +366,52 @@ the case for doing this sweep at all rather than assuming.
   on the device: card 3,200 -> 2,560, total 2,688, "You saved 20% — ₹640 with limited
   time offer".
 
+## Endpoint audit, both clients against the backend (2026-08-31)
+
+Not a spot-check: every route the backend declares (385 in `routes/`), every
+path the website requests, and every path the app requests, extracted and
+diffed three ways. The scan is in the session scratchpad; the conclusions are
+here because the conclusions are what outlive it.
+
+**The app calls no dead endpoints.** All 116 request paths resolve to a live
+route. Same for the website, with one exception, now fixed: `getAdminCategoryIcon`
+posted to `/admin/category/get`, which has never existed — the route is
+`/admin/category`. It 404'd, the `catch` swallowed it, and the icon came back
+`null`, which is indistinguishable from "no icon set".
+
+Four gaps were real, and one of them was serious.
+
+| Found | Fix |
+|---|---|
+| **Host Payouts read a different ledger on each platform.** The app called `/payout/request/list` — the old "ask us for your money" flow, summing `tbl_host_earnings` and listing `tbl_payout_req`. The website reads `tbl_financial_ledger` + `tbl_payouts`, which is where the payout engine actually writes. Signed in as the same host at the same moment: **the website showed ₹30,333.16 pending across ten payouts; the app showed ₹0, "No Payout History", and nothing owed.** Nothing errored. It asked the wrong table and got a truthful zero. | App now calls `/host/earnings/summary` + `/host/payout/history`. Verified on device against the live site: same pending total, same rows, same references (B588691, B510189…), same statuses, and the failure reason ("test rejection") that the app had never shown. |
+| **"Settled to date" was arithmetic, not a fact.** The app derived it as `earned − pending`, which treats every rupee not currently queued as money already in the host's bank — ₹74,481 against the website's ₹0, and the website was right: no payout had completed. | Reads the server's `settledPayouts`. |
+| **Host Offers existed only on the web.** Guests saw discounted listings on the phone; the host who set them could not start, change or stop one without a laptop. | `HostOffersScreen` + `HostOffersService` on the same three endpoints. Create → running → end driven end to end on a device against production. |
+| **A host could see "No show" and never set one.** `/host/booking/no-show` was web-only; `booking_status.dart` maps the status for display, so the app could render a state it had no way to reach. | `markBookingNoShow` + a confirm dialog beside check-in, same warning wording as the site. |
+| **Guest "Your reviews" was web-only.** The app could show a review from inside its booking, so "what have I said about the places I've stayed?" meant opening past stays one at a time. | `MyReviewsScreen` on `/user/reviews/list`, with delete. |
+| **The Properties tile opened the wrong screen.** Tapping "29,237 Properties" on the host dashboard launched the five-step add-a-listing wizard. | Opens the listings. |
+| **Payout account showed ciphertext.** The write path was unified to encrypt (AES-256-GCM) months ago; the app's `GET /payout/account/details` still returned the raw column, and the app masked the last four characters of the *ciphertext*. The edit form then prefilled that value back into the account-number field. | Server returns the same masked public shape the website reads, repeated under the old column names so installed APKs are fixed without a store update. The form no longer prefills an unrecoverable value, and the app now shows the penny-drop state — which is the only thing that explains why a payout is blocked. |
+
+Checked and found already consistent, worth recording so they are not re-investigated:
+`/common/faq` and `/public/faqs` read the same `tbl_faqs`; the app reverse-geocodes
+with the platform geocoder rather than `/public/geocode/reverse`; the listing wizard
+posts the same `listing/step1…5` + `submit`; host Messages exists on the app under
+`screens_host/support/`; the dashboard's "Collected from guests" and Payouts'
+"Total earned" are deliberately different figures (gross vs the host's net) and are
+labelled as such.
+
+**Both sides of one anti-pattern.** The website's own "My reviews" page swallowed a
+failed request and rendered "No reviews yet" — the same reassuring wrong answer this
+ledger keeps catching on the app. Fixed there too.
+
 ### Still open on the app
 
 - **API path/versioning reconciliation with the spec** (P1-11).
 - **A full pass on FE-13…FE-18** (no-op buttons, stock imagery) — spot-checked
   only; the guest flows named in P0-10 are done.
 - The five long-standing gaps listed above this section.
+- **Known and accepted, not defects:** the app derives host dashboard counts from
+  `/host/booking-history` rather than `/host/dashboard/summary` (the endpoint is
+  unpaginated, so the totals agree — but the app pulls every booking to show one
+  number); host bookings use `/host/booking-history` rather than the paginated
+  `/host/bookings/search`; `switchMode` exists on `AuthController` and nothing
+  calls it, matching the website, which also no longer offers a mode switch.

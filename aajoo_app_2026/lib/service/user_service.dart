@@ -7,6 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:rent_home/models/booking_history_response_model.dart';
 import 'package:rent_home/models/ongoing_reponse.dart';
+import 'package:rent_home/models/my_review.dart';
 import 'package:rent_home/models/user_review_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 
@@ -196,6 +197,32 @@ class UserService {
       print('deleteProfileImage error: $e');
       return false;
     }
+  }
+
+  /// Every review this guest has written, newest first.
+  ///
+  /// The website has had this page since the account area was built; the app
+  /// could only show a review from inside the booking it belonged to, so a
+  /// guest had no way to see what they had written across stays — or to find
+  /// and delete one without remembering which booking it was on.
+  ///
+  /// Throws on failure rather than returning an empty list: "you have not
+  /// reviewed anything" and "we could not ask" render identically, and only
+  /// one of them is true.
+  Future<List<MyReview>> getMyReviews() async {
+    final url = '$baseUrl/user/reviews/list';
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+
+    final response = await _dio.get(url);
+    final body = response.data;
+    final data = body is Map && body['data'] is Map ? body['data'] as Map : const {};
+    final rows = data['reviews'];
+    if (rows is! List) return const [];
+    return rows
+        .whereType<Map>()
+        .map((e) => MyReview.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
   }
 
   /// Soft-deletes a review created by the current user. Backend filters by

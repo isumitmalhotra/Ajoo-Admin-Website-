@@ -15,6 +15,7 @@ import 'package:rent_home/ui/screens_common/about/about_page.dart';
 import 'package:rent_home/ui/screens_renter/bookmark_properties/bookmark_properties_page.dart';
 import 'package:rent_home/ui/screens_renter/dashboard/dashboard_screen.dart';
 import 'package:rent_home/ui/screens_renter/history/history_page.dart';
+import 'package:rent_home/ui/screens_renter/reviews/my_reviews_screen.dart';
 import 'package:rent_home/ui/screens_renter/safety/safety_page.dart';
 import 'package:rent_home/ui/widgets/email_otp_sheet.dart';
 import 'package:rent_home/utils/address_autofill.dart';
@@ -1647,6 +1648,12 @@ class _ProfileScreenState extends State<ProfileScreen>
       }),
       _buildSettingItem('Bookmarks', Icons.bookmark_border, () {
         Get.to(() => const BookmarkedPropertiesPage());
+      }),
+      // Reviews written across every stay. The app could only show one from
+      // inside the booking it belonged to, so "what have I said about the
+      // places I've stayed?" meant opening past stays one at a time.
+      _buildSettingItem('Your Reviews', Icons.star_border_rounded, () {
+        Get.to(() => const MyReviewsScreen());
       }),
       // The guest half of the product's whole point. There was no entry
       // anywhere in the app, so an offer once sent vanished from the guest's

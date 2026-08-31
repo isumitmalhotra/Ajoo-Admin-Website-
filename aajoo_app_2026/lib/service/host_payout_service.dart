@@ -35,13 +35,61 @@ class HostPayoutService {
     }
   }
 
+  /// What the host has earned and what has been paid.
+  ///
+  /// This used to call `/payout/request/list`, the old "ask us for your money"
+  /// flow: it sums `tbl_host_earnings` and lists `tbl_payout_req`. The platform
+  /// stopped working that way when the payout engine shipped — earnings land in
+  /// `tbl_financial_ledger` and payouts are raised automatically into
+  /// `tbl_payouts`, which is what the website reads.
+  ///
+  /// Checked against production on 2026-08-31 with the same host signed in on
+  /// both: the website showed ₹30,333.16 pending across ten payouts while this
+  /// screen showed ₹0 and "No Payout History". Nothing was broken in the sense
+  /// of erroring — it asked the wrong table and got a truthful zero.
+  ///
+  /// It now reads the two endpoints the website reads, so one ledger answers
+  /// both. The old shape is kept because the screens are built on it.
   Future<PayoutListResponse> getPayoutList() async {
-    const endpoint = "payout/request/list";
     await _attachAuth();
 
     try {
-      final response = await _dio.get(endpoint);
-      return PayoutListResponse.fromJson(response.data);
+      // Fetched together: a total with no rows under it, or rows with no
+      // total over them, is a half-drawn screen either way.
+      final results = await Future.wait([
+        _dio.get('/host/earnings/summary'),
+        _dio.get('/host/payout/history?limit=50'),
+      ]);
+
+      Map<String, dynamic> dataOf(Response r) {
+        final b = r.data;
+        return b is Map && b['data'] is Map
+            ? Map<String, dynamic>.from(b['data'] as Map)
+            : <String, dynamic>{};
+      }
+
+      num n(Object? v) => v is num ? v : num.tryParse('${v ?? ''}') ?? 0;
+
+      final earnings = dataOf(results[0]);
+      final history = dataOf(results[1]);
+
+      final rows = (history['items'] is List ? history['items'] as List : const [])
+          .whereType<Map>()
+          .map((e) => PayoutRequest.fromPayoutRow(Map<String, dynamic>.from(e)))
+          .toList();
+
+      return PayoutListResponse(
+        success: true,
+        message: 'success',
+        data: Data(
+          hostTotalEarning: n(earnings['totalEarnings']),
+          // "Pending", not "earned minus paid": a payout an admin has put on
+          // hold is not on its way, and the server already excludes those.
+          earningLeft: n(earnings['pendingPayouts']),
+          settled: n(earnings['settledPayouts']),
+          payoutRequests: rows,
+        ),
+      );
     } on DioException catch (err) {
       _handleError(err);
       throw Exception("Error in fetching payout list: $err");

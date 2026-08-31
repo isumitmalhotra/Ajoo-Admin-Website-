@@ -221,6 +221,72 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
   bool _checkingIn = false;
   bool _confirming = false;
   bool _cancelling = false;
+  bool _markingNoShow = false;
+
+  /// The other half of the arrival question, and the one the app never had:
+  /// the guest did not turn up at all.
+  ///
+  /// Guarded behind a confirmation because it is not reversible from here and
+  /// the guest is not refunded — the same warning the website gives, in the
+  /// same words, so a host does not learn a different rule per device.
+  Future<void> _markNoShow() async {
+    if (_markingNoShow) return;
+
+    final guest = b.userDetailsUserFullName.trim();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text('Mark as a no-show?',
+            style: fraunces(fontSize: 17, fontWeight: FontWeight.w700)),
+        content: Text(
+          'Use this only if ${guest.isEmpty ? 'the guest' : guest} never '
+          'arrived within your check-in window and didn\'t get in touch. '
+          'No-show bookings are non-refundable.',
+          style: inter(fontSize: 13.5, height: 1.45),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Go back')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: kDanger),
+            child: const Text('Confirm no-show'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    setState(() => _markingNoShow = true);
+    try {
+      await HostService().markBookingNoShow(b.bookId);
+      setState(() => b.bookingStatusBsTitle = 'No Show');
+      Fluttertoast.showToast(msg: 'Marked as a no-show.');
+    } catch (e) {
+      if (mounted) {
+        showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            title: Text("Couldn't mark this as a no-show",
+                style: fraunces(fontSize: 17, fontWeight: FontWeight.w700)),
+            content: Text(e.toString().replaceFirst('Exception: ', ''),
+                style: inter(fontSize: 13.5, height: 1.45)),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('OK')),
+            ],
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _markingNoShow = false);
+    }
+  }
 
   Future<void> _markCheckedIn() async {
     if (_checkingIn) return;
@@ -521,6 +587,19 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
             label: Text(
                 _checkingIn ? 'Checking in…' : 'Mark guest as checked-in',
                 style: inter(fontSize: 14, fontWeight: FontWeight.w700)),
+          ),
+          const SizedBox(height: 6),
+          // The same window, the opposite answer. A booking the host can check
+          // in is a booking they can also report as never arrived — the app
+          // could show "No show" as a status and had no way to set one, so the
+          // stay sat as upcoming and the host was told to use a laptop.
+          TextButton.icon(
+            onPressed: _markingNoShow ? null : _markNoShow,
+            style: TextButton.styleFrom(foregroundColor: kDanger),
+            icon: const Icon(Icons.person_off_outlined, size: 18),
+            label: Text(
+                _markingNoShow ? 'Marking…' : "Guest didn't arrive (no-show)",
+                style: inter(fontSize: 13.5, fontWeight: FontWeight.w600)),
           ),
           const SizedBox(height: 10),
         ],

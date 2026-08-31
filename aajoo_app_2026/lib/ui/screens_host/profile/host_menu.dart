@@ -17,6 +17,7 @@ import 'package:rent_home/ui/screens_host/support/host_support_screen.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/ui/screens_host/performance/host_performance_screen.dart';
 import 'package:rent_home/ui/screens_host/boost/host_boost_screen.dart';
+import 'package:rent_home/ui/screens_host/offers/host_offers_screen.dart';
 import 'package:rent_home/ui/screens_host/notifications/host_notifications_screen.dart';
 import 'package:rent_home/ui/screens_common/refer/refer_screen.dart';
 import 'package:rent_home/ui/screens_host/settlements/host_settlements_screen.dart';
@@ -81,6 +82,14 @@ List<HostMenuEntry> hostMenuEntries({VoidCallback? beforeNavigate}) {
       label: 'Performance',
       subtitle: 'Occupancy, revenue and cancellations',
       onTap: () => go(() => const HostPerformanceScreen()),
+    ),
+    // Beside Boost, as on the website: both are ways to get a listing seen,
+    // one paid for and one given away.
+    HostMenuEntry(
+      icon: Icons.local_offer_outlined,
+      label: 'Offers',
+      subtitle: 'Run a limited-time discount on a listing',
+      onTap: () => go(() => const HostOffersScreen()),
     ),
     HostMenuEntry(
       icon: Icons.rocket_launch_outlined,

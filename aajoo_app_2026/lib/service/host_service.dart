@@ -428,6 +428,34 @@ class HostService {
     }
   }
 
+  /// The guest never arrived. Non-refundable, and irreversible from here.
+  ///
+  /// The endpoint has existed since host cancellation shipped and only the
+  /// website ever called it: the app could DISPLAY "No show" — booking_status
+  /// maps the string — but a host on a phone had no way to set it. The result
+  /// was a stay stuck as upcoming, a payout that behaved as though the guest
+  /// had come, and a host told to use a laptop.
+  Future<void> markBookingNoShow(String bookingId) async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final response = await _dio
+          .post("/host/booking/no-show", data: {"bookingId": bookingId});
+      final body = response.data;
+      if (body is! Map || body['success'] != true) {
+        throw Exception((body is Map ? body['message'] : null)?.toString() ??
+            'Could not mark this booking as a no-show.');
+      }
+    } on DioException catch (err) {
+      final data = err.response?.data;
+      final msg = data is Map ? data['message'] : null;
+      throw Exception(msg is List
+          ? msg.join(', ')
+          : (msg?.toString() ??
+              'Could not mark this booking as a no-show.'));
+    }
+  }
+
   Future<void> markBookingCheckIn(String bookingId) async {
     final token = await const FlutterSecureStorage().read(key: "user_token");
     _dio.options.headers['Authorization'] = 'Bearer $token';

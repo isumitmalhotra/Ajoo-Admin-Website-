@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/screens_host/payout/payout_controller.dart';
+import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
 
 class AddPayoutAccountPage extends StatefulWidget {
@@ -46,9 +47,14 @@ class _AddPayoutAccountPageState extends State<AddPayoutAccountPage> {
   void _prefill() {
     final acc = _controller.accountDetails.value;
     if (acc != null) {
-      _accountNumberCtrl.text = acc.accountNumber;
-      _confirmAccountNumberCtrl.text = acc.accountNumber;
+      // Deliberately NOT the account number. The server only ever returns it
+      // masked ("XXXX1234") because it is encrypted at rest, so prefilling the
+      // field put a value in it that is not an account number and that the
+      // server rejects — a host editing only their IFSC would have submitted
+      // four X's as their bank account. It is re-entered instead, and the
+      // account currently on file is shown under the field.
       _ifscCtrl.text = acc.accountIfsc.toUpperCase();
+      _holderNameCtrl.text = acc.accountHolderName ?? '';
     }
   }
 
@@ -59,6 +65,14 @@ class _AddPayoutAccountPageState extends State<AddPayoutAccountPage> {
     _ifscCtrl.dispose();
     _holderNameCtrl.dispose();
     super.dispose();
+  }
+
+  /// The last four of the account already saved, or null when there is none.
+  /// The server sends this masked as `XXXX1234`; only the tail is meaningful.
+  String? get _onFile {
+    final n = _controller.accountDetails.value?.accountNumber ?? '';
+    if (n.isEmpty) return null;
+    return '••••${n.length > 4 ? n.substring(n.length - 4) : n}';
   }
 
   String? _validateAccountNumber(String? v) {
@@ -192,6 +206,18 @@ class _AddPayoutAccountPageState extends State<AddPayoutAccountPage> {
                   obscureText: false,
                   validator: _validateAccountNumber,
                 ),
+                // What is on file today, so re-entering the number does not
+                // feel like the screen forgot. The stored value cannot be
+                // shown in full — it is encrypted, and this is all the server
+                // will return.
+                if (_onFile != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Currently on file: $_onFile. '
+                    'Re-enter the full number to keep or change it.',
+                    style: inter(fontSize: 11.5, color: kMuted),
+                  ),
+                ],
                 const SizedBox(height: 14),
                 _field(
                   controller: _confirmAccountNumberCtrl,
