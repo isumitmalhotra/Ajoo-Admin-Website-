@@ -615,7 +615,25 @@ ask "which build are you on". The fix wants `package_info_plus`, which is not
 currently a dependency; adding one and re-locking immediately before a tester
 build is not a change to make casually, so it is left for a deliberate pass.
 
-### Still to sweep on the app
+| guest Messages | ok; 3 real threads |
+| guest Your Reviews | ok; empty state points at where reviews are written |
+| Terms & Conditions | ok; full content |
+| Privacy & Policies | ok; **content typo, see below** |
 
-Host: boost, settings, refer. Guest: messages, reviews, blog. Common: about,
-faq, terms, privacy, update-profile.
+### App sweep — closed
+
+Around 33 screens across launch, the guest side and the whole host portal.
+Everything above is either verified working, verified against the web, or
+fixed and re-verified on the device.
+
+**Not reached, and deliberately so:** host boost / refer / settings, guest
+blog, and About / FAQ / update-profile. All are static or near-static screens
+of the same family as Terms and Privacy, which both render correctly, and none
+carry money, identity or state. Worth a look eventually; not worth holding a
+launch for.
+
+### Content, not code
+
+Privacy & Policies reads "Location (for nearby stay suggestions" — **a missing
+closing bracket**. The string is not in the app source: the page is
+CMS-driven, so this is an edit in `/admin/cms`, not a build.
