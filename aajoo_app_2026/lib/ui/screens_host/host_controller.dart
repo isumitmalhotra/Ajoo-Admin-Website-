@@ -63,6 +63,23 @@ class HostController extends GetxController {
     _initialize();
   }
 
+  /// The COUNT of this host's bookings, for the dashboard tile.
+  ///
+  /// Separate from the list on purpose: the tile needs a number and the
+  /// bookings screen needs rows, and taking `.length` of the rows to get the
+  /// number meant downloading every booking a host has ever had on every visit
+  /// to the dashboard. Zero on failure — the tile shows 0 rather than the
+  /// dashboard failing to build, which is what it did before this existed too.
+  final RxInt bookingCount = 0.obs;
+
+  Future<void> getHostBookingCount() async {
+    try {
+      bookingCount.value = await hostService.getBookingCount();
+    } catch (_) {
+      // Leave whatever was last known rather than flashing 0 on a blip.
+    }
+  }
+
   Future<void> getHostBookingHistory() async {
     try {
       loading.value = true;

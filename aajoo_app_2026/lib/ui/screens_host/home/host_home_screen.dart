@@ -80,7 +80,11 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
       hostController.getTransactionHistory(),
       hostController.getHostOngoing(hostId),
       hostController.getHostProperties(),
-      hostController.getHostBookingHistory(),
+      // The COUNT, not the list. This screen only ever needed the number;
+      // fetching every booking to call .length on it moved 17,735 bytes for a
+      // host with 30 bookings, and grew from there. The bookings SCREEN still
+      // loads rows — it shows them.
+      hostController.getHostBookingCount(),
       hostController.getNegotiations(),
     ]);
   }
@@ -313,7 +317,10 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
 
   Widget _statGrid() {
     return Obx(() {
-      final bookings = hostController.hostBookingHistoryResponse.value?.data.length ?? 0;
+      // totalcount from the server, for the same reason the properties tile
+      // below reads hostPropertyCount: a length is the size of what we happened
+      // to download, not the size of what exists.
+      final bookings = hostController.bookingCount.value;
       final ongoing =
           hostController.HostOngoingResponse.value?.data.bookings.length ?? 0;
       // totalCount, not properties.length — the list is one page now, so

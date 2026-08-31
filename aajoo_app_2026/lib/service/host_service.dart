@@ -140,6 +140,35 @@ class HostService {
     }
   }
 
+  /// How many bookings this host has, without downloading them.
+  ///
+  /// The dashboard tile used to take `.length` of the whole booking history:
+  /// 17,735 bytes for a host with 30 bookings, and linear from there, to render
+  /// one integer. `/host/booking-history` takes an optional page/limit now, and
+  /// `limit: 1` answers the count in ~520 bytes no matter how large the history
+  /// grows. The properties tile beside it has read a server count for exactly
+  /// this reason since the listing pagination work.
+  Future<int> getBookingCount() async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final response = await _dio.post(
+        "/host/booking-history",
+        data: {"page": 1, "limit": 1},
+      );
+      final data = response.data is Map ? response.data['data'] : null;
+      if (data is Map && data['totalcount'] != null) {
+        return int.tryParse('${data['totalcount']}') ?? 0;
+      }
+      // An older backend ignores page/limit and returns the bare array. Falling
+      // back to its length is still correct, just not cheap.
+      if (data is List) return data.length;
+      return 0;
+    } catch (err) {
+      throw _handleError(err);
+    }
+  }
+
   Future<HostBookingHistoryResponse> getBookingHistory() async {
     final token = await const FlutterSecureStorage().read(key: "user_token");
     print(token);
