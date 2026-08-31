@@ -148,6 +148,25 @@ class HostService {
   /// `limit: 1` answers the count in ~520 bytes no matter how large the history
   /// grows. The properties tile beside it has read a server count for exactly
   /// this reason since the listing pagination work.
+  /// Pull the count out of whatever the endpoint answered with.
+  ///
+  /// Pure and top-level so it can be tested without a network: the shapes it
+  /// has to survive are the reason this exists rather than an inline read.
+  ///  - paged backend  -> { data: { totalcount, rows, ... } }
+  ///  - older backend  -> { data: [ ...every booking... ] }, count is its length
+  ///  - anything else  -> 0
+  static int parseBookingCount(dynamic body) {
+    final data = body is Map ? body['data'] : null;
+    if (data is Map && data['totalcount'] != null) {
+      // Sent as a number by MySQL's COUNT but string-safe on purpose — the
+      // five-star review that rendered as zero stars was a DECIMAL arriving as
+      // "5.00" through int.tryParse.
+      return (num.tryParse('${data['totalcount']}') ?? 0).round();
+    }
+    if (data is List) return data.length;
+    return 0;
+  }
+
   Future<int> getBookingCount() async {
     final token = await const FlutterSecureStorage().read(key: "user_token");
     _dio.options.headers['Authorization'] = 'Bearer $token';
@@ -156,14 +175,7 @@ class HostService {
         "/host/booking-history",
         data: {"page": 1, "limit": 1},
       );
-      final data = response.data is Map ? response.data['data'] : null;
-      if (data is Map && data['totalcount'] != null) {
-        return int.tryParse('${data['totalcount']}') ?? 0;
-      }
-      // An older backend ignores page/limit and returns the bare array. Falling
-      // back to its length is still correct, just not cheap.
-      if (data is List) return data.length;
-      return 0;
+      return parseBookingCount(response.data);
     } catch (err) {
       throw _handleError(err);
     }
