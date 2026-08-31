@@ -494,6 +494,40 @@ them server-side and none visible from the page before the review existed.
 
 The test review was deleted afterwards; `/user/reviews/list` is back to empty.
 
+## Pets (2026-08-31)
+
+The host has been setting a pet policy since the listing wizard shipped —
+`phr_pets_allowed`, `phr_pet_fee`, `phr_pet_size` — and none of it reached a
+guest. No search parameter, no policy in the response, no column on
+`tbl_bookings`. The fee was collected in a form and charged to nobody.
+
+**Rules** (client, 2026-08-31): the fee is **per pet, per night**, matching
+`extraGuestFeeFor` beside it; pets do **not** count toward guest capacity and
+have their own cap, `pc_max_pets`.
+
+| Piece | Backend | Web | App |
+|---|---|---|---|
+| Policy loaded + priced (`petFeeFor`) | ✅ | — | — |
+| `/pricing/quote` takes `pets`, returns `petFee` + policy | ✅ | ✅ | ⬜ |
+| Booking refuses a pet where the host says no / over cap | ✅ | ✅ | ⬜ |
+| Count + fee snapshotted on the booking | ✅ | ✅ | ⬜ |
+| Pet-friendly search filter | ✅ both endpoints | ✅ | ⬜ |
+| Policy on every card + on the detail | ✅ all three endpoints | ✅ | ⬜ |
+| Pets stepper, gated + capped + priced | — | ✅ | ⬜ |
+| Fee as its own itemised line | — | ✅ | ⬜ |
+| Host form: cap + "per pet, per night" label | ✅ | ✅ | ⬜ |
+
+Verified on production: `₹5,000 × 2 nights = ₹10,000` + `2 pets × ₹200 × 2
+nights = ₹800` + `GST 5% = ₹540` → **₹11,340**, identical to the API.
+
+> **Three endpoints describe one policy, and I patched them one at a time.**
+> The filter went onto `/properties/list` (the app's) and not
+> `/properties/search` (the web's) — the exact split that made an offer show two
+> different prices. Then the property page still had no stepper, because
+> `/properties/:id` returned `petsAllowed` nested under `houseRules` with a
+> different name and no cap. All three speak the same `pets` block now. When a
+> field has to reach a guest, the question is always **which of the three**.
+
 ### Still open on the app
 
 - **API path/versioning reconciliation with the spec** (P1-11).
