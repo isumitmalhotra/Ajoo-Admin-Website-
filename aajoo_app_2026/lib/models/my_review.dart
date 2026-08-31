@@ -38,8 +38,17 @@ class MyReview {
   /// what the website's version of this page used to do.
   final String? image;
 
-  static int _int(Object? v) =>
-      v is int ? v : (int.tryParse('${v ?? ''}') ?? 0);
+  /// Ints from a payload that sends some of them as decimal strings.
+  ///
+  /// `br_rating` arrives as `"5.00"` — a DECIMAL column serialised by mysql2 —
+  /// and `int.tryParse("5.00")` is null, so a five-star review rendered as five
+  /// empty stars. The website is unaffected because JavaScript's Number()
+  /// parses decimals; Dart's int.parse does not. Parse as a number, then round.
+  static int _int(Object? v) {
+    if (v is int) return v;
+    if (v is num) return v.round();
+    return (num.tryParse('${v ?? ''}') ?? 0).round();
+  }
 
   factory MyReview.fromJson(Map<String, dynamic> j) {
     final p = j['propReview'] is Map
