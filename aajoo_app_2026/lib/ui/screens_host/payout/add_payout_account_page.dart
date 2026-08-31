@@ -236,10 +236,18 @@ class _AddPayoutAccountPageState extends State<AddPayoutAccountPage> {
                   label: 'IFSC Code',
                   icon: Icons.code,
                   textCapitalization: TextCapitalization.characters,
-                  inputFormatters: [
-                    LengthLimitingTextInputFormatter(11),
-                    FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
-                  ],
+                  // upperAlnum, not a bare filter: TextCapitalization only asks
+                  // the KEYBOARD to show capitals, it does not transform what
+                  // arrives, so a host typing "hdfc0001234" watched an IFSC
+                  // that looks nothing like the "HDFC0001234" printed in the
+                  // hint right below it. The submitted value was always
+                  // upper-cased (see accountIfsc below), so this was never a
+                  // data fault -- only a field that refused to look like what
+                  // it wanted. The web upper-cases as you type; so does this
+                  // now. It also fixes the formatter ORDER: the length limit
+                  // ran before the filter, so punctuation counted against the
+                  // 11 characters an IFSC is allowed.
+                  inputFormatters: AppInputFormatters.upperAlnum(11),
                   validator: _validateIfsc,
                 ),
                 const SizedBox(height: 24),
