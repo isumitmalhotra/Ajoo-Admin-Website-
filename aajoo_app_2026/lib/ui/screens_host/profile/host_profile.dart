@@ -14,7 +14,6 @@ import 'package:rent_home/data/models/host_properties_reponse.dart';
 import 'package:rent_home/ui/screens_host/listing/listing_wizard_screen.dart';
 import 'package:rent_home/ui/screens_host/host_controller.dart';
 import 'package:rent_home/ui/screens_host/property_details/view_host_property_details.dart';
-import 'package:rent_home/ui/screens_host/update_property/update_property_page.dart';
 import 'package:rent_home/ui/screens_common/update_profile/update_profile_screen.dart';
 import 'package:rent_home/ui/screens_host/profile/host_menu.dart';
 import 'package:shimmer/shimmer.dart';
@@ -615,7 +614,7 @@ class _HostProfilePageState extends State<HostProfilePage> {
                       child: InkWell(
                         customBorder: const CircleBorder(),
                         onTap: () => Get.to(
-                            () => UpdatePropertyPage(property: property)),
+                            () => ListingWizardScreen(propertyId: property.propertyId)),
                         child: const Padding(
                           padding: EdgeInsets.all(7),
                           child:

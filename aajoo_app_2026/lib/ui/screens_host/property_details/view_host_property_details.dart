@@ -5,10 +5,10 @@ import 'package:rent_home/constants.dart';
 import 'dart:io';
 
 import 'package:rent_home/ui/screens_host/host_controller.dart';
-import 'package:rent_home/ui/screens_host/update_property/update_property_page.dart';
 import 'package:rent_home/data/models/host_properties_reponse.dart';
 import 'package:rent_home/widgets/app_ui.dart' show withDividers, InfoRow;
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/ui/screens_host/listing/listing_wizard_screen.dart';
 
 class HostPropertyDetails extends StatefulWidget {
   final Property property;
@@ -82,7 +82,7 @@ class _HostPropertyDetailsState extends State<HostPropertyDetails> {
           IconButton(
             tooltip: 'Edit',
             icon: const Icon(Icons.edit_outlined),
-            onPressed: () => Get.to(() => UpdatePropertyPage(property: p)),
+            onPressed: () => Get.to(() => ListingWizardScreen(propertyId: p.propertyId)),
           ),
         ],
       ),
@@ -501,7 +501,7 @@ class _HostPropertyDetailsState extends State<HostPropertyDetails> {
       children: [
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () => Get.to(() => UpdatePropertyPage(property: p)),
+            onPressed: () => Get.to(() => ListingWizardScreen(propertyId: p.propertyId)),
             icon: const Icon(Icons.edit_outlined, size: 18),
             style: OutlinedButton.styleFrom(
               foregroundColor: kIndigo,
