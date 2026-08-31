@@ -90,10 +90,18 @@ class MapController extends GetxController {
   final Rxn<String> stayTo = Rxn<String>();
   final RxInt stayGuests = 0.obs;
 
-  void setStay({String? from, String? to, int? guests}) {
+  /// Whether the guest asked for pet-friendly stays only.
+  ///
+  /// Held here with the rest of the stay so paging the map or changing the
+  /// category cannot quietly drop it — the same reason dates and guests live
+  /// here rather than in the sheet.
+  final RxBool stayPetsOnly = false.obs;
+
+  void setStay({String? from, String? to, int? guests, bool? petsOnly}) {
     stayFrom.value = (from != null && from.isNotEmpty) ? from : null;
     stayTo.value = (to != null && to.isNotEmpty) ? to : null;
     stayGuests.value = (guests != null && guests > 0) ? guests : 0;
+    if (petsOnly != null) stayPetsOnly.value = petsOnly;
   }
 
   /// Widening steps for a search that came back empty, nearest first.
@@ -118,6 +126,7 @@ class MapController extends GetxController {
       // Whatever the guest last asked for narrows every fetch, so paging the
       // map or changing the category cannot quietly drop their dates.
       guests: stayGuests.value > 0 ? stayGuests.value : null,
+      petsAllowed: stayPetsOnly.value,
       from: stayFrom.value,
       to: stayTo.value,
     );
@@ -151,6 +160,7 @@ class MapController extends GetxController {
           category: category,
           radius: ring,
           guests: stayGuests.value > 0 ? stayGuests.value : null,
+          petsAllowed: stayPetsOnly.value,
           from: stayFrom.value,
           to: stayTo.value,
           // The planetary ring genuinely takes longer than the default
@@ -232,6 +242,7 @@ class MapController extends GetxController {
     stayFrom.value = null;
     stayTo.value = null;
     stayGuests.value = 0;
+    stayPetsOnly.value = false;
     await getProperties(
       currentPosition.value.latitude,
       currentPosition.value.longitude,

@@ -42,6 +42,9 @@ class MapService {
       {int category = 0,
       String radius = "",
       int? guests,
+      // Only stays whose host takes pets. Sent as true or omitted — sending
+      // false would read as a filter for stays that REFUSE pets.
+      bool petsAllowed = false,
       String? from,
       String? to,
       bool? isLuxury,
@@ -55,6 +58,7 @@ class MapService {
     // stripUnknown, and each is omitted rather than sent empty — a null would
     // be stripped anyway, and an empty string trips the number coercion.
     if (guests != null && guests > 0) data["guests"] = guests;
+    if (petsAllowed) data["petsAllowed"] = true;
     if (from != null && from.isNotEmpty) data["from"] = from;
     if (to != null && to.isNotEmpty) data["to"] = to;
     if (isLuxury == true) data["isLuxury"] = 1;

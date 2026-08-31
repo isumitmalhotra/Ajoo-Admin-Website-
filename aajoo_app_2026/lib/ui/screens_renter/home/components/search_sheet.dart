@@ -101,6 +101,11 @@ class _SearchSheetState extends State<SearchSheet> {
   double _weeklyPrice = 500.0;
   double _monthlyPrice = 2000.0;
   bool _weeklyAny = true;
+
+  /// Pet-friendly stays only. A SERVER filter — the host's answer lives in
+  /// property_house_rules, so sieving the fetched page here would search the
+  /// hundred rows already in hand rather than the catalogue.
+  bool _petsOnly = false;
   bool _monthlyAny = true;
   bool _advancedExpanded = false;
 
@@ -321,6 +326,7 @@ class _SearchSheetState extends State<SearchSheet> {
       _weeklyPrice = 500.0;
       _monthlyPrice = 2000.0;
       _weeklyAny = true;
+      _petsOnly = false;
       _monthlyAny = true;
     });
   }
@@ -354,6 +360,7 @@ class _SearchSheetState extends State<SearchSheet> {
       from: _dateRange == null ? null : _dmy(_dateRange!.start),
       to: _dateRange == null ? null : _dmy(_dateRange!.end),
       guests: _guests,
+      petsOnly: _petsOnly,
     );
 
     // A typed place with no suggestion tapped used to be ignored entirely:
@@ -812,6 +819,32 @@ class _SearchSheetState extends State<SearchSheet> {
               _radius = v;
               _radiusTouched = true;
             }),
+          ),
+          // Travelling with a pet. Matches the website's filter; the host has
+          // been answering "do you allow pets?" in the wizard for some time and
+          // no guest could search on the answer.
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Travelling with a pet',
+                          style: inter(
+                              fontSize: 14, fontWeight: FontWeight.w600)),
+                      Text('Only show stays that welcome pets',
+                          style: inter(fontSize: 11.5, color: kMuted)),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: _petsOnly,
+                  onChanged: (v) => setState(() => _petsOnly = v),
+                ),
+              ],
+            ),
           ),
           _sliderBlock(
             label: 'Weekly price',
