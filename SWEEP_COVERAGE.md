@@ -297,4 +297,78 @@ the browser tab held it cached — so the pages read as unfixed when they were
 not. **Check the hash the page actually loaded against the hash the live HTML
 references before concluding anything about a deploy.**
 
-## Next: Web — Public (0 / 42), App (0 / 146)
+---
+
+## Web — Public (20 / 20 reachable) — COMPLETE
+
+Swept logged out, and checked by **HTTP status and robots directive**, not by
+whether the page looked right. That distinction is the whole story of this
+block.
+
+| path | HTTP | robots | was |
+|---|---|---|---|
+| / | 200 | index, follow | ok |
+| /explore | 200 | index, follow | ok |
+| /search | 200 | index, follow | ok (no H1 — noted) |
+| /getting-started | 200 | index, follow | ok |
+| /about | 200 | index, follow | ok |
+| /contact | 200 | index, follow | ok |
+| /faq | 200 | index, follow | ok |
+| /safety | 200 | index, follow | ok |
+| /blog | 200 | index, follow | ok |
+| /pre-booking | 200 | index, follow | ok |
+| /become-a-host | 200 | index, follow | ok |
+| /login /register | 200 | noindex, follow | ok |
+| /forgot-password | 200 | noindex, nofollow | ok |
+| **/terms-condition** | 200 | index, follow | **was 404 + noindex** |
+| **/Privacy-Policy** | 200 | index, follow | **was 404 + noindex** |
+| **/state-regulation** | 200 | index, follow | **was 404 + noindex** |
+| **/help-center** | 200 | index, follow | **was 404 + noindex** |
+| **/become-a-host/register** | 200 | noindex, follow | **was 404** |
+| **/privacy-policy** | 301 → /Privacy-Policy | — | **was 404** |
+
+### Five working pages were answering HTTP 404
+
+`/terms-condition`, `/Privacy-Policy`, `/state-regulation`, `/help-center` and
+`/become-a-host/register` all rendered perfectly and all returned **HTTP 404
+with `noindex, follow`** and the title "Page not found | Aajoo".
+
+They were never registered in `config/seoDefaults.js` `STATIC_PAGES`, so the
+resolver classified them `unknown` and the edge turned that into a 404.
+
+**The SPA draws these client-side whatever the status line says**, so to anyone
+opening them they looked completely fine. Only checking the status code showed
+it. Terms and Privacy matter beyond ranking: payment providers and app stores
+verify those URLs, and a 404 fails that check. `/become-a-host/register` is the
+host signup form, which `App.tsx` explicitly marks "must stay PUBLIC".
+
+The site links both casings of the privacy page — the redesigned footer uses
+`/Privacy-Policy`, the pre-redesign layout's footer uses the lowercase form —
+so the lowercase path is now a 301 to the capitalised one rather than a second
+copy competing for the same ranking.
+
+### And the inverse: private areas were telling crawlers to index them
+
+`index.html` declares `index, follow`, because it is the head every public page
+starts from, and the edge serves that shell unmodified for signed-in paths. So
+`/admin/*`, `/account/*`, `/host/*`, `/booking/*`, `/payment/*` and
+`/checkout/*` all went out marked **indexable**.
+
+The backend has always answered `noindex, nofollow` for exactly those prefixes
+(`NOINDEX_PREFIXES`). It is never asked — not calling it is the entire point of
+skipping — so that answer reached nobody. Two correct pieces of code with the
+wrong directive on the wire between them. All five private prefixes now verify
+as `noindex, nofollow`.
+
+### Noted, not changed
+
+- `/search` has no `<h1>`.
+- `/auth` and `/user-dashboard` still 404 at the edge. `/auth` is an orphan
+  parent route with no index child; `/user-dashboard` is renter-gated legacy.
+  A 404 to a crawler is defensible for both.
+- `/` resolves to `/explore` client-side. The served HTML canonicalises `/` to
+  itself and the client then rewrites it to `/explore` — a mixed signal, but
+  the routing is deliberate (IntentGate documents the history), so it is a
+  product decision rather than a defect.
+
+## Next: App (0 / 146)
