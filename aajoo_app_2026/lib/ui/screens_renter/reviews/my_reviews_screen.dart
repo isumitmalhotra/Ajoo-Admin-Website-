@@ -172,6 +172,17 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
     );
   }
 
+  /// Shown when a listing genuinely has no photograph.
+  Widget _noPhoto() => Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: kLine,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Icon(Icons.image_outlined, size: 18, color: kMuted),
+      );
+
   Widget _card({required Widget child, Color? bg}) => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -195,6 +206,24 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // The listing's own photo, or a marked blank. Never a stock
+                // picture of a different property.
+                if (r.image != null) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.network(
+                      r.image!,
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _noPhoto(),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                ] else ...[
+                  _noPhoto(),
+                  const SizedBox(width: 10),
+                ],
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

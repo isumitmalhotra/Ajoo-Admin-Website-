@@ -15,6 +15,7 @@ class MyReview {
     required this.title,
     required this.body,
     required this.addedAt,
+    this.image,
   });
 
   final int id;
@@ -31,6 +32,11 @@ class MyReview {
   final String title;
   final String body;
   final DateTime? addedAt;
+
+  /// The listing's cover photo, or null when it has none. Null means show a
+  /// placeholder — never a stock photograph of a different property, which is
+  /// what the website's version of this page used to do.
+  final String? image;
 
   static int _int(Object? v) =>
       v is int ? v : (int.tryParse('${v ?? ''}') ?? 0);
@@ -53,6 +59,9 @@ class MyReview {
       title: '${j['br_title'] ?? ''}'.trim(),
       body: '${j['br_desc'] ?? ''}'.trim(),
       addedAt: DateTime.tryParse('${j['br_addedAt'] ?? ''}'),
+      image: (j['property_image'] ?? '').toString().isEmpty
+          ? null
+          : '${j['property_image']}',
     );
   }
 }
