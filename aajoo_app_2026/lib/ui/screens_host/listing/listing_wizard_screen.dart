@@ -612,7 +612,8 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
 
         ListingSection(
           title: 'Guest capacity',
-          sub: "Adults can't exceed your total capacity.",
+          sub: "How many people the place sleeps. Infants aren't counted — "
+              "a cot isn't a bed.",
           children: [
             _numRow([
               _numField('max_adults', 'Maximum adults'),
@@ -620,7 +621,9 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             ]),
             _numRow([
               _numField('max_infants', 'Infants'),
-              _numField('total_guests', 'Total guests'),
+              // Total guests is DERIVED, not asked — matching the website.
+              // Adults + children; infants excluded.
+              _derivedField('Total guests', c.derivedTotalGuests),
             ]),
           ],
         ),
@@ -1229,6 +1232,30 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
 
   Widget _numField(String key, String label) =>
       _text(key, label, numeric: true, maxLength: 3);
+
+  /// A read-only companion to [_numField], for a value the form computes.
+  Widget _derivedField(String label, int value) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: inter(fontSize: 12.5, color: kMuted)),
+          const SizedBox(height: 6),
+          Container(
+            height: 48,
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: kLine.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: kLine),
+            ),
+            child: Text(
+              value > 0 ? '$value' : '—',
+              style: inter(
+                  fontSize: 15, fontWeight: FontWeight.w600, color: kInk),
+            ),
+          ),
+        ],
+      );
 
   Widget _text(
     String key,

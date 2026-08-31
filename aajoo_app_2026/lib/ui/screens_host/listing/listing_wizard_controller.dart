@@ -465,40 +465,36 @@ class ListingWizardController extends GetxController {
       return int.tryParse(raw);
     }
 
-    final total = count('total_guests');
     final adults = count('max_adults');
     final children = count('max_children');
     final bedrooms = count('bedrooms');
     final beds = count('beds');
+    // DERIVED, not entered — same as the website since 2026-08-31. The host
+    // used to type adults, children, infants AND a total, and the form then
+    // policed the four against each other; every one of those errors was the
+    // form asking the host to do arithmetic it could do itself. Infants are
+    // excluded, the rule the guest selector already uses: a cot is not a bed.
+    final total = (adults ?? 0) + (children ?? 0);
 
     for (final k in const [
-      'total_guests', 'max_adults', 'max_children',
+      'max_adults', 'max_children',
       'max_infants', 'bedrooms', 'beds', 'bathrooms',
     ]) {
       final v = count(k);
       if (v != null && v < 0) errs[k] = "This can't be negative";
     }
-    if (total != null && total < 1) {
-      errs['total_guests'] = 'A listing has to sleep at least one guest';
-    }
-    if (total != null && adults != null && adults > total) {
-      errs['max_adults'] = 'More adults than the place sleeps in total';
-    }
-    // Infants are excluded — they share a bed, and every platform counts them
-    // apart from the party that has to fit.
-    if (total != null && adults != null && children != null &&
-        adults + children > total) {
-      errs['max_children'] =
-          '$adults adults and $children children is ${adults + children} — '
-          'more than the $total this place sleeps';
+    if (total < 1) {
+      errs['max_adults'] = 'A listing has to sleep at least one guest';
     }
     if (bedrooms != null && beds != null && bedrooms > 0 && beds < bedrooms) {
       errs['beds'] = '$bedrooms bedrooms need at least $bedrooms beds between them';
     }
-    if (total != null && beds != null && beds > 0 && total > beds * 4) {
-      errs['total_guests'] =
+    if (beds != null && beds > 0 && total > beds * 4) {
+      // Reported against BEDS: the host can no longer lower a total they do
+      // not type, so the actionable field is the one they can change.
+      errs['beds'] =
           "$total guests in $beds bed${beds == 1 ? '' : 's'} won't work — "
-          'add beds, or lower the count';
+          'add beds, or lower the guest counts';
     }
 
     // A seasonal property has to say which months it is open, or the calendar
@@ -614,6 +610,16 @@ class ListingWizardController extends GetxController {
 
   // ── Saving ────────────────────────────────────────────────────────────────
 
+  /// Sleeping capacity, worked out rather than asked for.
+  ///
+  /// Adults + children; infants excluded — a cot is not a bed, and counting one
+  /// would hide places that actually fit the party. One definition, used by the
+  /// read-only field on the form and by the payload, so the two cannot drift.
+  int get derivedTotalGuests {
+    int n(String k) => int.tryParse('${f[k] ?? ''}'.trim()) ?? 0;
+    return n('max_adults') + n('max_children');
+  }
+
   /// Save the current step and advance. Returns false if it did not save.
   Future<bool> saveAndContinue() async {
     error.value = '';
@@ -623,6 +629,12 @@ class ListingWizardController extends GetxController {
         return _run(() async {
           final payload = <String, dynamic>{
             ...f,
+            // total_guests is DERIVED from the two counts above it and is no
+            // longer a field the host types. Computed into the payload rather
+            // than spread from `f`, which would send whatever the draft last
+            // loaded — or nothing on a new listing — and leave the capacity
+            // guests search on stale.
+            'total_guests': derivedTotalGuests,
             if (propertyId.value != null) 'property_id': propertyId.value,
             if (seasonalMonths.isNotEmpty)
               'seasonal_months': seasonalMonths.toList(),

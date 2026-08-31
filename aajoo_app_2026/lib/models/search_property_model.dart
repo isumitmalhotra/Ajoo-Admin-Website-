@@ -4,6 +4,7 @@
 
 import 'dart:convert';
 import 'package:rent_home/models/property_offer.dart';
+import 'package:rent_home/models/pet_policy.dart';
 
 SearchResponse searchResponseFromJson(String str) =>
     SearchResponse.fromJson(json.decode(str));
@@ -61,6 +62,9 @@ class SearchPropertyModel {
   /// Null when there is none — see [PropertyOffer].
   PropertyOffer? offer;
 
+  /// The host's pet policy. Never null — a listing with none takes no pets.
+  PetPolicy pets;
+
   dynamic propertyId;
   dynamic propertyHostId;
   String? propertyName;
@@ -105,6 +109,7 @@ class SearchPropertyModel {
 
   SearchPropertyModel({
     this.offer,
+    this.pets = PetPolicy.none,
     this.propertyId,
     this.propertyHostId,
     this.propertyName,
@@ -141,6 +146,7 @@ class SearchPropertyModel {
   factory SearchPropertyModel.fromJson(Map<String, dynamic> json) =>
       SearchPropertyModel(
         offer: PropertyOffer.fromJson(json['offer']),
+        pets: PetPolicy.fromJson(json['pets']),
         propertyId: json["property_id"],
         propertyHostId: json["property_host_id"],
         propertyName: json["property_name"],

@@ -1,5 +1,6 @@
 import 'package:rent_home/utils/nightly_rates.dart';
 import 'package:rent_home/models/property_offer.dart';
+import 'package:rent_home/models/pet_policy.dart';
 
 class SinglePropertyResponse {
   final bool? success;
@@ -45,6 +46,7 @@ class SinglePropertyData {
   /// A discount running on this listing right now, priced by the server.
   /// Null when there is none — see [PropertyOffer].
   final PropertyOffer? offer;
+  final PetPolicy pets;
   final String? propertyCity;
   final String? propertyZip;
   /// The state's NAME, e.g. "Haryana".
@@ -122,6 +124,7 @@ class SinglePropertyData {
 
   SinglePropertyData({
     this.offer,
+    this.pets = PetPolicy.none,
     this.propertyId,
     this.propertyHostId,
     this.propertyName,
@@ -190,6 +193,7 @@ class SinglePropertyData {
 
     return SinglePropertyData(
       offer: PropertyOffer.fromJson(json['offer']),
+        pets: PetPolicy.fromJson(json['pets']),
       propertyId: _parseIntSafely(json['property_id']),
       propertyHostId: _parseIntSafely(json['property_host_id']),
       propertyName: json['property_name'],

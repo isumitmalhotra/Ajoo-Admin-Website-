@@ -45,6 +45,7 @@ import 'package:rent_home/widgets/verified_pill.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/models/property_offer.dart';
+import 'package:rent_home/models/pet_policy.dart';
 
 class PropertyPage extends StatefulWidget {
   final String image;
@@ -134,6 +135,19 @@ class _PropertyPageState extends State<PropertyPage>
   /// server; the server recomputes it and refuses a price that disagrees.
   double get _partyFee =>
       _single?.pricing?.extraGuestFee(_guests, totalDays) ?? 0;
+
+  /// How many pets are coming.
+  ///
+  /// Counted apart from guests because they do not occupy beds — the same
+  /// reason infants are excluded from the guest total. Shown only where this
+  /// host takes pets, and capped at the number they said they would take.
+  int _pets = 0;
+
+  PetPolicy get _petPolicy => _single?.pets ?? PetPolicy.none;
+
+  /// What the pets add, per pet per night. The server recomputes this and
+  /// refuses a price that disagrees, exactly as it does for the party fee.
+  double get _petFee => _petPolicy.feeFor(_pets, totalDays);
   int totalDays = 1;
 
   /// The Razorpay options last opened, so a refusal can offer "Try again".
@@ -1069,6 +1083,8 @@ class _PropertyPageState extends State<PropertyPage>
                                   perNightTariff: currentPrice,
                                   discount: _discountOnRoom,
                                   extraGuestFee: _partyFee,
+                                  petFee: _petFee,
+                                  pets: _pets,
                                   nightlyTotal: _nightlyTotal,
                                   longStayLabel: _longStay?.label,
                                 );
@@ -1142,6 +1158,72 @@ class _PropertyPageState extends State<PropertyPage>
                         ],
                       ),
 
+                      // Pets, only where this host takes them. Their own count
+                      // and their own cap: pets do not occupy beds, so they sit
+                      // outside the guest ceiling entirely.
+                      if (_petPolicy.petsAllowed) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Pets',
+                                      style: inter(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600)),
+                                  Text(
+                                    _petPolicy.feePerNight > 0
+                                        ? '${rupees(_petPolicy.feePerNight)} per pet, per night'
+                                        : 'Assistance animals are always welcome',
+                                    style: inter(fontSize: 11.5, color: kMuted),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.remove_circle_outline),
+                                  iconSize: 26,
+                                  onPressed: _pets > 0
+                                      ? () {
+                                          setState(() => _pets -= 1);
+                                          _restayed();
+                                        }
+                                      : null,
+                                ),
+                                SizedBox(
+                                  width: 28,
+                                  child: Text('$_pets',
+                                      textAlign: TextAlign.center,
+                                      style: inter(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w700)),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.add_circle_outline),
+                                  iconSize: 26,
+                                  // The host's cap when they set one; going
+                                  // over it is refused by the server with a
+                                  // reason, so stopping here is the kinder
+                                  // version of the same rule.
+                                  onPressed: (_petPolicy.maxPets <= 0 ||
+                                          _pets < _petPolicy.maxPets)
+                                      ? () {
+                                          setState(() => _pets += 1);
+                                          _restayed();
+                                        }
+                                      : null,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+
                       const SizedBox(height: 8),
 
                       // Price breakdown
@@ -1162,6 +1244,8 @@ class _PropertyPageState extends State<PropertyPage>
                               perNightTariff: currentPrice,
                               discount: _discountOnRoom,
                               extraGuestFee: _partyFee,
+                              petFee: _petFee,
+                              pets: _pets,
                               nightlyTotal: _nightlyTotal,
                               longStayLabel: _longStay?.label,
                             );
@@ -1204,6 +1288,35 @@ class _PropertyPageState extends State<PropertyPage>
                                       ),
                                       Text(
                                         rupees(p.extraGuestFee),
+                                        style: inter(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: kMuted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                                // Named the way the extra-guest line above is,
+                                // so a total that grew because a dog is coming
+                                // is explained rather than mysterious.
+                                if (_petFee > 0) ...[
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          '$_pets pet${_pets == 1 ? '' : 's'} × '
+                                          '${rupees(_petPolicy.feePerNight)} × '
+                                          '$totalDays night${totalDays == 1 ? '' : 's'}',
+                                          style: inter(
+                                              fontSize: 14, color: kMuted),
+                                        ),
+                                      ),
+                                      Text(
+                                        rupees(_petFee),
                                         style: inter(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
@@ -1643,6 +1756,8 @@ onPressed: () async {
                       perNightTariff: currentPrice,
                       discount: _discountOnRoom,
                       extraGuestFee: _partyFee,
+                      petFee: _petFee,
+                      pets: _pets,
                       nightlyTotal: _nightlyTotal,
                       longStayLabel: _longStay?.label,
                     );
@@ -1686,6 +1801,11 @@ onPressed: () async {
                       // so the two must be sent together or not at all.
                       "price": p.chargeable,
                       "no_of_guests": _guests,
+                      // Declared pets. The server prices them from its own
+                      // policy and refuses a pet at a host who does not take
+                      // them — but without this the booking records none and
+                      // the fee the guest just paid attaches to nothing.
+                      "no_of_pets": _pets,
                       "bookFrom": formattedDate,
                       "bookTo": formattedDateTo,
                       "isCod": isCod,
@@ -3009,6 +3129,8 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
         perNightTariff: currentPrice,
         discount: _discountOnRoom,
         extraGuestFee: _partyFee,
+        petFee: _petFee,
+        pets: _pets,
         nightlyTotal: _nightlyTotal,
         longStayLabel: _longStay?.label,
       );

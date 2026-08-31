@@ -4,6 +4,7 @@
 
 import 'dart:convert';
 import 'package:rent_home/models/property_offer.dart';
+import 'package:rent_home/models/pet_policy.dart';
 
 PropertiesResponse propertiesResponseFromJson(String str) =>
     PropertiesResponse.fromJson(json.decode(str));
@@ -96,6 +97,7 @@ class Property {
   /// A discount running on this listing right now, priced by the server.
   /// Null when there is none — see [PropertyOffer].
   final PropertyOffer? offer;
+  final PetPolicy pets;
 
   /// One decimal, for display: "4.6". Empty when unrated.
   String get ratingLabel => rating == null ? '' : rating!.toStringAsFixed(1);
@@ -129,6 +131,7 @@ class Property {
     this.reviewCount = 0,
     this.isBoosted = false,
     this.offer,
+    this.pets = PetPolicy.none,
   });
 
   factory Property.fromJson(Map<String, dynamic> json) => Property(
@@ -181,6 +184,7 @@ class Property {
         reviewCount: int.tryParse('${json["review_count"] ?? 0}') ?? 0,
         isBoosted: json["isBoosted"] == true,
         offer: PropertyOffer.fromJson(json["offer"]),
+        pets: PetPolicy.fromJson(json["pets"]),
       );
 
   Map<String, dynamic> toJson() => {

@@ -44,6 +44,16 @@ class StayPrice {
   /// sends against that sum. Send [chargeable], not [roomSubtotal].
   final double extraGuestFee;
 
+  /// What the declared pets add for the whole stay — per pet, per night.
+  ///
+  /// Like [extraGuestFee] it is shown as its own line and is part of what is
+  /// charged: the backend discounts and taxes room + party + pets, and
+  /// validates the `price` the app sends against that sum.
+  final double petFee;
+
+  /// How many pets were declared, so the line can name them.
+  final int pets;
+
   /// Room + party charge — the figure to send as `price`.
   final double chargeable;
 
@@ -83,6 +93,8 @@ class StayPrice {
   const StayPrice({
     required this.roomSubtotal,
     required this.extraGuestFee,
+    this.petFee = 0,
+    this.pets = 0,
     required this.chargeable,
     required this.discount,
     this.nightlyTotal = 0,
@@ -112,6 +124,8 @@ StayPrice priceStay({
   required double perNightTariff,
   double discount = 0,
   double extraGuestFee = 0,
+  double petFee = 0,
+  int pets = 0,
   double nightlyTotal = 0,
   String? longStayLabel,
 }) {
@@ -127,9 +141,10 @@ StayPrice priceStay({
       nightly > 0 ? (saving / nightly * 1000).roundToDouble() / 10 : 0.0;
   final party =
       extraGuestFee.isFinite && extraGuestFee > 0 ? extraGuestFee : 0.0;
-  // The party charge rides with the room through discount and tax, because
-  // that is what the backend does with it.
-  final chargeable = subtotal + party;
+  final petCharge = petFee.isFinite && petFee > 0 ? petFee : 0.0;
+  // The party charge and the pets ride with the room through discount and tax,
+  // because that is what the backend does with them.
+  final chargeable = subtotal + party + petCharge;
   final off = discount.isFinite && discount > 0 ? discount : 0.0;
   final discountedRoom = (chargeable - off).clamp(0.0, chargeable).toDouble();
   final taxPct = perNightTariff > 7500 ? 18 : 5;
@@ -145,6 +160,8 @@ StayPrice priceStay({
     longStaySavingPercent: savingPercent,
     longStayLabel: saving > 0 ? longStayLabel : null,
     extraGuestFee: party,
+    petFee: petCharge,
+    pets: pets,
     chargeable: chargeable,
     discount: chargeable - discountedRoom,
     discountedRoom: discountedRoom,
