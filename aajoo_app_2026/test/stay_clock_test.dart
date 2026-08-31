@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rent_home/utils/stay_clock.dart';
 
 void main() {
+  _stayRangeTests();
   // 10 Aug 2026, 10:00 IST  ->  04:30 UTC
   final beforeCheckout = DateTime.utc(2026, 8, 10, 4, 30);
   // 10 Aug 2026, 12:00 IST  ->  06:30 UTC  (checkout was 11:00 IST)
@@ -43,5 +44,44 @@ void main() {
 
   test('unparseable dates never claim a stay is active', () {
     expect(isStaying('not-a-date', 'nonsense'), isFalse);
+  });
+}
+
+/// How a stay's dates are written, on both portals.
+///
+/// The host booking list printed the raw server strings, and those are not
+/// consistently padded — the same card read "06-10-2026 → 7-10-2026". The
+/// guest list had a formatter privately all along. They are the same app and
+/// should not disagree about what a date looks like, so it lives in
+/// stay_clock.dart and both call it.
+void _stayRangeTests() {
+  group('stayRange', () {
+    test('an unpadded day formats the same as a padded one', () {
+      // The pair that made the bug visible on the host booking card.
+      expect(stayRange('06-10-2026', '7-10-2026'), '6 – 7 Oct 2026');
+    });
+
+    test('a range inside one month names the month once', () {
+      expect(stayRange('20-10-2026', '24-10-2026'), '20 – 24 Oct 2026');
+    });
+
+    test('a range crossing a month names both', () {
+      expect(stayRange('30-08-2026', '01-09-2026'), '30 Aug – 1 Sep 2026');
+    });
+
+    test('a range crossing a year carries the year on both sides', () {
+      expect(stayRange('30-12-2026', '02-01-2027'), '30 Dec 2026 – 2 Jan 2027');
+    });
+
+    test('an unparseable date falls back to what the server sent', () {
+      // A date the reader can see beats a tidy blank.
+      // The fallback path formats each side with shortStayDate, which is
+      // 'd MMM' — no year, because it is used for single dates too.
+      expect(stayRange('not-a-date', '01-09-2026'), 'not-a-date – 1 Sep');
+    });
+
+    test('a null pair does not throw', () {
+      expect(stayRange(null, null), '— – —');
+    });
   });
 }

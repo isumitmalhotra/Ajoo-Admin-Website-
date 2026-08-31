@@ -389,7 +389,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                               color: kInk)),
                       const SizedBox(height: 4),
                       Text(
-                          "${booking.bookDetailsBtBookFrom}  →  ${booking.bookDetailsBtBookTo}",
+                          stayRange(booking.bookDetailsBtBookFrom, booking.bookDetailsBtBookTo),
                           style: inter(fontSize: 12.5, color: kInk2)),
                       const SizedBox(height: 3),
                       Text("Contact: ${booking.userDetailsUserPnumber}",

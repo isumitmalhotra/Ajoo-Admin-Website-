@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 // When a stay starts and ends — the Dart counterpart of the web's
 // redesign/lib/stayClock.ts. One definition per platform, same rule.
 //
@@ -99,3 +100,32 @@ bool isStaying(String? from, String? to, {DateTime? now}) =>
 
 /// The stay has not begun yet.
 bool isUpcoming(String? from, {DateTime? now}) => !hasStarted(from, now: now);
+
+
+/// "19 Aug" from the DD-MM-YYYY the booking API speaks.
+///
+/// Falls back to whatever the server sent if it cannot be parsed, rather than
+/// printing a dash — a date the guest can read beats a tidy blank.
+String shortStayDate(String? raw) {
+  final parsed = parseStayDate(raw);
+  if (parsed == null) return raw ?? '—';
+  return DateFormat('d MMM').format(parsed);
+}
+
+/// "19 – 22 Aug 2026", collapsing the month and year when both dates share one.
+///
+/// Lives here rather than in one screen because the HOST booking list printed
+/// the raw server strings instead, and those are not consistently padded: the
+/// same card read "06-10-2026 → 7-10-2026". The guest list had this formatter
+/// privately all along; the two portals are the same app and should not
+/// disagree about what a date looks like.
+String stayRange(String? from, String? to) {
+  final a = parseStayDate(from);
+  final b = parseStayDate(to);
+  if (a == null || b == null) return '${shortStayDate(from)} – ${shortStayDate(to)}';
+  final sameMonth = a.year == b.year && a.month == b.month;
+  final left = sameMonth
+      ? DateFormat('d').format(a)
+      : DateFormat(a.year == b.year ? 'd MMM' : 'd MMM yyyy').format(a);
+  return '$left – ${DateFormat('d MMM yyyy').format(b)}';
+}

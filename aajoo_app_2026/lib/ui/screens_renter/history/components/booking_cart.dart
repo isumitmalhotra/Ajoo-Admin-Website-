@@ -13,7 +13,6 @@
 // on tap.
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/data/models/booking_history_response_model.dart';
 import 'package:rent_home/ui/screens_renter/history/history_description/history_description_page.dart';
@@ -37,27 +36,9 @@ num _asNum(dynamic v) {
 /// that was not whole. utils/money.dart does both correctly, once.
 String _money(num v) => rupeeDigits(v);
 
-/// "19 Aug" from the DD-MM-YYYY the booking API speaks.
-///
-/// Falls back to whatever the server sent if it cannot be parsed, rather than
-/// printing a dash — a date the guest can read beats a tidy blank.
-String _shortDate(String? raw) {
-  final parsed = parseStayDate(raw);
-  if (parsed == null) return raw ?? '—';
-  return DateFormat('d MMM').format(parsed);
-}
-
-/// "19 – 22 Aug 2026", collapsing the month and year when both dates share one.
-String _stayRange(String? from, String? to) {
-  final a = parseStayDate(from);
-  final b = parseStayDate(to);
-  if (a == null || b == null) return '${_shortDate(from)} – ${_shortDate(to)}';
-  final sameMonth = a.year == b.year && a.month == b.month;
-  final left = sameMonth
-      ? DateFormat('d').format(a)
-      : DateFormat(a.year == b.year ? 'd MMM' : 'd MMM yyyy').format(a);
-  return '$left – ${DateFormat('d MMM yyyy').format(b)}';
-}
+/// Lives in utils/stay_clock.dart now — the host list needed the same
+/// formatting and was printing raw server strings instead.
+String _stayRange(String? from, String? to) => stayRange(from, to);
 
 class BookingCard extends StatelessWidget {
   const BookingCard({
