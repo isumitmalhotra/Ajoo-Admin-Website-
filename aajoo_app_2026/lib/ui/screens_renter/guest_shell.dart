@@ -18,11 +18,22 @@ class GuestShellScope extends InheritedWidget {
   const GuestShellScope({
     super.key,
     required this.goToTab,
+    required this.currentIndex,
     required super.child,
   });
 
   /// 0 Home · 1 Dashboard · 2 Bookings · 3 Saved · 4 Profile.
   final void Function(int index) goToTab;
+
+  /// Which tab is showing right now.
+  ///
+  /// Exposed so a tab can tell when it has just become visible and reload.
+  /// The shell keeps every tab alive in an IndexedStack, so a screen's
+  /// initState runs exactly once per session: without this, whatever a tab
+  /// fetched at login is what it shows for the rest of the session, and a
+  /// fetch that failed at login shows its empty state forever. The host shell
+  /// solved the same problem with HostTabProvider.
+  final int currentIndex;
 
   /// Null when the screen is not inside the shell — it can also be pushed on
   /// its own from the drawer, where popping is the right move.
@@ -30,7 +41,8 @@ class GuestShellScope extends InheritedWidget {
       context.dependOnInheritedWidgetOfExactType<GuestShellScope>();
 
   @override
-  bool updateShouldNotify(GuestShellScope oldWidget) => false;
+  bool updateShouldNotify(GuestShellScope oldWidget) =>
+      oldWidget.currentIndex != currentIndex;
 }
 
 /// Guest bottom-nav shell (new design, scaffold guest_shell) — 5 tabs:
@@ -72,6 +84,7 @@ class _GuestShellState extends State<GuestShell> {
       backgroundColor: skin.page,
       body: GuestShellScope(
         goToTab: _goToTab,
+        currentIndex: _index,
         child: IndexedStack(index: _index, children: _screens),
       ),
       bottomNavigationBar: Container(

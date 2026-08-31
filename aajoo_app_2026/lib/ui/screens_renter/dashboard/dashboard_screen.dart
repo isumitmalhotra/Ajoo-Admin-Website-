@@ -40,10 +40,33 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
       NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
   int _savedCount = 0;
 
+  /// This screen's slot in the guest shell (0 Home · 1 Dashboard · …).
+  static const int _dashboardTab = 1;
+  bool _wasVisible = false;
+
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // The shell keeps every tab alive in an IndexedStack, so initState runs
+    // exactly once per session. Every figure here was therefore whatever it had
+    // been at login — and when that first fetch failed (a dropped connection on
+    // a cold backend is enough) the tiles sat on "Total Spent ₹0" and "0
+    // Reviews" for the rest of the session, with no way to retry but killing
+    // the app. Seen on a release build: the booking-history request aborted at
+    // sign-in and two visits to this tab never asked again.
+    //
+    // Re-fetch each time this tab becomes the visible one. The host dashboard
+    // already does exactly this, for exactly this reason.
+    final shell = GuestShellScope.maybeOf(context);
+    final isVisible = shell == null || shell.currentIndex == _dashboardTab;
+    if (isVisible && !_wasVisible) _load();
+    _wasVisible = isVisible;
   }
 
   /// Send the reader to Home to browse.

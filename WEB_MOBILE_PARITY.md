@@ -403,6 +403,49 @@ labelled as such.
 failed request and rendered "No reviews yet" — the same reassuring wrong answer this
 ledger keeps catching on the app. Fixed there too.
 
+## Screen-by-screen pass, both platforms (2026-08-31)
+
+Same two accounts signed in on the website and on the phone at the same time,
+every host and guest screen walked, with the browser's console and network
+panels open and `adb logcat` running. Everything below is a difference that was
+visible on screen or an error the tools caught.
+
+**The web portal itself is clean**: not one console error and not one failed
+request across the whole host portal and the guest account area.
+
+| Found | Where | Fix |
+|---|---|---|
+| **Three places counted bookings three different ways.** Bookings said 18 cancelled, Performance said 21, and the app's dashboard said 57 total where the site said 30. `/host/bookings/search` had it right — exclude soft-deleted rows and abandoned online checkouts — and the other two filtered on nothing. | backend | All three share the definition now. The app's 57 became 30 with no app change. |
+| **"Total Spent" counted money nobody had paid.** ₹34,845 on the app, ₹28,125 on the web's Past Stays, ₹26,760 on two other web screens. Both wrong ones counted an unsettled pay-at-property stay — the app because it filtered on booking *status* rather than payment, the web because it summed stay totals. | app + web | Both count what was actually collected. All four surfaces now read ₹26,760. |
+| **"Upcoming Stays 0" printed directly above a list containing a stay.** The tile filtered `/user/ongoing/bookings`; the list under it did not, and that endpoint returns anything unfinished. | app | The list matches its own heading. |
+| **A failed fetch became a permanent zero.** The guest dashboard loads once in `initState`, and the shell keeps tabs alive in an IndexedStack — so when the booking-history request aborted at sign-in, the tiles read ₹0 for the rest of the session and revisiting the tab never asked again. Caught on a *release* build. | app | Reloads when the tab becomes visible, the way the host dashboard already did. `GuestShellScope` exposes the visible tab. |
+| **Having no reviews answered HTTP 400.** `/review/host/user-review-list` returned `400 No record found`, so every guest who had never been reviewed threw a DioException twice on sign-in. | backend | 200 with an empty array. |
+| **"Total Bookings" was the length of a page.** The host dashboard tile read `bookings.length` against a 50-row page. | web | Reads `totalRecords`. |
+| **`property_state` was parsed as an int.** The column is a STRING and the server sends "Haryana"; the field has been null on every listing the app has ever shown, logging a parse failure each time. | app | Typed as the name it is. |
+| **Host booking cards never said which listing.** A reference, a guest and an amount — the property name is in the payload and only the card omitted it. | app | Shown. |
+| **Performance was headed "Last six months"** over figures the server computes across 90 days. Occupancy also divided by every property row ever owned, deleted ones included. | app + backend | 90 days, and the active count. |
+
+Checked and matching, so they are not re-investigated: Settlements agrees row for
+row (7 outstanding, same codes and amounts); Payouts and Earnings agree
+(₹1,04,814.16 / ₹0 settled / ₹30,333.16 pending, 11 rows); Bookings tabs, Saved,
+Negotiations, Messages, Calendar, Statements, Boost, Support all agree; the
+Properties count question resolved as two correct answers under different labels
+(29,237 total vs 29,227 active).
+
+**Known and not fixed**, deliberately: the host dashboard's Upcoming Stays rows
+and the guest Reviews cards use a stock Unsplash photo, because neither
+`/host/bookings/search` nor `/user/reviews/list` returns a property image — the
+honest fix is to add one to those payloads, not to keep dressing the gap. And
+the dashboard's "Aajoo Commission (15%)" is a percentage of host earnings while
+Statements shows the real commission ledger; both are labelled, but they do not
+match and one of them should probably go.
+
+**Not confirmed:** a `�` appears in stored negotiation text. It may be data
+written badly in an earlier session rather than a live encoding fault — the
+connection sets no charset and `utf8mb4` was not verified, because the live DB
+is unreachable from this machine. Worth one look before go-live given Hindi
+content.
+
 ### Still open on the app
 
 - **API path/versioning reconciliation with the spec** (P1-11).
