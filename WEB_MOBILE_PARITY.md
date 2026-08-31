@@ -552,3 +552,97 @@ and now pets. That gap is wider than pets and is worth its own pass.
   number); host bookings use `/host/booking-history` rather than the paginated
   `/host/bookings/search`; `switchMode` exists on `AuthController` and nothing
   calls it, matching the website, which also no longer offers a mode switch.
+
+---
+
+## 2026-09-01 — validation, alignment and host pass
+
+### Names were being corrupted on both platforms
+
+`nameOnly`/`placeOnly` (web) and `name`/`place` (app) allowed `\p{L}` and
+stripped the rest. In Devanagari a vowel sign is a combining **mark** (Mn), not
+a letter — so **सुमित was silently rewritten to समत**. The app's filters were
+`[A-Za-z]`-only on top of that, refusing non-Latin names outright.
+
+This is the worst shape a bug can take. The result is still letters: it passes
+the validator, saves cleanly to utf8mb4, renders with no mojibake box, and is
+simply a **different name** — visible only to someone who reads the script. It
+reached every name and place field on both platforms.
+
+It surfaced only because a test case was written with a real Devanagari name.
+`\p{L}` reads as obviously correct, and no amount of typing Latin names would
+ever have shown it.
+
+### Keystroke filtering
+
+| Surface | Was | Now |
+|---|---|---|
+| Web `SchemaField` (whole listing wizard) | raw value, no cap | filtered by field kind; 200 / 2000 char caps |
+| Web `manager_mobile`, `emergency_phone` | `.replace(/\D/g,"")` + maxLength 10 | `mobileOnly` — a pasted `+91 98765 43210` no longer truncates to the wrong number |
+| Web offer percent/price | `type="number" min/max`, raw handler | `pctOnly` clamped to the server's 1–90 |
+| Web payout account no. / IFSC | whitespace-strip only | digits / alphanumeric |
+| App traveller name·phone·email·age | **no formatters at all** | typed per field (web already filtered all four) |
+| App counter-offer price | numeric keyboard only | `AppInputFormatters.amount` |
+
+`keyboardType` and `inputMode` decide which keys are *shown*. A paste, a
+hardware keyboard and most swipe keyboards ignore them.
+
+The backend now labels schema text fields with `kind` (`emergency_contact` →
+phone, `property_age`/`upload_speed` → digits). It is optional and additive —
+the web wizard infers from key and label when it is absent, so a cached schema
+is still filtered.
+
+### Host portal
+
+- **Dashboard "Upcoming Stays" badged from dates alone**, so an unapproved
+  booking read "Staying now" once its window opened — the third home of the
+  fault `lib/bookingStatus.ts` exists to end. Nothing was mis-badged on
+  production the day it was found, which is exactly why looking at the screen
+  did not catch it.
+- **Earnings had a "Booking" column that could never fill**: `tbl_payouts` has
+  no booking column and the controller hardcoded `booking_id: null`. A payout
+  settles a **period**, which the table now shows.
+- **`po_failure_reason` reached the host at last.** It was added to the API,
+  the row type and the service mapper — then dropped in the component, one step
+  short of being read. A host saw "FAILED" with no way to tell whether to fix
+  their bank details or wait. The Redux path would have dropped it a second time.
+
+### A host was being billed for cancelled stays
+
+`hostDues.voidFor` was wired into **one** of the three ways a booking dies:
+
+| path | voided the due? |
+|---|---|
+| guest cancels | yes |
+| host cancels | **no** |
+| no-show | **no** |
+
+Both now void inside the existing transaction. Measured on production before
+the fix: **9 PENDING dues on cancelled bookings, ₹21,361, across 2 hosts** —
+for host 100, ₹9,330 of the ₹10,465 the Settlements screen demanded.
+
+The no-show case is the plainest: a due exists only on pay-at-property, where
+the host remits out of cash the guest hands over on arrival. Nobody arrived, so
+there is nothing to remit.
+
+The test that covered this asserted `voidFor` appeared *somewhere* in the file,
+which one call satisfied while two paths were missing. It now checks each
+cancelling function separately, and that the void runs before the commit.
+
+**The 9 existing rows still need voiding** — a write to a money table, left for
+a person to authorise.
+
+### Reconciled, not defects
+
+Statements (₹87,037 + ₹7,901 + ₹9,876) = Earnings total ₹1,04,814.16.
+Bookings tabs 5 + 7 + 18 = 30. Settlements "payable now ₹0" and "₹10,465 falls
+due" both match `tbl_host_dues`; the Earnings banner's ₹15,390 / 4 stays
+matches the ledger. The two figures count **different things** — the host's
+earning on uncollected stays vs the commission owed on them — so they are
+expected to differ.
+
+### Not touched, deliberately
+
+`src/redesign/pages/host/AddProperty.tsx` and
+`src/pages/admin/properties/form.tsx` both hold unvalidated inputs and are
+unreachable — nothing routes to either. They want deleting, not hardening.
