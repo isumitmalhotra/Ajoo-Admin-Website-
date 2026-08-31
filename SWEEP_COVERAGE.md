@@ -493,9 +493,53 @@ or hand to an accountant.
 Found by scanning for raw interpolation across the app rather than screen by
 screen, after the invoice list showed it. Most other hits were already fine.
 
+| host Payouts | ok; ₹30,333 pending and ₹1,04,814 earned match the web |
+| host Bank Account | **FIXED** — IFSC would not upper-case |
+| host Notifications | ok; 68 unread, real booking events |
+| host Support | ok — see the Gmail note below |
+| host Add Property (wizard) | **FIXED** — took names the server refuses |
+| guest Saved | ok, correct empty state |
+| guest Search + results | ok; autocomplete, LUX toggle, category rail |
+| guest Property detail | ok; **₹3,200/night, ₹3,360 total incl. taxes** — the money rule exactly |
+
+### The listing wizard took names the server would refuse
+
+**This is the original complaint, reproduced.** The field prints its rule
+directly above itself — "Use 5-80 characters. Letters, numbers, spaces and only
+& or -" — and accepted `Test@#Villa123-Pine\&Co` on the device, backslash
+included. The host found out on submit that the sentence above the box had been
+true all along.
+
+Nothing bad was ever stored: `listingEngine.controller validatePropertyName()`
+is the real gate. Fixed on **both platforms in the same pass**, held to exactly
+the server's `/^[A-Za-z0-9 &-]+$/`. Deliberately ASCII, unlike the human-name
+filter — filtering to something the server will REJECT would be worse than not
+filtering, and both comments say to widen them together if that rule moves.
+
+### The IFSC field would not look like an IFSC
+
+It relied on `TextCapitalization.characters`, which only asks the keyboard to
+show capitals and does not transform what arrives. A host typing their code
+watched "hdfc0001234" appear in a field whose own hint reads "HDFC0001234".
+Never a data fault — the value is upper-cased on submit — just a field that
+refused to look like the thing it wanted. It also fixes the formatter ORDER:
+the length limit ran before the character filter, so punctuation counted
+against the eleven characters an IFSC is allowed.
+
+The two fields either side of it were already correct: "Sumit123@#Malhotra"
+became "SumitMalhotra" and the account number took digits only.
+
+### Noted, not changed
+
+- Host Support lists **aajoolive@gmail.com** as "Property management support".
+  A Gmail address is a trust signal on a marketplace hosts entrust money to.
+- The property-detail header collides with the status-bar clock when scrolled.
+- The login screen reads "Log in to continue to your stays" with **Host**
+  selected.
+- The test guest avatar is a real photo of the repo owner.
+
 ### Still to sweep on the app
 
-Host: payouts, boost, notifications, bank account, support, settings, the
-listing wizard. Guest: saved, messages, negotiations, property detail,
-checkout, reviews, blog, safety. Common: about, faq, refer, settings, terms,
-privacy, update-profile.
+Host: boost, settings, refer. Guest: messages, negotiations, checkout,
+reviews, blog, safety. Common: about, faq, refer, settings, terms, privacy,
+update-profile.
