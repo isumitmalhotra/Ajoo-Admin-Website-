@@ -7,6 +7,7 @@ import 'package:rent_home/models/negotiated_deal.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/ui/screens_renter/property_details/open_property.dart';
 import 'package:rent_home/utils/money.dart';
+import 'package:rent_home/utils/input_sanitizers.dart';
 
 /// The guest's own view of every price negotiation they are in.
 ///
@@ -191,6 +192,9 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
             TextField(
               controller: priceCtl,
               keyboardType: TextInputType.number,
+              // The web's CounterOfferDialog filters this with decimalOnly.
+              // Here only the keyboard was numeric, which a paste ignores.
+              inputFormatters: AppInputFormatters.amount,
               decoration: InputDecoration(
                 hintText: (n.latestPrice * 0.92).round().toString(),
                 border: OutlineInputBorder(

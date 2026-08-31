@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/models/traveller_model.dart';
@@ -546,12 +548,26 @@ class _AddTravellerSheetState extends State<_AddTravellerSheet> {
     );
   }
 
+  /// keyboardType is a hint about which keys to SHOW, not a rule about which
+  /// characters may arrive: a paste, a hardware keyboard or a swipe keyboard
+  /// all ignore it. These four fields had nothing else, so the app accepted
+  /// traveller names with digits and phone numbers with letters where the web
+  /// form (redesign/components/TravellerPicker.tsx) filtered all four.
   Widget _field(TextEditingController c, String label, TextInputType type) => Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: TextField(
           controller: c,
           keyboardType: type,
+          inputFormatters: _formattersFor(type),
           decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
         ),
       );
+
+  List<TextInputFormatter> _formattersFor(TextInputType type) {
+    if (type == TextInputType.name) return AppInputFormatters.name;
+    if (type == TextInputType.phone) return AppInputFormatters.mobile;
+    if (type == TextInputType.emailAddress) return AppInputFormatters.email;
+    if (type == TextInputType.number) return AppInputFormatters.digits(3);
+    return const [];
+  }
 }

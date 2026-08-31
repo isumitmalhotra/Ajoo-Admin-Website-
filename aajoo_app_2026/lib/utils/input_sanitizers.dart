@@ -12,15 +12,25 @@ import 'package:flutter/services.dart';
 class AppInputFormatters {
   AppInputFormatters._();
 
-  /// Person names: letters, spaces, dot, apostrophe, hyphen. No digits ever.
+  /// Person names: letters in ANY script, spaces, dot, apostrophe, hyphen.
+  ///
+  /// These were [A-Za-z] only, which silently refused every name not written
+  /// in the Latin alphabet — a guest typing their name in Devanagari watched
+  /// the field stay empty. The web has always used \p{L} here, and the
+  /// messages table was widened to utf8mb4 in the same week precisely so those
+  /// names could be stored, so the app was the only thing still refusing them.
+  ///
+  /// \p{M} matters as much as \p{L}: a Devanagari vowel sign is a combining
+  /// MARK, so a letters-only filter deletes it and turns "सुमित" into "समत" —
+  /// a different name that passes every validator. The web had the same gap.
   static List<TextInputFormatter> get name => [
-        FilteringTextInputFormatter.allow(RegExp(r"[A-Za-z .'’-]")),
+        FilteringTextInputFormatter.allow(RegExp(r"[\p{L}\p{M} .'’-]", unicode: true)),
         LengthLimitingTextInputFormatter(100),
       ];
 
   /// Place names (city/town/locality): letters + a few separators.
   static List<TextInputFormatter> get place => [
-        FilteringTextInputFormatter.allow(RegExp(r"[A-Za-z .'’()&-]")),
+        FilteringTextInputFormatter.allow(RegExp(r"[\p{L}\p{M} .'’()&-]", unicode: true)),
         LengthLimitingTextInputFormatter(80),
       ];
 
