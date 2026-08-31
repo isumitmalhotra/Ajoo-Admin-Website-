@@ -421,14 +421,28 @@ match up.
   summary endpoints. Totals agree — that was checked — but it pulls every booking
   to show one number.
 
-### Unresolved, and stated as such
+### Resolved after this document was first written
 
-- **A possible encoding fault.** A replacement character appears in stored
-  negotiation text. It may be data written badly during testing rather than a
-  live fault: the database connection sets no charset, and whether the columns
-  are `utf8mb4` **could not be verified** because the live database is not
-  reachable from the development machine. Worth one look before go-live given
-  Hindi content.
+- **The encoding question — checked, and it found something else.** The
+  replacement character turned out to be **ours**: the stored bytes are
+  `EF BF BD`, U+FFFD itself, in columns that are `utf8mb4` and would have taken
+  an em-dash. All twelve affected rows read *"automated verification … not a
+  real stay"* — our own test text, mangled by the shell that wrote it before it
+  reached the database.
+
+  The check turned up a real fault that was not the one being looked for.
+  **`tbl_messages.message` — guest ⇄ host chat — was `utf8mb3`,** three-byte
+  UTF-8. Devanagari fits in three bytes, so Hindi always worked and this
+  survived every round of testing; an emoji is four, and with
+  `STRICT_TRANS_TABLES` MySQL refuses the row rather than truncating it. A guest
+  sending *"Thanks! See you soon 😊"* had the write rejected — and the socket
+  handler caught the error and emitted `messageSent`, **the success event**, so
+  they were told it had been delivered.
+
+  Both halves are fixed: the table is converted (migration applied to the live
+  database; emoji, Hindi and mixed text now round-trip byte-exact) and a failed
+  send emits a distinct `messageFailed` carrying the text back.
+  `scripts/checkTextEncoding.js` re-checks the live schema on demand.
 
 ---
 
