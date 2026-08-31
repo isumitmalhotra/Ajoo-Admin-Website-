@@ -29,7 +29,7 @@ per the standing parity rule.
 
 ---
 
-## Web — Admin (9 / 56)
+## Web — Admin (30 / 56)
 
 | # | Route | API | VIS | Notes |
 |---|---|---|---|---|
@@ -42,7 +42,27 @@ per the standing parity rule.
 | 7 | /admin/listing-queue | x | x | 1 row |
 | 8 | /admin/analytics | x | x | 12 rows |
 | 9 | /admin/booking-analytics | x | x | 12 rows |
-| 10 | /admin/property-analytics | ? | ? | **RE-TEST NEEDED** - read as blank, but the whole site was down at that moment (see below) |
+| 11 | /admin/payments | x | x | 13 rows |
+| 12 | /admin/negotiations | x | x | 24 rows |
+| 13 | /admin/reviews | x | x | 2 rows |
+| 14 | /admin/disputes | x | x | 19 rows |
+| 15 | /admin/finance | x | x | Revenue matches the DB exactly |
+| 16 | /admin/finance/host-dues | x | ~ | Shows the 21,361 of bad dues; backfill script written, not run |
+| 17 | /admin/finance/ledgers | x | x | 10 rows |
+| 18 | /admin/finance/payouts | x | x | 10 rows |
+| 19 | /admin/finance/invoices | x | x | 10 rows |
+| 20 | /admin/finance/reconciliation | x | x | 10 rows |
+| 21 | /admin/finance/reports/revenue | x | x | 3 rows |
+| 22 | /admin/categories | x | x | 14 rows |
+| 23 | /admin/amenities | x | x | 39 rows |
+| 24 | /admin/tags | x | x | 4 rows |
+| 25 | /admin/offers | x | x | 4 rows |
+| 26 | /admin/coupons | x | x | 20 rows |
+| 27 | /admin/blogs | x | x | 8 rows |
+| 28 | /admin/support | x | x | 0 tickets |
+| 29 | /admin/contact-messages | x | x | 0 messages |
+| 30 | /admin/settings | x | x | renders |
+| 10 | /admin/property-analytics | x | x | **Re-tested: fine, 20 rows.** The earlier blank was the outage |
 
 ---
 
@@ -81,3 +101,34 @@ site recovered ~80s later.
 and read as a blank page. It looked exactly like a real white-screen bug. It
 was the outage. Any "blank page" reading has to be checked against whether the
 bundle actually loaded before it is written down as a defect.
+
+---
+
+## The finding that outranks everything else in this sweep
+
+**29,230 of 29,248 listings have no photograph. 29,232 of them are ACTIVE.**
+
+| | |
+|---|---|
+| Properties (not deleted) | 29,248 |
+| Active, visible to guests | 29,232 |
+| With any photo | **18** (0.062%) |
+| Without | **29,230** |
+
+Confirmed guest-side, not just in the tables: `POST /properties/search` returns
+`coverImage: null, images: []` for seeded listings. (That endpoint requires
+latitude and longitude — it 400s without them.)
+
+Found while checking why the admin listing table drew a placeholder on every
+row. The missing `coverImage` field was real and is fixed, but it turned out to
+be the smaller half: the field is now returned and there is almost nothing to
+put in it.
+
+This is a **content** blocker, not an engineering one, and it is the single
+biggest launch risk on the list. It should not be "fixed" by reinstating a
+stock-photo fallback — that was removed deliberately, because a stock image on
+a real listing is a lie and it made every listing look like the same cottage.
+The honest placeholder is what makes the gap visible.
+
+Note for whoever sources the images: the last attempt to attach photos to the
+seeded corpus published a real person's CV as a property photo.
