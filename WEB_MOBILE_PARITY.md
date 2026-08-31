@@ -508,17 +508,29 @@ have their own cap, `pc_max_pets`.
 | Piece | Backend | Web | App |
 |---|---|---|---|
 | Policy loaded + priced (`petFeeFor`) | ✅ | — | — |
-| `/pricing/quote` takes `pets`, returns `petFee` + policy | ✅ | ✅ | ⬜ |
-| Booking refuses a pet where the host says no / over cap | ✅ | ✅ | ⬜ |
-| Count + fee snapshotted on the booking | ✅ | ✅ | ⬜ |
-| Pet-friendly search filter | ✅ both endpoints | ✅ | ⬜ |
-| Policy on every card + on the detail | ✅ all three endpoints | ✅ | ⬜ |
-| Pets stepper, gated + capped + priced | — | ✅ | ⬜ |
-| Fee as its own itemised line | — | ✅ | ⬜ |
-| Host form: cap + "per pet, per night" label | ✅ | ✅ | ⬜ |
+| `/pricing/quote` takes `pets`, returns `petFee` + policy | ✅ | ✅ | ✅ |
+| Booking refuses a pet where the host says no / over cap | ✅ | ✅ | ✅ |
+| Count + fee snapshotted on the booking | ✅ | ✅ | ✅ |
+| Pet-friendly search filter | ✅ both endpoints | ✅ | ✅ |
+| Policy on every card + on the detail | ✅ all three endpoints | ✅ | ✅ |
+| Pets stepper, gated + capped + priced | — | ✅ | ✅ |
+| Fee as its own itemised line | — | ✅ | ✅ |
+| Host form: cap + "per pet, per night" label | ✅ | ✅ | ✅ |
 
-Verified on production: `₹5,000 × 2 nights = ₹10,000` + `2 pets × ₹200 × 2
-nights = ₹800` + `GST 5% = ₹540` → **₹11,340**, identical to the API.
+Verified on production, **web**: `₹5,000 × 2 nights = ₹10,000` + `2 pets × ₹200
+× 2 nights = ₹800` + `GST 5% = ₹540` → **₹11,340**, identical to the API.
+
+Verified on the **device**: the stepper renders with "₹200 per pet, per night",
+the `+` greys out at the host's cap of 2, and the sheet reads Base ₹5,000 +
+"2 pets × ₹200 × 1 night" ₹400 + GST ₹270 = **₹5,670**, with the 10% advance
+(₹567) computed on the pet-inclusive total. The app's search toggle is the one
+piece not driven on a device — the emulator's tap chain kept drifting into
+Android Settings — but it sets a parameter proven end to end against the live
+API.
+
+**Also found while there:** the app's Advanced filters were radius + weekly +
+monthly price only. The website has price range, property type, guest rating
+and now pets. That gap is wider than pets and is worth its own pass.
 
 > **Three endpoints describe one policy, and I patched them one at a time.**
 > The filter went onto `/properties/list` (the app's) and not
