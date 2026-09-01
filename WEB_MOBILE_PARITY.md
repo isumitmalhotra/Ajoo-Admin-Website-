@@ -646,3 +646,61 @@ expected to differ.
 `src/redesign/pages/host/AddProperty.tsx` and
 `src/pages/admin/properties/form.tsx` both hold unvalidated inputs and are
 unreachable — nothing routes to either. They want deleting, not hardening.
+
+---
+
+## 2026-09-01 (later) — the app sweep
+
+Findings from ~33 app screens, after the web sweep closed. Full detail in
+`SESSION_HANDOFF_2026-09-01.md`; this records only what is genuinely
+*cross-platform*.
+
+### The same field, formatted on one side and not the other
+
+`property_price`, `pay_amount`, `security_deposit` and the booking dates all
+arrive as **strings** (`"67200.00"`, `"7-10-2026"`). The guest screens format
+them; the host screens interpolated them raw.
+
+| | guest | host, before |
+|---|---|---|
+| property price | `rupeesFrom(...)` | `₹3200.00` |
+| payment amount | — | `₹67200.00`, **including the PDF invoice** |
+| stay dates | `_stayRange()` | `06-10-2026 → 7-10-2026` |
+
+Nine money sites and the date range fixed. Both formatters now live in shared
+utils (`money.dart`, `stay_clock.dart`) so the two portals cannot drift again.
+
+### Fixed on both platforms in one pass, per the standing rule
+
+**The listing wizard accepted names the server refuses.** Both wizards printed
+the rule above the field — "Letters, numbers, spaces and only & or -" — and
+took `Test@#Villa123-Pine\&Co`. Both now filter to exactly the server's
+`/^[A-Za-z0-9 &-]+$/`.
+
+Deliberately ASCII, unlike the human-name filter: this mirrors a **server rule**
+rather than a name, and filtering to something the server will reject is worse
+than not filtering. Both comments say to widen them together if that rule moves.
+
+### One platform already had it right
+
+The **payout failure reason** was shown on the app all along and dropped on the
+web — the reverse of the usual direction. The web now shows it too.
+
+### Parity confirmed by cross-checking, not by reading either alone
+
+The **ongoing-stays** bug was invisible from any single surface: the guest app
+showed the stay under Ongoing with "Staying now", the web host dashboard agreed,
+and only the app's host dashboard reported zero. `book_status IN (4,5,6)` was
+missing **8 = "Booking Confirmed"**.
+
+Money now agrees across all three surfaces for the same booking — guest app,
+host app and host web all read **₹6,720** for B794077.
+
+### Still app-only, still open
+
+- The app ignores the `verificationRequired` flag the booking endpoint returns,
+  so an unverified guest is told why they cannot book and must find Profile
+  themselves. The web has no equivalent gap because it launches KYC from
+  checkout.
+- The app's Settings reports a hardcoded "Version 1.0.0"; the web has no
+  equivalent surface.
