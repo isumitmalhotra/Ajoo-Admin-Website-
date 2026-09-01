@@ -61,7 +61,17 @@ class MapService {
     if (petsAllowed) data["petsAllowed"] = true;
     if (from != null && from.isNotEmpty) data["from"] = from;
     if (to != null && to.isNotEmpty) data["to"] = to;
-    if (isLuxury == true) data["isLuxury"] = 1;
+    // 0, not omitted, when LUX is off.
+    //
+    // LUX and normal are mutually exclusive views of the catalogue (client
+    // decision, 2026-09-01): LUX shows only what a host or admin marked
+    // luxury, normal shows only what they did not. Omitting the key asked the
+    // server for everything, so LUX stays appeared in normal browsing — the
+    // same fault the website had, reported by a tester (#17).
+    //
+    // Left absent only when the caller passes null, which still means "no
+    // opinion" for any internal caller that has none.
+    if (isLuxury != null) data["isLuxury"] = isLuxury == true ? 1 : 0;
 
     // Radius goes over the wire as a NUMBER, and is omitted when blank.
     // Sending the empty string made the API answer "no record found" for
