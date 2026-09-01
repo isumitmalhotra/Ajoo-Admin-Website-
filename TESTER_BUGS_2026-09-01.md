@@ -14,7 +14,8 @@
 | **Product decision — client ruled LUX must be exclusive** | 1 | #17 |
 | **Could not reproduce** | 1 | #11 |
 | **Previously resolved** (our earlier fixes, per the sheet's own comments) | 5 | #1, #4, #5, #6, #7 |
-| **Needs a visual pass** | 4 | #3, #10, #13, #14 |
+| **Fixed in the visual pass** | 3 | #3, #13, #14 |
+| **Needs a provider decision (not a code fix)** | 1 | #10 |
 
 ---
 
@@ -146,14 +147,83 @@ Pool House, #11 closes with #16.
 
 ---
 
-## Needs a visual pass
+## The visual pass — #3, #13, #14 fixed and verified; #10 is a decision
 
-| # | Item | Note |
+### #3 · Map price markers overlap — FIXED
+Every point drew its own chip with no collision handling, so a dense area became
+a wall of unreadable pills. Pins are now grouped in projected pixel space at the
+current zoom; a group draws one "N stays" bubble and clicking it zooms to its
+bounds. Chips are also centred on their coordinate — with a 0x0 icon and a 0,0
+anchor they hung off to the bottom-right of the point they marked.
+
+Verified live by driving the map through four zoom levels:
+
+| Zoom | Markers | What is drawn |
 |---|---|---|
-| 3 | Map price markers overlap | Needs clustering/collision handling; confirm at the reported zoom |
-| 10 | Incorrect India map outline | Almost certainly the **tile provider's** boundary rendering, not our code. If so the fix is a provider/tile choice, and it matters — an incorrect India boundary is a legal and credibility issue |
-| 13 | Admin login unreadable text | Confirm which element; the login page was otherwise reworked today |
-| 14 | Send Offer date/offer UI misaligned | Reproduce on the guest offer sheet |
+| 9 | 3 | "50 stays", "49 stays", one price |
+| 12 | 4 | "49", "38", "12 stays", one price |
+| 15 | 18 | mostly "5 stays" |
+| 18 | **100** | every stay showing its own price |
+
+Nothing overlaps at any level, and all 100 results resolve individually at
+street zoom. The counts are real clustering, not coincidence: the corpus holds
+**29,232 listings across 28,657 distinct coordinates**, at most 4 on any single
+point — so a group of 50 is genuinely 50 separate places too close to draw apart
+at that zoom.
+
+### #13 · Admin login unreadable text — FIXED
+`index.css` carries a bare element rule, `h1..h5 { color: var(--dark) }`. A
+direct rule beats an inherited one, so **"Admin Console" rendered near-black on
+the navy panel that sets `color:#fff` — about 1.03:1**, which is what the tester
+read as unreadable. That panel's headings now inherit its colour.
+
+Separately, "Admin Login" painted a **solid** colour through
+`background-clip:text` with a transparent text-fill. Clipping a solid colour
+cannot look different from simply setting it, but it can fail — and the failure
+mode is an invisible heading. Property Verification had the same transparent
+fill with no fallback colour; it has one now.
+
+Verified live: both headings measure **15.11:1**, comfortably past WCAG AAA, and
+the text-fill is a real colour rather than transparent.
+
+> Worth knowing: that global heading rule means **any** heading placed on a dark
+> background anywhere in the app will render dark-on-dark unless it opts out.
+
+### #14 · Send Offer date UI misaligned — FIXED
+The calendar is 560px wide and its two month grids have a 250px floor each —
+528px that cannot shrink — inside a modal whose content box is
+**480 − 2×26 = 428px**. It spilled out of the modal.
+
+Added an opt-in `fitParent` for callers that render the calendar in normal flow
+inside a narrow container, and let the month row wrap rather than overflow.
+Absolutely-positioned popovers keep the old behaviour deliberately: their
+containing block is the field they hang off, and 100% of that is far too narrow.
+
+Verified live in the modal: calendar **413px inside the 480px modal**, 26px and
+41px clear of the edges, no sideways scroll, and the second month now sits
+*below* the first instead of outside the box. The admin Bookings calendar got
+the same treatment — its card is 720px so it does not overflow today, but it is
+`width:100%` and would on a narrower screen.
+
+### #10 · Incorrect India map — NOT a code fix
+Confirmed by pulling the raw tiles and looking at them, rather than inferring:
+at **z7 around Ladakh** (`tile.openstreetmap.org/7/91/51.png`) the standard OSM
+raster style draws dashed Line-of-Control and Aksai Chin lines, and labels
+Gilgit-Baltistan under Pakistani administration. That is painted into the
+imagery — no CSS or code change can alter it.
+
+The fix is a different tile provider, and every India-compliant option needs an
+account, so it is a decision rather than something to pick unilaterally:
+
+| Option | Boundaries | Cost | Notes |
+|---|---|---|---|
+| **Mappls / MapmyIndia** | Compliant by law | Free tier | Indian provider; the natural fit for an India-only product |
+| **Mapbox** (`worldview=IN`) | Compliant | Paid above free tier | `mapbox-gl` + `react-map-gl` are **already in package.json**, unused |
+| **Google Maps** (`region=IN`) | Compliant | Needs billing | `@react-google-maps/api` is **already installed**, unused |
+
+The tile URL had been copy-pasted into **six** components. All six now read one
+definition in `src/redesign/lib/basemap.ts`, so the switch is a one-line change
+plus a key once the provider is chosen.
 
 ---
 
