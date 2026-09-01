@@ -166,7 +166,26 @@ Verified live by driving the map through four zoom levels:
 | 18 | **100** | every stay showing its own price |
 
 Nothing overlaps at any level, and all 100 results resolve individually at
-street zoom. The counts are real clustering, not coincidence: the corpus holds
+street zoom.
+
+**Follow-up — the pins themselves were rendering wrong, and had been all
+along.** A `divIcon` with `iconSize [0,0]` gets an inline `width:0` on its
+wrapper, and a `display:block` child of a zero-width parent resolves to zero
+width too. Every marker's inner div measured **offsetWidth 0** on production, so
+the pill's background and border collapsed to nothing and the label painted
+straight onto the map beside it. The price chips had this too; clustering only
+made it obvious, because a dark teal fill showed "5" in a blob with the word
+"stays" hanging off it.
+
+`width:max-content` sizes each pill to its own text and ignores the wrapper.
+Verified live at the zoom from the report: pills measure 60–71px wide by 28px
+tall, sized to their text, and **every label is contained inside its own pill**
+(`anyZeroWidth: false`, `allContained: true` across every marker at z12, z15 and
+the default view).
+
+> Measuring this needs care: when the Browser pane is hidden the whole Leaflet
+> container reports 0x0 and *every* marker measures zero regardless. Check
+> `.leaflet-container` has a non-zero rect before trusting any marker geometry. The counts are real clustering, not coincidence: the corpus holds
 **29,232 listings across 28,657 distinct coordinates**, at most 4 on any single
 point — so a group of 50 is genuinely 50 separate places too close to draw apart
 at that zoom.
