@@ -2,6 +2,7 @@
 // login_screen.dart). Visual layer only; ALL auth wiring preserved verbatim:
 // AuthController.login() + isHost routing, signup → InfoScreen, forgot password,
 // OptionButton guest/host toggle, validators.
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/ui/screens_common/auth/basic_info/basic_info_screen.dart';
@@ -183,8 +184,27 @@ class _AuthPageState extends State<AuthPage> {
                 right: 0,
                 bottom: 0,
                 child: Container(
+                  // 72% of the screen is the RESTING size, but never more
+                  // than the height actually left.
+                  //
+                  // The old constraint measured 0.72 of the full screen and
+                  // ignored the keyboard. Open one — or turn the phone
+                  // sideways — and the space left is smaller than the card is
+                  // allowed to be, so it grew upwards until "Create your
+                  // account" and the email field were jammed against the top
+                  // of the screen, with the rest clipped and unreachable.
+                  // Reported by a tester as the email field "merging with the
+                  // top section"; reproduced here in landscape.
                   constraints: BoxConstraints(
-                      maxHeight: MediaQuery.of(context).size.height * 0.72),
+                    maxHeight: math.min(
+                      MediaQuery.of(context).size.height * 0.72,
+                      // Leave the brand strip visible so the sheet still reads
+                      // as a sheet rather than a full-screen takeover.
+                      MediaQuery.of(context).size.height -
+                          MediaQuery.of(context).viewInsets.bottom -
+                          96,
+                    ),
+                  ),
                   // The card is pinned to bottom: 0, so its own padding is all
                   // that separates the last row — "Don't have an account?
                   // Sign up" — from the system navigation bar, which draws on
@@ -208,6 +228,10 @@ class _AuthPageState extends State<AuthPage> {
                     ],
                   ),
                   child: SingleChildScrollView(
+                    // So a focused field can scroll clear of the keyboard
+                    // inside the card, rather than the card resizing around it.
+                    padding: EdgeInsets.only(
+                        bottom: MediaQuery.of(context).viewInsets.bottom),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
