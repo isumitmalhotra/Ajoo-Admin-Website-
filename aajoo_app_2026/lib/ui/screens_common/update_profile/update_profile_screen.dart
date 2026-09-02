@@ -22,6 +22,8 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   final AuthController authController = Get.find<AuthController>();
   final CommonController commonController = Get.find<CommonController>();
   final _formKey = GlobalKey<FormState>();
+  /// Lets a failed validation scroll back to the fields it flagged.
+  final _scrollCtrl = ScrollController();
 
   // Form controllers
   final TextEditingController _firstNameController = TextEditingController();
@@ -371,7 +373,38 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   }
 
   Future<void> _updateProfile() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      // Say something, and go to the problem.
+      //
+      // This used to be a bare `return`. The errors render against the FIELDS,
+      // and Last Name and State sit roughly a screen and a half above the
+      // button you just pressed — so from where the user is standing, tapping
+      // Update Profile did nothing at all. That is the "nothing happens"
+      // a tester reported against the profile save; the save was never
+      // attempted. Reproduced on a real account whose Last Name and State
+      // were empty.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Please fill the highlighted fields above.'),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      if (_scrollCtrl.hasClients) {
+        _scrollCtrl.animateTo(
+          0,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOut,
+        );
+      }
+      return;
+    }
 
     try {
       // Ensure doc types are available for mapping existing KYC
@@ -755,6 +788,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           key: _formKey,
           autovalidateMode: AutovalidateMode.onUserInteraction,
           child: SingleChildScrollView(
+            controller: _scrollCtrl,
             // Bottom inset for the system navigation bar.
             //
             // "Update Profile" is the last thing in this column, and the
@@ -946,6 +980,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
 
   @override
   void dispose() {
+    _scrollCtrl.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
     _phoneController.dispose();
