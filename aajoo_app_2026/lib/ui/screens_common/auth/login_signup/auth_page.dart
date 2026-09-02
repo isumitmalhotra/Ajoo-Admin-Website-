@@ -185,7 +185,17 @@ class _AuthPageState extends State<AuthPage> {
                 child: Container(
                   constraints: BoxConstraints(
                       maxHeight: MediaQuery.of(context).size.height * 0.72),
-                  padding: const EdgeInsets.fromLTRB(24, 26, 24, 24),
+                  // The card is pinned to bottom: 0, so its own padding is all
+                  // that separates the last row — "Don't have an account?
+                  // Sign up" — from the system navigation bar, which draws on
+                  // top of it. A fixed 24 left that row underneath the nav
+                  // buttons and untappable. Reported by a tester.
+                  padding: EdgeInsets.fromLTRB(
+                    24,
+                    26,
+                    24,
+                    24 + MediaQuery.of(context).viewPadding.bottom,
+                  ),
                   decoration: const BoxDecoration(
                     color: Colors.white,
                     borderRadius:

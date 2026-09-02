@@ -755,7 +755,20 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           key: _formKey,
           autovalidateMode: AutovalidateMode.onUserInteraction,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            // Bottom inset for the system navigation bar.
+            //
+            // "Update Profile" is the last thing in this column, and the
+            // gesture/3-button bar draws over the bottom of the scroll area —
+            // so the button sat underneath it and could not be tapped without
+            // over-scrolling. Reported by a tester. viewPadding rather than
+            // padding: it keeps its value while the keyboard is open, where
+            // padding collapses to zero.
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              16 + MediaQuery.of(context).viewPadding.bottom,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
