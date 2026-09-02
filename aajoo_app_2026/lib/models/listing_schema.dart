@@ -18,9 +18,17 @@ class Option {
   final String value;
   final String label;
 
+  /// `key` is accepted as well as `value` deliberately.
+  ///
+  /// /listing/schema names the identifier `value` on most lists but `key` on
+  /// houseRuleToggles. Reading only `value` gave all ten house-rule toggles an
+  /// EMPTY id, so they shared one entry in the controller's map: flipping any
+  /// one flipped all ten, and every listing submitted from the app carried its
+  /// house rules under "" rather than under the rule they belonged to.
+  /// Reported by a tester as the UI symptom; the data was wrong too.
   factory Option.fromJson(Map<String, dynamic> j) => Option(
-        value: (j['value'] ?? '').toString(),
-        label: (j['label'] ?? j['value'] ?? '').toString(),
+        value: (j['value'] ?? j['key'] ?? '').toString(),
+        label: (j['label'] ?? j['value'] ?? j['key'] ?? '').toString(),
       );
 
   static List<Option> listFrom(dynamic v) => v is List

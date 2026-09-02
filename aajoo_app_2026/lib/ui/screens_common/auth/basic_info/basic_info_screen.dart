@@ -51,6 +51,15 @@ class _InfoScreenState extends State<InfoScreen> {
   static const List<String> countryCodes = ['+91'];
   static const int minAge = 18;
 
+  /// The most recent date of birth that still satisfies [minAge].
+  ///
+  /// Used for both the wheel's starting position and its upper bound, so the
+  /// picker cannot offer an age the validator will only reject afterwards.
+  static DateTime get _latestAllowedDob {
+    final now = DateTime.now();
+    return DateTime(now.year - minAge, now.month, now.day);
+  }
+
   // Validation regex patterns — the same rules the rest of the platform uses:
   // names may carry . ' -, a PIN cannot start with 0, a mobile starts 6-9.
   static final RegExp _nameRegex = RegExp(r"^[a-zA-Z .'’-]{2,50}$");
@@ -175,7 +184,9 @@ class _InfoScreenState extends State<InfoScreen> {
   // ==================== UI INTERACTION METHODS ====================
 
   Future<void> _selectDate(BuildContext context) async {
-    DateTime selectedDate = DateTime.now();
+    // Seeded with the same date the wheel opens on, so tapping Done without
+    // touching the wheel submits a valid date rather than today.
+    DateTime selectedDate = _latestAllowedDob;
 
     await showCupertinoModalPopup(
       context: context,
@@ -233,9 +244,24 @@ class _InfoScreenState extends State<InfoScreen> {
             Expanded(
               child: CupertinoDatePicker(
                 mode: CupertinoDatePickerMode.date,
-                initialDateTime: DateTime.now(),
+                // Opens on the youngest DATE OF BIRTH that is old enough, not
+                // on today.
+                //
+                // The wheel used to start at today, and `selectedDate` is only
+                // assigned by onDateTimeChanged — which fires only if the wheel
+                // is actually scrolled. Tapping Done without scrolling
+                // therefore submitted TODAY as the date of birth, giving an age
+                // of 0 and "You must be at least 18 years old" on a signup that
+                // was perfectly valid. Trying again worked, because by then the
+                // wheel had been moved. Reported by a tester as "host signup
+                // fails on the first attempt".
+                //
+                // maximumDate carries the same rule, so an under-age date
+                // cannot be chosen at all rather than being rejected after the
+                // fact.
+                initialDateTime: _latestAllowedDob,
                 minimumDate: DateTime(1900),
-                maximumDate: DateTime.now(),
+                maximumDate: _latestAllowedDob,
                 onDateTimeChanged: (DateTime newDate) {
                   selectedDate = newDate;
                 },
