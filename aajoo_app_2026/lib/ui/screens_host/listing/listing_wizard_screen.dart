@@ -846,7 +846,16 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             OptionGroupPicker(
               label: '',
               options: s.scenicViews.options,
-              selected: c.views,
+              // `.toList()`, not `c.views` — do NOT "simplify" this back.
+              //
+              // Obx only subscribes to observables READ WHILE ITS BUILDER
+              // RUNS. Handing the RxList itself to a child widget reads
+              // nothing here; the `.contains()` then happens later, inside
+              // OptionGroupPicker's own build, where nothing is listening. So
+              // tapping a view updated the list and repainted nothing, and the
+              // pills looked dead (APP #10). Every other picker on this page
+              // reads its selection inline, which is why only this one broke.
+              selected: c.views.toList(),
               onToggle: (v) => c.toggleIn(c.views, v),
             ),
           ],
