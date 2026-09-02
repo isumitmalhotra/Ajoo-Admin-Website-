@@ -297,9 +297,19 @@ class SchemaFieldInput extends StatelessWidget {
 
   Widget _text({bool numeric = false, int maxLines = 1}) {
     return _SchemaTextField(
-      // Rebuild the controller when the field or its incoming value changes
-      // identity — e.g. when a draft loads over an empty form.
-      key: ValueKey('${field.key}:${value ?? ''}'),
+      // Keyed on the FIELD, never on its value.
+      //
+      // The value used to be part of this key, to pick up a draft loading over
+      // an empty form. But the value also changes on every keystroke — so
+      // typing gave the widget a new identity, Flutter threw away its State,
+      // its controller and its focus, and built a fresh one. The character
+      // landed (the replacement was seeded with it) and everything after it
+      // was swallowed, because there was no longer a focused field to receive
+      // it. Measured on device: tap, type "1500", and the field holds "1".
+      //
+      // The draft case is handled where it belongs — didUpdateWidget below,
+      // which can tell an outside change from the host's own typing.
+      key: ValueKey(field.key),
       initial: (value ?? '').toString(),
       numeric: numeric,
       maxLines: maxLines,
@@ -334,9 +344,29 @@ class _SchemaTextField extends StatefulWidget {
 class _SchemaTextFieldState extends State<_SchemaTextField> {
   late final TextEditingController _c =
       TextEditingController(text: widget.initial);
+  final FocusNode _focus = FocusNode();
+
+  /// Adopt a value that arrived from OUTSIDE this field.
+  ///
+  /// A draft loading over an empty form, or the wizard clearing a field, both
+  /// arrive as a changed `initial` while the host is not typing. Those should
+  /// replace what is in the box.
+  ///
+  /// While the field HAS focus they must not, because then the new `initial`
+  /// is simply an echo of the host's own keystroke coming back around, and
+  /// assigning it would reset the cursor to the start of the text mid-word.
+  @override
+  void didUpdateWidget(covariant _SchemaTextField old) {
+    super.didUpdateWidget(old);
+    if (!_focus.hasFocus && widget.initial != _c.text) {
+      _c.text = widget.initial;
+      _c.selection = TextSelection.collapsed(offset: _c.text.length);
+    }
+  }
 
   @override
   void dispose() {
+    _focus.dispose();
     _c.dispose();
     super.dispose();
   }
@@ -345,6 +375,7 @@ class _SchemaTextFieldState extends State<_SchemaTextField> {
   Widget build(BuildContext context) {
     return TextField(
       controller: _c,
+      focusNode: _focus,
       maxLines: widget.maxLines,
       keyboardType: widget.numeric
           ? const TextInputType.numberWithOptions(decimal: true)
