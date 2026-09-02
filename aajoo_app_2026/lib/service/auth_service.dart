@@ -8,6 +8,7 @@ import '../models/update_user_model.dart';
 import '../models/user_models.dart';
 import 'package:rent_home/utils/secure_store.dart';
 import 'package:rent_home/data/ApiConstants.dart';
+import 'package:rent_home/utils/upload_media_type.dart';
 
 class AuthService {
   final Dio _dio = Dio();
@@ -202,6 +203,7 @@ class AuthService {
         fields['user_id_doc'] = await MultipartFile.fromFile(
           idDoc.path,
           filename: idDoc.path.split('/').last,
+          contentType: mediaTypeForPath(idDoc.path),
         );
       }
       final formData = FormData.fromMap(fields);
@@ -335,6 +337,7 @@ class AuthService {
           await MultipartFile.fromFile(
             request.idDoc!.path,
             filename: request.idDoc!.path.split('/').last,
+            contentType: mediaTypeForPath(request.idDoc!.path),
           ),
         ));
       }
@@ -401,6 +404,7 @@ class AuthService {
         'user_id_doc': await MultipartFile.fromFile(
           userIdDoc.path,
           filename: userIdDoc.path.split('/').last,
+          contentType: mediaTypeForPath(userIdDoc.path),
         ),
       });
 

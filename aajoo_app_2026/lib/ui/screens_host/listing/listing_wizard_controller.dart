@@ -499,11 +499,15 @@ class ListingWizardController extends GetxController {
 
     // A seasonal property has to say which months it is open, or the calendar
     // has no idea when it can be booked (W5 · LP-P0-07).
+    //
+    // Read [seasonalMonths], NOT `f['seasonal_months']`. The month pills write
+    // to the list; `f` never receives that key — loading a draft deliberately
+    // moves it OUT of `f` (see hydrate), and it is only folded into the
+    // payload at submit. So this check used to read a key that was guaranteed
+    // absent and rejected every seasonal property however many months were
+    // lit up on screen, which is no listing at all rather than a wrong one.
     if (_s(f['property_status']) == 'seasonal') {
-      final months = f['seasonal_months'];
-      final named = months is Iterable
-          ? months.where((m) => _s(m).isNotEmpty).length
-          : 0;
+      final named = seasonalMonths.where((m) => _s(m).isNotEmpty).length;
       if (named == 0) {
         errs['seasonal_months'] = 'Choose the months this property is open';
       }

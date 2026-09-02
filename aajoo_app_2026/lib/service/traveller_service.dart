@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/data/source/remote/dio_config.dart';
 import 'package:rent_home/models/traveller_model.dart';
+import 'package:rent_home/utils/upload_media_type.dart';
 
 /// Saved travellers — the people an account books stays for.
 ///
@@ -111,7 +112,10 @@ class TravellerService {
     final form = FormData.fromMap({
       'id': id,
       if (docType != null && docType.isNotEmpty) 'docType': docType,
-      'document': await MultipartFile.fromFile(filePath),
+      'document': await MultipartFile.fromFile(
+        filePath,
+        contentType: mediaTypeForPath(filePath),
+      ),
     });
     final res = await _dio.post('/guest-profiles/document', data: form, options: await _auth());
     final body = res.data;

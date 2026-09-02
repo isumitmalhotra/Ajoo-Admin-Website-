@@ -8,6 +8,7 @@ import 'package:rent_home/models/single_property_response.dart';
 import 'package:rent_home/models/host_profile.dart';
 import 'package:rent_home/models/destination_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
+import 'package:rent_home/utils/upload_media_type.dart';
 
 class PropertyService {
   /// Why the last addProperties call failed, straight from the server.
@@ -62,6 +63,7 @@ class PropertyService {
                 .map((file) async => await MultipartFile.fromFile(
                       file.path,
                       filename: file.path.split('/').last,
+                      contentType: mediaTypeForPath(file.path),
                     ))
                 .toList())
             : null,
@@ -71,6 +73,7 @@ class PropertyService {
               .map((file) async => await MultipartFile.fromFile(
                     file.path,
                     filename: file.path.split('/').last,
+                    contentType: mediaTypeForPath(file.path),
                   ))
               .toList()),
       });
@@ -188,6 +191,7 @@ class PropertyService {
         "property_img": await MultipartFile.fromFile(
           imageFile.path,
           filename: imageFile.path.split('/').last,
+          contentType: mediaTypeForPath(imageFile.path),
         ),
       });
 

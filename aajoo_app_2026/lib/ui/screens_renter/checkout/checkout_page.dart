@@ -14,6 +14,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:lottie/lottie.dart';
 import 'package:rent_home/data/ApiConstants.dart';
+import 'package:rent_home/utils/upload_media_type.dart';
 
 class HotelCheckoutPage extends StatefulWidget {
   const HotelCheckoutPage(
@@ -211,6 +212,7 @@ class _HotelCheckoutPageState extends State<HotelCheckoutPage> {
           await dio.MultipartFile.fromFile(
             selectedImages[i].path,
             filename: selectedImages[i].path.split('/').last,
+            contentType: mediaTypeForPath(selectedImages[i].path),
           ),
         ));
       }

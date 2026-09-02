@@ -16,6 +16,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:rent_home/models/listing_schema.dart';
 import 'package:rent_home/data/ApiConstants.dart';
+import 'package:rent_home/utils/upload_media_type.dart';
 
 /// What went wrong, in words the host can act on.
 class ListingException implements Exception {
@@ -200,7 +201,8 @@ class ListingService {
         form.files.add(MapEntry(
           'files',
           await MultipartFile.fromFile(files[i].path,
-              filename: files[i].path.split(Platform.pathSeparator).last),
+              filename: files[i].path.split(Platform.pathSeparator).last,
+              contentType: mediaTypeForPath(files[i].path)),
         ));
         form.fields.add(MapEntry(
             'categories', i < categories.length ? categories[i] : ''));
@@ -224,7 +226,8 @@ class ListingService {
         'property_id': '$propertyId',
         'kind': 'document',
         'files': await MultipartFile.fromFile(file.path,
-            filename: file.path.split(Platform.pathSeparator).last),
+            filename: file.path.split(Platform.pathSeparator).last,
+            contentType: mediaTypeForPath(file.path)),
       });
       final res = await _dio.post('listing/media/upload',
           data: form, options: await _auth());

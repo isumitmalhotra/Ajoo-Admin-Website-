@@ -10,6 +10,7 @@ import 'package:rent_home/models/ongoing_reponse.dart';
 import 'package:rent_home/models/my_review.dart';
 import 'package:rent_home/models/user_review_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
+import 'package:rent_home/utils/upload_media_type.dart';
 
 class UserService {
   final _dio = Dio();
@@ -158,6 +159,7 @@ class UserService {
         'user_image': await MultipartFile.fromFile(
           imageFile.path,
           filename: imageFile.path.split('/').last,
+          contentType: mediaTypeForPath(imageFile.path),
         ),
       });
 
