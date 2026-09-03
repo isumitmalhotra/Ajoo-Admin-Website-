@@ -193,6 +193,12 @@ class ListingService {
     required int propertyId,
     required List<File> files,
     required List<String> categories,
+    /// One description per file, parallel to files exactly as categories is.
+    ///
+    /// Sending this field at all opts the app into the server's ALT rules: an
+    /// empty or useless value is refused rather than quietly stored. That is
+    /// the point — a gate only on the client is not a gate.
+    List<String> alts = const [],
   }) async {
     try {
       final form = FormData();
@@ -206,6 +212,9 @@ class ListingService {
         ));
         form.fields.add(MapEntry(
             'categories', i < categories.length ? categories[i] : ''));
+        if (alts.isNotEmpty) {
+          form.fields.add(MapEntry('alt', i < alts.length ? alts[i] : ''));
+        }
       }
       final res = await _dio.post('listing/media/upload',
           data: form, options: await _auth());

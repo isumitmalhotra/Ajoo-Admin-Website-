@@ -748,7 +748,11 @@ class ListingWizardController extends GetxController {
 
   // ── Photos ────────────────────────────────────────────────────────────────
 
-  Future<String?> uploadPhotos(List<File> files, String category) async {
+  Future<String?> uploadPhotos(
+    List<File> files,
+    String category, {
+    List<String> alts = const [],
+  }) async {
     final id = propertyId.value;
     if (id == null) return 'Finish step 1 first.';
     uploading.value = true;
@@ -757,6 +761,7 @@ class ListingWizardController extends GetxController {
         propertyId: id,
         files: files,
         categories: List.filled(files.length, category),
+        alts: alts,
       );
       if (res['media'] is List) {
         media.assignAll((res['media'] as List)

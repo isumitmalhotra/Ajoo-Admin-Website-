@@ -1624,17 +1624,215 @@ class _PhotoStep extends StatelessWidget {
   Future<void> _pick(BuildContext context) async {
     final picker = ImagePicker();
     final picked = await picker.pickMultiImage(imageQuality: 82);
-    if (picked.isEmpty) return;
+    if (picked.isEmpty || !context.mounted) return;
+
+    // Asked BEFORE the upload, on purpose. A photo that is already saved is a
+    // photo nobody comes back to describe — that is exactly why the library has
+    // 54 images and no descriptions. The one moment a host is looking at the
+    // picture is the only moment this question gets a real answer.
+    final descriptions = await _describePhotos(context, picked);
+    if (descriptions == null) return; // backed out
+
     final problem = await controller.uploadPhotos(
       picked.map((x) => File(x.path)).toList(),
       // The first photo of an empty listing is its cover; the rest are
       // uncategorised until the host says otherwise on the website.
       controller.media.isEmpty ? 'cover_photo' : '',
+      alts: descriptions,
     );
     if (problem != null && context.mounted) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(problem)));
     }
+  }
+
+  /// One line per picture, with the picture on screen while it is written.
+  ///
+  /// Returns null when the host backs out, which abandons the upload — the
+  /// alternative is uploading without descriptions, and a sheet that can be
+  /// dismissed into the outcome it exists to prevent is decoration.
+  Future<List<String>?> _describePhotos(
+    BuildContext context,
+    List<XFile> picked,
+  ) {
+    final controllers =
+        List.generate(picked.length, (_) => TextEditingController());
+
+    return showModalBottomSheet<List<String>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final media = MediaQuery.of(sheetContext);
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final ready = controllers.every((c) => c.text.trim().isNotEmpty);
+            return Padding(
+              // Ride above the keyboard: this sheet is nothing but text fields,
+              // and one covered by the keyboard cannot be filled in.
+              padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: media.size.height -
+                      media.viewInsets.bottom -
+                      media.padding.top -
+                      12,
+                ),
+                decoration: const BoxDecoration(
+                  color: kSurface,
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: kLine,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      picked.length == 1
+                          ? 'Describe this photo'
+                          : 'Describe these ${picked.length} photos',
+                      style: fraunces(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: kInk),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'One line each, saying what is actually in the picture. '
+                      'It is read aloud to guests using a screen reader, and it '
+                      'is how your photo is found in image search.',
+                      style: inter(fontSize: 12.5, color: kMuted, height: 1.45),
+                    ),
+                    const SizedBox(height: 14),
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: picked.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (_, i) => Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(
+                                File(picked[i].path),
+                                width: 84,
+                                height: 64,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextField(
+                                controller: controllers[i],
+                                onChanged: (_) => setSheetState(() {}),
+                                maxLength: 125,
+                                minLines: 1,
+                                maxLines: 2,
+                                style: inter(fontSize: 14, color: kInk),
+                                decoration: InputDecoration(
+                                  hintText:
+                                      'Stone cottage with a pine forest behind it',
+                                  hintStyle:
+                                      inter(fontSize: 13, color: kMuted),
+                                  isDense: true,
+                                  counterText: '',
+                                  filled: true,
+                                  fillColor: kSand,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 11),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide:
+                                        const BorderSide(color: kLine),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: const BorderSide(
+                                        color: kIndigo, width: 1.5),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(sheetContext),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: kMuted,
+                              side: const BorderSide(color: kLine),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: Text('Cancel',
+                                style: inter(fontWeight: FontWeight.w600)),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton(
+                            // Disabled until every one has something. The server
+                            // decides whether it is any GOOD and names the photo
+                            // if it is not.
+                            onPressed: ready
+                                ? () => Navigator.pop(
+                                      sheetContext,
+                                      controllers
+                                          .map((c) => c.text.trim())
+                                          .toList(),
+                                    )
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kIndigo,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: kMuted,
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: Text(
+                              'Upload ${picked.length} photo${picked.length == 1 ? '' : 's'}',
+                              style: inter(
+                                  fontSize: 14.5, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      for (final c in controllers) {
+        c.dispose();
+      }
+    });
   }
 }
 
