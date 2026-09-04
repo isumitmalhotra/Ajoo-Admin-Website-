@@ -73,6 +73,10 @@ class GuestNegotiation {
   final String? bookFrom;
   final String? bookTo;
 
+  /// Party size the price was struck for. Null on offers made before the
+  /// server stored it — the listing must not invent a number from that.
+  final int? guests;
+
   const GuestNegotiation({
     required this.propertyId,
     required this.propertyName,
@@ -90,6 +94,7 @@ class GuestNegotiation {
     this.canCounter = false,
     this.bookFrom,
     this.bookTo,
+    this.guests,
   });
 
   factory GuestNegotiation.fromJson(Map<String, dynamic> j) {
@@ -118,6 +123,7 @@ class GuestNegotiation {
       canCounter: j['canCounter'] == true,
       bookFrom: _s(j['bookFrom']),
       bookTo: _s(j['bookTo']),
+      guests: j['guests'] == null ? null : _i(j['guests']),
     );
   }
 }

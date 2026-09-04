@@ -2067,6 +2067,7 @@ onPressed: () async {
                       propertyName: _single?.propertyName ?? widget.name,
                       nightlyPrice: currentPrice,
                       initialFrom: selectedDate,
+                      guests: _guests,
                       initialTo: selectedDateTo,
                     );
                     if (!mounted) return;

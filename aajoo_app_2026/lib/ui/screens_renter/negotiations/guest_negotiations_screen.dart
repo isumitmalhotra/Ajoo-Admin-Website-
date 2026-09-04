@@ -84,6 +84,7 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
       dealCode: deal?.code,
       dealFrom: deal?.bookFrom ?? n.bookFrom,
       dealTo: deal?.bookTo ?? n.bookTo,
+      guests: deal?.guests ?? n.guests,
       dealPercent: deal?.percent,
       errorTitle: 'Deal',
     );

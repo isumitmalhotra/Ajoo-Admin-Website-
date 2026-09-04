@@ -60,6 +60,7 @@ class DealsService {
     String? message,
     String? bookFrom,
     String? bookTo,
+    int? guests,
   }) async {
     final token = await const FlutterSecureStorage().read(key: "user_token");
     if (token == null || token.isEmpty) {
@@ -76,6 +77,9 @@ class DealsService {
             'message': message.trim(),
           if (bookFrom != null && bookFrom.isNotEmpty) 'bookFrom': bookFrom,
           if (bookTo != null && bookTo.isNotEmpty) 'bookTo': bookTo,
+          // Declared server-side or stripUnknown drops it — the same way the
+          // dates used to vanish before they were whitelisted.
+          if (guests != null && guests > 0) 'guests': guests,
         },
       );
       final body = res.data;

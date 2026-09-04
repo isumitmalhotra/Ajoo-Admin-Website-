@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/models/properties_response_model.dart';
 import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';
+import 'package:rent_home/ui/screens_renter/home/map/map_controller.dart';
 
 /// Open a stay knowing only its id.
 ///
@@ -20,6 +21,10 @@ Future<void> openPropertyById(
   String? dealCode,
   String? dealFrom,
   String? dealTo,
+  /// Party size the deal was struck for. The listing page seeds its guest
+  /// picker from MapController.stayGuests, so that is where it is put; the
+  /// page then reads it exactly as it would a searched-for party.
+  int? guests,
   double? dealPercent,
   String errorTitle = 'Property',
 }) async {
@@ -63,6 +68,9 @@ Future<void> openPropertyById(
       categories: pd.categories?.map((e) => e.toString()).toList(),
       amenities: pd.amenities?.map((e) => e.toString()).toList(),
     );
+    if (guests != null && guests > 0 && Get.isRegistered<MapController>()) {
+      Get.find<MapController>().stayGuests.value = guests;
+    }
     Get.to(() => PropertyPage(
           property: property,
           price: property.propertyPrice,

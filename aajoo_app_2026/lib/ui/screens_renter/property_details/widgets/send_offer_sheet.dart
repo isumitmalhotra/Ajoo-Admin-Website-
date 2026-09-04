@@ -42,6 +42,7 @@ class SendOfferSheet extends StatefulWidget {
     this.initialFrom,
     this.initialTo,
     this.onAccepted,
+    this.guests,
   });
 
   final int propertyId;
@@ -49,6 +50,9 @@ class SendOfferSheet extends StatefulWidget {
 
   /// The listed nightly rate, shown as the thing being negotiated against.
   final double nightlyPrice;
+  /// The party on the listing page when the offer was made. Travels with the
+  /// offer so the agreed deal can reopen the listing for the same guests.
+  final int? guests;
 
   /// Dates already chosen on the property page, so the guest is not asked
   /// twice for something they have said.
@@ -148,6 +152,7 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
       message: _message.text,
       bookFrom: _api(_from),
       bookTo: _api(_to),
+      guests: widget.guests,
     );
 
     if (!mounted) return;
@@ -466,6 +471,7 @@ Future<bool> showSendOfferSheet(
   required int propertyId,
   required String propertyName,
   required double nightlyPrice,
+  int? guests,
   DateTime? initialFrom,
   DateTime? initialTo,
   VoidCallback? onAccepted,
@@ -481,6 +487,7 @@ Future<bool> showSendOfferSheet(
       initialFrom: initialFrom,
       initialTo: initialTo,
       onAccepted: onAccepted,
+      guests: guests,
     ),
   );
   return result == true;

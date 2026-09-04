@@ -23,6 +23,8 @@ class NegotiatedDeal {
   final DateTime? validTo;
   final String? bookFrom; // DD-MM-YYYY
   final String? bookTo; // DD-MM-YYYY
+  /// Party size the deal was struck for, when the server knows it.
+  final int? guests;
 
   NegotiatedDeal({
     required this.code,
@@ -35,6 +37,7 @@ class NegotiatedDeal {
     this.validTo,
     this.bookFrom,
     this.bookTo,
+    this.guests,
   });
 
   factory NegotiatedDeal.fromJson(Map<String, dynamic> json) {
@@ -56,6 +59,7 @@ class NegotiatedDeal {
       bookTo: (json['bookTo'] == null || json['bookTo'].toString().isEmpty)
           ? null
           : json['bookTo'].toString(),
+      guests: json['guests'] == null ? null : int.tryParse('${json['guests']}'),
     );
   }
 
