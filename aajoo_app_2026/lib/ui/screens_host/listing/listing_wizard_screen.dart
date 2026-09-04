@@ -16,6 +16,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/screens_renter/home/components/lux_theme.dart';
@@ -1106,8 +1107,21 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
               ]),
               _DocumentField(
                 label: 'Identity document',
-                value: c.p5['id_document']?.toString(),
-                onPick: (file) => c.uploadDocument(file, 'id_document'),
+                // 'identity_doc', not 'id_document'. The server reads
+                // b.identity_doc; the old key was silently dropped, so the
+                // upload landed in property_media and never reached
+                // property_verification — the admin then saw "missing".
+                value: c.p5['identity_doc']?.toString(),
+                onPick: (file) => c.uploadDocument(file, 'identity_doc'),
+                typeLabel: 'Document type',
+                typeValue: c.p5['identity_type']?.toString(),
+                typeOptions: const {
+                  'aadhaar': 'Aadhaar Card',
+                  'passport': 'Passport',
+                  'driving_licence': 'Driving Licence',
+                  'voter_id': 'Voter ID',
+                },
+                onType: (v) => c.setP5('identity_type', v),
               ),
             ],
           ),
@@ -1117,8 +1131,24 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
           children: [
             _DocumentField(
               label: 'Ownership proof',
-              value: c.p5['ownership_document']?.toString(),
-              onPick: (file) => c.uploadDocument(file, 'ownership_document'),
+              // 'ownership_doc', not 'ownership_document' — same fault as the
+              // identity field above, and the cause of APP #18 and the admin's
+              // "Ownership document missing" on a listing that had one.
+              value: c.p5['ownership_doc']?.toString(),
+              onPick: (file) => c.uploadDocument(file, 'ownership_doc'),
+              typeLabel: 'Document type',
+              typeValue: c.p5['ownership_doc_type']?.toString(),
+              // The same seven the website offers, same stored values.
+              typeOptions: const {
+                'electricity_bill': 'Electricity Bill',
+                'property_tax': 'Property Tax',
+                'sale_deed': 'Sale Deed',
+                'lease_agreement': 'Lease Agreement',
+                'rent_agreement': 'Rent Agreement',
+                'homestay_registration': 'Homestay Registration',
+                'municipal_record': 'Municipal Record',
+              },
+              onType: (v) => c.setP5('ownership_doc_type', v),
             ),
           ],
         ),
@@ -1885,36 +1915,76 @@ class _Thumb extends StatelessWidget {
 }
 
 /// Pick a file, upload it, and show what was uploaded — never a URL box.
+///
+/// A DOCUMENT picker, not a photo picker. This used ImagePicker, so a host
+/// could only hand over a photo of their sale deed; the PDF the registrar
+/// gave them was unselectable. The server has accepted PDFs for verification
+/// documents all along (kind=document, resource_type auto) — the app was the
+/// only thing refusing. Reported as APP #18, together with the missing
+/// document-type choice the website has; both are here now.
 class _DocumentField extends StatelessWidget {
   const _DocumentField({
     required this.label,
     required this.value,
     required this.onPick,
+    this.typeLabel,
+    this.typeValue,
+    this.typeOptions,
+    this.onType,
   });
 
   final String label;
   final String? value;
   final Future<String?> Function(File file) onPick;
+  final String? typeLabel;
+  final String? typeValue;
+  final Map<String, String>? typeOptions;
+  final void Function(String value)? onType;
+
+  static const _extensions = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
 
   @override
   Widget build(BuildContext context) {
     final has = value != null && value!.isNotEmpty;
+    final options = typeOptions;
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (options != null && options.isNotEmpty) ...[
+            Text(typeLabel ?? 'Document type',
+                style: inter(
+                    fontSize: 13.5, fontWeight: FontWeight.w600, color: kInk)),
+            const SizedBox(height: 7),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final e in options.entries)
+                  ChoiceChip(
+                    label: Text(e.value, style: inter(fontSize: 12.5)),
+                    selected: typeValue == e.key,
+                    selectedColor: kIndigo.withOpacity(0.14),
+                    onSelected: (_) => onType?.call(e.key),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
           Text(label,
               style: inter(
                   fontSize: 13.5, fontWeight: FontWeight.w600, color: kInk)),
           const SizedBox(height: 7),
           InkWell(
             onTap: () async {
-              final picker = ImagePicker();
-              final x = await picker.pickImage(
-                  source: ImageSource.gallery, imageQuality: 88);
-              if (x == null) return;
-              final problem = await onPick(File(x.path));
+              final result = await FilePicker.platform.pickFiles(
+                type: FileType.custom,
+                allowedExtensions: _extensions,
+              );
+              final path = result?.files.single.path;
+              if (path == null) return;
+              final problem = await onPick(File(path));
               if (problem != null && context.mounted) {
                 ScaffoldMessenger.of(context)
                     .showSnackBar(SnackBar(content: Text(problem)));
