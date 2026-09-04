@@ -17,6 +17,7 @@ import 'package:get/get.dart';
 import 'package:rent_home/models/listing_schema.dart';
 import 'package:rent_home/service/listing_service.dart';
 import 'package:rent_home/utils/money.dart';
+import '../../../utils/email_validation.dart';
 
 /// The seven declarations. All must be true before a listing can be submitted.
 const List<MapEntry<String, String>> kListingDeclarations = [
@@ -379,8 +380,10 @@ class ListingWizardController extends GetxController {
 
   static final RegExp _mobile = RegExp(r'^[6-9]\d{9}$');
   static final RegExp _pin = RegExp(r'^\d{6}$');
-  static final RegExp _email =
-      RegExp(r'^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$');
+  // Email lives in utils/email_validation.dart, not here. The rest of this
+  // block is domain-specific to Indian listings; an email address is not, and
+  // a fourth private copy of that pattern is how login came to reject
+  // `you+tag@gmail.com` while three other screens accepted it.
   static final RegExp _ifsc = RegExp(r'^[A-Za-z]{4}0[A-Za-z0-9]{6}$');
   static final RegExp _gstin = RegExp(
       r'^\d{2}[A-Za-z]{5}\d{4}[A-Za-z]{1}[A-Za-z\d]{1}[Zz]{1}[A-Za-z\d]{1}$');
@@ -427,7 +430,7 @@ class ListingWizardController extends GetxController {
         errs['manager_mobile'] = 'Enter a valid 10-digit mobile number';
       }
       final em = _s(f['manager_email']);
-      if (em.isNotEmpty && !_email.hasMatch(em)) {
+      if (em.isNotEmpty && !isValidEmail(em)) {
         errs['manager_email'] = "This email doesn't look right";
       }
       // "Authorization = No -> Cannot Continue". The server has always

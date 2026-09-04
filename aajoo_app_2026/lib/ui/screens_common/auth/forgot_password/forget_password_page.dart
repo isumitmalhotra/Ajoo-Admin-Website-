@@ -6,6 +6,7 @@ import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/screens_common/auth/forgot_password/forget_password_controller.dart';
 import 'package:rent_home/ui/widgets/password_rules_checklist.dart';
+import '../../../../utils/email_validation.dart';
 
 /// ForgetPasswordPage is a multi-step process using PageView:
 /// 1️⃣ Send OTP to Email
@@ -103,7 +104,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
               validator: (v) {
                 final t = (v ?? '').trim();
                 if (t.isEmpty) return 'Please enter your email';
-                if (!RegExp(r'^[\w.+-]+@[\w-]+\.[\w.-]+$').hasMatch(t)) {
+                if (!isValidEmail(t)) {
                   return 'Please enter a valid email address';
                 }
                 return null;

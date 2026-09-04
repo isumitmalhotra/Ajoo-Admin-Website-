@@ -13,6 +13,7 @@ import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/ui/widgets/password_rules_checklist.dart';
 import '../auth_controller.dart';
+import '../../../../utils/email_validation.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -282,20 +283,15 @@ class _AuthPageState extends State<AuthPage> {
                                         ? 'Please enter your email or mobile number'
                                         : 'Please enter your email';
                                   }
-                                  final emailRegex = RegExp(
-                                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
                                   if (isLogin) {
                                     // Ten digits is an Indian mobile; anything
                                     // with an "@" is meant to be an email.
-                                    final digits = v.replaceAll(RegExp(r'\D'), '');
-                                    final looksLikePhone =
-                                        !v.contains('@') && digits.length == 10;
-                                    if (looksLikePhone || emailRegex.hasMatch(v)) {
+                                    if (looksLikeMobile(v) || isValidEmail(v)) {
                                       return null;
                                     }
                                     return 'Enter the email address or the 10-digit mobile number you signed up with';
                                   }
-                                  if (!emailRegex.hasMatch(v)) {
+                                  if (!isValidEmail(v)) {
                                     return 'Please enter a valid email address';
                                   }
                                   return null;

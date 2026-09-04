@@ -12,6 +12,7 @@ import 'package:rent_home/ui/screens_host/add_property/new_property_controller_l
 import 'package:rent_home/controller/common_controller.dart';
 import 'package:rent_home/service/property_service.dart';
 import 'package:rent_home/widgets/app_ui.dart';
+import '../../../utils/email_validation.dart';
 
 class UpdatePropertyPage extends StatefulWidget {
   final Property property;
@@ -439,7 +440,7 @@ class _UpdatePropertyPageState extends State<UpdatePropertyPage> {
                       validator: (v) {
                         final t = (v ?? '').trim();
                         if (t.isEmpty) return 'Enter Email';
-                        if (!RegExp(r'^[\w.+-]+@[\w-]+\.[\w.-]+$').hasMatch(t)) {
+                        if (!isValidEmail(t)) {
                           return 'Enter a valid email address';
                         }
                         return null;
