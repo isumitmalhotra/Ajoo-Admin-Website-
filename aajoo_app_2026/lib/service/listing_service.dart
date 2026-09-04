@@ -177,10 +177,95 @@ class ListingService {
     }
   }
 
+  /// Statuses that mean the server accepted a submission.
+  ///
+  /// "verified" is what the approve handler writes, and an admin can approve
+  /// between the submit and the check below, so it counts as landed too.
+  static const _submittedStates = {
+    'submitted', 'approved', 'verified', 'held_for_verification',
+  };
+
+  /// Does this status mean the server accepted the submission?
+  ///
+  /// Public and pure so the rule can be tested without a network. Unknown or
+  /// empty reads false: "cannot tell" must not be reported to the host as
+  /// success.
+  static bool looksSubmitted(String? status) =>
+      _submittedStates.contains((status ?? '').trim().toLowerCase());
+
+  /// Is this a failure to REACH the server, as opposed to an answer from it?
+  ///
+  /// The distinction is the whole point. A 400 saying "accept the
+  /// declarations" is an answer and must be shown; a timeout is not, and the
+  /// listing has to be read back before anything is concluded from it.
+  static bool isTransportFailure(DioException e) =>
+      e.response == null &&
+      (e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.connectionError);
+
   /// Send for review. All seven declarations must be true.
+  ///
+  /// A submit that TIMES OUT is not the same as a submit that failed, and this
+  /// endpoint is the one place in the wizard where the difference is visible
+  /// to the host. Reported as "Submit for Review keeps loading even after the
+  /// property is submitted": the server had done the work and the answer never
+  /// arrived, so the app sat on a spinner — for up to the three-minute receive
+  /// timeout this service sets for photo uploads.
+  ///
+  /// Two changes. The submit gets its own, much shorter timeout, because it is
+  /// a small JSON POST and has no business inheriting an upload's patience.
+  /// And when the transport fails, the listing is READ BACK before deciding:
+  /// if it now says submitted, the submit worked and the host is told so.
+  ///
+  /// Only transport failures are recovered this way. An HTTP error response is
+  /// the server answering — "you have not accepted the declarations" is a real
+  /// answer and must reach the host unchanged.
   Future<Map<String, dynamic>> submit(Map<String, dynamic> payload) async {
-    final data = await _post('listing/submit', payload);
-    return data is Map ? Map<String, dynamic>.from(data) : {};
+    final auth = await _auth();
+    try {
+      final res = await _dio.post(
+        'listing/submit',
+        data: payload,
+        options: auth.copyWith(
+          receiveTimeout: const Duration(seconds: 45),
+          sendTimeout: const Duration(seconds: 45),
+        ),
+      );
+      final data = _unwrap(res);
+      return data is Map ? Map<String, dynamic>.from(data) : {};
+    } on DioException catch (e) {
+      final id = payload['property_id'];
+      final propertyId = id is int ? id : int.tryParse('${id ?? ''}');
+      if (isTransportFailure(e) && propertyId != null) {
+        if (await _wasSubmitted(propertyId)) return {};
+      }
+      _rethrowFriendly(e);
+    } catch (e) {
+      _rethrowFriendly(e);
+    }
+  }
+
+  /// Did the submit land after all? Never throws — this runs while another
+  /// error is already in flight, and a failure here just means "cannot tell",
+  /// which leaves the original error to be reported.
+  Future<bool> _wasSubmitted(int propertyId) async {
+    try {
+      final res = await _dio.get(
+        'listing/draft/$propertyId',
+        options: (await _auth()).copyWith(
+          receiveTimeout: const Duration(seconds: 20),
+        ),
+      );
+      final data = _unwrap(res);
+      if (data is! Map) return false;
+      final property = data['property'];
+      if (property is! Map) return false;
+      return looksSubmitted('${property['verification_status'] ?? ''}');
+    } catch (_) {
+      return false;
+    }
   }
 
   // ── Media ─────────────────────────────────────────────────────────────────
