@@ -240,7 +240,34 @@ class ListingWizardController extends GetxController {
     });
     merge(p4, d['bookingRules'], 'pbr_');
     merge(p4, d['settlement'], 'pst_');
-    merge(p5, d['houseRules'], 'ph_');
+    // 'phr_', not 'ph_' — the columns are phr_pets_allowed, phr_smoking and so
+    // on, so stripping 'ph_' left every key as r_pets_allowed and the house
+    // rules came back blank. Exactly the fault the pricing comment above
+    // describes, two lines further down the same function.
+    merge(p5, d['houseRules'], 'phr_');
+
+    // Step 5's own four tables. The server saved them and did not return them,
+    // so this could not restore them even in principle — a host who left the
+    // wizard and came back found the last step empty and retyped their
+    // identity details, their bank and their GST number. That is the reported
+    // bug; /listing/draft now sends these four.
+    merge(p5, d['verification'], 'pvf_');
+    merge(p5, d['contacts'], 'pcn_');
+    merge(p5, d['compliance'], 'pcp_');
+    // The account number arrives MASKED (XXXX1234) and is deliberately not put
+    // into the form field: submitting the mask would be submitting a wrong
+    // number. The rest of the bank block is restored so the host can see which
+    // account is on file, and step5 leaves the stored row alone unless a new
+    // account_number or ifsc is actually sent.
+    final bank = d['bank'];
+    if (bank is Map) {
+      merge(p5, {
+        for (final e in bank.entries)
+          if (e.key != 'pbd_account_number') e.key: e.value,
+      }, 'pbd_');
+      final masked = bank['pbd_account_number'];
+      if (masked != null) p5['account_number_on_file'] = masked;
+    }
 
     // Booleans come back as MySQL 1/0; the pill rows compare against true.
     for (final key in const [
