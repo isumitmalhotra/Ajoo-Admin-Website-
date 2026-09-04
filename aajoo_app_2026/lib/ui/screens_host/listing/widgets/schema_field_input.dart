@@ -149,6 +149,16 @@ class SchemaFieldInput extends StatelessWidget {
   }
 
   Future<void> _openPicker(BuildContext context) async {
+    // Drop focus before the sheet opens.
+    //
+    // Without this, whichever field the host last typed in still holds focus
+    // while they pick from the sheet. Closing it hands focus straight back,
+    // Flutter scrolls that field into view, and the form jumps away from the
+    // section they were working in — reported as the page "redirecting to the
+    // last entered numeric field" after a dropdown selection. Nothing is
+    // scrolling; a text field is simply being re-focused off screen.
+    FocusScope.of(context).unfocus();
+
     // A sheet, not a dropdown. Some of these lists run to a dozen options
     // with long labels, which a Material dropdown truncates.
     final picked = await showModalBottomSheet<String>(

@@ -102,7 +102,26 @@ class _AuthPageState extends State<AuthPage> {
         // upward off-screen and the only thing visible is its bottom edge.
         // That was the "blank page after tapping Explore": the login form was
         // rendering, just almost entirely above the top of the display.
-        body: SizedBox.expand(
+        // Measure the box the ROUTE handed over, rather than the screen.
+        //
+        // resizeToAvoidBottomInset defaults to true, so when the keypad opens
+        // the Scaffold has ALREADY taken the keyboard out of this body — and a
+        // card at `bottom: 0` is therefore sitting on top of the keypad
+        // before anything below does any arithmetic. Subtracting
+        // viewInsets.bottom again, and then padding the scroll view by it a
+        // second time, reserved the keypad's height three times over and left
+        // a band of empty white above it. Reported as APP #15; the same double
+        // count as the OTP sheet in APP #5.
+        //
+        // The shortfall is right whichever way the route behaves: zero when it
+        // has already excluded the keyboard, the whole inset when it has not.
+        body: LayoutBuilder(builder: (context, bodyBox) {
+          final media = MediaQuery.of(context);
+          final alreadyReserved = media.size.height - bodyBox.maxHeight;
+          final keyboardShortfall = (media.viewInsets.bottom - alreadyReserved)
+              .clamp(0.0, double.infinity);
+
+          return SizedBox.expand(
           child: Stack(
             children: [
               // Hero image
@@ -198,12 +217,12 @@ class _AuthPageState extends State<AuthPage> {
                   // top section"; reproduced here in landscape.
                   constraints: BoxConstraints(
                     maxHeight: math.min(
-                      MediaQuery.of(context).size.height * 0.72,
-                      // Leave the brand strip visible so the sheet still reads
-                      // as a sheet rather than a full-screen takeover.
-                      MediaQuery.of(context).size.height -
-                          MediaQuery.of(context).viewInsets.bottom -
-                          96,
+                      // The RESTING size is still a share of the screen.
+                      media.size.height * 0.72,
+                      // But never more than the room left in the body, less
+                      // enough to keep the brand strip visible so the sheet
+                      // still reads as a sheet and not a full-screen takeover.
+                      bodyBox.maxHeight - 96,
                     ),
                   ),
                   // The card is pinned to bottom: 0, so its own padding is all
@@ -231,8 +250,9 @@ class _AuthPageState extends State<AuthPage> {
                   child: SingleChildScrollView(
                     // So a focused field can scroll clear of the keyboard
                     // inside the card, rather than the card resizing around it.
-                    padding: EdgeInsets.only(
-                        bottom: MediaQuery.of(context).viewInsets.bottom),
+                    // Only the part the route did not already reserve — see
+                    // the note on the body above.
+                    padding: EdgeInsets.only(bottom: keyboardShortfall),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -595,7 +615,8 @@ class _AuthPageState extends State<AuthPage> {
               ),
             ],
           ),
-        ),
+          );
+        }),
       ),
     );
   }
