@@ -177,6 +177,37 @@ that commission, four ledger rows per booking.
 
 ## 8. Closed since the last edition — do not redo
 
+### 8a4. Closed 2026-09-05 — app search parity, and pets in the search bar
+
+**App (build 18).** The app carried every fault the website had just been fixed
+for, in its own dialect. All verified against live data through the endpoints
+the app calls.
+
+| Was | Now | Evidence |
+|---|---|---|
+| **Map search sent a POINT and nothing else.** Whatever was typed went to the geocoder and no further, so a property NAME was resolved as a place. Worse, when the geocoder could not place it — which is what happens to a name — the app refused the search and told the guest to try a nearby town. | **Fixed.** The term goes to the server, which matches name and address wherever the search is centred; a term that will not geocode searches instead of dead-ending. | live — a name centred on the wrong continent returns the stay |
+| **Price narrowed in Dart** over the properties already fetched. | **Fixed.** Sent to the server, and held on the controller with the dates so no refetch drops it. | live |
+| **Results screen searched and sorted its own page.** A name search looked inside 60 rows; "Price: Low to High" ordered those 60 and presented them as the cheapest on the platform. | **Fixed.** Both are the API's, debounced to one request per typing pause. | live — asc opens at ₹900, desc at ₹12,000 |
+| **`sort_by` went straight into the ORDER BY** as a column name, so an unknown value was a 500; and "rating" was sorted after the query, over the page that survived the limit. | **Fixed.** Allowlisted, ordered in SQL, unrated last. | live — ratings 5, 4, then unrated; a junk sort is ignored, not a 500 |
+| **The radius cancelled the search term** — distance and text were AND-ed, so a named stay outside the searched area was lost. | **Fixed.** OR-ed, exactly as the website's endpoint. | live |
+
+Category, price, rating, guests, dates and pets were already server-side on the
+app's results screen and were re-verified. Paging exists on the endpoint
+(`limit`/`offset` both honoured); the app still asks for one page of 60 and has
+no "load more" — the one remaining difference from the website, listed in §6.
+
+**Pets in the search bar (web).** The bar collected adults, children and
+infants and stopped, so a guest travelling with a dog met the question for the
+first time at checkout, after choosing a stay that may not take one. The
+stepper was already built and switched off with a note saying the search API
+could not filter on pets — it has been able to since August. In search the
+count means "stays that take pets": pets never occupy beds, so it narrows on
+the host's answer, and the host's own cap still applies on the listing. On the
+desktop popover and the phone sheet both. The sidebar tick reflects a pet
+carried in from the bar, and unticking it clears the pet.
+
+*Verified live:* adding one pet on a Delhi search took 4,006 stays to 2.
+
 ### 8a3. Closed 2026-09-05 — pagination, result consistency, card design
 
 Client, comparing our Delhi results with Airbnb's: "632 properties in delhi, on
