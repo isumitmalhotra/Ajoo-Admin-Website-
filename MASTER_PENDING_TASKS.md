@@ -177,6 +177,21 @@ that commission, four ledger rows per booking.
 
 ## 8. Closed since the last edition — do not redo
 
+### 8a7. Closed 2026-09-05 — negotiation: 90 seconds, then we quote the host
+
+Client rules for what happens after a guest offers below the host's ideal.
+
+| Rule | Was | Now |
+|---|---|---|
+| **The offer reaches the host** by email, in-app and website notification. | **Already built** — socket event, in-app notification and email all fire on escalation. Verified, not rebuilt. | unchanged |
+| **90 seconds, then the platform counters at the host's ideal** with a comment. | The thread sat until the expiry sweeper killed it at 30 minutes and told the guest the host was unavailable — true, and a wasted booking. | **Built.** `services/negotiationAutoCounter.js`, swept every 20s because ninety seconds is a promise to someone watching a screen. Claims the row before writing, so two overlapping sweeps cannot both answer. Live: an offer of ₹2,200 was answered at ₹2,500 with "The host hasn't replied yet, so here's their usual rate for these dates — ₹2,500/night. Accept it and it's yours until midnight tonight." |
+| **Once only** — a guest who counters the auto-counter waits for a person, and sees the host's stated response time. | Nothing was shown; "Waiting on host" with no number reads as "possibly for ever". | **Built.** The wizard has asked hosts their average response time all along and only booking-approval chasing ever read it. Now on the thread. Silent when the host never gave one — a duration nobody promised is worse than silence. |
+| **An accepted deal lasts until midnight IST**, not 24 hours. | A rolling 24 hours from acceptance, so two guests who agreed the same price on the same day had different deadlines. | **Built.** Live proof, same property: the old coupon ran 23:53→23:53; the new one was struck at 21:34 and expires 00:00. |
+
+The expiry sweeper stays as the backstop for a thread that goes quiet *after*
+the two of them are talking. Its 30-minute default and per-property window are
+unchanged.
+
 ### 8a6. 2026-09-05 — pre-booking: three rules built, one question open
 
 Client stated the pre-booking rules. Audited each against the code; three are
