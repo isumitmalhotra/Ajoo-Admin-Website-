@@ -146,9 +146,13 @@ const post = async (path, body, token) => {
   say(9, disposable.length ? 'OK' : 'GAP',
     disposable.length ? `${disposable.length} future booking(s), earliest ${disposable[0].book_id} on ${disposable[0].bt_book_from}`
                       : 'no future non-cancelled booking to spend');
-  // A dedicated one is created regardless, so UAT-16/17 never has to spend a
-  // booking another case is counting on.
-  gaps.push('disposable');
+  // A dedicated one is worth creating even when the audit passes, so UAT-16/17
+  // never has to spend a booking another case is counting on — every future
+  // booking above is also part of prerequisite 3's count and of the set UAT-07
+  // picks its primary from. Behind a flag, though: unconditional would mean a
+  // fresh booking on every run, and a pile of near-identical stays is its own
+  // kind of unusable test data.
+  if (!disposable.length || process.argv.includes('--fresh-disposable')) gaps.push('disposable');
 
   // 10 — where the OTPs land. One sendOtp for every otp_action, addressed to
   // the resolved account's cred_user_email; there is no separate payout inbox.
@@ -228,22 +232,47 @@ const post = async (path, body, token) => {
 
   const today = new Date();
   const wanted = [
-    // Starts YESTERDAY, not today. The bot calls a stay ongoing only once the
-    // check-in moment has passed, and that is 2 PM on the arrival day
-    // (CHECK_IN_HOUR in utils/chatbotServices.js) — a booking created this
-    // morning for today would still read as 'upcoming' until the afternoon.
-    { need: 'ongoing', label: '#4 stay in progress', from: addDays(today, -1), nights: 3 },
-    { need: 'disposable', label: '#9 disposable booking', from: addDays(today, 14), nights: 2 },
+    // Starts TODAY, and it has to. /booking/create refuses a check-in in the
+    // past, so yesterday is not available however much better it would read.
+    //
+    // The consequence: the bot calls a stay ongoing only once the check-in
+    // moment has passed, and that is 2 PM on the arrival day (CHECK_IN_HOUR in
+    // utils/chatbotServices.js). Seed this in the afternoon or the record
+    // exists and still classifies as 'upcoming' until then — a tester running
+    // UAT-08 that morning would log a Fail against working code.
+    { need: 'ongoing', label: '#4 stay in progress', from: today, nights: 3, cod: true },
+    // Pay-online, not pay-on-arrival. A guest may hold only one unsettled
+    // pay-on-arrival booking at a time, and the stay above is already it — so
+    // a second COD booking is refused. Online also suits the case better:
+    // it stays unpaid, so cancelling it moves no money and leaves no refund
+    // to unwind, which is what UAT-17 asks for.
+    { need: 'disposable', label: '#9 disposable booking', from: addDays(today, 14), nights: 2, cod: false },
   ].filter((w) => gaps.includes(w.need));
 
   for (const w of wanted) {
     const bookFrom = fmt(w.from);
     const bookTo = fmt(addDays(w.from, w.nights));
+    console.log(`\n${w.label}  ${bookFrom} -> ${bookTo}`);
+
+    // Ask what the stay costs instead of guessing. /booking/create recomputes
+    // the price server-side and rejects anything more than a rupee away, so a
+    // hardcoded figure works until the listing's rate, an offer or the tax
+    // changes, and then the seeder fails for a reason that looks unrelated.
+    // `price` is the PRE-TAX total — quote.total, not quote.grandTotal.
+    const quoted = await post('/pricing/quote', {
+      propertyId: PROPERTY_ID, bookFrom, bookTo, guests: 2,
+    });
+    const price = quoted.json?.data?.total;
+    if (!Number.isFinite(price)) {
+      console.log('   no quote:', quoted.json?.message || quoted.status);
+      continue;
+    }
+    console.log(`   quoted ₹${price} before tax (₹${quoted.json?.data?.grandTotal} with it)`);
+
     const r = await post('/booking/create', {
-      propertyId: PROPERTY_ID, price: 2100, bookFrom, bookTo, isCod: true, no_of_guests: 2,
+      propertyId: PROPERTY_ID, price, bookFrom, bookTo, isCod: w.cod, no_of_guests: 2,
     }, token);
     const d = r.json?.data || {};
-    console.log(`\n${w.label}  ${bookFrom} -> ${bookTo}`);
     console.log('  ', r.status, r.json?.success, r.json?.message || r.text || '');
     if (d.book_id || d.bookId) console.log('   booking:', d.book_id || d.bookId);
   }

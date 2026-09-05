@@ -22,17 +22,48 @@ models and `.env`. Read-only unless you pass `--apply`.
 | 1 | Bot embedded in the dev website and app | **Done** |
 | 2 | Signed-in session passed to the bot | **Done** — web already; app closed today |
 | 3 | Guest with ≥2 non-cancelled bookings | **Done** — user 101 has 16 |
-| 4 | Guest with a stay in progress | **Gap** — nobody has one today |
+| 4 | Guest with a stay in progress | **Done** — created, `B170046` |
 | 5 | Host with listing, analytics and payout data | **Done** — user 100 |
-| 6 | One account that is both Guest and Host | **Gap** — none exists |
+| 6 | One account that is both Guest and Host | **Done** — created, user 169 |
 | 7 | A booking owned by somebody else | **Done** — `B754668`, user 164 |
 | 8 | A second Host, for the cross-host denial test | **Done** — users 168, 133, 135 |
-| 9 | A disposable booking, cancellable once | **Usable, but spend a fresh one** |
+| 9 | A disposable booking, cancellable once | **Done** — created, `B261280` |
 | 10 | Which inbox receives which OTP | **Answered** |
-| 11 | One WhatsApp sender per role, stable | **Gap** — the guest number is on two live accounts |
+| 11 | One WhatsApp sender per role, stable | **Open** — the guest number is on two live accounts |
 
-Items 3, 5, 7, 8 and 10 needed nothing. Four items need action and they are
-described below.
+Ten of the eleven are ready. The one still open is item 11, and it is not a
+record to create — it is a clash to resolve, described below.
+
+## The records that were created
+
+Made on 2026-09-05 through the product's own endpoints, not by INSERT.
+
+| For | Record | Detail |
+|---|---|---|
+| 4 | Booking `B170046` | 05-09 to 08-09-2026, pay-at-property, **Booking Confirmed** |
+| 6 | User 169 `aishmobilehost@yopmail.com` | now holds both roles, four listings |
+| 9 | Booking `B261280` | 19-09 to 21-09-2026, pay-online, **Payment Pending** |
+
+`B170046` was approved by host 100 through `/host/confirm-book` after creation.
+Without that it sat at status 5, *Booked*, which is a request awaiting the
+host — the bot would still have called it ongoing, because it classifies purely
+on dates, but the host's own Ongoing Stays tile would not have listed it. A
+record that two screens disagree about is not a good test record.
+
+`B261280` is pay-online rather than pay-at-property on purpose. A guest may hold
+only one unsettled pay-on-arrival booking at a time and `B170046` is already it,
+so a second was refused. Online suits the case better anyway: it stays unpaid,
+so cancelling it moves no money and leaves no refund to unwind.
+
+Rolling back, if the run needs a clean slate:
+
+```sql
+UPDATE tbl_users      SET user_isUser      = 0 WHERE user_id      = 169;
+UPDATE tbl_user_creds SET cred_user_isUser = 0 WHERE cred_user_id = 169;
+```
+
+The two bookings should be cancelled through the product rather than deleted —
+they raised host-dues and history rows that a `DELETE` would orphan.
 
 ---
 
@@ -63,8 +94,10 @@ Shipped in **app build 23**. Four tests cover it, including one that fails if a
 
 ## 4 — a Guest with a stay in progress
 
-Nobody on the platform has one today. Checked across every account, not just the
-test guest: no non-cancelled booking has a check-in on or before today and a
+**Created: `B170046`, user 101, 05-09 to 08-09-2026, Booking Confirmed.**
+
+Nobody on the platform had one. Checked across every account, not just the test
+guest: no non-cancelled booking had a check-in on or before today and a
 check-out on or after it.
 
 Worth correcting an earlier note in case it is still circulating: `BPTEST04` was
@@ -72,24 +105,35 @@ recorded as the ongoing stay. Its dates do span today, but its status is 2,
 which is **Cancelled**, not Paid. Status 3 is Paid. `BPTEST01` and `BPTEST03`
 are cancelled too, and `BPTEST02` is a Check In whose dates ended in July.
 
-**To create one:** a three-night pay-at-property booking for user 101 starting
-**yesterday**. The seeder does it through `POST /booking/create`, so the record
-is the same shape as a real guest's — a booking is six tables plus a host-dues
-entry and a snapshotted cancellation policy, and hand-written rows drift from
-that.
+The seeder creates it through `POST /booking/create`, so the record is the same
+shape as a real guest's — a booking is six tables plus a host-dues entry and a
+snapshotted cancellation policy, and hand-written rows drift from that.
 
-Yesterday rather than today on purpose. The bot calls a stay ongoing only once
-the check-in moment has passed, and that is 2 PM on the arrival day. A booking
-made this morning for today would still read as *upcoming* until the afternoon,
-and a tester running UAT-08 before then would log a Fail against working code.
+**Two things to know if this ever has to be recreated.**
 
-Until it exists, **UAT-08 is Blocked - Client test data.**
+The stay must start **today**, not yesterday: `/booking/create` refuses a
+check-in in the past. But the bot only calls a stay ongoing once the check-in
+moment has passed, and that is **2 PM on the arrival day**. So seed it in the
+afternoon. Seeded in the morning, the record exists and still classifies as
+*upcoming*, and a tester running UAT-08 before lunch would log a Fail against
+working code.
+
+And it needs the host's approval afterwards. A new booking lands at status 5,
+*Booked*, which is a request waiting on the host. The bot would call it ongoing
+regardless, because it classifies on dates alone — but the host's Ongoing Stays
+tile only counts statuses 3, 6, 8 and 9, so the two screens would disagree about
+the same stay.
+
+UAT-08 is unblocked. The stay runs to 08-09-2026, so it stops being *ongoing* at
+11 AM that day — after which it needs recreating if the run is still going.
 
 ---
 
 ## 6 — one account that is both Guest and Host
 
-No account on the platform holds both roles. Every one is a host or a guest, and
+**Created: user 169, `aishmobilehost@yopmail.com`.**
+
+No account on the platform held both roles. Every one was a host or a guest, and
 never both.
 
 The platform does support the idea. `POST /user/switch-mode` mints a token for
@@ -97,18 +141,18 @@ the other role, and it always allows the switch back to guest, on the stated
 principle that every host is also a guest. What is missing is an account whose
 role flags say so, because the guest-side lookups filter on `user_isUser = 1`.
 
-**Recommendation: user 169** (`aishmobilehost@yopmail.com`). It has four
-listings, three of them live, so Host mode has something real to show; its inbox
-receives mail; and its number is not one of the two WhatsApp mappings. Setting
-`user_isUser` and `cred_user_isUser` to 1 is the whole change, and it is
-reversible in two statements the seeder prints.
+**User 169 was chosen** because it has four listings, three of them live, so
+Host mode has something real to show; its inbox receives mail; and its number is
+not one of the two WhatsApp mappings. Setting `user_isUser` and
+`cred_user_isUser` to 1 was the whole change, and it reverses in two statements.
 
 Leave `cred_user_isHost` alone. Sign-in filters on it, so flipping it would break
 host login for that account. The route into guest mode is switch-mode, which is
 what UAT-05 describes anyway: sign in, then choose the role in the chat.
 
-If 169 becomes the dual-role account, use **168 or 133** for prerequisite 8, so
-UAT-05 and the cross-host denial test are not reading the same record.
+Because 169 is now the dual-role account, use **168 or 133** for prerequisite 8,
+so UAT-05 and the cross-host denial test are not reading the same record. The
+seeder already excludes 169 from what it offers there.
 
 > **This will not pass UAT-05 as the code stands.** See the defects below.
 
@@ -116,14 +160,15 @@ UAT-05 and the cross-host denial test are not reading the same record.
 
 ## 9 — a disposable booking
 
-User 101 has five future non-cancelled bookings, the earliest `B811224` on
-07-09-2026, so the case is not blocked.
+**Created: `B261280`, user 101, 19-09 to 21-09-2026, unpaid.**
 
-Spend a fresh one anyway. All five are counted by prerequisite 3, and UAT-07
-picks a *deterministic primary booking* from that same set — cancelling one
-mid-run changes what UAT-07 should expect. The seeder creates a dedicated
-pay-at-property booking a fortnight out, so nothing else is disturbed and no
-refund has to be unwound.
+Use this one for UAT-16 and UAT-17, and nothing else.
+
+User 101 already had five future non-cancelled bookings, so the case was not
+blocked. A fresh one was made anyway. All five are counted by prerequisite 3,
+and UAT-07 picks a *deterministic primary booking* from that same set —
+cancelling one mid-run would change what UAT-07 should expect. A dedicated
+booking keeps the two cases from interfering.
 
 ---
 
@@ -263,13 +308,17 @@ Two items in the pack belong to Aajoo, not to the backend, and neither is done:
 
 ---
 
-## What is left, in order
+## What is left
 
-1. Move user 174 off 9882498033, or accept that UAT-35/36 cannot run from it.
-2. Decide on the two defects above — fix before the run, or accept two known
-   Fails and log them.
-3. Run `node scripts/seedBotPenguinUatRecords.js --apply` from the backend repo
-   to create the stay in progress, the disposable booking and the dual-role
-   flags. It needs `UAT_GUEST_EMAIL` and `UAT_GUEST_PASSWORD` in the
-   environment for the two bookings.
-4. Re-run the audit with no flag and confirm every line reads `ok`.
+1. **Move user 174 off 9882498033**, or accept that UAT-35 and UAT-36 cannot be
+   run from that number. This is the only outstanding prerequisite.
+2. **Decide on the two defects above** — fix them before the run, or accept two
+   known Fails and log them as such rather than as surprises.
+3. **Remove the plaintext OTP log line** before the run, or accept that every
+   code issued during UAT is readable in Render's log stream.
+4. **Aajoo's two items**: the second support operator, and confirming a UAT-31
+   alert recipient actually received mail.
+
+Re-run `node scripts/seedBotPenguinUatRecords.js` at any point to re-check all
+eleven. The stay in progress expires on 08-09-2026; if the run is still going,
+re-run with `--apply` in the afternoon to make a new one.
