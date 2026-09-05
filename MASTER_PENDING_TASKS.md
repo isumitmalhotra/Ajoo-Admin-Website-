@@ -177,6 +177,26 @@ that commission, four ledger rows per booking.
 
 ## 8. Closed since the last edition — do not redo
 
+### 8a9. Closed 2026-09-05 — response time required, and the app was discarding it
+
+Asked since the wizard was built, left optional, and skipped: 4 of 19 listings
+with booking rules had one and none were live — so the guest-facing line that
+needs it was correct and invisible on every bookable stay.
+
+| | Was | Now |
+|---|---|---|
+| **Server** | Optional; any number accepted. | Required, and must be one the schema offers. Verified live on the deployed API: missing → refused, 0 → refused, 7 → refused naming the allowed values, 3 → accepted. The test posted the row's own values, and the row is byte-for-byte unchanged after it. |
+| **Website** | Optional, and shown **only** under "Approval Required" — so an instant-book host could never be described to a waiting guest at all. | Required, asked of every host, help text naming whichever uses apply. |
+| **App** | **Never saved it.** The wizard posted `response_time`; the server has always read `response_time_hours`, and the step-4 payload is a spread of that map — so the answer went over the wire, was ignored and dropped. The draft loader maps `pbr_response_time_hours` back to the long key, so the control could not be refilled on a resume either. It looked like a working field for as long as nobody checked what it saved. | Same key as the server and the site, required to leave step 4. Build 22. |
+
+**Not defaulted, deliberately.** 24 hours against a host who answers in one
+loses them the booking; one hour against a host who answers tomorrow is a
+promise the platform made on their behalf.
+
+**Existing listings:** most have no figure, so the next step-4 save on each will
+ask for one. That is the intent, and it is the only way the stock gets filled
+in.
+
 ### 8a8. Closed 2026-09-05 — the same negotiation flow, checked on the app (build 21)
 
 | Rule | App before | Now |
