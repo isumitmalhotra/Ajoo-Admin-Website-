@@ -177,6 +177,21 @@ that commission, four ledger rows per booking.
 
 ## 8. Closed since the last edition — do not redo
 
+### 8a8. Closed 2026-09-05 — the same negotiation flow, checked on the app (build 21)
+
+| Rule | App before | Now |
+|---|---|---|
+| Offer reaches the host (email, in-app, socket) | **Already right** — server-side, shared with the site. | unchanged |
+| 90-second auto-counter at the host's ideal | **Already right** — server-side. The counter arrives as a real offer row with a push notification, so the app needs nothing. Confirmed against live data: the auto-countered thread and its wording come back on the endpoint the app reads. | unchanged |
+| Deal expires at midnight IST | **Already right** — the deal banner reads `validTo` off the coupon, so the shorter window simply shows a shorter countdown. | unchanged |
+| Negotiation off in the pre-booking flow | **Already right, and ahead of the website** — both pre-booking surfaces have passed `showNegotiationButton:false` since they were built. But it never said WHY, and a control that vanishes unexplained reads as a missing feature. | **Same sentence as the site** now sits under the Reserve button. |
+| Host's stated response time while waiting | **Missing.** "Waiting on host" with no number reads as "possibly for ever". | **Built.** The model carries it and the thread says "‹host› is away at the moment. They usually reply within N hours." Absent, zero, negative or unparseable all mean the host never said, and then nothing is shown — "0 hours" would read as instant. |
+
+**Data gap, not a code gap:** only **4 of 19** listings with booking rules have
+a response time on file, and all four are inactive — so the line is correct and
+currently invisible on every bookable listing. Same shape as the pets finding:
+the wizard asks the question and hosts are skipping it.
+
 ### 8a7. Closed 2026-09-05 — negotiation: 90 seconds, then we quote the host
 
 Client rules for what happens after a guest offers below the host's ideal.
