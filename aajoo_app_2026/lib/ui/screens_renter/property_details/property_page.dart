@@ -404,7 +404,17 @@ class _PropertyPageState extends State<PropertyPage>
     }
   }
 
-  bool get hasDeal => (widget.dealCode?.isNotEmpty ?? false);
+  /// Set once the guest gives the deal up to pick other dates.
+  ///
+  /// The deal arrives as constructor arguments, which cannot be cleared —
+  /// found by testing the release on a device: the discount came off the total
+  /// but hasDeal still read the untouched widget field, so the dates stayed
+  /// locked. The guest lost the discount AND kept the restriction, which is the
+  /// worst of both and worse than the bug being fixed.
+  bool _dealReleased = false;
+
+  bool get hasDeal =>
+      !_dealReleased && (widget.dealCode?.isNotEmpty ?? false);
 
   /// An accepted deal fixes its dates, so both pickers close.
   ///
@@ -433,6 +443,7 @@ class _PropertyPageState extends State<PropertyPage>
   /// this booking — the coupon itself lives until it expires at midnight.
   void _releaseDeal() {
     setState(() {
+      _dealReleased = true;
       _appliedCoupon = null;
       _couponController.clear();
       _couponOk = false;
