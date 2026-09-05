@@ -9,6 +9,7 @@ import 'package:rent_home/service/messages_service.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/data/models/action_result.dart';
 import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
+import 'dart:async';
 import 'dart:io';
 import '../../../data/models/update_user_model.dart';
 import '../../../service/auth_service.dart';
@@ -69,7 +70,26 @@ class AuthController extends GetxController {
     try {
       final loggedInStatus = await authService.checkLoginStatus();
       if (loggedInStatus) {
+        // The stored copy first, so the app opens with a name and a photo
+        // rather than a blank header, and so it still works offline.
         userData.value = await authService.getSavedUserDetails();
+
+        /**
+         * Then ask the server, because the stored copy can be out of date in a
+         * way the app cannot detect.
+         *
+         * Reported by the client: an admin verifies a host's ID in the portal,
+         * the host opens the app, and "Verify your identity" is still sitting
+         * at the top of their dashboard — while the website, which fetches the
+         * profile on mount, shows it correctly. Nothing was wrong with the
+         * data or the banner; this screen simply never asked again after the
+         * login that first wrote the file.
+         *
+         * Not awaited: startup must not wait on the network, and the cached
+         * value above is already good enough to render. skipLogoutOnError
+         * keeps a flaky connection from signing anybody out.
+         */
+        unawaited(getUserDetails(skipLogoutOnError: true));
       }
       isLoggedIn.value = loggedInStatus;
       return loggedInStatus;
@@ -364,6 +384,9 @@ class AuthController extends GetxController {
       final response = await authService.getUserDetails();
       if (response.success) {
         userData.value = response.data.user;
+        // Write it back, or the next cold start reads the stale file again and
+        // shows the wrong thing until this call returns a second time.
+        await authService.saveUserData(response.data.user.toJson());
       } else {
         error.value = response.message;
       }
@@ -371,7 +394,12 @@ class AuthController extends GetxController {
       await handleApiError(e, onError: (message) async {
         error.value = message;
       }, onUnauthorized: (message) async {
-        await logout(); // Logout on error
+        // skipLogoutOnError was accepted and then ignored — every caller
+        // passing it true was being promised a protection it did not have, and
+        // a single 401 on a background refresh would have signed the user out
+        // mid-session. It is honoured now.
+        if (skipLogoutOnError) return;
+        await logout();
       });
     } finally {
       isLoading.value = false;
