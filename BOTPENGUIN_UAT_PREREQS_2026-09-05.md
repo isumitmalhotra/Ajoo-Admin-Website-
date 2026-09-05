@@ -188,18 +188,27 @@ no separate payout inbox.
 | Guest cancellation (UAT-17) | `aajoo.renter1@mailinator.com` — user 101 |
 | Host payout (UAT-36) | `aajoo.host1@mailinator.com` — user 100 |
 
-Two things about that path the testers should know before the run:
+Two things about that path.
 
-**The OTP is written to the server log in clear text**, next to the address it
-was sent to, at `utils/chatbotServices.js:866`. The trailing comment says the
-debug line was removed in production. It was not. The pack's own rule is that
-full OTPs must not be recorded, and right now every one of them is, in Render's
-log stream, for anybody with dashboard access.
+**The code used to be written to the server log in clear text**, next to the
+address it was sent to, under a comment claiming the debug line had been removed
+in production. It had not. Every code the chatbot issued sat in Render's log
+stream for as long as the logs are kept, readable by anyone with dashboard
+access, long after the code itself expired ten minutes later — while the pack
+asks the testers never to record a full OTP anywhere.
 
-**Pending OTPs live in process memory**, a plain `Map` at
-`utils/chatbotServices.js:35`. A restart or a deploy drops them all, and a tester
-who requests a code and enters it after one will be told it expired. Expect that
-at least once across a week-long run; it is not a bug in the verification logic.
+Fixed. The line now records that a code went out, the session it belongs to, and
+the recipient masked to its first letter and its domain: `a***@mailinator.com`.
+The domain survives on purpose, because *"which inbox did that go to?"* is the
+whole of this prerequisite and it can be answered without recording an address.
+Verified by issuing a real code and reading the log: no six digits, and the mail
+still arrives.
+
+**Pending OTPs live in process memory**, a plain `Map`. A restart or a deploy
+drops them all, and a tester who requests a code and enters it after one will be
+told it expired. Expect that at least once across a week-long run; it is not a
+bug in the verification logic. Left as it is — moving them to a table is a change
+worth making deliberately, not the day before a UAT run.
 
 ---
 
@@ -369,15 +378,19 @@ Two items in the pack belong to Aajoo, not to the backend, and neither is done:
 
 ## What is left
 
-Every developer prerequisite is met and both defects are fixed and live. What
-remains is not developer work, with one exception:
+Every developer prerequisite is met, and every defect found while preparing them
+is fixed and deployed. Nothing engineering-side is outstanding.
 
-1. **Remove the plaintext OTP log line** before the run, or accept that every
-   code issued during UAT is readable in Render's log stream. This is the one
-   open engineering item and it is a five-line change.
-2. **Aajoo's two items**: a second BotPenguin operator in the support team for
-   UAT-29's transfer sub-test, and a UAT-31 alert recipient confirming they
-   actually received the mail.
+What remains belongs to Aajoo:
+
+1. **A second BotPenguin operator** in the support team, for UAT-29's transfer
+   sub-test. The live account shows one team member.
+2. **A UAT-31 alert recipient** confirming they actually received the mail.
+   Appearing in the bot's Alerts settings is not the test.
+
+One thing to know rather than do: the stay in progress ends on 08-09-2026. If
+the run is still going, make a new one in the afternoon with
+`node scripts/seedBotPenguinUatRecords.js --apply`.
 
 Re-run `node scripts/seedBotPenguinUatRecords.js` at any point to re-check all
 eleven. The stay in progress expires on 08-09-2026; if the run is still going,
