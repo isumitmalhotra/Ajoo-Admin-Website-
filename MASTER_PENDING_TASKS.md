@@ -177,6 +177,27 @@ that commission, four ledger rows per booking.
 
 ## 8. Closed since the last edition — do not redo
 
+### 8a6. 2026-09-05 — pre-booking: three rules built, one question open
+
+Client stated the pre-booking rules. Audited each against the code; three are
+built and verified live, one needs a decision before it can be.
+
+| Rule | Was | Now |
+|---|---|---|
+| **A stay starting tomorrow IST or later is a pre-booking**, whatever time it is booked. | **No such concept.** `booking_pref` (instant/pre_booking) is a HOST preference; `/pre-booking` is a browse surface. Nothing keyed off the stay's start date. | **Built.** `utils/preBooking.js` owns it. The server runs on UTC, so "today" off the clock is the wrong day between 18:30 UTC and midnight — 00:00–05:30 in India — and a guest booking at 11pm IST would have been told their stay starts today. |
+| **One month maximum per booking**, the real month the stay starts in: 31 / 30 / 28, and 29 in a leap year. | **Not implemented.** A per-host `pbr_max_stay_nights` existed; no platform cap, nothing calendar-aware. | **Built and enforced** at booking creation. Verified live: Jan 31, Apr 30, Feb 2027 28, Feb 2028 29, with the century rule. No booking has ever exceeded it (longest 28 nights), so nothing in flight breaks. |
+| **Weekly / monthly pricing applies, with a "best deal" banner.** | **Engine already correct** — host states what a week and a month COST, the rate divides across every night, monthly beats weekly. But none of it left `/pricing/quote`, so **a host who set a monthly price was giving a discount no guest could see**. | **Built.** The quote carries the label, saving and percentage; the rail names it. Live: 9 nights → "weekly rate", 28 nights → "You're getting this host's monthly rate — ₹51,000 less than booking these nights one at a time — 32.7% off". |
+| **Negotiations disabled on pre-booking.** | Not implemented. | **NOT built — needs a decision.** Under the stated definition this disables negotiation for **84% of all bookings** (63 of 75 start on a later day than they were made) and would have blocked **81% of every offer ever made** (48 of 59). The site's own strapline is "India's Negotiation-First Stay Marketplace". Almost certainly means *inside the Pre-Booking flow*, not every future-dated stay — confirm before building. |
+
+**Second open question — the monthly divisor.** The engine treats a month as
+**28 nights** and divides the host's monthly price by 28. The spec says 30/31.
+Changing it re-prices every long stay on 29,247 listings: a ₹30,000 month is
+₹1,071/night at 28 and ₹1,000 at 30. Not changed silently.
+
+**Still to build once those two are settled:** the banner on the app, and the
+one-month cap in both date pickers so a guest is stopped before the server has
+to refuse them.
+
 ### 8a5. Closed 2026-09-05 — the listing wizard's location picker
 
 Client: the map picker sits below the fields it fills, Street Address comes out
