@@ -17,6 +17,7 @@ import 'package:rent_home/ui/screens_host/property_details/view_host_property_de
 import 'package:rent_home/ui/screens_common/update_profile/update_profile_screen.dart';
 import 'package:rent_home/ui/screens_host/profile/host_menu.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:rent_home/ui/widgets/load_failed.dart';
 
 class HostProfilePage extends StatefulWidget {
   const HostProfilePage({super.key});
@@ -371,7 +372,22 @@ class _HostProfilePageState extends State<HostProfilePage> {
                   );
                 }
 
-                // No properties yet (or fetch failed) — friendly CTA either way.
+                // An empty list after a FAILED request is not "no properties
+                // yet". Say so, with a retry, instead of inviting a host who
+                // has listings to add their first one.
+                final failed = hostController.propertiesError.value;
+                if (failed != null && props.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: LoadFailed(
+                      title: "Couldn't load your properties",
+                      message: failed,
+                      onRetry: () => hostController.getHostProperties(),
+                    ),
+                  );
+                }
+
+                // No properties yet — friendly CTA.
                 return Container(
                   margin: const EdgeInsets.symmetric(vertical: 8),
                   padding: const EdgeInsets.all(20),

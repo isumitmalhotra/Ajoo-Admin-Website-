@@ -10,6 +10,7 @@ import 'package:rent_home/data/models/host_properties_reponse.dart';
 import 'package:rent_home/data/models/transaction_model.dart';
 import 'package:rent_home/service/host_service.dart';
 import 'package:rent_home/service/property_service.dart';
+import 'package:rent_home/utils/service_log.dart';
 
 class HostController extends GetxController {
   final HostService hostService = HostService();
@@ -22,6 +23,10 @@ class HostController extends GetxController {
   // from "fetched but empty/error" without depending on the shared `loading`
   // flag (which is reused across endpoints and causes flicker).
   final RxBool propertiesFetched = false.obs;
+  /// Why the last property fetch failed, or null. The profile screen drew
+  /// "No properties listed yet" + Add Property after a failed request —
+  /// to a host with twelve listings. This is how it tells the two apart.
+  final RxnString propertiesError = RxnString();
   final RxBool ongoingFetched = false.obs;
   final RxBool transactionsFetched = false.obs;
   Rx<HostOnGoingBookingResponse?> HostOngoingResponse =
@@ -235,6 +240,7 @@ class HostController extends GetxController {
   Future<void> getHostProperties({String? q}) async {
     try {
       loading.value = true;
+      propertiesError.value = null;
       propertySearch.value = q ?? "";
       final response = await hostService.getHostProperties(
           page: 1, q: q, sort: propertySort.value);
@@ -244,6 +250,8 @@ class HostController extends GetxController {
       getHostDrafts();
     } catch (e) {
       error.value = e.toString();
+      logServiceError('hostProperties', e);
+      propertiesError.value = ServiceErrors.lastFor('hostProperties');
     } finally {
       loading.value = false;
       propertiesFetched.value = true;

@@ -8,6 +8,8 @@ import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/ui/screens_renter/property_details/open_property.dart';
 import 'package:rent_home/utils/money.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
+import 'package:rent_home/ui/widgets/load_failed.dart';
+import 'package:rent_home/utils/service_log.dart';
 
 /// The guest's own view of every price negotiation they are in.
 ///
@@ -367,7 +369,20 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
               _tabs(all),
               const SizedBox(height: 14),
               if (visible.isEmpty)
-                _empty(all.isEmpty)
+                // An empty list after a FAILED request is not "no negotiations
+                // yet" — it is a screen that could not find out. Say so, and
+                // offer a retry, instead of the empty state.
+                (all.isEmpty &&
+                        ServiceErrors.lastFor('guestNegotiations') != null)
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 30),
+                        child: LoadFailed(
+                          title: "Couldn't load your negotiations",
+                          message: ServiceErrors.lastFor('guestNegotiations')!,
+                          onRetry: c.loadNegotiations,
+                        ),
+                      )
+                    : _empty(all.isEmpty)
               else
                 ...visible.map(_thread),
             ],

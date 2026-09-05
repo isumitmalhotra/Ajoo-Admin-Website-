@@ -35,12 +35,17 @@ class DealsService {
       final data = res.data is Map ? res.data['data'] : null;
       final list = (data is Map ? data['negotiations'] : null) ?? [];
       if (list is! List) return [];
+      // A successful answer clears the last failure, so a screen that
+      // recovered stops showing the retry card.
+      ServiceErrors.clear('guestNegotiations');
       return list
           .whereType<Map>()
           .map((e) => GuestNegotiation.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     } catch (e) {
-      logServiceError('deals_service:41', e);
+      // A stable key rather than file:line — the screen asks for this
+      // exact call by name to tell 'empty' from 'broken'.
+      logServiceError('guestNegotiations', e);
       return [];
     }
   }
@@ -150,14 +155,15 @@ class DealsService {
       final data = res.data is Map ? res.data['data'] : null;
       final list = (data is Map ? data['coupons'] : null) ?? [];
       if (list is! List) return [];
+      ServiceErrors.clear('guestDeals');
       return list
           .map((e) => NegotiatedDeal.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     } on DioException catch (e) {
-      logServiceError('deals_service:154', e);
+      logServiceError('guestDeals', e);
       return [];
     } catch (e) {
-      logServiceError('deals_service:156', e);
+      logServiceError('guestDeals', e);
       return [];
     }
   }
