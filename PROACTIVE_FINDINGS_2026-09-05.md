@@ -8,8 +8,8 @@ Ordered by how likely the next tester report is to come from it.
 
 | # | Class | Exposed | Effort | Priority |
 |---|---|---|---|---|
-| 1 | Silent-empty catches (app) | 26 sites | 1 day | **P1** |
-| 2 | `.nullable()` numerics with no empty-string transform | 34 fields | 3 h | **P1** |
+| 1 | Silent-empty catches (app) | ~~26 sites~~ **0 silent** — all 27 log; empty-vs-broken pattern shipped on notifications, 3 screens to follow | 1 day | **DONE 2026-09-05** (follow-up: 3 screens) |
+| 2 | `.nullable()` numerics with no empty-string transform | ~~34 fields~~ **0** — 38 sites on `nullableNumber()`, guard test fails the build if the shape returns | 3 h | **DONE 2026-09-05** |
 | 3 | `.catch(() => {})` (web) | 18 sites | 3 h | P2 |
 | 4 | Hardcoded status allowlists that define "money" | 2 arrays | 1 h review | P2 |
 | 5 | Admin form validates fields the user did not touch | 1 form | 2 h | P2 |
@@ -26,6 +26,8 @@ host notifications screen showed a blank list, and nothing anywhere recorded why
 **Where.** 26 sites in `aajoo_app_2026/lib/service/`. Worst offenders:
 `host_service.dart` (5), `booking_service.dart` (4), `growth_service.dart` (4),
 `deals_service.dart` (3).
+
+**Status 2026-09-05.** Done for logging on all 27 sites (`utils/service_log.dart`); the empty-vs-broken pattern (`ServiceErrors` + `LoadFailed`) is live on host notifications. **Follow-up:** apply the same key/clear + `LoadFailed` to guest bookings, guest negotiations and host properties — each is a controller-backed list, ~30 min apiece.
 
 **Fix.** Do not change the return type. Log the error and expose a `lastError`
 (or return a small `Result`) so the screen can show "Couldn't load — tap to retry"
@@ -54,7 +56,9 @@ the risk; ids and filters from JSON never arrive as `""`:
 - `properties.schema.js` — `no_of_beds`
 - `hostV2.schema.js` — `year`, `month`
 
-**Fix.** `nullableNumber()` already exists in `schema/adminSeo.schema.js` — hoist it
+**Status 2026-09-05.** Done. `nullableNumber()` lives in `schema/yupHelpers.js`; 38 sites converted, zero remain, and `tests/nullableNumberSweep.test.js` re-scans every schema on each run.
+
+**Fix (as applied).** `nullableNumber()` now lives in `schema/yupHelpers.js` — hoist it
 to `schema/_helpers.js` and apply it to every form-bound field above. Keep the
 refusal tests: the transform accepts *absence*, never bad input.
 
