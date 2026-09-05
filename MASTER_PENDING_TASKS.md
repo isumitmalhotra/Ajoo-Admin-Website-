@@ -177,6 +177,29 @@ that commission, four ledger rows per booking.
 
 ## 8. Closed since the last edition — do not redo
 
+### 8a5. Closed 2026-09-05 — the listing wizard's location picker
+
+Client: the map picker sits below the fields it fills, Street Address comes out
+as a locality where Google prints a street number, and moving the pin fills
+"half the fields" slowly and leaves the City blank. Four separate faults.
+
+| Was | Now | Evidence |
+|---|---|---|
+| **The picker sat at the BOTTOM** of "Where is the property?", under the six fields it fills, so hosts typed the address and then had the pin overwrite it. | **First in the section**, with a line saying it will fill the rest. | live — field order confirmed on the deployed wizard |
+| **Picking a place from the search filled NOTHING but the coordinates.** The picker trusted the search hit's own address; the legacy Places Text Search cannot return address components at all, and production runs on it, so every hit arrived blank. The fields the client did see came later, from a map click — which is the "half the fields, slowly" they reported. | **Fixed.** The hit is used when it carries an address, otherwise the pin is looked up. One request, only for the chosen place. | live — every field fills on the first pick |
+| **Street Address dropped the house number.** It was built as route + sublocality; Google returns the number separately as `street_number`, and a pin on a landmark with no route filled the locality name alone. | **Fixed.** Number and road, else the building's own name, else Google's formatted line with city/state/PIN/country trimmed. The two Google generations had a mapping each and had already drifted — one mapping now. | live — "S25/062, Katra Ahluwalia", "109 Court Road", "1, Chaura" |
+| **The City the pin set was wiped a moment later.** `StateCityFields` clears the city when the state changes, since the old city belonged to the old state — but the map writes both in one update, so the clear ate the city that had just arrived. | **Fixed.** It tells the two cases apart by whether the city changed in the same commit. | live — City fills as "Amritsar", was blank |
+| **Moving the pin left stale fields.** Merging non-empty values is right for a nudge, wrong for a move: Karnal → Amritsar kept "Karnal Division" in District. | **Fixed.** A different city or state replaces the address block outright. Same rule in the admin property form. | live — Amritsar → Karnal replaced all six fields |
+
+**Found, not fixed — the app's host wizard has NO map picker at all.** It asks
+for the address as text and never captures latitude or longitude, so a listing
+created on the app has no coordinates and cannot be returned by any
+location-based search. Only 6 of 29,252 listings are affected today and both
+real ones are inactive, because almost nothing has been listed from the app yet
+— but every future app listing lands the same way. Adding the picker to the
+Flutter wizard is a screen's worth of work, not a patch, so it is listed here
+rather than started.
+
 ### 8a4. Closed 2026-09-05 — app search parity, and pets in the search bar
 
 **App (build 18).** The app carried every fault the website had just been fixed
