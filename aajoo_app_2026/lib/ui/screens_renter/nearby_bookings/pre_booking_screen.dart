@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geocoding/geocoding.dart';
@@ -100,11 +102,6 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
   double? _priceMin;
   double? _priceMax;
   double _minRating = 0;
-
-  /// True when anything other than the default ordering is in play, i.e. when
-  /// the result list is a narrowed view rather than simply everything.
-  bool get _hasActiveFilters =>
-      _priceMin != null || _priceMax != null || _minRating > 0;
 
   /// How many filters are on — drives the count badge on the Filter button,
   /// so an active filter can never be invisible (the commonest cause of
@@ -216,7 +213,7 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
   /// to the build method, which meant a filter only ever applied while a
   /// search was active — pick "Price: Low to High" with an empty search box
   /// and nothing happened. Everything now goes through one path.
-  void _applySorting() => _searchProperties(_queryController.text);
+  void _applySorting() => _reloadFromServer();
 
   int _selectedHotelIndex = -1;
 
@@ -237,94 +234,42 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
   // Add method to filter properties by category
   String _sortOption = 'default';
 
-  static double _priceOf(SearchPropertyModel p) =>
-      double.tryParse(p.propertyPrice ?? '0') ?? 0;
-
   /// Price band and guest rating, applied to whatever list is handed in.
   ///
   /// An unrated stay has rating `null`, not 0, so a "4.0+" filter drops it —
   /// same rule the website applies. Claiming an unreviewed stay clears a
   /// rating bar would be inventing a review.
+  /// The price band and the rating floor are the API's, so what comes back IS
+  /// the filtered list. Applying them again here would narrow a page that has
+  /// already been narrowed, and would disagree with any count beside it.
   List<SearchPropertyModel> _filterProperties(
-      List<SearchPropertyModel> properties) {
-    if (!_hasActiveFilters) return properties;
-    return properties.where((p) {
-      final price = _priceOf(p);
-      if (_priceMin != null && price < _priceMin!) return false;
-      if (_priceMax != null && price > _priceMax!) return false;
-      if (_minRating > 0 && (p.rating == null || p.rating! < _minRating)) {
-        return false;
-      }
-      return true;
-    }).toList();
-  }
+          List<SearchPropertyModel> properties) =>
+      properties;
 
+  /// Ordering is the API's too, and for the same reason: sorting the page
+  /// orders the rows that already survived the limit, which is not the same
+  /// as the cheapest, or the best rated, on the platform. Unrated still sorts
+  /// last — that rule now lives in SQL.
   List<SearchPropertyModel> _sortProperties(
-      List<SearchPropertyModel> properties) {
-    switch (_sortOption) {
-      case 'price_low_high':
-        return List.from(properties)
-          ..sort((a, b) => _priceOf(a).compareTo(_priceOf(b)));
-      case 'price_high_low':
-        return List.from(properties)
-          ..sort((a, b) => _priceOf(b).compareTo(_priceOf(a)));
-      case 'rating':
-        // Unrated stays sort last rather than ahead of a 5.0 — the same rule
-        // the backend uses for sort_by=rating.
-        return List.from(properties)
-          ..sort((a, b) => (b.rating ?? -1).compareTo(a.rating ?? -1));
-      default:
-        return properties;
-    }
-  }
+          List<SearchPropertyModel> properties) =>
+      properties;
 
-  // Updated search function to maintain sorting and work with category filters
+  /// Search, by asking the API rather than sieving what is already here.
+  ///
+  /// This used to match the typed text against the sixty rows the screen had
+  /// fetched, so searching a stay by its name looked inside a page instead of
+  /// the catalogue — and the website had exactly the same fault, which the
+  /// client reported. The term goes to the API now, which matches it against
+  /// name, address, city and state and returns name matches first.
+  ///
+  /// Nothing is narrowed on the device any more, so `_isSearching` stays
+  /// false and the list simply renders what came back.
   void _searchProperties(String query) {
-    if (searchController.preBookingResponse.value?.data == null) return;
-
     setState(() {
-      if (query.isEmpty && _selectedHotelIndex == -1 && !_hasActiveFilters) {
-        _isSearching = false;
-        _filteredProperties.clear();
-      } else {
-        _isSearching = true;
-
-        List<SearchPropertyModel> baseResults =
-            searchController.preBookingResponse.value!.data;
-
-        // Apply text search filter if query is not empty
-        if (query.isNotEmpty) {
-          final searchLower = query.toLowerCase();
-          baseResults = baseResults.where((property) {
-            final nameMatch =
-                property.propertyName?.toLowerCase().contains(searchLower) ??
-                    false;
-            final addressMatch =
-                property.propertyAddress?.toLowerCase().contains(searchLower) ??
-                    false;
-            final cityMatch =
-                property.propertyCity?.toLowerCase().contains(searchLower) ??
-                    false;
-            final descMatch =
-                property.propertyDesc?.toLowerCase().contains(searchLower) ??
-                    false;
-
-            return nameMatch || addressMatch || cityMatch || descMatch;
-          }).toList();
-        }
-
-        // NO category sieve here.
-        //
-        // The API narrows by category now (see _loadResults), so what is in
-        // `preBookingResponse` is already the chosen type. Filtering it again
-        // on `category_titles` would silently drop the matches: a row can come
-        // back from the type filter with its titles unpopulated, and this
-        // returned `false` for exactly that case — so the server would answer
-        // with twelve villas and the screen would show none of them.
-
-        _filteredProperties = _sortProperties(_filterProperties(baseResults));
-      }
+      _isSearching = false;
+      _filteredProperties.clear();
     });
+    _reloadFromServer(delay: const Duration(milliseconds: 400));
   }
 
   /// The category the guest picked, by title.
@@ -1086,7 +1031,30 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
       guests: _guests > 0 ? _guests : null,
       from: _checkIn == null ? null : StayDatesBar.api(_checkIn!),
       to: _checkOut == null ? null : StayDatesBar.api(_checkOut!),
+      // The typed term and the chosen order, both the API's job now. Searching
+      // and sorting the page this returns answers a different question from
+      // the one the guest asked: a name search looked inside sixty rows, and
+      // "Price: Low to High" ordered those sixty and presented them as the
+      // cheapest on the platform.
+      query: _queryController.text.trim(),
+      sortBy: _sortOption,
     );
+  }
+
+  /// Ask the API again, a beat after the guest stops typing.
+  ///
+  /// One request per pause rather than one per keystroke.
+  Timer? _searchDebounce;
+
+  void _reloadFromServer({Duration delay = Duration.zero}) {
+    _searchDebounce?.cancel();
+    if (delay == Duration.zero) {
+      _loadResults();
+      return;
+    }
+    _searchDebounce = Timer(delay, () {
+      if (mounted) _loadResults();
+    });
   }
 
   @override

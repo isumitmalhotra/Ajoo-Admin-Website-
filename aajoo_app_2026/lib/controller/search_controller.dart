@@ -34,6 +34,8 @@ class HomeSearchController extends GetxController {
     double? minPrice,
     double? maxPrice,
     double? minRating,
+    String? query,
+    String? sortBy,
   }) async {
     isLoading.value = true;
     try {
@@ -49,6 +51,8 @@ class HomeSearchController extends GetxController {
         minPrice: minPrice,
         maxPrice: maxPrice,
         minRating: minRating,
+        query: query,
+        sortBy: sortBy,
       );
       preBookingResponse.value = response;
     } catch (err) {

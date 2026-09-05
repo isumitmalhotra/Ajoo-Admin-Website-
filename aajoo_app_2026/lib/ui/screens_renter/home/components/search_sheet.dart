@@ -362,6 +362,16 @@ class _SearchSheetState extends State<SearchSheet> {
       guests: _guests,
       petsOnly: _petsOnly,
     );
+    // The typed text and the price band, recorded the same way and for the
+    // same reason: the fetch has to carry them or the search silently becomes
+    // a different one. The text used to reach the geocoder and stop there, so
+    // typing a stay's NAME searched wherever that name happened to resolve to;
+    // the price band was applied in Dart to the page already fetched.
+    mapController.setQuery(
+      term: _whereController.text.trim(),
+      minPrice: _weeklyAny ? null : _weeklyPrice,
+      maxPrice: _monthlyAny ? null : _monthlyPrice,
+    );
 
     // A typed place with no suggestion tapped used to be ignored entirely:
     // the search fell through to "near my current position", so pressing
@@ -373,21 +383,28 @@ class _SearchSheetState extends State<SearchSheet> {
     if (target == null && typed.isNotEmpty) {
       final place = await GeocodeService.instance.resolve(typed);
       if (place == null) {
-        // Say so rather than silently searching somewhere else.
+        // Not a dead end any more.
+        //
+        // This refused the search outright, which is precisely wrong for the
+        // one case it fires on most: a guest typing a PROPERTY'S NAME. A name
+        // is not a place, so the geocoder cannot resolve it, and the guest was
+        // told to try a nearby town instead of being shown the stay they
+        // asked for by name. The term is sent to the server either way now,
+        // and the server matches it against name and address regardless of
+        // where the search is centred.
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(
-                "We couldn't find “$typed”. Try a nearby town or city."),
+            content: Text("Searching for “$typed” across Aajoo."),
           ));
         }
-        return;
+      } else {
+        target = _Destination(
+          city: place.shortName,
+          position: LatLng(place.lat, place.lng),
+          count: 0,
+          subtitle: place.context,
+        );
       }
-      target = _Destination(
-        city: place.shortName,
-        position: LatLng(place.lat, place.lng),
-        count: 0,
-        subtitle: place.context,
-      );
     }
 
     // Close as soon as we know WHERE to look, and let the destination screen
@@ -424,10 +441,6 @@ class _SearchSheetState extends State<SearchSheet> {
     } else {
       await mapController.fetchProperties(radius: radiusStr);
     }
-    mapController.applyPriceFilter(
-      minPrice: _weeklyAny ? null : _weeklyPrice,
-      maxPrice: _monthlyAny ? null : _monthlyPrice,
-    );
   }
 
   String get _whenLabel {

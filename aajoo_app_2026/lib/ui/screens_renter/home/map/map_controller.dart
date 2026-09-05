@@ -97,11 +97,29 @@ class MapController extends GetxController {
   /// here rather than in the sheet.
   final RxBool stayPetsOnly = false.obs;
 
+  /// What the guest typed, and the price band they asked for.
+  ///
+  /// Both live here for the same reason the dates do: every refetch — paging
+  /// the map, changing the category, widening the radius — must carry them, or
+  /// the guest's search quietly turns into a different one. The price band in
+  /// particular used to be applied in Dart to whatever had already been
+  /// fetched, so it narrowed a page rather than the catalogue.
+  final Rxn<String> searchTerm = Rxn<String>();
+  final Rxn<double> stayMinPrice = Rxn<double>();
+  final Rxn<double> stayMaxPrice = Rxn<double>();
+
   void setStay({String? from, String? to, int? guests, bool? petsOnly}) {
     stayFrom.value = (from != null && from.isNotEmpty) ? from : null;
     stayTo.value = (to != null && to.isNotEmpty) ? to : null;
     stayGuests.value = (guests != null && guests > 0) ? guests : 0;
     if (petsOnly != null) stayPetsOnly.value = petsOnly;
+  }
+
+  /// The typed term and the price band, set together by the search sheet.
+  void setQuery({String? term, double? minPrice, double? maxPrice}) {
+    searchTerm.value = (term != null && term.trim().isNotEmpty) ? term.trim() : null;
+    stayMinPrice.value = (minPrice != null && minPrice > 0) ? minPrice : null;
+    stayMaxPrice.value = (maxPrice != null && maxPrice > 0) ? maxPrice : null;
   }
 
   /// Widening steps for a search that came back empty, nearest first.
@@ -129,6 +147,9 @@ class MapController extends GetxController {
       petsAllowed: stayPetsOnly.value,
       from: stayFrom.value,
       to: stayTo.value,
+      q: searchTerm.value,
+      minPrice: stayMinPrice.value,
+      maxPrice: stayMaxPrice.value,
     );
 
     // Nothing within the default radius does not mean we have nothing. The
@@ -161,6 +182,9 @@ class MapController extends GetxController {
           radius: ring,
           guests: stayGuests.value > 0 ? stayGuests.value : null,
           petsAllowed: stayPetsOnly.value,
+          q: searchTerm.value,
+          minPrice: stayMinPrice.value,
+          maxPrice: stayMaxPrice.value,
           from: stayFrom.value,
           to: stayTo.value,
           // The planetary ring genuinely takes longer than the default
@@ -243,6 +267,9 @@ class MapController extends GetxController {
     stayTo.value = null;
     stayGuests.value = 0;
     stayPetsOnly.value = false;
+    searchTerm.value = null;
+    stayMinPrice.value = null;
+    stayMaxPrice.value = null;
     await getProperties(
       currentPosition.value.latitude,
       currentPosition.value.longitude,
@@ -252,22 +279,15 @@ class MapController extends GetxController {
     applyPriceFilter();
   }
 
-  // Frontend price filter (min/max) without new API calls
+  /// Price is narrowed by the DATABASE now — see [setQuery].
+  ///
+  /// This used to sieve `allProperties` in Dart, which searches the page
+  /// already fetched rather than the catalogue: a band could report nothing
+  /// while the platform held plenty just outside that page, and the count
+  /// beside it could only ever describe the page too. Kept as the reset the
+  /// callers still expect, so the visible list always mirrors what came back.
   void applyPriceFilter({double? minPrice, double? maxPrice}) {
-    if (minPrice == null && maxPrice == null) {
-      properties.assignAll(allProperties);
-      return;
-    }
-    final filtered = allProperties.where((p) {
-      // Sanitize price like '₹1,200' -> '1200'
-      final raw = p.propertyPrice.toString();
-      final cleaned = raw.replaceAll(RegExp(r'[^0-9\.]'), '');
-      final price = double.tryParse(cleaned) ?? 0.0;
-      final okMin = minPrice == null || price >= minPrice;
-      final okMax = maxPrice == null || price <= maxPrice;
-      return okMin && okMax;
-    }).toList();
-    properties.assignAll(filtered);
+    properties.assignAll(allProperties);
   }
 
   Future<void> fetchLuxuryProperties() async {

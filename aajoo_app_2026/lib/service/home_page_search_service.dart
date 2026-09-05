@@ -66,18 +66,34 @@ class HomePageSearchService {
     double? minPrice,
     double? maxPrice,
     double? minRating,
+    // What the guest typed. Matched by the API against name, address, city and
+    // state — the results screen used to filter its own fetched page by name,
+    // so searching a stay by name looked inside sixty rows rather than the
+    // catalogue.
+    String? query,
+    // 'default' | 'price_low_high' | 'price_high_low' | 'rating'. Ordered by
+    // the API, because sorting the fetched page orders sixty rows and presents
+    // them as the cheapest, or the best rated, on the platform.
+    String? sortBy,
   }) async {
     final token = await const FlutterSecureStorage().read(key: "user_token");
     _dio.options.headers['Authorization'] = 'Bearer $token';
+    // The API's own vocabulary for the sort, translated once here.
+    const sortMap = {
+      'price_low_high': ['property_price', 'asc'],
+      'price_high_low': ['property_price', 'desc'],
+      'rating': ['rating', 'desc'],
+    };
+    final chosenSort = sortMap[sortBy] ?? const ['property_id', 'desc'];
     final data = {
-      "query": "",
+      "query": (query ?? "").trim(),
       // Omitted rather than sent empty when we have no fix: the endpoint only
       // applies its distance filter when BOTH are present, and an empty string
       // is not a coordinate.
       if (longitude != null) "longitude": longitude,
       if (latitude != null) "latitude": latitude,
-      "sort_by": "property_id",
-      "order": "desc",
+      "sort_by": chosenSort[0],
+      "order": chosenSort[1],
       // Was 10. Ten rows is a preview, not a catalogue: with sort and filter
       // controls on this screen, "Price: Low to High" reordered ten listings
       // and a price band could only ever narrow those same ten — so a guest
