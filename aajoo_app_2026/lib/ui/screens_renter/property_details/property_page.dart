@@ -406,6 +406,43 @@ class _PropertyPageState extends State<PropertyPage>
 
   bool get hasDeal => (widget.dealCode?.isNotEmpty ?? false);
 
+  /// An accepted deal fixes its dates, so both pickers close.
+  ///
+  /// A negotiation is agreed against ONE stay — the host sanctions the dates
+  /// along with the price, and the coupon is written pinned to them.
+  /// /booking/create already refuses a mismatch ("This deal is for X to Y"),
+  /// so nobody could ever have paid the negotiated price for other nights.
+  ///
+  /// What they COULD do was move the dates while this page went on showing
+  /// "Negotiated deal applied" and the discounted total, and only meet the
+  /// refusal on the last screen. It matters most here: negotiation is a
+  /// same-day mechanism, so the dates being edited are exactly the ones that
+  /// would turn an agreed stay into a pre-booking, where deals do not apply.
+  ///
+  /// Only when the deal actually names dates — a code with none behaves as
+  /// before. Same rule as the website's property page.
+  bool get _dealFixesDates =>
+      hasDeal &&
+      (widget.dealFrom?.isNotEmpty ?? false) &&
+      (widget.dealTo?.isNotEmpty ?? false);
+
+  /// Give up the deal to book other nights.
+  ///
+  /// Locked is not the same as trapped: booking different dates is fine, it
+  /// just cannot be at the negotiated price. Clearing it here affects only
+  /// this booking — the coupon itself lives until it expires at midnight.
+  void _releaseDeal() {
+    setState(() {
+      _appliedCoupon = null;
+      _couponController.clear();
+      _couponOk = false;
+      _couponPercent = 0;
+      _couponDiscount = 0;
+      _couponMsg = '';
+      _updatePriceString();
+    });
+  }
+
   // ── Availability (grey out already-booked nights) ──────────────────────────
   final BookingService _bookingSvc = BookingService();
   List<DateTimeRange> _bookedRanges = [];
@@ -886,10 +923,11 @@ class _PropertyPageState extends State<PropertyPage>
               const SizedBox(height: 16),
               ListTile(
                 leading: const Icon(Icons.calendar_today),
+                enabled: !_dealFixesDates,
                 title: Text(
                   _dmy(selectedDate),
                 ),
-                onTap: () async {
+                onTap: _dealFixesDates ? null : () async {
                   final DateTime? picked = await showDatePicker(
                     context: context,
                     initialDate: _safeInitialDate(selectedDate, DateTime.now()),
@@ -931,10 +969,15 @@ class _PropertyPageState extends State<PropertyPage>
                     });
                   }
                 },
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                // No chevron when it cannot be opened — the arrow is this
+                // screen's promise that a row leads somewhere.
+                trailing: _dealFixesDates
+                    ? null
+                    : const Icon(Icons.arrow_forward_ios, size: 16),
               ),
               const SizedBox(height: 16),
               ListTile(
+                enabled: !_dealFixesDates,
                 leading: Icon(Icons.calendar_month,
                     color: _needsCheckout ? kDanger : null),
                 tileColor: _needsCheckout ? const Color(0xFFFDECEC) : null,
@@ -956,7 +999,7 @@ class _PropertyPageState extends State<PropertyPage>
                     ? Text('Pick a check-out date to book',
                         style: inter(fontSize: 11.5, color: kDanger))
                     : null,
-                onTap: () async {
+                onTap: _dealFixesDates ? null : () async {
                   final DateTime? picked = await showDatePicker(
                     context: context,
                     initialDate: _safeInitialDate(
@@ -1005,8 +1048,56 @@ class _PropertyPageState extends State<PropertyPage>
                     });
                   }
                 },
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                trailing: _dealFixesDates
+                    ? null
+                    : const Icon(Icons.arrow_forward_ios, size: 16),
               ),
+              // Say why the two rows above stopped responding, and offer the
+              // way out. A control that silently ignores a tap reads as broken.
+              if (_dealFixesDates)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(top: 2),
+                        child: Icon(Icons.event_available_rounded,
+                            size: 14, color: kMuted),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Your deal is agreed for '
+                              '${widget.dealFrom} to ${widget.dealTo}, '
+                              'so these dates cannot be changed.',
+                              style: inter(
+                                  fontSize: 12, color: kMuted, height: 1.35),
+                            ),
+                            GestureDetector(
+                              onTap: _releaseDeal,
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  'Book different dates without the deal',
+                                  style: inter(
+                                    fontSize: 12,
+                                    color: kIndigo,
+                                    fontWeight: FontWeight.w600,
+                                  ).copyWith(
+                                      decoration: TextDecoration.underline),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 16),
               // Set by the host and not negotiable, so no chevron: the two
               // rows above it use the same arrow to open a date picker, and
