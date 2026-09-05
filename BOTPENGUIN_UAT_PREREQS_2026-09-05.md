@@ -154,7 +154,8 @@ Because 169 is now the dual-role account, use **168 or 133** for prerequisite 8,
 so UAT-05 and the cross-host denial test are not reading the same record. The
 seeder already excludes 169 from what it offers there.
 
-> **This will not pass UAT-05 as the code stands.** See the defects below.
+> Creating this account exposed a defect that would have failed UAT-05 whatever
+> the test data looked like. It is fixed; see below.
 
 ---
 
@@ -229,12 +230,15 @@ it is, so the seeder reports it and changes nothing. Until it is resolved,
 
 ---
 
-## Two defects that will fail their cases
+## Two defects — both fixed
 
-Both are in the bot backend, both are small, and both are worth a decision
-*before* the run rather than a Fail during it.
+Both were in the bot backend. Fixed on 2026-09-05, before the run, so neither
+becomes a Fail during it. Twelve tests cover them; the backend suite is 53/53.
 
-### UAT-05 will fail — the chosen role is ignored for a dual-role account
+**Not yet deployed.** The backend auto-deploys on a push to `main`, and these
+changes are committed but need that push before UAT starts.
+
+### UAT-05 — the chosen role was ignored for a dual-role account
 
 `controllers/bp_controller.js:673`
 
@@ -253,21 +257,27 @@ nothing:
 user_role: user_role_result || session?.cs_user_role || null,
 ```
 
-Today every account holds exactly one role, so the two always agree and the
-problem is invisible. Give one account both — which is precisely what
-prerequisite 6 asks for — and choosing Guest returns `user_role: 'host'`.
+Every account held exactly one role, so the two always agreed and the problem
+was invisible. Give one account both — which is precisely what prerequisite 6
+asks for — and choosing Guest returned `user_role: 'host'`.
 
-The fix is to prefer the session's chosen role when the account actually holds
-it, and fall back to the flags otherwise. That keeps today's behaviour exactly
-for single-role accounts, including the useful case where someone claims a role
-they do not have.
+**The fix.** The rule now prefers the session's chosen role when the account
+actually holds it, and falls back to the flags otherwise. Single-role accounts
+behave exactly as before, including the useful correction when someone claims a
+role they do not have. The rule was lifted out of the request handler into
+`resolveUserRole`, so it can be tested as a rule rather than as text; the old
+rule and the new one are measurably different on one input and identical on the
+rest.
 
-Related, and worth knowing: `getContext` returns the guest's bookings regardless
-of role. Role scoping is enforced per endpoint — host listings, analytics and
-payout are separate calls — so UAT-05's *"Host data is not shown in Guest mode"*
-is tested there, not here.
+**A second leak the fix made reachable.** `getContext` returned the account's
+guest bookings whatever role the session was in. That cost nothing while no host
+had ever booked a stay, so the list was always empty — but a dual-role account
+would have had Host mode answering with that person's own trips, which is the
+leak UAT-05's *"Guest data is not shown in Host mode"* looks for. The booking
+list is now skipped in a host session. Support cases are not role-scoped and
+still appear.
 
-### UAT-17 will fail its last step — a second cancellation reports success
+### UAT-17 — a second cancellation reported success
 
 `utils/chatbotServices.js:930`
 
@@ -279,19 +289,47 @@ if (action === 'cancel_booking') {
   await model.tbl_bookings.update({ book_status: statusBookingCancelled }, ...);
 ```
 
-So cancelling an already-cancelled booking sets it to cancelled again and returns
+So cancelling an already-cancelled booking set it to cancelled again and returned
 *"Your booking has been cancelled successfully."* UAT-17's final step is exactly
 that, and its pass condition is that the repeat *"terminates safely instead of
 reporting a second cancellation."*
 
-The same path also skips what the website's cancellation does: it never records
-`book_cancelled_at`, never snapshots the refund fields, and never voids the host
-dues the booking raised. On a pay-at-property booking that leaves the host still
-billed for a stay that is not happening — the same class of problem as the
-host-cancel gap fixed on 2026-09-01.
+**The fix.** The path now refuses a booking that is already cancelled, and one
+whose stay has already started — the website has refused the latter for as long
+as it has had a cancel button. Driven against the live database on a throwaway
+booking:
 
-Using a pay-at-property booking for UAT-16/17, as recommended above, keeps the
-money side of that out of the run.
+```
+FIRST cancel  -> success: true   "Your booking has been cancelled successfully.
+                                  Nothing was charged for this booking..."
+SECOND cancel -> success: false  "This booking is already cancelled, so there is
+                                  nothing to cancel."
+```
+
+**Three things the same path was skipping.**
+
+It never recorded `book_cancelled_at` or which policy decided the outcome, so a
+chat cancellation left nothing to age a refund from. It does now, verified on
+that booking: policy `flexible`, 100%, `NOT_APPLICABLE` on an unpaid stay, with
+a timestamp.
+
+It never voided the host due. A pay-at-property booking raises a commission
+charge against the host, recovered from their next payout, and a cancelled stay
+earns none — the same gap that left ₹21,361 standing against cancelled stays
+when it was found on the host-cancel path on 2026-09-01. The void is now wired
+and unit-covered. It is not exercised end-to-end here, because dues exist only
+for pay-at-property bookings and the only one that guest holds is the stay in
+progress, which UAT-08 needs.
+
+And it quoted a refund the platform does not honour. `getRefundStatus` ran a
+ladder of its own invention — 80% back, or the amount less a flat ₹500 within 24
+hours — which is none of the published policies and bore no relation to what the
+guest agreed to at checkout. Worse, the figure it produced was the one written
+to the booking. Both the cancellation and the refund answer now use
+`utils/cancellationPolicy`, the calculator the website and the bot's own policy
+reply already shared, and the invented ladder is deleted. The refund answer
+reads back the decision rather than recomputing it, so "how much am I getting
+back?" and "you have been refunded X" can no longer disagree.
 
 ---
 
@@ -310,10 +348,11 @@ Two items in the pack belong to Aajoo, not to the backend, and neither is done:
 
 ## What is left
 
-1. **Move user 174 off 9882498033**, or accept that UAT-35 and UAT-36 cannot be
+1. **Deploy the backend.** The two fixes are committed but a push to `main` is
+   what puts them on `aajaodev.onrender.com`. Until then UAT-05 and UAT-17 will
+   still fail against the running service.
+2. **Move user 174 off 9882498033**, or accept that UAT-35 and UAT-36 cannot be
    run from that number. This is the only outstanding prerequisite.
-2. **Decide on the two defects above** — fix them before the run, or accept two
-   known Fails and log them as such rather than as surprises.
 3. **Remove the plaintext OTP log line** before the run, or accept that every
    code issued during UAT is readable in Render's log stream.
 4. **Aajoo's two items**: the second support operator, and confirming a UAT-31
