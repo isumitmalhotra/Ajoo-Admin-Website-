@@ -8,7 +8,7 @@ Ordered by how likely the next tester report is to come from it.
 
 | # | Class | Exposed | Effort | Priority |
 |---|---|---|---|---|
-| 1 | Silent-empty catches (app) | ~~26 sites~~ **0 silent** — all 27 log; empty-vs-broken pattern shipped on notifications, 3 screens to follow | 1 day | **DONE 2026-09-05** (follow-up: 3 screens) |
+| 1 | Silent-empty catches (app) | ~~26 sites~~ **0 silent** — all 27 log; empty-vs-broken pattern on notifications, guest negotiations and host properties (guest bookings already had its own) | 1 day | **DONE 2026-09-05** (follow-up done, build 16) |
 | 2 | `.nullable()` numerics with no empty-string transform | ~~34 fields~~ **0** — 38 sites on `nullableNumber()`, guard test fails the build if the shape returns | 3 h | **DONE 2026-09-05** |
 | 3 | `.catch(() => {})` (web) | ~~18 sites~~ **37 found, 0 left** — every site names what failed; Book Now, the notification bell and both offer pickers got a real error state; ESLint refuses the shape | 3 h | **DONE 2026-09-05** |
 | 4 | Hardcoded status allowlists that define "money" | ~~2 arrays~~ (3, counting the complement) **1** — `utils/bookingStatus.js`; guard test fails the build on a private list | 1 h review | **DONE 2026-09-05** |
