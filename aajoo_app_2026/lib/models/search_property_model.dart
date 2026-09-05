@@ -83,6 +83,9 @@ class SearchPropertyModel {
   bool isActive;
   int isDeleted;
   int isLuxury;
+
+  /// The host's cancellation policy key — the card wears it as a badge.
+  String? cancellationPolicy;
   DateTime createdAt;
   DateTime updatedAt;
   bool? propDetailsPropDetailIsPetFriendly;
@@ -128,6 +131,7 @@ class SearchPropertyModel {
     required this.isActive,
     required this.isDeleted,
     required this.isLuxury,
+    this.cancellationPolicy,
     required this.createdAt,
     required this.updatedAt,
     this.propDetailsPropDetailIsPetFriendly,
@@ -165,6 +169,7 @@ class SearchPropertyModel {
         isActive: json["is_active"],
         isDeleted: json["is_deleted"],
         isLuxury: json["is_luxury"],
+        cancellationPolicy: json["property_cancellation_policy"]?.toString(),
         createdAt: DateTime.parse(json["created_at"]),
         updatedAt: DateTime.parse(json["updated_at"]),
         propDetailsPropDetailIsPetFriendly:
@@ -200,6 +205,7 @@ class SearchPropertyModel {
         "is_active": isActive,
         "is_deleted": isDeleted,
         "is_luxury": isLuxury,
+        "property_cancellation_policy": cancellationPolicy,
         "created_at": createdAt.toIso8601String(),
         "updated_at": updatedAt.toIso8601String(),
         "propDetails.propDetail_isPetFriendly":

@@ -5,6 +5,8 @@ import 'package:rent_home/constants.dart';
 import 'package:rent_home/models/host_profile.dart';
 import 'package:rent_home/models/single_property_response.dart';
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/models/cancellation_policy.dart';
+import 'package:rent_home/ui/screens_common/cancellation_policy/cancellation_policy_page.dart';
 
 /// The seven detail sections, one at a time (A-29/A-30/A-31).
 ///
@@ -462,6 +464,13 @@ class PropertyDetailPanels extends StatefulWidget {
   /// where the spec says the host must not be shown at all.
   final Set<PropertyTab> hidden;
 
+  /// The published cancellation policies, from the server, so the Policies
+  /// panel can print the host's choice in the engine's own words. Injected by
+  /// the page rather than fetched here: a widget that starts a request in its
+  /// build cannot be tested without a network, and when it is null the panel
+  /// names the policy and links to the full text instead.
+  final Future<List<CancellationPolicyOption>>? cancellationPolicies;
+
   const PropertyDetailPanels({
     super.key,
     required this.single,
@@ -470,6 +479,7 @@ class PropertyDetailPanels extends StatefulWidget {
     this.fallback = const PropertyPanelFallback(),
     this.experiencesBuilder,
     this.hidden = const {},
+    this.cancellationPolicies,
   });
 
   @override
@@ -949,41 +959,58 @@ class _PropertyDetailPanelsState extends State<PropertyDetailPanels> {
     );
   }
 
-  /// The host's cancellation policy, in words — never an invented one.
+  /// The host's cancellation policy, in the server's words — never an
+  /// invented one.
   ///
   /// This panel used to state "Free cancellation up to 48 hours before
-  /// check-in" on EVERY listing, as a hardcoded line. It is a refund promise,
-  /// and on a non-refundable listing it was simply false. The API returns the
-  /// host's actual choice; the model just never read it.
-  static const _policyText = <String, String>{
-    'flexible':
-        'Flexible — free cancellation until 24 hours before check-in, then 50% refund.',
-    'moderate':
-        'Moderate — free cancellation until 5 days before check-in, then 50% refund.',
-    'firm':
-        'Firm — free cancellation within 48 hours of booking and at least 30 days before check-in.',
-    'strict':
-        'Strict — free cancellation within 48 hours of booking only; 50% refund up to 7 days before.',
-    'non_refundable': 'Non-refundable — this booking cannot be refunded.',
-    'custom': 'Custom policy — ask the host for the details before you book.',
-  };
-
+  /// check-in" on EVERY listing, as a hardcoded line. The fix kept a map of
+  /// sentences in the app — and two of them, Firm and Strict, described rules
+  /// the refund engine never had ("within 48 hours of booking"). A refund
+  /// promise on a screen has to come from the code that keeps it, so the rules
+  /// are fetched from /common/cancellation-policies, the same source the
+  /// website reads, generated from the engine's own tiers.
   Widget _policies() {
     final inTime = _s?.propDetails?.inTime;
     final outTime = _s?.propDetails?.outTime;
     final security = _s?.propDetails?.monthlySecurity;
     final policyKey = (_s?.cancellationPolicy ?? '').trim().toLowerCase();
-    final policyText = _policyText[policyKey];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const PanelTitle('Things to know'),
-        RuleLine(
-          ok: policyKey != 'non_refundable',
-          text: policyText ??
-              (policyKey.isEmpty
-                  ? "The host hasn't set a cancellation policy yet — ask before you book."
-                  : 'Cancellation policy: $policyKey'),
+        FutureBuilder<List<CancellationPolicyOption>>(
+          future: widget.cancellationPolicies,
+          builder: (context, snap) {
+            final opt = (snap.data ?? const <CancellationPolicyOption>[])
+                .where((o) => o.key == policyKey)
+                .cast<CancellationPolicyOption?>()
+                .firstWhere((_) => true, orElse: () => null);
+            if (policyKey.isEmpty) {
+              return const RuleLine(
+                  ok: false,
+                  text: "The host hasn't set a cancellation policy yet — ask before you book.");
+            }
+            if (opt == null) {
+              // Not loaded (yet, or at all): name the policy and point at the
+              // full text rather than paraphrase it from memory.
+              return _policyLink(
+                  RuleLine(ok: true, text: 'Cancellation policy: ${_titleCase(policyKey)}'),
+                  policyKey);
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RuleLine(ok: true, text: '${opt.label} — ${opt.summary}'),
+                for (final r in opt.rules)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 30, bottom: 4),
+                    child: Text('• $r',
+                        style: inter(fontSize: 12.5, color: kMuted, height: 1.4)),
+                  ),
+                _policyLink(const SizedBox.shrink(), policyKey),
+              ],
+            );
+          },
         ),
         if (inTime != null || outTime != null)
           RuleLine(
@@ -1001,4 +1028,30 @@ class _PropertyDetailPanelsState extends State<PropertyDetailPanels> {
       ],
     );
   }
+
+  Widget _policyLink(Widget above, String policyKey) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          above,
+          Padding(
+            padding: const EdgeInsets.only(left: 30, top: 2, bottom: 8),
+            child: GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => CancellationPolicyPage(scrollToPolicy: policyKey)),
+              ),
+              child: Text('Read the full Cancellation & Refund Policy',
+                  style: inter(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: kprimaryColor)
+                      .copyWith(decoration: TextDecoration.underline)),
+            ),
+          ),
+        ],
+      );
+
+  static String _titleCase(String key) =>
+      key.split('_').map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}').join(' ');
 }

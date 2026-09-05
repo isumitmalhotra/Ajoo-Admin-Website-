@@ -46,6 +46,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/models/property_offer.dart';
 import 'package:rent_home/models/pet_policy.dart';
+import 'package:rent_home/ui/screens_renter/property_details/widgets/stay_cancellation_card.dart';
+import 'package:rent_home/service/cancellation_policy_service.dart';
 
 class PropertyPage extends StatefulWidget {
   final String image;
@@ -178,6 +180,10 @@ class _PropertyPageState extends State<PropertyPage>
   final propertyController =
       Get.put<NewPropertyController>(NewPropertyController());
   bool isCod = false;
+  // Policy v1.0 §15: the guest must actively acknowledge the cancellation
+  // policy before completing the booking. Reset when the dates change —
+  // different dates are different deadlines.
+  bool _policyOk = false;
   // Wallet (audit C-9): referral credit the guest can put toward this stay.
   // Balance loads best-effort (0 on any failure = the row never renders);
   // the toggle defaults ON because it is the guest's own money and the split
@@ -389,6 +395,7 @@ class _PropertyPageState extends State<PropertyPage>
     if (from != null && to != null && to.isAfter(from)) {
       selectedDate = from;
       selectedDateTo = to;
+      _policyOk = false; // new dates, new deadlines — ask again
       totalDays = _nightsBetween(from, to);
       if (totalDays < 1) totalDays = 1;
       isButtonEnabled = true;
@@ -1734,8 +1741,22 @@ class _PropertyPageState extends State<PropertyPage>
                 onChanged: (id) => setState(() => _travellerId = id),
               ),
               const SizedBox(height: 16),
+              StayCancellationCard(
+                propertyId: int.tryParse('${widget.id}') ?? 0,
+                checkIn: selectedDate,
+                accepted: _policyOk,
+                onAccepted: (v) => setState(() => _policyOk = v),
+              ),
+              const SizedBox(height: 16),
               ElevatedButton(
 onPressed: () async {
+                  if (!_policyOk) {
+                    bookingController.showSnackbar(
+                        'Cancellation policy',
+                        "Please confirm you've read the cancellation policy for this stay.",
+                        true);
+                    return;
+                  }
                   // Nothing in here may fail silently. Before this, an
                   // exception anywhere in the booking path closed the sheet
                   // with no message at all — the guest tapped Book Now and
@@ -2330,6 +2351,8 @@ onPressed: () async {
                         single: _single,
                         host: _host,
                         reviewCount: _reviewCount,
+                        cancellationPolicies:
+                            CancellationPolicyService.instance.policies(),
                         experiencesBuilder: _buildReviews,
                         fallback: PropertyPanelFallback(
                           description: widget.description,

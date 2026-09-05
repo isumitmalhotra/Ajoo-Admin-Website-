@@ -8,6 +8,7 @@ import 'package:rent_home/ui/design/aajoo_skin.dart';
 import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/utils/money.dart';
+import 'package:rent_home/ui/widgets/cancellation_badge.dart';
 
 /// The full-width stay card on the Pre-Booking / browse screen.
 ///
@@ -95,6 +96,7 @@ class PreBookingCard extends StatelessWidget {
       propertyHostId: property.propertyHostId,
       propertyZip: property.propertyZip,
       propertyContact: property.propertyContact,
+      propertyCancellationPolicy: property.cancellationPolicy,
       propDetailsPropDetailIsPetFriendly:
           property.propDetailsPropDetailIsPetFriendly,
       propDetailsPropDetailIsSmoke: property.propDetailsPropDetailIsSmoke,
@@ -210,6 +212,11 @@ class PreBookingCard extends StatelessWidget {
                   bg: const Color(0xFFD4AF37),
                   fg: const Color(0xFF1A1508),
                 ),
+              // Policy v1.0: every card says which cancellation policy applies.
+              if (CancellationBadge.has(property.cancellationPolicy)) ...[
+                if (property.isLuxury == 1) const SizedBox(height: 6),
+                CancellationBadge(property.cancellationPolicy, compact: true),
+              ],
               if (_isGuestFavourite) ...[
                 if (property.isLuxury == 1) const SizedBox(height: 6),
                 _Badge(

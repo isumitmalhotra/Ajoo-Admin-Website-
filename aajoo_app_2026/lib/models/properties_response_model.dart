@@ -67,6 +67,8 @@ class Property {
   dynamic propertyZip;
   String? propertyContact;
   String? propertyEmail;
+  /// The host's cancellation policy key (flexible | moderate | firm | strict | super_strict).
+  String? propertyCancellationPolicy;
   double? distance;
   bool? propDetailsPropDetailIsPetFriendly;
   bool? propDetailsPropDetailIsSmoke;
@@ -114,6 +116,7 @@ class Property {
     required this.propertyHostId,
     required this.propertyZip,
     this.propertyContact,
+    this.propertyCancellationPolicy,
     this.distance,
     this.propDetailsPropDetailIsPetFriendly,
     this.propDetailsPropDetailIsSmoke,
@@ -146,6 +149,7 @@ class Property {
         propertyHostId: json["property_host_id"],
         propertyZip: json["property_zip"],
         propertyContact: json["property_contact"]?.toString(),
+        propertyCancellationPolicy: json["property_cancellation_policy"]?.toString(),
         propertyEmail: json["property_email"]?.toString(),
         distance: (json["distance"] as num?)?.toDouble(),
         propDetailsPropDetailIsPetFriendly:
@@ -199,6 +203,7 @@ class Property {
         "property_host_id": propertyHostId,
         "property_zip": propertyZip,
         "property_contact": propertyContact,
+        "property_cancellation_policy": propertyCancellationPolicy,
         "property_email": propertyEmail,
         "distance": distance,
         "propDetails.propDetail_isPetFriendly":

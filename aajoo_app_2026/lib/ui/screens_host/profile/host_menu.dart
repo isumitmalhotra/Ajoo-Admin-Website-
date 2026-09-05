@@ -21,6 +21,7 @@ import 'package:rent_home/ui/screens_host/offers/host_offers_screen.dart';
 import 'package:rent_home/ui/screens_host/notifications/host_notifications_screen.dart';
 import 'package:rent_home/ui/screens_common/refer/refer_screen.dart';
 import 'package:rent_home/ui/screens_host/settlements/host_settlements_screen.dart';
+import 'package:rent_home/ui/screens_common/cancellation_policy/cancellation_policy_page.dart';
 
 /// Every page a host can reach, declared once (A-78).
 ///
@@ -171,6 +172,11 @@ List<HostMenuEntry> hostMenuEntries({VoidCallback? beforeNavigate}) {
       icon: Iconsax.shield,
       label: 'Privacy Policy',
       onTap: () => go(() => const PrivacyPolicyPage()),
+    ),
+    HostMenuEntry(
+      icon: Iconsax.calendar_remove,
+      label: 'Cancellation & Refund Policy',
+      onTap: () => go(() => const CancellationPolicyPage()),
     ),
     // No "Switch to guest" here. A host who wants to browse as a guest signs in
     // on the guest side; carrying a second mode through the whole host shell

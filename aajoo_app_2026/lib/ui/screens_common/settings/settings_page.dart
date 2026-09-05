@@ -9,6 +9,7 @@ import 'package:rent_home/ui/screens_common/privacy_policy/privacy-policy_page.d
 import 'package:rent_home/ui/screens_common/terms_and_conditions/terms_condition_user_page.dart';
 import 'package:rent_home/ui/screens_common/settings/change_password_page.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:rent_home/ui/screens_common/cancellation_policy/cancellation_policy_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -310,6 +311,13 @@ class _SettingsPageState extends State<SettingsPage> {
                   CupertinoPageRoute(
                       builder: (context) => const PrivacyPolicyPage()));
             },
+          ),
+          SettingsTile(
+            title: "Cancellation & Refund Policy",
+            onTap: () => Navigator.push(
+                context,
+                CupertinoPageRoute(
+                    builder: (context) => const CancellationPolicyPage())),
           ),
           SettingsTile(
             title: "FAQ",

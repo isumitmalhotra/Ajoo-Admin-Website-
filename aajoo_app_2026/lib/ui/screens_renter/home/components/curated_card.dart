@@ -5,6 +5,7 @@ import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/service/bookmark_service.dart';
 import 'package:rent_home/utils/money.dart';
+import 'package:rent_home/ui/widgets/cancellation_badge.dart';
 
 /// AajooHomes property card — re-skinned to the new teal/orange design
 /// (scaffold property_card.dart): white bordered card, image with a badge +
@@ -206,6 +207,11 @@ class CuratedCard extends StatelessWidget {
                       ),
                     ]),
                     const SizedBox(height: 4),
+                    if (CancellationBadge.has(property.propertyCancellationPolicy))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: CancellationBadge(property.propertyCancellationPolicy, compact: true),
+                      ),
                     Text(property.propertyName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
