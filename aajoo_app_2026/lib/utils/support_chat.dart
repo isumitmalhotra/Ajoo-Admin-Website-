@@ -1,6 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 
+import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 
 /// The BotPenguin support window, opened as the person we already know.
@@ -8,9 +10,18 @@ import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 /// The app opened a bare chat URL, so a guest who had been signed in for weeks
 /// was asked for their phone number and a fresh OTP the moment they tapped
 /// Chat — the bot had no way to tell who they were. The website has not done
-/// that since the widget shipped: it hands the logged-in JWT to BotPenguin as a
-/// `ctx-token` attribute, the bot forwards it to /bp/session/start, and the
-/// backend verifies it and starts the session ALREADY authenticated.
+/// that since the widget shipped: the chat is opened carrying a token the bot
+/// forwards to /bp/session/start, and the backend verifies it and starts the
+/// session ALREADY authenticated.
+///
+/// The token is a HANDOFF token, not the login session.
+///
+/// This used to send `user_token` itself — a 30-day credential that opens the
+/// whole API — to a third party, in a URL, where it lands in their logs and
+/// their analytics. The website stopped doing that on 2026-09-05; this is the
+/// same fix on the second surface. /bp/handoff mints a 15-minute token good for
+/// this one purpose, signed with a key the session verifiers reject, so what
+/// BotPenguin receives cannot be replayed against anything else.
 ///
 /// The hosted chat window takes the same context as query parameters, so this
 /// builds the identical set the web sets — same names, same values — and the
@@ -21,6 +32,28 @@ import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 const String botPenguinChatUrl =
     'https://window-2.botpenguin.com/69803a093817049868bf064f/696f4cdf88f4a8046c67188e';
 
+/// Swap the login session for a short-lived, single-purpose handoff token.
+///
+/// Returns null on any failure — a missing endpoint, a timeout, an expired
+/// session. The caller then opens the plain chat and the bot asks who it is
+/// talking to, which is a worse greeting and a correct one.
+Future<String?> _handoffToken(String sessionToken) async {
+  try {
+    final dio = Dio(BaseOptions(
+      baseUrl: Apiconstants.baseUrl,
+      connectTimeout: const Duration(seconds: 6),
+      receiveTimeout: const Duration(seconds: 6),
+      headers: {'Authorization': 'Bearer $sessionToken'},
+    ));
+    final res = await dio.post('/bp/handoff');
+    final data = res.data is Map ? res.data['data'] : null;
+    final t = data is Map ? data['token']?.toString() : null;
+    return (t != null && t.trim().isNotEmpty) ? t.trim() : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 /// [base] is exposed for tests; callers use the default.
 Future<String> supportChatUrl({String base = botPenguinChatUrl}) async {
   final params = <String, String>{};
@@ -30,9 +63,15 @@ Future<String> supportChatUrl({String base = botPenguinChatUrl}) async {
         await const FlutterSecureStorage().read(key: 'user_token') ?? '';
     if (token.trim().isEmpty) return base;
 
-    // The token is what /bp/session/start verifies; everything else below is
-    // convenience so the bot can greet properly and skip its capture nodes.
-    params['ctx-token'] = token.trim();
+    final handoff = await _handoffToken(token.trim());
+    // No handoff, no identity. Falling back to the login session would put the
+    // very credential this exists to protect into a vendor's URL; the bot
+    // asking for a phone number is the correct outcome instead.
+    if (handoff == null) return base;
+
+    // What /bp/session/start verifies. Everything else below is convenience so
+    // the bot can greet properly and skip its capture nodes.
+    params['ctx-token'] = handoff;
     // A plain marker for the bot's If/Else gate — the web sets the same fixed
     // value so the condition can read `isauth equals yes`.
     params['ctx-isauth'] = 'yes';
