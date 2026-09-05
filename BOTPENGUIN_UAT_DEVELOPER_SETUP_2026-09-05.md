@@ -13,7 +13,7 @@ Two items remain open. Neither is development work: both sit with Aajoo and the 
 | Development records ready | **11 of 11** |
 | Defects fixed and deployed | **4** |
 | Open, and not development work | **2** |
-| Android build to test on | **1.0.0 (24)** — the handoff fix landed in 23 |
+| Android build to test on | **1.0.0 (28)** — the handoff fix landed in 23 |
 | Backend | **Deployed and confirmed serving the new code** |
 
 Every record below was checked against the live development backend and its database rather than reported from working notes. That matters here: two of the eleven had previously been recorded as satisfied and were not, so please work from this document rather than any earlier list.
@@ -34,7 +34,7 @@ Both surfaces now hand the bot an authenticated context when the user is already
 
 What is passed is a **handoff token, not the login session**. It is minted per chat opening, lives fifteen minutes, is valid for starting a chat session and nothing else, and is signed with a key that the ordinary session verifiers reject. If it cannot be minted, the chat opens with no identity at all rather than falling back to the login session — the bot then asks for a phone number, which is the correct outcome.
 
-> **This was the app's outstanding half.** Until 5 September the Android app put the user's thirty-day login credential into the chat URL, where it would have been recorded in BotPenguin's request logs and analytics. The website had already moved to handoff tokens; the app now matches it. Shipped in build 23; test on build 24 or later, which carries it forward.
+> **This was the app's outstanding half.** Until 5 September the Android app put the user's thirty-day login credential into the chat URL, where it would have been recorded in BotPenguin's request logs and analytics. The website had already moved to handoff tokens; the app now matches it. Shipped in build 23 and carried forward ever since; test on build 28.
 
 ### 3. Guest account with at least two non-cancelled bookings
 
@@ -116,7 +116,7 @@ All four are fixed, deployed, and confirmed live.
 
 *Relates to prerequisite 2, and to UAT-03, UAT-04 and UAT-05.*
 
-Covered in item 2 above. Fixed in Android build 23 and carried forward; install build 24 or later.
+Covered in item 2 above. Fixed in Android build 23 and carried forward; install build 28.
 
 ### A dual-role account was always treated as a Host
 
@@ -209,6 +209,87 @@ Every one of the eleven records was checked against the live development backend
 
 The four fixes carry automated tests — eighteen in total across the two areas — and the backend test suite passes in full. The two behavioural fixes were additionally driven against the live system: the cancellation was performed twice on a throwaway booking to confirm the repeat is refused, and a real one-time code was issued to confirm the log no longer contains it while the email still arrives.
 
-The backend was confirmed serving the new code after release. The app-side change landed in Android build 1.0.0 (23); the current build is 1.0.0 (24), which carries it plus one unrelated booking fix. Test on 24.
+The backend was confirmed serving the new code after release. The app-side change landed in Android build 1.0.0 (23) and has been carried forward since; the current build is **1.0.0 (28)**. Test on 28. Section 8 lists what else changed between 23 and 28 and why none of it touches the cases in this pack.
 
 We are happy to walk through any of this before testing begins, and to prepare any further development record on request.
+
+---
+
+## 8. What changed on 6 September, on both surfaces
+
+Five changes went out the day after this pack was written. None alters a UAT case
+or a development record, and every one of them is deliberate — but each is
+visible enough that a tester could reasonably log it as a defect. They are listed
+here so nobody has to guess.
+
+Where a change is marked **both**, the website and the Android app behave
+identically, because the rule is enforced in the backend that serves them and the
+chatbot alike.
+
+### Negotiation is now for stays starting today — **both**
+
+The largest of the five, and the one most likely to surprise a tester.
+
+A booking is one of two kinds, told apart by the day the stay **starts**:
+
+| What the guest gets | Stay starts **today** | Stay starts **tomorrow or later** |
+|---|---|---|
+| Called | normal booking | advance booking, or pre-booking |
+| Negotiate a price | **Yes** | **No** |
+| Pay 10% and book | **No** | **Yes** |
+| Pay in full | Yes | Yes |
+| Pay at property | Yes | Yes |
+
+So an offer on a stay that begins tomorrow is now refused, with a message saying
+so and pointing at the 10% option instead. Before 6 September the same offer
+would have been accepted. **This is the intended behaviour, not a fault.**
+
+Weekly and monthly pricing is unchanged and applies to **both** kinds alike: a
+fortnight booked to start today and the same fortnight booked to start tomorrow
+price identically, as two weeks.
+
+The rule is decided in Indian time, so the switch happens at midnight IST rather
+than at the tester's own midnight.
+
+### An agreed deal fixes its dates — **both**
+
+Once a negotiated deal is applied, the check-in and check-out fields stop
+accepting changes and say why. A deal is agreed for one stay, and the backend has
+always refused it against different dates; previously the guest could edit the
+dates and only met that refusal on the final screen.
+
+A link under the dates releases the deal so other dates can be booked at the
+listed price. Releasing removes the discount immediately.
+
+### A deal lasts until midnight, not 24 hours — **both**
+
+The wording on the negotiations screen said a deal was "valid for 24 hours" while
+the message beside it said "yours until midnight tonight". Deals expire at the end
+of the day they were struck, so the second was right and the first has been
+corrected. A deal accepted late in the evening lasts an hour, which is expected.
+
+### A host previewing their own listing stays in the host portal — **website**
+
+The eye button on My Properties used to open the public guest page inside the
+renter site, including an account menu labelled "Renter account". It now opens a
+preview: the listing exactly as a guest sees it, under a preview bar offering My
+Properties and Edit listing.
+
+Related, and visible anywhere a signed-in host meets the public site: the account
+menu now reads "Host account" and points at the host's own pages rather than the
+renter dashboard.
+
+### One-time codes are no longer written to the server log — **backend**
+
+Covered in section 2, item 10. Listed again here only because it shipped on the
+same day.
+
+### None of this changes the pack
+
+No development record was affected, no UAT case's steps or pass criteria change,
+and the eleven prerequisites in section 2 all still hold. The chatbot's own
+booking, cancellation and payout journeys are untouched.
+
+The one thing to carry into the run: if a tester negotiates through the bot on a
+stay starting tomorrow or later and is refused, that is the rule above working,
+and should be recorded as a Pass rather than a Fail.
