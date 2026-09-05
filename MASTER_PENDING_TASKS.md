@@ -177,6 +177,34 @@ that commission, four ledger rows per booking.
 
 ## 8. Closed since the last edition — do not redo
 
+### 8a3. Closed 2026-09-05 — pagination, result consistency, card design
+
+Client, comparing our Delhi results with Airbnb's: "632 properties in delhi, on
+map shows 100 stays only … no pagination exist … our page looks more like a
+dummy". Six more defects, all fixed, deployed and re-verified live.
+
+| Was | Now | Evidence |
+|---|---|---|
+| **No pagination.** The API answered with its first 100 rows and there was no way to ask for row 101 — `limit` had never been whitelisted (stripUnknown deleted it, which is where the suspiciously round 100 came from) and `offset` did not exist. | **Fixed.** 24 stays a page with a numbered pager: first and last page always reachable, current page ± 1, ellipsis over the gap. Changing the search returns to page one. | live — "1–24 of 4,006", page 2 shows "25–48" with different stays |
+| **The header promised what the pages could not deliver.** The live-host rule (a listing whose owner is deleted or deactivated is not for sale) ran in JavaScript over the fetched rows while the total was pure SQL. | **Fixed.** Same rule, applied where the counting happens, so the total and every page agree. | test + live |
+| **Sort ordered the page, not the search.** "Price: low to high" sorted the 24 stays on screen and presented that as the cheapest on the platform. | **Fixed.** Server-side, from a fixed map (never caller text — it lands in an ORDER BY). A search term still leads the ordering. Sorting returns to page one. | live — price_asc opens at ₹900, an invalid sort is refused 403 |
+| **Guest rating filtered the page.** A 4-star filter searched 24 stays out of 632. | **Fixed.** A subquery over the same rows the ratings helper averages; unrated is excluded by a floor rather than counted as zero. | live — 2 stays at 4★+, 1 at 4.5★+ |
+| **A ticked property type could search the wrong category.** The title→id map was keyed by a normalised title, and the normaliser strips a trailing "s", so "Villa" and "Villas" collapse to one key — both of which an admin may create. | **Fixed.** Keyed by the exact title. | code; no collision in today's data |
+| **Cards read as a form beside Airbnb's.** Hard border, 14px padding, a 16/11 crop that made the photograph a thumbnail, and the tightest grid on the site (2 columns, 16px). | **Fixed.** 18px radius, border traded for a soft hover lift, 4/3 image, 16–18px padding, blurred pills that sit in the photograph, 24px grid taking a third column above 1600px. Same markup, so the rails move with it. | live — computed styles confirmed on the deployed page |
+
+**Filters audited end to end against live data** — property type (single, multi-
+select, an admin-created category, and one an admin switched off), price (each
+bound alone), sort (all four), guest rating, pets, guests, dates, and a
+combined query. All narrow at the database and all agree with their counts.
+
+**Left as data, not code:** only **7 of 29,232** live listings have a
+house-rules row at all, and 5 say pets are allowed — so "Travelling with a pet"
+is correct but almost always answers empty. Separately, 3,247 listings sit in
+the "Pet-Friendly Stays" *category* and none of them says pets are allowed in
+its house rules. The two are different things and the filter reads the host's
+actual answer; making the category stand in for it would tell a guest they can
+bring a dog when no host ever said so.
+
 ### 8a2. Closed 2026-09-05 — property search and filters (client report)
 
 Client: "we can't search property by entering the property exact name", and a
