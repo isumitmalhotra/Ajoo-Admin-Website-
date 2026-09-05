@@ -27,10 +27,10 @@ work; sorting by owner is what makes that visible.
 |---|---|---|
 | [1. Client decisions](#1-blocked-on-client-decisions) | Client | 7 |
 | [2. Ops / Render access](#2-blocked-on-ops--render-access) | Whoever holds Render + GCP | 6 |
-| [3. Engineering](#3-engineering--genuinely-open) | Us | 12 |
+| [3. Engineering](#3-engineering--genuinely-open) | Us | 14 |
 | [4. Contract deliverables](#4-contract-deliverables-) | Us | 8 |
 | [5. Section-0 redo](#5-section-0-site-redo--separate-sow) | Blocked on a signed change order | 20 |
-| [6. Unproven, not broken](#6-unproven-not-broken) | Us + tester | 9 |
+| [6. Unproven, not broken](#6-unproven-not-broken) | Us + tester | 8 |
 
 **If only two things get done:** §2.1 (live payment keys) and §1.1 (delete the
 seed listings). The first means the product currently looks like it is taking
@@ -48,7 +48,7 @@ money and is not. The second gates every honest SEO number on the site.
 | **1.4** | **Cancellation-policy final copy** (was E-4) | `normaliseCancellationPolicy` ships Flexible/Moderate/Strict and the host picks one at listing time. The *text shown to guests* is still placeholder. | code |
 | **1.5** | **Weather provider + key** (was E-2, RENT-7) | Renter-dashboard weather widget cannot start without a provider choice. | carried |
 | **1.6** | **Brand assets** — logo set, favicon/PWA icons, animated illustrations, WhatsApp number, social links, reference designs (was E-5, S0-ASSET-1…5) | Gates most of Section-0. | carried |
-| **1.7** | **The four test listings that are now the public catalogue** | Of the 5 live real-host listings, **4 were approved on 2026-09-04 so the site was not empty** after approval started gating visibility: Garg Resorts (29263), Tharamani Farm Retreat (29265), Vrindavan Garden Farm Stay (29277), Delhi Green Farm Stay (29279 — the last two renamed from "Aish mobile host property…"). They are tester accounts' listings with tester phone numbers. Decide whether they stay through launch or come down with the seed data. | verified 09-05 — `property_submission` + `tbl_properties` |
+| **1.7** | **The five test listings that are now the public catalogue** | Of the 6 live real-host listings, **5 are tester approvals**: four on 2026-09-04 so the site was not empty after approval started gating visibility — Garg Resorts (29263), Tharamani Farm Retreat (29265), Vrindavan Garden Farm Stay (29277), Delhi Green Farm Stay (29279 — the last two renamed from "Aish mobile host property…") — and Aish camping in the hills (29289) on 09-05, approved to prove the audit-trail fix. They are tester accounts' listings with tester phone numbers. Decide whether they stay through launch or come down with the seed data. | verified 09-05 — `property_submission` + `tbl_properties` |
 
 ---
 
@@ -86,6 +86,8 @@ money and is not. The second gates every honest SEO number on the site.
 | **3.10** | **Web lint baseline is red** | `npm run lint` reports **~600 problems, 540 of them `no-explicit-any`**, so lint cannot gate the Vercel build (which runs `tsc -b` only). The empty-catch rule added on 09-05 therefore only bites when someone runs lint by hand. Either downgrade `no-explicit-any` to a warning and clean the rest, or fix the anys — then add `lint` to the build. | verified 09-05 — `eslint .` |
 | **3.11** | **Report of listings whose stored contact fails the 6–9 mobile rule** | Two of yesterday's renames were blocked because the admin form re-validated a stored `1425369807`. The form now validates only what changed, but the junk is still stored and will surface the next time a host edits those listings in the wizard. A one-off query + host nudge. | verified 09-05 — the two numbers |
 | **3.12** | **Leftovers from the sweep** | (a) Two screen-level empty catches remain in the app (`host_profile.dart:67`, `csc_picker.dart:750`); every *service* is clean. (b) `tbl_book_statuses` ids 12/13/14 double as payout-request states (`statusPayoutPending/Successfull/Failed` in `commonConfig`); 13 now counts as revenue by decision, but a booking table sharing ids with a payout table is a cleanup waiting to bite. | verified 09-05 — `flutter analyze`, `config/commonConfig.js` |
+| **3.13** | **Admin → Properties → "Approve & publish" is a second, broken approval path** | `POST /admin/properties/verify` (`adminProperty.controller.verifyProperty`) refuses with *"This listing has no verification documents"* because it counts `tbl_property_documents` + `tbl_attachments` only — the five-step wizard writes documents to **`property_media` (`pmd_type=document`)**, which the detail read 40 lines below already knows. Net: the button refuses **15 of the 16 real-host listings** (29289 had 7 documents on screen while being refused). Worse, if the count ever passes it approves **without** the state machine (drafts get an Approve button), the ≥70% completeness gate, the `property_submission` record (`psb_status`, `psb_reviewed_by`), or SEO regeneration. The queue page's subtitle says older-form listings are reviewed here, but the Properties list shows wizard listings with the button too. **Fix:** make that button route to / call the listing-engine `adminReview`, or hide it for wizard listings. | verified 09-05 — refused on 29289; code |
+| **3.14** | **Queue approvals never reach the admin audit ledger** | `adminReview` (Listing Verification) writes `property_submission` but never calls `logAdminMutation`, so `tbl_admin_audit` has no row for today's approval of 29289 — while the broken Properties path does log. The W7 ledger promise ("every admin mutation is durable") has a hole exactly at the decision that puts a listing in front of guests. One call to add. | verified 09-05 — audit query |
 
 ---
 
@@ -143,7 +145,6 @@ Nothing here is known to be defective. Each is a path nobody has exercised.
 - Google Search Console will not accept the sitemap without warnings until someone with GSC access submits it.
 - Whether `dbCutoverSafe` currently reads true — see §2.4.
 - **For the tester, on build 16** (each deploys cleanly and is covered by tests, but needs a signed-in host/guest on a device): #19's merged notification feed matches the website for the same host; the guest count survives "Move to Book at Agreed Price" on a *new* negotiation; airplane mode on host Notifications, guest My Negotiations and host Profile → properties shows "Couldn't load · Try again" rather than an empty state; #13's dropdown focus jump (fixed from the code, never reproduced on the emulator).
-- **`psb_reviewed_by` on approvals.** The fix that records which admin approved a listing shipped *after* the four approvals of 2026-09-04 — all four rows still read `null`, and no approval has been made since. One listing is sitting at `submitted` right now; approving it is the proof.
 - **`REQUIRE_IMAGE_ALT`** — whether it has been set on Render is not visible from outside (see §2.3).
 
 ---
@@ -197,7 +198,8 @@ that commission, four ledger rows per booking.
 | **Sweep class 3** — `.catch(() => {})` on the web | **Done — 37 sites, not 18.** The ESLint rule added at the end found 19 more written with a comment inside the braces. Four got real error states: notification bell, Book Now (was stuck on "one moment"), host and admin offer pickers. | verified 09-05 — `eslint .` 0 hits, real build |
 | **Sweep class 4** — two arrays disagreeing on which statuses are revenue | **Done.** One list in `utils/bookingStatus.js` (3,5,6,7,8,9,10,13); a third, complement-shaped list in property analytics folded in; guard test refuses a private list. No real booking sits at 4/12/13, so no figure moved. | verified 09-05 — DB status counts |
 | **Sweep class 5** — admin form validating untouched fields | **Done.** `PropertyForm.tsx` validates and sends only what changed. | verified — the two renames went through |
-| **"14 listings moved into the review queue"** (build-14 sheet note) | **Overstated.** The DB records **4 approvals** on 09-04 (→ §1.7). Real-host listings today: 5 live, 1 approved-but-inactive, 1 `submitted` awaiting review, 9 drafts. | verified 09-05 — DB |
+| **"14 listings moved into the review queue"** (build-14 sheet note) | **Overstated.** The DB records **4 approvals** on 09-04 (→ §1.7). Real-host listings after 09-05: 6 live, 1 approved-but-inactive, 9 drafts, 0 awaiting review. | verified 09-05 — DB |
+| **`psb_reviewed_by` fix unproven** | **Proven on production 2026-09-05.** Approving 29289 through Listing Verification wrote `psb_reviewed_by = 1` (admintest, super_admin), `psb_reviewed_at`, `psb_published_at` and all nine checks; the listing went `verified`/active and its slug page answers 200 `index, follow`. It reaches the property sitemap when that document's hour-long in-process cache expires (Admin → Global SEO → Regenerate forces it) — approval does not purge the cache. Found two things on the way → §3.13, §3.14. | verified 09-05 — DB + curl |
 
 ### 8b. Closed before 2026-09-04
 
