@@ -133,7 +133,6 @@ class PreBookingCard extends StatelessWidget {
           lat: property.propertyLatitude.toString(),
           long: property.propertyLongitude.toString(),
           galleryImages: images,
-          showNegotiationButton: false,
           inTime: property.propDetailsPropDetailInTime.toString(),
           outTime: property.propDetailsPropDetailOutTime.toString(),
         ),

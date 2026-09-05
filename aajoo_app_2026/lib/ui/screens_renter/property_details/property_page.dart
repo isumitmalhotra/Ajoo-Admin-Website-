@@ -64,7 +64,10 @@ class PropertyPage extends StatefulWidget {
   final String? inTime;
   final String? outTime;
   final Property property;
-  final bool showNegotiationButton;
+  // showNegotiationButton was here: a flag the pre-booking screens set to
+  // hide the offer button. The rule is the stay's start date now (see
+  // isPrebooking), so a caller cannot decide it and this no longer exists —
+  // an argument that is accepted and ignored is worse than none.
   // Optional negotiated-deal context — set when this page is opened from a
   // "Book now" deal (dashboard/home banner). Pre-fills the agreed dates, shows a
   // deal banner, and applies the coupon at checkout.
@@ -87,7 +90,6 @@ class PropertyPage extends StatefulWidget {
     required this.location,
     this.inTime,
     this.outTime,
-    this.showNegotiationButton = true,
     required this.property,
     this.dealCode,
     this.dealFrom,
@@ -201,7 +203,35 @@ class _PropertyPageState extends State<PropertyPage>
   static const List<String> _stayTypes = ['Per night', 'Monthly'];
 
   // Prebooking mode: if negotiation button is hidden, this page is opened from prebooking
-  bool get isPrebooking => !widget.showNegotiationButton;
+  /**
+   * Is this an ADVANCE booking — a stay starting tomorrow or later?
+   *
+   * The client's rule, 2026-09-06. A stay starting today is a normal booking:
+   * negotiable, paid in full or at the property. A stay starting tomorrow or
+   * later is an advance booking — also called a pre-booking — which cannot be
+   * negotiated and gets pay-10%-and-book instead. The weekly and monthly
+   * packages apply to both alike, and always did.
+   *
+   * This read `!widget.showNegotiationButton`, a flag set only by the
+   * pre-booking screens — so the same future stay opened from search or a home
+   * rail negotiated freely. 17 of the 23 deals ever struck were for future
+   * dates. The rule is about the dates, so it reads the dates, and it reacts as
+   * the guest changes them.
+   *
+   * IST, matching utils/preBooking.js on the server: at 20:00 UTC it is already
+   * tomorrow in India, and a handset answering from its own clock would offer a
+   * negotiation the server then refuses.
+   */
+  bool get isPrebooking => !_startsTodayIST(selectedDate);
+
+  static const int _istOffsetMinutes = 330;
+
+  static bool _startsTodayIST(DateTime? d, {DateTime? now}) {
+    if (d == null) return false;
+    final ist = (now ?? DateTime.now().toUtc())
+        .add(const Duration(minutes: _istOffsetMinutes));
+    return d.year == ist.year && d.month == ist.month && d.day == ist.day;
+  }
 
   // Single property fetch
   final PropertyService _propertyService = PropertyService();
@@ -833,24 +863,14 @@ class _PropertyPageState extends State<PropertyPage>
               ),
               // "Negotiate & Reserve" — the sheet it opens offers both, and
               // negotiating is the thing that makes this platform different.
-              child: Text(widget.showNegotiationButton
-                  ? 'Negotiate & Reserve'
-                  : 'Reserve'),
+              child: Text(isPrebooking ? 'Reserve' : 'Negotiate & Reserve'),
             ),
-            // Why there is nothing to negotiate with here.
-            //
-            // The button is already hidden in this flow; hiding a control
-            // without saying why reads as a missing feature. The website says
-            // the same sentence in the same place.
-            if (!widget.showNegotiationButton) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Pre-booking rate. Any discount the host or Aajoo is running '
-                'is already in this price.',
-                textAlign: TextAlign.center,
-                style: inter(fontSize: 11.5, color: kMuted, height: 1.4),
-              ),
-            ],
+            // No explanation sits here. This strip is a Row — price on the
+            // left, button on the right — so a paragraph added to it lays out
+            // sideways and runs off the screen edge, which is exactly what it
+            // did. The advance-booking terms belong with the payment options,
+            // and the sheet this button opens already carries them:
+            // "Advance required — 10% online to confirm the pre-booking."
           ],
         ),
       );
@@ -2156,7 +2176,7 @@ onPressed: () async {
               ),
               const SizedBox(height: 16),
               Visibility(
-                visible: widget.showNegotiationButton,
+                visible: !isPrebooking,
                 child: ElevatedButton(
                   onPressed: () async {
                     final AuthController authController =

@@ -333,7 +333,6 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
           lat: p.propertyLatitude ?? '0',
           long: p.propertyLongitude ?? '0',
           galleryImages: images,
-          showNegotiationButton: false,
           inTime: p.propDetailsPropDetailInTime,
           outTime: p.propDetailsPropDetailOutTime,
           dealFrom: _checkIn == null ? null : StayDatesBar.api(_checkIn!),
