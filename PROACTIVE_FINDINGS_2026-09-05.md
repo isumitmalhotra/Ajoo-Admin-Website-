@@ -58,9 +58,9 @@ the risk; ids and filters from JSON never arrive as `""`:
 
 **Status 2026-09-05.** Done. `nullableNumber()` lives in `schema/yupHelpers.js`; 38 sites converted, zero remain, and `tests/nullableNumberSweep.test.js` re-scans every schema on each run.
 
-**Fix (as applied).** `nullableNumber()` now lives in `schema/yupHelpers.js` — hoist it
-to `schema/_helpers.js` and apply it to every form-bound field above. Keep the
-refusal tests: the transform accepts *absence*, never bad input.
+**Fix (as applied).** `nullableNumber()` is the bare primitive — the transform only —
+so every site keeps its own `.integer()/.positive()/.min()/.typeError()` chain and
+wrong input is still refused. The transform accepts *absence*, never bad input.
 
 ## 3. `.catch(() => {})` — web
 
