@@ -9,7 +9,9 @@
 > **Repos:** FE `D:/Projects/aajao-frontend-vercel` (React/Vite → Vercel) ·
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
-> Tester build in circulation: **16 (1.0.0+16)**, `aajoo-homes-1.0.0-build16-release.apk` at repo root.
+> Tester build in circulation: **17 (1.0.0+17)**, `aajoo-homes-1.0.0-build17-release.apk` at repo root.
+> Documents delivered 2026-09-05 (repo root): `UAT_WebApp_2026-09-05.docx` (81 cases) · `UAT_AndroidApp_2026-09-05.docx` (55 cases) ·
+> `Delivery_Delay_Analysis_2026-09-05.docx` · `Deployment_Options_2026-09-05.docx`.
 >
 > **How to read the evidence column.** `verified` = checked against production or
 > the live DB and the check is named (dated 09-04 unless it says 09-05). `code` =
@@ -25,12 +27,12 @@ work; sorting by owner is what makes that visible.
 
 | Section | Owner | Open |
 |---|---|---|
-| [1. Client decisions](#1-blocked-on-client-decisions) | Client | 7 |
-| [2. Ops / Render access](#2-blocked-on-ops--render-access) | Whoever holds Render + GCP | 6 |
+| [1. Client decisions](#1-blocked-on-client-decisions) | Client | 8 |
+| [2. Ops / Render access](#2-blocked-on-ops--render-access) | Whoever holds Render + GCP | 7 |
 | [3. Engineering](#3-engineering--genuinely-open) | Us | 12 |
 | [4. Contract deliverables](#4-contract-deliverables-) | Us | 8 |
 | [5. Section-0 redo](#5-section-0-site-redo--separate-sow) | Blocked on a signed change order | 20 |
-| [6. Unproven, not broken](#6-unproven-not-broken) | Us + tester | 8 |
+| [6. Unproven, not broken](#6-unproven-not-broken) | Us + tester | 9 |
 
 **If only two things get done:** §2.1 (live payment keys) and §1.1 (delete the
 seed listings). The first means the product currently looks like it is taking
@@ -49,6 +51,7 @@ money and is not. The second gates every honest SEO number on the site.
 | **1.5** | **Weather provider + key** (was E-2, RENT-7) | Renter-dashboard weather widget cannot start without a provider choice. | carried |
 | **1.6** | **Brand assets** — logo set, favicon/PWA icons, animated illustrations, WhatsApp number, social links, reference designs (was E-5, S0-ASSET-1…5) | Gates most of Section-0. | carried |
 | **1.7** | **The five test listings that are now the public catalogue** | Of the 6 live real-host listings, **5 are tester approvals**: four on 2026-09-04 so the site was not empty after approval started gating visibility — Garg Resorts (29263), Tharamani Farm Retreat (29265), Vrindavan Garden Farm Stay (29277), Delhi Green Farm Stay (29279 — the last two renamed from "Aish mobile host property…") — and Aish camping in the hills (29289) on 09-05, approved to prove the audit-trail fix. They are tester accounts' listings with tester phone numbers. Decide whether they stay through launch or come down with the seed data. | verified 09-05 — `property_submission` + `tbl_properties` |
+| **1.8** | **Where the platform runs after UAT** | `Deployment_Options_2026-09-05.docx` compares staying on Render + Vercel with AWS, Azure, GCP, DigitalOcean and a VPS, with indicative costs. Recommendation: stay through UAT (Render Starter, $7/mo), then **DigitalOcean Bangalore** (~$45–75/mo) as the first managed home in India; hyperscaler only with an owner or credits; VPS only with a named operator. Needs the client's answers to §8 of that document: expected traffic, budget, who operates, existing cloud agreements. | doc |
 
 ---
 
@@ -62,6 +65,7 @@ money and is not. The second gates every honest SEO number on the site.
 | **2.4** | **`HEALTH_TOKEN` (or `ADMIN_API_TOKEN`) unset** | `/health/env` returns bare `{"ready":true}`. The detail — including **`dbCutoverSafe`**, the check that would have caught July's outage — is unreadable by anyone. | verified 09-05 — probe still returns `{"ready":true}` only |
 | **2.5** | **Credential rotation** | Deferred by instruction. Everything historic is in git history: DB password, Razorpay secret, Cloudinary secret, Gmail app password. | carried |
 | **2.6** | **Google Cloud budget alert** | Maps + Places keys are live and unmetered. | carried |
+| **2.7** | **Render Starter ($7/mo) + confirm Clever Cloud backups** | The API is on Render's free tier: 30–50 s cold starts hidden by a keep-alive ping, and a disk that is wiped on deploy (invoices are written there). Starter removes the sleep; Clever Cloud's backup schedule and retention should be confirmed in its dashboard before UAT — it is the only copy of the database. | verified — `KEEP_ALIVE_SETUP.md`; DB 43 MB on Clever Cloud |
 
 > **On 2.2 —** the "not configured" message is raised inside the *approve*
 > handler, not on page load, so its absence from the Payout Queue proves nothing.
@@ -101,8 +105,8 @@ Functional scope is delivered; these are the contractual artifacts. All still op
 | **4.4** | **HMS — Functional Specification** | |
 | **4.5** | **Security & Compliance doc + RBAC matrix** | The RBAC itself exists (`config/adminRoles.js`, incl. `SEO_MANAGER`); the document does not. |
 | **4.6** | **Test suite to contract standard** | **43 backend test files pass** on `npm test` and **138 app tests** on `flutter test`, but the contract asks for >80% measured coverage, 200+ integration tests, plus load and OWASP reports. No coverage tooling is wired. |
-| **4.7** | **Deployment guide + operational runbook + KT docs** | `DEPLOY_RUNBOOK.md` and the handoffs exist; they need formalising. |
-| **4.8** | **UAT test cases + sign-off package** | Client-led. |
+| **4.7** | **Deployment guide + operational runbook + KT docs** | `DEPLOY_RUNBOOK.md` and the handoffs exist; `Deployment_Options_2026-09-05.docx` (05-09) covers requirements, sizing, tools, providers, cost and a migration plan. Still to formalise: the runbook for whichever host is chosen (§1.8) and the KT pack. |
+| **4.8** | **UAT test cases + sign-off package** | **Manuals delivered 2026-09-05** — web (81 cases, 8 modules) and Android (55 cases, 6 modules), each with environment, accounts, procedure, defect template and sign-off table. Execution and sign-off are the client's; **an internal dry run of both manuals is recommended first** — see §6 for the cases that have only code/test-level verification so far. |
 
 ---
 
@@ -144,6 +148,7 @@ Nothing here is known to be defective. Each is a path nobody has exercised.
 - Whether `dbCutoverSafe` currently reads true — see §2.4.
 - **For the tester, on build 16** (each deploys cleanly and is covered by tests, but needs a signed-in host/guest on a device): #19's merged notification feed matches the website for the same host; the guest count survives "Move to Book at Agreed Price" on a *new* negotiation; airplane mode on host Notifications, guest My Negotiations and host Profile → properties shows "Couldn't load · Try again" rather than an empty state; #13's dropdown focus jump (fixed from the code, never reproduced on the emulator).
 - **`REQUIRE_IMAGE_ALT`** — whether it has been set on Render is not visible from outside (see §2.3).
+- **UAT cases with code/test-level verification only (2026-09-05).** Most manual cases were walked live during the 1 Sep sweep and this week's fixes, but these have not been driven end-to-end on production or a device: web **W-BOOK-04** (cancellation card + acknowledgement on Booking review — deployed, not exercised in a real checkout), **W-ACC-03** (cancel quote from the policy snapshot), **W-BOOK-11** (double-booking race), **W-NEG-02** (guest count through an accepted counter); Android **build 17 has not been run on a device** — A-BOOK-02 (reserve-sheet card), A-EXP-04 (policy tab from the server), A-X-01 (airplane-mode states), A-ACC-07 (push), A-ONB-04 (Google sign-in), A-ACC-12 (chat after the handoff-token change). Everything else in the manuals is either verified live or a known limitation named in the manuals.
 
 ---
 
@@ -199,6 +204,7 @@ that commission, four ledger rows per booking.
 | **"14 listings moved into the review queue"** (build-14 sheet note) | **Overstated.** The DB records **4 approvals** on 09-04 (→ §1.7). Real-host listings after 09-05: 6 live, 1 approved-but-inactive, 9 drafts, 0 awaiting review. | verified 09-05 — DB |
 | **Admin → Properties → "Approve & publish" was a second, broken approval path** (was 3.13) | **Fixed 2026-09-05.** It counted documents in two tables while the wizard writes them to a third (`property_media`), so it refused **15 of the 16 real-host listings** — and had the count ever passed, it would have approved with no state machine, no completeness gate, no `property_submission` record and no SEO regeneration. The queue's handler body is now `reviewListing()` — one implementation, no HTTP in it — and both entry points call it; the Properties dialog keeps its tier choice, drafts are refused with the machine's own message, and only older-form listings still take the attachment path (whose gate now counts all three tables). `tests/listingReview.test.js` pins the shape. Follow-up the same day: the list now carries `verification_status`, so the Pending tab shows drafts as **Draft / "Not submitted"** with no Approve button, and the review dialog says so and disables approve. | verified 09-05 — production probe on a draft answers the lifecycle message; live Pending tab shows 9 drafts with Review only; 44/44 |
 | **Queue approvals never reached the admin audit ledger** (was 3.14) | **Fixed 2026-09-05.** Every decision, from either entry point, goes through `auditDecision()` → `tbl_admin_audit` as `property_approved / _rejected / _changes_requested / _suspended` with before/after. | verified 09-05 — audit row on the post-deploy re-approval |
+| **UAT manuals, delay analysis, deployment options** | **Delivered 2026-09-05.** Two UAT manuals (web 81 cases, Android 55 cases) with sign-off tables; the delivery-delay analysis against the 13 July plan with a dated timeline and owners; the hosting comparison with sizing, tools, provider costs, VPS route, decision matrix and a migration plan. Generated from the repos and the session record, not from memory; structural check passed (no raw markup, tables intact). | verified 09-05 — files at repo root |
 | **Cancellation & Refund Policy v1.0 — final copy** (was 1.4) | **Implemented 2026-09-05 against the client's document.** The five ladders already matched; two loopholes did not: a booking did **not** keep the policy it was made under (the refund read the listing's *current* policy — 48 bookings carried no snapshot), and "hours before check-in" was measured from **midnight UTC**, so a guest's free-cancellation window was up to ~18 h shorter than promised. Both fixed (`book_cancel_policy` snapshot; check-in = `pbr_checkin_time` in IST, default 14:00). Also: *Non-Refundable* and *Custom* removed from host selection (not in the document; no listing used them); guest-facing rules generated in the document's words; refund-timeline copy per §9; the app's hardcoded Firm/Strict sentences (wrong) replaced by the server's. New: `/cancellation-policy` page (web + app, one text served by `/common/cancellation-policy`), this stay's refund dates + a required acknowledgement before payment on web and app, colour-coded badge on every card, links from listing pages, footer, Settings and host menu. `tests/cancellationPolicyV1.test.js` pins the ladders to the document's table. | verified 09-05 — 46/46 BE, 138/138 app, live page 200 + index, cards badged on the live search |
 | **Cookie banner asked for analytics, loaded marketing** (was inside 1.2) | **Fixed 2026-09-05.** One "yes" loaded GA4, GTM, a Meta pixel and Hotjar under a banner that mentioned only analytics; the chat widget fingerprinted every public visitor before the question; "Read more" went to Terms. Now: three categories at equal weight, Consent Mode v2 defaults denied, Hotjar barred from sensitive routes, BotPenguin mounted only in the signed-in renter area, policy section drafted and linked. The client's remaining part is in §1.2. | verified 09-05 — anonymous visit: no cookies, no vendor scripts, v2 storage shape |
 | **BotPenguin was handed the user's 30-day session JWT** (was 3.13) | **Fixed 2026-09-05.** The widget now asks `POST /bp/handoff` (user session required) for a **15-minute, purpose-bound handoff token** signed with a key of its own, so no session verifier accepts it; `/bp/session/start` takes that, and an old tab's session token only until 2026-09-13. Consumed once at session start — a conversation cannot expire mid-way; a chat opened >15 min after landing falls back to the phone/OTP path. Bot flow on the vendor side unchanged. `tests/botHandoff.test.js`. | verified 09-05 — production mint: purpose `bp_handoff`, exp−iat = 900 s, rejected by `/user/detail` |
@@ -248,7 +254,7 @@ open long after they shipped. Three habits prevent it:
    fooled by formatting — a lint selector, a guard test, a `COUNT(*)` — and say
    which one.
 
-Detailed context: `PROACTIVE_FINDINGS_2026-09-05.md` · `SEO_CMS_PHASE1_TASKLIST.md`
+Detailed context: `Delivery_Delay_Analysis_2026-09-05.docx` (why the date slipped, and what changes) · `Deployment_Options_2026-09-05.docx` · `PROACTIVE_FINDINGS_2026-09-05.md` · `SEO_CMS_PHASE1_TASKLIST.md`
 · `AAJOO_SECTION0_TASKLIST.md` · `CONTRACT_COMPLIANCE_CHECK.md` ·
 `CLIENT_INPUTS_REQUIRED.md` · `RENDER_ENV_CHECKLIST.md` · `PAYOUTS_SETUP.md` ·
 latest `SESSION_HANDOFF_*.md`.
