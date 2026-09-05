@@ -1026,9 +1026,20 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
           children: [
             if (b.bookingTypes.isNotEmpty)
               _p4Choice('booking_type', 'Booking type', b.bookingTypes),
+            // 'response_time_hours', not 'response_time'.
+            //
+            // The step-4 payload is a spread of `p4`, and the server reads
+            // `response_time_hours` — so under the old key the answer was
+            // posted, ignored and dropped, and the draft loader (which maps
+            // pbr_response_time_hours → response_time_hours) could never fill
+            // the control back in. Every host who listed from the app answered
+            // this question into a void.
             if (b.responseTimes.isNotEmpty)
-              _p4Choice('response_time', 'Your usual response time',
-                  b.responseTimes),
+              _p4Choice('response_time_hours',
+                  'How quickly do you usually reply?', b.responseTimes,
+                  required: true,
+                  help: 'Shown to guests waiting on a price offer, and the '
+                      'time you have to approve a booking request.'),
             if (b.availability.isNotEmpty)
               _p4Choice('availability', 'Availability', b.availability),
             if (b.earlyCheckin.isNotEmpty)
@@ -1496,10 +1507,16 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
         onChanged: (v) => c.setP5(key, v),
       );
 
-  Widget _p4Choice(String key, String label, List<Option> options) =>
+  Widget _p4Choice(String key, String label, List<Option> options,
+          {bool required = false, String? help}) =>
       SchemaFieldInput(
         field: SchemaField(
-            key: key, label: label, type: FieldType.select, options: options),
+            key: key,
+            label: label,
+            type: FieldType.select,
+            options: options,
+            required: required,
+            help: help),
         value: c.p4[key],
         onChanged: (k, v) => c.setP4(k, v),
         error: c.fieldErrors[key],

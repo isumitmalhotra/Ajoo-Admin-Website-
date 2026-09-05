@@ -571,6 +571,22 @@ class ListingWizardController extends GetxController {
     num? val(String k) => num.tryParse(_s(p4[k]));
     bool set(String k) => (val(k) ?? 0) > 0;
 
+    /**
+     * Required (client, 2026-09-05).
+     *
+     * Optional since the wizard was built, and hosts skipped it — 4 of the 19
+     * listings with booking rules had one and none were live — so the line a
+     * waiting guest sees ("the host usually replies within N hours") was
+     * correct and invisible on every bookable stay.
+     *
+     * Not defaulted: 24 hours against a host who answers in one loses them the
+     * booking, and one hour against a host who answers tomorrow is a promise
+     * the platform made for them.
+     */
+    if (!set('response_time_hours')) {
+      errs['response_time_hours'] = 'Tell guests how quickly you usually reply';
+    }
+
     final price = val('base_price');
     if (price == null || price <= 0) {
       errs['base_price'] = 'Enter the nightly price';
