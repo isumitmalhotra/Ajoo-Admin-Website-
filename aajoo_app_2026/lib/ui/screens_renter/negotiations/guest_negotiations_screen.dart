@@ -328,7 +328,7 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(err ??
             (action == 'accept'
-                ? 'Deal accepted — book within 24 hours to keep this price.'
+                ? 'Deal accepted — book before midnight tonight to keep this price.'
                 : 'Offer declined.')),
         backgroundColor: err != null ? kDanger : kSuccess,
       ));
@@ -673,7 +673,10 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Text('Your deal is applied at checkout and is valid for 24 hours.',
+            // Midnight, not 24 hours. Deals have expired at end of day IST since
+            // 2026-09-05 (utils/negotiationCoupon.js), so a deal accepted at
+            // 11pm lasted one hour while this promised a day of it.
+            Text('Your deal is applied at checkout and lasts until midnight tonight.',
                 style: inter(fontSize: 12, color: kMuted)),
             const SizedBox(height: 4),
             // An accepted PRICE is not a confirmed BOOKING — most hosts still
