@@ -177,6 +177,28 @@ that commission, four ledger rows per booking.
 
 ## 8. Closed since the last edition — do not redo
 
+### 8a2. Closed 2026-09-05 — property search and filters (client report)
+
+Client: "we can't search property by entering the property exact name", and a
+Kullu listing at ₹2,500 came back for neither Kullu nor a 2500–2500 price
+band. Seven defects sat behind those two sentences. All fixed, deployed and
+re-verified against live data; guarded by `tests/propertySearchFilters.test.js`.
+
+| Was | Now | Evidence |
+|---|---|---|
+| **Search by name impossible (web).** `/properties/search` had no text parameter at all. The site geocodes whatever is typed, so a property NAME was resolved as a place — "Aish camping in the hills" resolved to a street in Woodbourne, New York, and the search ran there. | **Fixed.** `q` matches name / address / city / state, whitelisted in the schema. Name matches rank first and that order survives the second fetch. | live — site returns the property; API probe |
+| **Search by name impossible (app).** `searchProperty` posted `latitude:"" longitude:"" radius:10`. `Number("")` is 0 and `isFinite(0)` is true, so every text search asked for stays within 10km of 0°N 0°E, in the Atlantic. | **Fixed server-side**, so installed builds are fixed too; the app also stops sending the blank values. | live — the old payload now returns the property |
+| **A listing's address didn't reach search.** Distance was the only geo test, and the Kullu listings sit ~50km from Kullu, so no sane radius reached them. | **Fixed.** The text match is OR-ed against the geo group, so an address answers for itself whatever the pin says. | live — Kullu at radius 5 returns 51 stays, was 0 |
+| **Price filter mostly inert.** Server: `if (minPrice && maxPrice)` around a BETWEEN, so a ceiling with no floor narrowed nothing and a floor of 0 disabled the filter. Web: filtered in the browser over the 100 rows already fetched. | **Fixed.** Two independent bounds, in SQL, on both endpoints; the web sends them instead of sieving a page. | live — Kullu 3000–3300 returns 23, all ₹3,300 |
+| **LUXE deleted real stays from search.** The browse partition was applied to searches too, and three of the five real active listings are marked luxury — ordinary search sends `isLuxury:0`, so it could not return them. It also contradicts the host wizard, which promises only that luxury stays *appear* in the LUXE collection. | **Fixed.** Shelves stay separate while browsing (tester #17 still holds); a search answers from both. Cards keep their LUXE mark. | live — both the fix and the #17 guard re-checked |
+| **LUXE overwrote the text search (app).** Both were assigned to `whereClause[Op.or]`, the same key. Whichever ran last won, so any search carrying `isLuxury` discarded the term and answered with the whole non-luxury catalogue. | **Fixed.** Both live under `Op.and`. | live — a nonsense term now returns nothing |
+| **Two filter clauses could only throw or miss.** `filters.amenities` set a `property_amenities` column that does not exist, with a Postgres operator this MySQL dialect cannot render. `filters.city` was an exact match. | **Fixed.** Dead clause removed with a note on where amenity narrowing belongs; city matches loosely. | test + live |
+
+**Left as data, not code:** listing 29289's map pin sits 50.6km from the Kullu
+address it carries — the host placed it there. Every other real listing is
+within 11km of the town it claims. Search no longer depends on the pin, but the
+map and distance ordering still do, so it is worth correcting in admin.
+
 ### 8a. Closed 2026-09-04 → 09-05 (tester rounds, builds 13–16, the sweep)
 
 | Was | Now | Evidence |
