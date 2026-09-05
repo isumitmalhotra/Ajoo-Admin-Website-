@@ -27,7 +27,9 @@ import 'package:rent_home/ui/screens_host/listing/widgets/listing_section.dart';
 import 'package:rent_home/ui/screens_host/listing/widgets/schema_field_input.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
+import 'package:rent_home/ui/screens_host/listing/components/location_picker_sheet.dart';
 import 'package:rent_home/ui/screens_host/listing/components/state_city_fields.dart';
+import 'package:rent_home/service/geocode_service.dart';
 
 class ListingWizardScreen extends StatefulWidget {
   const ListingWizardScreen({super.key, this.propertyId});
@@ -511,6 +513,15 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
         ListingSection(
           title: 'Where is the property?',
           children: [
+            // The map comes FIRST, because it is the control that fills every
+            // field under it. Until now this wizard had no map at all: it
+            // asked hosts to type the whole address and never captured a
+            // coordinate, so a listing created on the app had no pin — and a
+            // property with no pin is returned by no location search. It
+            // existed in the catalogue and was invisible in the one place
+            // guests look.
+            _locationPin(),
+            const SizedBox(height: 16),
             _text('country', 'Country'),
             // Picked from the reference tables, not typed. Free text here is
             // how the catalogue filled with "KURUKSHETRA" and thousands of
@@ -1299,6 +1310,135 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
           ),
         ],
       );
+
+  /// The map row: pick, or adjust a pin already set.
+  Widget _locationPin() {
+    return Obx(() {
+      final lat = double.tryParse((c.f['latitude'] ?? '').toString());
+      final lng = double.tryParse((c.f['longitude'] ?? '').toString());
+      final hasPin = lat != null && lng != null && (lat != 0 || lng != 0);
+      final city = (c.f['city'] ?? '').toString();
+      final error = c.fieldErrors['location_pin'];
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Location on map',
+              style: inter(
+                  fontSize: 13, fontWeight: FontWeight.w600, color: kInk)),
+          const SizedBox(height: 8),
+          if (hasPin)
+            Container(
+              padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: kLine),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.place_rounded,
+                      size: 17, color: kprimaryColor),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      city.isEmpty
+                          ? 'Pin set — guests will see this spot.'
+                          : 'Pin set near $city — guests will see this spot.',
+                      style: inter(fontSize: 12.5, color: kInk2),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => _pickLocation(lat, lng),
+                    child: Text('Adjust',
+                        style: inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: kprimaryColor)),
+                  ),
+                ],
+              ),
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _pickLocation(null, null),
+                icon: const Icon(Icons.map_outlined, size: 18),
+                label: Text('Pick the location on the map',
+                    style: inter(
+                        fontSize: 13.5, fontWeight: FontWeight.w600)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: kprimaryColor,
+                  side: const BorderSide(color: kprimaryColor),
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          if (!hasPin) ...[
+            const SizedBox(height: 6),
+            Text(
+                "Drop the pin and we'll fill in the address below. You can "
+                'correct anything afterwards.',
+                style: inter(fontSize: 11.5, color: kMuted)),
+          ],
+          if (error != null) ...[
+            const SizedBox(height: 6),
+            Text(error, style: inter(fontSize: 11.5, color: kDanger)),
+          ],
+        ],
+      );
+    });
+  }
+
+  Future<void> _pickLocation(double? lat, double? lng) async {
+    final picked = await showListingLocationPicker(context,
+        initialLat: lat, initialLng: lng);
+    if (picked == null || !mounted) return;
+    _applyPickedLocation(picked);
+  }
+
+  /// Write a chosen pin into the form.
+  ///
+  /// Nudging the pin inside one town fills only what the lookup found, so a
+  /// result with no street cannot wipe a street the host typed. MOVING it
+  /// somewhere else replaces the address outright, empty included: merging
+  /// across a move leaves the old town's district under the new town's name,
+  /// and nothing on screen says which half is stale. Same rule as the website.
+  void _applyPickedLocation(PickedAddress a) {
+    String norm(String? v) => (v ?? '').trim().toLowerCase();
+    final currentCity = (c.f['city'] ?? '').toString();
+    final currentState = (c.f['state'] ?? '').toString();
+    final moved = (a.city.isNotEmpty && norm(a.city) != norm(currentCity)) ||
+        (a.state.isNotEmpty && norm(a.state) != norm(currentState));
+    String take(String next, String current) =>
+        moved ? next : (next.isNotEmpty ? next : current);
+
+    c.f['latitude'] = a.lat.toString();
+    c.f['longitude'] = a.lng.toString();
+    c.f['state'] = take(a.state, currentState);
+    c.f['city'] = take(a.city, currentCity);
+    c.f['district'] = take(a.district, (c.f['district'] ?? '').toString());
+    c.f['village'] = take(a.village, (c.f['village'] ?? '').toString());
+    c.f['pincode'] = take(a.pincode, (c.f['pincode'] ?? '').toString());
+    c.f['street_address'] =
+        take(a.street, (c.f['street_address'] ?? '').toString());
+    for (final k in const [
+      'location_pin', 'state', 'city', 'district', 'village', 'pincode',
+      'street_address'
+    ]) {
+      c.fieldErrors.remove(k);
+    }
+    // The address fields are plain text inputs that adopt a changed value on
+    // rebuild, so the screen has to rebuild for the pin's answer to appear.
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(a.isEmpty
+          ? 'Pin saved. Add the address below.'
+          : 'Location set — address filled from the map.'),
+    ));
+  }
 
   Widget _text(
     String key,

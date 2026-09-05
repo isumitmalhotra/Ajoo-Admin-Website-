@@ -470,6 +470,18 @@ class ListingWizardController extends GetxController {
     }
     if (_s(f['state']).isEmpty) errs['state'] = 'State is required';
     if (_s(f['city']).isEmpty) errs['city'] = 'City is required';
+    // A pin, same as the website asks for.
+    //
+    // This wizard had no map at all, so it never captured one — and a listing
+    // with no coordinates cannot be returned by any location search. It is in
+    // the catalogue and invisible in the one place guests look. Required here
+    // rather than left optional, because "listed but unfindable" is the worst
+    // outcome of the three.
+    final lat = double.tryParse(_s(f['latitude']));
+    final lng = double.tryParse(_s(f['longitude']));
+    if (lat == null || lng == null || (lat == 0 && lng == 0)) {
+      errs['location_pin'] = "Set the property's location on the map";
+    }
     if (!_pin.hasMatch(_s(f['pincode']))) {
       errs['pincode'] = 'Enter the 6-digit PIN code';
     }

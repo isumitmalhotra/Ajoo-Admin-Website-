@@ -191,14 +191,28 @@ as a locality where Google prints a street number, and moving the pin fills
 | **The City the pin set was wiped a moment later.** `StateCityFields` clears the city when the state changes, since the old city belonged to the old state — but the map writes both in one update, so the clear ate the city that had just arrived. | **Fixed.** It tells the two cases apart by whether the city changed in the same commit. | live — City fills as "Amritsar", was blank |
 | **Moving the pin left stale fields.** Merging non-empty values is right for a nudge, wrong for a move: Karnal → Amritsar kept "Karnal Division" in District. | **Fixed.** A different city or state replaces the address block outright. Same rule in the admin property form. | live — Amritsar → Karnal replaced all six fields |
 
-**Found, not fixed — the app's host wizard has NO map picker at all.** It asks
-for the address as text and never captures latitude or longitude, so a listing
-created on the app has no coordinates and cannot be returned by any
-location-based search. Only 6 of 29,252 listings are affected today and both
-real ones are inactive, because almost nothing has been listed from the app yet
-— but every future app listing lands the same way. Adding the picker to the
-Flutter wizard is a screen's worth of work, not a patch, so it is listed here
-rather than started.
+**Closed the same day — the app's host wizard now has the picker too (build
+19).** It had none: hosts typed the whole address and no coordinate was ever
+captured, so a listing created on the app could not be returned by any
+location-based search. It sat in the catalogue and was invisible in the one
+place guests look.
+
+The app now opens the same section with a map, in the same order and with the
+same rules as the website:
+
+* a sheet with search, "My location", and a fixed centre pin the map moves
+  under — dragging a marker on a phone means covering the thing you are aiming;
+* the address is looked up for the point actually chosen, never taken from the
+  search suggestion, because suggestions arrive with an empty address whenever
+  the backend answers from Google's legacy Text Search;
+* a nudge inside one town fills only what was found; a move to another town
+  replaces the address block outright;
+* a pin is now required to leave step 1, as it is on the website;
+* `StateCityFields` reloads its city list when the pin sets a new state, and
+  does not clear a city that arrived with it.
+
+A failed lookup still keeps the pin and says so — coordinates are the one thing
+the form cannot do without, and the fields stay editable.
 
 ### 8a4. Closed 2026-09-05 — app search parity, and pets in the search bar
 

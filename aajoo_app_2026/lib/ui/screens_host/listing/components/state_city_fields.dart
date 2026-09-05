@@ -56,6 +56,28 @@ class _StateCityFieldsState extends State<StateCityFields> {
     _boot();
   }
 
+  @override
+  void didUpdateWidget(covariant StateCityFields old) {
+    super.didUpdateWidget(old);
+    // The state can change from OUTSIDE the dropdown — the map picker writes
+    // state and city together when a pin lands in another state. The city list
+    // is only reloaded by the dropdown's own handler, so without this the
+    // options underneath stayed those of the previous state. The picked city
+    // still showed (see _withCurrent), but opening the list offered the wrong
+    // towns.
+    //
+    // The city is NOT cleared here. A state that arrived with its own city is
+    // not an orphaned city, and clearing it is exactly the bug the website had:
+    // the pin filled the city and the state-change handler wiped it a moment
+    // later.
+    final next = widget.state?.trim() ?? '';
+    final prev = old.state?.trim() ?? '';
+    if (next != prev && next.isNotEmpty) {
+      _cityIsFreeText = false;
+      _loadCities(next);
+    }
+  }
+
   Future<void> _boot() async {
     final states = await LocationsService.instance.states();
     if (!mounted) return;
