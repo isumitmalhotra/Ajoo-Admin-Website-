@@ -22,15 +22,20 @@ class HomePageSearchService {
   Future<SearchResponse> searchProperty(String query) async {
     final token = await const FlutterSecureStorage().read(key: "user_token");
     _dio.options.headers['Authorization'] = 'Bearer $token';
+    // No coordinates, and therefore no radius either.
+    //
+    // These were posted as empty strings. Number("") is 0 on the server and
+    // isFinite(0) is true, so a text search asked for stays within 10km of
+    // 0N 0E — a point in the Atlantic — and every search from this screen
+    // came back "no record found" whatever was typed. The server now treats a
+    // blank coordinate as absent, so old builds are fixed too; this stops
+    // sending the nonsense in the first place.
     final data = {
       "query": query,
-      "longitude": "",
-      "latitude": "",
       "sort_by": "property_id",
       "order": "desc",
       "limit": 10,
       "offset": 0,
-      "radius": 10
     };
 
     try {
