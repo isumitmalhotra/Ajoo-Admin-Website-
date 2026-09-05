@@ -13,7 +13,7 @@ Two items remain open. Neither is development work: both sit with Aajoo and the 
 | Development records ready | **11 of 11** |
 | Defects fixed and deployed | **4** |
 | Open, and not development work | **2** |
-| Android build carrying these changes | **1.0.0 (23)** |
+| Android build to test on | **1.0.0 (24)** — the handoff fix landed in 23 |
 | Backend | **Deployed and confirmed serving the new code** |
 
 Every record below was checked against the live development backend and its database rather than reported from working notes. That matters here: two of the eleven had previously been recorded as satisfied and were not, so please work from this document rather than any earlier list.
@@ -34,7 +34,7 @@ Both surfaces now hand the bot an authenticated context when the user is already
 
 What is passed is a **handoff token, not the login session**. It is minted per chat opening, lives fifteen minutes, is valid for starting a chat session and nothing else, and is signed with a key that the ordinary session verifiers reject. If it cannot be minted, the chat opens with no identity at all rather than falling back to the login session — the bot then asks for a phone number, which is the correct outcome.
 
-> **This was the app's outstanding half.** Until 5 September the Android app put the user's thirty-day login credential into the chat URL, where it would have been recorded in BotPenguin's request logs and analytics. The website had already moved to handoff tokens; the app now matches it. Shipped in build 23.
+> **This was the app's outstanding half.** Until 5 September the Android app put the user's thirty-day login credential into the chat URL, where it would have been recorded in BotPenguin's request logs and analytics. The website had already moved to handoff tokens; the app now matches it. Shipped in build 23; test on build 24 or later, which carries it forward.
 
 ### 3. Guest account with at least two non-cancelled bookings
 
@@ -116,7 +116,7 @@ All four are fixed, deployed, and confirmed live.
 
 *Relates to prerequisite 2, and to UAT-03, UAT-04 and UAT-05.*
 
-Covered in item 2 above. Fixed in Android build 23.
+Covered in item 2 above. Fixed in Android build 23 and carried forward; install build 24 or later.
 
 ### A dual-role account was always treated as a Host
 
@@ -209,6 +209,6 @@ Every one of the eleven records was checked against the live development backend
 
 The four fixes carry automated tests — eighteen in total across the two areas — and the backend test suite passes in full. The two behavioural fixes were additionally driven against the live system: the cancellation was performed twice on a throwaway booking to confirm the repeat is refused, and a real one-time code was issued to confirm the log no longer contains it while the email still arrives.
 
-The backend was confirmed serving the new code after release, and the Android build carrying the app-side change is 1.0.0 (23).
+The backend was confirmed serving the new code after release. The app-side change landed in Android build 1.0.0 (23); the current build is 1.0.0 (24), which carries it plus one unrelated booking fix. Test on 24.
 
 We are happy to walk through any of this before testing begins, and to prepare any further development record on request.
