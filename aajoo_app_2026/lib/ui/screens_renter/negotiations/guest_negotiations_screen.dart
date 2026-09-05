@@ -457,6 +457,38 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
         ),
       );
 
+  /// "The host is away — they usually reply within N hours."
+  ///
+  /// Only while genuinely waiting on a person. The platform answers a first
+  /// offer within ninety seconds using the host's own ideal price, so a thread
+  /// that reaches this state is one the guest pushed past that.
+  Widget _awayNote(GuestNegotiation n) {
+    if (n.status != 'awaiting_host' || n.hostResponseHours == null) {
+      return const SizedBox.shrink();
+    }
+    final h = n.hostResponseHours!;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 1),
+            child: Icon(Icons.schedule_rounded, size: 13, color: kMuted),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              '${n.hostName} is away at the moment. They usually reply '
+              'within $h hour${h == 1 ? '' : 's'}.',
+              style: inter(fontSize: 12, color: kMuted, height: 1.35),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _thread(GuestNegotiation n) {
     final chip = _statusChip(n.status);
     return Container(
@@ -507,6 +539,7 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
             Text('${_pretty(n.bookFrom)} → ${_pretty(n.bookTo)}',
                 style: inter(fontSize: 12.5, color: kMuted)),
           ],
+          _awayNote(n),
           const SizedBox(height: 12),
 
           // The exchange itself, in order. Neither side could see this before.

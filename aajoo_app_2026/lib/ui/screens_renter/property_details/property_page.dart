@@ -789,6 +789,20 @@ class _PropertyPageState extends State<PropertyPage>
                   ? 'Negotiate & Reserve'
                   : 'Reserve'),
             ),
+            // Why there is nothing to negotiate with here.
+            //
+            // The button is already hidden in this flow; hiding a control
+            // without saying why reads as a missing feature. The website says
+            // the same sentence in the same place.
+            if (!widget.showNegotiationButton) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Pre-booking rate. Any discount the host or Aajoo is running '
+                'is already in this price.',
+                textAlign: TextAlign.center,
+                style: inter(fontSize: 11.5, color: kMuted, height: 1.4),
+              ),
+            ],
           ],
         ),
       );

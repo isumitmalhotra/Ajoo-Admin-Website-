@@ -77,6 +77,17 @@ class GuestNegotiation {
   /// server stored it — the listing must not invent a number from that.
   final int? guests;
 
+  /// How long this host says they take to answer, in hours.
+  ///
+  /// The platform answers a guest's FIRST offer within ninety seconds using
+  /// the host's own ideal price. Past that the thread belongs to the two of
+  /// them, so "Waiting on host" is a real wait — and with no number attached
+  /// it reads as "possibly for ever".
+  ///
+  /// Null when the host never gave one, and then nothing is shown: a duration
+  /// nobody promised is worse than silence.
+  final int? hostResponseHours;
+
   const GuestNegotiation({
     required this.propertyId,
     required this.propertyName,
@@ -95,6 +106,7 @@ class GuestNegotiation {
     this.bookFrom,
     this.bookTo,
     this.guests,
+    this.hostResponseHours,
   });
 
   factory GuestNegotiation.fromJson(Map<String, dynamic> j) {
@@ -106,6 +118,10 @@ class GuestNegotiation {
       listedPrice: _d(j['listedPrice']),
       hostId: _i(j['hostId']),
       hostName: j['hostName']?.toString() ?? 'Host',
+      // Absent, zero or unparseable all mean "the host never said".
+      hostResponseHours: (int.tryParse(j['hostResponseHours']?.toString() ?? '') ?? 0) > 0
+          ? int.parse(j['hostResponseHours'].toString())
+          : null,
       messages: raw is List
           ? raw
               .whereType<Map>()
