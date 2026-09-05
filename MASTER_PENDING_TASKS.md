@@ -196,8 +196,31 @@ nights and three more at full nightly rate. A month package now forms when the
 stay covers a whole month, the same way a week needs seven nights. Verified
 live across all four month lengths, both sides of the leap year.
 
-**Still to build:** the long-stay banner on the app, and the one-month cap in
-both date pickers so a guest is stopped before the server has to refuse them.
+**Both remaining pieces done (build 20).**
+
+*The date pickers now stop at the limit.* The web calendar greys out every day
+past the month's last night once a check-in is picked, with the reason on
+hover, and answers a click that still gets through by naming the number —
+"up to one month" without it leaves a guest counting squares. Verified live: a
+10 September check-in caps the checkout at 10 October and greys 11–31 October.
+The app's check-out picker offered a year ahead against a server that accepts
+one month; it stops at the month's last night now.
+
+*The app's own month rule was still 28.* The bigger find of the two. The app
+carries its own copy of the host's long-stay maths so a guest sees a number
+before any request lands — and that copy still divided the monthly price by a
+flat 28 after the server moved to the calendar month. The app was quoting,
+confidently, a price the booking endpoint would refuse. It now uses the month
+the stay starts in and needs a whole month to qualify, matching the server;
+with no start date it falls back to 28, the same fallback the server keeps.
+
+The app already had the savings banner ("You saved 32% — ₹51,000 with the
+monthly rate"), so nothing new was needed there — it was reading a wrong
+number, not missing a display.
+
+The arithmetic now lives in three places (server, website, app) because none
+can share code with the others: a few pure lines with a test on each side,
+which is the cheapest way to keep three copies honest.
 
 ### 8a5. Closed 2026-09-05 — the listing wizard's location picker
 
