@@ -10,9 +10,9 @@ Ordered by how likely the next tester report is to come from it.
 |---|---|---|---|---|
 | 1 | Silent-empty catches (app) | ~~26 sites~~ **0 silent** — all 27 log; empty-vs-broken pattern shipped on notifications, 3 screens to follow | 1 day | **DONE 2026-09-05** (follow-up: 3 screens) |
 | 2 | `.nullable()` numerics with no empty-string transform | ~~34 fields~~ **0** — 38 sites on `nullableNumber()`, guard test fails the build if the shape returns | 3 h | **DONE 2026-09-05** |
-| 3 | `.catch(() => {})` (web) | 18 sites | 3 h | P2 |
-| 4 | Hardcoded status allowlists that define "money" | 2 arrays | 1 h review | P2 |
-| 5 | Admin form validates fields the user did not touch | 1 form | 2 h | P2 |
+| 3 | `.catch(() => {})` (web) | ~~18 sites~~ **37 found, 0 left** — every site names what failed; Book Now, the notification bell and both offer pickers got a real error state; ESLint refuses the shape | 3 h | **DONE 2026-09-05** |
+| 4 | Hardcoded status allowlists that define "money" | ~~2 arrays~~ (3, counting the complement) **1** — `utils/bookingStatus.js`; guard test fails the build on a private list | 1 h review | **DONE 2026-09-05** |
+| 5 | Admin form validates fields the user did not touch | ~~1 form~~ **0** — only changed fields are validated and sent; both blocked renames went through | 2 h | **DONE 2026-09-05** |
 
 ---
 
@@ -71,8 +71,27 @@ reviews call is how "this property has no reviews" hid for months.
 `auth.ts` 2; one each in `Settlements`, `Offers` (host and admin), `ListProperty`,
 `PolicyConfirmBanner`, `googleAuth.ts`, `customerApi.ts`.
 
-**Fix.** Replace with `.catch((e) => console.warn("<what failed>", e))` at minimum.
-Where the screen has an empty state, add a distinct error state.
+**Status 2026-09-05.** Done — and the count above was wrong. The 18 were the
+sites with a literal `{}`; the ESLint rule added at the end of the pass found
+**19 more** written as `.catch(() => { /* what the screen does instead */ })`,
+which a grep for the literal could not see. All 37 (plus the `try { } catch {
+/* stay hidden */ }` beside one of them) log a labelled `console.warn`. Four had
+a visible dead end behind the silence and now have an error state:
+
+- The **notification bell** showed *"No notifications yet"* after a failed
+  request — the web twin of APP #19. It now says it couldn't load, with a retry.
+- **Book Now** on the listing page said *"Just checking these dates are still
+  free — one moment"* forever when the availability call failed. It now says the
+  check failed and asks for a reload.
+- The **host and admin offer pickers** rendered an empty dropdown after a failed
+  listings fetch / search, which read as "you have no listings". They now say the
+  request failed.
+
+`eslint.config.js` carries a `no-restricted-syntax` rule that refuses
+`.catch(() => {})` outright (verified to fire on a probe file).
+
+**Fix (as applied).** `.catch((e) => console.warn("<what failed>", e))` at
+minimum; where the screen had an empty state, a distinct error state.
 
 ## 4. Hardcoded status allowlists that define "money" — backend
 
@@ -87,9 +106,20 @@ They differ by status 13. Two definitions of "a booking that counts" is the
 disagree across screens. A status added to `tbl_book_statuses` reaches neither
 unless someone remembers both.
 
-**Fix.** One exported definition in `utils/bookingStatus.js`, with a comment on
-why 13 is in one and not the other (or make them agree). One hour to review,
-and it prevents a class of "the dashboard and the ledger show different totals".
+**Status 2026-09-05.** Done. `utils/bookingStatus.js` exports the one list
+(`REVENUE_STATUSES` = 3, 5, 6, 7, 8, 9, 10, 13), `isRevenueStatus()` (fails
+closed on NaN/null/junk) and the pending/cancelled ids. `admin.controller.js`
+(monthly chart + booking analytics) and `adminPropAnalytics.controller.js`
+(per-property revenue + chart) all import it; the latter had a **third**
+definition written as its complement, which silently counted statuses 4 and 12
+as income.
+
+**Decision on 13.** "Successful" is a completed, paid-out stay and counts as
+revenue — it was the one id the two lists disagreed on. No real booking sits at
+13 today (or at 4 / 12), so no live figure moved; the change settles what
+happens when one does. `tests/bookingStatus.test.js` scans controllers,
+services and utils and fails on any `*_STATUSES =` or literal ids inside
+`book_status IN (...)`.
 
 ## 5. Admin form validates fields the user did not touch
 
@@ -99,9 +129,15 @@ the rule (`1425369807`, `5869471230` — ten digits, but Indian mobiles start 6�
 Two of today's four listing renames were blocked by it. Any edit to those listings
 is blocked until someone changes a phone number they were not editing.
 
-**Fix.** Validate a field only when it changed from its loaded value (`dirty`), or
-on the server accept an unchanged value as-is. Separately, a one-off report of
-listings whose stored contact fails the rule (host-entered junk) is worth having.
+**Status 2026-09-05.** Done. `PropertyForm.tsx` keeps the loaded draft and
+validates `propContact` / `propEmail` only when they differ from it; unchanged
+values are left out of the payload, so the server never re-validates them.
+Listings 29277 and 29279 — the two renames this had blocked — were renamed
+straight after. The one-off report of stored contacts that fail the rule is
+still worth running before hosts are asked to edit those listings.
+
+**Fix (as applied).** Validate a field only when it changed from its loaded
+value; omit unchanged fields from the update.
 
 ---
 
