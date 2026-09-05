@@ -16,6 +16,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:rent_home/constants.dart';
+import 'package:rent_home/utils/stay_length.dart';
 import 'package:rent_home/ui/screens_renter/property_details/widgets/send_offer_sheet.dart';
 import 'package:rent_home/utils/nightly_rates.dart';
 import 'package:rent_home/constants/payment_config.dart';
@@ -947,7 +948,12 @@ class _PropertyPageState extends State<PropertyPage>
                     initialDate: _safeInitialDate(
                         selectedDateTo ?? selectedDate, selectedDate),
                     firstDate: selectedDate,
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                    // One month at a time (client rule, 2026-09-05): the real
+                    // length of the month the stay STARTS in — 31 from
+                    // January, 28 from February, 29 in a leap year. The server
+                    // refuses anything longer, so offering it here would only
+                    // let a guest choose a stay and then be told no.
+                    lastDate: latestCheckout(selectedDate),
                     selectableDayPredicate: (d) => !_isBookedDay(d),
                     builder: (context, child) {
                       return Theme(
@@ -3110,7 +3116,8 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
   /// old long-stay fields at all, so a 35-night stay was quoted at the full
   /// nightly rate times thirty-five. The server resolves the identical rate
   /// and refuses a booking whose price disagrees, so this must match it.
-  LongStayRate? get _longStay => _single?.pricing?.longStayFor(totalDays);
+  LongStayRate? get _longStay =>
+      _single?.pricing?.longStayFor(totalDays, from: selectedDate);
 
   /// What the same nights cost night by night — the comparison the saving is
   /// measured against, and what a short stay pays.

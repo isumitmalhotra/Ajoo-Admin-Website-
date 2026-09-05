@@ -1,3 +1,4 @@
+import 'package:rent_home/utils/stay_length.dart';
 /// Per-night pricing, mirroring `utils/nightlyRates.js` on the server and
 /// `src/redesign/lib/nightlyRates.ts` on the web.
 ///
@@ -177,12 +178,20 @@ class PricingRule {
   /// Monthly wins over weekly when both apply. Mirrors longStayRateFor in
   /// utils/nightlyRates.js, which the server re-runs and refuses a booking
   /// that disagrees with — so these must not drift.
-  LongStayRate? longStayFor(int nights) {
+  LongStayRate? longStayFor(int nights, {DateTime? from}) {
     if (nights <= 0) return null;
     final monthly = monthlyPrice ?? 0;
-    if (nights >= kMonthlyNights && monthly > 0) {
+    // A month is the month the stay STARTS in — 31 nights from January, 30
+    // from April, 28 from February, 29 in a leap year (client, 2026-09-05).
+    // It was a flat 28 on both clients and the server; the server changed, so
+    // this must, or the app quotes a price the booking endpoint refuses.
+    //
+    // Without a start date there is no month to measure, and 28 is the same
+    // fallback the server keeps for callers that cannot know one.
+    final monthNights = from == null ? kMonthlyNights : maxNightsFrom(from);
+    if (nights >= monthNights && monthly > 0) {
       return LongStayRate(
-          nightlyRate: monthly / kMonthlyNights, label: 'Monthly rate');
+          nightlyRate: monthly / monthNights, label: 'Monthly rate');
     }
     final weekly = weeklyPrice ?? 0;
     if (nights >= kWeeklyNights && weekly > 0) {
