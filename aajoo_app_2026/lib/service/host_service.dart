@@ -9,6 +9,7 @@ import 'package:rent_home/models/host_ongoing_response.dart';
 import 'package:rent_home/models/host_properties_reponse.dart' as hostResponse;
 import 'package:rent_home/models/transaction_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
+import '../utils/service_log.dart';
 
 class HostService {
   final Dio _dio = Dio();
@@ -221,6 +222,7 @@ class HostService {
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
     } catch (err) {
+      logServiceError('host_service:223', err);
       return const [];
     }
   }
@@ -263,7 +265,8 @@ class HostService {
       final res = await _dio.get("/host/support/tickets/$ticketId");
       final data = res.data is Map ? res.data['data'] : null;
       return data is Map ? Map<String, dynamic>.from(data) : null;
-    } catch (_) {
+    } catch (e) {
+      logServiceError('host_service:266', e);
       return null;
     }
   }
@@ -308,6 +311,7 @@ class HostService {
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
     } catch (err) {
+      logServiceError('host_service:310', err);
       return const [];
     }
   }
@@ -323,6 +327,7 @@ class HostService {
       );
       return response.data;
     } catch (err) {
+      logServiceError('host_service:325', err);
       return null;
     }
   }
@@ -362,6 +367,7 @@ class HostService {
           .map((e) => HostNegotiation.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     } catch (err) {
+      logServiceError('host_service:364', err);
       return const [];
     }
   }

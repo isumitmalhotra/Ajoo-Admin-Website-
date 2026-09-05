@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'package:rent_home/data/ApiConstants.dart';
+import '../utils/service_log.dart';
 
 /// The four surfaces the app was missing against the website: Refer & Earn,
 /// host Performance, host Boost and the host notification list.
@@ -46,7 +47,8 @@ class GrowthService {
           options: await _auth());
       final d = _data(res.data);
       return d == null ? null : ReferralSummary.fromJson(d);
-    } catch (_) {
+    } catch (e) {
+      logServiceError('growth_service:49', e);
       return null;
     }
   }
@@ -58,7 +60,8 @@ class GrowthService {
           options: await _auth());
       final d = _data(res.data);
       return d == null ? null : HostPerformance.fromJson(d);
-    } catch (_) {
+    } catch (e) {
+      logServiceError('growth_service:61', e);
       return null;
     }
   }
@@ -73,7 +76,8 @@ class GrowthService {
           .whereType<Map>()
           .map((e) => BoostRecord.fromJson(Map<String, dynamic>.from(e)))
           .toList();
-    } catch (_) {
+    } catch (e) {
+      logServiceError('growth_service:76', e);
       return const [];
     }
   }
@@ -143,6 +147,9 @@ class GrowthService {
         options: await _auth(),
       );
       final d = _data(res.data);
+      // A successful answer clears the last failure, so a screen that
+      // recovered stops showing the retry card.
+      ServiceErrors.clear('hostNotifications');
       final items = d?['items'];
       return HostNotificationPage(
         items: items is List
@@ -154,7 +161,10 @@ class GrowthService {
         unread: int.tryParse('${d?['unreadCount'] ?? 0}') ?? 0,
         totalPages: int.tryParse('${d?['totalPages'] ?? 1}') ?? 1,
       );
-    } catch (_) {
+    } catch (e) {
+      // A stable key rather than file:line — the screen asks for this
+      // exact call by name to tell 'empty' from 'broken'.
+      logServiceError('hostNotifications', e);
       return const HostNotificationPage(items: [], unread: 0, totalPages: 1);
     }
   }

@@ -17,6 +17,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:rent_home/models/listing_schema.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/utils/upload_media_type.dart';
+import '../utils/service_log.dart';
 
 /// What went wrong, in words the host can act on.
 class ListingException implements Exception {
@@ -263,7 +264,8 @@ class ListingService {
       final property = data['property'];
       if (property is! Map) return false;
       return looksSubmitted('${property['verification_status'] ?? ''}');
-    } catch (_) {
+    } catch (e) {
+      logServiceError('listing_service:266', e);
       return false;
     }
   }

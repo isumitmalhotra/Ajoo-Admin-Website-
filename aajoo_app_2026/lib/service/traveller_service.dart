@@ -4,6 +4,7 @@ import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/data/source/remote/dio_config.dart';
 import 'package:rent_home/models/traveller_model.dart';
 import 'package:rent_home/utils/upload_media_type.dart';
+import '../utils/service_log.dart';
 
 /// Saved travellers — the people an account books stays for.
 ///
@@ -45,7 +46,8 @@ class TravellerService {
           .map((e) => Traveller.fromJson(Map<String, dynamic>.from(e)))
           .where((t) => t.id > 0)
           .toList();
-    } catch (_) {
+    } catch (e) {
+      logServiceError('traveller_service:48', e);
       return const [];
     }
   }
@@ -136,7 +138,8 @@ class TravellerService {
       if (body is! Map || body['success'] != true) return null;
       final url = body['data']?['url']?.toString();
       return (url == null || url.isEmpty) ? null : url;
-    } catch (_) {
+    } catch (e) {
+      logServiceError('traveller_service:139', e);
       return null;
     }
   }
@@ -151,7 +154,8 @@ class TravellerService {
       final t = body['data']?['traveller'];
       if (t is! Map) return null;
       return Traveller.fromJson(Map<String, dynamic>.from(t));
-    } catch (_) {
+    } catch (e) {
+      logServiceError('traveller_service:154', e);
       return null;
     }
   }

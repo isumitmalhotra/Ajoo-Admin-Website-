@@ -13,6 +13,7 @@ import 'package:logger/logger.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import '../models/notification_response_model.dart';
 import 'notification_routing_service.dart';
+import '../utils/service_log.dart';
 
 /// Background FCM handler.
 ///
@@ -45,7 +46,8 @@ class NotificationService {
   FirebaseMessaging? get _firebaseMessaging {
     try {
       return FirebaseMessaging.instance;
-    } catch (_) {
+    } catch (e) {
+      logServiceError('notification_service:48', e);
       return null;
     }
   }

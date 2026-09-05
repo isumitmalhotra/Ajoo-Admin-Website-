@@ -9,6 +9,7 @@ import '../models/user_models.dart';
 import 'package:rent_home/utils/secure_store.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/utils/upload_media_type.dart';
+import '../utils/service_log.dart';
 
 class AuthService {
   final Dio _dio = Dio();
@@ -97,7 +98,8 @@ class AuthService {
       return response.statusCode == 200 &&
           response.data is Map &&
           response.data['success'] == true;
-    } catch (_) {
+    } catch (e) {
+      logServiceError('auth_service:100', e);
       return false;
     }
   }

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/data/source/remote/dio_config.dart';
 import 'package:rent_home/models/blog_model.dart';
+import '../utils/service_log.dart';
 
 /// Blog posts for the home screen (A-25).
 ///
@@ -54,7 +55,8 @@ class BlogService {
           .where((b) => b.title.isNotEmpty)
           .take(limit)
           .toList();
-    } catch (_) {
+    } catch (e) {
+      logServiceError('blog_service:57', e);
       return const [];
     }
   }

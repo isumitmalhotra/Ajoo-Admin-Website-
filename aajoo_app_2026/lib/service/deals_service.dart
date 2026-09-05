@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/models/negotiated_deal.dart';
 import 'package:rent_home/models/guest_negotiation.dart';
+import '../utils/service_log.dart';
 
 /// Renter's personal negotiated deals (coupons from accepted price offers).
 /// GET /user/coupons/list → { data: { coupons: [...] } }. Mirrors the web
@@ -38,7 +39,8 @@ class DealsService {
           .whereType<Map>()
           .map((e) => GuestNegotiation.fromJson(Map<String, dynamic>.from(e)))
           .toList();
-    } catch (_) {
+    } catch (e) {
+      logServiceError('deals_service:41', e);
       return [];
     }
   }
@@ -151,9 +153,11 @@ class DealsService {
       return list
           .map((e) => NegotiatedDeal.fromJson(Map<String, dynamic>.from(e)))
           .toList();
-    } on DioException catch (_) {
+    } on DioException catch (e) {
+      logServiceError('deals_service:154', e);
       return [];
-    } catch (_) {
+    } catch (e) {
+      logServiceError('deals_service:156', e);
       return [];
     }
   }

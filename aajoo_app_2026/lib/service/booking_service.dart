@@ -9,6 +9,7 @@ import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/models/create_booking_response.dart';
 import 'package:rent_home/models/single_property_response.dart';
 import 'package:rent_home/data/ApiConstants.dart';
+import '../utils/service_log.dart';
 
 class BookingService {
   final Dio _dio = Dio(
@@ -32,6 +33,7 @@ class BookingService {
       return Get.find<UserController>();
     } catch (e) {
       // UserController not found, return null
+      logServiceError('booking_service:33', e);
       return null;
     }
   }
@@ -47,7 +49,8 @@ class BookingService {
       final response = await _dio.get(url);
       final data = response.data is Map ? response.data['data'] : null;
       return double.tryParse('${data is Map ? data['balance'] : 0}') ?? 0;
-    } catch (_) {
+    } catch (e) {
+      logServiceError('booking_service:50', e);
       return 0;
     }
   }
@@ -112,6 +115,7 @@ class BookingService {
       }
       return out;
     } catch (e) {
+      logServiceError('booking_service:114', e);
       return [];
     }
   }
@@ -201,9 +205,10 @@ class BookingService {
       final data = body is Map ? body['data'] : null;
       if (data is! Map) return null;
       return CancellationQuote.fromJson(Map<String, dynamic>.from(data));
-    } catch (_) {
+    } catch (e) {
       // A quote we could not fetch must not block the cancel — the guest can
       // still proceed, they simply do not get the figure up front.
+      logServiceError('booking_service:204', e);
       return null;
     }
   }
@@ -239,7 +244,8 @@ class BookingService {
         return null;
       }
       return bytes;
-    } catch (_) {
+    } catch (e) {
+      logServiceError('booking_service:242', e);
       return null;
     }
   }

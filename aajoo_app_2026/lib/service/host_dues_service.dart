@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'package:rent_home/data/ApiConstants.dart';
+import '../utils/service_log.dart';
 
 /// Pay-at-property settlement — what a host owes the platform, and paying it.
 ///
@@ -45,7 +46,8 @@ class HostDuesService {
       final res = await _dio.get('/host/dues', options: await _auth());
       final d = _data(res.data);
       return d == null ? null : HostDues.fromJson(d);
-    } catch (_) {
+    } catch (e) {
+      logServiceError('host_dues_service:48', e);
       return null;
     }
   }

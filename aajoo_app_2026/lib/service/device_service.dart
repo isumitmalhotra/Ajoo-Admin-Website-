@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
+import '../utils/service_log.dart';
 
 class DeviceService {
   static void showMapOptions(
@@ -78,7 +79,8 @@ class DeviceService {
         Uri.parse(url),
         mode: LaunchMode.externalApplication,
       );
-    } catch (_) {
+    } catch (e) {
+      logServiceError('device_service:81', e);
       return false;
     }
   }

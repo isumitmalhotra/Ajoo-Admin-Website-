@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/service/growth_service.dart';
+import 'package:rent_home/ui/widgets/load_failed.dart';
+import 'package:rent_home/utils/service_log.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/ui/screens_host/support/host_support_screen.dart';
 import 'package:rent_home/ui/screens_host/negotiations/host_negotiations_screen.dart';
@@ -152,9 +154,21 @@ class _HostNotificationsScreenState extends State<HostNotificationsScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _items.isEmpty
-              ? _empty()
-              : RefreshIndicator(
+          // An empty list after a FAILED request is not "no notifications" —
+          // it is a screen that could not find out. Say so, and offer a retry.
+          : (_items.isEmpty &&
+                  ServiceErrors.lastFor('hostNotifications') != null)
+              ? LoadFailed(
+                  title: "Couldn't load your notifications",
+                  message: ServiceErrors.lastFor('hostNotifications')!,
+                  onRetry: () async {
+                    setState(() => _loading = true);
+                    await _load();
+                  },
+                )
+              : _items.isEmpty
+                  ? _empty()
+                  : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),

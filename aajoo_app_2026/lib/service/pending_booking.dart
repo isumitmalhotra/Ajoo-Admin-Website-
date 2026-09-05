@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../utils/service_log.dart';
 
 /// The booking a guest was in the middle of when something took them out of
 /// the app.
@@ -99,7 +100,8 @@ class PendingBookingStore {
         return null;
       }
       return intent;
-    } catch (_) {
+    } catch (e) {
+      logServiceError('pending_booking:102', e);
       return null;
     }
   }
