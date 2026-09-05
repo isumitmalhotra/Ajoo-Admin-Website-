@@ -26,13 +26,12 @@ models and `.env`. Read-only unless you pass `--apply`.
 | 5 | Host with listing, analytics and payout data | **Done** — user 100 |
 | 6 | One account that is both Guest and Host | **Done** — created, user 169 |
 | 7 | A booking owned by somebody else | **Done** — `B754668`, user 164 |
-| 8 | A second Host, for the cross-host denial test | **Done** — users 168, 133, 135 |
+| 8 | A second Host, for the cross-host denial test | **Done** — users 168, 135, 150 |
 | 9 | A disposable booking, cancellable once | **Done** — created, `B261280` |
 | 10 | Which inbox receives which OTP | **Answered** |
-| 11 | One WhatsApp sender per role, stable | **Open** — the guest number is on two live accounts |
+| 11 | One WhatsApp sender per role, stable | **Done** — the duplicate was cleared |
 
-Ten of the eleven are ready. The one still open is item 11, and it is not a
-record to create — it is a clash to resolve, described below.
+All eleven are ready.
 
 ## The records that were created
 
@@ -150,9 +149,14 @@ Leave `cred_user_isHost` alone. Sign-in filters on it, so flipping it would brea
 host login for that account. The route into guest mode is switch-mode, which is
 what UAT-05 describes anyway: sign in, then choose the role in the chat.
 
-Because 169 is now the dual-role account, use **168 or 133** for prerequisite 8,
-so UAT-05 and the cross-host denial test are not reading the same record. The
-seeder already excludes 169 from what it offers there.
+Because 169 is now the dual-role account, use **168** (`Aish test Host`) for
+prerequisite 8, so UAT-05 and the cross-host denial test are not reading the same
+record. The seeder excludes 169 from what it offers there.
+
+It also excludes closed accounts, which it did not at first: it offered user 133,
+soft-deleted a month ago, purely because the listings it left behind are still
+counted against it. A tester handed a closed account gets a denial for the wrong
+reason and logs a Pass that proves nothing.
 
 > Creating this account exposed a defect that would have failed UAT-05 whatever
 > the test data looked like. It is fixed; see below.
@@ -208,25 +212,42 @@ The intended mapping is right, and stable:
 | Guest | 9882498033 | user 101, `aajoo.renter1@mailinator.com` |
 | Host | 9611577338 | user 100, `aajoo.host1@mailinator.com` |
 
-**But the guest number is on two live accounts.** User 174 "Ashish Kumar"
-(`ashishra366@gmail.com`) was created on 2026-09-05 at 01:50 with the same number
-9882498033, and it is flagged as a **host**.
+**The guest number had been taken by a second live account.** User 174
+(`ashishra366@gmail.com`) was created on 2026-09-05 with the same number
+9882498033 and flagged as a **host**.
 
 WhatsApp identifies a sender only by number, and the bot narrows the lookup by
-the role the session is in. So on that one number:
-
-- a Guest session resolves to user 101, which is correct;
-- a **Host session resolves to user 174**, a different person's account.
-
-That breaks two things. It is exactly the state the pack forbids — *"Do not map
-the same WhatsApp sender as Guest and Host at the same time"* — and it means a
-Host Payout OTP started from that number would be emailed to
-`ashishra366@gmail.com` rather than the test host, which contradicts the answer
+the role the session is in. So on that one number a Guest session resolved to
+user 101, correctly, while a **Host session resolved to user 174** — a different
+person's account. That is exactly the state the pack forbids, and it meant a
+Host Payout OTP started from that number would have been emailed to
+`ashishra366@gmail.com` rather than to the test host, contradicting the answer
 given for prerequisite 10.
 
-The fix is to move user 174 off 9882498033. That is a decision about whose number
-it is, so the seeder reports it and changes nothing. Until it is resolved,
-**UAT-35 and UAT-36 are unsafe to run from that number.**
+**Resolved.** The number was cleared from user 174. Both senders now resolve to
+exactly one account under every role filter:
+
+| Sender | Guest session | Host session |
+|---|---|---|
+| 9882498033 | user 101 | nobody |
+| 9611577338 | nobody | user 100 |
+
+The guest handset resolving to nobody in Host mode is the point, not a gap.
+
+**Why cleared rather than renumbered.** Putting a stand-in number on the account
+would claim a digit string that may belong to a real person. That account does
+not need one: it signs in with an email and password, holds no listings, and has
+never booked or hosted a stay. The field is nullable and five live accounts
+already sit without one. **Mobile sign-in stops working for user 174; email
+sign-in is unaffected**, and the change reverses in one statement.
+
+Nothing had been mis-resolved yet. Both chatbot sessions ever recorded against
+that number resolved to user 101 as a guest, so the clash was latent and no
+conversation needs resetting.
+
+Run `node scripts/fixUatWhatsAppClash.js` to re-check. It refuses to clear a
+number from any account that holds listings or bookings, or that would be left
+with no way to sign in.
 
 ---
 
@@ -348,16 +369,31 @@ Two items in the pack belong to Aajoo, not to the backend, and neither is done:
 
 ## What is left
 
-1. **Deploy the backend.** The two fixes are committed but a push to `main` is
-   what puts them on `aajaodev.onrender.com`. Until then UAT-05 and UAT-17 will
-   still fail against the running service.
-2. **Move user 174 off 9882498033**, or accept that UAT-35 and UAT-36 cannot be
-   run from that number. This is the only outstanding prerequisite.
-3. **Remove the plaintext OTP log line** before the run, or accept that every
-   code issued during UAT is readable in Render's log stream.
-4. **Aajoo's two items**: the second support operator, and confirming a UAT-31
-   alert recipient actually received mail.
+Every developer prerequisite is met and both defects are fixed and live. What
+remains is not developer work, with one exception:
+
+1. **Remove the plaintext OTP log line** before the run, or accept that every
+   code issued during UAT is readable in Render's log stream. This is the one
+   open engineering item and it is a five-line change.
+2. **Aajoo's two items**: a second BotPenguin operator in the support team for
+   UAT-29's transfer sub-test, and a UAT-31 alert recipient confirming they
+   actually received the mail.
 
 Re-run `node scripts/seedBotPenguinUatRecords.js` at any point to re-check all
 eleven. The stay in progress expires on 08-09-2026; if the run is still going,
 re-run with `--apply` in the afternoon to make a new one.
+
+## The records and accounts UAT will use
+
+| Role | Account | Number | Inbox |
+|---|---|---|---|
+| Guest | 101 `lala Tester` | 9882498033 | `aajoo.renter1@mailinator.com` |
+| Host | 100 `Aajoo Test Host` | 9611577338 | `aajoo.host1@mailinator.com` |
+| Guest **and** Host | 169 `Aish Mobile Host new` | — | `aishmobilehost@yopmail.com` |
+| Second Host | 168 `Aish test Host` | — | `itsme.ashsriv007+host2@gmail.com` |
+
+| Booking | For | Dates |
+|---|---|---|
+| `B170046` | the stay in progress | 05-09 to 08-09-2026 |
+| `B261280` | the one cancellation test | 19-09 to 21-09-2026 |
+| `B754668` | somebody else's, for the denial test | owned by user 164 |

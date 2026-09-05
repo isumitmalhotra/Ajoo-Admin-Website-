@@ -118,22 +118,34 @@ const post = async (path, body, token) => {
                 : `no account holds both roles (would set them on user ${DUAL_ID})`);
   if (!both.length) gaps.push('dual');
 
-  // 7 — a booking owned by somebody else, for the ownership-denial test.
+  // 7 — a booking owned by somebody else, for the ownership-denial test. Its
+  // owner has to be a live account for the same reason as item 8.
   const others = await q(
-    `SELECT book_id, book_user_id FROM tbl_bookings
-      WHERE book_is_delete = 0 AND book_status <> :c AND book_user_id <> :g
-      ORDER BY book_pri_id DESC LIMIT 1`, { g: GUEST_ID, c: CANCELLED });
+    `SELECT b.book_id, b.book_user_id, u.user_fullName name FROM tbl_bookings b
+       JOIN tbl_users u ON u.user_id = b.book_user_id
+      WHERE b.book_is_delete = 0 AND b.book_status <> :c AND b.book_user_id <> :g
+        AND u.user_isDelete = 0
+      ORDER BY b.book_pri_id DESC LIMIT 1`, { g: GUEST_ID, c: CANCELLED });
   say(7, others.length ? 'OK' : 'GAP',
-    others.length ? `${others[0].book_id} belongs to user ${others[0].book_user_id}` : 'none found');
+    others.length ? `${others[0].book_id} belongs to user ${others[0].book_user_id} (${others[0].name})` : 'none found');
 
   // 8 — a second Host, for the cross-host denial test. Must not be the dual-role
   // account, or the two tests are reading the same record.
+  //
+  // Closed accounts are excluded, which this did not do at first: it offered
+  // user 133, soft-deleted a month earlier, purely because the listings it left
+  // behind are still counted against it. A tester handed a closed account gets
+  // a denial for the wrong reason and logs a Pass that proves nothing.
   const hosts = await q(
-    `SELECT property_host_id id, COUNT(*) n FROM tbl_properties
-      WHERE property_host_id NOT IN (:h, :d) GROUP BY property_host_id
+    `SELECT p.property_host_id id, u.user_fullName name, COUNT(*) n
+       FROM tbl_properties p
+       JOIN tbl_users u ON u.user_id = p.property_host_id
+      WHERE p.property_host_id NOT IN (:h, :d)
+        AND u.user_isDelete = 0 AND u.user_isActive = 1
+      GROUP BY p.property_host_id, u.user_fullName
       ORDER BY n DESC LIMIT 3`, { h: HOST_ID, d: DUAL_ID });
   say(8, hosts.length ? 'OK' : 'GAP',
-    hosts.length ? `second hosts available: ${hosts.map((x) => `${x.id} (${x.n})`).join(', ')}` : 'none');
+    hosts.length ? `second hosts available: ${hosts.map((x) => `${x.id} ${x.name} (${x.n})`).join(', ')}` : 'none');
 
   // 9 — a disposable booking. Future and non-cancelled, so cancelling it once
   // is a real cancellation and cancelling it twice is a real repeat.
