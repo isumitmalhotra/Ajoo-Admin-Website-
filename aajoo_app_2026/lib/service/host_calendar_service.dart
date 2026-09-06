@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:rent_home/models/host_calendar_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
+import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
 
 /// The host calendar's three endpoints, all owner-scoped server-side by
 /// property_host_id — a host can only ever read or change their own listing.
@@ -130,7 +131,14 @@ class HostCalendarService {
 
   Exception _handleError(dynamic error) {
     if (error is DioException) {
-      final message = _messageOf(error.response?.data) ?? error.message;
+      // NOT error.message: for a transport failure that is Dio's own
+      // diagnostic string, and wrapping it in an Exception here defeats the
+      // friendly mapping in handleApiError — the caller receives a plain
+      // Exception, not a DioException, so the mapper never runs. This is how
+      // "The connection errored: No route to host This indicates an error
+      // which most likely cannot be solved by the library." reached a login
+      // screen. Our API's own message still wins when there is one.
+      final message = _messageOf(error.response?.data) ?? friendlyTransportMessage(error);
       return Exception(message);
     }
     return Exception(error.toString());

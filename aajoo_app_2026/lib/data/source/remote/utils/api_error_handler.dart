@@ -31,7 +31,7 @@ Future<void> _defaultUnauthorized(String message) async {
 /// app is broken rather than the network being unreachable. Every transport
 /// failure now maps to a plain sentence, and only a genuine message from our
 /// own API is ever shown as-is.
-String _friendlyTransportMessage(DioException error) {
+String friendlyTransportMessage(DioException error) {
   switch (error.type) {
     case DioExceptionType.connectionTimeout:
     case DioExceptionType.sendTimeout:
@@ -78,7 +78,7 @@ Future<String> handleApiError(
     } else if (apiMessage != null && apiMessage.toString().trim().isNotEmpty) {
       message = apiMessage.toString();
     } else {
-      message = _friendlyTransportMessage(error);
+      message = friendlyTransportMessage(error);
     }
   } else if (error is Exception) {
     message = error.toString().replaceFirst('Exception: ', '');

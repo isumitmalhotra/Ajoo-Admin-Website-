@@ -10,6 +10,7 @@ import 'package:rent_home/utils/secure_store.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/utils/upload_media_type.dart';
 import '../utils/service_log.dart';
+import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
 
 class AuthService {
   final Dio _dio = Dio();
@@ -469,7 +470,14 @@ class AuthService {
     if (error is DioException) {
       final response = error.response?.data;
       print('Error during API call: $response');
-      final message = response?['message'] ?? error.message;
+      // NOT error.message: for a transport failure that is Dio's own
+      // diagnostic string, and wrapping it in an Exception here defeats the
+      // friendly mapping in handleApiError — the caller receives a plain
+      // Exception, not a DioException, so the mapper never runs. This is how
+      // "The connection errored: No route to host This indicates an error
+      // which most likely cannot be solved by the library." reached a login
+      // screen. Our API's own message still wins when there is one.
+      final message = response?['message'] ?? friendlyTransportMessage(error);
       print('Error during API call: $message');
       // Get.snackbar('Error', message, snackPosition: SnackPosition.TOP
       return Exception(message);
