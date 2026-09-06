@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Documentation vs Codebase — Gap Audit</title>
+<style>
+  @page { size: A4; margin: 20mm 17mm 22mm; }
+
+  :root {
+    --navy: #1B2447;
+    --teal: #0F766E;
+    --ink:  #1F2937;
+    --muted:#5B6472;
+    --line: #D9DEE7;
+    --soft: #F4F6F9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: #fff;
+    /* Cambria before Georgia deliberately: Georgia ships OLD-STYLE figures, so
+       "six P0s" reads as "six Pos" and every number sits at a different
+       height. This document is full of IDs and money. Cambria has lining
+       figures and prints just as well. */
+    font-family: Cambria, "Palatino Linotype", Georgia, "Times New Roman", serif;
+    font-variant-numeric: lining-nums;
+    font-size: 10.4pt;
+    line-height: 1.58;
+    color: var(--ink);
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---- cover ------------------------------------------------------- */
+  .cover { page-break-after: always; padding-top: 58mm; }
+  .cover .rule { width: 54px; height: 4px; background: var(--teal); margin-bottom: 22px; }
+  .cover h1 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    font-size: 27pt; line-height: 1.2; color: var(--navy);
+    margin: 0 0 16px; font-weight: 600; letter-spacing: -0.4px;
+  }
+  .cover .sub { font-size: 11.5pt; color: var(--muted); margin: 0 0 40px; max-width: 118mm; }
+  .cover .meta {
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 9pt;
+    color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px;
+  }
+  .cover .meta strong { color: var(--navy); font-weight: 600; }
+
+  /* ---- headings ---------------------------------------------------- */
+  h2, h3, h4 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    color: var(--navy); font-weight: 600; page-break-after: avoid;
+  }
+  h2 {
+    font-size: 15pt; margin: 26px 0 12px; padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--line); letter-spacing: -0.2px;
+  }
+  h3 {
+    font-size: 11.4pt; margin: 18px 0 7px; color: var(--teal);
+    letter-spacing: .1px;
+  }
+  h4 { font-size: 10.6pt; margin: 14px 0 6px; }
+
+  p { margin: 0 0 10px; orphans: 3; widows: 3; }
+
+  /* ---- lists ------------------------------------------------------- */
+  ul, ol { margin: 0 0 11px; padding-left: 20px; }
+  li { margin-bottom: 5px; }
+  li > ul, li > ol { margin-top: 5px; }
+
+  /* ---- emphasis & code --------------------------------------------- */
+  strong { color: var(--navy); font-weight: 700; }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 8.7pt; background: var(--soft);
+    border: 1px solid var(--line); border-radius: 3px;
+    padding: 0.5px 4px; color: #33405A;
+    /* long identifiers must not push the page sideways */
+    word-break: break-word;
+  }
+  pre { background: var(--soft); border: 1px solid var(--line); border-radius: 5px;
+        padding: 10px 12px; overflow-x: auto; page-break-inside: avoid; }
+  pre code { border: 0; background: none; padding: 0; font-size: 8.6pt; }
+
+  /* ---- tables ------------------------------------------------------ */
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 16px;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.7pt;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }   /* repeat header across pages */
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  th {
+    background: var(--navy); color: #fff; text-align: left; font-weight: 600;
+    padding: 7px 9px; border: 1px solid var(--navy); line-height: 1.35;
+  }
+  td {
+    padding: 6px 9px; border: 1px solid var(--line); vertical-align: top;
+    line-height: 1.45;
+  }
+  tbody tr:nth-child(even) td { background: #FAFBFD; }
+  /* strong is navy, and a header cell IS navy — bold text in a header was
+     rendering invisible. Headers set their own colour; inherit it. */
+  th strong, th b { color: inherit; }
+  td code { font-size: 8.1pt; }
+
+  /* ---- callouts ---------------------------------------------------- */
+  blockquote {
+    margin: 14px 0; padding: 10px 14px;
+    background: #F2F8F7; border-left: 3px solid var(--teal);
+    page-break-inside: avoid;
+  }
+  blockquote p { margin: 0 0 6px; }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+
+  /* Keep a section heading with the text that follows it. */
+  h2 + p, h3 + p, h2 + table, h3 + table, h2 + ul, h3 + ul { page-break-before: avoid; }
+</style></head>
+<body>
+  <section class="cover">
+    <div class="rule"></div>
+    <h1>Documentation vs Codebase — Gap Audit</h1>
+    <p class="sub">A check of five client documents against the codebase and the live system: what is built, what is still open, the one legally material gap, and the two decisions that are yours.</p>
+    <div class="meta">
+      <strong>Aajoo Homes &mdash; Documentation Audit</strong><br>
+      Prepared 6 September 2026 by the Zyphex Tech development team<br>
+      Verified against the live development backend and database
+    </div>
+  </section>
+  <h2>1. What this is</h2>
+<p>You asked whether anything in the five documents below is still pending or differs from what is built. This is that check, document by document, verified against the code and the live system rather than from memory.</p>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Aajoo Homes Pricing Architecture</td>
+<td><strong>Byte-identical to the pricing document answered earlier today.</strong> Nothing new.</td>
+</tr>
+<tr>
+<td>Aajoo Homes — Section 0 — Quick Summary &amp; Project Direction</td>
+<td>Content pages built to spec; <strong>entry routing, brand assets, banners and CMS coverage are open</strong></td>
+</tr>
+<tr>
+<td>CNT-11 Host Agreement (+ CNT-13–16, DEC-1–6, HOST-1–7, ADM-1–5)</td>
+<td><strong>The largest block of open work</strong>, including one legally material gap</td>
+</tr>
+<tr>
+<td>Aajoo Homes — Legal &amp; Compliance Documentation Suite</td>
+<td><strong>18 of 20 documents are not published anywhere</strong></td>
+</tr>
+<tr>
+<td>AAJOO HOMES PRIVATE LIMITED — Privacy Policy</td>
+<td><strong>The v1.0 text you supplied is not the text on the site or in the app</strong></td>
+</tr>
+</tbody></table>
+<p>Two things need a decision from you before code can move, because the documents contradict each other or contradict a fix you asked for. They are in section 8.</p>
+<h2>2. The one legally material gap</h2>
+<p>The Host Agreement&#39;s own <strong>Developer Requirements</strong> (page 5) ask for four things so that electronic acceptance is enforceable. One is done.</p>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>State</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Require Hosts to scroll through the Host Agreement before publishing their first property</td>
+<td><strong>Not done.</strong> The agreement text is not shown anywhere in the flow, and there is no page to show.</td>
+</tr>
+<tr>
+<td>Mandatory checkbox with the stated wording</td>
+<td><strong>Partly.</strong> Step 5 has seven declaration checkboxes, including &quot;I accept the Host Agreement&quot; — but none of them links to a document, so nothing has been read.</td>
+</tr>
+<tr>
+<td>Store agreement version, date and time of acceptance, IP address, device information</td>
+<td><strong>Not done.</strong> <code>property_submission</code> stores one boolean per declaration and a single <code>psb_submitted_at</code> for the whole submission. No version, no IP, no device, no per-declaration timestamp.</td>
+</tr>
+<tr>
+<td>Re-accept whenever a material update is published</td>
+<td><strong>Not done.</strong> There is no version to compare against.</td>
+</tr>
+</tbody></table>
+<p>As it stands, a host ticks a box next to the words &quot;I accept the Host Agreement&quot; for an agreement that does not exist on the platform, and we keep no record of which version they accepted or when. That is the item to fix first.</p>
+<hr>
+<h2>3. Legal &amp; Compliance Suite — 20 documents</h2>
+<p>The suite says these &quot;should be available from the website footer, mobile app, and during user onboarding where applicable.&quot;</p>
+<p><strong>Published today (4):</strong> a single combined Terms &amp; Conditions, Privacy Policy, Cancellation &amp; Refund Policy, State Regulations. Plus a Safety page and a Help Center that are not from the suite.</p>
+<p><strong>Not published (18):</strong> Guest Terms &amp; Conditions and Host Terms &amp; Conditions as separate documents · Host Agreement · Community Standards · Trust &amp; Safety Policy · Responsible Hosting Policy · Responsible Travel Policy · Cookie Policy · Payment Policy · Verification Policy · Content Policy · Review Policy · Referral &amp; Rewards Policy · Promotional Offers Policy · Accessibility Statement · AI Usage &amp; Recommendation Policy · Data Retention &amp; Deletion Policy · Copyright &amp; Trademark Policy.</p>
+<p><strong>And the four that are published do not carry your text.</strong> The Privacy Policy you supplied has 51 numbered sections across three parts; the live page has ten short summary paragraphs written before that document existed. Same for Terms. The app fetches its own separate copy from the server, also short-form, also not yours — so there are currently <strong>three different Privacy Policies</strong> in play: the site&#39;s, the app&#39;s, and the one in your PDF.</p>
+<p><strong>Broken links in the legacy footer</strong>, measured live:</p>
+<table>
+<thead>
+<tr>
+<th>Link</th>
+<th>Goes to</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Cancellation Policy</td>
+<td><code>/terms-condition</code></td>
+<td>wrong page — <code>/cancellation-policy</code> exists</td>
+</tr>
+<tr>
+<td>Host Agreement</td>
+<td><code>/terms-condition</code></td>
+<td>wrong page — no Host Agreement page exists</td>
+</tr>
+<tr>
+<td>FAQ</td>
+<td><code>/faqs</code></td>
+<td><strong>404</strong></td>
+</tr>
+<tr>
+<td>Find Your Stay</td>
+<td><code>/property/list</code></td>
+<td><strong>404</strong></td>
+</tr>
+<tr>
+<td>User Dashboard</td>
+<td><code>/user-dashboard</code></td>
+<td><strong>404</strong></td>
+</tr>
+</tbody></table>
+<p><strong>One more thing worth knowing.</strong> The admin panel has a Terms &amp; Conditions editor that writes to <code>tbl_terms_conditions</code>. That table has <strong>zero rows</strong>, and neither the website nor the app reads it — the website&#39;s page is hardcoded and the app&#39;s comes from a hardcoded controller response. So the editor edits nothing, and the policies are not CMS-editable, which DEC-2 explicitly requires (&quot;Policies (IMPORTANT): Privacy Policy, Terms &amp; Conditions, Cancellation Policy, Host Agreement — must be editable 100%&quot;).</p>
+<p><strong>Privacy Policy specifics.</strong> §50 names a Grievance Officer at <code>grievance@aajoohomes.com</code> — not published anywhere. The section-8 contact addresses (<code>hello@</code>, <code>support@</code>, <code>hosts@</code>, <code>privacy@</code>, <code>legal@</code>) are not on the site either. Account deletion (§34) and access/correction (§33) do exist and work.</p>
+<hr>
+<h2>4. Section 0 — what is built and what is not</h2>
+<p><strong>Built to spec.</strong> CNT-1 Getting Started, CNT-2 Explore homepage (all fifteen sections in the specified order, copy verbatim), CNT-3 About, CNT-4 Contact, CNT-5 Login, CNT-6 Sign Up, and <strong>CNT-7 FAQ in full</strong> — global search, category filters, expand/collapse, related questions, popular, recently updated, helpful/not-helpful voting, rich text, internal links and per-question SEO URLs. CNT-13 Why Host with Aajoo exists.</p>
+<p><strong>Open:</strong></p>
+<ul>
+<li><strong>GS-2 entry routing.</strong> <code>/</code> currently sends a signed-out visitor to <code>/explore</code>, not to Getting Started. This was changed deliberately — see section 8.</li>
+<li><strong>GS-7 navigation.</strong> The minimal-then-expand-on-scroll behaviour is not implemented; the header is the Airbnb-pattern rebuild delivered earlier.</li>
+<li><strong>0.4 Support information.</strong> The office address, WhatsApp number and social profiles named in the document are not on the site. The redesigned footer&#39;s social icons still point at bare <code>instagram.com</code> / <code>facebook.com</code>.</li>
+<li><strong>0.5 Configurable messaging.</strong> Email and OTP templates are in code, not configurable without a deploy.</li>
+<li><strong>BR-1, BR-5, BR-6.</strong> Logo variants, favicon and app-icon sets, and the Lottie/3D mission-and-vision animations are all waiting on brand assets you have not sent yet.</li>
+<li><strong>CNT-14 Help Center.</strong> The current page is a static list of questions. The specified structure — guest/host split, smart search with auto-suggestions, trending and recently-viewed articles, an emergency section, SLA targets, and ticket-raising from within the Help Center — is not there. Ticketing itself exists for both guests and hosts, just not reachable from this page.</li>
+<li><strong>CNT-15 Footer.</strong> The eight-section mega footer, contact block, newsletter, trust badges, popular destinations, SEO link grid, disclaimer and full CMS control are not built. The current footer has four columns and three legal links.</li>
+<li><strong>CNT-16 Announcements &amp; Promotional Banners — nothing exists.</strong> No table, no admin screen, no scheduling, no targeting by user type / location / device, no priority, no countdown, no impression or click tracking. This is the single largest untouched module in the pack.</li>
+</ul>
+<hr>
+<h2>5. Decisions (DEC-1 to DEC-6)</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>State</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>DEC-1 Getting Started owns <code>/</code></td>
+<td><strong>Differs — see section 8</strong></td>
+</tr>
+<tr>
+<td>DEC-2 Hybrid CMS</td>
+<td>Partly. Content pages are hardcoded; policies are hardcoded; banners and announcements have no CMS at all. Blog, FAQ, homepage sections and SEO are CMS-driven.</td>
+</tr>
+<tr>
+<td>DEC-3 Property detail layout</td>
+<td>Matches, section for section.</td>
+</tr>
+<tr>
+<td>DEC-4 Android first, web parity</td>
+<td>Largely matches.</td>
+</tr>
+<tr>
+<td>DEC-5 Filter master list</td>
+<td><strong>Four of seven groups missing.</strong> Built: property type, price (free min/max rather than the four named bands), guest rating, pet-friendly. Missing: all location filters (city, village, mountain/river/forest view, near lake), stay features (entire place / private room / shared room), the amenity filters (WiFi, kitchen, parking, pool, bonfire, work-friendly), all experience filters (adventure, relaxation, family, couples, workation), and the special filters (instant booking, verified, discounted, top rated, new listings).</td>
+</tr>
+<tr>
+<td>DEC-6 Categories, amenities, tags</td>
+<td><strong>Categories:</strong> &quot;Eco Stay&quot; is missing, and eight test rows are live in production — <code>couple</code>, <code>party</code>, <code>test</code>, <code>test</code>, <code>add one cate</code>, <code>Test Api Category updat</code>, plus <code>Resort</code> and <code>Pool House</code> which are not on your list. <strong>Amenities:</strong> 44 rows, covering the master list. <strong>Tags:</strong> the ten SEO tags are not seeded — the table holds six unrelated rows including <code>Test Tag update</code> and <code>add new</code>, and <strong>no property carries a tag at all</strong>, so the tag system is inert.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>6. Host dashboard (HOST-1 to HOST-7)</h2>
+<p>Most of this exists: ongoing bookings, property list, calendar, earnings, payouts, statements, messages, negotiations, reviews, performance, boost, support with ticketing. HOST-4 is done — there is no &quot;Total Spent&quot; box; occupancy, earnings and payouts are in its place.</p>
+<p><strong>Open:</strong></p>
+<ul>
+<li><strong>HOST-3 smart edit rules.</strong> The three tiers — always editable, needs admin review, locked — are not implemented. A host editing an approved listing re-enters the review queue but <strong>stays live</strong>, and every field is equally editable: property name, address, category and guest capacity can all be changed on a live listing without approval.</li>
+<li><strong>HOST-7:</strong> Listing Optimizer (photo score, description score, AI suggestions, ranking tips) and Compliance Center (document status, verification progress, state-regulation reminders) do not exist.</li>
+</ul>
+<hr>
+<h2>7. Admin dashboard (ADM-1 to ADM-5)</h2>
+<ul>
+<li><strong>ADM-1 — admin-only fields: none of them exist.</strong> No commission override per property, no priority ranking score, no visibility boost score, no featured-listing toggle, no manual-verified flag, no verification notes, no legal approval status, no state-regulation compliance tag, no fraud risk level, no manual-review toggle, no payment-hold flag. (Host-paid Boost exists, which is a different thing.)</li>
+<li><strong>ADM-2 — invoice:</strong> built and downloadable, with invoice number, booking id, dates, host name, guest, subtotal, discount, taxes, payment reference and a system-generated footer. Missing: <strong>the GST number</strong> (we do not have your GSTIN) and a separate <strong>Platform Fee</strong> line.</li>
+<li><strong>ADM-3 — BotPenguin placement:</strong> correct. The widget is scoped to the signed-in renter area and host support; it does not load in the admin dashboard.</li>
+<li><strong>ADM-4 — verification workflow:</strong> the state machine, the four admin actions and the host notifications are all built. <strong>The preset rejection-reason list is not</strong> — rejection reasons are free text, so the nine named reasons cannot be reported on.</li>
+<li><strong>ADM-5 — modules:</strong> analytics, property control, user management, financial control, disputes, CMS, location and category control, and the role system are built. <strong>Missing: the fraud &amp; risk engine</strong> (automatic flagging of fake listings, fake bookings, suspicious payments, duplicate accounts) <strong>and the marketing control panel</strong> (banners, campaigns, featured listings, homepage control) — the latter being CNT-16 again.</li>
+</ul>
+<hr>
+<h2>8. Two things only you can decide</h2>
+<h3>The front door</h3>
+<p>DEC-1 says Getting Started should own <code>/</code>. It does not: a signed-out visitor at <code>aajoohomes.com</code> is sent to <code>/explore</code>.</p>
+<p>That was changed on purpose, and the reason still stands. The original build routed <code>/</code> by a <code>localStorage</code> flag written the first time someone chose an experience. The flag never expired and nothing cleared it, so anyone who had once tapped &quot;Become a Host&quot; landed on the host pitch every time afterwards, on that browser, with no way back to the front door by typing the address. It reads as a broken site. Separately, search engines have no <code>localStorage</code>, so Google only ever saw <code>/getting-started</code> — the homepage was never what <code>/</code> resolved to for indexing.</p>
+<p>Both problems are solvable while honouring DEC-1: give the stored preference an expiry, keep an always-visible way back, and serve crawlers the real page. <strong>Tell us to do that and we will.</strong> We did not flip it back on our own because the current behaviour was itself a fix to a defect you reported.</p>
+<h3>The brand: your documents disagree with each other</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Section 0 (BR-2 / BR-4)</th>
+<th>Later section of the Host Agreement PDF</th>
+<th>HOST-6</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Headings</td>
+<td>Plus Jakarta Sans</td>
+<td><strong>Satoshi</strong> (&quot;LOCK IT&quot;)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Body / UI</td>
+<td>Manrope</td>
+<td><strong>Inter</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Primary</td>
+<td>Evergreen Teal <code>#0F766E</code></td>
+<td>Ocean Teal <code>#0D9488</code></td>
+<td>Deep Indigo <code>#1B2447</code></td>
+</tr>
+<tr>
+<td>Background</td>
+<td>Warm Ivory <code>#FAF8F4</code></td>
+<td>Warm Ivory <code>#FDF7F0</code></td>
+<td>Warm Sand <code>#EFE7D6</code></td>
+</tr>
+<tr>
+<td>Accent</td>
+<td>Golden Amber <code>#E8A317</code></td>
+<td>Sunset Orange <code>#FF7A00</code></td>
+<td>Clay Orange <code>#C16345</code></td>
+</tr>
+<tr>
+<td>Dark</td>
+<td>Charcoal Navy <code>#1F2937</code></td>
+<td>Deep Navy <code>#111827</code></td>
+<td>—</td>
+</tr>
+</tbody></table>
+<p>HOST-6&#39;s palette is the Indigo + Sand + Clay scheme that <strong>BR-4 explicitly rejects</strong> two documents earlier. And the same PDF that says &quot;lock in Satoshi and Inter&quot; also says &quot;Replace Poppins&quot; — which is the display face the Android app currently uses.</p>
+<p>The website today implements <strong>Section 0&#39;s</strong> direction: Plus Jakarta Sans + Manrope, Evergreen Teal, Warm Ivory, Golden Amber, Charcoal Navy. The app uses Manrope with Poppins for display.</p>
+<p>We are not going to guess between three palettes and two type systems. <strong>Name the one that wins and we will apply it across website, app, admin, emails and PDFs in a single pass.</strong> Note that Satoshi is not a Google font — it needs a licence, which you would need to buy before we can ship it.</p>
+<hr>
+<h2>9. Suggested order of work</h2>
+<ol>
+<li><strong>Host Agreement acceptance</strong> — publish the agreement, show it in the flow, and record version, timestamp, IP and device. This is the only item on this list with legal consequences.</li>
+<li><strong>The legal suite</strong> — publish all 20 documents from your text, wire them to one CMS-editable source that the website <em>and</em> the app both read, and fix the five broken footer links.</li>
+<li><strong>Brand decision</strong>, then one pass across every surface.</li>
+<li><strong>Announcements &amp; banners (CNT-16)</strong> and the admin marketing panel — one module, two requirements.</li>
+<li><strong>ADM-1 admin control fields</strong> and <strong>ADM-4 preset rejection reasons</strong>.</li>
+<li><strong>DEC-5 filters</strong> and <strong>DEC-6 tag seeding</strong> (plus deleting the eight test categories from production).</li>
+<li><strong>CNT-14 Help Center</strong> and <strong>CNT-15 mega footer</strong>.</li>
+<li><strong>HOST-3 edit tiers</strong>, <strong>HOST-7 optimizer and compliance centre</strong>, <strong>ADM-5 fraud engine</strong>.</li>
+</ol>
+<p>Nothing in items 3 to 8 blocks a launch on its own. Items 1 and 2 do.</p>
+
+</body></html>
