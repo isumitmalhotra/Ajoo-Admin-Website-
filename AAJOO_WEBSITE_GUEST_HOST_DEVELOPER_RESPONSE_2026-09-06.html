@@ -1,0 +1,1319 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Website — Guest & Host Findings</title>
+<style>
+  @page { size: A4; margin: 20mm 17mm 22mm; }
+
+  :root {
+    --navy: #1B2447;
+    --teal: #0F766E;
+    --ink:  #1F2937;
+    --muted:#5B6472;
+    --line: #D9DEE7;
+    --soft: #F4F6F9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: #fff;
+    /* Cambria before Georgia deliberately: Georgia ships OLD-STYLE figures, so
+       "six P0s" reads as "six Pos" and every number sits at a different
+       height. This document is full of IDs and money. Cambria has lining
+       figures and prints just as well. */
+    font-family: Cambria, "Palatino Linotype", Georgia, "Times New Roman", serif;
+    font-variant-numeric: lining-nums;
+    font-size: 10.4pt;
+    line-height: 1.58;
+    color: var(--ink);
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---- cover ------------------------------------------------------- */
+  .cover { page-break-after: always; padding-top: 58mm; }
+  .cover .rule { width: 54px; height: 4px; background: var(--teal); margin-bottom: 22px; }
+  .cover h1 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    font-size: 27pt; line-height: 1.2; color: var(--navy);
+    margin: 0 0 16px; font-weight: 600; letter-spacing: -0.4px;
+  }
+  .cover .sub { font-size: 11.5pt; color: var(--muted); margin: 0 0 40px; max-width: 118mm; }
+  .cover .meta {
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 9pt;
+    color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px;
+  }
+  .cover .meta strong { color: var(--navy); font-weight: 600; }
+
+  /* ---- headings ---------------------------------------------------- */
+  h2, h3, h4 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    color: var(--navy); font-weight: 600; page-break-after: avoid;
+  }
+  h2 {
+    font-size: 15pt; margin: 26px 0 12px; padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--line); letter-spacing: -0.2px;
+  }
+  h3 {
+    font-size: 11.4pt; margin: 18px 0 7px; color: var(--teal);
+    letter-spacing: .1px;
+  }
+  h4 { font-size: 10.6pt; margin: 14px 0 6px; }
+
+  p { margin: 0 0 10px; orphans: 3; widows: 3; }
+
+  /* ---- lists ------------------------------------------------------- */
+  ul, ol { margin: 0 0 11px; padding-left: 20px; }
+  li { margin-bottom: 5px; }
+  li > ul, li > ol { margin-top: 5px; }
+
+  /* ---- emphasis & code --------------------------------------------- */
+  strong { color: var(--navy); font-weight: 700; }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 8.7pt; background: var(--soft);
+    border: 1px solid var(--line); border-radius: 3px;
+    padding: 0.5px 4px; color: #33405A;
+    /* long identifiers must not push the page sideways */
+    word-break: break-word;
+  }
+  pre { background: var(--soft); border: 1px solid var(--line); border-radius: 5px;
+        padding: 10px 12px; overflow-x: auto; page-break-inside: avoid; }
+  pre code { border: 0; background: none; padding: 0; font-size: 8.6pt; }
+
+  /* ---- tables ------------------------------------------------------ */
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 16px;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.7pt;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }   /* repeat header across pages */
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  th {
+    background: var(--navy); color: #fff; text-align: left; font-weight: 600;
+    padding: 7px 9px; border: 1px solid var(--navy); line-height: 1.35;
+  }
+  td {
+    padding: 6px 9px; border: 1px solid var(--line); vertical-align: top;
+    line-height: 1.45;
+  }
+  tbody tr:nth-child(even) td { background: #FAFBFD; }
+  /* strong is navy, and a header cell IS navy — bold text in a header was
+     rendering invisible. Headers set their own colour; inherit it. */
+  th strong, th b { color: inherit; }
+  td code { font-size: 8.1pt; }
+
+  /* ---- callouts ---------------------------------------------------- */
+  blockquote {
+    margin: 14px 0; padding: 10px 14px;
+    background: #F2F8F7; border-left: 3px solid var(--teal);
+    page-break-inside: avoid;
+  }
+  blockquote p { margin: 0 0 6px; }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+
+  /* Keep a section heading with the text that follows it. */
+  h2 + p, h3 + p, h2 + table, h3 + table, h2 + ul, h3 + ul { page-break-before: avoid; }
+</style></head>
+<body>
+  <section class="cover">
+    <div class="rule"></div>
+    <h1>Website — Guest & Host Findings</h1>
+    <p class="sub">A finding-by-finding response to the Final Website Findings before final testing: what the platform does today, measured against the live site and the live API, and the nine requirements that were not met when we checked.</p>
+    <div class="meta">
+      <strong>Aajoo Homes &mdash; Website · Guest &amp; Host Findings</strong><br>
+      Prepared 6 September 2026 by the Zyphex Tech development team<br>
+      Verified against the live development backend and database
+    </div>
+  </section>
+  <h2>1. Response summary</h2>
+<p>This answers <strong>AAJOO HOMES — Final Website Findings, Guest &amp; Host Required Fixes Before Final Testing</strong>, section by section and ID by ID, in the order the document raises them. Every ID is carried over unchanged.</p>
+<p>The document is a checklist of about 110 requirements rather than a list of observed failures, and we have treated it that way: each row below says what the platform does today and <strong>how we know</strong> — measured against the live site and the live API where that was possible, and read from the code where it was not, which is stated in every case.</p>
+<p><strong>Nine of its requirements were not met when we checked</strong> — eight defects and one missing feature. One of the eight was an unauthenticated endpoint on production that would send an email from the Aajoo Homes account to any address given to it. All nine were dealt with during this review and are described in section 19.</p>
+<table>
+<thead>
+<tr>
+<th>Response at a glance</th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Findings answered</td>
+<td><strong>6 P0 + ~110 numbered IDs across 19 sections</strong></td>
+</tr>
+<tr>
+<td>Already implemented, verified</td>
+<td><strong>~100</strong></td>
+</tr>
+<tr>
+<td>Fixed during this review</td>
+<td><strong>8</strong></td>
+</tr>
+<tr>
+<td>Built during this review</td>
+<td><strong>1</strong> — guest support tickets (S-03, S-04, S-05, API-04)</td>
+</tr>
+<tr>
+<td>Needs your input before we can build it</td>
+<td><strong>1</strong> — the API error-code table (API-07)</td>
+</tr>
+<tr>
+<td>Backend</td>
+<td><code>1effc41</code></td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td><code>b8f3818</code></td>
+</tr>
+<tr>
+<td>Android</td>
+<td><code>1.0.0 (29)</code></td>
+</tr>
+<tr>
+<td>Migration applied to the live database</td>
+<td><code>20260906120000-guest-support-tickets</code></td>
+</tr>
+<tr>
+<td>Backend test suite</td>
+<td><strong>60/60 files pass</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>On evidence.</strong> Anything marked <em>verified live</em> was measured on <code>www.aajoohomes.com</code> or <code>aajaodev.onrender.com</code> on 6 September 2026 — response codes, response headers, rate-limit headers, rendered widths and API payloads are quoted as they came back. Authenticated Guest and Host flows were verified <strong>from the code</strong>, because we do not type stored account passwords into forms; where a row could only be checked that way, it says so.</p>
+</blockquote>
+<h2>2. Section 2 — Release-blocking P0</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Finding</th>
+<th>Status</th>
+<th>What is true now</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>WEB-P0-01</td>
+<td><code>/property/detail/undefined</code> is reachable</td>
+<td><strong>Fixed — both halves</strong></td>
+<td>The URL already answered a real <strong>404</strong> (verified live), but the site was still <em>generating</em> it: the featured grid maps <code>id</code> from <code>property_id</code>, and a row without one produced a link to a property that cannot exist. Every place that interpolates an id into a property URL now checks it first. One placeholder grid was linking to <code>${i + 1}</code> — a card&#39;s <em>position</em> published as a property id — and now links nowhere. <code>/home</code>, the retired pre-redesign page that carried that grid, redirects to <code>/</code>. Sitemaps have never contained such URLs: they are built from approved listings only.</td>
+</tr>
+<tr>
+<td>WEB-P0-02</td>
+<td>Negotiation must be a complete server-connected flow</td>
+<td><strong>Done</strong></td>
+<td>Offer → server decision → host response → agreed price → booking → payment is a server flow end to end. The agreed price reaches checkout as a coupon the server issues and pins; the client cannot name it. Auto-accept at or above the floor, escalation below it, expiry, attempt limits and a full offer ledger all live server-side. See section 7.</td>
+</tr>
+<tr>
+<td>WEB-P0-03</td>
+<td>Monthly stay flow complete wherever monthly is offered</td>
+<td><strong>Done</strong></td>
+<td>Weekly and monthly rates are part of the pricing engine and are applied by the server for any stay long enough to qualify, on both normal and advance bookings. Renewal is month-by-month through a new booking rather than a separate renewal object — the same path a first month takes, so there is no second code path to keep correct.</td>
+</tr>
+<tr>
+<td>WEB-P0-04</td>
+<td>Booking, payment and confirmation must be one authoritative transaction</td>
+<td><strong>Done</strong></td>
+<td>Availability → booking → payment → <strong>server-side signature verification</strong> → confirmation, and the verification handler takes a row lock on the payment before it does anything. A replayed callback — a gateway retry, a double-tap, a deliberate replay — carries a valid signature, so the lock is the idempotency point: the second arrival waits, then sees &quot;already paid&quot; and returns success <strong>with no side effects</strong>. Booking creation serialises per property, so two guests cannot both win the same nights.</td>
+</tr>
+<tr>
+<td>WEB-P0-05</td>
+<td>Cancellation and refund flow complete</td>
+<td><strong>Done</strong></td>
+<td>My Bookings → Cancel → the applicable policy shown before confirming → <strong>email OTP</strong> → server-calculated refund → booking state updated → refund status visible. The refund is computed from the policy snapshot taken at booking, so a later policy change cannot alter a guest&#39;s entitlement, and check-in is measured in IST rather than in the server&#39;s timezone.</td>
+</tr>
+<tr>
+<td>WEB-P0-06</td>
+<td>Guest and Host authorization enforced server-side</td>
+<td><strong>Done, and tightened</strong></td>
+<td>Every guest query is scoped by the id on the token; every host query by <code>property_host_id</code>. A booking id, property id or ticket id in a request is a lookup key and never an authorisation. Two things were tightened during this review: the public property endpoint stopped returning the host&#39;s own phone number and email, and payout requests are now checked against the balance. See sections 17 and 16.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>3. Section 3 — Guest authentication and account</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>G-01</td>
+<td>OTP send → verify → session</td>
+<td><strong>Done</strong></td>
+<td>Code + live: the OTP endpoints answer and are rate-limited.</td>
+</tr>
+<tr>
+<td>G-02</td>
+<td>OTP abuse controls</td>
+<td><strong>Done — tightened this review</strong></td>
+<td>Three separate controls: <strong>5 attempts</strong> per code (<code>otpMaxAttempts</code>), <strong>10-minute</strong> validity, and a request budget that was running at 50 per 15 minutes and is now <strong>5</strong>, matching the attempt limit so neither quietly outlives the other. Verified live: the endpoint answers <code>ratelimit-limit: 5</code>.</td>
+</tr>
+<tr>
+<td>G-03</td>
+<td>Expired session must not leave a false authenticated state</td>
+<td><strong>Done</strong></td>
+<td>An expired token is rejected server-side and the client clears its session on a 401 rather than continuing to render a signed-in shell.</td>
+</tr>
+<tr>
+<td>G-04</td>
+<td>Logout revokes the server session</td>
+<td><strong>Done</strong></td>
+<td>Logout used to write a log row and return &quot;Logout successful&quot; while the 30-day JWT kept working — deleting the client&#39;s copy <em>was</em> the logout. There is now a real revocation store, covered by <code>tests/sessionRevocation.test.js</code>.</td>
+</tr>
+<tr>
+<td>G-05</td>
+<td>Protected routes</td>
+<td><strong>Done</strong></td>
+<td><code>RenterRoute</code>, <code>HostRoute</code> and <code>AdminProtectedRoute</code> gate the client, and every corresponding endpoint gates the server. The client guard is convenience; the server guard is the control.</td>
+</tr>
+<tr>
+<td>G-06</td>
+<td>Account deletion</td>
+<td><strong>Done</strong></td>
+<td><code>POST /user/delete</code>, authenticated. Bookings and financial records are retained rather than hard-deleted, because a deleted booking is a deleted invoice.</td>
+</tr>
+<tr>
+<td>G-07</td>
+<td>Profile loads from the backend and persists</td>
+<td><strong>Done</strong></td>
+<td>And revalidates: a signed-in tab now refreshes the profile in the background, so an admin&#39;s change (a KYC approval, a name) reaches an open session instead of waiting for a sign-out.</td>
+</tr>
+<tr>
+<td>G-08</td>
+<td>Privacy/Terms consent recorded; both accessible</td>
+<td><strong>Done</strong></td>
+<td>Per-category cookie consent since 5 September — the earlier banner asked about analytics and then loaded a pixel and Hotjar regardless. Vendor scripts now load only for the categories accepted. Privacy Policy and Terms are public pages.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>4. Section 4 — Guest search and property discovery</h2>
+<p>Seven silent search defects were found and fixed on 5 September, before this document arrived; the rows below reflect the state after that work.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>G-09</td>
+<td>Results correspond to the selected location</td>
+<td><strong>Done</strong></td>
+<td>Geo-bounded server-side.</td>
+</tr>
+<tr>
+<td>G-10</td>
+<td>Availability uses the selected dates</td>
+<td><strong>Done</strong></td>
+<td>Booked and host-blocked ranges are excluded by the server, not filtered on the page.</td>
+</tr>
+<tr>
+<td>G-11</td>
+<td>Guest count validated against capacity</td>
+<td><strong>Done</strong></td>
+<td>Server-side, against the property&#39;s own capacity. The &quot;Who&quot; segment genuinely filters.</td>
+</tr>
+<tr>
+<td>G-12</td>
+<td>Filters affect returned results, not just UI state</td>
+<td><strong>Done — this was one of the seven</strong></td>
+<td>Type and count filters were narrowing <em>the page already fetched</em> rather than the catalogue, so a filter appeared to work and quietly hid matching stays. Both are server-side now.</td>
+</tr>
+<tr>
+<td>G-13</td>
+<td>Unavailable properties/dates not bookable</td>
+<td><strong>Done</strong></td>
+<td>Enforced at booking creation as well as in search — the page cannot be the control.</td>
+</tr>
+<tr>
+<td>G-14</td>
+<td>Inactive/deleted/unpublished not bookable or exposed</td>
+<td><strong>Done</strong></td>
+<td><code>is_active = 1 AND is_deleted ≠ 1</code> is the single visibility rule, applied by search, by the property endpoint, by the sitemap and by the public page — which answers <strong>404</strong>, verified live on a draft listing.</td>
+</tr>
+<tr>
+<td>G-15</td>
+<td>Details from authoritative data</td>
+<td><strong>Done</strong></td>
+<td>Price, amenities, rules, location and availability all come from the listing&#39;s own tables.</td>
+</tr>
+<tr>
+<td>G-16</td>
+<td>Images load and belong to the property</td>
+<td><strong>Done</strong></td>
+<td>No stock fallback: an earlier build filled empty listings with stock photographs, which advertised places that do not exist. A listing with no photographs now looks like one.</td>
+</tr>
+<tr>
+<td>G-17</td>
+<td>Reviews belong to the property and follow the rules</td>
+<td><strong>Done</strong></td>
+<td>Scoped by property; only approved, active reviews are shown, and only real ones feed the rating.</td>
+</tr>
+<tr>
+<td>G-18</td>
+<td>Malformed/undefined/nonexistent ids resolve cleanly</td>
+<td><strong>Done</strong></td>
+<td>Verified live: <code>/property/detail/undefined</code>, <code>/property/undefined</code> and an unknown slug all answer <strong>404</strong> with <code>noindex</code>.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>5. Section 5 — Guest booking and availability</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>G-19</td>
+<td>No double booking of the same inventory</td>
+<td><strong>Done</strong></td>
+<td>Bookings serialise <strong>per property</strong> before the overlap guards run. Without it two requests a millisecond apart both read &quot;no overlap&quot; and both insert.</td>
+</tr>
+<tr>
+<td>G-20</td>
+<td>Displayed, negotiated, tax and payable amounts consistent with the server</td>
+<td><strong>Done</strong></td>
+<td>The server recomputes and rejects a client figure that differs by more than one rupee — verified live: a booking posted with a stale price is refused with &quot;The price for these dates has changed.&quot;</td>
+</tr>
+<tr>
+<td>G-21</td>
+<td>Guest A cannot reach Guest B&#39;s booking</td>
+<td><strong>Done</strong></td>
+<td>Every booking query carries <code>book_user_id</code> from the token.</td>
+</tr>
+<tr>
+<td>G-22</td>
+<td>Booking detail correct</td>
+<td><strong>Done</strong></td>
+<td>Property, dates, guests, amount, status and payment state, from the booking row.</td>
+</tr>
+<tr>
+<td>G-23</td>
+<td>Upcoming/ongoing/past/cancelled accurate</td>
+<td><strong>Done</strong></td>
+<td>The status set was corrected in an earlier pass — a bug in it had hidden a guest who was in residence.</td>
+</tr>
+<tr>
+<td>G-24</td>
+<td>Modification respects status and policy</td>
+<td><strong>Done</strong></td>
+<td>Refused once the stay has started, and once cancelled.</td>
+</tr>
+<tr>
+<td>G-25</td>
+<td>Invoice available and matching</td>
+<td><strong>Done</strong></td>
+<td><code>GET /user/invoice/:bookId/download</code>, authenticated and owner-scoped. Invoice files are no longer served as public static assets — they were, and an invoice names the guest, the property, the dates and the amount.</td>
+</tr>
+<tr>
+<td>G-26</td>
+<td>Payment status server-authoritative</td>
+<td><strong>Done</strong></td>
+<td>Written only by the verification handler and by the gateway webhook.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>6. Section 6 — Guest negotiation</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>N-01</td>
+<td>Offer creation for an eligible property</td>
+<td><strong>Done</strong></td>
+<td>Eligibility is a server decision — a discounted listing, an advance booking and a listing with negotiation off are all refused with a reason.</td>
+</tr>
+<tr>
+<td>N-02</td>
+<td>Guest never receives minimum/ideal thresholds</td>
+<td><strong>Done</strong></td>
+<td><code>property_mini_price</code> and <code>property_ideal_price</code> are excluded for anyone but the owner. <strong>Verified live</strong> on the public property payload: both absent.</td>
+</tr>
+<tr>
+<td>N-03</td>
+<td>At or above minimum follows the auto-accept rule</td>
+<td><strong>Done</strong></td>
+<td>Server-side, from the listing&#39;s own floor.</td>
+</tr>
+<tr>
+<td>N-04</td>
+<td>Below minimum escalates to the host</td>
+<td><strong>Done</strong></td>
+<td>With the host&#39;s allowed responses and a deadline.</td>
+</tr>
+<tr>
+<td>N-05</td>
+<td>Host responds only for an authorised property</td>
+<td><strong>Done</strong></td>
+<td>Scoped by <code>property_host_id</code>.</td>
+</tr>
+<tr>
+<td>N-06</td>
+<td>Accepted price becomes the authoritative booking price</td>
+<td><strong>Done</strong></td>
+<td>Issued as a server-side coupon and pinned to the offer&#39;s dates — the client cannot name a price or move the dates the deal was struck for.</td>
+</tr>
+<tr>
+<td>N-07</td>
+<td>Expired offer cannot be accepted or reused</td>
+<td><strong>Done</strong></td>
+<td>Expiry is checked server-side on every action.</td>
+</tr>
+<tr>
+<td>N-08</td>
+<td>Duplicate offers cannot create inconsistent records</td>
+<td><strong>Done</strong></td>
+<td>The guard and the round number come from <strong>one locking read</strong> held until the offer row is written; without it two requests a millisecond apart both saw no pending offer.</td>
+</tr>
+<tr>
+<td>N-09</td>
+<td>Concurrent negotiation is deterministic</td>
+<td><strong>Done</strong></td>
+<td>Same lock.</td>
+</tr>
+<tr>
+<td>N-10</td>
+<td>Reconnect must not duplicate or lose the final state</td>
+<td><strong>Done</strong></td>
+<td>The final state lives in the offer row, not in the socket; a reconnect re-reads it.</td>
+</tr>
+<tr>
+<td>N-11</td>
+<td>Offers, decisions and outcomes recorded</td>
+<td><strong>Done</strong></td>
+<td>A full ledger, including abandoned and expired outcomes.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>7. Section 7 — Guest payment</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>P-01</td>
+<td>Amount tampering in the browser</td>
+<td><strong>Rejected</strong></td>
+<td>The server recomputes; a mismatch beyond ₹1 is refused.</td>
+</tr>
+<tr>
+<td>P-02</td>
+<td>Payment belongs to the correct booking/user/order</td>
+<td><strong>Done</strong></td>
+<td>The payment lookup is scoped to the caller. It used to match on the order id alone, so any authenticated user replaying somebody else&#39;s callback could drive the handler against a booking that was never theirs.</td>
+</tr>
+<tr>
+<td>P-03</td>
+<td>Signature verification server-side</td>
+<td><strong>Done</strong></td>
+<td>HMAC-SHA256 over <code>order_id|payment_id</code> against the gateway secret, on the server. The handler refuses loudly if the secret is missing rather than treating every payment as a forgery.</td>
+</tr>
+<tr>
+<td>P-04</td>
+<td>Replay must not duplicate effects</td>
+<td><strong>Done</strong></td>
+<td>The lookup takes <code>FOR UPDATE</code>. A replay carries a <em>valid</em> signature, so signature checking alone cannot reject it; the lock makes the second arrival wait, and it then sees &quot;already paid&quot; and returns success with no booking update, no host earning, no notification and no ledger row. Before this, each replay created a duplicate earning — and host earnings feed the payout balance, so a replay was creditable money.</td>
+</tr>
+<tr>
+<td>P-05</td>
+<td>Failed payment must not confirm a booking</td>
+<td><strong>Done</strong></td>
+<td>Confirmation follows verification, never precedes it.</td>
+</tr>
+<tr>
+<td>P-06</td>
+<td>Pending state represented and reconciled</td>
+<td><strong>Done</strong></td>
+<td>Its own status, reconciled by the gateway webhook.</td>
+</tr>
+<tr>
+<td>P-07</td>
+<td>Refresh or repeated click must not duplicate</td>
+<td><strong>Done</strong></td>
+<td>Same lock, plus an order reused rather than recreated for the same booking.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>8. Section 8 — Guest cancellation and refund</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>C-01</td>
+<td>Policy displayed before confirmation</td>
+<td><strong>Done</strong></td>
+<td><code>POST /user/cancel/quote</code> returns the exact refund for this booking under its own policy, and the page shows it before the guest confirms.</td>
+</tr>
+<tr>
+<td>C-02</td>
+<td>OTP confirmation required</td>
+<td><strong>Done</strong></td>
+<td>An email OTP; a request without one is answered <code>otpRequired: true</code> rather than proceeding.</td>
+</tr>
+<tr>
+<td>C-03</td>
+<td>Refund calculated server-side from the applicable policy</td>
+<td><strong>Done</strong></td>
+<td>From the policy <strong>snapshotted at booking</strong>, so a later change to the property&#39;s policy cannot alter what a guest was promised.</td>
+</tr>
+<tr>
+<td>C-04</td>
+<td>Cancelled booking cannot be modified</td>
+<td><strong>Done</strong></td>
+<td>The cancel query itself filters on the statuses from which cancellation is legal.</td>
+</tr>
+<tr>
+<td>C-05</td>
+<td>Guest sees read-only refund status</td>
+<td><strong>Done</strong></td>
+<td><code>book_refund_status</code> on the booking.</td>
+</tr>
+<tr>
+<td>C-06</td>
+<td>Duplicate cancellation safely rejected</td>
+<td><strong>Done</strong></td>
+<td>The second attempt matches no row and is answered &quot;Booking not found or can no longer be cancelled&quot; — idempotent by construction rather than by a flag someone has to remember to check.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>9. Section 9 — Guest stay, support and notifications</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>S-01</td>
+<td>Stay information for an active/upcoming stay</td>
+<td><strong>Done</strong></td>
+<td>Location, amenities, rules and host contact are exposed <strong>to a guest with a booking</strong> — and, as of this review, no longer to everyone. See section 17.</td>
+</tr>
+<tr>
+<td>S-02</td>
+<td>Emergency information available</td>
+<td><strong>Done</strong></td>
+<td>Carried on the stay screen with the host and support contacts.</td>
+</tr>
+<tr>
+<td>S-03</td>
+<td>Guest can create a ticket with a unique Ticket ID</td>
+<td><strong>Built this review</strong></td>
+<td>The guest Support page offered FAQ links, a chat widget and an email address. There was no ticket and no reference number — a guest who wrote in could not tell whether anyone had read it. <code>POST /user/support/tickets/create</code> now returns a reference such as <strong>AJ-000123</strong>.</td>
+</tr>
+<tr>
+<td>S-04</td>
+<td>Ticket status and updates remain visible</td>
+<td><strong>Built this review</strong></td>
+<td>The Support page lists the guest&#39;s tickets with status and an unread count, and opens the thread.</td>
+</tr>
+<tr>
+<td>S-05</td>
+<td>Closure follows the lifecycle; tickets are not silently deleted</td>
+<td><strong>Built this review</strong></td>
+<td>OPEN / PENDING / RESOLVED / CLOSED, and nothing on the guest side can delete a ticket or a message. A reply into a closed ticket is refused with the reference to quote, rather than accepted into silence.</td>
+</tr>
+<tr>
+<td>S-06</td>
+<td>Notifications correspond to real backend events</td>
+<td><strong>Done</strong></td>
+<td>Every notification is written by the flow it describes. A support reply now sends a <strong>guest</strong> to <code>/account/support</code> — it was hardcoded to the host portal, which a guest has no account for.</td>
+</tr>
+<tr>
+<td>S-07</td>
+<td>Messaging loads real conversations and enforces participation</td>
+<td><strong>Done</strong></td>
+<td>Scoped to the two parties.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>10. Section 10 — Host registration, KYC and activation</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>H-01</td>
+<td>Registration creates the correct host account</td>
+<td><strong>Done</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>H-02</td>
+<td>Identity/session verification end to end</td>
+<td><strong>Done</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>H-03</td>
+<td>KYC submitted securely and tied to the host</td>
+<td><strong>Done</strong></td>
+<td>Through the identity provider, keyed to the host record.</td>
+</tr>
+<tr>
+<td>H-04</td>
+<td>Pending/approved/rejected status accurate</td>
+<td><strong>Done</strong></td>
+<td>Gated on whether the verification is <em>current</em>, not on a session status an abandoned attempt leaves behind.</td>
+</tr>
+<tr>
+<td>H-05</td>
+<td>Inactive host cannot perform restricted actions</td>
+<td><strong>Done</strong></td>
+<td>Publishing a listing and requesting a payout both refuse an unverified host, with the reason.</td>
+</tr>
+<tr>
+<td>H-06</td>
+<td>KYC documents not reachable by guessed URLs</td>
+<td><strong>Done</strong></td>
+<td>Stored as Cloudinary <em>authenticated</em> assets, served only through short-lived signed URLs.</td>
+</tr>
+<tr>
+<td>H-07</td>
+<td>Host profile persists and displays</td>
+<td><strong>Done</strong></td>
+<td></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>11. Section 11 — Host property management</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>H-08</td>
+<td>Complete creation flow</td>
+<td><strong>Done</strong></td>
+<td>The five-step wizard, which is the only property form on web and app.</td>
+</tr>
+<tr>
+<td>H-09</td>
+<td>Host reaches only their own properties</td>
+<td><strong>Done</strong></td>
+<td>Every read and write filters on <code>property_host_id</code> from the token.</td>
+</tr>
+<tr>
+<td>H-10</td>
+<td>Data complete and validated</td>
+<td><strong>Done</strong></td>
+<td>Schema-driven, with a readiness score that has to reach 70 before submission.</td>
+</tr>
+<tr>
+<td>H-11</td>
+<td>Nightly/monthly pricing saved and used</td>
+<td><strong>Done</strong></td>
+<td>By booking and by negotiation.</td>
+</tr>
+<tr>
+<td>H-12</td>
+<td>Upload validation, limits and private document rules</td>
+<td><strong>Done</strong></td>
+<td>Type and size limits; identity and ownership documents are authenticated assets, never public.</td>
+</tr>
+<tr>
+<td>H-13</td>
+<td>Only eligible/verified listings become bookable</td>
+<td><strong>Done</strong></td>
+<td>Admin approval is the only thing that sets a listing live; submitting takes it <em>off</em> the site.</td>
+</tr>
+<tr>
+<td>H-14</td>
+<td>Unverified host cannot bypass restrictions</td>
+<td><strong>Done</strong></td>
+<td>A listing published for an unverified host is held inactive until they verify.</td>
+</tr>
+<tr>
+<td>H-15</td>
+<td>Changing a property id cannot expose another host&#39;s property</td>
+<td><strong>Done</strong></td>
+<td>Answered &quot;Draft not found&quot; — the same answer a missing id gets, so the error cannot be used to enumerate.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>12. Section 12 — Host calendar and availability</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>H-16</td>
+<td>Calendar only for owned properties</td>
+<td><strong>Done</strong></td>
+<td>Scoped by <code>property_host_id</code>.</td>
+</tr>
+<tr>
+<td>H-17</td>
+<td>Block eligible dates</td>
+<td><strong>Done</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>H-18</td>
+<td>Unblock where allowed</td>
+<td><strong>Done</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>H-19</td>
+<td>Existing bookings not overwritten by manual blocking</td>
+<td><strong>Done</strong></td>
+<td>A block that hits an occupying booking is refused; the occupancy rule is shared with the booking side so the two cannot disagree.</td>
+</tr>
+<tr>
+<td>H-20</td>
+<td>Guest availability reflects host changes</td>
+<td><strong>Done</strong></td>
+<td>Guest availability reads the same rules, not a cached copy.</td>
+</tr>
+<tr>
+<td>H-21</td>
+<td>Dates do not shift with browser timezone</td>
+<td><strong>Done</strong></td>
+<td>Dates are day-stamps in IST, computed by adding the IST offset and reading UTC fields — the same helper on the server, the website and the app, so the three cannot drift.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>13. Section 13 — Host bookings</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>H-22</td>
+<td>Only host-owned bookings shown</td>
+<td><strong>Done</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>H-23</td>
+<td>Guest/property/date/amount/status correct</td>
+<td><strong>Done</strong></td>
+<td>Money and dates are formatted on the host side too — they used to print raw API strings the guest side already formatted.</td>
+</tr>
+<tr>
+<td>H-24</td>
+<td>Accurate booking state</td>
+<td><strong>Done</strong></td>
+<td>One shared status vocabulary across the host, admin and guest screens, after a pass that found three screens giving one booking three different labels.</td>
+</tr>
+<tr>
+<td>H-25</td>
+<td>Only permitted guest information exposed</td>
+<td><strong>Done, and the mirror fixed</strong></td>
+<td>The host sees what they need to host. The reverse leak — the <em>host&#39;s</em> own phone and email on an unauthenticated endpoint — was found and fixed this review.</td>
+</tr>
+<tr>
+<td>H-26</td>
+<td>Host view updates on guest cancellation/refund</td>
+<td><strong>Done</strong></td>
+<td></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>14. Section 14 — Host negotiation</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>H-27</td>
+<td>Offers only for owned properties</td>
+<td><strong>Done</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>H-28</td>
+<td>Enough to respond, without cross-host data</td>
+<td><strong>Done</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>H-29</td>
+<td>Accept produces the correct final price and state</td>
+<td><strong>Done</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>H-30</td>
+<td>Counter produces a valid state and reaches the guest</td>
+<td><strong>Done</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>H-31</td>
+<td>Decline closes the offer</td>
+<td><strong>Done</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>H-32</td>
+<td>Cannot act on an expired offer</td>
+<td><strong>Done</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>H-33</td>
+<td>Concurrent responses cannot conflict</td>
+<td><strong>Done</strong></td>
+<td>The same locking read the guest side uses.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>15. Section 15 — Host earnings, commission and payout</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>H-34</td>
+<td>Earnings reflect eligible bookings and the approved commission</td>
+<td><strong>Done</strong></td>
+<td>Earnings are written by the payment flow, once, and the commission is one derivation rather than a figure each screen computes.</td>
+</tr>
+<tr>
+<td>H-35</td>
+<td>Available balance calculated server-side</td>
+<td><strong>Done — now one calculation</strong></td>
+<td>Received earnings minus everything already requested and not refused.</td>
+</tr>
+<tr>
+<td>H-36</td>
+<td>Host cannot request a payout for another host</td>
+<td><strong>Done</strong></td>
+<td>The host id comes from the token.</td>
+</tr>
+<tr>
+<td>H-37</td>
+<td>Payout restricted until KYC approval</td>
+<td><strong>Done</strong></td>
+<td>Money leaving the platform to a bank account nobody has identified is what verification is for.</td>
+</tr>
+<tr>
+<td>H-38</td>
+<td>Request above the available balance rejected</td>
+<td><strong>Fixed this review</strong></td>
+<td>There was a comment saying the amount should be checked against the host&#39;s account, and directly under it, the insert. Nothing checked anything — a host with fifty rupees of earnings could request fifty lakh, and because pending requests are subtracted from the balance a host is shown, one bogus request also drove their own displayed earnings negative.</td>
+</tr>
+<tr>
+<td>H-39</td>
+<td>Repeated request cannot duplicate</td>
+<td><strong>Fixed this review</strong></td>
+<td>A second pending request is refused, naming the one already waiting.</td>
+</tr>
+<tr>
+<td>H-40</td>
+<td>Pending/processing/completed/failed accurate</td>
+<td><strong>Done</strong></td>
+<td>Driven by the disbursement webhook.</td>
+</tr>
+<tr>
+<td>H-41</td>
+<td>Commission/earning calculation visible to the host</td>
+<td><strong>Done</strong></td>
+<td>Shown per booking and in the statement.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>16. Section 16 — Cross-cutting web security</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Area</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SEC-01</td>
+<td>Horizontal privilege escalation</td>
+<td><strong>Blocked.</strong> Guest bookings scope on the user id, host properties and bookings on <code>property_host_id</code>, payouts on the host id, tickets on both the user id and the ticket&#39;s own role. A wrong id is answered as <em>not found</em>, never as <em>forbidden</em>, so an error cannot be used to enumerate what exists.</td>
+</tr>
+<tr>
+<td>SEC-02</td>
+<td>Role escalation</td>
+<td><strong>Blocked.</strong> Admin routes take an admin token; a host or guest token is not one. Status columns are never read from a request body.</td>
+</tr>
+<tr>
+<td>SEC-03</td>
+<td>Price tampering</td>
+<td><strong>Blocked.</strong> Server recomputation on booking; negotiated prices are server-issued coupons; payment amounts are verified against the gateway signature.</td>
+</tr>
+<tr>
+<td>SEC-04</td>
+<td>Token/session security</td>
+<td><strong>Done.</strong> Real server-side revocation on logout, covered by tests.</td>
+</tr>
+<tr>
+<td>SEC-05</td>
+<td>Private uploads</td>
+<td><strong>Done, and one leak closed.</strong> KYC, identity and ownership documents are authenticated assets behind signed URLs; invoices are no longer public static files. The <strong>host&#39;s own phone number and email</strong> were being returned by the unauthenticated property endpoint — every host&#39;s contact details could be harvested by walking property ids. Fixed.</td>
+</tr>
+<tr>
+<td>SEC-06</td>
+<td>Sensitive logs</td>
+<td><strong>Done.</strong> Request bodies are redacted by key — password, otp, pin, token, authorization, jwt, secret, apikey, signature and the KYC and bank fields — matched case- and separator-insensitively, so <code>cred_user_password</code> is caught as readily as <code>password</code>. A plaintext OTP that had been reaching a log line was removed on 5 September.</td>
+</tr>
+<tr>
+<td>SEC-07</td>
+<td>Rate limits</td>
+<td><strong>Fixed this review.</strong> The credential limiter — login, signup, OTP verification, password change — was running at <strong>50 per 15 minutes</strong>, ten times its own documented value, because it had been raised &quot;for demonstration&quot; and never put back. The live API answered <code>ratelimit-limit: 50</code>; it now answers <strong>5</strong>. Booking creation moved to its own budget of 30, because trying a few date combinations is not a credential guess.</td>
+</tr>
+<tr>
+<td>SEC-08</td>
+<td>CORS/CSRF</td>
+<td><strong>Done.</strong> An origin allowlist, not <code>true</code>, with a deliberate exception for requests carrying no Origin header at all (the app, webhooks). Authentication is a Bearer token rather than a cookie, so there is no ambient credential for a cross-site request to ride.</td>
+</tr>
+<tr>
+<td>SEC-09</td>
+<td>TLS</td>
+<td><strong>Done, and strengthened.</strong> Both hosts are HTTPS-only and http redirects to https. The API returned <strong>no HSTS header at all</strong>; it now sends <code>max-age=31536000; includeSubDomains</code>, verified live.</td>
+</tr>
+<tr>
+<td>SEC-10</td>
+<td>Error leakage</td>
+<td><strong>Done, and tightened.</strong> A classifier replaces anything that smells of infrastructure — SQL text, unknown-column, duplicate-entry, connection errors — while letting through messages actually written for a person; when in doubt it replaces. A duplicate-key message on a phone number would otherwise confirm that number has an account. The API also advertised <code>X-Powered-By: Express</code>; that is now off, along with nosniff, frame-deny and a referrer policy.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>17. Section 17 — Mobile web</h2>
+<p>Measured with a real browser at <strong>320 × 720</strong>, the narrowest width the section names, on the live site.</p>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Guest login/OTP usable at 320–412px</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Search filters, date picker, guest selector fit</td>
+<td>✅ <code>/search</code> renders at exactly 320px with no overflow</td>
+</tr>
+<tr>
+<td>Property gallery and details usable by touch</td>
+<td>✅ and the photographs now carry ALT text, which they did not</td>
+</tr>
+<tr>
+<td>Negotiation input visible with the keyboard open</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Booking/payment CTA not hidden behind sticky navigation</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Cancellation policy/OTP modal fits</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Guest booking details do not scroll horizontally</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Host dashboard, calendar and property forms at phone widths</td>
+<td><strong>Was failing — fixed.</strong> The host dashboard&#39;s action row measured 314px of buttons in 288px of space, so the page scrolled sideways. It wraps now.</td>
+</tr>
+<tr>
+<td>Host negotiation controls accessible</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Host payout/KYC forms usable</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><strong>No horizontal scrolling at 320–360px</strong></td>
+<td><strong>Two pages were failing — both fixed.</strong> <code>/host/dashboard</code> (330px of content in 320) and <code>/become-a-host</code> (378px in 320: a top bar that never got a phone treatment). Both measure exactly 320 now, verified live after deployment.</td>
+</tr>
+<tr>
+<td>Orientation changes do not corrupt state</td>
+<td>✅</td>
+</tr>
+</tbody></table>
+<p>Two wide tables — host bookings and host earnings — extend past the viewport <strong>inside their own scrolling containers</strong>, which is the correct answer rather than a defect: the page itself does not move.</p>
+<hr>
+<h2>18. Section 18 — API contract</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>API-01</td>
+<td>Bearer JWT lifecycle</td>
+<td><strong>Done</strong>, with server-side revocation.</td>
+</tr>
+<tr>
+<td>API-02</td>
+<td>Guest booking APIs integrated</td>
+<td><strong>Done</strong> — profile, list, detail, modify, cancel, refund quote, invoice, payment status.</td>
+</tr>
+<tr>
+<td>API-03</td>
+<td>Stay information</td>
+<td><strong>Done</strong> where exposed.</td>
+</tr>
+<tr>
+<td>API-04</td>
+<td>Support ticket create/update/get/list/close</td>
+<td><strong>Built this review</strong> for the guest; already present for the host. Both go into one admin queue.</td>
+</tr>
+<tr>
+<td>API-05</td>
+<td>Host APIs integrated</td>
+<td><strong>Done</strong> — profile, properties, detail, calendar, bookings, payouts, commission, KYC.</td>
+</tr>
+<tr>
+<td>API-06</td>
+<td>Notifications generated only from authorised backend flows</td>
+<td><strong>Done</strong> — every notification is written by the flow it describes; no client can raise one.</td>
+</tr>
+<tr>
+<td>API-07</td>
+<td><code>AUTH_001</code>, <code>BOOKING_001</code>, <code>PAYMENT_001/002</code>, <code>REFUND_001</code>, <code>PROPERTY_001</code>, <code>SUPPORT_001</code>, <code>SERVER_500</code> handled safely</td>
+<td><strong>Needs your input — see below.</strong></td>
+</tr>
+<tr>
+<td>API-08</td>
+<td>Retry policy; authentication and validation errors not blindly retried</td>
+<td><strong>Done</strong> — 5xx and network failures retry with backoff; 4xx does not.</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>API-07, plainly.</strong> The platform does not emit those symbolic codes. Every response is <code>{ success, message, data }</code> with an HTTP status, and errors are handled safely today — nothing leaks, and no client depends on a code. We can add a <code>code</code> field alongside the existing message, which is additive and safe for both the website and the app. <strong>What we need from you is the code table itself</strong> — which condition each of <code>AUTH_001</code> vs <code>AUTH_002</code>, and <code>PAYMENT_001</code> vs <code>PAYMENT_002</code>, refers to in your API Integration Specification. We are not willing to guess a mapping: a contract that disagrees with your specification is worse than one that has not been written yet. Send the table and this is a short piece of work.</p>
+</blockquote>
+<hr>
+<h2>19. What we changed during this review</h2>
+<p>Nine items, all deployed, all covered by tests.</p>
+<h3>1. An unauthenticated endpoint that sent email as Aajoo Homes</h3>
+<p><code>POST /test/mail</code> took <strong>no authentication</strong> and sent an email from the Aajoo Homes account to whatever address was in the request body. It answered on production; we confirmed it was reachable without sending anything. Anyone who found it could send Aajoo-branded mail to anyone, at whatever rate the limiter allowed — a phishing template, and a fast route to the domain being blocklisted by the receiving providers. Removed, along with <code>/create/test</code>.</p>
+<p>A test now fails the build if any <em>unauthenticated</em> test or debug route ever appears again. It deliberately permits the one guarded diagnostic that remains — an admin-only mail check, which exists because a failed send is otherwise invisible.</p>
+<h3>2. The credential rate limit was ten times its documented value</h3>
+<p>The limiter guarding login, signup, OTP verification and password change carried the comment <em>&quot;5 requests per 15 minutes&quot;</em> and the value <strong>50</strong>, with a note saying it had been raised for a demonstration. The live API confirmed it: <code>ratelimit-limit: 50</code>. It is 5 again, which also matches the 5-attempt limit on each OTP, so the per-code counter and the per-caller budget run out together. Booking creation was moved to its own budget of 30 rather than being dragged down with it.</p>
+<h3>3. Every host&#39;s phone number and email were public</h3>
+<p><code>property_contact</code> and <code>property_email</code> are written from the host&#39;s own mobile and email at listing time, and the property endpoint is unauthenticated — so a scraper could walk <code>/properties/1</code>, <code>/properties/2</code> and collect every host&#39;s contact details. No guest-facing screen uses them; the property page offers a Message Host button, and the stay screen carries the contact once there is a booking. They are now hidden from anyone but the owner, beside the negotiation floor that was hidden for the same reason.</p>
+<h3>4. The API sent no security headers</h3>
+<p>No HSTS, no <code>nosniff</code>, no frame policy, and an <code>X-Powered-By: Express</code> banner. All four headers are set and the banner is off, verified live. Set by hand rather than by adding a security middleware, because that would also impose a content-security policy on a process that serves signed invoice files and a socket handshake.</p>
+<h3>5. WEB-P0-01 — the site was generating the URL it 404s</h3>
+<p>Described in section 2. The 404 was already correct; the link generation was not.</p>
+<h3>6 and 7. Two pages scrolled sideways on a 320px phone</h3>
+<p>The host dashboard and <code>/become-a-host</code>. Both measure exactly 320 now.</p>
+<h3>8. Guest support tickets</h3>
+<p>The whole feature, described in section 9. Same tables, same admin queue, a reference number the guest can quote, and a reply notification that sends them to the guest portal rather than to a host portal they have no account for. One migration, applied to the live database; the three existing tickets are hosts&#39; and stay labelled as such.</p>
+<h3>9. A payout request was never checked against the balance</h3>
+<p>Described in section 15. The balance was already computed correctly — in the <em>read</em>. It is now one helper used by both the read and the create, because two answers to the same question about a host&#39;s money is a failure this platform has had before.</p>
+<hr>
+<h2>20. Section 19 — Final testing entry criteria</h2>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>All P0 findings fixed</td>
+<td>✅ six of six</td>
+</tr>
+<tr>
+<td>All P1 findings on auth, authorization, negotiation, booking, payment, cancellation, KYC or payout fixed</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Developer regression completed</td>
+<td>✅ 60/60 backend test files; the frontend production build is clean; the live checks in this document were re-run after deployment</td>
+</tr>
+<tr>
+<td>Updated website and matching backend available</td>
+<td>✅ frontend <code>b8f3818</code>, backend <code>1effc41</code>, both deployed</td>
+</tr>
+<tr>
+<td>No development/test payment configuration in production</td>
+<td>✅ the two test endpoints are gone; the payment gateway remains in <strong>test mode</strong> until you ask us to switch keys, which is a configuration change and not a deploy</td>
+</tr>
+<tr>
+<td>Invalid property route fixed</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Guest booking journey end to end</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Host property/calendar/booking/negotiation/payout journey end to end</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Security negative tests completed</td>
+<td>✅ section 16</td>
+</tr>
+<tr>
+<td>Mobile web critical journeys pass</td>
+<td>✅ section 17</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>21. Section 20 — Developer update</h2>
+<table>
+<thead>
+<tr>
+<th>Required update</th>
+<th>Developer response</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Website build/version</td>
+<td><code>b8f3818</code></td>
+</tr>
+<tr>
+<td>Backend version/deployment</td>
+<td><code>1effc41</code>, deployed and verified live</td>
+</tr>
+<tr>
+<td>P0 fixes completed</td>
+<td>6 of 6</td>
+</tr>
+<tr>
+<td>P1 fixes completed</td>
+<td>All. Nine items were found untrue during this review and fixed; one feature (guest support tickets) was built.</td>
+</tr>
+<tr>
+<td>Guest regression completed</td>
+<td>Yes — search, booking, payment, cancellation, negotiation and account, by code review plus live checks on every unauthenticated surface</td>
+</tr>
+<tr>
+<td>Host regression completed</td>
+<td>Yes — listing, calendar, bookings, negotiation, earnings and payout</td>
+</tr>
+<tr>
+<td>Payment regression completed</td>
+<td>Yes — signature verification, replay, ownership, refresh, pending reconciliation</td>
+</tr>
+<tr>
+<td>Negotiation regression completed</td>
+<td>Yes — floor privacy, auto-accept, escalation, expiry, concurrency, the ledger</td>
+</tr>
+<tr>
+<td>Security regression completed</td>
+<td>Yes — section 16, including the four items fixed during it</td>
+</tr>
+<tr>
+<td>Mobile web regression completed</td>
+<td>Yes — measured at 320px on the live site before and after</td>
+</tr>
+<tr>
+<td>Known remaining issues</td>
+<td><strong>One needs you: the API-07 error-code table.</strong> <strong>One needs your QA rather than ours: the new guest ticket flow was verified by build and by deployed bundle, but driving it end to end needs a signed-in guest session, and we do not type stored account passwords into forms.</strong> It is a ten-minute check and section 22 says how.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>22. Release position</h2>
+<p><strong>🟢 GO for final testing, with one flow for you to exercise.</strong></p>
+<p>The document&#39;s blocking position rested on the six P0s and the security section. All six are addressed and the security items are measured rather than asserted — including four defects the review itself uncovered, one of which was live and exploitable by anyone who found the URL.</p>
+<p><strong>The ten-minute check we would like you to run first</strong>, because it is the one thing built rather than fixed here:</p>
+<ol>
+<li>Sign in as a guest → <strong>Account → Support</strong>.</li>
+<li>Raise a ticket. Confirm you are given a reference like <code>AJ-000123</code>.</li>
+<li>In the admin panel → <strong>Support</strong>: the ticket appears in the same queue as host tickets, labelled <strong>Guest</strong>.</li>
+<li>Reply from admin. The guest gets a notification that opens <code>/account/support</code>, not the host portal.</li>
+<li>Reply back from the guest side; the ticket returns to the support queue.</li>
+<li>Set it to <strong>Closed</strong> from admin. The guest sees it closed and is told to raise a new one quoting the old reference, rather than typing into a thread nobody will read.</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Backend</td>
+<td><code>1effc41</code> — 60/60 test files</td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td><code>b8f3818</code> — production build clean</td>
+</tr>
+<tr>
+<td>Migration</td>
+<td><code>20260906120000-guest-support-tickets</code>, applied to the live database</td>
+</tr>
+<tr>
+<td>New tests</td>
+<td><code>tests/webHardening.test.js</code> (15 assertions), <code>tests/guestSupportTickets.test.js</code> (14)</td>
+</tr>
+<tr>
+<td>Live verification</td>
+<td>6 September 2026 — response codes, security headers, rate-limit headers, public API payloads and rendered widths at 320px</td>
+</tr>
+</tbody></table>
+
+</body></html>

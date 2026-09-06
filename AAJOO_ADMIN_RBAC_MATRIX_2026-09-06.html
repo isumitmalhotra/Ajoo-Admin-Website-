@@ -1,0 +1,2061 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Admin RBAC — Endpoint × Role Matrix</title>
+<style>
+  @page { size: A4; margin: 20mm 17mm 22mm; }
+
+  :root {
+    --navy: #1B2447;
+    --teal: #0F766E;
+    --ink:  #1F2937;
+    --muted:#5B6472;
+    --line: #D9DEE7;
+    --soft: #F4F6F9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: #fff;
+    /* Cambria before Georgia deliberately: Georgia ships OLD-STYLE figures, so
+       "six P0s" reads as "six Pos" and every number sits at a different
+       height. This document is full of IDs and money. Cambria has lining
+       figures and prints just as well. */
+    font-family: Cambria, "Palatino Linotype", Georgia, "Times New Roman", serif;
+    font-variant-numeric: lining-nums;
+    font-size: 10.4pt;
+    line-height: 1.58;
+    color: var(--ink);
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---- cover ------------------------------------------------------- */
+  .cover { page-break-after: always; padding-top: 58mm; }
+  .cover .rule { width: 54px; height: 4px; background: var(--teal); margin-bottom: 22px; }
+  .cover h1 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    font-size: 27pt; line-height: 1.2; color: var(--navy);
+    margin: 0 0 16px; font-weight: 600; letter-spacing: -0.4px;
+  }
+  .cover .sub { font-size: 11.5pt; color: var(--muted); margin: 0 0 40px; max-width: 118mm; }
+  .cover .meta {
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 9pt;
+    color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px;
+  }
+  .cover .meta strong { color: var(--navy); font-weight: 600; }
+
+  /* ---- headings ---------------------------------------------------- */
+  h2, h3, h4 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    color: var(--navy); font-weight: 600; page-break-after: avoid;
+  }
+  h2 {
+    font-size: 15pt; margin: 26px 0 12px; padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--line); letter-spacing: -0.2px;
+  }
+  h3 {
+    font-size: 11.4pt; margin: 18px 0 7px; color: var(--teal);
+    letter-spacing: .1px;
+  }
+  h4 { font-size: 10.6pt; margin: 14px 0 6px; }
+
+  p { margin: 0 0 10px; orphans: 3; widows: 3; }
+
+  /* ---- lists ------------------------------------------------------- */
+  ul, ol { margin: 0 0 11px; padding-left: 20px; }
+  li { margin-bottom: 5px; }
+  li > ul, li > ol { margin-top: 5px; }
+
+  /* ---- emphasis & code --------------------------------------------- */
+  strong { color: var(--navy); font-weight: 700; }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 8.7pt; background: var(--soft);
+    border: 1px solid var(--line); border-radius: 3px;
+    padding: 0.5px 4px; color: #33405A;
+    /* long identifiers must not push the page sideways */
+    word-break: break-word;
+  }
+  pre { background: var(--soft); border: 1px solid var(--line); border-radius: 5px;
+        padding: 10px 12px; overflow-x: auto; page-break-inside: avoid; }
+  pre code { border: 0; background: none; padding: 0; font-size: 8.6pt; }
+
+  /* ---- tables ------------------------------------------------------ */
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 16px;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.7pt;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }   /* repeat header across pages */
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  th {
+    background: var(--navy); color: #fff; text-align: left; font-weight: 600;
+    padding: 7px 9px; border: 1px solid var(--navy); line-height: 1.35;
+  }
+  td {
+    padding: 6px 9px; border: 1px solid var(--line); vertical-align: top;
+    line-height: 1.45;
+  }
+  tbody tr:nth-child(even) td { background: #FAFBFD; }
+  /* strong is navy, and a header cell IS navy — bold text in a header was
+     rendering invisible. Headers set their own colour; inherit it. */
+  th strong, th b { color: inherit; }
+  td code { font-size: 8.1pt; }
+
+  /* ---- callouts ---------------------------------------------------- */
+  blockquote {
+    margin: 14px 0; padding: 10px 14px;
+    background: #F2F8F7; border-left: 3px solid var(--teal);
+    page-break-inside: avoid;
+  }
+  blockquote p { margin: 0 0 6px; }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+
+  /* Keep a section heading with the text that follows it. */
+  h2 + p, h3 + p, h2 + table, h3 + table, h2 + ul, h3 + ul { page-break-before: avoid; }
+</style></head>
+<body>
+  <section class="cover">
+    <div class="rule"></div>
+    <h1>Admin RBAC — Endpoint × Role Matrix</h1>
+    <p class="sub">Every admin endpoint and what each role gets, generated from the route definitions on 6 September 2026.</p>
+    <div class="meta">
+      <strong>Aajoo Homes &mdash; Admin RBAC</strong><br>
+      Prepared 6 September 2026 by the Zyphex Tech development team<br>
+      Verified against the live development backend and database
+    </div>
+  </section>
+  <p>Generated from the route definitions on 6 September 2026, not transcribed by
+hand: every row is read out of <code>routes/*.js</code> and every cell is decided by
+calling the same functions the middleware calls. If a gate changes, this file
+changes with it.</p>
+<p><strong>191 admin endpoints.</strong> <code>200</code> means the role reaches it; <code>403</code> means the
+server refuses; <code>no gate</code> marks the two endpoints that are deliberately
+unauthenticated.</p>
+<ul>
+<li><code>POST /admin/login</code> — the login itself.</li>
+<li><code>POST /admin/create</code> — authorised inside the controller: it is open only
+while no admin exists at all, and demands a super-admin token from the second
+account onward.</li>
+</ul>
+<p><strong>How the three narrower roles are confined.</strong> 29 endpoints carry an explicit
+<code>requireRole</code>; the remaining 162 were written when every administrator was
+equivalent. Rather than gate them one by one — where the failure mode of
+forgetting one is a role that reaches something it should not — <code>seo_manager</code>
+and <code>support</code> are confined centrally in <code>adminAuth</code>/<code>adminAuthToken</code> against a
+named list of what they MAY reach. A new endpoint is refused to both until
+somebody chooses to add it.</p>
+<p><code>finance</code> and <code>admin</code> are not confined that way: <code>admin</code> is the operations
+role, and <code>finance</code> is separated from it by the 27 explicit gates on the
+finance routes — of which 8 are write-gated to <code>super_admin</code> and <code>finance</code>
+alone, so an operations administrator cannot approve a payout.</p>
+<h4>Analytics</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET /admin/analytics/category-properties</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/analytics/graph</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/analytics/locations</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>Booking</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /admin/booking/amend</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/booking/detail</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/booking/search</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/booking/status/list</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/booking/status/listing/admin-page</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/booking/status/update</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/booking/update</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>CMSSection</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET /admin/cms/faq-page/get</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/cms/faq-page/update</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>GET /admin/cms/FaqPage/get</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/cms/FaqPage/update</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/cms/homepage/delete/image</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>GET /admin/cms/homepage/get</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>GET /admin/cms/homepage/property/dropdown</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>GET /admin/cms/homepage/testimonial/dropdown</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/cms/homepage/update</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/cms/section/add</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/cms/section/search</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>GET /admin/cms/tc-page/get</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/cms/tc-page/update</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>GET /admin/cms/TCPage/get</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/cms/TCPage/update</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+</tbody></table>
+<h4>Contact</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /admin/contact/delete</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/contact/messages</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/contact/status</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>Coupons</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /admin/coupon/add</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/coupon/delete</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/coupon/detail</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/coupon/search</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/coupon/status/update</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>FAQ</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /admin/faq/add</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/faq/delete</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/faq/detail</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/faq/listing</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+</tbody></table>
+<h4>Finance</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET /admin/finance/dashboard</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/finance/invoice/:invoiceId</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/finance/invoice/:invoiceId/download</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/finance/invoice/search</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/finance/invoice/void/:invoiceId</code></td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/finance/ledger/:ledgerId</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/finance/ledger/export</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/finance/ledger/host/:hostId</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/finance/ledger/search</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/finance/ledger/user/:userId</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/finance/payout/:payoutId</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>PUT /admin/finance/payout/:payoutId/approve</code></td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>PUT /admin/finance/payout/:payoutId/reject</code></td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/finance/payout/initiate</code></td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>PUT /admin/finance/payout/schedule/:scheduleId</code></td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/finance/payout/schedule/create</code></td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/finance/payout/schedule/search</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/finance/payout/search</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/finance/reconciliation/:reconId</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>PUT /admin/finance/reconciliation/:reconId/resolve</code></td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/finance/reconciliation/run</code></td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/finance/reconciliation/search</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/finance/reports/cashflow</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/finance/reports/commission</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/finance/reports/export</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/finance/reports/revenue</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/finance/reports/tax</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>Host</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET /admin/host/detail/:hostId</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/host/kyc/approve</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/host/kyc/detail/:hostId</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/host/kyc/reject</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/host/payout/history</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/host/payout/hold</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/host/payout/release</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/host/performance/summary</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/host/search</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/host/search/assign-property</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>PropAnalytics</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /admin/properties/analytic/search</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/property/analytic/detail</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>Property</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /admin/properties/delete/image</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/properties/search</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/properties/update-status</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/properties/verify</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/property</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/property/create</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/property/delete</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/property/nearby</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/property/nearby/save</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>PropertyAmeneties</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /admin/amenity</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/amenity/create</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/amenity/delete</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/amenity/list/dropdowns</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/amenity/search</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/amenity/update-status</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>PropertyCategories</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /admin/categories</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/categories/delete</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/category</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/category/:categoryId/flow</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/category/create</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/category/flow</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/category/list/dropdowns</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/category/update-status</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>PropertyReviews</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /admin/property/review/detail</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/property/review/search</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/property/review/update</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>PropertyTag</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /admin/tag/create</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/tag/delete</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/tag/listing/dropdowns</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/tag/search</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/tag/single</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/tag/update-status</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>Redirects</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET /admin/seo/redirects</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/seo/redirects</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>DELETE /admin/seo/redirects/:id</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/seo/redirects/analyse</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>GET /admin/seo/redirects/export</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/seo/redirects/import</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>GET /admin/seo/slug-history</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+</tbody></table>
+<h4>Seo</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /admin/seo/bulk/apply</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>GET /admin/seo/bulk/export</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/seo/bulk/import</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/seo/bulk/import/apply</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/seo/bulk/preview</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>GET /admin/seo/bulk/variables</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>GET /admin/seo/changes</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>GET /admin/seo/global</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/seo/global</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>GET /admin/seo/health</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>GET /admin/seo/images</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/seo/images</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/seo/images/bulk/apply</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/seo/images/bulk/preview</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>GET /admin/seo/page</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/seo/page</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/seo/robots/preview</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>GET /admin/seo/sitemap</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/seo/sitemap/regenerate</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>GET /admin/seo/templates</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/seo/templates</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/seo/templates/preview</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+</tbody></table>
+<h4>Support</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET /admin/support/tickets</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/support/tickets/:ticketId</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/support/tickets/reply</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/support/tickets/status</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>TermsAndCond</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /admin/terms-condition/add</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/terms-condition/delete</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/terms-condition/detail</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/terms-condition/listing</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+</tbody></table>
+<h4>User</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /admin/user/create</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/user/delete</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/user/delete/image</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/user/search</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/user/single</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/user/update/status</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/user/verification</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/user/verify</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>blog</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /admin/blog/delete</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/blog/listing</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/blog/status</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+</tbody></table>
+<h4>cmsContent</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /admin/cms/content/get</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>POST /admin/cms/content/save</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>200</td>
+</tr>
+</tbody></table>
+<h4>core</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET /admin/analytics/summary</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/audit</code></td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/bookings/analytics</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/boost/list</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/create</code></td>
+<td>no gate</td>
+<td>no gate</td>
+<td>no gate</td>
+<td>no gate</td>
+<td>no gate</td>
+</tr>
+<tr>
+<td><code>GET /admin/dashboard</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/disputes/list</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/disputes/resolve</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/login</code></td>
+<td>no gate</td>
+<td>no gate</td>
+<td>no gate</td>
+<td>no gate</td>
+<td>no gate</td>
+</tr>
+<tr>
+<td><code>POST /admin/logout</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/logs/list</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/members/list</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/members/role</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/members/status</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/negotiations/audit</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/negotiations/list</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/negotiations/messages</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/referrals/list</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/roles/list</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>GET /admin/verify-token</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+</tr>
+</tbody></table>
+<h4>guestProfile</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET /admin/guest-profiles/:id/document</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/guest-profiles/for-booking/:bookingId</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>hostDues</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET /admin/host-dues</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>listingEngine</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET /admin/listing/detail/:propertyId</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/listing/queue</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/listing/review</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>mailTest</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /admin/mail/test</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>notifications</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>PUT /admin/notifications/:id/read</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/notifications/search</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>property</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /admin/properties/load</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+</tbody></table>
+<h4>propertyOffers</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>super_admin</th>
+<th>admin</th>
+<th>finance</th>
+<th>support</th>
+<th>seo_manager</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /admin/offers</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>GET /admin/offers</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>POST /admin/offers/:id/end</code></td>
+<td>200</td>
+<td>200</td>
+<td>200</td>
+<td>403</td>
+<td>403</td>
+</tr>
+</tbody></table>
+
+</body></html>

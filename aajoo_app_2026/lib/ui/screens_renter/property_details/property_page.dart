@@ -30,6 +30,7 @@ import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/data/models/single_property_response.dart';
 import 'package:rent_home/models/host_profile.dart';
+import 'package:rent_home/models/stay_quote.dart';
 import 'package:rent_home/ui/screens_renter/history/history_description/review/all_reviews_list/view_property_all_reviews_page.dart';
 import 'package:rent_home/service/bookmark_service.dart';
 import 'package:rent_home/service/property_service.dart';
@@ -720,6 +721,63 @@ class _PropertyPageState extends State<PropertyPage>
   /// declared in the backend's createBooking schema, and validation runs with
   /// stripUnknown, so the server has never once received it. It now labels the
   /// stay and nothing else — the dates and the host's rate set the price.
+  /// The SERVER's price for the dates currently chosen, or null.
+  ///
+  /// §15: "the UI never computes the final price." This page did — it kept
+  /// its own copy of the rate card and smoothed a weekly price across the
+  /// nights, while the server composes a stay out of whole months, whole weeks
+  /// and remainder nights at the host's stated figures. The two agreed for
+  /// short stays and diverged for long ones, and the Advance Booking Discount
+  /// (§10-§12) made the divergence total: the server takes a percentage off
+  /// an advance booking, this page knew nothing about it, and
+  /// booking.controller refuses a price more than a rupee from its own. An
+  /// advance booking on a discounted listing simply could not be made here.
+  StayQuote? _serverQuote;
+
+  /// Guards against a slow answer for OLD dates overwriting a newer one.
+  int _quoteSeq = 0;
+
+  /// What the host is taking off for booking ahead (§10-§12).
+  ///
+  /// Server only, like the long-stay banner and for the same reason: this
+  /// device has no business deciding whether a stay earns a discount. Scaled
+  /// by a running offer exactly as the room was, so "original less discount"
+  /// still equals the line it sits under.
+  double get _advanceDiscount {
+    final q = _serverQuote;
+    if (q == null || q.advanceDiscount <= 0) return 0;
+    final o = _offer;
+    final scaled =
+        o == null ? q.advanceDiscount : q.advanceDiscount * o.ratio;
+    return (scaled * 100).roundToDouble() / 100;
+  }
+
+  double get _advanceDiscountPercent =>
+      _advanceDiscount > 0 ? (_serverQuote?.advanceDiscountPercent ?? 0) : 0;
+
+  /// Ask the server what these dates cost.
+  ///
+  /// Fire-and-forget from [_updatePriceString], which already runs on every
+  /// date change. A failure leaves [_serverQuote] null and the local estimate
+  /// showing — never an error and never a blank price.
+  Future<void> _refreshServerQuote() async {
+    final to = selectedDateTo;
+    if (to == null || totalDays < 1) {
+      if (_serverQuote != null && mounted) setState(() => _serverQuote = null);
+      return;
+    }
+    final seq = ++_quoteSeq;
+    final q = await _propertyService.getStayQuote(
+      propertyId: widget.id,
+      bookFrom: DateFormat('dd-MM-yyyy').format(selectedDate),
+      bookTo: DateFormat('dd-MM-yyyy').format(to),
+      guests: _guests,
+      pets: _pets,
+    );
+    if (!mounted || seq != _quoteSeq) return;
+    setState(() => _serverQuote = q);
+  }
+
   void _updatePriceString() {
     // Weekend rates, when the host set any. This was currentPrice * totalDays,
     // which threw away the Friday/Saturday/Sunday prices step 4 collects — the
@@ -734,6 +792,9 @@ class _PropertyPageState extends State<PropertyPage>
         weekendTotal > 0 ? weekendTotal : currentPrice * totalDays;
     currentPriceString = totalPrice.toStringAsFixed(0);
     _priceController.text = currentPriceString;
+    // The local figure above is now the FALLBACK. Ask the server for the real
+    // one; it lands a moment later and replaces it.
+    _refreshServerQuote();
   }
 
   void _toggleExpanded() {
@@ -1412,8 +1473,15 @@ class _PropertyPageState extends State<PropertyPage>
                                         color: kMuted,
                                       ),
                                     ),
+                                    // The price BEFORE the advance-booking
+                                    // discount, because the discount is named
+                                    // on its own line directly below (§12:
+                                    // "Original Price / Advance Booking
+                                    // Discount / Final Price"). Identical to
+                                    // the room subtotal on every stay that
+                                    // earns no discount.
                                     Text(
-                                      rupees(p.roomSubtotal),
+                                      rupees(p.roomSubtotal + _advanceDiscount),
                                       style: inter(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -1422,6 +1490,35 @@ class _PropertyPageState extends State<PropertyPage>
                                     ),
                                   ],
                                 ),
+                                // Already deducted from every total below. It
+                                // is shown, not subtracted again.
+                                if (_advanceDiscount > 0) ...[
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          _advanceDiscountPercent > 0
+                                              ? 'Advance booking discount '
+                                                  '(−${_advanceDiscountPercent.toStringAsFixed(_advanceDiscountPercent % 1 == 0 ? 0 : 1)}%)'
+                                              : 'Advance booking discount',
+                                          style: inter(
+                                              fontSize: 14, color: kSuccess),
+                                        ),
+                                      ),
+                                      Text(
+                                        '− ${rupees(_advanceDiscount)}',
+                                        style: inter(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: kSuccess,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                                 if (p.extraGuestFee > 0) ...[
                                   const SizedBox(height: 8),
                                   Row(
@@ -3268,7 +3365,14 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
   double get _roomCharge {
     final rate = _longStay;
     final nightly = _nightlyTotal;
-    final base = (rate == null || totalDays <= 0)
+    // The server's answer wins whenever we have one. It already carries the
+    // host's long-stay composition AND the advance-booking discount, and it is
+    // the figure booking.controller will insist on — so preferring it is what
+    // stops this page quoting a price the checkout then refuses.
+    final quoted = _serverQuote?.subtotal;
+    final base = (quoted != null && quoted > 0)
+        ? quoted
+        : (rate == null || totalDays <= 0)
         ? nightly
         : (() {
             final atLongStay =

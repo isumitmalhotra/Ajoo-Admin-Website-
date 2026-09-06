@@ -6,6 +6,7 @@ import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:rent_home/models/property_review_response_model.dart';
 import 'package:rent_home/models/single_property_response.dart';
 import 'package:rent_home/models/host_profile.dart';
+import 'package:rent_home/models/stay_quote.dart';
 import 'package:rent_home/models/destination_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/utils/upload_media_type.dart';
@@ -299,6 +300,37 @@ class PropertyService {
       return Exception(message);
     }
     return Exception(error.toString());
+  }
+
+  /// The server's price for a stay (Pricing Architecture §15).
+  ///
+  /// Public endpoint — an anonymous visitor pricing a stay is the browse
+  /// funnel — so no token is attached and a signed-out guest gets the same
+  /// answer. Returns null on any failure, which the caller reads as "keep
+  /// using the local estimate" rather than as an error worth showing: a quote
+  /// that did not arrive must never blank out a price the guest is reading.
+  Future<StayQuote?> getStayQuote({
+    required int propertyId,
+    required String bookFrom,
+    required String bookTo,
+    int guests = 1,
+    int pets = 0,
+  }) async {
+    try {
+      final response = await dio.post('pricing/quote', data: {
+        'propertyId': propertyId,
+        'bookFrom': bookFrom,
+        'bookTo': bookTo,
+        'guests': guests < 1 ? 1 : guests,
+        'pets': pets < 0 ? 0 : pets,
+      });
+      if (response.statusCode != 200) return null;
+      final body = response.data;
+      if (body is! Map || body['success'] != true) return null;
+      return StayQuote.fromJson(body['data']);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<bool> deleteProperty(int id) async {

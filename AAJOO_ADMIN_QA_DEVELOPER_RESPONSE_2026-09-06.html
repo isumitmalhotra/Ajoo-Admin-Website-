@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Admin Dashboard — QA / Technical Audit</title>
+<style>
+  @page { size: A4; margin: 20mm 17mm 22mm; }
+
+  :root {
+    --navy: #1B2447;
+    --teal: #0F766E;
+    --ink:  #1F2937;
+    --muted:#5B6472;
+    --line: #D9DEE7;
+    --soft: #F4F6F9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: #fff;
+    /* Cambria before Georgia deliberately: Georgia ships OLD-STYLE figures, so
+       "six P0s" reads as "six Pos" and every number sits at a different
+       height. This document is full of IDs and money. Cambria has lining
+       figures and prints just as well. */
+    font-family: Cambria, "Palatino Linotype", Georgia, "Times New Roman", serif;
+    font-variant-numeric: lining-nums;
+    font-size: 10.4pt;
+    line-height: 1.58;
+    color: var(--ink);
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---- cover ------------------------------------------------------- */
+  .cover { page-break-after: always; padding-top: 58mm; }
+  .cover .rule { width: 54px; height: 4px; background: var(--teal); margin-bottom: 22px; }
+  .cover h1 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    font-size: 27pt; line-height: 1.2; color: var(--navy);
+    margin: 0 0 16px; font-weight: 600; letter-spacing: -0.4px;
+  }
+  .cover .sub { font-size: 11.5pt; color: var(--muted); margin: 0 0 40px; max-width: 118mm; }
+  .cover .meta {
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 9pt;
+    color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px;
+  }
+  .cover .meta strong { color: var(--navy); font-weight: 600; }
+
+  /* ---- headings ---------------------------------------------------- */
+  h2, h3, h4 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    color: var(--navy); font-weight: 600; page-break-after: avoid;
+  }
+  h2 {
+    font-size: 15pt; margin: 26px 0 12px; padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--line); letter-spacing: -0.2px;
+  }
+  h3 {
+    font-size: 11.4pt; margin: 18px 0 7px; color: var(--teal);
+    letter-spacing: .1px;
+  }
+  h4 { font-size: 10.6pt; margin: 14px 0 6px; }
+
+  p { margin: 0 0 10px; orphans: 3; widows: 3; }
+
+  /* ---- lists ------------------------------------------------------- */
+  ul, ol { margin: 0 0 11px; padding-left: 20px; }
+  li { margin-bottom: 5px; }
+  li > ul, li > ol { margin-top: 5px; }
+
+  /* ---- emphasis & code --------------------------------------------- */
+  strong { color: var(--navy); font-weight: 700; }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 8.7pt; background: var(--soft);
+    border: 1px solid var(--line); border-radius: 3px;
+    padding: 0.5px 4px; color: #33405A;
+    /* long identifiers must not push the page sideways */
+    word-break: break-word;
+  }
+  pre { background: var(--soft); border: 1px solid var(--line); border-radius: 5px;
+        padding: 10px 12px; overflow-x: auto; page-break-inside: avoid; }
+  pre code { border: 0; background: none; padding: 0; font-size: 8.6pt; }
+
+  /* ---- tables ------------------------------------------------------ */
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 16px;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.7pt;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }   /* repeat header across pages */
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  th {
+    background: var(--navy); color: #fff; text-align: left; font-weight: 600;
+    padding: 7px 9px; border: 1px solid var(--navy); line-height: 1.35;
+  }
+  td {
+    padding: 6px 9px; border: 1px solid var(--line); vertical-align: top;
+    line-height: 1.45;
+  }
+  tbody tr:nth-child(even) td { background: #FAFBFD; }
+  /* strong is navy, and a header cell IS navy — bold text in a header was
+     rendering invisible. Headers set their own colour; inherit it. */
+  th strong, th b { color: inherit; }
+  td code { font-size: 8.1pt; }
+
+  /* ---- callouts ---------------------------------------------------- */
+  blockquote {
+    margin: 14px 0; padding: 10px 14px;
+    background: #F2F8F7; border-left: 3px solid var(--teal);
+    page-break-inside: avoid;
+  }
+  blockquote p { margin: 0 0 6px; }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+
+  /* Keep a section heading with the text that follows it. */
+  h2 + p, h3 + p, h2 + table, h3 + table, h2 + ul, h3 + ul { page-break-before: avoid; }
+</style></head>
+<body>
+  <section class="cover">
+    <div class="rule"></div>
+    <h1>Admin Dashboard — QA / Technical Audit</h1>
+    <p class="sub">A finding-by-finding response to the admin QA audit: the evidence for what was already implemented before the audit was written, the three defects it did not find that we did, and the attached endpoint-by-role matrix it asked for by name.</p>
+    <div class="meta">
+      <strong>Aajoo Homes &mdash; Admin Dashboard · QA / Technical Audit</strong><br>
+      Prepared 6 September 2026 by the Zyphex Tech development team<br>
+      Verified against the live development backend and database
+    </div>
+  </section>
+  <h2>1. Response summary</h2>
+<p>This answers <strong>AAJOO HOMES ADMIN DASHBOARD — FULL QA / TECHNICAL AUDIT</strong>, ID by ID, in the order the audit raises them.</p>
+<p>One thing first, because it changes how the rest should be read. The audit states its own limitation honestly — it was performed against a supplied backend <strong>archive</strong>, <code>aajaoBackend-main (3)(1).zip</code>. That archive predates a large amount of work. <strong>Most of the P0 and P1 findings were already implemented before the audit arrived</strong>, several of them citing these exact IDs in the code comments. So the bulk of this response is not &quot;we fixed it&quot; — it is the evidence that it is already true, which is what the audit asked for and did not have access to.</p>
+<p>Three things in it were <em>not</em> true, and are now.</p>
+<p>The audit asks by name for an <strong>endpoint × role authorization matrix</strong>. It is attached as a separate document, generated from the route definitions rather than typed: 191 admin endpoints, every cell decided by calling the same functions the middleware calls.</p>
+<table>
+<thead>
+<tr>
+<th>Response at a glance</th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Findings answered</td>
+<td><strong>6 P0 + 6 P1 + 8 production + 5 database + 10 sections</strong></td>
+</tr>
+<tr>
+<td>Already implemented, verified against the current code and the live system</td>
+<td><strong>22</strong></td>
+</tr>
+<tr>
+<td>Fixed during this review</td>
+<td><strong>3</strong></td>
+</tr>
+<tr>
+<td>Needs a setting only you can make</td>
+<td><strong>2</strong></td>
+</tr>
+<tr>
+<td>Called out rather than quietly changed</td>
+<td><strong>1</strong></td>
+</tr>
+<tr>
+<td>Backend</td>
+<td><code>2ba4345</code></td>
+</tr>
+<tr>
+<td>Admin frontend</td>
+<td><code>55c4f7d</code></td>
+</tr>
+<tr>
+<td>Migrations applied to the live database today</td>
+<td><strong>4</strong></td>
+</tr>
+<tr>
+<td>Backend test suite</td>
+<td><strong>63/63 files pass</strong></td>
+</tr>
+<tr>
+<td>Attached</td>
+<td><code>AAJOO_ADMIN_RBAC_MATRIX_2026-09-06</code> — 191 endpoints × 5 roles</td>
+</tr>
+</tbody></table>
+<h2>2. Section 2 — Release-blocking P0</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Finding</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ADM-P0-01</td>
+<td>Finance mutation endpoints lack RBAC gates</td>
+<td><strong>Already done</strong></td>
+<td>Measured from the routes, not asserted: <strong>27 of 27</strong> finance endpoints carry <code>adminAuth</code> <strong>and</strong> an explicit <code>requireRole</code>. Nineteen are <code>FINANCE_READ</code> (super admin, finance, admin); <strong>eight are <code>FINANCE_WRITE</code> — super admin and finance only</strong> — and those eight are exactly the ones that move money: payout initiate, approve, reject, schedule create and update, invoice void, reconciliation resolve and run. An operations administrator cannot approve a payout. Covered by <code>tests/adminRbac.test.js</code>.</td>
+</tr>
+<tr>
+<td>ADM-P0-02</td>
+<td>Bundled Razorpay TEST credentials in source</td>
+<td><strong>Already done</strong></td>
+<td>Both keys come from the environment; there is no fallback literal. <code>usableForPayments</code> is false when the keys are absent, and false for a test key on a production deploy unless <code>ALLOW_TEST_PAYMENTS=true</code> is set deliberately — a separate, greppable variable rather than &quot;leave NODE_ENV unset&quot;, because that would loosen the CORS allowlist and every other production check at the same time. It is announced at boot on every start.</td>
+</tr>
+<tr>
+<td>ADM-P0-03</td>
+<td>CORS allows all origins</td>
+<td><strong>Already done</strong></td>
+<td>HTTP and Socket.IO both use one allowlist function, not <code>origin: true</code> and not <code>&#39;*&#39;</code>. The socket carries negotiation messages and admin events, so it takes the same list.</td>
+</tr>
+<tr>
+<td>ADM-P0-04</td>
+<td>RBAC storage is incomplete</td>
+<td><strong>Already done</strong></td>
+<td><code>tbl_admins.admin_role</code> exists, with a migration that backfilled it, and <code>config/adminRoles.js</code> is the single definition used by the migration, the model, the token, the middleware and the matrix test. Five roles: super admin, admin, finance, support, SEO manager. Exactly one of them — super admin — passes a gate it was not named in; <code>requireRole</code> used to treat <em>admin</em> that way, which made every gate in the system admit every administrator.</td>
+</tr>
+<tr>
+<td>ADM-P0-05</td>
+<td>Persistent admin mutation audit is incomplete</td>
+<td><strong>Already done</strong></td>
+<td><code>tbl_admin_audit</code> is a durable ledger — actor, role, action, entity, entity id, before, after, reason, timestamp — written by approvals, KYC decisions, payouts, invoice voids, reconciliation, finance mutations, listing decisions, coupons and role changes. The login log still exists and is still only a login log; it is no longer the whole story. Four indexes on it.</td>
+</tr>
+<tr>
+<td>ADM-P0-06</td>
+<td>DB failure is not a hard readiness gate</td>
+<td><strong>Already done</strong></td>
+<td>Liveness and readiness are separated. The process does not exit on a transient database blip — killing a service over a reconnectable error is the worse failure — but the instance is marked <strong>not ready</strong>, and <code>/health/env</code> answers 503 while it is, so the platform routes around it.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>3. Section 3 — High-severity security / authorization</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Finding</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ADM-P1-01</td>
+<td>Admin rate limiter uses the wrong claim</td>
+<td><strong>Already done</strong></td>
+<td>The bucket key reads <code>userId ?? id ?? adminId</code> from the verified claims and, failing that, decodes the token&#39;s payload without verifying it — deliberately, since a forged token can only move the forger into a different rate-limit bucket. Before this every signed-in administrator fell through to the IP bucket and shared one budget with everyone behind the same office connection, which is why admin screens started failing mid-session with nothing actually wrong.</td>
+</tr>
+<tr>
+<td>ADM-P1-02</td>
+<td>Role changes rely on legacy <code>isAdmin</code></td>
+<td><strong>Already done</strong></td>
+<td>The role column decides; <code>admin_isAdmin</code> is kept in sync as a legacy mirror and is never the authority. A token minted before a demotion does not keep its powers — the role is re-read from the row on every admin request, so deactivating or demoting an administrator takes effect immediately rather than when their token expires.</td>
+</tr>
+<tr>
+<td>ADM-P1-03</td>
+<td>Admin creation route uses <code>optionalAdminAuth</code></td>
+<td><strong>Already done, and deliberately</strong></td>
+<td>The route is open <em>only</em> while <code>tbl_admins</code> is empty — otherwise the first administrator could never be created. From the second account onward the controller requires an authenticated <strong>super admin</strong> and refuses anything else, and a role that is not on the canonical list is rejected. Verified live: an unauthenticated <code>POST /admin/create</code> is answered with validation errors, and a valid body from an unauthenticated caller is refused.</td>
+</tr>
+<tr>
+<td>ADM-P1-04</td>
+<td>Finance reads lack explicit least-privilege gates</td>
+<td><strong>Already done, and extended this review</strong></td>
+<td>All 27 finance routes are gated (above). The audit&#39;s wider point — least privilege — was only half true: of <strong>191 admin endpoints, 29 carry an explicit role gate</strong>. The other 162 were written when every administrator was equivalent. <code>seo_manager</code> was already confined centrally; <strong><code>support</code> was not</strong>, so a support login could approve a property, cancel a booking, delete a user or issue a coupon. Fixed — see section 15.</td>
+</tr>
+<tr>
+<td>ADM-P1-05</td>
+<td>KYC / private identity data needs stronger authorization</td>
+<td><strong>Already done</strong></td>
+<td>Identity, ownership and KYC documents are Cloudinary <em>authenticated</em> assets, reachable only through short-lived signed URLs — not by guessing a path. <code>uploads/</code> is no longer served as static files; invoices go through a signed route, because an invoice names the guest, the property, the dates and the amount. A support account can now read a host record and cannot reach the KYC decision endpoints.</td>
+</tr>
+<tr>
+<td>ADM-P1-06</td>
+<td>Object-level authorization must be tested everywhere</td>
+<td><strong>Done, with one honest limit</strong></td>
+<td>Every guest query carries the caller&#39;s id, every host query <code>property_host_id</code>, every payout the host id, every ticket both the user id and the ticket&#39;s role. A wrong id is answered <em>not found</em> rather than <em>forbidden</em>, so an error cannot be used to enumerate what exists. What we cannot do is drive the authenticated admin UI with real logins — see section 17.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>4. Section 4 — Admin functional coverage</h2>
+<p>Every module the audit lists exists and is wired to the backend. Rather than repeat sixteen rows of &quot;yes&quot;, here is what is worth knowing about each.</p>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>State</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Dashboard</td>
+<td>KPIs, date filters, queues and recent activity. The four headline counts were reconciled with their own list screens — see section 9.</td>
+</tr>
+<tr>
+<td>Users</td>
+<td>Search, detail, verification, activation, deletion policy, bookings, support context, audit.</td>
+</tr>
+<tr>
+<td>Hosts</td>
+<td>Onboarding, KYC, verification, activation, properties, earnings, payouts, documents.</td>
+</tr>
+<tr>
+<td>Properties</td>
+<td>Search, detail, a real verification state machine (draft → submitted → approved/rejected/changes/suspended) with the legal transitions enforced, media, categories, availability, booking history.</td>
+</tr>
+<tr>
+<td>Bookings</td>
+<td>Search, detail, status, amendment, cancellation and refund state, payment state, invoice, audit. An admin can no longer mark a booking paid when no payment was recorded.</td>
+</tr>
+<tr>
+<td>Negotiations</td>
+<td>Guest/host, property, full offer history, state, final price, timestamps, expiry, escalation, participant isolation.</td>
+</tr>
+<tr>
+<td>Finance</td>
+<td>Ledger, payouts, invoices, reconciliation, commission, revenue, tax, cashflow, exports, approval and rejection with reasons, audit.</td>
+</tr>
+<tr>
+<td>Support</td>
+<td>Tickets, threads, reply, status, closure — and, since today, guest tickets in the same queue as host tickets, labelled by who raised them.</td>
+</tr>
+<tr>
+<td>Disputes</td>
+<td>Queue, evidence, decision notes, linked booking, immutable history.</td>
+</tr>
+<tr>
+<td>Referrals, Coupons, CMS, Reviews, Analytics</td>
+<td>All present and backed by real endpoints.</td>
+</tr>
+<tr>
+<td>Team / Roles</td>
+<td>Creation, activation, role assignment, <strong>session revocation</strong>, audit.</td>
+</tr>
+<tr>
+<td>System health</td>
+<td>Database, payments, email, push, environment readiness — public answers ready/not-ready, detail behind a token.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>5. Section 5 — Endpoint regression matrix</h2>
+<p>Attached in full as <strong><code>AAJOO_ADMIN_RBAC_MATRIX_2026-09-06</code></strong>: 191 endpoints across 29 route groups, with the expected outcome for each of the five roles. Generated from the route definitions and evaluated through the same functions the middleware uses, so it cannot drift from the server. Summarised:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Admin endpoints</td>
+<td><strong>191</strong></td>
+</tr>
+<tr>
+<td>Behind admin authentication</td>
+<td><strong>189</strong></td>
+</tr>
+<tr>
+<td>Deliberately unauthenticated</td>
+<td><strong>2</strong> — <code>POST /admin/login</code>, and <code>POST /admin/create</code>, which is open only while no admin exists and demands a super admin thereafter</td>
+</tr>
+<tr>
+<td>With an explicit <code>requireRole</code></td>
+<td><strong>29</strong></td>
+</tr>
+<tr>
+<td>Confined centrally instead</td>
+<td><code>seo_manager</code> and <code>support</code>, by named scope, default deny</td>
+</tr>
+<tr>
+<td>Finance write endpoints reachable by an operations admin</td>
+<td><strong>0</strong></td>
+</tr>
+<tr>
+<td>Endpoints a support account may now change</td>
+<td><strong>the 4 queues it owns</strong>, out of 191</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>6. Section 6 — Database and data integrity</h2>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Migrations run from empty and against the current schema; order and rollback</td>
+<td>Every migration is written idempotently — it checks whether the column, index or table is already there — so it runs on an empty database and on this one. Four were applied to the live database today, each with a <code>down</code>.</td>
+</tr>
+<tr>
+<td>Foreign keys and orphan prevention</td>
+<td>Present on the modular listing tables; the legacy tables use application-level scoping. Nothing in the admin or public queries returns an orphan, because every one filters by the owning id.</td>
+</tr>
+<tr>
+<td>Indexes for booking date/status, payment ids, payout ids, KYC status, negotiation, tickets, audit</td>
+<td>Bookings 10, payments 6, properties 8, support tickets 7, admin audit 4, users 5. <strong>Three tables carried nothing but a primary key and now have indexes — see section 15.</strong></td>
+</tr>
+<tr>
+<td><strong>Monetary calculations use DECIMAL/NUMERIC</strong></td>
+<td><strong>This was not true. Sixteen money columns were <code>DOUBLE</code>. Fixed today — section 15.</strong></td>
+</tr>
+<tr>
+<td>Financial mutations transactional and idempotent</td>
+<td>Payment verification takes a row lock scoped to the caller; booking creation serialises per property; cancellation, settlement and payout each run in one transaction.</td>
+</tr>
+<tr>
+<td>Soft-deleted users and properties never reappear</td>
+<td>One visibility rule — <code>is_active = 1 AND is_deleted &lt;&gt; 1</code> — applied by search, the property endpoint, the sitemap and the public page, which answers a real 404.</td>
+</tr>
+<tr>
+<td>Dashboard KPI counts use the same populations as their list screens</td>
+<td>Reconciled — section 9.</td>
+</tr>
+<tr>
+<td>Timezone handling</td>
+<td>Dates are day-stamps in IST, computed by one helper shared by the server, the website and the app, so the three cannot disagree at a month boundary or across devices.</td>
+</tr>
+<tr>
+<td>Concurrent admin updates cannot silently overwrite a newer decision</td>
+<td>The listing state machine refuses an illegal transition rather than applying it; finance mutations are locked.</td>
+</tr>
+<tr>
+<td>Audit before/after matches the committed state</td>
+<td>The ledger is written inside the same transaction as the change.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>7. Section 7 — Codebase-specific database findings</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Finding</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>DB-01</td>
+<td>No canonical finance/support role storage</td>
+<td><strong>Already done</strong> — <code>admin_role</code>, migrated and backfilled, with one definition file.</td>
+</tr>
+<tr>
+<td>DB-02</td>
+<td>Login logs are not a mutation audit</td>
+<td><strong>Already done</strong> — <code>tbl_admin_audit</code> is the mutation ledger; the login log stayed what it is.</td>
+</tr>
+<tr>
+<td>DB-03</td>
+<td><code>tbl_admin_flags</code> mixes KYC and payout variance with disputes</td>
+<td><strong>Answered</strong> — investigated and settled: what the admin panel called &quot;disputes&quot; <em>were</em> KYC holds, all of them. They are separated now: compliance flags are one thing, customer disputes another, and the queue says which.</td>
+</tr>
+<tr>
+<td>DB-04</td>
+<td>Verify soft-delete filtering everywhere</td>
+<td><strong>Done</strong> — one rule, applied by every query listed above.</td>
+</tr>
+<tr>
+<td>DB-05</td>
+<td>Ledger, wallet, payout, invoice and reconciliation reconcile without unexplained deltas</td>
+<td><strong>Done, and the arithmetic is now exact</strong> — this is precisely what the DOUBLE columns threatened. See section 15.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>8. Section 8 — Dashboard KPI</h2>
+<p>The audit&#39;s first three bullets describe a defect that existed and was fixed: the dashboard tiles and the list screens they link to were counting <strong>different populations</strong>.</p>
+<ul>
+<li>Users — the tile also required <code>isUser = 1</code> and <code>isActive = 1</code>; the user list filters on <code>isDelete</code> alone.</li>
+<li>Hosts — the tile also required <code>isActive = 1</code>; the host list does not.</li>
+<li>Properties — the tile also required <code>isVerify = 1</code> <strong>and</strong> <code>isActive = 1</code>, so it reported a smaller number than the screen it opened.</li>
+</ul>
+<p>They now count the same populations, with the reason written beside them so the next person does not &quot;tidy&quot; one of them back. Revenue excludes cancelled and unpaid rows by an explicit status list rather than by assumption; empty data renders zero rather than null; pagination totals come from the same query as the rows.</p>
+<hr>
+<h2>9. Section 9 — Finance deep QA</h2>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Cannot approve a payout for another host by changing the id</td>
+<td>Scoped by host id from the token, never from the body.</td>
+</tr>
+<tr>
+<td>Finance role can perform only permitted finance actions</td>
+<td>27 gated routes, 8 write-gated. Support, host and guest are all refused.</td>
+</tr>
+<tr>
+<td>Payout approval requires valid state and eligibility</td>
+<td>State checked; the host&#39;s identity check must be current.</td>
+</tr>
+<tr>
+<td>Rejecting a payout requires a reason</td>
+<td>Required.</td>
+</tr>
+<tr>
+<td>Invoice void requires a reason and immutable audit</td>
+<td>Both.</td>
+</tr>
+<tr>
+<td>Reconciliation resolution requires notes and an actor</td>
+<td>Both, in the ledger.</td>
+</tr>
+<tr>
+<td>Duplicate payout approval is idempotent</td>
+<td>Yes — and, fixed earlier today, a payout <strong>request</strong> can no longer exceed the available balance or be raised twice while one is pending. That check was a comment with nothing under it.</td>
+</tr>
+<tr>
+<td>Duplicate payment/refund/webhook events do not duplicate ledger entries</td>
+<td>The verification handler row-locks the payment; a replay returns success with no side effects.</td>
+</tr>
+<tr>
+<td>Gross, commission, tax, net host earning and platform earning reconcile</td>
+<td>Now with exact arithmetic — section 15.</td>
+</tr>
+<tr>
+<td>Exports match the filtered screen</td>
+<td>Yes, and are role-gated with the reads.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>10. Section 10 — Negotiation control plane</h2>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Full thread with correct guest/host identity after alternating messages</td>
+<td>Identity comes from <strong>property ownership</strong>, not from who sent last.</td>
+</tr>
+<tr>
+<td>Final negotiated amount equals the booking amount</td>
+<td>The agreed price is a server-issued coupon pinned to the offer&#39;s dates; the client cannot name a price or move the dates.</td>
+</tr>
+<tr>
+<td>Expired offers cannot appear active</td>
+<td>Expiry is evaluated server-side on every read and action.</td>
+</tr>
+<tr>
+<td>Internal thresholds not exposed</td>
+<td><code>property_mini_price</code> and <code>property_ideal_price</code> are excluded for anyone but the owner — verified against the live public payload, both absent.</td>
+</tr>
+<tr>
+<td>Every transition has timestamp and actor</td>
+<td>Recorded in the offer ledger.</td>
+</tr>
+<tr>
+<td>Admin cannot silently alter a negotiation</td>
+<td>Admin mutations write to <code>tbl_admin_audit</code>.</td>
+</tr>
+<tr>
+<td>Concurrent accept/counter resolve deterministically</td>
+<td>One locking read holds the thread until the offer row is written. Before it, two requests a millisecond apart both saw no pending offer.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>11. Section 11 — Support and disputes</h2>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Unique ID and complete thread</td>
+<td>Yes; the guest side now gets a quotable reference (<code>AJ-000123</code>).</td>
+</tr>
+<tr>
+<td>Status transitions validated</td>
+<td>OPEN / PENDING / RESOLVED / CLOSED, and a reply into a closed ticket is refused rather than swallowed.</td>
+</tr>
+<tr>
+<td>Closure and dispute resolution require a reason</td>
+<td>Yes.</td>
+</tr>
+<tr>
+<td>Ticket links to user/host/booking/property</td>
+<td>Yes.</td>
+</tr>
+<tr>
+<td>Compliance flags distinguishable from customer disputes</td>
+<td>Yes — see DB-03.</td>
+</tr>
+<tr>
+<td><strong>Support roles cannot access financial mutation</strong></td>
+<td><strong>Yes — and as of this review they cannot access non-financial mutation either.</strong> Section 15.</td>
+</tr>
+<tr>
+<td>Sensitive PII masked by role</td>
+<td>Bank details are masked; identity documents need a signed URL.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>12. Section 12 — Production readiness</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Finding</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PROD-01</td>
+<td>Payment fallback</td>
+<td><strong>Done</strong> — environment only, fails closed, <code>ALLOW_TEST_PAYMENTS</code> is the one explicit escape hatch and must be removed at go-live.</td>
+</tr>
+<tr>
+<td>PROD-02</td>
+<td>CORS</td>
+<td><strong>Done</strong> — one allowlist for HTTP and WebSocket.</td>
+</tr>
+<tr>
+<td>PROD-03</td>
+<td>DB failure</td>
+<td><strong>Done</strong> — readiness separated from liveness.</td>
+</tr>
+<tr>
+<td>PROD-04</td>
+<td><code>/health/env</code> detail</td>
+<td><strong>Done</strong> — public callers get <code>{ready}</code> and nothing else; the inventory of which secrets are set requires <code>HEALTH_TOKEN</code>. Same treatment applied to <code>/health/push</code> today, which had been publishing the Firebase project id and service-account email to anyone.</td>
+</tr>
+<tr>
+<td>PROD-05</td>
+<td><code>/db-test</code></td>
+<td><strong>Done</strong> — answers a bare ok/unavailable with no driver text. Kept rather than deleted because the platform&#39;s health-check path is configured outside this repository and a 404 there would fail every deploy.</td>
+</tr>
+<tr>
+<td>PROD-06</td>
+<td>Uploads</td>
+<td><strong>Done</strong> — <code>uploads/</code> is not static; private documents are authenticated assets behind signed URLs.</td>
+</tr>
+<tr>
+<td>PROD-07</td>
+<td>Socket.IO origins and authentication</td>
+<td><strong>Done</strong> — origins allowlisted, and as of today a socket that cannot be identified is <strong>refused</strong>. It used to be admitted, and the anti-spoofing guard was skipped for exactly those sockets.</td>
+</tr>
+<tr>
+<td>PROD-08</td>
+<td>Admin limiter uses <code>adminId</code></td>
+<td><strong>Done.</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>13. Section 13 — Admin frontend final-test requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>State</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Dashboard cards link to a screen with the same population</td>
+<td>Yes — section 8.</td>
+</tr>
+<tr>
+<td>Loading, empty, error, retry and pagination states</td>
+<td>Present on the admin tables.</td>
+</tr>
+<tr>
+<td>Destructive actions confirm and handle the committed result</td>
+<td>Yes.</td>
+</tr>
+<tr>
+<td>Financial mutations show status and reference</td>
+<td>Yes.</td>
+</tr>
+<tr>
+<td><strong>RBAC enforced by the backend, not by hiding UI</strong></td>
+<td>Yes — the attached matrix is the server&#39;s behaviour, not the menu&#39;s.</td>
+</tr>
+<tr>
+<td>Refresh on a protected page revalidates</td>
+<td>Yes, and a signed-in session now revalidates in the background.</td>
+</tr>
+<tr>
+<td>Deactivated or expired sessions rejected immediately</td>
+<td>Yes — deactivation is a row lookup on every admin request, and logout revokes durably.</td>
+</tr>
+<tr>
+<td>Direct URL access to a restricted module returns 403</td>
+<td>Yes for the confined roles; the matrix says which.</td>
+</tr>
+<tr>
+<td>Server validation errors shown clearly</td>
+<td>Yes.</td>
+</tr>
+<tr>
+<td>Exports show filter and date range</td>
+<td>Yes.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>14. Section 14 — Critical end-to-end scenarios</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Scenario</th>
+<th>State</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>E2E-01</td>
+<td>Guest → negotiation → booking → payment → confirmation → admin</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>E2E-02</td>
+<td>Cancellation → refund → admin ledger reconciliation</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>E2E-03</td>
+<td>Host onboarding → KYC → verification → publish → booking</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>E2E-04</td>
+<td>Host payout → finance approval → ledger → status</td>
+<td>✅ <strong>once <code>FIELD_ENCRYPTION_KEY</code> is set</strong> — section 16</td>
+</tr>
+<tr>
+<td>E2E-05</td>
+<td>Offer → counter → accept → booking amount → commission</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>E2E-06</td>
+<td>Ticket → reply → status → closure → notification</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>E2E-07</td>
+<td>Compliance flag → review → resolution → audit</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>E2E-08</td>
+<td>Role change → existing session → permission changes</td>
+<td>✅ role re-read per request</td>
+</tr>
+<tr>
+<td>E2E-09</td>
+<td>Admin deactivation → existing token rejected</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>E2E-10</td>
+<td>Payment/webhook replay → no duplicates</td>
+<td>✅ row-locked</td>
+</tr>
+<tr>
+<td>E2E-11</td>
+<td>Concurrent admin actions → no double approval</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>E2E-12</td>
+<td>Deleted user/property → no orphan exposure</td>
+<td>✅</td>
+</tr>
+</tbody></table>
+<p>Every one of these is exercised by the code paths and the test suite. What we have <strong>not</strong> done is drive them through the authenticated admin UI with real logins — section 17.</p>
+<hr>
+<h2>15. What we changed during this review</h2>
+<p>Three things were not true. All three are deployed.</p>
+<h3>Money was floating point</h3>
+<p>Sixteen columns were <code>DOUBLE(10,2)</code>: the booking total, the price, the tax, the refund, the pet fee, the host earning, the payout amount, the payout history, the booking-history price, three coupon limits and three property price fields.</p>
+<p>The <code>(10,2)</code> rounds on <strong>storage</strong>, which is why nothing had visibly broken. It does not make the arithmetic exact — a DOUBLE is binary floating point, <code>0.1</code> has no exact representation in it, and <code>SUM()</code> over a column of them accumulates error. That is precisely the reconciliation drift section 6 asks about: booking total against payment against commission against host earning, differing by a few paise that nobody can account for, at the moment somebody is closing a month.</p>
+<p>All sixteen are <code>DECIMAL(10,2)</code> now, applied to the live database. The migration reads the booking totals before and after and <strong>refuses if they move</strong>; they did not — ₹819,842.75 both times. Zero DOUBLE or FLOAT money columns remain. Nine model definitions still said <code>DOUBLE</code> and now agree with the schema.</p>
+<h3>Three tables had no indexes at all</h3>
+<p><code>tbl_negotiation_offers</code> is the one that matters. Every read is by property and participants, and the concurrency guard takes <code>FOR UPDATE</code> on the thread — with only a primary key that lock is taken by <strong>scanning the table</strong>, so two guests negotiating on different properties contended with each other for no reason. It is 67 rows today and it is the table that grows fastest once negotiation is the product&#39;s main feature. Also <code>tbl_payout_reqs</code> (host, status) and <code>tbl_book_details</code> (booking, status).</p>
+<h3>A support account could change almost anything</h3>
+<p>29 of 191 admin endpoints carry an explicit role gate. <code>seo_manager</code> was already confined centrally against a named list of what it may reach; <code>support</code> was not — so a support login could approve a property, cancel a booking, delete a user, issue a coupon or rewrite the site&#39;s content. It could not touch finance, which is separately gated, and that is what the audit asked about specifically; this is the rest of least privilege.</p>
+<p>Support is now confined the same way: write access to the four queues it owns, read access to the records behind a ticket, and nothing else. Reads that arrive as a POST are handled explicitly, because this API searches with POST and a GET-only rule would leave an agent able to open a record and unable to find one. A new endpoint is refused to the role until somebody chooses to add it — the failure mode worth having. Nobody is affected today: the one support account on the live database is inactive.</p>
+<hr>
+<h2>16. What needs you</h2>
+<p><strong>1. <code>FIELD_ENCRYPTION_KEY</code> (blocking host payouts).</strong> Reported separately today with a screenshot: &quot;Payout accounts can&#39;t be saved yet — the server is missing its encryption key.&quot; The server is right to refuse — it will not write a bank account number in plaintext — but the variable is not set on the host, and it was on neither the required nor the optional environment list, so nothing reported its absence. Measured: <code>tbl_host_acc_details</code> holds <strong>zero rows</strong>, so no host has ever saved an account and nothing is encrypted under a key that has since been lost. Generate one and set it:</p>
+<pre><code class="language-bash">node -e &quot;console.log(require(&#39;crypto&#39;).randomBytes(32).toString(&#39;base64&#39;))&quot;
+</code></pre>
+<p>Never rotate it without re-encrypting the stored accounts. E2E-04 cannot complete until this is set.</p>
+<p><strong>2. <code>HEALTH_TOKEN</code>.</strong> Not set, which means the readiness <em>detail</em> at <code>/health/env</code> — which secrets are configured, whether the database variables match what the service is running on, whether payments can collect money — is readable by nobody, including you. The public answer still works. Set any long random string; it is the header <code>x-health-token</code>.</p>
+<hr>
+<h2>17. One thing we are not claiming</h2>
+<p>We do not enter stored account passwords into forms, so <strong>the authenticated admin UI regression is yours to run rather than ours.</strong> Everything reachable without signing in has been measured — the routes, the role gates, the database, the migrations, the public endpoints, the response headers — and everything else is verified from the code and the test suite, which is stated row by row above rather than blurred into a tick.</p>
+<p>Concretely, what we cannot produce and you can: the API collection executed with real tokens for each of the five roles, and the admin UI evidence for the critical workflows. The attached matrix tells you exactly what to expect from each of the 191 endpoints for each role, which is the hard half of writing that collection.</p>
+<hr>
+<h2>18. Section 17 — Developer action required</h2>
+<table>
+<thead>
+<tr>
+<th>Required update</th>
+<th>Response</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Backend version / commit</td>
+<td><code>2ba4345</code>, deployed</td>
+</tr>
+<tr>
+<td>Admin frontend version / commit</td>
+<td><code>55c4f7d</code>, deployed</td>
+</tr>
+<tr>
+<td>Database migration version</td>
+<td><code>20260906170000-operational-indexes</code> (four applied today)</td>
+</tr>
+<tr>
+<td>P0 findings fixed</td>
+<td><strong>6 of 6</strong> — five were already implemented; the sixth, ADM-P0-01, was implemented and is now also evidenced by the attached matrix</td>
+</tr>
+<tr>
+<td>P1 findings fixed</td>
+<td><strong>6 of 6</strong> — five already implemented; ADM-P1-04 extended during this review</td>
+</tr>
+<tr>
+<td>RBAC matrix attached</td>
+<td><strong>Yes</strong> — <code>AAJOO_ADMIN_RBAC_MATRIX_2026-09-06</code>, 191 endpoints × 5 roles, generated from the routes</td>
+</tr>
+<tr>
+<td>API regression completed</td>
+<td>Backend suite 63/63; every unauthenticated admin surface probed live</td>
+</tr>
+<tr>
+<td>Database reconciliation completed</td>
+<td>Money columns converted with a before/after total check that would have failed the migration; indexes added; soft-delete rule verified as a single definition</td>
+</tr>
+<tr>
+<td>Payment live-mode verification</td>
+<td><strong>Not possible without your live key.</strong> The platform fails closed without one and announces its mode at boot</td>
+</tr>
+<tr>
+<td>Security regression completed</td>
+<td>Yes — sections 2, 3 and 12, including three defects found and fixed during this review and four found earlier today</td>
+</tr>
+<tr>
+<td>Admin UI regression completed</td>
+<td><strong>Not by us</strong> — section 17</td>
+</tr>
+<tr>
+<td>Guest / Host / Admin E2E completed</td>
+<td>Code paths and suite yes; authenticated UI no</td>
+</tr>
+<tr>
+<td>Known remaining issues</td>
+<td>The two settings in section 16, and the date-storage note below</td>
+</tr>
+</tbody></table>
+<p><strong>One thing called out rather than quietly changed.</strong> Stay dates in <code>tbl_book_details</code> are stored as <strong><code>DD-MM-YYYY</code> strings</strong>. Every date comparison therefore runs <code>STR_TO_DATE(...)</code> per row, which no index can serve — so availability search cannot be indexed on dates however many indexes are added. It is correct today and it will not scale. Converting the column is a data migration with a real blast radius across booking, availability, calendar and reporting, and it belongs in its own change with its own testing rather than in an index migration. We would rather tell you it is there than fix it quietly and half-way.</p>
+<hr>
+<h2>19. Release position</h2>
+<p><strong>🟢 The admin control plane is ready for your authenticated regression.</strong></p>
+<p>The audit&#39;s blocking position rested on six P0 findings. Five were already implemented before it was written — it says itself that it was reviewing a supplied archive — and this response gives the evidence for each rather than the assurance. The sixth is evidenced by the attached matrix. Three further defects were found during this review and fixed: money stored as floating point, three unindexed tables, and a support role that could change almost anything.</p>
+<p>Two environment settings are yours, one of them blocking host payouts entirely.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Backend</td>
+<td><code>2ba4345</code> — 63/63 test files</td>
+</tr>
+<tr>
+<td>Admin frontend</td>
+<td><code>55c4f7d</code></td>
+</tr>
+<tr>
+<td>Migrations applied to the live database</td>
+<td><code>guest-support-tickets</code>, <code>money-columns-decimal</code>, <code>money-columns-decimal-followup</code>, <code>operational-indexes</code></td>
+</tr>
+<tr>
+<td>Attached</td>
+<td><code>AAJOO_ADMIN_RBAC_MATRIX_2026-09-06</code></td>
+</tr>
+<tr>
+<td>Live verification</td>
+<td>Finance route gates, admin route guards, <code>/health/push</code>, <code>/health/env</code>, <code>/db-test</code>, the socket handshake, and the money columns read back from the production database</td>
+</tr>
+</tbody></table>
+
+</body></html>

@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Android APK — Release Candidate</title>
+<style>
+  @page { size: A4; margin: 20mm 17mm 22mm; }
+
+  :root {
+    --navy: #1B2447;
+    --teal: #0F766E;
+    --ink:  #1F2937;
+    --muted:#5B6472;
+    --line: #D9DEE7;
+    --soft: #F4F6F9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: #fff;
+    /* Cambria before Georgia deliberately: Georgia ships OLD-STYLE figures, so
+       "six P0s" reads as "six Pos" and every number sits at a different
+       height. This document is full of IDs and money. Cambria has lining
+       figures and prints just as well. */
+    font-family: Cambria, "Palatino Linotype", Georgia, "Times New Roman", serif;
+    font-variant-numeric: lining-nums;
+    font-size: 10.4pt;
+    line-height: 1.58;
+    color: var(--ink);
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---- cover ------------------------------------------------------- */
+  .cover { page-break-after: always; padding-top: 58mm; }
+  .cover .rule { width: 54px; height: 4px; background: var(--teal); margin-bottom: 22px; }
+  .cover h1 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    font-size: 27pt; line-height: 1.2; color: var(--navy);
+    margin: 0 0 16px; font-weight: 600; letter-spacing: -0.4px;
+  }
+  .cover .sub { font-size: 11.5pt; color: var(--muted); margin: 0 0 40px; max-width: 118mm; }
+  .cover .meta {
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 9pt;
+    color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px;
+  }
+  .cover .meta strong { color: var(--navy); font-weight: 600; }
+
+  /* ---- headings ---------------------------------------------------- */
+  h2, h3, h4 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    color: var(--navy); font-weight: 600; page-break-after: avoid;
+  }
+  h2 {
+    font-size: 15pt; margin: 26px 0 12px; padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--line); letter-spacing: -0.2px;
+  }
+  h3 {
+    font-size: 11.4pt; margin: 18px 0 7px; color: var(--teal);
+    letter-spacing: .1px;
+  }
+  h4 { font-size: 10.6pt; margin: 14px 0 6px; }
+
+  p { margin: 0 0 10px; orphans: 3; widows: 3; }
+
+  /* ---- lists ------------------------------------------------------- */
+  ul, ol { margin: 0 0 11px; padding-left: 20px; }
+  li { margin-bottom: 5px; }
+  li > ul, li > ol { margin-top: 5px; }
+
+  /* ---- emphasis & code --------------------------------------------- */
+  strong { color: var(--navy); font-weight: 700; }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 8.7pt; background: var(--soft);
+    border: 1px solid var(--line); border-radius: 3px;
+    padding: 0.5px 4px; color: #33405A;
+    /* long identifiers must not push the page sideways */
+    word-break: break-word;
+  }
+  pre { background: var(--soft); border: 1px solid var(--line); border-radius: 5px;
+        padding: 10px 12px; overflow-x: auto; page-break-inside: avoid; }
+  pre code { border: 0; background: none; padding: 0; font-size: 8.6pt; }
+
+  /* ---- tables ------------------------------------------------------ */
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 16px;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.7pt;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }   /* repeat header across pages */
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  th {
+    background: var(--navy); color: #fff; text-align: left; font-weight: 600;
+    padding: 7px 9px; border: 1px solid var(--navy); line-height: 1.35;
+  }
+  td {
+    padding: 6px 9px; border: 1px solid var(--line); vertical-align: top;
+    line-height: 1.45;
+  }
+  tbody tr:nth-child(even) td { background: #FAFBFD; }
+  /* strong is navy, and a header cell IS navy — bold text in a header was
+     rendering invisible. Headers set their own colour; inherit it. */
+  th strong, th b { color: inherit; }
+  td code { font-size: 8.1pt; }
+
+  /* ---- callouts ---------------------------------------------------- */
+  blockquote {
+    margin: 14px 0; padding: 10px 14px;
+    background: #F2F8F7; border-left: 3px solid var(--teal);
+    page-break-inside: avoid;
+  }
+  blockquote p { margin: 0 0 6px; }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+
+  /* Keep a section heading with the text that follows it. */
+  h2 + p, h3 + p, h2 + table, h3 + table, h2 + ul, h3 + ul { page-break-before: avoid; }
+</style></head>
+<body>
+  <section class="cover">
+    <div class="rule"></div>
+    <h1>Android APK — Release Candidate</h1>
+    <p class="sub">A finding-by-finding response to the pre-final-testing findings for the APK, frontend and backend: what was actually inside the shipped artifact, the eight defects that were not true of the code and are now fixed, and the four things we need from you.</p>
+    <div class="meta">
+      <strong>Aajoo Homes &mdash; Android APK · Release Candidate</strong><br>
+      Prepared 6 September 2026 by the Zyphex Tech development team<br>
+      Verified against the live development backend and database
+    </div>
+  </section>
+  <h2>1. Response summary</h2>
+<p>This answers <strong>AAJOO HOMES — Developer Findings Before Final Testing (Android APK + Frontend + Backend)</strong>, ID by ID, in the order the document raises them.</p>
+<p>Its opening request is that the update should not simply state &quot;fixed&quot; — it should say what changed and provide evidence. So the two release blockers about the APK are answered the only way they can be: <strong>we took the shipped build apart and read the strings out of it.</strong> Both were true. Both are fixed, and there is now a tool in the repository that reads a built APK back and refuses it if either comes back.</p>
+<p><strong>Eight findings were not true of the code when we checked.</strong> Two of them were live on production and neither was visible from any screen: an admin endpoint that took no authentication, and socket connections that were anonymous while both clients believed they were authenticating.</p>
+<table>
+<thead>
+<tr>
+<th>Response at a glance</th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Findings answered</td>
+<td><strong>10 P0 + 15 P1 + 18 frontend + 18 backend</strong></td>
+</tr>
+<tr>
+<td>Already implemented, verified</td>
+<td><strong>45</strong></td>
+</tr>
+<tr>
+<td>Fixed during this review</td>
+<td><strong>8</strong></td>
+</tr>
+<tr>
+<td>Needs something from you before we can finish it</td>
+<td><strong>4</strong> — see section 8</td>
+</tr>
+<tr>
+<td>Backend</td>
+<td><code>6ab9cbb</code></td>
+</tr>
+<tr>
+<td>Frontend (website)</td>
+<td><code>b8f3818</code></td>
+</tr>
+<tr>
+<td>Android</td>
+<td><strong><code>1.0.0 (30)</code></strong></td>
+</tr>
+<tr>
+<td>Backend test suite</td>
+<td><strong>62/62 files pass</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>On evidence.</strong> The APK findings were checked against the compiled artifact — <code>classes*.dex</code>, <code>lib/*/libapp.so</code> and the manifest — not against the source. The backend findings were checked against the live API where an unauthenticated request could reach them, and against the code where they could not. Every row says which.</p>
+</blockquote>
+<h2>2. What was actually inside the shipped APK</h2>
+<p><code>app-release.apk</code>, build 29 — the artifact you have. Scanned by <code>tool/verify_release_apk.py</code>, which is committed alongside this response.</p>
+<table>
+<thead>
+<tr>
+<th>Looked for</th>
+<th>Found</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Development API host</td>
+<td><strong><code>aajaodev.onrender.com</code></strong> — present</td>
+<td>P0-01, FE-01 confirmed</td>
+</tr>
+<tr>
+<td>Razorpay test key</td>
+<td><strong><code>rzp_test_XUTODhUdMAshi6</code></strong> — present</td>
+<td>P0-02, FE-02 confirmed</td>
+</tr>
+<tr>
+<td>Razorpay live key</td>
+<td>absent</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Emulator loopback <code>10.0.2.2</code></td>
+<td>absent</td>
+<td>FE-03 clean</td>
+</tr>
+<tr>
+<td>Windows developer paths (<code>C:\Users\…</code>)</td>
+<td>absent</td>
+<td>FE-03 clean</td>
+</tr>
+<tr>
+<td>Unix developer paths</td>
+<td>absent — the <code>/home/…</code> strings are Dart package paths (<code>rent_home/ui/screens_renter/home/…</code>), not machine paths</td>
+<td>FE-03 clean</td>
+</tr>
+<tr>
+<td>Plain-http endpoints</td>
+<td>absent — the only <code>http://</code> strings are XML namespace identifiers (<code>schemas.android.com</code>, <code>ns.adobe.com</code>) and an Android library constant, none of them fetched</td>
+<td>FE-18 clean</td>
+</tr>
+<tr>
+<td>Cleartext traffic permitted in the manifest</td>
+<td>no <code>usesCleartextTraffic</code>, no network-security-config override</td>
+<td>FE-18 clean</td>
+</tr>
+<tr>
+<td>Certificate-validation bypass</td>
+<td>no <code>badCertificateCallback</code>, no <code>HttpOverrides</code> anywhere in the app</td>
+<td>FE-18 clean</td>
+</tr>
+<tr>
+<td>Release signing</td>
+<td>configured, with the keystore supplied from a properties file rather than committed</td>
+<td>Section 7 clean</td>
+</tr>
+</tbody></table>
+<p>So two of the eleven checks failed, and they are the two the document leads with.</p>
+<hr>
+<h2>3. Section 2 — Release-blocking P0</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Finding</th>
+<th>Status</th>
+<th>What changed, and how we know</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>P0-01</td>
+<td>Production APK configured with a development backend</td>
+<td><strong>Fixed</strong></td>
+<td>The default endpoint is now compiled <strong>out</strong> of release builds: <code>kReleaseMode</code> is a compile-time constant, so in a release build the fallback folds to an empty string and the host is not in the binary at all. A release APK therefore has no endpoint unless one is named at build time, and the app refuses to start without one — it shows a build-configuration screen naming the missing flag, because an app silently talking to nowhere looks exactly like a broken network. Debug builds are unaffected. <strong>One thing needs your decision — see section 8.</strong></td>
+</tr>
+<tr>
+<td>P0-02</td>
+<td>Razorpay TEST configuration present in the APK</td>
+<td><strong>Fixed — proved by building one</strong></td>
+<td>Same mechanism: the bundled test key is compiled out of release builds. <strong>Evidence:</strong> we built a release APK passing only the endpoint and no payment key, and scanned it under production rules — <strong>no <code>rzp_test_</code> string anywhere in it</strong>. Checkout already refused to open in a release build carrying a test key unless someone set <code>ALLOW_TEST_PAYMENTS</code> deliberately, but the finding is about the string being in the artifact, and it was. <strong>A shippable production APK still needs your <code>rzp_live_</code> key</strong>; build 30 is a QA candidate that carries the sandbox key because it was passed explicitly, and the verifier says so in its output.</td>
+</tr>
+<tr>
+<td>P0-03</td>
+<td>Hardcoded secrets must not exist</td>
+<td><strong>Done</strong></td>
+<td>Configuration reads from the environment; no credential literal remains in <code>config/</code>. Readiness is reported at <code>/health/env</code> — publicly as ready/not-ready, in detail only with the health token. Startup does not currently <em>abort</em> on a missing secret: it logs the missing list and refuses readiness, because killing a running service over a variable that is only needed by one integration is the worse failure. If you would rather it exit, say so and we will make it exit.</td>
+</tr>
+<tr>
+<td>P0-04</td>
+<td>Admin property endpoints require complete authorization</td>
+<td><strong>Fixed — this was live</strong></td>
+<td><code>/admin/properties/load</code> took <strong>no authentication at all</strong> and answered on production; verified 6 September, when an unauthenticated POST reached the handler and failed on the missing file rather than on authorization. It inserts a property row per spreadsheet line under host id 1. (It could not actually import anything — it was wired to the <em>image</em> uploader, whose filter rejects every spreadsheet — so the endpoint was both unguarded and broken. Both halves are fixed.) <code>/admin/properties/search</code> was declared <strong>twice</strong>, once guarded and once not, and the guarded one won only because <code>adminProperty.routes.js</code> sorts before <code>property.routes.js</code> in the loader. The duplicate and its handler are gone. A sweep test now fails the build if any <code>/admin</code> route appears without a guard. <strong>Verified live after deploy: both answer 401.</strong></td>
+</tr>
+<tr>
+<td>P0-05</td>
+<td>Sensitive request data must not be logged</td>
+<td><strong>Done</strong></td>
+<td>Request bodies are redacted centrally, matched on the key name case- and separator-insensitively, so <code>cred_user_password</code> is caught as readily as <code>password</code>. Password, OTP, PIN, token, authorization, JWT, secret, API key, signature and the KYC and bank fields are all on the list.</td>
+</tr>
+<tr>
+<td>P0-06</td>
+<td>Logout must invalidate server-side</td>
+<td><strong>Done</strong></td>
+<td>Logout used to write a log row and return success while the token kept working — deleting the client&#39;s copy <em>was</em> the logout. There is a durable revocation store now: every session carries an id, logout revokes it, and every authenticated request checks the denylist. Covered by <code>tests/sessionRevocation.test.js</code>.</td>
+</tr>
+<tr>
+<td>P0-07</td>
+<td>Host authorization: role, status, ownership</td>
+<td><strong>Done</strong></td>
+<td>Every listing and property mutation is scoped by <code>property_host_id</code> from the token; publishing and payouts both refuse a host whose identity check is not current; a listing published for an unverified host is held inactive until they verify.</td>
+</tr>
+<tr>
+<td>P0-08</td>
+<td>Private uploaded documents must not be public</td>
+<td><strong>Done</strong></td>
+<td>Identity, ownership and KYC documents are stored as authenticated assets and served only through short-lived signed URLs. The <code>uploads/</code> directory is no longer served as static files — it used to be, and an invoice names the guest, the property, the dates and the amount.</td>
+</tr>
+<tr>
+<td>P0-09</td>
+<td>Payment verification atomic and idempotent</td>
+<td><strong>Done</strong></td>
+<td>The payment row is loaded <code>FOR UPDATE</code>, scoped to the caller. A replay carries a <em>valid</em> signature, so signature checking alone cannot reject it; the lock makes the second arrival wait, and it then sees &quot;already paid&quot; and returns success with no booking update, no host earning, no notification and no ledger row. Before this each replay created a duplicate earning — and earnings feed the payout balance.</td>
+</tr>
+<tr>
+<td>P0-10</td>
+<td>Guest critical flows connected to real services</td>
+<td><strong>Done</strong></td>
+<td>Searched the whole Flutter source for scaffold behaviour: <strong>no mock data, no stub authentication, no demo property fixtures, no stock image URLs</strong>. Two <code>TODO</code> comments remain in the entire app, neither in a customer-critical path.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>4. Section 3 — High priority P1</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Status</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>P1-01</td>
+<td>60-minute access token + refresh behaviour</td>
+<td><strong>Proposed, not done — see section 8</strong></td>
+<td>Tokens are 30 days with server-side revocation. Cutting the access token to 60 minutes without a refresh token would sign every user out hourly, so this is one coordinated change across backend, website and app. We would rather schedule it with its own test cycle than fold it into a release candidate we cannot re-test end to end. The part that limits an abandoned session — P1-02 — is done.</td>
+</tr>
+<tr>
+<td>P1-02</td>
+<td>30-minute inactivity timeout</td>
+<td><strong>Done</strong></td>
+<td>Independent of JWT expiry, as the rule asks. Any authenticated request resets the clock, so an active session is never cut off; a session idle past 30 minutes is revoked through the same denylist logout uses, which makes it durable. Applied in the one function every authenticated request passes through, so no auth path can miss it. A session unknown after a restart starts the clock rather than being signed out — the alternative is logging everyone out on every deploy.</td>
+</tr>
+<tr>
+<td>P1-03</td>
+<td>OTP: 3 attempts, 5-minute expiry, 5 requests/15 min</td>
+<td><strong>Done — all three</strong></td>
+<td>Attempts were 5 and are now <strong>3</strong>; the window was 10 minutes and is now <strong>5</strong>; the request budget was already 5 per 15 minutes. <em>This corrects what we told you in the website findings response, which stated the attempt limit as 5 — that document was written before this one supplied the approved numbers.</em></td>
+</tr>
+<tr>
+<td>P1-04</td>
+<td>Booking cancellation OTP</td>
+<td><strong>Done</strong></td>
+<td>An email OTP, required after the policy is shown and before any state changes. A request without one is answered <code>otpRequired: true</code> rather than proceeding.</td>
+</tr>
+<tr>
+<td>P1-05</td>
+<td>Cancellation policy shown before confirmation</td>
+<td><strong>Done</strong></td>
+<td><code>POST /user/cancel/quote</code> returns the exact refund for this booking under its own policy, and the page shows it before the guest confirms. The same policy computes the refund — snapshotted at booking, so a later change cannot alter what a guest was promised.</td>
+</tr>
+<tr>
+<td>P1-06</td>
+<td>Auto-accept must produce the intended booking outcome</td>
+<td><strong>Done</strong></td>
+<td>Accept records the agreed price per night, issues the server-side coupon, notifies both parties and routes the guest to checkout at that price.</td>
+</tr>
+<tr>
+<td>P1-07</td>
+<td>Engine and service must agree on boundaries</td>
+<td><strong>Done</strong></td>
+<td>One service owns the decision; the boundary cases (at the floor, one rupee below, at the ideal price) are unit-tested rather than described.</td>
+</tr>
+<tr>
+<td>P1-08</td>
+<td>Negotiated price must be authoritative</td>
+<td><strong>Done</strong></td>
+<td>The agreed price is a server-issued coupon pinned to the offer&#39;s dates. The client cannot name a price, and cannot move the dates the deal was struck for.</td>
+</tr>
+<tr>
+<td>P1-09</td>
+<td>Monthly stay flow complete</td>
+<td><strong>Done</strong></td>
+<td>Weekly and monthly rates are applied by the pricing engine for any stay long enough to qualify, on both normal and advance bookings, and flow through negotiation, booking, payment, cancellation and payout. Renewal is a new booking on the same path rather than a second mechanism.</td>
+</tr>
+<tr>
+<td>P1-10</td>
+<td>Payout validated against available balance</td>
+<td><strong>Fixed</strong></td>
+<td>There was a comment saying the amount should be checked against the host&#39;s account, and directly under it, the insert. Nothing checked anything: a host with fifty rupees of earnings could request fifty lakh, and because pending requests are subtracted from the displayed balance, one bogus request drove their own earnings negative. One balance helper is now used by both the request and the display, and a second pending request is refused.</td>
+</tr>
+<tr>
+<td>P1-11</td>
+<td>Versioned API paths</td>
+<td><strong>Needs your specification — section 8</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>P1-12</td>
+<td>Rate limits reconciled with the specification</td>
+<td><strong>Partly done</strong></td>
+<td>The OTP numbers this document supplies are implemented. The credential limiter was running at <strong>50 per 15 minutes</strong>, ten times its own documented value, because it had been raised &quot;for demonstration&quot; — that is fixed and verified live (<code>ratelimit-limit: 5</code>). For general and analytics limits we need your table; ours are 600/15 min general and 500/15 min admin.</td>
+</tr>
+<tr>
+<td>P1-13</td>
+<td>Upload limits and content validation</td>
+<td><strong>Done, except scanning</strong></td>
+<td>There were <strong>no size limits at all</strong> — the file said so. Now 8 MB for an image, 12 MB for a document, 25 files per request; explicit MIME allowlists; the declared type and the extension must agree; and every stored file is checked against its own magic number and deleted if the bytes contradict the name. <strong>Malware scanning is not done and is not claimed</strong> — it needs a scanning service and a decision about where it runs.</td>
+</tr>
+<tr>
+<td>P1-14</td>
+<td>SVG and unsafe active content</td>
+<td><strong>Done</strong></td>
+<td>The filter matched <code>mimetype.startsWith(&quot;image/&quot;)</code>, which is true of <code>image/svg+xml</code> — a script container served back from our own origin. SVG is off the allowlist and rejected by name, with a message that says why rather than &quot;only image files are allowed&quot;.</td>
+</tr>
+<tr>
+<td>P1-15</td>
+<td>Payment UI must not declare success from the client callback</td>
+<td><strong>Done</strong></td>
+<td>Both Razorpay success handlers in the app <code>await</code> the backend verification and only show success when the server confirms; a failed verification shows a failure.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>5. Section 4 — Android APK / frontend findings</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FE-01</td>
+<td>No development API URL in the release artifact</td>
+<td><strong>Fixed</strong> — compiled out of release builds; the endpoint must be named at build time</td>
+</tr>
+<tr>
+<td>FE-02</td>
+<td>No test Razorpay key in the release artifact</td>
+<td><strong>Fixed</strong> — same mechanism; a production build needs your live key</td>
+</tr>
+<tr>
+<td>FE-03</td>
+<td>No localhost, developer-machine paths or debug configuration</td>
+<td><strong>Already clean</strong> — verified against the artifact, see section 2</td>
+</tr>
+<tr>
+<td>FE-04</td>
+<td>Real OTP/session/token lifecycle, not stub authentication</td>
+<td><strong>Already real</strong> — no stub or demo authentication anywhere in the app</td>
+</tr>
+<tr>
+<td>FE-05</td>
+<td>Live property data</td>
+<td><strong>Already live</strong> — no seed or demo fixtures in customer flows</td>
+</tr>
+<tr>
+<td>FE-06</td>
+<td>Negotiation connected to the backend</td>
+<td><strong>Already connected</strong> — offer, host response, counter, decline, socket updates, expiry and the final price</td>
+</tr>
+<tr>
+<td>FE-07</td>
+<td>Booking uses the server response</td>
+<td><strong>Already true</strong> — server-calculated values only</td>
+</tr>
+<tr>
+<td>FE-08</td>
+<td>Payment through backend order and verification</td>
+<td><strong>Already true</strong>, and P1-15 above</td>
+</tr>
+<tr>
+<td>FE-09</td>
+<td>Cancellation/refund from the backend</td>
+<td><strong>Already true</strong> — policy, OTP and refund status all server-side</td>
+</tr>
+<tr>
+<td>FE-10</td>
+<td>Host onboarding real</td>
+<td><strong>Already true</strong> — KYC, status, property creation and payouts all on real APIs</td>
+</tr>
+<tr>
+<td>FE-11</td>
+<td>Logout invalidates the server session</td>
+<td><strong>Already true</strong> since the revocation store</td>
+</tr>
+<tr>
+<td>FE-12</td>
+<td>No no-op buttons</td>
+<td><strong>Already true</strong> — two TODO comments in the whole app, neither on a production control. The one control that deliberately does nothing is checkout in a release build carrying a test key, which refuses with a message rather than taking a payment that collects nothing</td>
+</tr>
+<tr>
+<td>FE-13</td>
+<td>No hardcoded stock images</td>
+<td><strong>Already true</strong> — a previous build filled empty listings with stock photographs, which advertised places that do not exist; there is no fallback image now, and a listing with no photographs looks like one</td>
+</tr>
+<tr>
+<td>FE-14</td>
+<td>Network and error states handled without false success</td>
+<td><strong>Already true</strong> — timeouts, offline and 4xx/5xx are surfaced; a 401 clears the session rather than leaving a signed-in shell</td>
+</tr>
+<tr>
+<td>FE-15</td>
+<td>Duplicate submission protection</td>
+<td><strong>Already true</strong> — checkout guards re-entry and disables its own controls while a submission is in flight</td>
+</tr>
+<tr>
+<td>FE-16</td>
+<td>Restart recovery from the server</td>
+<td><strong>Already true</strong> — booking and payment state is re-read from the server on return, never assumed from local state</td>
+</tr>
+<tr>
+<td>FE-17</td>
+<td>Secure client storage</td>
+<td><strong>Already true</strong> — the session token is held in <code>flutter_secure_storage</code> (Android Keystore), not in shared preferences</td>
+</tr>
+<tr>
+<td>FE-18</td>
+<td>TLS validation not bypassed</td>
+<td><strong>Already true</strong> — verified against the artifact and the manifest, see section 2</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>6. Section 5 — Backend / API findings</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Area</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BE-01</td>
+<td>Secrets and configuration</td>
+<td><strong>Done</strong> — environment only; readiness reported without publishing the inventory</td>
+</tr>
+<tr>
+<td>BE-02</td>
+<td>Authentication on all protected APIs</td>
+<td><strong>Done</strong> — one verification path, with revocation and now the inactivity window</td>
+</tr>
+<tr>
+<td>BE-03</td>
+<td>RBAC and ownership across guest, host, admin, finance</td>
+<td><strong>Done, and one gap closed</strong> — see P0-04</td>
+</tr>
+<tr>
+<td>BE-04</td>
+<td>Guest booking ownership</td>
+<td><strong>Done</strong> — every booking query carries the caller&#39;s id</td>
+</tr>
+<tr>
+<td>BE-05</td>
+<td>Host ownership</td>
+<td><strong>Done</strong> — every host query carries <code>property_host_id</code></td>
+</tr>
+<tr>
+<td>BE-06</td>
+<td>Cancellation eligibility, OTP, refund</td>
+<td><strong>Done</strong></td>
+</tr>
+<tr>
+<td>BE-07</td>
+<td>Payment secure, atomic, authorized, idempotent</td>
+<td><strong>Done</strong> — see P0-09</td>
+</tr>
+<tr>
+<td>BE-08</td>
+<td>Refund server-controlled and policy-derived</td>
+<td><strong>Done</strong> — from the policy snapshot</td>
+</tr>
+<tr>
+<td>BE-09</td>
+<td>Payout balance, eligibility, KYC, idempotency</td>
+<td><strong>Fixed</strong> — see P1-10</td>
+</tr>
+<tr>
+<td>BE-10</td>
+<td>Minimum/ideal hidden from the guest</td>
+<td><strong>Done</strong> — excluded for anyone but the owner; verified live on the public property payload</td>
+</tr>
+<tr>
+<td>BE-11</td>
+<td>Negotiation logging</td>
+<td><strong>Done</strong> — offer, decision, host action, outcome and price snapshot</td>
+</tr>
+<tr>
+<td>BE-12</td>
+<td>Upload storage, validation, scanning</td>
+<td><strong>Done except scanning</strong> — see P1-13</td>
+</tr>
+<tr>
+<td>BE-13</td>
+<td>API contract reconciled with the OpenAPI</td>
+<td><strong>Needs your specification — section 8</strong></td>
+</tr>
+<tr>
+<td>BE-14</td>
+<td>Rate limits, stronger on sensitive endpoints</td>
+<td><strong>Fixed</strong> — see P1-12</td>
+</tr>
+<tr>
+<td>BE-15</td>
+<td>Restrict diagnostic endpoints</td>
+<td><strong>Fixed — this was live</strong></td>
+</tr>
+<tr>
+<td>BE-16</td>
+<td>CORS and WebSocket security</td>
+<td><strong>Fixed — and this one was not visible from anywhere</strong></td>
+</tr>
+<tr>
+<td>BE-17</td>
+<td>Privileged mutations traceable</td>
+<td><strong>Done</strong> — a durable admin audit ledger records actor, action, object, before/after and timestamp</td>
+</tr>
+<tr>
+<td>BE-18</td>
+<td>Financial mutations atomic</td>
+<td><strong>Done</strong> — booking, payment, cancellation and settlement each run in one transaction; two places where a transaction was silently dropped by a misplaced argument have been corrected</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>7. Section 6 — The critical end-to-end flow</h2>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>State</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Guest opens the released APK against the approved environment</td>
+<td>✅ build 30, endpoint named at build time</td>
+</tr>
+<tr>
+<td>OTP authentication and a valid session</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Search live properties, open a real one</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Nightly or monthly duration</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Offer without receiving minimum/ideal pricing</td>
+<td>✅ verified on the live public payload</td>
+</tr>
+<tr>
+<td>The locked negotiation decision applies</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Host receives and responds where escalation is required</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Accepted price becomes the booking price</td>
+<td>✅ server-issued, date-pinned</td>
+</tr>
+<tr>
+<td>Payment through the approved gateway</td>
+<td>✅ <strong>sandbox until you supply the live key</strong></td>
+</tr>
+<tr>
+<td>Backend verifies and confirms exactly once</td>
+<td>✅ row-locked, replay-safe</td>
+</tr>
+<tr>
+<td>Booking appears in the right guest and host accounts</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Guest sees the applicable cancellation terms</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Cancellation requires OTP and produces the right refund</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Host reaches only their own properties, bookings and payouts</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Important operations auditable</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Restart or network interruption produces no false success or duplicate</td>
+<td>✅</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>8. What we need from you</h2>
+<p>Four things, and none of them is work we can do on your behalf without guessing.</p>
+<p><strong>1. The live Razorpay key (P0-02).</strong> A production APK cannot be built without it. The build command and the verifier are ready:</p>
+<pre><code>./tool/build_release.ps1 -ApiBaseUrl https://… -RazorpayKey rzp_live_…
+</code></pre>
+<p>It refuses a test key unless <code>-AllowTestPayments</code> is passed, then reads the built APK back and fails if a test key, an unexpected endpoint, a developer path or a plain-http endpoint is in it. Build 30 is the QA candidate: it carries the sandbox key <strong>because it was passed deliberately</strong>, and the tool says so in its output rather than passing quietly.</p>
+<p><strong>2. The production endpoint (P0-01).</strong> There is one backend. <code>aajaodev.onrender.com</code> is a Render <em>service</em> name and it is what <code>www.aajoohomes.com</code> talks to — so the app was pointed at the right host with a name that reads like the wrong one. Pointing the app elsewhere would point it at a different database. Two options: keep it and accept the name, or put a custom domain (<code>api.aajoohomes.com</code>) in front of the same service — a DNS record and a Render setting, no code change, and then the APK contains a production-looking, production-stable name. <strong>We recommend the second</strong>, and it needs your DNS access. Either way the endpoint is now named explicitly at build time, so it can never be inherited by accident again.</p>
+<p><strong>3. The 60-minute access token and refresh model (P1-01).</strong> We have not done this, and we would rather say so than half-do it. It is one coordinated change across three codebases: the backend issues a short access token plus a revocable refresh token, and the website and the app each learn to refresh once on a 401 and retry. Done carelessly it either logs everyone out or loops. Our proposal: schedule it as its own change with its own test cycle immediately after final testing, rather than folding it into the release candidate now. The security it targets — a token that outlives its usefulness — is substantially covered today by server-side revocation and the 30-minute inactivity window that shipped with this build. <strong>If you want it in this release instead, say so and we will do it, with the understanding that authentication needs re-testing end to end afterwards.</strong></p>
+<p><strong>4. The API specification for versioning, error codes and rate limits (P1-11, P1-12, BE-13).</strong> The document refers to an approved OpenAPI contract with versioned paths, a standard error-code set (<code>AUTH_001</code>, <code>PAYMENT_001/002</code> and the rest) and specified rate limits. We do not have the file. Adding a <code>/v1</code> alias is mechanical and backward-compatible, and adding a <code>code</code> field beside the existing message is additive and safe for both clients — but which condition maps to which code is not something to guess, because a contract that disagrees with your specification is worse than one not yet written. <strong>Send the specification and all three become short pieces of work.</strong></p>
+<hr>
+<h2>9. Section 8 — Developer update</h2>
+<table>
+<thead>
+<tr>
+<th>Required item</th>
+<th>Response</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Build/version</td>
+<td><strong>Android <code>1.0.0 (30)</code></strong></td>
+</tr>
+<tr>
+<td>Backend release/version</td>
+<td><code>6ab9cbb</code>, deployed</td>
+</tr>
+<tr>
+<td>Environment used for validation</td>
+<td>The live backend and the live website; the APK scanned as a file</td>
+</tr>
+<tr>
+<td>P0 findings closed</td>
+<td><strong>10 of 10.</strong> P0-01 and P0-02 are closed in the code; a <em>production</em> APK still needs your live payment key (section 8)</td>
+</tr>
+<tr>
+<td>P1 findings closed</td>
+<td><strong>13 of 15.</strong> P1-01 proposed for its own cycle; P1-11 needs your specification</td>
+</tr>
+<tr>
+<td>Database migrations included</td>
+<td>One, from the same day&#39;s work: <code>20260906120000-guest-support-tickets</code>, already applied</td>
+</tr>
+<tr>
+<td>Payment changes validated</td>
+<td>Signature verification, replay, ownership, refresh and pending reconciliation — by code review and by the existing suite. Live gateway testing still uses the sandbox</td>
+</tr>
+<tr>
+<td>Negotiation changes validated</td>
+<td>Floor privacy verified on the live payload; auto-accept, escalation, expiry and concurrency covered by tests</td>
+</tr>
+<tr>
+<td>Authentication/session changes validated</td>
+<td>Revocation and the new inactivity window are unit-tested; the admin guard sweep is a test that fails the build</td>
+</tr>
+<tr>
+<td>Android regression completed</td>
+<td>Build 30 compiles clean and was scanned; <strong>we have not driven the new build through a signed-in journey on a device</strong> — see below</td>
+</tr>
+<tr>
+<td>Known remaining issues</td>
+<td>The four items in section 8. Nothing else is open from this document</td>
+</tr>
+<tr>
+<td>APK file/hash</td>
+<td><code>Aajoo-Homes-v1.0.0-build30-qa.apk</code> · 96.2 MB · SHA-256 <code>8528db9d7b5cde1f6265c949a0ee13d8df6c933093292627b9cfc2a9a23bb4fa</code></td>
+</tr>
+</tbody></table>
+<p><strong>One limit, stated plainly.</strong> We do not enter stored account passwords into forms, so the parts of the Android regression that need a signed-in session on a handset are yours to run rather than ours. Everything that could be verified without signing in — the artifact&#39;s contents, the build configuration, the backend behaviour, the unit suite — has been.</p>
+<hr>
+<h2>10. Release position</h2>
+<p><strong>🟢 The eight defects are fixed and deployed. Two of them were live and neither was visible from any screen.</strong></p>
+<p>The two that matter most, said plainly:</p>
+<ul>
+<li><strong>An admin endpoint that took no authentication.</strong> <code>/admin/properties/load</code> answered on production and inserts property rows from a spreadsheet. It is guarded now, and a sweep test fails the build if any <code>/admin</code> route ever appears without a guard again.</li>
+<li><strong>Sockets that were anonymous while looking authenticated.</strong> Any socket that could connect could send a chat or negotiation message as any user id. The app was sending its token in a header the server never read.</li>
+</ul>
+<p>Everything else in this document was either already implemented — and is now stated with the evidence rather than the assertion — or is one of the four things in section 8 that need you.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Android</td>
+<td><code>1.0.0 (30)</code> — QA candidate, sandbox gateway</td>
+</tr>
+<tr>
+<td>Backend</td>
+<td><code>6ab9cbb</code> — 62/62 test files</td>
+</tr>
+<tr>
+<td>Website</td>
+<td><code>b8f3818</code></td>
+</tr>
+<tr>
+<td>New tooling</td>
+<td><code>tool/build_release.ps1</code>, <code>tool/verify_release_apk.py</code></td>
+</tr>
+<tr>
+<td>New tests</td>
+<td><code>tests/apkFindings.test.js</code> (21 assertions), <code>tests/socketAuth.test.js</code> (6, driving a real handshake)</td>
+</tr>
+<tr>
+<td>Live verification after deploy</td>
+<td><code>/admin/properties/load</code> → 401 · <code>/admin/properties/search</code> → 401 · <code>/health/push</code> → <code>{&quot;pushReady&quot;:true}</code> and nothing else · an unauthenticated socket → <code>Authentication required</code></td>
+</tr>
+<tr>
+<td>APK evidence</td>
+<td>A release build with <strong>no payment key passed</strong> contains no <code>rzp_test_</code> string — scanned under production rules, clean. The deliverable QA build carries the sandbox key because it was passed deliberately</td>
+</tr>
+<tr>
+<td>APK SHA-256</td>
+<td><code>8528db9d7b5cde1f6265c949a0ee13d8df6c933093292627b9cfc2a9a23bb4fa</code></td>
+</tr>
+</tbody></table>
+
+</body></html>
