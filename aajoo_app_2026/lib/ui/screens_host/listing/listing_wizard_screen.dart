@@ -31,6 +31,7 @@ import 'package:rent_home/ui/screens_host/listing/components/location_picker_she
 import 'package:rent_home/ui/screens_host/listing/components/state_city_fields.dart';
 import 'package:rent_home/service/geocode_service.dart';
 import 'package:rent_home/ui/screens_host/listing/components/agreement_block.dart';
+import 'package:rent_home/utils/safe_bottom.dart';
 
 class ListingWizardScreen extends StatefulWidget {
   const ListingWizardScreen({super.key, this.propertyId});
@@ -117,12 +118,25 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
         backgroundColor: kSurface,
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text('Sent for review',
+        // Editing a live listing is an UPDATE, not an application.
+        //
+        // Both cases showed "we usually verify within 24-48 hours, and you
+        // will be notified as soon as it is live" — told to a host whose
+        // property has been live for weeks and who corrected a typo. It reads
+        // as though they have just taken their own listing off the market.
+        //
+        // `c.isLive` is the same flag the wizard already uses to word the
+        // submit button, and the server behaves accordingly too: an approved
+        // listing keeps its tier and stays live while the change is reviewed.
+        title: Text(c.isLive ? 'Changes submitted' : 'Sent for review',
             style: fraunces(
                 fontSize: 19, fontWeight: FontWeight.w700, color: kInk)),
         content: Text(
-          'Your listing is with our team. We usually verify within 24–48 hours, '
-          'and you will be notified as soon as it is live.',
+          c.isLive
+              ? 'Your listing stays live. We have let our team know it changed '
+                  'so they can take a look, and your guests see the update now.'
+              : 'Your listing is with our team. We usually verify within 24–48 hours, '
+                  'and you will be notified as soon as it is live.',
           style: inter(fontSize: 14, color: kInk2, height: 1.5),
         ),
         actions: [
@@ -1880,7 +1894,11 @@ class _PhotoStep extends StatelessWidget {
                   borderRadius:
                       BorderRadius.vertical(top: Radius.circular(20)),
                 ),
-                padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+                // Same as the map picker: the Upload button is the last thing
+                // in this sheet, so it needs the navigation bar's room or it
+                // sits behind it.
+                padding: safeBottomInsets(sheetContext,
+                    left: 18, top: 14, right: 18, bottom: 18),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,

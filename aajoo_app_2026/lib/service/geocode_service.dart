@@ -173,14 +173,24 @@ class GeocodeService {
   /// point actually chosen is cheap and always right.
   ///
   /// Never throws: a failed lookup returns null and the caller keeps the pin.
-  Future<PickedAddress?> reverse(double lat, double lng) async {
+  /// Pass a [cancelToken] to drop a lookup whose pin has already moved on.
+  /// Without one the request keeps a connection open and finishes into
+  /// nothing, which is what made panning across a map feel like wading.
+  Future<PickedAddress?> reverse(double lat, double lng,
+      {CancelToken? cancelToken}) async {
     try {
       final res = await _dio.get('/public/geocode/reverse',
-          queryParameters: {'lat': lat, 'lng': lng});
+          queryParameters: {'lat': lat, 'lng': lng},
+          cancelToken: cancelToken);
       final data = res.data is Map ? res.data['data'] : null;
       if (data is! Map) return null;
       return PickedAddress.fromJson(
           lat, lng, Map<String, dynamic>.from(data));
+    } on DioException catch (e) {
+      // A cancelled lookup is the caller doing its job, not a failure.
+      if (CancelToken.isCancel(e)) return null;
+      _logger.w('reverse geocode failed for $lat,$lng: $e');
+      return null;
     } catch (e) {
       _logger.w('reverse geocode failed for $lat,$lng: $e');
       return null;

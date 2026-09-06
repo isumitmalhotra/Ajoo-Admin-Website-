@@ -20,13 +20,16 @@
 //     answers is a console setting no client can see. Trusting the suggestion
 //     is exactly what left the website's form blank.
 import 'dart:async';
+import 'dart:math' as math;
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/service/geocode_service.dart';
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/utils/safe_bottom.dart';
 
 /// Open the picker. Resolves to the chosen address, or null if it was closed.
 Future<PickedAddress?> showListingLocationPicker(
@@ -78,6 +81,35 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
   /// Guards a slow reply for a pin the host has already moved away from.
   int _lookupSeq = 0;
 
+  /// Drops the request itself, not just its answer. A pan across a city used
+  /// to leave a queue of reverse lookups finishing into nothing, each one
+  /// holding a connection the next one had to wait behind.
+  CancelToken? _lookupCancel;
+
+  /// The point [_resolved] describes, so a pan that ends where it started
+  /// costs nothing.
+  LatLng? _resolvedAt;
+
+  /// Answers already paid for, keyed by the pin rounded to ~11 m. Panning back
+  /// over ground already covered is the commonest thing a host does here and
+  /// it should not cost a round trip. Bounded because this sheet can be open
+  /// for a long time.
+  final Map<String, PickedAddress> _reverseCache = {};
+  static const int _reverseCacheMax = 60;
+
+  /// The map is built ONCE and the same widget instance is handed back on
+  /// every rebuild, so `Element.updateChild` short-circuits and the platform
+  /// view is never diffed. Without this, every keystroke in the search box and
+  /// every step of a lookup rebuilt the Google Map -- which is what made
+  /// typing and panning feel heavy. The camera is driven through the
+  /// controller, not through this widget, so nothing is lost by freezing it.
+  Widget? _mapView;
+
+  /// A camera move asked for before the map existed -- "My location" answering
+  /// faster than the platform view is created. Applied in [onMapCreated].
+  LatLng? _pendingCamera;
+  double _pendingZoom = 16;
+
   @override
   void initState() {
     super.initState();
@@ -98,6 +130,7 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
   void dispose() {
     _searchDebounce?.cancel();
     _idleDebounce?.cancel();
+    _lookupCancel?.cancel('sheet closed');
     _searchController.dispose();
     _map?.dispose();
     super.dispose();
@@ -105,16 +138,83 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
 
   // ── Lookup ────────────────────────────────────────────────────────────────
 
+  /// Metres between two pins, near enough for a "did it really move?" test.
+  static double _metresBetween(LatLng a, LatLng b) {
+    const double mPerDegLat = 111320;
+    final dLat = (a.latitude - b.latitude) * mPerDegLat;
+    final dLng = (a.longitude - b.longitude) *
+        mPerDegLat *
+        math.cos(a.latitude * math.pi / 180).abs();
+    return math.sqrt(dLat * dLat + dLng * dLng);
+  }
+
+  static String _cacheKey(LatLng at) =>
+      '${at.latitude.toStringAsFixed(4)},${at.longitude.toStringAsFixed(4)}';
+
   Future<void> _lookup(LatLng at) async {
+    // A finger lifted mid-pan nudges the camera by a couple of metres. That is
+    // the same spot, and asking again for it greys out "Use this location" for
+    // a second on a pin the host never meant to move.
+    if (_resolvedAt != null &&
+        _resolved != null &&
+        _metresBetween(_resolvedAt!, at) < 15) {
+      // Same address, but the pin IS the answer, so carry the exact point
+      // through rather than committing the one from a few metres back.
+      final a = _resolved!;
+      if (a.lat != at.latitude || a.lng != at.longitude) {
+        setState(() {
+          _resolvedAt = at;
+          _resolved = PickedAddress(
+            lat: at.latitude,
+            lng: at.longitude,
+            label: a.label,
+            state: a.state,
+            district: a.district,
+            city: a.city,
+            village: a.village,
+            pincode: a.pincode,
+            street: a.street,
+          );
+        });
+      }
+      return;
+    }
+
+    final cached = _reverseCache[_cacheKey(at)];
+    if (cached != null) {
+      _lookupCancel?.cancel('superseded');
+      _lookupSeq++;
+      setState(() {
+        _resolving = false;
+        _note = '';
+        _resolved = cached;
+        _resolvedAt = at;
+      });
+      return;
+    }
+
     final seq = ++_lookupSeq;
+    _lookupCancel?.cancel('superseded');
+    final cancel = _lookupCancel = CancelToken();
     setState(() {
       _resolving = true;
       _note = '';
     });
-    final found = await GeocodeService.instance.reverse(at.latitude, at.longitude);
+    final found = await GeocodeService.instance
+        .reverse(at.latitude, at.longitude, cancelToken: cancel);
     if (!mounted || seq != _lookupSeq) return;
+    if (found != null) {
+      if (_reverseCache.length >= _reverseCacheMax) {
+        _reverseCache.remove(_reverseCache.keys.first);
+      }
+      _reverseCache[_cacheKey(at)] = found;
+    }
     setState(() {
       _resolving = false;
+      // Only a lookup that actually answered counts as "this point is done".
+      // Marking a FAILED one resolved would make the nearby-pin guard below
+      // swallow every retry, and the host would be stuck with the error.
+      _resolvedAt = found == null ? null : at;
       // The pin counts even when the lookup fails or finds nothing: the
       // coordinates are the one thing the form cannot do without, and the host
       // can still type the address themselves.
@@ -130,7 +230,16 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
 
   void _moveTo(LatLng at, {double zoom = 16}) {
     setState(() => _target = at);
-    _map?.animateCamera(CameraUpdate.newLatLngZoom(at, zoom));
+    // The camera is only ever driven through the controller -- the widget's
+    // initialCameraPosition is read once at creation and ignored after. If the
+    // map does not exist yet (which "My location" can beat on a cold start),
+    // remember where to go and do it in onMapCreated instead of dropping it.
+    if (_map == null) {
+      _pendingCamera = at;
+      _pendingZoom = zoom;
+    } else {
+      _map!.animateCamera(CameraUpdate.newLatLngZoom(at, zoom));
+    }
     _lookup(at);
   }
 
@@ -140,7 +249,14 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
     _searchDebounce?.cancel();
     final q = value.trim();
     if (q.length < 3) {
-      setState(() => _hits = const []);
+      // Only rebuild when there is something to clear. Typing the first two
+      // letters used to rebuild the whole sheet, map included, per keystroke.
+      if (_hits.isNotEmpty || _searching) {
+        setState(() {
+          _hits = const [];
+          _searching = false;
+        });
+      }
       return;
     }
     // One request per pause, not one per keystroke.
@@ -286,23 +402,7 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
 
   Widget _map_(BuildContext context) => Stack(
         children: [
-          Positioned.fill(
-            child: GoogleMap(
-              initialCameraPosition: CameraPosition(target: _target, zoom: 15),
-              onMapCreated: (c) => _map = c,
-              myLocationButtonEnabled: false,
-              myLocationEnabled: false,
-              zoomControlsEnabled: false,
-              // The map moves under a fixed pin, so the camera IS the answer.
-              onCameraMove: (pos) => _target = pos.target,
-              onCameraIdle: () {
-                _idleDebounce?.cancel();
-                _idleDebounce =
-                    Timer(const Duration(milliseconds: 400), () => _lookup(_target));
-              },
-              onTap: _moveTo,
-            ),
-          ),
+          Positioned.fill(child: _mapView ??= _buildMap()),
           // The pin itself: dead centre, lifted by half its height so the point
           // sits on the coordinate rather than the middle of the teardrop.
           const IgnorePointer(
@@ -320,6 +420,33 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
           ),
           if (_hits.isNotEmpty) _suggestions(),
         ],
+      );
+
+  /// Built once -- see [_mapView]. Everything it needs is either fixed or read
+  /// from a field at callback time, so it never has to be rebuilt.
+  Widget _buildMap() => GoogleMap(
+        initialCameraPosition: CameraPosition(target: _target, zoom: 15),
+        onMapCreated: (c) {
+          _map = c;
+          final pending = _pendingCamera;
+          if (pending != null) {
+            _pendingCamera = null;
+            c.animateCamera(CameraUpdate.newLatLngZoom(pending, _pendingZoom));
+          }
+        },
+        myLocationButtonEnabled: false,
+        myLocationEnabled: false,
+        zoomControlsEnabled: false,
+        // The map moves under a fixed pin, so the camera IS the answer.
+        onCameraMove: (pos) => _target = pos.target,
+        onCameraIdle: () {
+          // Long enough that a pan-pause-pan gesture asks once rather than
+          // three times; short enough that stopping still answers promptly.
+          _idleDebounce?.cancel();
+          _idleDebounce =
+              Timer(const Duration(milliseconds: 600), () => _lookup(_target));
+        },
+        onTap: _moveTo,
       );
 
   Widget _suggestions() => Positioned(
@@ -373,7 +500,11 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
             ? a!.label
             : 'Move the map to place the pin.');
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
+      // The device's navigation sits under this footer. Without its inset the
+      // "Use this location" button lands behind the gesture pill or the
+      // three-button bar and cannot be tapped — which made the map picker a
+      // dead end on most phones.
+      padding: safeBottomInsets(context, left: 18, top: 12, right: 18, bottom: 16),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(top: BorderSide(color: kLine)),

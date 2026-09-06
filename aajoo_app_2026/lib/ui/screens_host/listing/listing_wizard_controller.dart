@@ -261,7 +261,35 @@ class ListingWizardController extends GetxController {
     }
 
     merge(f, d['foundation'], 'pf_');
-    merge(f, d['manager'], 'pm_');
+    /**
+     * The manager block, under the names the FORM uses.
+     *
+     * Stripping 'pm_' produced full_name / mobile / email, and every field on
+     * this step is manager_full_name / manager_mobile / manager_email — so
+     * the block never hydrated. Worse than blank: step 1 posts the whole form
+     * back, so saving an edit wrote null over a manager's name, mobile and
+     * email that were already on file. That is the reported "manager details
+     * are not retained".
+     *
+     * Mapped explicitly rather than by a second prefix rule, because the bare
+     * names it used to produce (email, mobile) are generic enough to collide
+     * with another step's fields.
+     */
+    final mgr = d['manager'];
+    if (mgr is Map) {
+      const managerKeys = {
+        'pm_full_name': 'manager_full_name',
+        'pm_mobile': 'manager_mobile',
+        'pm_email': 'manager_email',
+        'pm_owner_name': 'manager_owner_name',
+        'pm_owner_contact': 'manager_owner_contact',
+        'pm_authorization_available': 'manager_authorization_available',
+      };
+      managerKeys.forEach((column, formKey) {
+        final v = mgr[column];
+        if (v != null) f[formKey] = v;
+      });
+    }
     merge(f, d['location'], 'pl_');
     merge(f, d['capacity'], 'pc_');
     merge(spec, d['specification'], 'ps_');
@@ -306,6 +334,32 @@ class ListingWizardController extends GetxController {
     // rules came back blank. Exactly the fault the pricing comment above
     // describes, two lines further down the same function.
     merge(p5, d['houseRules'], 'phr_');
+    /**
+     * ...and into the map the toggles actually read.
+     *
+     * The line above restores the house rules into `p5`, which holds the
+     * step's text fields. The switches read `houseRules`, a separate map — so
+     * every toggle rendered OFF however it was saved, and because submit sends
+     * `...houseRules`, saving an edit wrote 0 over every rule the host had
+     * turned on and not re-toggled in that session. The reported "some house
+     * rule toggles that were enabled are reset to off".
+     *
+     * MySQL hands booleans back as 1/0, hence the explicit coercion; only the
+     * ten switch keys are copied, so the free-text rules (quiet hours, the
+     * check-in method) stay in `p5` where their fields read them.
+     */
+    final rules = d['houseRules'];
+    if (rules is Map) {
+      for (final key in const [
+        'pets_allowed', 'smoking', 'alcohol', 'visitors', 'parties',
+        'loud_music', 'commercial_shoot', 'cooking_allowed', 'self_checkin',
+        'caretaker_available',
+      ]) {
+        final v = rules['phr_$key'];
+        if (v != null) houseRules[key] = v == 1 || v == true || v == '1';
+      }
+      houseRules.refresh();
+    }
 
     // Step 5's own four tables. The server saved them and did not return them,
     // so this could not restore them even in principle — a host who left the

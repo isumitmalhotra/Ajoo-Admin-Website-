@@ -731,8 +731,12 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
     );
   }
 
-  /// The negotiation thread for this property — the same conversation the
-  /// guest sees from their side, not a second messaging system.
+  /// The conversation with this guest — the same thread the guest sees from
+  /// their side, not a second messaging system.
+  ///
+  /// Opened with the negotiation affordances put away: the booking exists, so
+  /// there is no price left to haggle over. Reported as "Chat with Guest
+  /// incorrectly redirects to the Negotiation chat".
   Future<void> _openGuestChat() async {
     if (b.bookPropId == 0 || b.bookUserId == 0) {
       Fluttertoast.showToast(
@@ -777,6 +781,7 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
           property: property,
           lat: property.propertyLatitude,
           long: property.propertyLongitude,
+          conversationOnly: true,
         ));
   }
 }

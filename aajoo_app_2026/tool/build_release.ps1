@@ -1,4 +1,4 @@
-# Build a release APK and prove what is inside it.
+﻿# Build a release APK and prove what is inside it.
 #
 # The release-candidate findings ask for two things that cannot be asserted
 # from source alone (P0-01/FE-01, P0-02/FE-02, section 7):
@@ -19,6 +19,11 @@
 # For a QA build that must still use the sandbox gateway, pass the test key and
 # say so out loud:
 #   ./tool/build_release.ps1 -ApiBaseUrl https://… -RazorpayKey rzp_test_xxx -AllowTestPayments
+
+# Saved with a UTF-8 BOM on purpose. Windows PowerShell 5.1 reads a BOM-less
+# file as ANSI, which turns the em-dashes in the messages below into bytes it
+# cannot parse -- and the failure looks like a Gradle problem rather than an
+# encoding one. pwsh does not need the BOM; it does no harm there.
 
 param(
     [Parameter(Mandatory = $true)][string]$ApiBaseUrl,

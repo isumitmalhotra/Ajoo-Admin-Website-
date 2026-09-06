@@ -11,6 +11,7 @@ import 'package:rent_home/ui/screens_common/settings/change_password_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:rent_home/ui/screens_common/cancellation_policy/cancellation_policy_page.dart';
 import 'package:rent_home/ui/screens_common/legal/legal_document_page.dart';
+import 'package:rent_home/utils/safe_bottom.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -273,7 +274,9 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16.0),
+        // Delete My Account is the last row, so the list's bottom padding is
+        // what keeps it clear of the device's navigation.
+        padding: safeBottomInsets(context, left: 16, top: 16, right: 16, bottom: 16),
         children: [
           const SectionHeader(title: "Account"),
           SettingsTile(
@@ -345,7 +348,7 @@ class _SettingsPageState extends State<SettingsPage> {
             onTap: _handleRateApp,
           ),
           const SizedBox(height: 20),
-          const SectionHeader(title: "Version 1.0.0 (build 37)"),
+          const SectionHeader(title: "Version 1.0.0 (build 38)"),
           LogoutTile(
             onTap: _handleLogout,
           ),

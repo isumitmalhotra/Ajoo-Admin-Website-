@@ -556,6 +556,11 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
     );
   }
 
+  /// The guest's side of the same booking conversation.
+  ///
+  /// `conversationOnly` for the same reason the host's "Chat with Guest" is:
+  /// the stay is booked. It also keeps the two ends of one thread consistent —
+  /// a host on a plain chat and a guest on an offer box is worse than either.
   Future<void> _openHostChat() async {
     final property = _propertyModel();
     if (property == null) {
@@ -584,6 +589,7 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
           property: property,
           lat: property.propertyLatitude,
           long: property.propertyLongitude,
+          conversationOnly: true,
         ));
   }
 
