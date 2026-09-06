@@ -523,13 +523,47 @@ class _HostProfilePageState extends State<HostProfilePage> {
     // review" telling the host to keep waiting for a decision already made.
     final bool rejected =
         property.isRejected || vs == 'rejected' || vs == 'declined';
-    final String statusLabel =
-        approved ? 'Approved' : (rejected ? 'Rejected' : 'Pending review');
-    final Color statusColor =
-        approved ? Colors.green : (rejected ? Colors.red : Colors.orange);
+    // A listing the host has NOT submitted yet is not waiting on anybody.
+    //
+    // The label used to be a three-way — approved, rejected, else "Pending
+    // review" — so a draft sat under an orange hourglass claiming an admin
+    // was looking at it, while the banner directly above it correctly offered
+    // to resume the unfinished listing. Same property, two answers, and the
+    // one on the card was the wrong one. Reported from a device.
+    //
+    // The states are the server's own (utils/listingLifecycle.js), so a
+    // listing that comes back suspended or with changes requested says that
+    // rather than being folded into "pending" as well.
+    final bool isDraft = vs == 'draft' || vs == '';
+    final bool changesRequested = vs == 'changes_requested';
+    final bool suspended = vs == 'suspended';
+    final String statusLabel = approved
+        ? 'Approved'
+        : rejected
+            ? 'Rejected'
+            : suspended
+                ? 'Suspended'
+                : changesRequested
+                    ? 'Changes requested'
+                    : isDraft
+                        ? 'Draft'
+                        : 'Pending review';
+    final Color statusColor = approved
+        ? Colors.green
+        : (rejected || suspended)
+            ? Colors.red
+            : isDraft
+                ? kMuted
+                : Colors.orange;
     final IconData statusIcon = approved
         ? Icons.verified
-        : (rejected ? Icons.cancel : Icons.hourglass_bottom);
+        : rejected
+            ? Icons.cancel
+            : suspended
+                ? Icons.block
+                : isDraft
+                    ? Icons.edit_note
+                    : Icons.hourglass_bottom;
 
     final String? cover = property.coverImage?.toString();
     final bool hasCover = cover != null && cover.isNotEmpty && cover != 'null';
