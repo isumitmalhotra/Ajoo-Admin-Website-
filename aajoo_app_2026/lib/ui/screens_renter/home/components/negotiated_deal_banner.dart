@@ -42,6 +42,14 @@ class NegotiatedDealBanner extends StatelessWidget {
       dealCode: deal.code,
       dealFrom: deal.bookFrom,
       dealTo: deal.bookTo,
+      // The party the deal was struck for, not the page default.
+      //
+      // The Negotiations screen has passed this since the party size started
+      // travelling with an offer; this banner is the OTHER way into the same
+      // accepted deal and it did not, so opening a deal from the home screen
+      // restored the dates and quietly reset the guest count — the tester's
+      // report, on the second door rather than the first.
+      guests: deal.guests,
       dealPercent: deal.percent,
       errorTitle: 'Deal',
     );
