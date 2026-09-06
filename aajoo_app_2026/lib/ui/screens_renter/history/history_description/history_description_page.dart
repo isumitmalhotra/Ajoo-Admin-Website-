@@ -25,7 +25,9 @@ import 'package:rent_home/models/single_property_response.dart';
 import 'package:rent_home/service/device_service.dart';
 import 'package:rent_home/service/property_service.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
-import 'package:rent_home/ui/screens_common/price_negotiation/negotitaion_page.dart';
+import 'package:rent_home/ui/screens_renter/messages/messages_screen.dart';
+import 'package:rent_home/utils/booking_chat.dart';
+import 'package:rent_home/utils/safe_bottom.dart';
 import 'package:rent_home/ui/screens_common/support/support_screen.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/ui/screens_renter/history/history_description/components/booking_property_gallery.dart';
@@ -265,7 +267,9 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 110),
+                  // Clears the floating action bar below, whose height
+                  // now includes the navigation inset.
+                  SizedBox(height: safeBottom(context, base: 110)),
                 ],
               ),
             ),
@@ -273,7 +277,11 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 10,
+            // Was a hardcoded 10, which puts "Get Directions" and the call
+            // button under the gesture pill — the same defect as the map
+            // picker's "Use this location". Seen on the emulator while
+            // checking the booking chat.
+            bottom: safeBottom(context, base: 10),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _isCancelled ? _bookNowBar() : _stayBar(),
@@ -556,42 +564,35 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
     );
   }
 
-  /// The guest's side of the same booking conversation.
+  /// The regular conversation with this host.
   ///
-  /// `conversationOnly` for the same reason the host's "Chat with Guest" is:
-  /// the stay is booked. It also keeps the two ends of one thread consistent —
-  /// a host on a plain chat and a guest on an offer box is worse than either.
+  /// The mirror of the host's "Chat with Guest" — see that method. Same
+  /// thread, and the same opening line the website prefills, so a guest who
+  /// writes from the site and then from the app reads as one person.
   Future<void> _openHostChat() async {
     final property = _propertyModel();
     if (property == null) {
       Fluttertoast.showToast(msg: 'Still loading this stay — try again.');
       return;
     }
-    final token = await const FlutterSecureStorage().read(key: "user_token");
-    if (token == null) {
-      Fluttertoast.showToast(msg: 'Please login to message the host.');
-      return;
-    }
-    final userId = Get.find<AuthController>().userData.value?.userId;
-    if (userId == null) {
-      Fluttertoast.showToast(msg: 'Please login to message the host.');
+    final hostId = property.propertyHostId;
+    if (hostId == 0) {
+      Fluttertoast.showToast(msg: 'Host details are unavailable for this stay.');
       return;
     }
     if (!mounted) return;
-    Get.to(() => PriceNegotiationPage(
-          userId: userId.toString(),
-          senderId: userId.toString(),
-          receiverId: property.propertyHostId.toString(),
-          hostId: property.propertyHostId.toString(),
-          propertyId: property.propertyId.toString(),
-          serverUrl: Apiconstants.serverUrl,
-          token: token,
-          property: property,
-          lat: property.propertyLatitude,
-          long: property.propertyLongitude,
-          conversationOnly: true,
+    Get.to(() => MessagesScreen(
+          openWith: hostId.toString(),
+          openWithName: 'Host',
+          draft: guestOpeningMessage(
+            propertyName: property.propertyName,
+            bookingCode: widget.bookingData.bookId,
+            from: widget.bookingData.bookDetailsBtBookFrom,
+            to: widget.bookingData.bookDetailsBtBookTo,
+          ),
         ));
   }
+
 
   void _bookAgain() {
     final property = _propertyModel();

@@ -22,12 +22,11 @@ import 'package:rent_home/service/booking_service.dart';
 import 'package:rent_home/service/negotitation_service.dart';
 import 'package:rent_home/controller/alert_dialog.dart';
 import 'package:rent_home/utils/availability_days.dart';
+import 'package:rent_home/utils/safe_bottom.dart';
 
 import '../auth/auth_controller.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/utils/money.dart';
-import 'package:rent_home/utils/fonts.dart';
-import 'package:rent_home/utils/safe_bottom.dart';
 
 class PriceNegotiationPage extends StatefulWidget {
   final String userId;
@@ -41,21 +40,6 @@ class PriceNegotiationPage extends StatefulWidget {
   final String senderId;
   final String hostId;
 
-  /**
-   * Open as a plain conversation, with no negotiation controls.
-   *
-   * "Chat with guest" on a booking opened this page as-is, so a host messaging
-   * somebody about a stay they had already paid for was shown a price bar,
-   * quick-price chips and a Custom Offer box — for a booking there is nothing
-   * left to negotiate. Reported as "redirects to the Negotiation chat".
-   *
-   * It is the same thread and the same socket, because there is only one
-   * conversation between a host and a guest about a property. Only the offer
-   * affordances are put away, and only when the caller says so — the
-   * negotiation entry points pass nothing and are unchanged.
-   */
-  final bool conversationOnly;
-
   const PriceNegotiationPage({
     super.key,
     required this.userId,
@@ -68,7 +52,6 @@ class PriceNegotiationPage extends StatefulWidget {
     required this.long,
     required this.hostId,
     required this.senderId,
-    this.conversationOnly = false,
   });
 
   @override
@@ -173,11 +156,6 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
       NegotiationController(negotiationService),
       tag: controllerTag,
     );
-    // A booking chat is a conversation, not a haggle: no two-message budget,
-    // no alternating turns, and not shut down by the accepted offer that
-    // produced the booking in the first place.
-    negotiationController.enforceNegotiationLimits.value =
-        !widget.conversationOnly;
     negotiationController.currentPrice.value =
         double.tryParse(widget.property.propertyPrice) ?? 250000.0;
 
@@ -443,84 +421,6 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
     );
   }
 
-  /// A plain message box, for a conversation that is not a negotiation.
-  ///
-  /// Sends through the SAME `sendNegotiationMessage` the offer box uses, with
-  /// `isOffer: false` — the transport, the room and the thread are identical;
-  /// the difference is that this one carries words rather than a price. The
-  /// controller has always supported that; nothing in the UI ever offered it.
-  Widget _plainComposer(ThemeData theme) {
-    return Obx(() {
-      final connected = negotiationController.connectionStatus.value ==
-          NegotiationConnectionStatus.connected;
-      void send() {
-        final text = offerController.text.trim();
-        if (text.isEmpty) return;
-        negotiationController.sendNegotiationMessage(
-          propertyId: widget.propertyId,
-          senderId: widget.senderId,
-          receiverId: widget.receiverId,
-          messageText: text,
-          isOffer: false,
-          context: context,
-          userId: widget.userId,
-          hostId: widget.hostId,
-        );
-        offerController.clear();
-        _scrollToBottom();
-      }
-
-      return Container(
-        decoration: BoxDecoration(
-          color: kCream,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: kLine),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: offerController,
-                enabled: connected,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => send(),
-                minLines: 1,
-                maxLines: 4,
-                decoration: InputDecoration(
-                  hintText: connected
-                      ? 'Message your guest…'
-                      : 'Connecting…',
-                  hintStyle: inter(fontSize: 14, color: kMuted),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 14),
-                ),
-                style: inter(fontSize: 15, color: kInk),
-              ),
-            ),
-            Container(
-              margin: const EdgeInsets.all(4),
-              child: ElevatedButton(
-                onPressed: connected ? send : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.primaryColor,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: kLine,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 14),
-                  elevation: 0,
-                ),
-                child: const Icon(Icons.send_rounded, size: 18),
-              ),
-            ),
-          ],
-        ),
-      );
-    });
-  }
-
   void _showAcceptOfferDialog(double price) {
     showModalBottomSheet(
       context: context,
@@ -570,12 +470,8 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                 slivers: [
                   NegotiationAppBar(
                       property: widget.property,
-                      showPrice: !widget.conversationOnly,
                       negotiationController: negotiationController),
 
-                  // The offer status, the countdown and Accept all belong to a
-                  // negotiation in progress. A booking chat has none.
-                  if (!widget.conversationOnly)
                   ChatStatusCard(
                     property: widget.property,
                     negotiationController: negotiationController,
@@ -735,10 +631,10 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                 ],
               ),
               child: Padding(
-                // Same navigation-bar inset as the map picker, the photo sheet
-                // and Settings. This screen is now where a host and a guest
-                // talk about a booking, so a composer sitting under the
-                // gesture pill is not a cosmetic complaint.
+                // The same navigation-bar inset as the map picker, the
+                // photo sheet and Settings. The offer box is the last thing
+                // on this screen, so a hardcoded 16 puts it under the
+                // gesture pill.
                 padding: safeBottomInsets(context,
                     left: 16, top: 16, right: 16, bottom: 16),
                 child: Card(
@@ -764,9 +660,7 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
-                        children: widget.conversationOnly
-                            ? [_plainComposer(theme)]
-                            : [
+                        children: [
                           // Timer and Booking Option Card for user
                           Visibility(
                             visible:

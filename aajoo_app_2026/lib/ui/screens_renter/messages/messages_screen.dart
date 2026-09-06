@@ -20,12 +20,26 @@ import 'package:rent_home/utils/fonts.dart';
 /// payload happened to name a property, and every other conversation was
 /// unreachable from the phone.
 class MessagesScreen extends StatefulWidget {
-  const MessagesScreen({super.key, this.openWith, this.openWithName});
+  const MessagesScreen({
+    super.key,
+    this.openWith,
+    this.openWithName,
+    this.draft,
+  });
 
   /// Deep-link straight into one conversation (from a notification, or
   /// "Contact host"), even when no thread exists for them yet.
   final String? openWith;
   final String? openWithName;
+
+  /// An opening line to put in the box, unsent.
+  ///
+  /// A conversation opened from a booking should say which booking. The
+  /// website has done this for months (redesign/lib/contactHost.ts) and the
+  /// host on the other end sees "Booking ref: B703473" rather than a bare
+  /// hello. It is a suggestion and stays editable -- nothing is ever sent on
+  /// somebody's behalf.
+  final String? draft;
 
   @override
   State<MessagesScreen> createState() => _MessagesScreenState();
@@ -72,7 +86,8 @@ class _MessagesScreenState extends State<MessagesScreen> {
     if (_me == null) return;
     Navigator.of(context)
         .push(MaterialPageRoute(
-          builder: (_) => _ConversationScreen(thread: t, me: _me!),
+          builder: (_) =>
+              _ConversationScreen(thread: t, me: _me!, draft: widget.draft),
         ))
         // Unread counts change while you are in there.
         .then((_) => _refresh());
@@ -201,10 +216,17 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
 /// One conversation.
 class _ConversationScreen extends StatefulWidget {
-  const _ConversationScreen({required this.thread, required this.me});
+  const _ConversationScreen({
+    required this.thread,
+    required this.me,
+    this.draft,
+  });
 
   final MessageThread thread;
   final String me;
+
+  /// Prefilled, unsent -- see [MessagesScreen.draft].
+  final String? draft;
 
   @override
   State<_ConversationScreen> createState() => _ConversationScreenState();
@@ -222,6 +244,13 @@ class _ConversationScreenState extends State<_ConversationScreen> {
   @override
   void initState() {
     super.initState();
+    // Once, into an untouched box, exactly as the website does it
+    // (ChatPanel.tsx). initState runs on open and the composer is empty then,
+    // so nothing typed can be overwritten; and because it is only a draft,
+    // landing in a thread that already has messages costs a keystroke to
+    // clear rather than sending anything.
+    final draft = widget.draft;
+    if (draft != null && draft.trim().isNotEmpty) _input.text = draft;
     _historySub = _svc.history.listen((rows) {
       if (!mounted) return;
       setState(() {

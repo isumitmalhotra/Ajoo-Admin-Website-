@@ -19,6 +19,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rent_home/utils/booking_chat.dart';
 import 'package:rent_home/utils/safe_bottom.dart';
 
 /// A file's code with its comments removed.
@@ -59,6 +60,7 @@ const _hostBooking = 'lib/ui/screens_host/booking_history/host_booking_detail_pa
 const _guestBooking =
     'lib/ui/screens_renter/history/history_description/history_description_page.dart';
 const _geocode = 'lib/service/geocode_service.dart';
+const _messages = 'lib/ui/screens_renter/messages/messages_screen.dart';
 
 void main() {
   group('#20/#22/#23 — a control at the bottom clears the navigation bar', () {
@@ -116,8 +118,12 @@ void main() {
       expect(got, const EdgeInsets.fromLTRB(18, 12, 18, 40));
     });
 
-    test('all three call sites use the helper', () {
-      for (final f in [_picker, _wizard, _settings]) {
+    test('all the call sites use the helper', () {
+      // The last two were not in the report: the negotiation composer, and
+      // the guest booking screen's floating "Get Directions" bar, which was
+      // pinned at a hardcoded `bottom: 10` and sat under the gesture pill.
+      // Both were seen on the emulator while checking the other fixes.
+      for (final f in [_picker, _wizard, _settings, _negotiation, _guestBooking]) {
         expect(codeOf(f), contains('safeBottom'), reason: '$f lost the fix');
         expect(File(f).readAsStringSync(),
             contains("import 'package:rent_home/utils/safe_bottom.dart'"),
@@ -194,71 +200,136 @@ void main() {
     });
   });
 
-  group('#26 — Chat with Guest is a conversation, not a negotiation', () {
-    final page = codeOf(_negotiation);
+  group('#26 — a booking chat is the regular chat', () {
+    // The reported bug: "Chat with Guest incorrectly redirects to the
+    // Negotiation chat after booking completion... should open the regular
+    // chat with the guest".
+    //
+    // There IS a regular chat, and it is not the negotiation screen.
+    // `tbl_messages` carries person-to-person conversations with no property
+    // attached; MessagesScreen is its inbox; and the WEBSITE has routed
+    // "Contact Host" into it for months, prefilling a line that names the
+    // stay (redesign/lib/contactHost.ts). The app's booking screens went to
+    // the property-scoped negotiation page instead. Matching the website is
+    // the fix — not hiding the offer box on the wrong screen.
+    final host = codeOf(_hostBooking);
+    final guest = codeOf(_guestBooking);
 
-    test('the page can hide its offer affordances', () {
-      expect(page, contains('final bool conversationOnly'));
-      expect(page, contains('this.conversationOnly = false'));
-      expect(page, contains('if (!widget.conversationOnly)'));
-      expect(page, contains('widget.conversationOnly'));
-      expect(page, contains('_plainComposer'));
-    });
-
-    test('a plain message still goes through the same thread', () {
-      // One conversation between a host and a guest about a property. The
-      // composer sends through sendNegotiationMessage with isOffer false — it
-      // is not a second messaging system.
-      expect(page, contains('sendNegotiationMessage'));
-      expect(page, contains('isOffer: false'));
-    });
-
-    test('the base-price chip is hidden in a booking chat', () {
-      expect(page, contains('showPrice: !widget.conversationOnly'));
-      expect(
-        codeOf('lib/ui/screens_common/price_negotiation/components/negotiation_app_bar.dart'),
-        contains('if (showPrice)'),
-      );
-    });
-
-    test('the negotiation message limits do not apply to it', () {
-      // The trap this nearly shipped into: a negotiation allows two messages
-      // each, strictly alternating, and none once an offer is accepted. A
-      // booked stay usually HAS an accepted offer, so the new composer would
-      // have rendered perfectly and refused every message the host typed.
-      final controller =
-          codeOf('lib/ui/screens_common/price_negotiation/negotiation_controller.dart');
-      expect(controller, contains('enforceNegotiationLimits'));
-      expect(controller,
-          contains('if (!enforceNegotiationLimits.value) return true;'));
-      expect(page,
-          contains('negotiationController.enforceNegotiationLimits.value'));
-      expect(page, contains('!widget.conversationOnly'));
-    });
-
-    test('the composer clears the navigation bar', () {
-      // This screen is now where a host and a guest talk about a booking.
-      expect(page, contains('safeBottomInsets(context'));
-    });
-
-    test('both sides of a booking open it in conversation mode', () {
-      for (final f in [_hostBooking, _guestBooking]) {
-        expect(codeOf(f), contains('conversationOnly: true'),
-            reason: '$f still opens the negotiation screen');
+    test('neither booking screen opens the negotiation page', () {
+      for (final entry in {'host': host, 'guest': guest}.entries) {
+        expect(entry.value, isNot(contains('PriceNegotiationPage')),
+            reason: 'the ${entry.key} booking screen still negotiates');
+        expect(entry.value, isNot(contains('negotitaion_page.dart')),
+            reason: 'the ${entry.key} booking screen still imports it');
       }
     });
 
+    test('both open MessagesScreen with the other person', () {
+      for (final code in [host, guest]) {
+        expect(code, contains('MessagesScreen('));
+        expect(code, contains('openWith:'));
+        expect(code, contains('draft:'));
+      }
+    });
+
+    test('the screen accepts a prefilled, unsent draft', () {
+      final screen = codeOf(_messages);
+      expect(screen, contains('final String? draft'));
+      expect(screen, contains('_input.text = draft'));
+      // Passed down to the conversation, or the inbox would swallow it.
+      expect(screen, contains('draft: widget.draft'));
+    });
+
+    test('a request made before the socket is up is not dropped', () {
+      // Found by opening the fixed screen on a device: the thread rendered
+      // "No messages yet" on a conversation that had messages, because
+      // initState asks for the history while the socket is still shaking
+      // hands and both emitters returned silently when it was not connected.
+      // The send path was worse — the composer drew its optimistic bubble and
+      // the message was thrown away.
+      final svc = codeOf('lib/service/messages_service.dart');
+      expect(svc, contains('_pendingLoad'));
+      expect(svc, contains('_pendingSends'));
+      expect(svc, contains('void _flush()'));
+      expect(svc, contains('_flush();'));
+      // Bounded, and dropped on sign-out — a queued message belongs to the
+      // account that typed it.
+      expect(svc, contains('_maxPendingSends'));
+      expect(svc, contains('_pendingSends.clear();'));
+    });
+
     test('the negotiation entry points are untouched', () {
-      // Offering on a property, and the host inbox, are still negotiations.
-      // If these ever pass conversationOnly the feature has been broken.
+      // Offering on a property, the host inbox and a negotiation push
+      // notification are all still negotiations.
       for (final f in [
         'lib/ui/screens_host/support/host_messages_screen.dart',
         'lib/ui/screens_common/price_negotiation/negotiation_wrapper.dart',
         'lib/ui/screens_common/notifications/notification_screen.dart',
       ]) {
-        expect(codeOf(f), isNot(contains('conversationOnly')),
+        expect(codeOf(f), contains('PriceNegotiationPage'),
             reason: '$f should still be a negotiation');
       }
     });
+
+    test('the negotiation composer clears the navigation bar', () {
+      // Not part of the report, but the same defect as #20/#22/#23 on a
+      // screen this pass touched.
+      expect(codeOf(_negotiation), contains('safeBottomInsets(context'));
+    });
+  });
+
+  group('#26 — the opening line', () {
+    // Word for word the website's, so a guest who writes from the site and
+    // then from the app does not read as two different people.
+    test('names the stay, the dates and the reference', () {
+      expect(
+        guestOpeningMessage(
+          propertyName: 'Aajoo Homes',
+          bookingCode: 'B703473',
+          from: '06-09-2026',
+          to: '07-09-2026',
+        ),
+        "Hi! I'd like to ask about my stay at Aajoo Homes "
+        '(06 Sep – 07 Sep 2026). Booking ref: B703473.',
+      );
+    });
+
+    test('drops the parts it does not know', () {
+      expect(guestOpeningMessage(propertyName: 'Aajoo Homes'),
+          "Hi! I'd like to ask about my stay at Aajoo Homes.");
+      expect(guestOpeningMessage(bookingCode: 'B1'),
+          "Hi! I'd like to ask about my booking. Booking ref: B1.");
+    });
+
+    test('is empty when there is nothing to say', () {
+      // An empty draft leaves the box alone rather than prefilling "Hi!".
+      expect(guestOpeningMessage(), '');
+      expect(hostOpeningMessage(guestName: 'Aajoo Renter'), '');
+    });
+
+    test('the host greets the guest by first name', () {
+      expect(
+        hostOpeningMessage(
+          guestName: 'Aajoo Renter',
+          propertyName: 'Aajoo Homes',
+          bookingCode: 'B703473',
+          from: '06-09-2026',
+          to: '07-09-2026',
+        ),
+        "Hello Aajoo! I'm getting in touch about your stay at Aajoo Homes "
+        '(06 Sep – 07 Sep 2026). Booking ref: B703473.',
+      );
+    });
+
+    test('a date it cannot parse is passed through, not dropped', () {
+      // Booking dates are DD-MM-YYYY from the API. Anything else is shown as
+      // it came rather than silently vanishing from the sentence.
+      expect(stayRangeLabel('2026-09-06', '2026-09-07'),
+          '2026-09-06 – 2026-09-07');
+      expect(stayRangeLabel('06-13-2026', '07-09-2026'),
+          '06-13-2026 – 07 Sep 2026');
+      expect(stayRangeLabel(null, null), '');
+    });
   });
 }
+

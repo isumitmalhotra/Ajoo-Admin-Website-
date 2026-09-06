@@ -32,6 +32,24 @@ class MessagesService {
   bool _initialised = false;
   String? _me;
 
+  /// Work asked for before the socket was up.
+  ///
+  /// Both emitters below used to return silently when `_socket.connected` was
+  /// false, and opening a conversation does exactly that: the screen is pushed,
+  /// initState asks for the history, and the socket is still shaking hands. The
+  /// thread rendered "No messages yet — say hello." on a conversation that had
+  /// messages, and a message typed in that first second was dropped after the
+  /// composer had already drawn its optimistic bubble — sent, to the eye, and
+  /// gone.
+  ///
+  /// So they queue instead, and the queue is flushed on connect. Only the most
+  /// recent history request is kept (an older one is for a screen the user has
+  /// left); sends are kept in order, and bounded, because a queue that grows
+  /// without limit while offline is its own bug.
+  String? _pendingLoad;
+  final List<Map<String, dynamic>> _pendingSends = [];
+  static const int _maxPendingSends = 20;
+
   final _historyController = StreamController<List<ChatMessage>>.broadcast();
   final _incomingController = StreamController<ChatMessage>.broadcast();
   final _connectedController = StreamController<bool>.broadcast();
@@ -99,6 +117,7 @@ class MessagesService {
         // Re-join on every connect, not just the first — a reconnect starts a
         // new session server-side and would otherwise deliver nothing.
         if (_me != null) _socket!.emit('join', _me);
+        _flush();
       });
       _socket!.onDisconnect((_) => _connectedController.add(false));
       _socket!.onConnectError((e) {
@@ -135,7 +154,11 @@ class MessagesService {
   /// Ask for the conversation with [partnerId] and mark their messages seen.
   void loadConversation(String partnerId) {
     final me = _me;
-    if (me == null || !(_socket?.connected ?? false)) return;
+    if (me == null) return;
+    if (!(_socket?.connected ?? false)) {
+      _pendingLoad = partnerId;
+      return;
+    }
     _socket!.emit('loadMessages', {'sender_id': me, 'receiver_id': partnerId});
     _socket!.emit('messageSeen', {'sender_id': partnerId, 'receiver_id': me});
   }
@@ -143,12 +166,39 @@ class MessagesService {
   void send({required String partnerId, required String body}) {
     final me = _me;
     final text = body.trim();
-    if (me == null || text.isEmpty || !(_socket?.connected ?? false)) return;
-    _socket!.emit('sendMessage', {
+    if (me == null || text.isEmpty) return;
+    final payload = <String, dynamic>{
       'sender_id': me,
       'receiver_id': partnerId,
       'message': text,
-    });
+    };
+    if (!(_socket?.connected ?? false)) {
+      // Oldest first, so the one the user is looking at survives.
+      if (_pendingSends.length >= _maxPendingSends) _pendingSends.removeAt(0);
+      _pendingSends.add(payload);
+      return;
+    }
+    _socket!.emit('sendMessage', payload);
+  }
+
+  /// Send whatever was asked for while the socket was down.
+  void _flush() {
+    final socket = _socket;
+    final me = _me;
+    if (socket == null || me == null || !socket.connected) return;
+
+    final sends = List<Map<String, dynamic>>.from(_pendingSends);
+    _pendingSends.clear();
+    for (final payload in sends) {
+      socket.emit('sendMessage', payload);
+    }
+
+    final load = _pendingLoad;
+    _pendingLoad = null;
+    if (load != null) {
+      socket.emit('loadMessages', {'sender_id': me, 'receiver_id': load});
+      socket.emit('messageSeen', {'sender_id': load, 'receiver_id': me});
+    }
   }
 
   /// Drop the socket — called on logout, so the next account does not inherit
@@ -158,5 +208,9 @@ class MessagesService {
     _socket = null;
     _initialised = false;
     _me = null;
+    // A queued message belongs to the account that typed it. Carrying it into
+    // the next sign-in would deliver it as somebody else.
+    _pendingSends.clear();
+    _pendingLoad = null;
   }
 }

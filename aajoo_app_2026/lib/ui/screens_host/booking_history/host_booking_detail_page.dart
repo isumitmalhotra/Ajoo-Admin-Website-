@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
-import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/models/host_booking_history_model.dart';
-import 'package:rent_home/models/properties_response_model.dart';
 import 'package:rent_home/models/single_property_response.dart';
 import 'package:rent_home/service/device_service.dart';
 import 'package:rent_home/service/property_service.dart';
 import 'package:rent_home/service/host_service.dart';
 import 'package:rent_home/utils/stay_clock.dart';
-import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
-import 'package:rent_home/ui/screens_common/price_negotiation/negotitaion_page.dart';
+import 'package:rent_home/ui/screens_renter/messages/messages_screen.dart';
+import 'package:rent_home/utils/booking_chat.dart';
 import 'package:rent_home/ui/screens_host/support/host_support_screen.dart';
 import 'package:rent_home/ui/screens_renter/property_details/components/property_tabs.dart';
 import 'package:rent_home/utils/fonts.dart';
@@ -731,57 +728,38 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
     );
   }
 
-  /// The conversation with this guest — the same thread the guest sees from
-  /// their side, not a second messaging system.
+  /// The regular conversation with this guest.
   ///
-  /// Opened with the negotiation affordances put away: the booking exists, so
-  /// there is no price left to haggle over. Reported as "Chat with Guest
-  /// incorrectly redirects to the Negotiation chat".
+  /// NOT the price negotiation screen, which is what this used to open: a
+  /// price bar, quick-price chips and a Custom Offer box, shown to a host
+  /// messaging somebody about a stay that is already booked and paid for.
+  /// Reported as "Chat with Guest incorrectly redirects to the Negotiation
+  /// chat after booking completion".
+  ///
+  /// `tbl_messages` is the person-to-person thread and MessagesScreen is its
+  /// inbox; the website has routed booking conversations there for months
+  /// (redesign/lib/contactHost.ts). The opening line names the stay so the
+  /// guest does not have to ask which booking this is about, and stays
+  /// editable — nothing is ever sent on anyone's behalf.
   Future<void> _openGuestChat() async {
-    if (b.bookPropId == 0 || b.bookUserId == 0) {
+    if (b.bookUserId == 0) {
       Fluttertoast.showToast(
           msg: 'Guest details are unavailable for this booking.');
       return;
     }
-    final token = await const FlutterSecureStorage().read(key: "user_token");
-    if (token == null) {
-      Fluttertoast.showToast(msg: 'Please login again to message the guest.');
-      return;
-    }
-    final hostId = Get.find<AuthController>().userData.value?.userId;
-    if (hostId == null) {
-      Fluttertoast.showToast(msg: 'Please login again to message the guest.');
-      return;
-    }
-    final s = _single;
-    final property = Property(
-      propertyId: b.bookPropId,
-      propertyName: s?.propertyName ?? b.propertyName,
-      propertyAddress: s?.propertyAddress ?? b.propertyAddress,
-      propertyDesc: s?.propertyDesc ?? '',
-      propertyPrice: s?.propertyPrice ?? b.bookPrice.toStringAsFixed(0),
-      propertyCity: s?.propertyCity ?? '',
-      propertyLongitude: s?.propertyLongitude ?? '0',
-      propertyLatitude: s?.propertyLatitude ?? '0',
-      propertyHostId: hostId,
-      propertyZip: s?.propertyZip,
-      images: s?.images ?? const [],
-      categoryTitles: const [],
-    );
     if (!mounted) return;
-    Get.to(() => PriceNegotiationPage(
-          // The host is the sender here; the guest is on the other end.
-          userId: hostId.toString(),
-          senderId: hostId.toString(),
-          receiverId: b.bookUserId.toString(),
-          hostId: hostId.toString(),
-          propertyId: b.bookPropId.toString(),
-          serverUrl: Apiconstants.serverUrl,
-          token: token,
-          property: property,
-          lat: property.propertyLatitude,
-          long: property.propertyLongitude,
-          conversationOnly: true,
+    final guestName = b.userDetailsUserFullName.trim();
+    Get.to(() => MessagesScreen(
+          openWith: b.bookUserId.toString(),
+          openWithName: guestName.isEmpty ? 'Guest' : guestName,
+          draft: hostOpeningMessage(
+            guestName: guestName,
+            propertyName: b.propertyName,
+            bookingCode: b.bookId,
+            from: b.bookDetailsBtBookFrom,
+            to: b.bookDetailsBtBookTo,
+          ),
         ));
   }
+
 }

@@ -9,17 +9,10 @@ class NegotiationAppBar extends StatelessWidget {
   final Property property;
   final NegotiationController negotiationController;
 
-  /// Show the "Base: <price>" chip.
-  ///
-  /// False for a booking conversation, where the stay is already paid for and
-  /// a base price on the header is the negotiation screen leaking through.
-  final bool showPrice;
-
   const NegotiationAppBar({
     super.key,
     required this.property,
     required this.negotiationController,
-    this.showPrice = true,
   });
 
   @override
@@ -102,24 +95,22 @@ class NegotiationAppBar extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
-                      if (showPrice) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            "Base: ${rupees(double.tryParse(property.propertyPrice) ?? 0)}",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          "Base: ${rupees(double.parse(property.propertyPrice))}",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                      ],
+                      ),
+                      const SizedBox(height: 8),
                       Text(
                         property.propertyDesc,
                         maxLines: 3,

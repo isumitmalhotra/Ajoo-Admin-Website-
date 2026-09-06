@@ -47,24 +47,6 @@ class NegotiationController extends GetxController {
   final RxBool isUserTurn = true.obs; // User starts first
   final RxString lastMessageSenderId = ''.obs;
 
-  /// Whether the negotiation rules apply to this thread.
-  ///
-  /// A negotiation is deliberately constrained: two messages each, strictly
-  /// alternating, and nothing at all once an offer is accepted. Those rules
-  /// exist so haggling terminates.
-  ///
-  /// A BOOKING conversation is not a negotiation. The same screen and the same
-  /// socket carry it, so without this flag "Chat with guest" inherited all
-  /// three limits — and since a booked stay almost always has an accepted
-  /// offer behind it, `offerFinalized` alone meant the host could not send a
-  /// single message. The box would have looked right and refused every word.
-  ///
-  /// Nothing is being circumvented: the server has never enforced a count or a
-  /// turn (see socketController's sendNegotiationMessage, which checks only
-  /// that a socket sends as itself and that a guest's offer is below the list
-  /// price). These are UI rules for the UI that needs them.
-  final RxBool enforceNegotiationLimits = true.obs;
-
   NegotiationController(this._negotiationService);
 
   @override
@@ -77,9 +59,6 @@ class NegotiationController extends GetxController {
 
   //Check if user can send message based on chat limits and turn
   bool canUserSendMessage(String currentUserId, String hostId) {
-    // A plain conversation has no budget, no turns and no finalised offer to
-    // close it — see [enforceNegotiationLimits].
-    if (!enforceNegotiationLimits.value) return true;
     final currentUserIdStr = authController.userData.value?.userId.toString();
     // if (lastMsg.isOffer == true &&
     //     currentUserIdStr != null &&
