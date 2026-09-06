@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Real-Time & Advance Booking Pricing Architecture</title>
+<style>
+  @page { size: A4; margin: 20mm 17mm 22mm; }
+
+  :root {
+    --navy: #1B2447;
+    --teal: #0F766E;
+    --ink:  #1F2937;
+    --muted:#5B6472;
+    --line: #D9DEE7;
+    --soft: #F4F6F9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: #fff;
+    /* Cambria before Georgia deliberately: Georgia ships OLD-STYLE figures, so
+       "six P0s" reads as "six Pos" and every number sits at a different
+       height. This document is full of IDs and money. Cambria has lining
+       figures and prints just as well. */
+    font-family: Cambria, "Palatino Linotype", Georgia, "Times New Roman", serif;
+    font-variant-numeric: lining-nums;
+    font-size: 10.4pt;
+    line-height: 1.58;
+    color: var(--ink);
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---- cover ------------------------------------------------------- */
+  .cover { page-break-after: always; padding-top: 58mm; }
+  .cover .rule { width: 54px; height: 4px; background: var(--teal); margin-bottom: 22px; }
+  .cover h1 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    font-size: 27pt; line-height: 1.2; color: var(--navy);
+    margin: 0 0 16px; font-weight: 600; letter-spacing: -0.4px;
+  }
+  .cover .sub { font-size: 11.5pt; color: var(--muted); margin: 0 0 40px; max-width: 118mm; }
+  .cover .meta {
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 9pt;
+    color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px;
+  }
+  .cover .meta strong { color: var(--navy); font-weight: 600; }
+
+  /* ---- headings ---------------------------------------------------- */
+  h2, h3, h4 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    color: var(--navy); font-weight: 600; page-break-after: avoid;
+  }
+  h2 {
+    font-size: 15pt; margin: 26px 0 12px; padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--line); letter-spacing: -0.2px;
+  }
+  h3 {
+    font-size: 11.4pt; margin: 18px 0 7px; color: var(--teal);
+    letter-spacing: .1px;
+  }
+  h4 { font-size: 10.6pt; margin: 14px 0 6px; }
+
+  p { margin: 0 0 10px; orphans: 3; widows: 3; }
+
+  /* ---- lists ------------------------------------------------------- */
+  ul, ol { margin: 0 0 11px; padding-left: 20px; }
+  li { margin-bottom: 5px; }
+  li > ul, li > ol { margin-top: 5px; }
+
+  /* ---- emphasis & code --------------------------------------------- */
+  strong { color: var(--navy); font-weight: 700; }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 8.7pt; background: var(--soft);
+    border: 1px solid var(--line); border-radius: 3px;
+    padding: 0.5px 4px; color: #33405A;
+    /* long identifiers must not push the page sideways */
+    word-break: break-word;
+  }
+  pre { background: var(--soft); border: 1px solid var(--line); border-radius: 5px;
+        padding: 10px 12px; overflow-x: auto; page-break-inside: avoid; }
+  pre code { border: 0; background: none; padding: 0; font-size: 8.6pt; }
+
+  /* ---- tables ------------------------------------------------------ */
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 16px;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.7pt;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }   /* repeat header across pages */
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  th {
+    background: var(--navy); color: #fff; text-align: left; font-weight: 600;
+    padding: 7px 9px; border: 1px solid var(--navy); line-height: 1.35;
+  }
+  td {
+    padding: 6px 9px; border: 1px solid var(--line); vertical-align: top;
+    line-height: 1.45;
+  }
+  tbody tr:nth-child(even) td { background: #FAFBFD; }
+  /* strong is navy, and a header cell IS navy — bold text in a header was
+     rendering invisible. Headers set their own colour; inherit it. */
+  th strong, th b { color: inherit; }
+  td code { font-size: 8.1pt; }
+
+  /* ---- callouts ---------------------------------------------------- */
+  blockquote {
+    margin: 14px 0; padding: 10px 14px;
+    background: #F2F8F7; border-left: 3px solid var(--teal);
+    page-break-inside: avoid;
+  }
+  blockquote p { margin: 0 0 6px; }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+
+  /* Keep a section heading with the text that follows it. */
+  h2 + p, h3 + p, h2 + table, h3 + table, h2 + ul, h3 + ul { page-break-before: avoid; }
+</style></head>
+<body>
+  <section class="cover">
+    <div class="rule"></div>
+    <h1>Real-Time & Advance Booking Pricing Architecture</h1>
+    <p class="sub">A section-by-section response to the Real-Time &amp; Advance Booking Pricing Architecture: what the engine already does, the Advance Booking Discount that was collected and never given, and the two decisions that are yours.</p>
+    <div class="meta">
+      <strong>Aajoo Homes &mdash; Pricing Architecture</strong><br>
+      Prepared 6 September 2026 by the Zyphex Tech development team<br>
+      Verified against the live development backend and database
+    </div>
+  </section>
+  <h2>1. Response summary</h2>
+<p>This answers <strong>Aajoo Homes — Real-Time &amp; Advance Booking Pricing Architecture</strong>, section by section, in the order the document sets them out.</p>
+<p>The document describes an engine that is largely already built. The three-tier grid, the composite Night/Week/Month calculation, the hidden floor, the auto-accept rule and the escalation to the host all shipped with W2 and are unit-tested. Running the document&#39;s own worked example through the live engine returns the document&#39;s own numbers — Minimum ₹45,000, Ideal ₹53,000, Maximum ₹62,000 — without anything being adjusted to make it do so.</p>
+<p><strong>Three things in it were not true, and are now.</strong></p>
+<p>The first is the one that matters. <strong>§10–§12, the Advance Booking Discount, was not implemented at all.</strong> The host was asked for a percentage in Step 4 of the listing wizard, the answer was stored, and the pricing resolver read it into the rule object — where nothing consumed it. Five live listings carry a discount today. Not one guest has ever been shown one, and not one host has ever given one away. It is implemented, deployed and verified on the live site as of today.</p>
+<p>The second is <strong>§15</strong>. &quot;The frontend should never independently calculate the final booking price&quot; was half true: the website and the Android app each kept their own copy of the rate card. On short stays the three implementations agreed. On long stays the app&#39;s did not — it smoothed a weekly price across the nights while the server composes whole weeks plus remainder nights. Both clients now ask the backend and render its answer.</p>
+<p>The third is a leak. <strong><code>{min_price}</code> was one of the variables an administrator could put in a property&#39;s page title or meta description.</strong> §6 and §17 rule 4 make &quot;the guest never sees the minimum&quot; non-negotiable. One title pattern would have printed a host&#39;s negotiation floor into a page title and let Google index it. No live template used it; the variable is gone and a test now guards every door that number could leave by.</p>
+<p>Two questions at the end need your decision rather than our judgement.</p>
+<table>
+<thead>
+<tr>
+<th>Response at a glance</th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Sections answered</td>
+<td><strong>19 of 19</strong></td>
+</tr>
+<tr>
+<td>Already implemented, verified against the live system</td>
+<td><strong>14</strong></td>
+</tr>
+<tr>
+<td>Implemented during this response</td>
+<td><strong>3</strong></td>
+</tr>
+<tr>
+<td>Needs your decision</td>
+<td><strong>2</strong></td>
+</tr>
+<tr>
+<td>Backend</td>
+<td><code>11482d7</code>, <code>985fe68</code>, <code>b4dc3f1</code></td>
+</tr>
+<tr>
+<td>Website</td>
+<td><code>0753ccf</code>, <code>6cd929d</code></td>
+</tr>
+<tr>
+<td>Android app</td>
+<td><code>a88b106</code>, <code>70d0176</code> — <strong>build 32</strong></td>
+</tr>
+<tr>
+<td>Backend test suite</td>
+<td><strong>65/65 files pass</strong></td>
+</tr>
+<tr>
+<td>New tests written for this document</td>
+<td><strong>16</strong> (<code>advanceDiscount</code>, <code>internalPriceNeverPublic</code>)</td>
+</tr>
+</tbody></table>
+<h2>2. §1–§4 — Source of truth, host pricing structure, the meaning of the three prices</h2>
+<p><strong>Status: already implemented.</strong></p>
+<p>The Real-Time Negotiation Engine specification v1.0 remains the locked foundation; nothing in this response changes a rule in it.</p>
+<p>The listing wizard collects a Minimum, an Ideal and a Maximum for each of the three periods — nine figures per listing. They are stored in <code>property_pricing</code> (week and month) and on the listing row (night), and resolved into a single rule object by one function, <code>nightlyRates.pricingRuleFor</code>, which every pricing path calls.</p>
+<p>The engine computes all three totals for every stay. The guest-facing block carries only the Maximum; the Minimum and Ideal totals are returned under a separate <code>internal</code> key that feeds the negotiation engine and is never serialised into a guest response. <code>tests/pricingQuote.test.js</code> fails the build if the quote controller so much as mentions that key, and <code>tests/pricingGrid.test.js</code> (17 cases) covers the grid itself.</p>
+<p>Where a host has left a tier blank, it is derived from the period Maximum by the same ratio their nightly figures imply, rather than left null — so a partially-filled rate card still produces a coherent floor instead of switching negotiation off by accident.</p>
+<hr>
+<h2>3. §5 — The 12-night worked example</h2>
+<p><strong>Status: already implemented. The engine returns the document&#39;s numbers exactly.</strong></p>
+<p>The stay is composed of whole months first, then whole weeks, then remainder nights, each charged at the host&#39;s stated figure for that period. Twelve nights is one week plus five nights.</p>
+<p>Run against the document&#39;s rate card:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Week</th>
+<th>5 nights</th>
+<th>Total</th>
+<th>Document</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Minimum</td>
+<td>₹25,000</td>
+<td>5 × ₹4,000 = ₹20,000</td>
+<td><strong>₹45,000</strong></td>
+<td>₹45,000</td>
+</tr>
+<tr>
+<td>Ideal</td>
+<td>₹28,000</td>
+<td>5 × ₹5,000 = ₹25,000</td>
+<td><strong>₹53,000</strong></td>
+<td>₹53,000</td>
+</tr>
+<tr>
+<td>Maximum / List</td>
+<td>₹32,000</td>
+<td>5 × ₹6,000 = ₹30,000</td>
+<td><strong>₹62,000</strong></td>
+<td>₹62,000</td>
+</tr>
+</tbody></table>
+<p>One guard the document does not mention and the engine enforces anyway: a composed total is never allowed to exceed what the same nights would cost one at a time. A host who set a weekly price above seven times their nightly rate would otherwise charge a guest <em>more</em> for staying longer.</p>
+<hr>
+<h2>4. §6 — What the customer sees</h2>
+<p><strong>Status: already implemented, and one leak closed this review.</strong></p>
+<p>The guest sees the Maximum/List total and never the other two. Verified at four doors:</p>
+<table>
+<thead>
+<tr>
+<th>Door</th>
+<th>State</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /pricing/quote</code></td>
+<td>Field-by-field response; the <code>internal</code> block is never spread in. Guarded by a source test.</td>
+</tr>
+<tr>
+<td><code>GET /properties/:id</code></td>
+<td><code>property_mini_price</code> and <code>property_ideal_price</code> are stripped for anyone who is not the listing&#39;s owner.</td>
+</tr>
+<tr>
+<td>The quote object itself</td>
+<td>No key beginning <code>min</code> or <code>ideal</code> exists in the guest block. Asserted over every key, not a fixed list.</td>
+</tr>
+<tr>
+<td><strong>SEO page titles and meta descriptions</strong></td>
+<td><strong>Was leaking. Now closed.</strong></td>
+</tr>
+</tbody></table>
+<p>The fourth was real. The SEO module offers an administrator a vocabulary of variables to write title and description patterns with — <code>{property_name}</code>, <code>{city}</code>, <code>{price}</code> — and <code>{min_price}</code> was among them. A single pattern would have put a host&#39;s negotiation floor into a page title, and a page title is the one place a leak cannot be taken back once Google has it. Neither of the two seeded templates used it and nothing published carried it, so no floor was actually exposed. The variable is removed, the bulk query no longer even selects the column, and typing <code>{min_price}</code> now returns &quot;not a variable&quot; rather than rendering silently.</p>
+<p><code>tests/internalPriceNeverPublic.test.js</code> (6 cases) covers all four doors, and asserts the vocabulary actually loaded first — an empty list would otherwise pass every check by proving nothing.</p>
+<hr>
+<h2>5. §7, §8 — Real-time booking and the below-minimum offer</h2>
+<p><strong>Status: already implemented.</strong></p>
+<p>One engine decides, and every entry point calls it — the website, the Android app&#39;s chat, and the WhatsApp bot. Before that consolidation an app guest who offered above the floor waited for a decision a website guest got instantly: the same offer on the same property, answered differently depending on which screen they were on.</p>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Offer ≥ Minimum</td>
+<td>Accepted automatically at <strong>the offered price</strong>, not at the floor. The host is notified that a booking was completed, not asked to approve it.</td>
+</tr>
+<tr>
+<td>Offer &lt; Minimum</td>
+<td>Sent to the host as a pending row with Accept / Counter / Decline. Never auto-accepted.</td>
+</tr>
+<tr>
+<td>Offer &gt; List price</td>
+<td>Refused outright — there is nothing to negotiate above the number on the screen.</td>
+</tr>
+<tr>
+<td>No Minimum configured</td>
+<td>Negotiation is off for that listing and the guest is told to book at the listed price (rule 5).</td>
+</tr>
+</tbody></table>
+<p>Counters run up to a fixed number of rounds each way. The original implementation allowed one round each and then stuck: a guest&#39;s only replies to a host&#39;s counter were yes and no.</p>
+<p>Covered by <code>tests/negotiationEngine.test.js</code> (24 cases), <code>negotiationGuards</code>, <code>negotiationCounter</code> and <code>negotiationAutoCounter</code>.</p>
+<hr>
+<h2>6. §9 — Real-time booking payment</h2>
+<p><strong>Status: already implemented.</strong></p>
+<p>An accepted price reaches checkout as a personal, time-limited coupon pinned to that guest, that property and those dates. Both routes to acceptance — automatic and host-approved — mint the same thing, so the two produce an identical checkout rather than two code paths that must be kept in step.</p>
+<p>The booking is then created at the agreed price. It does not revert to the list price at any point, and the booking endpoint recomputes the expected figure independently and refuses anything that disagrees with it by more than a rupee.</p>
+<hr>
+<h2>7. §10, §11, §12 — Advance booking, its pricing and its UI</h2>
+<p><strong>Status: NOT IMPLEMENTED. Built, deployed and verified live today.</strong></p>
+<p>This is the substantive gap. The host was asked for an advance-booking discount, the answer was written to <code>property_pricing.ppr_advance_discount</code>, and <code>pricingRuleFor</code> resolved it into <code>advanceDiscountPercent</code> on the rule object — which was then read by nothing. The column existed, the form field existed, the resolver existed. The arithmetic did not.</p>
+<p>Five listings on the live database carry a percentage today, four at 10% and one at 20%.</p>
+<h3>What was built</h3>
+<p>The discount is applied inside <code>nightlyRates.quoteRange</code> — the one function both the quote endpoint and booking creation call — rather than in a controller. That placement is the point: it means the price a guest is shown and the price the server will accept cannot disagree about whether a discount applied, and it makes §12&#39;s ordering rule true without the deposit code needing to know this rule exists.</p>
+<p>It reduces the room subtotal, which is how a negotiated offer and a coupon already behave. A larger party still pays its extra-guest charge in full.</p>
+<p>A same-day stay is untouched, per §13: real-time stays are priced by negotiation, and stacking a discount on a floor the host is negotiating against would move that floor without telling them.</p>
+<h3>Verified on the live site</h3>
+<p>Property 29290, twelve nights from 16 September, 10% advance discount. The figures below are read from the deployed website, not from a test:</p>
+<table>
+<thead>
+<tr>
+<th>Line</th>
+<th>Shown</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>₹8,000 × 12 nights</td>
+<td><strong>₹95,000</strong></td>
+</tr>
+<tr>
+<td>Advance booking discount (−10%)</td>
+<td><strong>− ₹9,500</strong></td>
+</tr>
+<tr>
+<td>Taxes &amp; GST (18%)</td>
+<td><strong>₹15,390</strong></td>
+</tr>
+<tr>
+<td>Total</td>
+<td><strong>₹1,00,890</strong></td>
+</tr>
+<tr>
+<td>Pay 10% now</td>
+<td><strong>₹10,089</strong></td>
+</tr>
+<tr>
+<td>Remaining before check-in</td>
+<td><strong>₹90,801</strong></td>
+</tr>
+</tbody></table>
+<p>Ten per cent of the <em>undiscounted</em> total would have been ₹11,210. The gap between that and ₹10,089 is §12&#39;s ordering rule, visible on screen.</p>
+<p>The same three lines appear on the property page, the review page and the payment page.</p>
+<h3>The part that was not about display</h3>
+<p>The checkout draft used to carry the browser&#39;s own room subtotal. Left that way, the discount would have shown on the property page and then been refused at checkout — the booking endpoint recomputes the same figure and rejects anything more than a rupee off, so <strong>every discounted listing would have become unbookable</strong>. And had it been accepted, the 10% deposit would have been taken on the larger number: §12&#39;s rule, inverted. The draft now carries the server&#39;s figure. The original price is re-derived for display only; nothing subtracts the discount twice.</p>
+<p><code>tests/advanceDiscount.test.js</code> (10 cases) pins the document&#39;s example — ₹62,000 → ₹55,800 — the ordering rule, the real-time exemption, and the rule that the discount never moves the negotiation floor.</p>
+<hr>
+<h2>8. §13 — Real-time vs advance</h2>
+<p><strong>Status: already implemented, as a server-side rule rather than a UI convention.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Document</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Booking window</td>
+<td>Current vs future</td>
+<td>A stay starting today is real-time; tomorrow or later is advance. Decided in one place, in Indian Standard Time, and used by every surface.</td>
+</tr>
+<tr>
+<td>Base pricing</td>
+<td>Night / Week / Month</td>
+<td>Same engine for both.</td>
+</tr>
+<tr>
+<td>Public starting price</td>
+<td>Maximum/List</td>
+<td>Both.</td>
+</tr>
+<tr>
+<td>Ideal / Minimum</td>
+<td>Internal</td>
+<td>Both. Never serialised.</td>
+</tr>
+<tr>
+<td>Negotiation</td>
+<td>Yes / No</td>
+<td>The offer endpoint refuses an offer on a stay that does not start today.</td>
+</tr>
+<tr>
+<td>Discount</td>
+<td>Negotiated price / Advance Booking Discount</td>
+<td>As above. The two cannot both apply to one stay.</td>
+</tr>
+<tr>
+<td>Host decision</td>
+<td>Only below minimum / none</td>
+<td>As above.</td>
+</tr>
+<tr>
+<td>Payment</td>
+<td>100% / 10% advance</td>
+<td><code>payMode: &quot;deposit&quot;</code> is refused on a same-day stay, with an explanation. The deposit option is not offered on one either.</td>
+</tr>
+</tbody></table>
+<p>The deposit exists to hold a date that is still some way off; a guest arriving this afternoon has nothing to hold.</p>
+<hr>
+<h2>9. §14 — Complete system flow</h2>
+<p><strong>Status: both flows match, with one presentational difference — see section 12 below.</strong></p>
+<p>The real-time flow runs exactly as drawn: dates → nights → three totals → show Maximum → offer → compare against Minimum → auto-accept or escalate → agreed price → 100% payment.</p>
+<p>The advance flow now runs exactly as drawn too, which it did not this morning: dates → nights → three totals internally → Maximum as the public price → apply the discount → show original, discount and final → 10% of the final → confirmed.</p>
+<hr>
+<h2>10. §15 — One source of truth</h2>
+<p><strong>Status: was half true. Now true on both clients.</strong></p>
+<p>The backend has had a single pricing engine since W2, and one public endpoint — <code>POST /pricing/quote</code> — that returns the full breakdown. What the document asks for is that the clients <em>use</em> it.</p>
+<p><strong>The website</strong> already called it, but the figure it handed to checkout was still its own. That is now the server&#39;s.</p>
+<p><strong>The Android app did not call it at all.</strong> It carried a copy of the rate card and worked the room charge out on the device. For a short stay the two agreed. For a long one they did not: the app divided a weekly price across the nights, while the server charges whole weeks at the host&#39;s weekly figure plus the remainder at the nightly rate. The advance discount would have made that divergence total — the app could not have booked any of the five discounted listings, because the price it sent would have been refused.</p>
+<p>The app now asks the server and renders the answer, with the local arithmetic kept only as a fallback so a quote that has not yet arrived never blanks out a price a guest is reading. <strong>Android build 32</strong> carries this.</p>
+<hr>
+<h2>11. §16, §17, §18, §19 — Validation, the non-negotiable rules, the final model</h2>
+<p><strong>Status: already implemented.</strong></p>
+<p>On §16: most of the list is not <em>validated</em> from the client — it is recomputed on the server and the client&#39;s figure is compared against it. That is the stronger form. Dates are refused unless they are canonical <code>DD-MM-YYYY</code>; nights, the three period prices, the three tiers, the discount eligibility and amount, the final price, the advance and the remaining balance are all derived server-side. Availability is re-checked inside the booking transaction, with the property serialised so two guests cannot both pass an overlap test and both insert.</p>
+<p>On §17, all ten rules hold, and each is a test rather than a convention. Every negotiation decision is written to <code>tbl_negotiation_log</code> with the pricing snapshot, the round, the channel and the outcome — including the automatic acceptances, which is the case most likely to be left out. The decision function itself is pure: it takes numbers and returns an action, touching neither the database nor the clock.</p>
+<p>On §18 and §19: one engine, two experiences, which is what is deployed.</p>
+<hr>
+<h2>12. Two questions for you</h2>
+<p>Neither is a defect. Both are places where the document is silent, or where following it literally would break something else, and the answer is yours rather than ours.</p>
+<h3>The 10% advance: on the price, or on the bill?</h3>
+<p>§12 works the example without tax: ₹55,800 → pay ₹5,580, remaining ₹50,220. The live platform charges GST on top of the room price, so 10% of what the guest actually owes is 10% of the tax-inclusive total.</p>
+<p>We have kept the tax-inclusive reading — in the live example above, ₹10,089 of a ₹1,00,890 bill — because the &quot;remaining&quot; figure then settles the whole bill, and a deposit taken on a pre-tax number would leave the guest owing more than the document&#39;s arithmetic implies. <strong>If you want the 10% taken on the pre-tax price instead, it is a one-line change</strong> and we will make it. It does not affect the ordering rule either way.</p>
+<h3>Should the guest&#39;s offer be entered as a stay total?</h3>
+<p>§7 states the negotiation in stay totals: list ₹62,000, guest offers ₹50,000. The offer box asks for a figure <strong>per night</strong>, which is what the host&#39;s screen, the app, the chat bot and the accepted-price coupon all speak. The decision reached is identical — the engine converts the stay floor to a per-night floor and compares — but the guest is typing a different unit from the one the document uses.</p>
+<p>We have added the stay total to the offer box, beside the stay&#39;s list total, so the guest now compares the same two numbers the document compares. <strong>Changing the input itself to a stay total is a larger change</strong>: the host would still be shown a per-night figure when deciding, unless every negotiation surface moves together. Tell us if you want that and we will plan it as its own piece of work rather than fold it into this one.</p>
+<hr>
+<h2>13. What changed today</h2>
+<table>
+<thead>
+<tr>
+<th>Change</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Advance Booking Discount applied inside the shared pricing function</td>
+<td><code>utils/nightlyRates.js</code></td>
+</tr>
+<tr>
+<td>Discount, original price and percentage returned by the quote endpoint</td>
+<td><code>controllers/pricing.controller.js</code></td>
+</tr>
+<tr>
+<td><code>{min_price}</code> removed from the SEO variable vocabulary; column no longer selected</td>
+<td><code>utils/seoTemplate.js</code>, <code>controllers/adminSeoBulk.controller.js</code></td>
+</tr>
+<tr>
+<td>Three-line breakdown on the property, review and payment pages</td>
+<td>Website</td>
+</tr>
+<tr>
+<td>Checkout draft carries the server&#39;s room subtotal, not the browser&#39;s</td>
+<td>Website</td>
+</tr>
+<tr>
+<td>Stay total shown beside the per-night offer</td>
+<td>Website</td>
+</tr>
+<tr>
+<td>App calls <code>/pricing/quote</code>; local arithmetic becomes the fallback</td>
+<td>Android, build 32</td>
+</tr>
+<tr>
+<td>Three-line breakdown in the app&#39;s price panel</td>
+<td>Android, build 32</td>
+</tr>
+<tr>
+<td>Release script passes <code>-AllowTestPayments</code> through to the artifact verifier</td>
+<td>Android build tooling</td>
+</tr>
+<tr>
+<td><code>tests/advanceDiscount.test.js</code>, <code>tests/internalPriceNeverPublic.test.js</code></td>
+<td>16 new cases</td>
+</tr>
+</tbody></table>
+<p>Everything above is deployed. The website and backend are live; the Android artifact is <strong>Aajoo-Homes-v1.0.0-build32.apk</strong>.</p>
+
+</body></html>
