@@ -138,6 +138,125 @@ class _BlogListCard extends StatelessWidget {
 
 /// Cover image, or a tinted panel. No post has an image yet, so the panel is
 /// the normal case rather than the exception.
+/// The post's pictures, as a swipeable slider.
+///
+/// The web post page got this first; the app read the same posts and showed
+/// only the first picture, so a gallery written in the admin was invisible on
+/// the device most of these are read on.
+///
+/// With one picture it renders exactly what [BlogCover] renders, so nothing
+/// changes for the posts that have one and the controls stay hidden. No
+/// carousel package: a PageView, a dot row and two arrows is the whole thing.
+class BlogGallery extends StatefulWidget {
+  final BlogPost post;
+  final double height;
+  const BlogGallery({super.key, required this.post, required this.height});
+
+  @override
+  State<BlogGallery> createState() => _BlogGalleryState();
+}
+
+class _BlogGalleryState extends State<BlogGallery> {
+  final _controller = PageController();
+  int _at = 0;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _go(int delta) {
+    final count = widget.post.images.length;
+    if (count < 2) return;
+    // Wraps, so the last photo's "next" is the first rather than nothing.
+    final next = (_at + delta + count) % count;
+    _controller.animateToPage(
+      next,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
+  Widget _arrow(IconData icon, VoidCallback onTap, Alignment align) {
+    return Align(
+      alignment: align,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Material(
+          color: Colors.white.withOpacity(0.92),
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(7),
+              child: Icon(icon, size: 20, color: kInk),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shots = widget.post.images;
+    if (shots.length < 2) {
+      return BlogCover(post: widget.post, height: widget.height);
+    }
+
+    final fallback = Container(
+      color: kIndigo50,
+      alignment: Alignment.center,
+      child: Icon(Icons.article_outlined,
+          size: widget.height / 4.5, color: kIndigo600),
+    );
+
+    return SizedBox(
+      height: widget.height,
+      child: Stack(
+        children: [
+          PageView.builder(
+            controller: _controller,
+            itemCount: shots.length,
+            onPageChanged: (i) => setState(() => _at = i),
+            itemBuilder: (_, i) => Image.network(
+              shots[i],
+              fit: BoxFit.cover,
+              width: double.infinity,
+              errorBuilder: (_, __, ___) => fallback,
+            ),
+          ),
+          _arrow(Icons.chevron_left, () => _go(-1), Alignment.centerLeft),
+          _arrow(Icons.chevron_right, () => _go(1), Alignment.centerRight),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 10,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(shots.length, (i) {
+                final on = i == _at;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: on ? 18 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: on ? Colors.white : Colors.white.withOpacity(0.55),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class BlogCover extends StatelessWidget {
   final BlogPost post;
   final double height;
@@ -199,7 +318,7 @@ class BlogPostScreen extends StatelessWidget {
           const SizedBox(height: 16),
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: BlogCover(post: post, height: 200),
+            child: BlogGallery(post: post, height: 200),
           ),
           const SizedBox(height: 18),
           ...paras.map((p) => Padding(

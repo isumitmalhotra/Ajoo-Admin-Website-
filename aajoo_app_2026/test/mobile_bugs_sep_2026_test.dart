@@ -278,6 +278,39 @@ void main() {
     });
   });
 
+  group('blog gallery — the app shows every picture, not just the first', () {
+    // The web post page got a slider first. The app read the same posts and
+    // rendered only the cover, so a gallery written in the admin was invisible
+    // on the device most of these are read on.
+    final model = codeOf('lib/models/blog_model.dart');
+    final screen = codeOf('lib/ui/screens_renter/blog/blog_screens.dart');
+
+    test('the model reads the images array', () {
+      expect(model, contains('final List<String> images'));
+      expect(model, contains("json['images']"));
+    });
+
+    test('it still understands the old single-cover shape', () {
+      // The API keeps sending blogImg.afile_path for the first picture, so a
+      // build in the wild — and this one, against an older server — keeps
+      // showing a cover rather than nothing.
+      expect(model, contains("json['blogImg.afile_path']"));
+      expect(model, contains('gallery.isNotEmpty'));
+    });
+
+    test('the post screen renders the gallery', () {
+      expect(screen, contains('class BlogGallery'));
+      expect(screen, contains('BlogGallery(post: post, height: 200)'));
+      expect(screen, contains('PageView.builder'));
+    });
+
+    test('one picture falls back to the plain cover', () {
+      // No arrows and no dots over a single image.
+      expect(screen, contains('if (shots.length < 2)'));
+      expect(screen, contains('BlogCover(post: widget.post, height: widget.height)'));
+    });
+  });
+
   group('#26 — the opening line', () {
     // Word for word the website's, so a guest who writes from the site and
     // then from the app does not read as two different people.

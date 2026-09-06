@@ -9,7 +9,15 @@ class BlogPost {
   final String title;
   final String shortDesc;
   final String longDesc;
+  /// The first picture — the card thumbnail.
   final String? imageUrl;
+
+  /// Every picture on the post, oldest first.
+  ///
+  /// A post used to carry one cover; it carries a gallery now, and the post
+  /// screen shows it as a slider. The API still sends the flattened
+  /// "blogImg.afile_path" for the first one, so an older build keeps working.
+  final List<String> images;
 
   /// The stay a property post is about.
   ///
@@ -25,20 +33,31 @@ class BlogPost {
     required this.shortDesc,
     required this.longDesc,
     this.imageUrl,
+    this.images = const [],
     this.propertyId,
     this.propertyName,
   });
 
   factory BlogPost.fromJson(Map<String, dynamic> json) {
+    final raw = json['images'];
+    final gallery = raw is List
+        ? raw
+            .map((e) => (e is Map ? e['url'] : e)?.toString().trim() ?? '')
+            .where((u) => u.isNotEmpty)
+            .toList()
+        : <String>[];
     final img = json['blogImg.afile_path'] ??
         (json['blogImg'] is Map ? json['blogImg']['afile_path'] : null);
-    final url = img?.toString().trim();
+    final url = gallery.isNotEmpty ? gallery.first : img?.toString().trim();
     return BlogPost(
       id: int.tryParse(json['blog_id']?.toString() ?? '') ?? 0,
       title: (json['blog_title'] ?? '').toString().trim(),
       shortDesc: (json['blog_short_desc'] ?? '').toString().trim(),
       longDesc: (json['blog_long_desc'] ?? '').toString().trim(),
       imageUrl: (url == null || url.isEmpty) ? null : url,
+      images: gallery.isNotEmpty
+          ? gallery
+          : (url == null || url.isEmpty) ? const [] : [url],
       propertyId: int.tryParse(json['blog_property_id']?.toString() ?? ''),
       propertyName: (json['blog_property_name']?.toString().trim().isEmpty ?? true)
           ? null
