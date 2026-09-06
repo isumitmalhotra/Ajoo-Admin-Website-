@@ -54,7 +54,11 @@ $apk = Join-Path $root 'build/app/outputs/flutter-apk/app-release.apk'
 if (-not (Test-Path $apk)) { throw "APK not found at $apk" }
 
 Write-Host "`nVerifying the artifact" -ForegroundColor Cyan
-& python (Join-Path $PSScriptRoot 'verify_release_apk.py') $apk $ApiBaseUrl
+# The verifier has to be TOLD, or it fails a QA build on the very key that
+# build was asked for. The switch reached this script and stopped here.
+$verifyArgs = @((Join-Path $PSScriptRoot 'verify_release_apk.py'), $apk, $ApiBaseUrl)
+if ($AllowTestPayments) { $verifyArgs += '--allow-test-payments' }
+& python @verifyArgs
 if ($LASTEXITCODE -ne 0) { throw "APK verification failed — do not ship this build" }
 
 $hash = (Get-FileHash $apk -Algorithm SHA256).Hash
