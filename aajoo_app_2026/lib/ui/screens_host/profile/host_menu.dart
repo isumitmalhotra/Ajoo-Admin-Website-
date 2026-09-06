@@ -167,7 +167,14 @@ List<HostMenuEntry> hostMenuEntries({VoidCallback? beforeNavigate}) {
     HostMenuEntry(
       icon: Iconsax.document_text,
       label: 'Host Terms & Conditions',
-      onTap: () => go(() => const TermsPage(isHost: true)),
+      // The client's v1.0 text, from the same endpoint the website reads.
+      // TermsPage still exists and still fetches the older, shorter copy from
+      // common/term-condition-host — kept only so an installed build that has
+      // not updated keeps working.
+      onTap: () => go(() => const LegalDocumentPage(
+            documentKey: 'host_terms',
+            title: 'Host Terms & Conditions',
+          )),
     ),
     // The agreement a host accepts before publishing. It had no page here, no
     // page on the website and no page in the wizard — only a checkbox naming
@@ -180,7 +187,10 @@ List<HostMenuEntry> hostMenuEntries({VoidCallback? beforeNavigate}) {
     HostMenuEntry(
       icon: Iconsax.shield,
       label: 'Privacy Policy',
-      onTap: () => go(() => const PrivacyPolicyPage()),
+      onTap: () => go(() => const LegalDocumentPage(
+            documentKey: 'privacy_policy',
+            title: 'Privacy Policy',
+          )),
     ),
     HostMenuEntry(
       icon: Iconsax.calendar_remove,

@@ -10,6 +10,7 @@ import 'package:rent_home/ui/screens_common/terms_and_conditions/terms_condition
 import 'package:rent_home/ui/screens_common/settings/change_password_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:rent_home/ui/screens_common/cancellation_policy/cancellation_policy_page.dart';
+import 'package:rent_home/ui/screens_common/legal/legal_document_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -294,23 +295,29 @@ class _SettingsPageState extends State<SettingsPage> {
                   MaterialPageRoute(builder: (context) => const AboutPage()));
             },
           ),
+          // Both of these used to fetch the app's OWN copy of the text, which
+          // was shorter and older than the website's and older still than the
+          // client's supplied v1.0. Three surfaces, three privacy policies.
+          // They read the shared endpoint now.
           SettingsTile(
             title: "Terms and Conditions",
-            onTap: () {
-              // Handle Terms and Conditions action
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => const TermsPage()));
-            },
+            onTap: () => Navigator.push(
+                context,
+                CupertinoPageRoute(
+                    builder: (context) => const LegalDocumentPage(
+                          documentKey: 'guest_terms',
+                          title: 'Guest Terms & Conditions',
+                        ))),
           ),
           SettingsTile(
             title: "Privacy Policy",
-            onTap: () {
-              // Handle Privacy Policy action
-              Navigator.push(
-                  context,
-                  CupertinoPageRoute(
-                      builder: (context) => const PrivacyPolicyPage()));
-            },
+            onTap: () => Navigator.push(
+                context,
+                CupertinoPageRoute(
+                    builder: (context) => const LegalDocumentPage(
+                          documentKey: 'privacy_policy',
+                          title: 'Privacy Policy',
+                        ))),
           ),
           SettingsTile(
             title: "Cancellation & Refund Policy",
@@ -335,7 +342,7 @@ class _SettingsPageState extends State<SettingsPage> {
             onTap: _handleRateApp,
           ),
           const SizedBox(height: 20),
-          const SectionHeader(title: "Version 1.0.0 (build 34)"),
+          const SectionHeader(title: "Version 1.0.0 (build 35)"),
           LogoutTile(
             onTap: _handleLogout,
           ),
