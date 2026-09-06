@@ -29,6 +29,13 @@ class DioConfig {
   /// Long enough for a Render container to wake, short enough that a genuinely
   /// dead network gives up rather than hanging forever.
   static const Duration connectTimeout = Duration(seconds: 20);
+
+  /// How long to wait before each retry of a connection failure.
+  /// Two entries means two retries; see coldStartRetry().
+  static const List<Duration> retryDelays = [
+    Duration(seconds: 3),
+    Duration(seconds: 12),
+  ];
   static const Duration receiveTimeout = Duration(seconds: 60);
   static const Duration sendTimeout = Duration(seconds: 30);
 
@@ -62,37 +69,51 @@ class DioConfig {
   ///    answer, and repeating it just doubles the load.
   ///  - only idempotent-by-intent calls are safe to repeat blindly, so anything
   ///    that creates money movement opts out via `extra['noRetry'] = true`.
-  ///  - one attempt, after a short pause. More would just extend the spinner.
+  ///  - two attempts, 3s then 12s. Enough for a container to wake or a deploy
+  ///    to finish; not so many that a dead network hangs for a minute.
   static Interceptor coldStartRetry() {
     return InterceptorsWrapper(
       onError: (DioException e, handler) async {
         final isConnectionFailure = e.type == DioExceptionType.connectionError ||
             e.type == DioExceptionType.connectionTimeout ||
             e.type == DioExceptionType.receiveTimeout;
-        final alreadyRetried = e.requestOptions.extra['__retried'] == true;
         final optedOut = e.requestOptions.extra['noRetry'] == true;
-
-        if (!isConnectionFailure || alreadyRetried || optedOut) {
+        if (!isConnectionFailure || optedOut) {
           return handler.next(e);
         }
 
-        await Future<void>.delayed(const Duration(seconds: 3));
-        try {
-          final options = e.requestOptions;
-          options.extra = {...options.extra, '__retried': true};
-          final dio = Dio(BaseOptions(
-            baseUrl: options.baseUrl,
-            connectTimeout: connectTimeout,
-            receiveTimeout: receiveTimeout,
-            sendTimeout: sendTimeout,
-          ));
-          final response = await dio.fetch(options);
-          return handler.resolve(response);
-        } catch (_) {
-          // The retry failed too — surface the ORIGINAL error, which is the one
-          // that describes what actually went wrong.
-          return handler.next(e);
+        /*
+         * The waits LOOP here rather than relying on this interceptor firing
+         * again, because it cannot: the retry goes through a bare Dio with no
+         * interceptors attached, so a second attempt driven by re-entry would
+         * never happen. That is why a single 3-second retry was all this ever
+         * did, whatever the delay list said.
+         *
+         * And one 3-second retry does not cover the case it was written for. A
+         * Render container that has gone to sleep takes 30-50 seconds to wake,
+         * and a deploy restarts it for about as long — a tester who hits either
+         * window fails on both attempts and is told the connection errored.
+         * Three seconds then twelve covers a restart, without leaving somebody
+         * staring at a spinner for a minute when the network is simply down.
+         */
+        final retryClient = Dio(BaseOptions(
+          baseUrl: e.requestOptions.baseUrl,
+          connectTimeout: connectTimeout,
+          receiveTimeout: receiveTimeout,
+          sendTimeout: sendTimeout,
+        ));
+        for (final delay in retryDelays) {
+          await Future<void>.delayed(delay);
+          try {
+            final response = await retryClient.fetch(e.requestOptions);
+            return handler.resolve(response);
+          } catch (_) {
+            // Try the next wait, if there is one.
+          }
         }
+        // Every attempt failed — surface the ORIGINAL error, which is the one
+        // that describes what actually went wrong.
+        return handler.next(e);
       },
     );
   }
