@@ -30,6 +30,7 @@ import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/ui/screens_host/listing/components/location_picker_sheet.dart';
 import 'package:rent_home/ui/screens_host/listing/components/state_city_fields.dart';
 import 'package:rent_home/service/geocode_service.dart';
+import 'package:rent_home/ui/screens_host/listing/components/agreement_block.dart';
 
 class ListingWizardScreen extends StatefulWidget {
   const ListingWizardScreen({super.key, this.propertyId});
@@ -1254,6 +1255,15 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
                 onChanged: (v) => c.toggleDeclaration(d.key, v),
               ),
           ],
+        ),
+        // The Host Agreement gets its own section: the text to read, then the
+        // one checkbox the agreement itself specifies. It is not a
+        // declaration row because a tick beside "I accept the Host Agreement"
+        // — with nothing to read — is not acceptance of anything.
+        ListingSection(
+          title: 'Host Agreement',
+          sub: 'Read the agreement, then accept it to publish.',
+          children: [HostAgreementBlock(c: c)],
         ),
       ],
     );

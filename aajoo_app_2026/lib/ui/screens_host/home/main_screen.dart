@@ -13,6 +13,7 @@ import '../../../constants.dart';
 import '../../../utils/fonts.dart';
 import '../../screens_common/auth/auth_controller.dart';
 import 'host_home_screen.dart';
+import '../../screens_common/legal/agreement_gate.dart';
 
 /// Host shell — new teal/orange design (scaffold host_shell): a bottom nav with
 /// a raised center "Add Property" FAB. Backed by HostTabProvider (so the drawer +
@@ -52,6 +53,12 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     NotificationService().init();
+    // Requirement 4: a host who owes a NEW version of the Host Agreement is
+    // asked before continuing. Post-frame so there is a route to show it on,
+    // and fire-and-forget so a slow network never delays the portal.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) maybeShowAgreementGate(context);
+    });
   }
 
   @override

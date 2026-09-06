@@ -22,6 +22,7 @@ import 'package:rent_home/ui/screens_host/notifications/host_notifications_scree
 import 'package:rent_home/ui/screens_common/refer/refer_screen.dart';
 import 'package:rent_home/ui/screens_host/settlements/host_settlements_screen.dart';
 import 'package:rent_home/ui/screens_common/cancellation_policy/cancellation_policy_page.dart';
+import 'package:rent_home/ui/screens_common/legal/legal_document_page.dart';
 
 /// Every page a host can reach, declared once (A-78).
 ///
@@ -167,6 +168,14 @@ List<HostMenuEntry> hostMenuEntries({VoidCallback? beforeNavigate}) {
       icon: Iconsax.document_text,
       label: 'Host Terms & Conditions',
       onTap: () => go(() => const TermsPage(isHost: true)),
+    ),
+    // The agreement a host accepts before publishing. It had no page here, no
+    // page on the website and no page in the wizard — only a checkbox naming
+    // it. Same words as the website's /host-agreement: both read one endpoint.
+    HostMenuEntry(
+      icon: Iconsax.clipboard_text,
+      label: 'Host Agreement',
+      onTap: () => go(() => const LegalDocumentPage()),
     ),
     HostMenuEntry(
       icon: Iconsax.shield,

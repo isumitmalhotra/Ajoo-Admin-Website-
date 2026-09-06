@@ -18,6 +18,8 @@ import 'package:rent_home/models/listing_schema.dart';
 import 'package:rent_home/service/listing_service.dart';
 import 'package:rent_home/utils/money.dart';
 import '../../../utils/email_validation.dart';
+import '../../../models/legal_document.dart';
+import '../../../service/legal_service.dart';
 
 /// The seven declarations. All must be true before a listing can be submitted.
 const List<MapEntry<String, String>> kListingDeclarations = [
@@ -25,7 +27,11 @@ const List<MapEntry<String, String>> kListingDeclarations = [
       "The information I've provided is accurate"),
   MapEntry('declaration_documents_genuine', 'My documents are genuine'),
   MapEntry('declaration_terms', "I accept Aajoo's Terms"),
-  MapEntry('declaration_host_agreement', 'I accept the Host Agreement'),
+  // declaration_host_agreement is deliberately NOT here. It has its own block
+  // on step 5, with the agreement to read and the wording the agreement
+  // itself specifies. A checkbox next to the words "I accept the Host
+  // Agreement", for a document published nowhere, is not acceptance of
+  // anything — which is what this used to be.
   MapEntry('declaration_cancellation', 'I agree to the cancellation policy'),
   MapEntry('declaration_commission', 'I agree to the commission policy'),
   MapEntry('declaration_verification', 'I understand the verification process'),
@@ -102,6 +108,17 @@ class ListingWizardController extends GetxController {
   // ── Step 5 — verification & publish ───────────────────────────────────────
   final RxMap<String, dynamic> p5 = <String, dynamic>{}.obs;
   final RxMap<String, bool> declarations = <String, bool>{}.obs;
+
+  // ── The Host Agreement (Developer Requirements 1-3) ──────────────────────
+  /// The agreement text, from the server. Null until it loads, or if it fails.
+  final Rxn<LegalDocument> agreement = Rxn<LegalDocument>();
+  /// True once this host has accepted the CURRENT version — either earlier
+  /// (a second listing does not make them read it again) or just now.
+  final RxBool agreementDone = false.obs;
+  /// The host has scrolled to the end of the text on this screen.
+  final RxBool agreementRead = false.obs;
+  final RxBool agreementBusy = false.obs;
+  final RxString agreementError = ''.obs;
   final RxMap<String, dynamic> readiness = <String, dynamic>{}.obs;
 
   bool get isLastStep => step.value == kListingSteps.length - 1;
@@ -125,9 +142,48 @@ class ListingWizardController extends GetxController {
     return schema.value?.categoryFlows[cat];
   }
 
-  /// Every declaration ticked?
+  /// Every declaration ticked, AND the Host Agreement accepted.
+  ///
+  /// The agreement is not one of the checkboxes any more: it is a record on
+  /// the server, which the server re-checks on submit. This flag only decides
+  /// whether the button is enabled.
   bool get allDeclared =>
-      kListingDeclarations.every((d) => declarations[d.key] == true);
+      kListingDeclarations.every((d) => declarations[d.key] == true) &&
+      agreementDone.value;
+
+  /// Load the agreement and this host's standing. Safe to call more than once.
+  Future<void> loadAgreement() async {
+    final results = await Future.wait([
+      LegalService.instance.document('host_agreement'),
+      LegalService.instance.outstanding(),
+    ]);
+    agreement.value = results[0] as LegalDocument?;
+    final owed = (results[1] as List<OutstandingLegal>)
+        .any((d) => d.key == 'host_agreement');
+    agreementDone.value = !owed;
+    if (!owed) declarations['declaration_host_agreement'] = true;
+    declarations.refresh();
+  }
+
+  /// Accept it. Recorded the moment the host agrees rather than at submit —
+  /// the ledger should hold the time they consented, and a host who accepts
+  /// and then abandons the wizard has still accepted.
+  Future<void> acceptAgreement() async {
+    if (agreementBusy.value || agreementDone.value) return;
+    agreementBusy.value = true;
+    agreementError.value = '';
+    final problem = await LegalService.instance.accept('host_agreement');
+    agreementBusy.value = false;
+    if (problem != null) {
+      // Left unaccepted on purpose: a tick that survives a failed write would
+      // send the host into a submit the server refuses, with no idea why.
+      agreementError.value = problem;
+      return;
+    }
+    agreementDone.value = true;
+    declarations['declaration_host_agreement'] = true;
+    declarations.refresh();
+  }
 
   @override
   void onInit() {
@@ -148,6 +204,11 @@ class ListingWizardController extends GetxController {
     everAll([step, propertyId], (_) {
       if (step.value == 4 && propertyId.value != null) refreshReadiness();
     });
+
+    // The agreement, once. Fetched at init rather than when step 5 opens so
+    // the block is already populated when the host gets there — a wall of
+    // "Loading the agreement..." at the last step is where people give up.
+    loadAgreement();
 
     _load();
   }
@@ -793,6 +854,10 @@ class ListingWizardController extends GetxController {
       await _service.submit({
         'property_id': id,
         for (final d in kListingDeclarations) d.key: true,
+        // Still required by the server, just no longer one of the checkboxes.
+        // It is true because the acceptance is on file — which the server
+        // re-checks against its own ledger rather than trusting this flag.
+        'declaration_host_agreement': true,
       });
       return null;
     } catch (e) {

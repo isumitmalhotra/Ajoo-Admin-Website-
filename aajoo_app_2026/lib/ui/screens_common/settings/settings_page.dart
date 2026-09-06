@@ -335,7 +335,7 @@ class _SettingsPageState extends State<SettingsPage> {
             onTap: _handleRateApp,
           ),
           const SizedBox(height: 20),
-          const SectionHeader(title: "Version 1.0.0 (build 33)"),
+          const SectionHeader(title: "Version 1.0.0 (build 34)"),
           LogoutTile(
             onTap: _handleLogout,
           ),
