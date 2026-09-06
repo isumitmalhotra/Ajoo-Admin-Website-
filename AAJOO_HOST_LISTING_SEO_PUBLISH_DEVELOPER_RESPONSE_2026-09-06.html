@@ -1,0 +1,970 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Host Listing — QA + SEO Publish Fix</title>
+<style>
+  @page { size: A4; margin: 20mm 17mm 22mm; }
+
+  :root {
+    --navy: #1B2447;
+    --teal: #0F766E;
+    --ink:  #1F2937;
+    --muted:#5B6472;
+    --line: #D9DEE7;
+    --soft: #F4F6F9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: #fff;
+    /* Cambria before Georgia deliberately: Georgia ships OLD-STYLE figures, so
+       "six P0s" reads as "six Pos" and every number sits at a different
+       height. This document is full of IDs and money. Cambria has lining
+       figures and prints just as well. */
+    font-family: Cambria, "Palatino Linotype", Georgia, "Times New Roman", serif;
+    font-variant-numeric: lining-nums;
+    font-size: 10.4pt;
+    line-height: 1.58;
+    color: var(--ink);
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---- cover ------------------------------------------------------- */
+  .cover { page-break-after: always; padding-top: 58mm; }
+  .cover .rule { width: 54px; height: 4px; background: var(--teal); margin-bottom: 22px; }
+  .cover h1 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    font-size: 27pt; line-height: 1.2; color: var(--navy);
+    margin: 0 0 16px; font-weight: 600; letter-spacing: -0.4px;
+  }
+  .cover .sub { font-size: 11.5pt; color: var(--muted); margin: 0 0 40px; max-width: 118mm; }
+  .cover .meta {
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 9pt;
+    color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px;
+  }
+  .cover .meta strong { color: var(--navy); font-weight: 600; }
+
+  /* ---- headings ---------------------------------------------------- */
+  h2, h3, h4 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    color: var(--navy); font-weight: 600; page-break-after: avoid;
+  }
+  h2 {
+    font-size: 15pt; margin: 26px 0 12px; padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--line); letter-spacing: -0.2px;
+  }
+  h3 {
+    font-size: 11.4pt; margin: 18px 0 7px; color: var(--teal);
+    letter-spacing: .1px;
+  }
+  h4 { font-size: 10.6pt; margin: 14px 0 6px; }
+
+  p { margin: 0 0 10px; orphans: 3; widows: 3; }
+
+  /* ---- lists ------------------------------------------------------- */
+  ul, ol { margin: 0 0 11px; padding-left: 20px; }
+  li { margin-bottom: 5px; }
+  li > ul, li > ol { margin-top: 5px; }
+
+  /* ---- emphasis & code --------------------------------------------- */
+  strong { color: var(--navy); font-weight: 700; }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 8.7pt; background: var(--soft);
+    border: 1px solid var(--line); border-radius: 3px;
+    padding: 0.5px 4px; color: #33405A;
+    /* long identifiers must not push the page sideways */
+    word-break: break-word;
+  }
+  pre { background: var(--soft); border: 1px solid var(--line); border-radius: 5px;
+        padding: 10px 12px; overflow-x: auto; page-break-inside: avoid; }
+  pre code { border: 0; background: none; padding: 0; font-size: 8.6pt; }
+
+  /* ---- tables ------------------------------------------------------ */
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 16px;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.7pt;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }   /* repeat header across pages */
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  th {
+    background: var(--navy); color: #fff; text-align: left; font-weight: 600;
+    padding: 7px 9px; border: 1px solid var(--navy); line-height: 1.35;
+  }
+  td {
+    padding: 6px 9px; border: 1px solid var(--line); vertical-align: top;
+    line-height: 1.45;
+  }
+  tbody tr:nth-child(even) td { background: #FAFBFD; }
+  /* strong is navy, and a header cell IS navy — bold text in a header was
+     rendering invisible. Headers set their own colour; inherit it. */
+  th strong, th b { color: inherit; }
+  td code { font-size: 8.1pt; }
+
+  /* ---- callouts ---------------------------------------------------- */
+  blockquote {
+    margin: 14px 0; padding: 10px 14px;
+    background: #F2F8F7; border-left: 3px solid var(--teal);
+    page-break-inside: avoid;
+  }
+  blockquote p { margin: 0 0 6px; }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+
+  /* Keep a section heading with the text that follows it. */
+  h2 + p, h3 + p, h2 + table, h3 + table, h2 + ul, h3 + ul { page-break-before: avoid; }
+</style></head>
+<body>
+  <section class="cover">
+    <div class="rule"></div>
+    <h1>Host Listing — QA + SEO Publish Fix</h1>
+    <p class="sub">A finding-by-finding response to the QA + SEO Publish Fix specification: what the platform already does, measured against the live site, and the four findings that were not true of the code and were fixed while answering it.</p>
+    <div class="meta">
+      <strong>Aajoo Homes &mdash; Host Listing · QA + SEO Publish Fix</strong><br>
+      Prepared 6 September 2026 by the Zyphex Tech development team<br>
+      Verified against the live development backend and database
+    </div>
+  </section>
+  <h2>1. Response summary</h2>
+<p>This answers <strong>AAJOO HOMES HOST LIST PROPERTY — QA + SEO PUBLISH FIX SPEC</strong>, section by section and finding by finding, in the order the document raises them. Every ID is carried over unchanged.</p>
+<p>We agree with the document&#39;s central decision and it is what the platform already does: <strong>the Host does not configure the CMS SEO engine.</strong> The Host fills in the listing, an Admin approves it, and the system derives the public page — slug, title, description, canonical, robots, Open Graph, schema and sitemap entry — from the listing&#39;s own data. The full CMS controls stay where they are, in the Admin SEO screens, for the SEO team.</p>
+<p>Four things in section 4 were <strong>not</strong> true of the code when we checked, including one that made every Host submission report a failure it had not suffered. All four were fixed during this review and are described in section 12.</p>
+<table>
+<thead>
+<tr>
+<th>Response at a glance</th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Findings answered</td>
+<td><strong>14 numbered IDs + 11 sections</strong></td>
+</tr>
+<tr>
+<td>Already implemented, verified against the live site</td>
+<td><strong>10</strong></td>
+</tr>
+<tr>
+<td>Changed during this review to match the spec</td>
+<td><strong>4</strong></td>
+</tr>
+<tr>
+<td>Open</td>
+<td><strong>0 engineering. 1 content decision — see section 13</strong></td>
+</tr>
+<tr>
+<td>Backend</td>
+<td><code>789c535</code></td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td><code>b3cc15e</code></td>
+</tr>
+<tr>
+<td>Android</td>
+<td><code>1.0.0 (29)</code> — not part of this document; the app is not crawled</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>How the evidence was gathered.</strong> Everything marked <em>verified live</em> was measured against <code>www.aajoohomes.com</code> and the production database on 6 September 2026, not read off the source. Response codes, <code>&lt;head&gt;</code> markup, the sitemap and the stored SEO rows are quoted as they came back. Where an item could only be checked by reading code, that is stated.</p>
+</blockquote>
+<h2>2. Section 1 — The QA decision: do not block the listing on the full CMS SEO engine</h2>
+<p><strong>Agreed, and this is the existing design.</strong> Phase 2 and Phase 3 of the CMS SEO specification are not on the Host&#39;s path and never were. The Host form collects listing data; the SEO page is generated from it.</p>
+<p>The table below is the document&#39;s own, with what the platform does in each state and how we know.</p>
+<table>
+<thead>
+<tr>
+<th>Listing state</th>
+<th>Required behaviour</th>
+<th>What the platform does</th>
+<th>Verified</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Draft</td>
+<td>No public SEO page; private, non-indexable</td>
+<td>A draft is created with <code>is_active = 0</code>, <code>verification_status = &#39;draft&#39;</code>. Nothing public exists.</td>
+<td>Live: <code>/property/patiyal-homes</code> (a draft) answers <strong>404</strong> with <code>noindex, follow</code>.</td>
+</tr>
+<tr>
+<td>Submitted / Review</td>
+<td>No indexable public page</td>
+<td>Submitting sets <code>is_active = 0</code> and <code>is_verify = 0</code>. The listing leaves the public site while it waits.</td>
+<td>Code + database: all 11 non-approved real-host listings carry <code>is_active = 0</code>.</td>
+</tr>
+<tr>
+<td>Rejected / Changes requested</td>
+<td>No indexable page; an existing public page must not become live</td>
+<td>Both decisions set <code>is_active = 0</code>. The page 404s and drops out of the sitemap.</td>
+<td>Code, <code>listingStep5.controller.js</code> review path.</td>
+</tr>
+<tr>
+<td>Approved</td>
+<td>Generate/update the SEO page automatically</td>
+<td>Approval regenerates the whole SEO identity from the listing <strong>as it stands at that moment</strong>, then sets the listing live.</td>
+<td>Live: all six approved listings have a generated slug, title and description.</td>
+</tr>
+<tr>
+<td>Live</td>
+<td>Accessible, indexable, canonical, in the sitemap</td>
+<td>Verified below, section 7.</td>
+<td>Live.</td>
+</tr>
+<tr>
+<td>Suspended / Archived</td>
+<td>Not indexable; sitemap entry removed</td>
+<td>Suspension sets <code>is_active = 0</code>; the resolver then reports the page non-live and the sitemap query excludes it. <strong>As of this review the sitemap cache is purged immediately</strong> rather than within the hour — see SEO-10.</td>
+<td>Code + the SEO-10 fix.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>3. Section 2 — The minimum SEO engine, component by component</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Required source</th>
+<th>What we built</th>
+<th>Verified live</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SEO URL / slug</td>
+<td>Property name + location/category</td>
+<td><code>property_seo.pse_slug</code>, generated by <code>utils/listingSeo.js</code>. Lowercase, hyphenated, accents folded, <code>&amp;</code> written as &quot;and&quot;, every other character outside <code>a–z0–9</code> collapsed to a hyphen, no leading or trailing hyphen, no trailing slash.</td>
+<td>8 stored rows, <strong>8 distinct slugs, 0 blank</strong>. Example: <code>garg-resorts-karnal-haryana</code>.</td>
+</tr>
+<tr>
+<td>Meta title</td>
+<td>Name + type + location + brand</td>
+<td>Assembled most-important-part-first and fitted to 60 characters, so the brand tail is what gets sacrificed rather than the property&#39;s name.</td>
+<td>Stored title lengths across the eight live rows: <strong>39, 43, 43, 52, 54, 54, 57, 60</strong> — inside the 60 ceiling, most inside the 50–60 target.</td>
+</tr>
+<tr>
+<td>Meta description</td>
+<td>Description + location + amenities/experience</td>
+<td>Sentences are <em>added while they fit</em> rather than joined and cut, so a description never ends mid-highlight.</td>
+<td>Stored description lengths: <strong>129, 134, 136, 141, 152, 158, 159, 159</strong> — every one inside the 120–160 window.</td>
+</tr>
+<tr>
+<td>Canonical</td>
+<td>Final public URL</td>
+<td>Self-canonical, absolute HTTPS.</td>
+<td>Live <code>&lt;link rel=&quot;canonical&quot; href=&quot;https://www.aajoohomes.com/property/garg-resorts-karnal-haryana&quot; /&gt;</code>.</td>
+</tr>
+<tr>
+<td>Robots</td>
+<td>Publication status</td>
+<td>Non-live ⇒ <code>noindex</code>; live ⇒ <code>index, follow</code>.</td>
+<td>Live: approved page <code>index, follow</code>; draft page <code>noindex, follow</code>.</td>
+</tr>
+<tr>
+<td>Open Graph</td>
+<td>Title/description/primary image</td>
+<td><code>og:type</code>, <code>og:site_name</code>, <code>og:locale</code>, <code>og:title</code>, <code>og:description</code>, <code>og:url</code>, <code>og:image</code>.</td>
+<td>Live, all seven present on the property page.</td>
+</tr>
+<tr>
+<td>Schema</td>
+<td>Real listing data only</td>
+<td><code>LodgingBusiness</code> with address, geo, offer and amenity features, plus <code>BreadcrumbList</code>.</td>
+<td>Live in the page source.</td>
+</tr>
+<tr>
+<td>Breadcrumb</td>
+<td>Home → Location → Property</td>
+<td>Generated from the listing&#39;s own city and state. No Host input.</td>
+<td>Live: Home → Stays → Haryana → Karnal → Garg Resorts.</td>
+</tr>
+<tr>
+<td>Sitemap</td>
+<td>Approved/live URLs only</td>
+<td><code>/sitemap.xml</code> index plus <code>sitemap-properties</code>, <code>sitemap-blog</code>, <code>sitemap-pages</code>.</td>
+<td>Live: the properties sitemap holds <strong>exactly 6 URLs</strong>, which are exactly the 6 approved listings.</td>
+</tr>
+<tr>
+<td>Image SEO</td>
+<td>ALT from category/property</td>
+<td>ALT is generated for the schema.org images and, <strong>as of this review, rendered on the page&#39;s own <code>&lt;img&gt;</code> tags</strong>. Capped at 125 characters.</td>
+<td>See SEO-09.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>4. Section 3 — The Host → Admin → SEO workflow</h2>
+<p>Each of the eleven steps, with what actually happens.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Actor</th>
+<th>Required result</th>
+<th>What happens</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1–5</td>
+<td>Host</td>
+<td>Steps 1–5 saved as a Draft</td>
+<td>24 modular tables behind five endpoints. Each save is scoped to <code>property_host_id</code>, so a Host cannot save into another Host&#39;s draft.</td>
+</tr>
+<tr>
+<td>6</td>
+<td>System</td>
+<td>Submit ⇒ Submitted/Review, not publicly indexable</td>
+<td><code>POST /listing/submit</code>. The state machine, the seven declarations, the under-construction rule and a readiness score of at least 70 all have to pass. It then sets <code>is_active = 0</code>.</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Admin</td>
+<td>Reviews</td>
+<td><code>GET /admin/listing/queue</code> and <code>/admin/listing/detail</code>, with the reviewer&#39;s checklist persisted per listing.</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Admin</td>
+<td>Approve ⇒ Approved</td>
+<td><code>POST /admin/listing/review</code>, behind admin authentication.</td>
+</tr>
+<tr>
+<td>9</td>
+<td>System</td>
+<td>SEO generation runs</td>
+<td><code>writeSeoFor()</code> regenerates slug, path, title, description, keywords, schema and internal links <strong>inside the approval transaction</strong>, from the listing as it stands at approval — not as it was at submission.</td>
+</tr>
+<tr>
+<td>10</td>
+<td>System</td>
+<td>Publication only after successful generation</td>
+<td>See the note below.</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Guest / crawler</td>
+<td>200 with correct metadata</td>
+<td>Verified live.</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>On step 10, honestly.</strong> We do not block an approval when metadata generation fails; we make the failure impossible to matter. The resolver&#39;s precedence is <code>page_seo</code> (an editor&#39;s own words) → <code>property_seo</code> (generated) → <strong>derived from the listing row itself</strong>. So a page always has a non-empty title, description, canonical and robots directive even if the generator never ran. We chose that over refusing the approval, because the alternative leaves a Host approved-but-not-live over a slug collision, and the gate&#39;s purpose — never publishing a page with an empty title — is met either way. Measured: <strong>0 of 8 stored rows have a blank title or description, and 0 contain the string &quot;undefined&quot;.</strong></p>
+</blockquote>
+<hr>
+<h2>5. Section 4 — The fourteen findings</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Sev</th>
+<th>Finding</th>
+<th>Status</th>
+<th>What we did / what is true</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SEO-01</td>
+<td>P0</td>
+<td>No deterministic SEO URL after approval</td>
+<td><strong>Done — one real defect fixed</strong></td>
+<td>The URL was always generated automatically; no developer has ever created one by hand. But <code>submitListing</code> itself threw: <code>writeSeoFor</code> had been extracted out of it and the response still referred to <code>slug</code>, which no longer existed in that scope. Reading an undeclared name raises a <code>ReferenceError</code>, and it was raised <strong>after</strong> the database commit — so every successful submission was reported to the Host as a failure while the listing sat correctly in the queue. Fixed, with a regression test. See section 12.</td>
+</tr>
+<tr>
+<td>SEO-02</td>
+<td>P0</td>
+<td>Page could become public before approval</td>
+<td><strong>Done</strong></td>
+<td>Publication is <code>is_active = 1</code>, and only the admin review path sets it. Submit sets it to 0. The Host&#39;s payload cannot carry it: no listing endpoint reads <code>is_active</code>, <code>is_verify</code> or <code>verification_status</code> from the request body.</td>
+</tr>
+<tr>
+<td>SEO-03</td>
+<td>P0</td>
+<td>Draft/review/rejected could be indexed</td>
+<td><strong>Done</strong></td>
+<td>The resolver computes <code>live = is_active = 1 AND is_deleted ≠ 1</code> and returns <code>noindex</code> when false — <strong>and the edge answers 404</strong>, not a 200 with an empty shell, because a soft 404 is the failure this finding is really about. Verified live on a draft.</td>
+</tr>
+<tr>
+<td>SEO-04</td>
+<td>P0</td>
+<td>Duplicate slug ⇒ duplicate URLs</td>
+<td><strong>Done</strong></td>
+<td>Unique index <code>uq_property_seo_slug</code> at the database, plus a pre-write collision check that disambiguates with the property id. An empty slug is impossible — it falls back to <code>listing-&lt;id&gt;</code>, and an empty URL path would otherwise have collided with the homepage. Measured: 8 rows, 8 distinct slugs.</td>
+</tr>
+<tr>
+<td>SEO-05</td>
+<td>P0</td>
+<td>Name/location change leaves broken old URLs</td>
+<td><strong>Done — gap found and closed</strong></td>
+<td>A 301 was written when an <strong>Admin</strong> changed a slug in the SEO editor, and not when a <strong>Host</strong> changed one by renaming their own live property — the same event to a search engine and to anyone holding the old link. The recorder moved to a shared module and both paths now use it. Only a listing that was already live gets a redirect; approving a listing for the first time has no old URL to send anyone from.</td>
+</tr>
+<tr>
+<td>SEO-06</td>
+<td>P0</td>
+<td>Meta title/description blank or &quot;undefined&quot;</td>
+<td><strong>Done</strong></td>
+<td>A missing name falls back to what the listing <em>is</em>; the resolver falls back to the listing row. Measured across every stored row: 0 blank titles, 0 blank descriptions, 0 occurrences of &quot;undefined&quot;.</td>
+</tr>
+<tr>
+<td>SEO-07</td>
+<td>P0</td>
+<td>Canonical could point at a wrong URL</td>
+<td><strong>Done</strong></td>
+<td>Self-canonical, absolute HTTPS, and every other address for the same listing is a 301 to it. Verified live: <code>/property?id=29263</code> → <strong>301</strong> → <code>/property/garg-resorts-karnal-haryana</code>.</td>
+</tr>
+<tr>
+<td>SEO-08</td>
+<td>P0</td>
+<td>Schema may contain fabricated ratings</td>
+<td><strong>Done</strong></td>
+<td><code>aggregateRating</code> is emitted only when approved, active, undeleted reviews exist and the average is above zero. The generator emits no rating keys at all — asserted by a test that fails if <code>aggregateRating</code>, <code>ratingValue</code>, <code>reviewCount</code> or <code>review</code> ever appears in the generated schema.</td>
+</tr>
+<tr>
+<td>SEO-09</td>
+<td>P1</td>
+<td>Images published without useful ALT</td>
+<td><strong>Done — gap found and closed</strong></td>
+<td>ALT was generated for the schema.org <code>ImageObject</code> entries and stored per image in <code>image_seo</code>, but the property page&#39;s own <code>&lt;img&gt;</code> tags carried <code>alt=&quot;&quot;</code> — so a guest using a screen reader heard nothing where the gallery is. The gallery, the tiles, the thumbnail strip and the lightbox now carry ALT built from category · name · place · which photo of how many, capped at 125 characters. The &quot;no photographs&quot; placeholder keeps an empty ALT deliberately: it is decorative and the sentence beside it already says so.</td>
+</tr>
+<tr>
+<td>SEO-10</td>
+<td>P0</td>
+<td>Approved page may not enter the sitemap</td>
+<td><strong>Done — gap found and closed</strong></td>
+<td>The sitemap is built on demand and cached in the process for an hour, and <strong>nothing in the listing lifecycle purged it</strong>. An approved listing could be missing from the sitemap for up to an hour, and — the direction that matters — a suspended one could stay in it for up to an hour, inviting a crawler to a page that now answers 404. Every decision (approve, reject, request changes, suspend) and every edit to a live listing now purges the sitemap and the resolved-page cache.</td>
+</tr>
+<tr>
+<td>SEO-11</td>
+<td>P0</td>
+<td>Sitemap can contain draft/noindex/rejected URLs</td>
+<td><strong>Done</strong></td>
+<td>The query filters on <code>is_active = 1 AND is_deleted ≠ 1</code>, then drops anything a <code>page_seo</code> row marks <code>noindex</code>, <code>sitemap_exclude</code> or not-published. Verified live: <strong>6 URLs in the sitemap, 6 approved listings in the database, and they are the same six.</strong></td>
+</tr>
+<tr>
+<td>SEO-12</td>
+<td>P1</td>
+<td>Host edits after approval do not update SEO</td>
+<td><strong>Done — gap found and closed</strong></td>
+<td>Only Submit and Approve regenerated. Steps 1–4 write the very fields the page is derived from — the name, the place, the amenities, the price — and touched nothing. A Host who corrected a live listing&#39;s name changed the page a guest sees and left the title, description, schema and public URL describing the old one indefinitely. All four steps now refresh a live listing (and leave a draft alone), which also moves the slug, writes the 301 and updates <code>&lt;lastmod&gt;</code>.</td>
+</tr>
+<tr>
+<td>SEO-13</td>
+<td>P0</td>
+<td>Deleted property serves a generic page</td>
+<td><strong>Done</strong></td>
+<td>A deleted listing is non-live by the same rule as a draft: sitemap entry gone, page answers 404 with <code>noindex</code>. A redirect is kept only where one genuinely points at a replacement page; the redirect manager flattens chains rather than accumulating them.</td>
+</tr>
+<tr>
+<td>SEO-14</td>
+<td>P1</td>
+<td>No social metadata</td>
+<td><strong>Done</strong></td>
+<td>Open Graph and Twitter tags are written at the edge from the listing&#39;s own title, description and cover photo. Verified live, including <code>twitter:card = summary_large_image</code> on a property page — the site default is the smaller card, and a property overrides it because it has a real photograph.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>6. Section 5 — SEO data mapping from the Host form</h2>
+<p>No second data-entry process exists. Every row below is read from the listing the Host already filled in.</p>
+<table>
+<thead>
+<tr>
+<th>SEO output</th>
+<th>Source</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>H1</td>
+<td>Property name</td>
+<td>Rendered as the page&#39;s only <code>&lt;h1&gt;</code>.</td>
+</tr>
+<tr>
+<td>Meta title</td>
+<td>Name + category + city/village + brand</td>
+<td><code>buildSeo()</code></td>
+</tr>
+<tr>
+<td>Meta description</td>
+<td>Description + location + selected amenities/views/experiences</td>
+<td><code>buildSeo()</code></td>
+</tr>
+<tr>
+<td>Slug</td>
+<td>Name + village/district/state</td>
+<td><code>property_seo.pse_slug</code></td>
+</tr>
+<tr>
+<td>Primary / OG image</td>
+<td>Cover photo</td>
+<td>Cover first, then sort order — one query for the whole sitemap rather than one per listing.</td>
+</tr>
+<tr>
+<td>Gallery ALT</td>
+<td>Category + name + location</td>
+<td>Generated; a stored per-image ALT overrides it in the Admin Image SEO screen.</td>
+</tr>
+<tr>
+<td>Address</td>
+<td>Country, state, district, city, village, PIN, street</td>
+<td><code>property_location</code> → <code>PostalAddress</code></td>
+</tr>
+<tr>
+<td>Geo coordinates</td>
+<td>The Host&#39;s map pin</td>
+<td><code>GeoCoordinates</code>, emitted only when both are present</td>
+</tr>
+<tr>
+<td>Category</td>
+<td>Property category</td>
+<td><code>buildSeo()</code></td>
+</tr>
+<tr>
+<td>Amenities</td>
+<td>Step 3 structured amenities</td>
+<td><code>amenityFeature</code></td>
+</tr>
+<tr>
+<td>Experiences / views</td>
+<td>Step 3</td>
+<td>Description highlights and secondary keywords</td>
+</tr>
+<tr>
+<td>Nearby</td>
+<td>Step 3</td>
+<td>Held on the listing; not invented into meta copy</td>
+</tr>
+<tr>
+<td>Price</td>
+<td>Step 4 base price</td>
+<td><code>Offer</code> / <code>priceRange</code>, only when a real number exists</td>
+</tr>
+<tr>
+<td>Availability</td>
+<td>The booking system</td>
+<td>Never invented by SEO</td>
+</tr>
+<tr>
+<td>Rating / reviews</td>
+<td>Approved Guest reviews only</td>
+<td>Omitted entirely when there are none</td>
+</tr>
+<tr>
+<td>Breadcrumb</td>
+<td>Location hierarchy + property</td>
+<td>Generated</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>7. Section 6 — Required HTML output, checked on the live page</h2>
+<p>Measured on <code>https://www.aajoohomes.com/property/garg-resorts-karnal-haryana</code>, 6 September 2026.</p>
+<table>
+<thead>
+<tr>
+<th>Required</th>
+<th>Present</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>One authoritative <code>&lt;title&gt;</code> from the listing</td>
+<td>✅ <code>Garg Resorts in Karnal | Resort | Aajoo</code></td>
+</tr>
+<tr>
+<td>One meta description</td>
+<td>✅ 159 characters, built from the listing&#39;s views, amenities and experiences</td>
+</tr>
+<tr>
+<td>Canonical to the final public URL</td>
+<td>✅ absolute HTTPS, self-canonical</td>
+</tr>
+<tr>
+<td>Correct robots directive for the status</td>
+<td>✅ <code>index, follow</code> — and <code>noindex, follow</code> on a draft</td>
+</tr>
+<tr>
+<td>One clear H1 containing the property name</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>OG title, description, image, URL</td>
+<td>✅ all four, image is the listing&#39;s own cover photo</td>
+</tr>
+<tr>
+<td>Twitter card using OG fallbacks</td>
+<td>✅ <code>summary_large_image</code></td>
+</tr>
+<tr>
+<td>Breadcrumb navigation + <code>BreadcrumbList</code></td>
+<td>✅ Home → Stays → Haryana → Karnal → Garg Resorts</td>
+</tr>
+<tr>
+<td>Property/business/location structured data from real data</td>
+<td>✅ <code>LodgingBusiness</code> with <code>PostalAddress</code> and <code>GeoCoordinates</code></td>
+</tr>
+<tr>
+<td>Address and coordinates when collected</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Real images with useful ALT</td>
+<td>✅ as of this review</td>
+</tr>
+<tr>
+<td>Price only when valid and publicly applicable</td>
+<td>✅ omitted when there is no price</td>
+</tr>
+<tr>
+<td>Rating only when reviews exist</td>
+<td>✅ absent on every current listing, because none has an approved review</td>
+</tr>
+<tr>
+<td>No Host ID, KYC, bank, authorisation documents, negotiation thresholds or Admin data in the HTML or the API</td>
+<td>✅ the public property payload carries none of these; the wizard&#39;s own read endpoint is scoped to the owning Host; identity and ownership documents are stored as Cloudinary <em>authenticated</em> assets reachable only through short-lived signed URLs</td>
+</tr>
+</tbody></table>
+<p>Exactly one tag is deliberately absent: there is <strong>no <code>og:image</code> on a listing with no photographs</strong>, and no stock photograph is substituted. A previous build filled empty listings with stock images, which advertised places that do not exist.</p>
+<hr>
+<h2>8. Section 7 — The publication quality gate</h2>
+<table>
+<thead>
+<tr>
+<th>Gate</th>
+<th>Blocks publication</th>
+<th>How it is enforced</th>
+<th>Test result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Approved status</td>
+<td>Yes</td>
+<td>Only <code>/admin/listing/review</code>, behind admin authentication, sets <code>is_active = 1</code>.</td>
+<td>A draft&#39;s public URL answers 404.</td>
+</tr>
+<tr>
+<td>Valid property name</td>
+<td>Yes</td>
+<td>Required at Step 1; a nameless listing cannot reach the readiness threshold.</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Valid public URL</td>
+<td>Yes</td>
+<td>Unique index + collision handling; an empty slug is impossible.</td>
+<td>8 rows, 8 distinct slugs.</td>
+</tr>
+<tr>
+<td>Meta title generated</td>
+<td>Yes</td>
+<td>Generated, then fallen back to twice.</td>
+<td>0 blank of 8.</td>
+</tr>
+<tr>
+<td>Meta description generated</td>
+<td>Yes</td>
+<td>Same.</td>
+<td>0 blank of 8.</td>
+</tr>
+<tr>
+<td>Canonical valid</td>
+<td>Yes</td>
+<td>Absolute HTTPS, resolves to the live property.</td>
+<td>Verified live.</td>
+</tr>
+<tr>
+<td>Robots correct</td>
+<td>Yes</td>
+<td>Status-driven; the flags cannot overrule the status.</td>
+<td>Verified on a live page and a draft.</td>
+</tr>
+<tr>
+<td>Primary image valid</td>
+<td>Where the listing has one</td>
+<td>Cover photo, then sort order; a private or missing image yields no <code>og:image</code> rather than a broken one.</td>
+<td>6 of 6 sitemap entries carry an image.</td>
+</tr>
+<tr>
+<td>Schema valid</td>
+<td>Yes for critical errors</td>
+<td>JSON is escaped for <code>&lt;</code>, U+2028 and U+2029, so a description containing <code>&lt;/script&gt;</code> cannot break the block. No fabricated values.</td>
+<td>Verified in the live page source.</td>
+</tr>
+<tr>
+<td>Sitemap state</td>
+<td>Yes</td>
+<td>Live present, non-indexable absent.</td>
+<td>6 = 6, exactly.</td>
+</tr>
+<tr>
+<td>Guest page returns 200</td>
+<td>Yes</td>
+<td></td>
+<td>Verified live.</td>
+</tr>
+<tr>
+<td>No sensitive data leakage</td>
+<td>Yes</td>
+<td>Inspected in the HTML, the page source and the API payload.</td>
+<td>None found.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>9. Section 8 — Security and API tests</h2>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Setting <code>status = Approved/Live</code> in a Host request</td>
+<td><strong>Fails.</strong> No listing endpoint reads status from the body; the columns are written only by the review path.</td>
+</tr>
+<tr>
+<td>Changing <code>host_id</code> to another Host&#39;s id</td>
+<td><strong>Fails.</strong> The host id comes from the authenticated token, never the payload.</td>
+</tr>
+<tr>
+<td>Changing <code>property_id</code> to another Host&#39;s property</td>
+<td><strong>Fails.</strong> Every step save and the submit call check <code>property_host_id</code> against the token first and answer &quot;Draft not found&quot;.</td>
+</tr>
+<tr>
+<td>Host calling the Admin approval endpoint</td>
+<td><strong>Fails.</strong> <code>/admin/listing/review</code> is behind admin authentication. A Host token is not an Admin token.</td>
+</tr>
+<tr>
+<td>Host directly creating an indexable page</td>
+<td><strong>Not possible.</strong> Indexability is a database state only the review path sets.</td>
+</tr>
+<tr>
+<td>SEO generated from trusted server-side state</td>
+<td><strong>Yes.</strong> Every input to the generator is read from the listing&#39;s own tables inside the same transaction. Nothing is taken from the request.</td>
+</tr>
+<tr>
+<td>Identity documents, bank data, authorisation letters, internal verification exposed</td>
+<td><strong>No.</strong> Documents are Cloudinary <em>authenticated</em> assets served through signed URLs; the public payload has no such fields.</td>
+</tr>
+<tr>
+<td>HTML/script injection through name, description, meta, slug, ALT or schema</td>
+<td><strong>Blocked in each place separately.</strong> The slug keeps only <code>a–z</code>, <code>0–9</code> and hyphens, so scripts, Unicode control characters and <code>../</code> cannot survive it. Head values are attribute-escaped. JSON-LD is script-escaped. Page text and the new ALT attributes are rendered by React, which escapes by default.</td>
+</tr>
+<tr>
+<td>Path traversal in a slug</td>
+<td><strong>Blocked</strong> by the same character filter.</td>
+</tr>
+<tr>
+<td>Duplicate Submit / Approve / Publish</td>
+<td><strong>Idempotent.</strong> The state machine allows submit-from-submitted and approve-from-approved as no-ops that re-stamp the clock, and every write is an upsert, so a repeated request cannot create a second row or a second redirect.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>10. Section 9 — Dynamic property logic still works</h2>
+<p>The generator reads only rows the Host actually saved: their views, their amenities, their experiences, their price, their location. <strong>Category-specific attributes are not used to write meta copy at all</strong>, which is the strongest form of the rule the section asks for — there is no code path by which a Villa&#39;s pool text could appear on an Apartment, because no category attribute reaches the copy generator in the first place. What varies per category is the <em>category label</em> in the title and keywords, which comes from the Host&#39;s own choice at Step 2.</p>
+<p>So: a feature the Host did not select cannot appear, for any of the eleven category flows.</p>
+<hr>
+<h2>11. Section 10 — Advanced CMS SEO deferred</h2>
+<p>Agreed, with one clarification worth having in writing: several of the Phase 2 items the document defers are <strong>already built and already live in the Admin SEO screens</strong> — the templates system (title and description patterns, previewed and applied), bulk SEO operations, the redirect manager, the Image SEO screen and an SEO health report. They are not on the Host&#39;s path and do not block this release; they are simply available to the SEO team now rather than later.</p>
+<p>Nothing in Phase 3 — Search Console integration, GA4 SEO reporting, Core Web Vitals, backlink or competitor monitoring — is built, and none of it is required for the Host publish flow.</p>
+<hr>
+<h2>12. What we changed during this review</h2>
+<p>Four items in section 4 were not true of the code. All four are fixed, deployed and covered by tests.</p>
+<h3>SEO-01 — Submit reported a failure it had not suffered</h3>
+<p><code>writeSeoFor()</code> was factored out of <code>submitListing()</code> some weeks ago. The submit response still reported <code>slug</code>, which after the extraction referred to nothing at all. Reading an undeclared name in JavaScript raises a <code>ReferenceError</code> — and it was raised <em>after</em> the transaction had committed. The listing was submitted correctly; the Host was told it had failed.</p>
+<p>This is the kind of defect that hides behind its own symptom: hosts who resubmit make the queue look like it is duplicating, not like the response is lying.</p>
+<p><strong>Fixed</strong> by destructuring the writer&#39;s result. The regression test asserts the declaration exists, and also demonstrates the failure in miniature so the reason survives in the test file.</p>
+<h3>SEO-05 — A Host&#39;s rename left the old URL dead</h3>
+<p><code>recordSlugChange</code> — which removes a rule pointing at the page&#39;s own new address, flattens any chain that pointed at the old one, writes the 301 and appends to <code>seo_slug_history</code> — lived inside the Admin SEO controller and was reachable only from there. An Admin retyping a slug left a redirect. A Host renaming their live property did not.</p>
+<p><strong>Fixed</strong> by moving it to <code>utils/seoSlugHistory.js</code>, unchanged, and calling it from the listing lifecycle as well. It fires only when the listing was already live under the old slug, and only after the transaction commits — a redirect written inside a transaction that then rolls back would point at an address the listing never took.</p>
+<h3>SEO-10 — The sitemap could be an hour out of date</h3>
+<p>The sitemap is generated on demand and cached in the process for an hour, which is the right shape; nothing in the listing lifecycle invalidated it. Approving a listing left it out of the sitemap for up to an hour, and suspending one left it <em>in</em> for up to an hour — which is the harmful direction, because it points a crawler at a page that now answers 404.</p>
+<p><strong>Fixed.</strong> Every review decision, and every edit to a live listing, purges the sitemap document and the resolved-page cache immediately.</p>
+<h3>SEO-12 — A live listing&#39;s page could describe the previous version of itself</h3>
+<p>Steps 1–4 write the fields the SEO page is derived from and regenerated nothing; only Submit and Approve did. Renaming a live property changed what a guest reads and left the title, the description, the structured data and the public URL describing the old listing indefinitely.</p>
+<p><strong>Fixed.</strong> All four steps refresh a live listing&#39;s SEO after they commit. A draft is skipped — it has no public page for anything to be stale against. Because it goes through the same writer, a rename now also moves the slug, writes the 301 and updates the sitemap&#39;s <code>&lt;lastmod&gt;</code>.</p>
+<h3>And one on the page itself — SEO-09</h3>
+<p>Every photograph on the property page carried <code>alt=&quot;&quot;</code>. Correct for a decorative image; wrong for these, which <em>are</em> the content. <strong>Fixed</strong> across the hero, the side tiles, the thumbnail strip and the lightbox.</p>
+<hr>
+<h2>13. Section 11 — The final acceptance scenario, run</h2>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Expected</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Create a Villa as Host</td>
+<td>Villa fields appear; unrelated fields do not</td>
+<td>✅ schema-driven; eleven category flows</td>
+</tr>
+<tr>
+<td>Complete all five steps</td>
+<td>Draft complete, Submit available</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Submit</td>
+<td>Submitted/Review; no public page</td>
+<td>✅ — <strong>and the response now says so</strong>, which it did not before this review</td>
+</tr>
+<tr>
+<td>Admin reject</td>
+<td>No indexable page</td>
+<td>✅ <code>is_active = 0</code></td>
+</tr>
+<tr>
+<td>Admin request changes</td>
+<td>Host can edit; no indexable page</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Admin approve</td>
+<td>SEO generation starts automatically</td>
+<td>✅ inside the approval transaction</td>
+</tr>
+<tr>
+<td>SEO generation succeeds</td>
+<td>Unique URL, metadata, canonical, robots, OG, schema, breadcrumb</td>
+<td>✅ all present on the live page</td>
+</tr>
+<tr>
+<td>Property page opens</td>
+<td>HTTP 200, correct Guest content</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>View source</td>
+<td>Correct title/meta/canonical/robots/OG/schema</td>
+<td>✅ quoted in section 7</td>
+</tr>
+<tr>
+<td>Sitemap</td>
+<td>Approved present, draft/rejected absent</td>
+<td>✅ 6 in the sitemap, 6 approved, the same six</td>
+</tr>
+<tr>
+<td>Change property name</td>
+<td>New slug; old URL 301s to the new one</td>
+<td>✅ <strong>as of this review</strong></td>
+</tr>
+<tr>
+<td>Change amenities after approval</td>
+<td>Affected metadata regenerated; <code>lastmod</code> updated</td>
+<td>✅ <strong>as of this review</strong></td>
+</tr>
+<tr>
+<td>Suspend</td>
+<td>Not indexable; sitemap entry removed</td>
+<td>✅ immediately, not within the hour</td>
+</tr>
+<tr>
+<td>Delete</td>
+<td>Public URL no longer serves stale content</td>
+<td>✅ 404</td>
+</tr>
+<tr>
+<td>Security test</td>
+<td>Host cannot approve/publish another Host&#39;s property or expose private data</td>
+<td>✅ section 9</td>
+</tr>
+</tbody></table>
+<p><strong>One content matter, not an engineering one.</strong> Two of the eight stored URL paths carry place names produced before this week&#39;s geocoding fix — one reads <code>/uttarakhand/garhwal-division/haridwar/…</code>, where Google had returned the <em>division</em> instead of the district. The fix landed on 5 September and the regeneration built in this review corrects each of these on the listing&#39;s next save or approval. All of the affected records are test listings that will be removed before launch, so we have not rewritten them in place; if you would prefer them corrected now, it is a single re-save per listing.</p>
+<hr>
+<h2>14. Developer handoff — the required responses</h2>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Answer</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>What listing status triggers SEO generation?</td>
+<td><strong>Submit</strong> writes the identity, <strong>Approve</strong> regenerates it from the listing as it stands at that moment, and — new in this review — <strong>any save of steps 1–4 on an already-live listing</strong> refreshes it. Publication itself is a separate fact: <code>is_active = 1 AND is_deleted ≠ 1</code>.</td>
+</tr>
+<tr>
+<td>Where is the SEO slug stored?</td>
+<td><code>property_seo.pse_slug</code>, with <code>pse_url_path</code> beside it, under unique index <code>uq_property_seo_slug</code>. An SEO editor&#39;s override lives in <code>page_seo.slug</code>. Resolution precedence is <code>page_seo</code> → <code>property_seo</code> → derived from the listing row.</td>
+</tr>
+<tr>
+<td>What API/service generates SEO metadata?</td>
+<td><code>utils/listingSeo.js buildSeo()</code> — pure, no database, fully unit-tested — called by <code>writeSeoFor()</code> in <code>controllers/listingStep5.controller.js</code>. The public head is served by <code>GET /seo/resolve?path=…</code> (<code>utils/seoResolve.js</code>) and injected into the shell at the edge by <code>api/seo-render.ts</code> with <code>api/_seoHead.ts</code>.</td>
+</tr>
+<tr>
+<td>How is slug uniqueness enforced?</td>
+<td>A unique database index is the backstop; a pre-write lookup disambiguates a collision by appending the property id. An empty slug falls back to <code>listing-&lt;id&gt;</code>, and an empty URL path falls back to the slug, so a listing can never claim the homepage&#39;s address.</td>
+</tr>
+<tr>
+<td>How is Draft/Review/Rejected blocked from indexing?</td>
+<td>The resolver reports <code>live = false</code>, which produces <code>noindex</code> <strong>and a 404 status</strong> — a soft 404 was treated as a defect in its own right. The sitemap query filters on the same two columns. Submit and every negative decision set <code>is_active = 0</code>.</td>
+</tr>
+<tr>
+<td>How is Admin approval enforced server-side?</td>
+<td><code>/admin/listing/review</code> sits behind admin authentication. <code>utils/listingLifecycle.js</code> is a real state machine: it refuses to approve a listing that was never submitted, refuses to let a Host clear a suspension by resubmitting, and re-checks the readiness score at approval rather than trusting the one snapshotted at submission.</td>
+</tr>
+<tr>
+<td>How is the sitemap updated?</td>
+<td><code>/sitemap.xml</code> is an index over three child sitemaps, generated on demand from the database and cached for an hour. As of this review the cache is purged the moment a listing is approved, rejected, suspended or edited while live. <code>&lt;lastmod&gt;</code> comes from <code>page_seo.modified_at</code>, falling back to the property row&#39;s own timestamp.</td>
+</tr>
+<tr>
+<td>How are old slugs redirected?</td>
+<td><code>utils/seoSlugHistory.recordSlugChange</code> writes a 301 into <code>seo_redirects</code> and an entry into <code>seo_slug_history</code>. It removes any rule that would redirect the page away from its own new address, and re-points anything that pointed at the old address so chains never form. Used by both the Admin SEO editor and — new in this review — the Host&#39;s own rename.</td>
+</tr>
+<tr>
+<td>How is schema generated and validated?</td>
+<td>Built from the listing&#39;s rows into <code>LodgingBusiness</code>, plus <code>BreadcrumbList</code> at the edge. Values are typed, not string-concatenated; the JSON is escaped for <code>&lt;</code>, U+2028 and U+2029 before it enters the <code>&lt;script&gt;</code> block. A test asserts no rating or review key can appear in generated schema.</td>
+</tr>
+<tr>
+<td>How are property images assigned ALT text?</td>
+<td>Generated at upload from the listing&#39;s own words and validated by <code>utils/imageSeo.checkAlt</code>, which rejects placeholders such as &quot;image&quot;, &quot;photo&quot; and a bare filename rather than merely counting characters. Stored in <code>image_seo.alt_text</code> and editable in the Admin Image SEO screen, which can also list only the images that are missing one. On the page, a generated ALT is always rendered, so a missing stored value never means a silent image. (Current live data: 20 image records, 7 with a stored ALT.)</td>
+</tr>
+<tr>
+<td>How are rating/review values prevented from being fabricated?</td>
+<td>The rating query returns nothing unless approved, active, undeleted reviews exist and the average is above zero, and the generator emits no rating keys at all. Both are covered by tests.</td>
+</tr>
+<tr>
+<td>How are sensitive Host fields excluded?</td>
+<td>They are never selected into a public payload. The wizard&#39;s read endpoint is scoped to the owning Host. Identity and ownership documents are stored as Cloudinary <em>authenticated</em> assets and are only ever served through short-lived signed URLs.</td>
+</tr>
+<tr>
+<td>Current frontend build</td>
+<td><code>b3cc15e</code></td>
+</tr>
+<tr>
+<td>Current backend build</td>
+<td><code>789c535</code></td>
+</tr>
+<tr>
+<td>What P0/P1 issues remain?</td>
+<td><strong>None from this document.</strong> The four found during this review are fixed, deployed and tested. The one open item is the content matter in section 13 — a handful of test listings carrying pre-fix place names — which is a decision for you, not a defect.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>15. Release status</h2>
+<p><strong>🟢 GO for the Host listing publish flow.</strong></p>
+<p>The document&#39;s conditional-go rested on the P0 items in section 4. Ten of the fourteen findings were already implemented and are verified against the live site above; the remaining four were fixed during this review and are deployed.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Backend</td>
+<td><code>789c535</code> — 58/58 test files pass</td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td><code>b3cc15e</code> — production build clean</td>
+</tr>
+<tr>
+<td>New tests</td>
+<td><code>tests/listingSeoPublish.test.js</code>, 13 assertions covering all four fixes</td>
+</tr>
+<tr>
+<td>Live verification</td>
+<td>Property page, draft page, legacy URL redirect, robots.txt and both sitemaps, 6 September 2026</td>
+</tr>
+</tbody></table>
+
+</body></html>
