@@ -324,7 +324,10 @@ class _SettingsPageState extends State<SettingsPage> {
             onTap: () => Navigator.push(
                 context,
                 CupertinoPageRoute(
-                    builder: (context) => const CancellationPolicyPage())),
+                    builder: (context) => const LegalDocumentPage(
+                          documentKey: 'cancellation_policy',
+                          title: 'Cancellation & Refund Policy',
+                        ))),
           ),
           SettingsTile(
             title: "FAQ",
@@ -342,7 +345,7 @@ class _SettingsPageState extends State<SettingsPage> {
             onTap: _handleRateApp,
           ),
           const SizedBox(height: 20),
-          const SectionHeader(title: "Version 1.0.0 (build 35)"),
+          const SectionHeader(title: "Version 1.0.0 (build 36)"),
           LogoutTile(
             onTap: _handleLogout,
           ),

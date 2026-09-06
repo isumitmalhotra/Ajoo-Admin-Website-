@@ -195,7 +195,13 @@ List<HostMenuEntry> hostMenuEntries({VoidCallback? beforeNavigate}) {
     HostMenuEntry(
       icon: Iconsax.calendar_remove,
       label: 'Cancellation & Refund Policy',
-      onTap: () => go(() => const CancellationPolicyPage()),
+      // Same endpoint as the other four documents. The screen it replaces
+      // read the same text through a different endpoint in a different
+      // layout — one document, two renderers.
+      onTap: () => go(() => const LegalDocumentPage(
+            documentKey: 'cancellation_policy',
+            title: 'Cancellation & Refund Policy',
+          )),
     ),
     // No "Switch to guest" here. A host who wants to browse as a guest signs in
     // on the guest side; carrying a second mode through the whole host shell
