@@ -32,10 +32,24 @@ import 'package:rent_home/ui/screens_common/location_picker/location_picker.dart
 import 'package:rent_home/ui/screens_renter/bookmark_properties/bookmark_properties_page.dart';
 import 'package:rent_home/controller/alert_dialog.dart';
 
+import 'package:rent_home/data/ApiConstants.dart';
+
 import 'binding/init_binding.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  /// A release build must name its endpoint (P0-01, FE-01).
+  ///
+  /// The default host is compiled out of release builds, so a release APK put
+  /// together without `--dart-define=API_BASE_URL=…` has nowhere to talk to.
+  /// Say so on the screen rather than starting: an app that silently talks to
+  /// nowhere looks exactly like a broken network, and costs a day to diagnose
+  /// from a tester's "it isn't loading". Debug builds are unaffected.
+  if (!Apiconstants.isConfigured) {
+    runApp(const _BuildConfigurationError());
+    return;
+  }
 
   // Firebase must never be able to stop the app from starting.
   //
@@ -64,6 +78,50 @@ void main() async {
   unawaited(LuxMode.instance.load());
 
   runApp(const MyApp());
+}
+
+/// Shown instead of the app when the build was assembled without an endpoint.
+///
+/// Deliberately plain: no theme, no Get, no network — the point is that it
+/// renders under any circumstances and names the missing flag.
+class _BuildConfigurationError extends StatelessWidget {
+  const _BuildConfigurationError();
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: const Color(0xFF0F172A),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.settings_ethernet, color: Colors.white70, size: 44),
+                SizedBox(height: 18),
+                Text(
+                  'This build is not configured',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w700),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'It was compiled without an API endpoint, so it has nothing '
+                  'to connect to.\n\n'
+                  'Rebuild with:\n'
+                  'flutter build apk --dart-define=API_BASE_URL=https://…',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.6),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {

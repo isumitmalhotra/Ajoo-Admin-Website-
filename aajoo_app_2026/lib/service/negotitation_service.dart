@@ -37,6 +37,13 @@ class NegotiationService {
       _socket = IO.io(serverUrl, <String, dynamic>{
         'transports': ['websocket'],
         'autoConnect': false,
+        // BOTH, deliberately (BE-16). The server reads auth.token first and
+        // the Authorization header second: `auth` is the contract the website
+        // uses, and the header is what this client has always sent — which the
+        // server did not read, so every app socket connected anonymously while
+        // looking authenticated from here. Sending both means neither side has
+        // to be changed in lockstep again.
+        'auth': {'token': token},
         'extraHeaders': {'Authorization': 'Bearer $token'},
         'reconnection': true,
         'reconnectionAttempts': 5,

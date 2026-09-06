@@ -25,11 +25,24 @@ import 'package:flutter/foundation.dart' show kReleaseMode;
 class PaymentConfig {
   PaymentConfig._();
 
-  /// Bundled fallback (TEST mode). Kept here so the app builds without
-  /// `--dart-define`. NEVER replace this with a live key — set the live
-  /// key via `--dart-define=RAZORPAY_KEY=rzp_live_...` at build time
-  /// instead, so test debugging on dev devices stays safe.
-  static const String _fallbackTestKey = 'rzp_test_XUTODhUdMAshi6';
+  /// Bundled fallback (TEST mode), in DEVELOPMENT builds only.
+  ///
+  /// P0-02/FE-02: the released APK contained `rzp_test_XUTODhUdMAshi6`,
+  /// because this constant was compiled in unconditionally. Checkout already
+  /// refused to open in a release build carrying a test key — see
+  /// [usableForPayments] — but the finding is about the string being in the
+  /// artifact at all, and it was.
+  ///
+  /// `kReleaseMode` is a compile-time constant, so a release build folds this
+  /// to the empty string and the key is not in the binary. A release build has
+  /// no key unless one is passed:
+  ///
+  ///   flutter build apk --dart-define=RAZORPAY_KEY=rzp_live_…
+  ///
+  /// NEVER put a live key here. Debug builds keep the test key so that
+  /// day-to-day work needs no flags.
+  static const String _fallbackTestKey =
+      kReleaseMode ? '' : 'rzp_test_XUTODhUdMAshi6';
 
   /// Compile-time override. Build with:
   ///   flutter build apk --dart-define=RAZORPAY_KEY=rzp_live_xxxxxxxxxxxx
