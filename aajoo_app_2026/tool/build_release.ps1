@@ -29,7 +29,10 @@ param(
     [Parameter(Mandatory = $true)][string]$ApiBaseUrl,
     [Parameter(Mandatory = $true)][string]$RazorpayKey,
     [switch]$AllowTestPayments,
-    [switch]$AllowDevEndpoint
+    [switch]$AllowDevEndpoint,
+
+    # Skip the endpoint reachability probe (offline builds only).
+    [switch]$SkipEndpointCheck
 )
 
 # The one endpoint a shipping build may point at.
@@ -64,6 +67,40 @@ if ($ProductionApiBase -and $ApiBaseUrl -ne $ProductionApiBase -and -not $AllowD
 }
 if (-not $ProductionApiBase -and -not $AllowDevEndpoint) {
     throw "No production endpoint is configured in this script yet, so every build is a QA build. Pass -AllowDevEndpoint to acknowledge that, or set `$ProductionApiBase once the API has a production host."
+}
+
+# Does that endpoint actually answer?
+#
+# The guards above catch an EMPTY endpoint and, once $ProductionApiBase is set,
+# a non-production one. Neither catches the case that actually bit us: a URL
+# that is perfectly well-formed and serves nothing. api.aajoohomes.com is
+# exactly that — it resolves, it speaks https, and it returns Vercel's
+# DEPLOYMENT_NOT_FOUND — and an audit prescribed it as the build endpoint. The
+# app's own isConfigured() cannot help, because it only asks whether the string
+# starts with https://.
+#
+# So ask the server. Two seconds here replaces an APK that installs, opens and
+# fails every call in a tester's hands.
+if (-not $SkipEndpointCheck) {
+Write-Host "Checking $ApiBaseUrl is alive..." -ForegroundColor DarkGray
+try {
+    $probe = Invoke-WebRequest -Uri "$ApiBaseUrl/health" -TimeoutSec 45 -UseBasicParsing -ErrorAction Stop
+    if ($probe.Content -notmatch '"status"\s*:\s*"ok"') {
+        throw "answered $($probe.StatusCode) but does not look like the Aajoo API: $($probe.Content.Substring(0, [Math]::Min(120, $probe.Content.Length)))"
+    }
+    Write-Host "  endpoint is live" -ForegroundColor DarkGray
+} catch {
+    throw @"
+$ApiBaseUrl does not serve the Aajoo API.
+
+  $($_.Exception.Message)
+
+GET $ApiBaseUrl/health must return {"status":"ok",...}. A build against a host
+that does not answer will install and then fail every request, which is far
+harder to diagnose than this message. Pass -SkipEndpointCheck only if you are
+building offline and know the host is right.
+"@
+}
 }
 
 $defines = @(

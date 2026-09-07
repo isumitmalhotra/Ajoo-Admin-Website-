@@ -10,7 +10,18 @@ import 'package:flutter/foundation.dart' show kReleaseMode;
 /// It is one value with a build-time override now, the same mechanism
 /// [PaymentConfig] uses for the Razorpay key:
 ///
-///   flutter build apk --dart-define=API_BASE_URL=https://api.aajoohomes.com
+///   flutter build apk --dart-define=API_BASE_URL=https://<the API host>
+///
+/// The host is deliberately NOT named here. This comment used to give
+/// `https://api.aajoohomes.com` as the example, an outside audit copied it as
+/// the prescribed build command, and that host does not serve the API: it is a
+/// DNS record pointing at Vercel which answers 404 DEPLOYMENT_NOT_FOUND. A
+/// build made against it passes [isConfigured] — the check only asks for a
+/// well-formed https URL — installs, opens, and then fails every single call.
+///
+/// Build through tool/build_release.ps1 rather than copying a URL out of a
+/// comment. That script now asks the endpoint whether it is alive before it
+/// spends four minutes compiling against it.
 ///
 /// Without the flag the app uses the host below, which is the backend the live
 /// website talks to today — so nothing changes until somebody deliberately
