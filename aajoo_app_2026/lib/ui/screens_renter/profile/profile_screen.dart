@@ -992,14 +992,29 @@ class _ProfileScreenState extends State<ProfileScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                // FIND-3. At 320dp with the OS font scale at 1.3 this
+                // broke as "Personal Informatio / n". It was a Row: an
+                // Expanded heading beside a Verified pill whose own text also
+                // grows with the font scale. The bigger the pill got, the
+                // narrower the heading's box became, until the single word
+                // "Information" no longer fitted a line and Flutter cut it in
+                // half.
+                //
+                // A Wrap fixes the shape of the problem rather than the
+                // symptom. With room, it lays out exactly as the Row did,
+                // heading left and pill right. Without room, the PILL drops to
+                // the next line — which is the thing that should move, since
+                // it is a badge and the heading is the heading.
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 6,
                   children: [
-                    const Expanded(
-                      child: Text(
-                        'Personal Information',
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
+                    const Text(
+                      'Personal Information',
+                      style: TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     if (user.isKycVerified)
                       Container(

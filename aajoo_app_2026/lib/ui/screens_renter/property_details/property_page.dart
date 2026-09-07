@@ -832,11 +832,35 @@ class _PropertyPageState extends State<PropertyPage>
           16,
           14 + MediaQuery.of(context).padding.bottom,
         ),
-        child: Row(
+        // FIND-3. At 320dp this Row truncated the MONEY: the headline read
+        // "₹2,000 …" and the line under it "₹2,100 total · i…".
+        //
+        // The cause was the Expanded. The button is sized by its own label —
+        // "Negotiate & Reserve" plus 24px of padding each side — and takes
+        // what it needs FIRST; Expanded then hands the price column whatever
+        // is left, which on a narrow phone is not enough for either figure.
+        //
+        // Truncating a price is not a cosmetic fault. The rule on this
+        // platform is that the headline is always the tax-inclusive total with
+        // its breakdown beside it, and "₹2,100 total · i…" is neither — it is
+        // a number the guest cannot check.
+        //
+        // A Wrap removes the competition rather than refereeing it. The price
+        // column now takes its natural width instead of a share, and when the
+        // two halves no longer fit on one line the BUTTON drops to the next —
+        // which is the half that should move. With room, spaceBetween lays it
+        // out exactly as the Row did, so nothing changes on a normal phone.
+        // Both halves are still defined once; a narrow branch with its own
+        // copy of the price column is how two layouts end up quoting two
+        // different numbers.
+        child: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 10,
           children: [
             // Left — price + total
-            Expanded(
-              child: Column(
+            Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -904,8 +928,6 @@ class _PropertyPageState extends State<PropertyPage>
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 12),
             // Right — clay Reserve button
             ElevatedButton(
               onPressed: _toggleExpanded,

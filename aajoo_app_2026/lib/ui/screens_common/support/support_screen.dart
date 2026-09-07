@@ -317,10 +317,21 @@ class _ChatCard extends StatelessWidget {
                   ),
                   icon: Image.asset('assets/whatsapp.png',
                       width: 18, height: 18),
-                  label: Text(
-                    'WhatsApp',
-                    style:
-                        inter(fontSize: 14, fontWeight: FontWeight.w600),
+                  // FIND-3. At 320dp this rendered "WhatsAp / p". The
+                  // button is a flex child beside "Start chat", so on a
+                  // narrow phone its share of the row is smaller than the one
+                  // word it has to show. Shrinking the word beats hyphenating
+                  // a brand name in half; scaleDown never grows it, so nothing
+                  // changes on a normal screen.
+                  label: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'WhatsApp',
+                      maxLines: 1,
+                      softWrap: false,
+                      style:
+                          inter(fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: kInk,

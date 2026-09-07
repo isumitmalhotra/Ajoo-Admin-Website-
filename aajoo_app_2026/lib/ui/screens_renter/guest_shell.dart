@@ -98,8 +98,19 @@ class _GuestShellState extends State<GuestShell> {
         ),
         child: NavigationBarTheme(
           data: NavigationBarThemeData(
+            // FIND-3. "Dashboard" is the longest label and the one that broke
+            // as "Dashboa / rd". Five tabs share the width, so each gets about
+            // a fifth of it, and on a 320dp phone that is roughly 60dp of
+            // usable space — less than "Dashboard" needs at 11sp once the OS
+            // font scale is turned up.
+            //
+            // The base size therefore drops on a narrow screen. Combined with
+            // the clamp below, 9.5 × 1.15 lands at almost exactly the 11sp
+            // this bar has always rendered at on a normal phone, so a small
+            // device with large text now reads the same as a normal device
+            // with default text — rather than a word cut in half.
             labelTextStyle: WidgetStateProperty.resolveWith((states) => inter(
-                  fontSize: 11,
+                  fontSize: MediaQuery.sizeOf(context).width < 360 ? 9 : 11,
                   fontWeight: states.contains(WidgetState.selected)
                       ? FontWeight.w700
                       : FontWeight.w500,
@@ -108,7 +119,28 @@ class _GuestShellState extends State<GuestShell> {
                       : skin.muted,
                 )),
           ),
-          child: NavigationBar(
+          // The scale is CLAMPED rather than ignored: someone who has turned
+          // text up has done so because they need it, and dropping back to
+          // 1.0 would be answering an accessibility setting with "no".
+          //
+          // The ceiling depends on the width because the space does. Five tabs
+          // across 320dp leave each about 64dp, and "Dashboard" has to fit
+          // inside that with the bar's own padding taken off. 1.15 was tried
+          // first and was still not enough — the label was measured on the
+          // device and still broke — so a narrow screen gets 1.05 on top of
+          // the smaller base size above. Everything else in the app still
+          // scales the whole way; this cap is local to the one bar whose
+          // height cannot move.
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(
+                MediaQuery.textScalerOf(context).scale(1.0).clamp(
+                      1.0,
+                      MediaQuery.sizeOf(context).width < 360 ? 1.05 : 1.15,
+                    ),
+              ),
+            ),
+            child: NavigationBar(
             selectedIndex: _index,
             onDestinationSelected: (i) => setState(() => _index = i),
             backgroundColor: skin.isLux ? skin.sheet : Colors.white,
@@ -126,6 +158,7 @@ class _GuestShellState extends State<GuestShell> {
                   'Saved'),
               _tab(skin, Icons.person_outline, Icons.person_rounded, 'Profile'),
             ],
+            ),
           ),
         ),
       ),
