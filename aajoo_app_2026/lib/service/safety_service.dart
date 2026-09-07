@@ -18,10 +18,27 @@ class SafetyReason {
 /// carries a sentence to show them. Deliberately NOT a bool: "it didn't send"
 /// is the one outcome this flow must never hide.
 class SafetyResult {
-  const SafetyResult({required this.ok, this.reference, this.message});
+  const SafetyResult({
+    required this.ok,
+    this.reference,
+    this.message,
+    this.uncertain = false,
+  });
   final bool ok;
   final String? reference;
   final String? message;
+
+  /// The request timed out: we do not know whether it arrived.
+  ///
+  /// Found on a device. The first SOS timed out at twelve seconds, the screen
+  /// said "Couldn't send that" — and the ticket was sitting in the admin queue
+  /// the whole time. Telling somebody their alert failed when it did not is
+  /// worse than a plain failure: they do not follow up, or they raise it again
+  /// and support gets two of the same emergency.
+  ///
+  /// A timeout is UNKNOWN, not FAILED, and this flow is the last place to
+  /// blur the two.
+  final bool uncertain;
 }
 
 /// Safety: the SOS alert and the report flow (audit finding A-2).
@@ -34,10 +51,19 @@ class SafetyService {
   SafetyService._();
   static final SafetyService instance = SafetyService._();
 
+  /// Longer than the app's usual budget, deliberately.
+  ///
+  /// The first report sent from a device timed out at twelve seconds and told
+  /// the person it had failed — correct behaviour, and the wrong outcome. The
+  /// backend sleeps when idle and its first response after that can take
+  /// twenty seconds or more; a safety report is the last request that should
+  /// give up while the server is still waking. Thirty seconds, and the person
+  /// sees "Sending…" for as long as it takes rather than a failure that was
+  /// only impatience.
   final _dio = Dio(BaseOptions(
     baseUrl: Apiconstants.baseUrl,
-    connectTimeout: const Duration(seconds: 12),
-    receiveTimeout: const Duration(seconds: 12),
+    connectTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 30),
   ));
 
   /// The reasons a person can pick from.
@@ -114,6 +140,22 @@ class SafetyService {
       // person, and "Request failed with status code 400" is not.
       final m = e.response?.data is Map ? e.response!.data['message'] : null;
       appLog('safety report failed: ${e.message}', tag: 'safety');
+
+      const timedOut = {
+        DioExceptionType.connectionTimeout,
+        DioExceptionType.receiveTimeout,
+        DioExceptionType.sendTimeout,
+      };
+      if (m == null && timedOut.contains(e.type)) {
+        return const SafetyResult(
+          ok: false,
+          uncertain: true,
+          message:
+              "We couldn't confirm that was sent — it may still have reached us. "
+              'If you are in danger, call 112. Check Help & Support in a minute: '
+              'if a ticket is there, we have it.',
+        );
+      }
       return SafetyResult(
         ok: false,
         message: m?.toString() ??

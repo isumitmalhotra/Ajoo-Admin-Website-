@@ -115,6 +115,7 @@ class _SafetyPageState extends State<SafetyPage> {
   /// A safety action in flight, and what it said when it finished.
   bool _busy = false;
   bool _ok = false;
+  bool _uncertain = false;
   String? _result;
 
   Map<String, String> _copy = _defaults;
@@ -269,7 +270,13 @@ class _SafetyPageState extends State<SafetyPage> {
                   fontSize: 13,
                   height: 1.5,
                   fontWeight: FontWeight.w600,
-                  color: _ok ? kSuccess : const Color(0xFFB42318)),
+                  color: _ok
+                      ? kSuccess
+                      : (_uncertain
+                          // Amber, because "we could not confirm" is not
+                          // "it failed" and must not read like it.
+                          ? const Color(0xFFB54708)
+                          : const Color(0xFFB42318))),
             ),
           ],
         ],
@@ -342,6 +349,7 @@ class _SafetyPageState extends State<SafetyPage> {
     setState(() {
       _busy = false;
       _ok = res.ok;
+      _uncertain = res.uncertain;
       _result = res.ok
           ? 'Aajoo has been alerted (${res.reference}). If you are in danger, call 112 now.'
           : (res.message ?? "Couldn't send that. Please call 112.");
@@ -480,6 +488,7 @@ class _SafetyPageState extends State<SafetyPage> {
     setState(() {
       _busy = false;
       _ok = res.ok;
+      _uncertain = res.uncertain;
       _result = res.ok
           ? 'Thank you — our safety team has this (${res.reference}). You can follow it in Help & Support.'
           : (res.message ?? "Couldn't send that report.");
