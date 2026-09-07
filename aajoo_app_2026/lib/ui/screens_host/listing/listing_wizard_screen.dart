@@ -2563,7 +2563,13 @@ class _NearbyPickerState extends State<_NearbyPicker> {
                 '${o['name']}'.trim().toLowerCase() ==
                 '${p['name']}'.trim().toLowerCase()))
         .toList();
-    final rows = [...places, ...extras];
+    // Sorted by distance, suggestions and carried-over picks together.
+    // Appending the extras left a 4.6km place sitting after the 12.8km ones,
+    // which reads as a bug even though the list is right — the host has no way
+    // to know one of those chips came from a previous session.
+    final rows = [...places, ...extras]
+      ..sort((a, b) => (double.tryParse('${a['km']}') ?? 0)
+          .compareTo(double.tryParse('${b['km']}') ?? 0));
     if (rows.isEmpty) return const [];
 
     final chosen = c.nearbyPicked.where((p) => p['section'] == key).length;
