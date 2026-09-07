@@ -12,6 +12,7 @@
 // in the same tables, with the same verification workflow, as one created on
 // the site.
 import 'dart:io';
+import '../../../utils/image_rules.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1849,15 +1850,36 @@ class _PhotoStep extends StatelessWidget {
     final picked = await picker.pickMultiImage(imageQuality: 82);
     if (picked.isEmpty || !context.mounted) return;
 
+    // Portrait photographs are refused before anything else happens — before
+    // the host is asked to describe them, and long before an upload over
+    // mobile data. The gallery lays out wide frames, and a tall picture in one
+    // is letterboxed to a strip between two blank panels. The server enforces
+    // the same rule against what Cloudinary reports; this is here so the host
+    // finds out while they are still looking at the photograph.
+    final verdicts = await Future.wait(
+      picked.map((x) => checkLandscape(File(x.path))),
+    );
+    final rejected = verdicts.where((v) => !v.ok).toList();
+    final keep = <XFile>[
+      for (var i = 0; i < picked.length; i++)
+        if (verdicts[i].ok) picked[i],
+    ];
+    if (!context.mounted) return;
+    if (rejected.isNotEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(landscapeMessage(rejected))));
+    }
+    if (keep.isEmpty) return;
+
     // Asked BEFORE the upload, on purpose. A photo that is already saved is a
     // photo nobody comes back to describe — that is exactly why the library has
     // 54 images and no descriptions. The one moment a host is looking at the
     // picture is the only moment this question gets a real answer.
-    final descriptions = await _describePhotos(context, picked);
+    final descriptions = await _describePhotos(context, keep);
     if (descriptions == null) return; // backed out
 
     final problem = await controller.uploadPhotos(
-      picked.map((x) => File(x.path)).toList(),
+      keep.map((x) => File(x.path)).toList(),
       // The first photo of an empty listing is its cover; the rest are
       // uncategorised until the host says otherwise on the website.
       controller.media.isEmpty ? 'cover_photo' : '',
