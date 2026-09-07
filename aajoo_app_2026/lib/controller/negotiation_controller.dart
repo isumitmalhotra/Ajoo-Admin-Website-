@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:rent_home/models/negotiation_model.dart';
 import 'package:rent_home/service/negotitation_service.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 class NegotiationController extends GetxController {
   final NegotiationService _negotiationService;
   final Rx<NegotiationConnectionStatus> connectionStatus =
@@ -123,7 +124,7 @@ class NegotiationController extends GetxController {
       }
     }, onError: (error) {
       if (_isDisposed) return;
-      print('Negotiation connection status error: $error');
+      appLog('Negotiation connection status error: $error');
       errorMessage.value = 'Connection error: $error';
     });
 
@@ -153,7 +154,7 @@ class NegotiationController extends GetxController {
       }
     }, onError: (error) {
       if (_isDisposed) return;
-      print('Negotiation message stream error: $error');
+      appLog('Negotiation message stream error: $error');
       errorMessage.value = 'Message stream error: $error';
     });
 
@@ -186,7 +187,7 @@ class NegotiationController extends GetxController {
       isLoading.value = false;
     }, onError: (error) {
       if (_isDisposed) return;
-      print('Negotiation chat history stream error: $error');
+      appLog('Negotiation chat history stream error: $error');
       errorMessage.value = 'Failed to load chat history: $error';
       isLoading.value = false;
     });
@@ -198,7 +199,7 @@ class NegotiationController extends GetxController {
       errorMessage.value = '';
       await _negotiationService.initSocket(serverUrl, token: token);
     } catch (e) {
-      print('Negotiation socket connection error: $e');
+      appLog('Negotiation socket connection error: $e');
       errorMessage.value = 'Socket connection error: $e';
       isLoading.value = false;
     }
@@ -210,7 +211,7 @@ class NegotiationController extends GetxController {
       _negotiationService.joinNegotiationRoom(userId, propertyId);
       isRoomJoined.value = true;
     } catch (e) {
-      print('Error joining negotiation room: $e');
+      appLog('Error joining negotiation room: $e');
       errorMessage.value = 'Error joining negotiation room: $e';
     }
   }
@@ -282,7 +283,7 @@ class NegotiationController extends GetxController {
         }
       }
     } catch (e) {
-      print('Error sending negotiation message: $e');
+      appLog('Error sending negotiation message: $e');
       errorMessage.value = 'Error sending negotiation message: $e';
       if (context != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -310,7 +311,7 @@ class NegotiationController extends GetxController {
             0.0;
       });
     } catch (e) {
-      print('Error loading negotiation chat: $e');
+      appLog('Error loading negotiation chat: $e');
       errorMessage.value = 'Error loading negotiation chat: $e';
       isLoading.value = false;
     }
@@ -335,7 +336,7 @@ class NegotiationController extends GetxController {
       isUserTurn.value = true;
       lastMessageSenderId.value = '';
     } catch (e) {
-      print('Error during negotiation socket disconnection: $e');
+      appLog('Error during negotiation socket disconnection: $e');
       errorMessage.value = 'Error during socket disconnection: $e';
     }
   }

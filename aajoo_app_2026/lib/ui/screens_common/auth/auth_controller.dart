@@ -18,7 +18,8 @@ import '../../../service/notification_routing_service.dart';
 import '../../../data/models/user_models.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
-
+
+import 'package:rent_home/utils/app_log.dart';
 class AuthController extends GetxController {
   final AuthService authService = AuthService();
   /// Resolved on use, never at construction.
@@ -99,7 +100,7 @@ class AuthController extends GetxController {
       // — which means logged out, and the app knows how to show a login
       // screen. Rethrowing here is what turned an unreadable Keystore entry on
       // one handset into an app frozen on its splash screen.
-      debugPrint('checkLoginStatus failed, treating as signed out: $e');
+      appLog('checkLoginStatus failed, treating as signed out: $e');
       isLoggedIn.value = false;
       return false;
     }
@@ -200,7 +201,7 @@ class AuthController extends GetxController {
       // doesn't work" is an unactionable report, and this turns it into one
       // that says which of four different things went wrong.
       _showLoginError(_googleSignInMessage(e));
-      debugPrint('Google sign-in failed: code=${e.code} message=${e.message}');
+      appLog('Google sign-in failed: code=${e.code} message=${e.message}');
     } catch (e) {
       await handleApiError(e, onError: (message) async {
         _showLoginError(message);
@@ -745,7 +746,7 @@ class AuthController extends GetxController {
         await _firebaseMessaging?.deleteToken();
       } catch (e) {
         // ignore: avoid_print
-        print('logout: could not delete the push token: $e');
+        appLog('logout: could not delete the push token: $e');
       }
       try {
         // Clear per-user caches so the next account doesn't inherit previous
@@ -754,7 +755,7 @@ class AuthController extends GetxController {
         await BookmarkService().clearCache();
       } catch (e) {
         // ignore: avoid_print
-        print('logout: could not clear the bookmark cache: $e');
+        appLog('logout: could not clear the bookmark cache: $e');
       }
 
       showAlert('Success', 'Logged out successfully', false);

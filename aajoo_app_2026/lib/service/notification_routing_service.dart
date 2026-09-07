@@ -11,7 +11,8 @@ import '../controller/user_controller.dart';
 import '../models/properties_response_model.dart';
 import '../utils/notification_link.dart';
 import 'package:rent_home/data/ApiConstants.dart';
-
+
+import 'package:rent_home/utils/app_log.dart';
 class NotificationRoutingService extends GetxService {
   final _storage = const FlutterSecureStorage();
 
@@ -40,7 +41,7 @@ class NotificationRoutingService extends GetxService {
       _attachFirebaseHandlers();
     } catch (e) {
       // ignore: avoid_print
-      print('push routing unavailable, continuing without it: $e');
+      appLog('push routing unavailable, continuing without it: $e');
     }
   }
 
@@ -81,7 +82,7 @@ class NotificationRoutingService extends GetxService {
   }
 
   void handleNotificationData(Map<String, dynamic> data) async {
-    print('📱 Handling notification data: $data');
+    appLog('📱 Handling notification data: $data');
 
     // A push used to be ignored outright unless it carried both `route` and
     // `type`. Most carry neither, so tapping them did nothing at all. There is
@@ -93,7 +94,7 @@ class NotificationRoutingService extends GetxService {
     final authController = Get.find<AuthController>();
     final status = await authController.checkLoginStatus();
     if (!status) {
-      print('🔒 User not logged in, redirecting to login');
+      appLog('🔒 User not logged in, redirecting to login');
       _setPendingNavigation(route, data);
       Get.toNamed('/login');
       return;
@@ -293,7 +294,7 @@ class NotificationRoutingService extends GetxService {
   void _setPendingNavigation(String route, Map<String, dynamic> data) {
     _pendingRoute.value = route;
     _pendingData.value = data;
-    print('📱 Pending navigation set: $route with data: $data');
+    appLog('📱 Pending navigation set: $route with data: $data');
   }
 
   void setPendingRoute(String route) {

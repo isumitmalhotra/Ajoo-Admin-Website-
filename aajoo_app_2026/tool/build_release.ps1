@@ -28,8 +28,19 @@
 param(
     [Parameter(Mandatory = $true)][string]$ApiBaseUrl,
     [Parameter(Mandatory = $true)][string]$RazorpayKey,
-    [switch]$AllowTestPayments
+    [switch]$AllowTestPayments,
+    [switch]$AllowDevEndpoint
 )
+
+# The one endpoint a shipping build may point at.
+#
+# EMPTY ON PURPOSE, and the script refuses a build without -AllowDevEndpoint
+# until it is filled in. As of 2026-09-07 there is no production API host:
+# api.aajoohomes.com resolves to VERCEL and answers 404, so it serves the
+# website, not the API. A build made with the endpoint the audit prescribes
+# would install and reach nothing at all. Set this the day the backend has a
+# production home, and the guard below starts doing its real job.
+$ProductionApiBase = ''
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
@@ -40,6 +51,19 @@ if (-not $ApiBaseUrl.StartsWith('https://')) {
 }
 if ($RazorpayKey.StartsWith('rzp_test_') -and -not $AllowTestPayments) {
     throw "That is a TEST payment key. Pass -AllowTestPayments if this build is for QA; a live build needs rzp_live_…"
+}
+
+# The same rule for the endpoint, which the payment key had and it did not.
+#
+# Finding A-1 cites a real incident: a release APK once shipped with the dev
+# URL baked in. Making the endpoint mandatory stops an EMPTY one; it does
+# nothing about the WRONG one. A build that is not pointed at production now
+# has to say so out loud, exactly as a sandbox payment key does.
+if ($ProductionApiBase -and $ApiBaseUrl -ne $ProductionApiBase -and -not $AllowDevEndpoint) {
+    throw "That is not the production endpoint ($ProductionApiBase). Pass -AllowDevEndpoint if this build is for QA."
+}
+if (-not $ProductionApiBase -and -not $AllowDevEndpoint) {
+    throw "No production endpoint is configured in this script yet, so every build is a QA build. Pass -AllowDevEndpoint to acknowledge that, or set `$ProductionApiBase once the API has a production host."
 }
 
 $defines = @(

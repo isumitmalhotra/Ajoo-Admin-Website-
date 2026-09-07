@@ -3,7 +3,6 @@ import 'package:rent_home/constants.dart';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:rent_home/ui/unused_screens/chat/chat_page.dart';
 import 'package:rent_home/service/device_service.dart';
 
 class PaymentSuccessDialog extends StatelessWidget {
@@ -57,7 +56,7 @@ class PaymentSuccessDialog extends StatelessWidget {
             DeviceService.showMapOptions(context, lat, long);
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: kPrimaryColor,
+            backgroundColor: kprimaryColor,
             minimumSize: const Size(100, 50),
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(

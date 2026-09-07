@@ -6,6 +6,7 @@ import 'package:rent_home/controller/common_controller.dart';
 import 'package:rent_home/utils/secure_store.dart';
 import '../auth/auth_controller.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 // class SplashScreen extends StatefulWidget {
 //   const SplashScreen({Key? key}) : super(key: key);
 
@@ -46,11 +47,11 @@ import '../auth/auth_controller.dart';
 //   @override
 //   void initState() {
 //     super.initState();
-//     debugPrint("🚀 SplashScreen initState called");
+//     appLog("🚀 SplashScreen initState called");
 
 //     _initializeApp();
 
-//     debugPrint("📡 Fetching amenities & tags...");
+//     appLog("📡 Fetching amenities & tags...");
 //     commonController.fetchAmenities();
 //     commonController.fetchTags();
 
@@ -59,92 +60,92 @@ import '../auth/auth_controller.dart';
 //         setState(() {
 //           _currentIndex = (_currentIndex + 1) % _hotelContent.length;
 //         });
-//         debugPrint("🔄 Carousel index changed: $_currentIndex");
+//         appLog("🔄 Carousel index changed: $_currentIndex");
 //       } else {
-//         debugPrint("⚠️ Widget not mounted, timer skipped");
+//         appLog("⚠️ Widget not mounted, timer skipped");
 //       }
 //     });
 //   }
 
 //   Future<void> _initializeApp() async {
-//     debugPrint("⚙️ Initializing app...");
+//     appLog("⚙️ Initializing app...");
 
 //     try {
-//       debugPrint("🔐 Checking login status...");
+//       appLog("🔐 Checking login status...");
 //       final isLoggedIn = await authController.checkLoginStatus();
-//       debugPrint("✅ Login status: $isLoggedIn");
+//       appLog("✅ Login status: $isLoggedIn");
 
 //       if (isLoggedIn) {
-//         debugPrint("👤 Fetching user details...");
+//         appLog("👤 Fetching user details...");
 //         authController.getUserDetails();
-//         debugPrint("✅ User details fetched");
+//         appLog("✅ User details fetched");
 //       }
 
 //       if (!mounted) {
-//         debugPrint("❌ Widget not mounted, aborting navigation");
+//         appLog("❌ Widget not mounted, aborting navigation");
 //         return;
 //       }
 
-//       debugPrint("📦 Checking onboarding status...");
+//       appLog("📦 Checking onboarding status...");
 //       final hasSeenOnboarding = await _checkOnboardingStatus();
-//       debugPrint("✅ Onboarding seen: $hasSeenOnboarding");
+//       appLog("✅ Onboarding seen: $hasSeenOnboarding");
 
 //       if (!hasSeenOnboarding) {
-//         debugPrint("➡️ Navigating to /onboarding");
+//         appLog("➡️ Navigating to /onboarding");
 //         Get.offAllNamed('/onboarding');
 //       } else if (!isLoggedIn) {
-//         debugPrint("➡️ Navigating to /login");
+//         appLog("➡️ Navigating to /login");
 //         Get.offAllNamed('/login');
 //       } else {
 //         final isHost = authController.userData.value?.isHost == true;
-//         debugPrint("👤 Is Host: $isHost");
+//         appLog("👤 Is Host: $isHost");
 
 //         if (isHost) {
-//           debugPrint("➡️ Navigating to /host/home");
+//           appLog("➡️ Navigating to /host/home");
 //           Get.offAllNamed('/host/home');
 //         } else {
-//           debugPrint("➡️ Navigating to /home");
+//           appLog("➡️ Navigating to /home");
 //           Get.offAllNamed('/home');
 //         }
 //       }
 //     } catch (e, stackTrace) {
-//       debugPrint("❌ Error during initialization: $e");
-//       debugPrint("📍 StackTrace: $stackTrace");
+//       appLog("❌ Error during initialization: $e");
+//       appLog("📍 StackTrace: $stackTrace");
 
 //       if (mounted) {
-//         debugPrint("➡️ Navigating to /login (fallback)");
+//         appLog("➡️ Navigating to /login (fallback)");
 //         Get.offAllNamed('/login');
 //       }
 //     }
 //   }
 
 //   Future<bool> _checkOnboardingStatus() async {
-//     debugPrint("🔍 Reading token from secure storage...");
+//     appLog("🔍 Reading token from secure storage...");
 
 //     const storage = FlutterSecureStorage();
 //     final token = await storage.read(key: authController.authService.TOKEN_KEY);
 
-//     debugPrint("🔑 Token: ${token != null ? "EXISTS" : "NULL"}");
+//     appLog("🔑 Token: ${token != null ? "EXISTS" : "NULL"}");
 
 //     if (token == null) {
-//       debugPrint("❗ No token found → onboarding required");
+//       appLog("❗ No token found → onboarding required");
 //       return false;
 //     }
 
-//     debugPrint("✅ Token found → onboarding already done");
+//     appLog("✅ Token found → onboarding already done");
 //     return true;
 //   }
 
 //   @override
 //   void dispose() {
-//     debugPrint("🧹 Disposing SplashScreen & cancelling timer");
+//     appLog("🧹 Disposing SplashScreen & cancelling timer");
 //     _timer.cancel();
 //     super.dispose();
 //   }
 
 //   @override
 //   Widget build(BuildContext context) {
-//     debugPrint("🎨 SplashScreen build called");
+//     appLog("🎨 SplashScreen build called");
 
 //     return Scaffold(
 //       backgroundColor: Colors.white,
@@ -264,7 +265,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _initializeApp() async {
     _watchdog = Timer(const Duration(seconds: 8), () {
       if (!_left) {
-        debugPrint('Splash watchdog fired — startup did not finish in time.');
+        appLog('Splash watchdog fired — startup did not finish in time.');
         _go('/login');
       }
     });
@@ -278,7 +279,7 @@ class _SplashScreenState extends State<SplashScreen> {
         // Fire-and-forget, but never unhandled — a failure here must not
         // prevent the app from opening.
         unawaited(Future(() => authController.getUserDetails())
-            .catchError((Object e) => debugPrint('getUserDetails failed: $e')));
+            .catchError((Object e) => appLog('getUserDetails failed: $e')));
       }
       if (!mounted) return;
 
@@ -294,7 +295,7 @@ class _SplashScreenState extends State<SplashScreen> {
     } catch (e) {
       // Land somewhere. Anywhere. The old code logged this line and then did
       // nothing, which is how a one-line storage failure became a dead app.
-      debugPrint('Splash init failed, falling back to /login: $e');
+      appLog('Splash init failed, falling back to /login: $e');
       _go('/login');
     }
   }

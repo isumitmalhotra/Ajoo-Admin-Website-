@@ -26,6 +26,7 @@ import 'package:rent_home/models/properties_response_model.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:shimmer/shimmer.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 class PreBookingScreen extends StatefulWidget {
   /// Open showing the stays around one searched place.
   ///
@@ -136,7 +137,7 @@ class _PreBookingScreenState extends State<PreBookingScreen> {
       Placemark place = placemarks[0];
       return "${place.street}, ${place.subLocality},${place.locality}";
     } catch (e) {
-      print("Error getting address: $e");
+      appLog("Error getting address: $e");
       return " - ";
     }
   }

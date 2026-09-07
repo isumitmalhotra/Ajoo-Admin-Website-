@@ -5,6 +5,7 @@ import 'package:rent_home/controller/alert_dialog.dart';
 import 'package:rent_home/data/models/host_booking_history_model.dart';
 import 'package:rent_home/service/host_service.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 class HostBookingHistoryController extends GetxController {
   final HostService hostService = HostService();
   final storage = const FlutterSecureStorage();
@@ -84,7 +85,7 @@ class HostBookingHistoryController extends GetxController {
       isSubmittingReview.value = true;
       errorMessage.value = null;
 
-      print("submitReview button tapped");
+      appLog("submitReview button tapped");
 
       final response =
           await hostService.addUserReview(rating, id, description, title);

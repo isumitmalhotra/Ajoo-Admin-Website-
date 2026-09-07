@@ -5,6 +5,7 @@ import 'package:rent_home/models/faq_reponse_model.dart';
 import 'package:rent_home/models/terms_condition_user_response_model.dart';
 import 'package:rent_home/service/static_page_service.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 class StaticPageController extends GetxController {
   final _staticPageService = StaticPageService();
   Rx<AajooModel?> aboutUsData = Rx<AajooModel?>(null);
@@ -28,7 +29,7 @@ class StaticPageController extends GetxController {
       final response = await _staticPageService.getAboutUsData();
       aboutUsData.value = response;
     } catch (err) {
-      print(err);
+      appLog(err);
       showSnackbar("Error ", "Something went Wrong", true);
     } finally {
       isLoading.value = false;
@@ -42,7 +43,7 @@ class StaticPageController extends GetxController {
       final response = await _staticPageService.getFaqData();
       faqData.value = response;
     } catch (err) {
-      print(err);
+      appLog(err);
       faqError.value = true;
       // No snackbar. The FAQ list is a secondary section of a page whose main
       // job — phone, chat, email — works regardless; a red toast over a
@@ -60,7 +61,7 @@ class StaticPageController extends GetxController {
           await _staticPageService.getTermsAndCondtionData(isHost: isHost);
       terms.value = response;
     } catch (err) {
-      print(err);
+      appLog(err);
       showSnackbar("Error ", "Something went Wrong", true);
     } finally {
       isLoading.value = false;
@@ -73,7 +74,7 @@ class StaticPageController extends GetxController {
       final response = await _staticPageService.getPrivacyPolicy(isHost);
       privacyPolicy.value = response;
     } catch (err) {
-      print(err);
+      appLog(err);
       showSnackbar("Error ", "Something went Wrong", true);
     } finally {
       isLoading.value = false;

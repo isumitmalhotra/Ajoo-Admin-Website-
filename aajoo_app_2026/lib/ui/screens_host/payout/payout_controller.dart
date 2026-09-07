@@ -3,6 +3,7 @@ import 'package:rent_home/data/models/payout_list_model.dart';
 import 'package:rent_home/models/host_account_details_model.dart';
 import 'package:rent_home/service/host_payout_service.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 class PayoutController extends GetxController {
   final _payoutService = HostPayoutService();
 
@@ -26,14 +27,14 @@ class PayoutController extends GetxController {
 
   Future<void> fetchPayoutList() async {
     isLoading.value = true;
-    print('[PAYOUT] fetchPayoutList → START');
+    appLog('[PAYOUT] fetchPayoutList → START');
 
     try {
-      print('[PAYOUT] Calling getPayoutList API');
+      appLog('[PAYOUT] Calling getPayoutList API');
 
       final response = await _payoutService.getPayoutList();
 
-      print(
+      appLog(
         '[PAYOUT] API SUCCESS → '
         'count: ${response.data.payoutRequests.length}',
       );
@@ -43,11 +44,11 @@ class PayoutController extends GetxController {
     } catch (e, stackTrace) {
       isError.value = true;
 
-      print('[PAYOUT] API ERROR → $e');
-      print('[PAYOUT] STACKTRACE → $stackTrace');
+      appLog('[PAYOUT] API ERROR → $e');
+      appLog('[PAYOUT] STACKTRACE → $stackTrace');
     } finally {
       isLoading.value = false;
-      print('[PAYOUT] fetchPayoutList → END');
+      appLog('[PAYOUT] fetchPayoutList → END');
     }
   }
 
@@ -57,7 +58,7 @@ class PayoutController extends GetxController {
       final acc = await _payoutService.getHostAccountDetails();
       accountDetails.value = acc;
     } catch (e) {
-      print('[PAYOUT] fetchAccountDetails ERROR → $e');
+      appLog('[PAYOUT] fetchAccountDetails ERROR → $e');
       // Soft-fail: treat unreachable account endpoint as "no account yet"
       accountDetails.value = null;
     } finally {
@@ -87,7 +88,7 @@ class PayoutController extends GetxController {
       }
       return ok;
     } catch (e) {
-      print('[PAYOUT] saveAccountDetails ERROR → $e');
+      appLog('[PAYOUT] saveAccountDetails ERROR → $e');
       return false;
     } finally {
       isSavingAccount.value = false;

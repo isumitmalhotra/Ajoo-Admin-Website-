@@ -14,7 +14,8 @@ import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/ui/widgets/password_rules_checklist.dart';
 import '../auth_controller.dart';
 import '../../../../utils/email_validation.dart';
-
+
+import 'package:rent_home/utils/app_log.dart';
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
 
@@ -471,7 +472,7 @@ class _AuthPageState extends State<AuthPage> {
                                                   'user_isHost'] = hostVal;
                                               Get.to(() => const InfoScreen());
                                             } else {
-                                              print(
+                                              appLog(
                                                   'Error: ${authController.error.value}');
                                             }
                                           }

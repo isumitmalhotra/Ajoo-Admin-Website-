@@ -15,7 +15,6 @@ import 'package:rent_home/ui/screens_common/auth/verify/verify_page.dart';
 import 'package:rent_home/ui/screens_common/auth/kyc/didit_kyc_screen.dart';
 import 'package:rent_home/ui/screens_renter/home/homescreen.dart';
 import 'package:rent_home/ui/screens_renter/guest_shell.dart';
-import 'package:rent_home/ui/unused_screens/chat/chat_page.dart';
 import 'package:rent_home/ui/screens_host/home/main_screen.dart';
 import 'package:rent_home/ui/screens_renter/history/history_page.dart';
 import 'package:rent_home/ui/screens_common/notifications/notification_screen.dart';
@@ -35,7 +34,8 @@ import 'package:rent_home/controller/alert_dialog.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 
 import 'binding/init_binding.dart';
-
+
+import 'package:rent_home/utils/app_log.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -65,7 +65,7 @@ void main() async {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)
         .timeout(const Duration(seconds: 10));
   } catch (e) {
-    debugPrint('Firebase unavailable, starting without it: $e');
+    appLog('Firebase unavailable, starting without it: $e');
   }
 
   Get.put(ThemeService());
@@ -214,7 +214,6 @@ class MyApp extends StatelessWidget {
       builder: (context, child) {
         return MultiProvider(
           providers: [
-            Provider(create: (_) => ChatProvider()),
             ChangeNotifierProvider(create: (_) => HostTabProvider()),
           ],
           child: child!,

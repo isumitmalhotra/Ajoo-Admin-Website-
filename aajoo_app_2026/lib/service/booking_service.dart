@@ -11,7 +11,8 @@ import 'package:rent_home/models/single_property_response.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import '../utils/service_log.dart';
 import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
-
+
+import 'package:rent_home/utils/app_log.dart';
 class BookingService {
   final Dio _dio = Dio(
     BaseOptions(
@@ -58,18 +59,18 @@ class BookingService {
 
   Future<BookingResponse> createBooking(Map<String, dynamic> data) async {
     final url = '$baseUrl/booking/create';
-    // print(data);
+    // appLog(data);
     final token = await const FlutterSecureStorage().read(key: "user_token");
     _dio.options.headers['Authorization'] = 'Bearer $token';
     try {
-      print(data);
+      appLog(data);
       final response = await _dio.post(url, data: data);
 
-      print(response.data);
+      appLog(redact(response.data), tag: 'booking');
       userController?.fetchOngoingBookings();
       return BookingResponse.fromJson(response.data);
     } on DioException catch (err) {
-      print(err.response?.data);
+      appLog(redact(err.response?.data), tag: 'booking');
       throw _handleError(err);
     } catch (e) {
       throw _handleError(e);
@@ -130,7 +131,7 @@ class BookingService {
         "longitude": property.data?.propertyLongitude ?? "0.0",
       };
     } else {
-      print(property.toJson());
+      appLog(property.toJson());
 
       throw Exception("Failed to get property latitude and longitude");
     }
@@ -138,17 +139,17 @@ class BookingService {
 
   Future<SinglePropertyResponse> getSingleProperty(int id) async {
     final token = await const FlutterSecureStorage().read(key: "user_token");
-    print(token);
+    // The session token is never logged — see utils/app_log.dart.
     _dio.options.headers["Authorization"] = "Bearer $token";
 
     try {
       final response = await _dio.get("$baseUrl/properties/$id");
 
       // Remove this line that's causing the error
-      // print("history ->>>" + response.data); // response.data is a Map, not a String
+      // appLog("history ->>>" + response.data); // response.data is a Map, not a String
 
       // Instead, print like this if needed:
-      print("history ->>> ${response.data}");
+      appLog(redact(response.data), tag: 'booking.history');
 
       if (response.statusCode == 200) {
         final propertyResponse = SinglePropertyResponse.fromJson(response.data);
@@ -159,14 +160,14 @@ class BookingService {
           message: "Failed to get property",
           data: SinglePropertyData());
     } on DioException catch (e) {
-      print(e);
+      appLog(e);
       _handleError(e);
       return SinglePropertyResponse(
           success: false,
           message: "Failed to get property",
           data: SinglePropertyData());
     } on Exception catch (e) {
-      print(e);
+      appLog(e);
       return SinglePropertyResponse(
           success: false,
           message: "Failed to get property",
@@ -185,7 +186,7 @@ class BookingService {
         "paymentId": paymentId,
         "signature": signature,
       });
-      print(response.data);
+      appLog(redact(response.data), tag: 'booking');
       return response.data['success'];
     } on DioException catch (err) {
       throw _handleError(err);
@@ -272,7 +273,7 @@ class BookingService {
     };
     try {
       final response = await _dio.post(url, data: data);
-      print("Cancel booking response: ${response.data}");
+      appLog(redact(response.data), tag: 'booking.cancel');
       // A 200 with `success: false` is still a refusal.
       //
       // This returned response.data whatever it said, so the controller
@@ -288,7 +289,7 @@ class BookingService {
       userController?.fetchOngoingBookings();
       return response.data;
     } on DioException catch (err) {
-      print("Cancel booking error: ${err.response?.data}");
+      appLog("Cancel booking error: ${err.response?.data}");
       throw _handleError(err);
     } catch (e) {
       throw _handleError(e);
@@ -305,10 +306,10 @@ class BookingService {
     };
     try {
       final response = await _dio.post(url, data: data);
-      print("Create ongoing booking payment response: ${response.data}");
+      appLog(redact(response.data), tag: 'booking.pay');
       return response.data;
     } on DioException catch (err) {
-      print("Create ongoing booking payment error: ${err.response?.data}");
+      appLog("Create ongoing booking payment error: ${err.response?.data}");
       throw _handleError(err);
     } catch (e) {
       throw _handleError(e);

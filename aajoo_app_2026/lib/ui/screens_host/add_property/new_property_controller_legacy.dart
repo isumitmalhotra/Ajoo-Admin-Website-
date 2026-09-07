@@ -7,7 +7,8 @@ import 'package:rent_home/ui/screens_host/host_controller.dart';
 import 'package:rent_home/data/models/action_result.dart';
 import 'package:rent_home/data/models/property_review_response_model.dart';
 import 'package:rent_home/service/property_service.dart';
-
+
+import 'package:rent_home/utils/app_log.dart';
 class NewPropertyController extends GetxController {
   RxBool isLoading = false.obs;
   RxString propertyName = ''.obs;
@@ -102,8 +103,8 @@ class NewPropertyController extends GetxController {
     isLoading.value = true;
     final response = await _propertyService.getPropertyReview(id);
     propertyReviewResponse.value = response;
-    // print('Property Review Response: ${propertyReviewResponse.value.toJson()}');
-    print('Property Review Response: ${propertyReviewResponse.value.data}');
+    // appLog('Property Review Response: ${propertyReviewResponse.value.toJson()}');
+    appLog('Property Review Response: ${propertyReviewResponse.value.data}');
     isLoading.value = false;
   }
 

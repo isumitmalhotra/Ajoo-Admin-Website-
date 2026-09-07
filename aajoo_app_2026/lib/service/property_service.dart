@@ -11,7 +11,8 @@ import 'package:rent_home/models/destination_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/utils/upload_media_type.dart';
 import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
-
+
+import 'package:rent_home/utils/app_log.dart';
 class PropertyService {
   /// Why the last addProperties call failed, straight from the server.
   ///
@@ -82,7 +83,7 @@ class PropertyService {
 
       // Send POST request with form data
       final response = await dio.post("properties/add", data: formData);
-      print(response.data);
+      appLog(redact(response.data));
 
       if (response.statusCode == 200) {
         if (response.data['success'] == true) {
@@ -90,11 +91,11 @@ class PropertyService {
           return true;
         }
         lastAddError = _messageFrom(response.data);
-        print("Failed to add property: ${response.data}");
+        appLog("Failed to add property: ${response.data}");
         return false;
       }
       lastAddError = _messageFrom(response.data);
-      print("Failed to add property: ${response.data}");
+      appLog("Failed to add property: ${response.data}");
       return false;
     } on DioException catch (e) {
       final timedOut = e.type == DioExceptionType.sendTimeout ||
@@ -110,7 +111,7 @@ class PropertyService {
                   ? 'Upload timed out. Your photos may be too large — try '
                       'fewer or smaller images, then submit again.'
                   : 'Could not reach the server. Check your connection.');
-      print("Error: ${e.response?.data} ${e.message}");
+      appLog("Error: ${e.response?.data} ${e.message}");
       return false;
     }
   }
@@ -122,7 +123,7 @@ class PropertyService {
     final response = await dio.post("review/like", data: {
       "reviewId": id,
     });
-    print(response.data);
+    appLog(redact(response.data));
     if (response.statusCode == 200) {
       if (response.data["success"]) {
         return true;
@@ -138,7 +139,7 @@ class PropertyService {
     final response = await dio.post("review/dislike", data: {
       "reviewId": id,
     });
-    print(response.data);
+    appLog(redact(response.data));
     if (response.statusCode == 200) {
       if (response.data["success"]) {
         return true;
@@ -166,7 +167,7 @@ class PropertyService {
           .where((d) => d.name.isNotEmpty)
           .toList();
     } catch (e) {
-      debugPrint('getDestinations failed: $e');
+      appLog('getDestinations failed: $e');
       return const [];
     }
   }
@@ -177,8 +178,8 @@ class PropertyService {
     final response = await dio.post("properties/reviews/list", data: {
       "propertyId": id,
     });
-    print(id);
-    print(response.data);
+    appLog(id);
+    appLog(redact(response.data));
     final responseModel = ReviewResponse.fromJson(response.data);
     return responseModel;
   }
@@ -198,7 +199,7 @@ class PropertyService {
       });
 
       final response = await dio.post(url, data: formData);
-      print(response.data);
+      appLog(redact(response.data));
       if (response.statusCode == 200) {
         if (response.data["success"]) {
           return true;
@@ -207,24 +208,24 @@ class PropertyService {
       }
       return false;
     } on DioException catch (e) {
-      print(e);
-      print(e.response);
+      appLog(e);
+      appLog(e.response);
       return false;
     }
   }
 
   Future<SinglePropertyResponse> getSingleProperty(int id) async {
     final token = await _secureStorage.read(key: TOKEN_KEY);
-    print(token);
+    appLog(token);
     dio.options.headers["Authorization"] = "Bearer $token";
     try {
       final response = await dio.get("properties/$id");
 
       // Remove this line that's causing the error
-      // print("history ->>>" + response.data); // response.data is a Map, not a String
+      // appLog("history ->>>" + response.data); // response.data is a Map, not a String
 
       // Instead, print like this if needed:
-      print("history ->>> ${response.data}");
+      appLog("history ->>> ${response.data}");
 
       if (response.statusCode == 200) {
         final propertyResponse = SinglePropertyResponse.fromJson(response.data);
@@ -235,14 +236,14 @@ class PropertyService {
           message: "Failed to get property",
           data: SinglePropertyData());
     } on DioException catch (e) {
-      print(e);
+      appLog(e);
       _handleError(e);
       return SinglePropertyResponse(
           success: false,
           message: "Failed to get property",
           data: SinglePropertyData());
     } on Exception catch (e) {
-      print(e);
+      appLog(e);
       return SinglePropertyResponse(
           success: false,
           message: "Failed to get property",
@@ -269,7 +270,7 @@ class PropertyService {
       if (host is! Map) return null;
       return HostProfile.fromJson(Map<String, dynamic>.from(host));
     } catch (e) {
-      print('getHostProfile failed: $e');
+      appLog('getHostProfile failed: $e');
       return null;
     }
   }
@@ -344,7 +345,7 @@ class PropertyService {
       final response = await dio.post("host/delete-property", data: {
         "propertyId": id,
       });
-      print(response.data);
+      appLog(redact(response.data));
       if (response.statusCode == 200) {
         if (response.data["success"]) {
           return true;
@@ -354,8 +355,8 @@ class PropertyService {
 
       return false;
     } on DioException catch (e) {
-      print(e.message);
-      print(e.response!.data);
+      appLog(e.message);
+      appLog(e.response!.data);
       return false;
     }
   }

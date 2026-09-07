@@ -29,7 +29,8 @@ import '../../../data/models/update_user_model.dart';
 import '../../../data/models/user_models.dart';
 import 'package:rent_home/ui/screens_host/add_property/widgets/state_city_dropdowns.dart';
 import 'package:rent_home/ui/screens_common/refer/refer_screen.dart';
-
+
+import 'package:rent_home/utils/app_log.dart';
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -778,14 +779,14 @@ class _ProfileScreenState extends State<ProfileScreen>
       _zipcodeController.dispose();
       _scrollController.dispose();
     } catch (e) {
-      debugPrint('Error during dispose: $e');
+      appLog('Error during dispose: $e');
     }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    print(authController.userData.value?.kycDocs?.toJson());
+    appLog(authController.userData.value?.kycDocs?.toJson());
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(

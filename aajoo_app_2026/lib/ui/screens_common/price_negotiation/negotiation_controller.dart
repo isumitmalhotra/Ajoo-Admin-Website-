@@ -7,6 +7,7 @@ import 'package:rent_home/data/models/negotiation_model.dart';
 import 'package:rent_home/service/negotitation_service.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/negotitaion_page.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 class NegotiationController extends GetxController {
   final NegotiationService _negotiationService;
   final Rx<NegotiationConnectionStatus> connectionStatus =
@@ -70,12 +71,12 @@ class NegotiationController extends GetxController {
     // return true;
     // Global blocking conditions
     if (chatLimitReached.value) {
-      //  debugPrint('$logTag ❌ Blocked: chatLimitReached is true');
+      //  appLog('$logTag ❌ Blocked: chatLimitReached is true');
       return false;
     }
 
     if (offerFinalized.value) {
-      //  debugPrint('$logTag ❌ Blocked: offerFinalized is true');
+      //  appLog('$logTag ❌ Blocked: offerFinalized is true');
       return false;
     }
 
@@ -83,50 +84,50 @@ class NegotiationController extends GetxController {
     if (messages.isNotEmpty) {
       final lastMsgSenderId = messages.last.senderId;
 
-      // debugPrint('$logTag lastMsgSenderId: $lastMsgSenderId');
+      // appLog('$logTag lastMsgSenderId: $lastMsgSenderId');
 
       if (lastMsgSenderId.isNotEmpty && lastMsgSenderId == currentUserIdStr) {
-        // debugPrint(
+        // appLog(
         //     '$logTag ❌ Blocked: Same user trying to send consecutive messages');
         return false;
       }
     } else {
-      // debugPrint('$logTag No previous messages → first message allowed');
+      // appLog('$logTag No previous messages → first message allowed');
     }
 
     // Turn-based check (no consecutive messages)
     // if (lastMessageSenderId.value.isNotEmpty &&
     //     lastMessageSenderId.value == currentUserId) {
-    //   debugPrint(
+    //   appLog(
     //       '$logTag ❌ Blocked: Same user trying to send consecutive messages');
     //   return false;
     // }
     // if (lastMsgSenderId.isNotEmpty && lastMsgSenderId == currentUserIdStr) {
-    //   debugPrint(
+    //   appLog(
     //       '$logTag ❌ Blocked: Same user trying to send consecutive messages');
     //   return false;
     // }
 
     // Identify sender role
     final isCurrentUserSender = currentUserIdStr != hostId;
-    //debugPrint('$logTag isCurrentUserSender: $isCurrentUserSender');
+    //appLog('$logTag isCurrentUserSender: $isCurrentUserSender');
 
     // Message limit checks
     if (isCurrentUserSender) {
       if (userMessageCount.value >= maxMessagesPerUser.value) {
-        // debugPrint('$logTag ❌ Blocked: User message limit reached '
+        // appLog('$logTag ❌ Blocked: User message limit reached '
         //     '(${userMessageCount.value}/${maxMessagesPerUser.value})');
         return false;
       }
     } else {
       if (hostMessageCount.value >= maxMessagesPerUser.value) {
-        // debugPrint('$logTag ❌ Blocked: Host message limit reached '
+        // appLog('$logTag ❌ Blocked: Host message limit reached '
         //     '(${hostMessageCount.value}/${maxMessagesPerUser.value})');
         return false;
       }
     }
 
-    //   debugPrint('$logTag ✅ Allowed: User can send message');
+    //   appLog('$logTag ✅ Allowed: User can send message');
     return true;
   }
 
@@ -242,7 +243,7 @@ class NegotiationController extends GetxController {
       // }
     }, onError: (error) {
       if (_isDisposed) return;
-      print('Negotiation message stream error: $error');
+      appLog('Negotiation message stream error: $error');
       errorMessage.value = 'Message stream error: $error';
     });
 
@@ -302,7 +303,7 @@ class NegotiationController extends GetxController {
       _negotiationService.joinNegotiationRoom(userId, propertyId);
       isRoomJoined.value = true;
     } catch (e) {
-      print('Error joining negotiation room: $e');
+      appLog('Error joining negotiation room: $e');
       errorMessage.value = 'Error joining negotiation room: $e';
     }
   }
@@ -376,7 +377,7 @@ class NegotiationController extends GetxController {
         }
       }
     } catch (e) {
-      print('Error sending negotiation message: $e');
+      appLog('Error sending negotiation message: $e');
       errorMessage.value = 'Error sending negotiation message: $e';
       if (context != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -468,7 +469,7 @@ class NegotiationController extends GetxController {
       isUserTurn.value = true;
       lastMessageSenderId.value = '';
     } catch (e) {
-      print('Error during negotiation socket disconnection: $e');
+      appLog('Error during negotiation socket disconnection: $e');
       errorMessage.value = 'Error during socket disconnection: $e';
     }
   }

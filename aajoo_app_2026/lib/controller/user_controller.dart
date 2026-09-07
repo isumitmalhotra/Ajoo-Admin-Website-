@@ -11,6 +11,7 @@ import 'package:rent_home/service/property_service.dart';
 import 'package:rent_home/service/user_service.dart';
 import 'package:rent_home/service/booking_service.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 class UserController extends GetxController {
   final UserService _userService = UserService();
   final PropertyService _propertyService = PropertyService();
@@ -38,10 +39,10 @@ class UserController extends GetxController {
     try {
       final bookings = await _userService.getOngoingBookings();
       ongoingBookings.value = bookings;
-      print("ongoing booking created ");
+      appLog("ongoing booking created ");
       isError.value = false;
     } catch (e) {
-      print("ONGOING - $e");
+      appLog("ONGOING - $e");
       isError.value = true;
       // showSnackbar("Error", e.toString(), true);
     } finally {
@@ -54,7 +55,7 @@ class UserController extends GetxController {
     try {
       final response = await _userService.getUserReviews();
       userReviews.value = response;
-      print("User Reviews: ${userReviews.value}");
+      appLog("User Reviews: ${userReviews.value}");
       isError.value = false;
     } catch (e) {
       isError.value = true;
@@ -178,7 +179,7 @@ class UserController extends GetxController {
   }
 
   Future<void> getProperty(int id) async {
-    print("Property ID: $id");
+    appLog("Property ID: $id");
     isLoading.value = true;
     try {
       final response = await _propertyService.getSingleProperty(id);
@@ -194,7 +195,7 @@ class UserController extends GetxController {
       }
       isError.value = false;
     } catch (e) {
-      print(e);
+      appLog(e);
       isError.value = true;
       showSnackbar("Error", e.toString(), true);
     } finally {
@@ -250,7 +251,7 @@ class UserController extends GetxController {
           duration: const Duration(seconds: 3),
         );
       } catch (e) {
-        print("showSnackbar failed: $e");
+        appLog("showSnackbar failed: $e");
       }
     });
   }

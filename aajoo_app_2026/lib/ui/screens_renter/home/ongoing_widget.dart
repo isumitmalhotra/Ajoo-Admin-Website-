@@ -6,7 +6,8 @@ import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/data/models/ongoing_reponse.dart';
 import 'package:rent_home/ui/screens_renter/home/view_ongoing_booking.dart';
 import 'package:rent_home/service/device_service.dart';
-
+
+import 'package:rent_home/utils/app_log.dart';
 class OngoingBookingWidget extends StatefulWidget {
   final UserController userController;
 
@@ -240,7 +241,7 @@ class _OngoingBookingWidgetState extends State<OngoingBookingWidget> {
                         );
                         return;
                       }
-                      print("Coordinates: $lat, $long");
+                      appLog("Coordinates: $lat, $long");
                       final latitude = double.tryParse(lat.toString()) ?? 0.0;
                       final longitude = double.tryParse(long.toString()) ?? 0.0;
                       DeviceService.showMapOptions(

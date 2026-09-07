@@ -4,7 +4,8 @@ import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/data/models/create_booking_response.dart';
 import 'package:rent_home/service/booking_service.dart';
 import 'package:rent_home/models/cancellation_quote.dart';
-
+
+import 'package:rent_home/utils/app_log.dart';
 class BookingController extends GetxController {
   RxBool isLoading = false.obs;
   RxString error = "".obs;
@@ -47,7 +48,7 @@ class BookingController extends GetxController {
       // Debug: booking response
       // final br = bookingResponse.value;
       // if (br?.data != null) {
-      //   print(br!.data!.toJson());
+      //   appLog(br!.data!.toJson());
       // }
       if (bookingResponse.value?.success == true) {
       } else {

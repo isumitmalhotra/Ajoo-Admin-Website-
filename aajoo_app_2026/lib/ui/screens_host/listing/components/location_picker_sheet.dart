@@ -320,34 +320,60 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
     );
   }
 
+  /// Title, then subtitle, then the actions — not all three in one row.
+  ///
+  /// They used to share a Row, so "My location" and the close button took
+  /// their width first and the text got whatever was left. At the system font
+  /// scale of 1.3 that left column is about half the sheet: the title wrapped
+  /// onto two lines and the subtitle onto three, and the header ate a third of
+  /// a small phone's screen before the map began. Seen on the emulator at
+  /// 360dp / 1.3x while working through audit finding A-4.
+  ///
+  /// Giving the text the full width costs one row of height at the default
+  /// scale and stops the wrap entirely at every scale above it.
   Widget _header() => Padding(
         padding: const EdgeInsets.fromLTRB(18, 14, 8, 6),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Where is the property?',
-                      style: fraunces(
-                          fontSize: 18, fontWeight: FontWeight.w700, color: kInk)),
-                  const SizedBox(height: 2),
-                  Text('Search, or move the map under the pin.',
-                      style: inter(fontSize: 12.5, color: kMuted)),
-                ],
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Text('Where is the property?',
+                        style: fraunces(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: kInk)),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded, color: kInk2),
+                  tooltip: 'Close',
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: Text('Search, or move the map under the pin.',
+                  style: inter(fontSize: 12.5, color: kMuted)),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => _useMyLocation(),
+                icon: const Icon(Icons.my_location_rounded, size: 17),
+                label: Text('My location',
+                    style: inter(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                style: TextButton.styleFrom(
+                  foregroundColor: kprimaryColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  visualDensity: VisualDensity.compact,
+                ),
               ),
-            ),
-            TextButton.icon(
-              onPressed: () => _useMyLocation(),
-              icon: const Icon(Icons.my_location_rounded, size: 17),
-              label: Text('My location',
-                  style: inter(fontSize: 12.5, fontWeight: FontWeight.w600)),
-              style: TextButton.styleFrom(foregroundColor: kprimaryColor),
-            ),
-            IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.close_rounded, color: kInk2),
-              tooltip: 'Close',
             ),
           ],
         ),

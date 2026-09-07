@@ -19,6 +19,7 @@ import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/utils/upload_media_type.dart';
 import '../utils/service_log.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 /// What went wrong, in words the host can act on.
 class ListingException implements Exception {
   ListingException(this.message);
@@ -334,7 +335,7 @@ class ListingService {
       }
       return null;
     } catch (e) {
-      if (kDebugMode) debugPrint('uploadDocument failed: $e');
+      if (kDebugMode) appLog('uploadDocument failed: $e');
       _rethrowFriendly(e);
     }
   }

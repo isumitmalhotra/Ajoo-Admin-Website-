@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../ui/screens_common/auth/auth_controller.dart';
 import '../service/notification_routing_service.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 class NotificationRoutingMiddleware extends GetMiddleware {
   @override
   RouteSettings? redirect(String? route) {
@@ -22,7 +23,7 @@ class NotificationRoutingMiddleware extends GetMiddleware {
 
   @override
   GetPage? onPageCalled(GetPage? page) {
-    print('📱 Notification Routing Middleware: Processing ${page?.name}');
+    appLog('📱 Notification Routing Middleware: Processing ${page?.name}');
     return super.onPageCalled(page);
   }
 

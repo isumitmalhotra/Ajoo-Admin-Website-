@@ -2,6 +2,7 @@ import 'package:rent_home/utils/nightly_rates.dart';
 import 'package:rent_home/models/property_offer.dart';
 import 'package:rent_home/models/pet_policy.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 class SinglePropertyResponse {
   final bool? success;
   final String? message;
@@ -274,7 +275,7 @@ class SinglePropertyData {
       try {
         return int.parse(value);
       } catch (e) {
-        print('Failed to parse "$value" to int: $e');
+        appLog('Failed to parse "$value" to int: $e');
         return null;
       }
     }

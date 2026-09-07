@@ -14,7 +14,8 @@ import 'package:rent_home/data/ApiConstants.dart';
 import '../models/notification_response_model.dart';
 import 'notification_routing_service.dart';
 import '../utils/service_log.dart';
-
+
+import 'package:rent_home/utils/app_log.dart';
 /// Background FCM handler.
 ///
 /// This MUST be a top-level (or static) function annotated with
@@ -218,7 +219,7 @@ class NotificationService {
       logger.d("📩 Notitication clicked");
       logger.d("payload: ${response.payload}");
       final data = jsonDecode(response.payload!);
-      print(data);
+      appLog(data);
       if (Get.isRegistered<NotificationRoutingService>()) {
         Get.find<NotificationRoutingService>().handleNotificationData(data);
       }

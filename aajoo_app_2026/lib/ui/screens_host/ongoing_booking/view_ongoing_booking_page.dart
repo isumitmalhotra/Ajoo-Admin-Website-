@@ -7,7 +7,8 @@ import 'package:rent_home/widgets/app_ui.dart' show withDividers;
 import 'package:rent_home/ui/screens_host/host_controller.dart';
 import 'package:rent_home/data/models/host_ongoing_response.dart';
 import 'package:rent_home/service/device_service.dart';
-
+
+import 'package:rent_home/utils/app_log.dart';
 class ViewOngoingBookingPage extends StatefulWidget {
   final Booking booking;
 
@@ -25,9 +26,9 @@ class _ViewOngoingBookingPageState extends State<ViewOngoingBookingPage> {
     // Avoid accessing first when list could be empty
     try {
       if (widget.booking.attachments.isNotEmpty) {
-        print(widget.booking.attachments.first);
+        appLog(widget.booking.attachments.first);
       } else {
-        print("No attachments for this booking");
+        appLog("No attachments for this booking");
       }
     } catch (_) {}
     return Scaffold(

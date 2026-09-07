@@ -4,6 +4,7 @@ import 'package:rent_home/models/host_account_details_model.dart';
 import 'package:rent_home/models/payout_list_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 class HostPayoutService {
   final Dio _dio = Dio();
   final String baseUrl = '${Apiconstants.baseUrl}/';
@@ -30,7 +31,7 @@ class HostPayoutService {
       _handleError(err);
       return false;
     } catch (e) {
-      print("Error in creating payout request: $e");
+      appLog("Error in creating payout request: $e");
       return false;
     }
   }
@@ -94,7 +95,7 @@ class HostPayoutService {
       _handleError(err);
       throw Exception("Error in fetching payout list: $err");
     } catch (e) {
-      print("Error in fetching payout list: $e");
+      appLog("Error in fetching payout list: $e");
       throw Exception("Error in fetching payout list: $e");
     }
   }
@@ -115,7 +116,7 @@ class HostPayoutService {
       _handleError(err);
       return null;
     } catch (e) {
-      print("Error in fetching host account details: $e");
+      appLog("Error in fetching host account details: $e");
       return null;
     }
   }
@@ -150,16 +151,16 @@ class HostPayoutService {
       _handleError(err);
       return false;
     } catch (e) {
-      print("Error in saving host account details: $e");
+      appLog("Error in saving host account details: $e");
       return false;
     }
   }
 
   void _handleError(DioException err) {
     if (err.response != null) {
-      print('Error: ${err.response?.data}');
+      appLog('Error: ${err.response?.data}');
     } else {
-      print('Error: ${err.message}');
+      appLog('Error: ${err.message}');
     }
   }
 }

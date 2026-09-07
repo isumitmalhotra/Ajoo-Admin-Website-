@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/models/search_property_model.dart';
 import 'package:rent_home/service/home_page_search_service.dart';
-
+
+import 'package:rent_home/utils/app_log.dart';
 class HomeSearchController extends GetxController {
   Rx<bool> isLoading = false.obs;
   Rx<SearchResponse?> searchResponse = Rx<SearchResponse?>(null);
@@ -16,7 +17,7 @@ class HomeSearchController extends GetxController {
       final response = await _homePageSearchService.searchProperty(query.value);
       searchResponse.value = response;
     } catch (err) {
-      print(err);
+      appLog(err);
     } finally {
       isLoading.value = false;
     }
@@ -56,7 +57,7 @@ class HomeSearchController extends GetxController {
       );
       preBookingResponse.value = response;
     } catch (err) {
-      print(err);
+      appLog(err);
     } finally {
       isLoading.value = false;
     }

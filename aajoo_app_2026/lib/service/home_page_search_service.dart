@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:rent_home/models/search_property_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 class HomePageSearchService {
   final _dio = Dio();
   final String baseUrl = '${Apiconstants.baseUrl}/';
@@ -40,10 +41,10 @@ class HomePageSearchService {
 
     try {
       final response = await _dio.post("properties/list", data: data);
-      print(response.data);
+      appLog(redact(response.data));
       return SearchResponse.fromJson(response.data);
     } catch (Err) {
-      print(Err);
+      appLog(Err);
       rethrow;
     }
   }
@@ -124,10 +125,10 @@ class HomePageSearchService {
     };
     try {
       final response = await _dio.post("properties/list", data: data);
-      print(response.data);
+      appLog(redact(response.data));
       return SearchResponse.fromJson(response.data);
     } catch (Err) {
-      print(Err);
+      appLog(Err);
       rethrow;
     }
   }

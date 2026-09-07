@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
-import 'package:rent_home/ui/unused_screens/chat/chat_page.dart';
 
 class NegotiationScreenLoadView extends StatelessWidget {
   const NegotiationScreenLoadView({
@@ -18,7 +17,7 @@ class NegotiationScreenLoadView extends StatelessWidget {
         children: [
           Image.asset("assets/happy_tourist.png", height: 150),
           const CircularProgressIndicator(
-            color: kPrimaryColor,
+            color: kprimaryColor,
           ),
           const Padding(
             padding: EdgeInsets.all(10.0),

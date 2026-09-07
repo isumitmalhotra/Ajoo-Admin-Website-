@@ -12,7 +12,8 @@ import 'package:rent_home/models/user_review_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/utils/upload_media_type.dart';
 import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
-
+
+import 'package:rent_home/utils/app_log.dart';
 class UserService {
   final _dio = Dio();
   UserService() {
@@ -49,11 +50,11 @@ class UserService {
     try {
       final response = await _dio.get("$baseUrl/review/host/user-review-list");
       final json = response.data;
-      print(json);
+      appLog(json);
 
       return UserReviewResponse.fromJson(json);
     } catch (e) {
-      print(e);
+      appLog(e);
       throw _handleError(e);
     }
   }
@@ -64,7 +65,7 @@ class UserService {
     _dio.options.headers['Authorization'] = 'Bearer $token';
     try {
       final response = await _dio.post(url, data: reviewData);
-      print(response.data);
+      appLog(redact(response.data));
       return response.data['success'];
     } on DioException catch (err) {
       throw _handleError(err);
@@ -142,7 +143,7 @@ class UserService {
     try {
       final response = await _dio.post(url);
       final json = response.data;
-      print(json);
+      appLog(json);
 
       return OnGoingBookingResponse.fromJson(json);
     } on DioException catch (err) {
@@ -173,7 +174,7 @@ class UserService {
 
       // Send POST request
       final response = await _dio.post(url, data: formData);
-      print(response.data);
+      appLog(redact(response.data));
 
       final data = response.data;
       if (data is Map && data['success'] == true) {
@@ -196,15 +197,15 @@ class UserService {
 
     try {
       final response = await _dio.post(url);
-      print(response.data);
+      appLog(redact(response.data));
       return response.statusCode == 200 &&
           response.data is Map &&
           response.data['success'] == true;
     } on DioException catch (err) {
-      print('deleteProfileImage DioException: ${err.message}');
+      appLog('deleteProfileImage DioException: ${err.message}');
       return false;
     } catch (e) {
-      print('deleteProfileImage error: $e');
+      appLog('deleteProfileImage error: $e');
       return false;
     }
   }
@@ -245,15 +246,15 @@ class UserService {
 
     try {
       final response = await _dio.post(url, data: {'reviewId': reviewId});
-      print(response.data);
+      appLog(redact(response.data));
       return response.statusCode == 200 &&
           response.data is Map &&
           response.data['success'] == true;
     } on DioException catch (err) {
-      print('deleteUserReview DioException: ${err.message}');
+      appLog('deleteUserReview DioException: ${err.message}');
       return false;
     } catch (e) {
-      print('deleteUserReview error: $e');
+      appLog('deleteUserReview error: $e');
       return false;
     }
   }

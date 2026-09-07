@@ -22,7 +22,6 @@ class _TermsPageState extends State<TermsPage> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {

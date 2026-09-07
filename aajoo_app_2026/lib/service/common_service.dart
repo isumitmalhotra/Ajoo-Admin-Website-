@@ -8,6 +8,7 @@ import 'package:rent_home/models/doc_type_response_model.dart';
 import 'package:rent_home/models/tags_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 class CommonService {
   final Dio _dio = Dio();
   final String baseUrl = '${Apiconstants.baseUrl}/';
@@ -20,10 +21,10 @@ class CommonService {
   Future<AmenitiesResponse> getAmenities() async {
     try {
       final response = await _dio.get('common/amenties');
-      // print(response.data);
+      // appLog(redact(response.data));
       return AmenitiesResponse.fromJson(response.data);
     } catch (e) {
-      print(e);
+      appLog(e);
       throw Exception('Failed to load amenities: $e');
     }
   }
@@ -31,10 +32,10 @@ class CommonService {
   Future<CategoryResponse> getCategories() async {
     try {
       final response = await _dio.get('common/categories');
-      // print(response.data);
+      // appLog(redact(response.data));
       return CategoryResponse.fromJson(response.data);
     } catch (err) {
-      print(err);
+      appLog(err);
       throw Exception('Failed to load categories: $err');
     }
   }
@@ -42,10 +43,10 @@ class CommonService {
   Future<TagsResponse> getTags() async {
     try {
       final response = await _dio.get('common/tags');
-      // print(response.data);
+      // appLog(redact(response.data));
       return TagsResponse.fromJson(response.data);
     } catch (e) {
-      print(e);
+      appLog(e);
       throw Exception('Failed to load tags: $e');
     }
   }
@@ -53,10 +54,10 @@ class CommonService {
   Future<DocTypeResponse> getDocTypes() async {
     try {
       final response = await _dio.get('common/documents/list');
-      // print(response.data);
+      // appLog(redact(response.data));
       return DocTypeResponse.fromJson(response.data);
     } catch (e) {
-      print(e);
+      appLog(e);
       throw Exception('Failed to load document types: $e');
     }
   }

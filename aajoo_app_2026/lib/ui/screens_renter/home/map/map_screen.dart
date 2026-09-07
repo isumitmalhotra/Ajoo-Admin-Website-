@@ -15,7 +15,8 @@ import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/widgets/hotel_dialog.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:rent_home/utils/money.dart';
-
+
+import 'package:rent_home/utils/app_log.dart';
 /// The pin draws its own ₹ glyph, so it wants the digits alone.
 String _pinPrice(String raw) => rupeesFrom(raw).replaceAll('₹', '');
 
@@ -580,7 +581,7 @@ class _MapScreenState extends State<MapScreen> {
         markers['selected_location'] = selectedMarker;
       });
     } catch (e) {
-      debugPrint('Error updating selected location marker: $e');
+      appLog('Error updating selected location marker: $e');
     }
   }
 

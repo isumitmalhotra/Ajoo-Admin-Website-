@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 class DropdownWithSearch<T> extends StatelessWidget {
   final String title;
   final String placeHolder;
@@ -59,7 +60,7 @@ class DropdownWithSearch<T> extends StatelessWidget {
                       _lastSelected = value;
                     }
                     else {
-                      print("Value NULL $value $_lastSelected");
+                      appLog("Value NULL $value $_lastSelected");
                       onChanged(_lastSelected);
                     }*/
           });

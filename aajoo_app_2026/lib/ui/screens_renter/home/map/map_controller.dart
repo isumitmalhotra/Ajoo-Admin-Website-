@@ -5,7 +5,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/ui/screens_common/location_picker/location_permission_denied.dart';
 import 'package:rent_home/service/map_service.dart';
-
+
+import 'package:rent_home/utils/app_log.dart';
 class MapController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxString error = ''.obs;
@@ -230,7 +231,7 @@ class MapController extends GetxController {
       // Name it, so the search pill can stop saying "Goa".
       resolveCurrentPlace();
     } else {
-      print("location permission denied");
+      appLog("location permission denied");
       error.value = 'Location permission denied';
     }
     await getProperties(
@@ -298,12 +299,12 @@ class MapController extends GetxController {
       isLoading.value = false;
       if (response != null) {
         properties.assignAll(response.data.property);
-        print("Luxury Properties: ${properties.length}");
+        appLog("Luxury Properties: ${properties.length}");
       } else {
         error.value = 'Failed to fetch properties';
       }
     } catch (err) {
-      print(err);
+      appLog(err);
     }
   }
 }

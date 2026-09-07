@@ -16,6 +16,7 @@ import 'package:lottie/lottie.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/utils/upload_media_type.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 class HotelCheckoutPage extends StatefulWidget {
   const HotelCheckoutPage(
       {super.key, required this.property, required this.booking});
@@ -76,7 +77,7 @@ class _HotelCheckoutPageState extends State<HotelCheckoutPage> {
         checkInDate = DateFormat('yyyy-MM-dd')
             .parse(widget.property.propDetails!.inTime!);
       } catch (e) {
-        print('Error parsing inTime: $e');
+        appLog('Error parsing inTime: $e');
       }
     }
     if (widget.property.propDetails?.outTime != null) {
@@ -84,7 +85,7 @@ class _HotelCheckoutPageState extends State<HotelCheckoutPage> {
         checkOutDate = DateFormat('yyyy-MM-dd')
             .parse(widget.property.propDetails!.outTime!);
       } catch (e) {
-        print('Error parsing outTime: $e');
+        appLog('Error parsing outTime: $e');
       }
     }
     _dio.interceptors.add(PrettyDioLogger(

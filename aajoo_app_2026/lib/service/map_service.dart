@@ -2,7 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:rent_home/models/properties_response_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
-
+
+import 'package:rent_home/utils/app_log.dart';
 class MapService {
   final String baseUrl = Apiconstants.baseUrl;
   final Dio _dio = Dio();
@@ -111,9 +112,9 @@ class MapService {
       data["category"] = category.toString();
     }
 
-    print("Search payload: $data");
+    appLog("Search payload: $data");
     try {
-      print("Fetch Property !!!");
+      appLog("Fetch Property !!!");
       final response = await _dio.post(
         "/properties/search",
         data: data,
@@ -121,7 +122,7 @@ class MapService {
             ? null
             : Options(receiveTimeout: receiveTimeout),
       );
-      print("Response for Fetch Property : ${response.data}");
+      appLog("Response for Fetch Property : ${response.data}");
 
       if (response.statusCode == 200 && response.data["success"] == true) {
         final msg = (response.data["message"] ?? "").toString().toLowerCase();
@@ -133,7 +134,7 @@ class MapService {
           );
         }
         final propertiesResponse = PropertiesResponse.fromJson(response.data);
-        print("Properties: ${propertiesResponse.data.property.length}");
+        appLog("Properties: ${propertiesResponse.data.property.length}");
         return propertiesResponse;
       }
       if (response.statusCode == 400) {
@@ -146,15 +147,15 @@ class MapService {
         return null;
       }
     } on DioException catch (e) {
-      print(e.response);
-      print(e.message);
+      appLog(e.response);
+      appLog(e.message);
       return PropertiesResponse(
         success: false,
         message: networkFailure,
         data: Data(property: []),
       );
     } on Exception catch (e) {
-      print(e);
+      appLog(e);
       return PropertiesResponse(
         success: false,
         message: networkFailure,
@@ -193,13 +194,13 @@ class MapService {
                   List<Property>.from(data.map((x) => Property.fromJson(x)))),
         );
 
-        print("Properties: ${propertyResponseModel.data.property.length}");
+        appLog("Properties: ${propertyResponseModel.data.property.length}");
         return propertyResponseModel;
       } else {
         return null;
       }
     } catch (e) {
-      print(e);
+      appLog(e);
       return null;
     }
   }

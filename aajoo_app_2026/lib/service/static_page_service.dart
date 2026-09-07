@@ -5,6 +5,7 @@ import 'package:rent_home/models/safety_data_model.dart';
 import 'package:rent_home/models/terms_condition_user_response_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 class StaticPageService {
   final Dio _dio = Dio();
   final String baseUrl = '${Apiconstants.baseUrl}/';
@@ -26,7 +27,7 @@ class StaticPageService {
   Future<AajooModel> getAboutUsData() async {
     try {
       final response = await _dio.get("common/about-us");
-      print(response.data);
+      appLog(redact(response.data));
       return AajooModel.fromJson(response.data);
     } catch (err) {
       rethrow;

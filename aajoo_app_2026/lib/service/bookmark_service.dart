@@ -4,6 +4,7 @@ import 'package:rent_home/models/properties_response_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 /// Backend-synced bookmark store.
 ///
 /// Bookmarks live on the server (`tbl_saved_liked_prop`), keyed to the
@@ -82,7 +83,7 @@ class BookmarkService {
           response.data['success'] == true;
       if (!ok) {
         // ignore: avoid_print
-        print('toggleBookmark non-ok: ${response.data}');
+        appLog('toggleBookmark non-ok: ${response.data}');
         return false;
       }
 
@@ -100,11 +101,11 @@ class BookmarkService {
       return true;
     } on DioException catch (e) {
       // ignore: avoid_print
-      print('toggleBookmark error: ${e.message}');
+      appLog('toggleBookmark error: ${e.message}');
       return false;
     } catch (e) {
       // ignore: avoid_print
-      print('toggleBookmark unexpected: $e');
+      appLog('toggleBookmark unexpected: $e');
       return false;
     }
   }
@@ -164,15 +165,15 @@ class BookmarkService {
         return bookmarkedProperties;
       }
       // ignore: avoid_print
-      print('getBookmarks non-ok: ${response.data}');
+      appLog('getBookmarks non-ok: ${response.data}');
       return bookmarkedProperties;
     } on DioException catch (e) {
       // ignore: avoid_print
-      print('getBookmarks error: ${e.message}');
+      appLog('getBookmarks error: ${e.message}');
       return bookmarkedProperties;
     } catch (e) {
       // ignore: avoid_print
-      print('getBookmarks unexpected: $e');
+      appLog('getBookmarks unexpected: $e');
       return bookmarkedProperties;
     }
   }

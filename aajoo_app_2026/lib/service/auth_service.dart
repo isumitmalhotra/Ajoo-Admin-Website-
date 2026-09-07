@@ -11,7 +11,8 @@ import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/utils/upload_media_type.dart';
 import '../utils/service_log.dart';
 import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
-
+
+import 'package:rent_home/utils/app_log.dart';
 class AuthService {
   final Dio _dio = Dio();
   final String baseUrl = Apiconstants.baseUrl;
@@ -66,7 +67,7 @@ class AuthService {
       final data = jsonDecode(savedUserDataStr) as Map<String, dynamic>;
       return UserDetail.fromJson(data);
     } catch (e) {
-      print('Error decoding saved user data: $e');
+      appLog('Error decoding saved user data: $e');
       return null;
     }
   }
@@ -113,8 +114,8 @@ class AuthService {
         'user_password': password,
         'isHost': isHost ? 1 : 0,
       });
-      print("isHost: $isHost");
-      print(response.data);
+      appLog("isHost: $isHost");
+      appLog(redact(response.data), tag: 'auth');
 
       final loginResponse = LoginResponse.fromJson(response.data);
 
@@ -177,7 +178,7 @@ class AuthService {
     String? referralCode,
   }) async {
     try {
-      print('${isHost}isHost');
+      appLog('${isHost}isHost');
       final usernameBase = fullName.trim().split(' ').first;
       final Map<String, dynamic> fields = {
         'user_fullName': fullName,
@@ -286,7 +287,7 @@ class AuthService {
   Future<LoginResponse> getUserDetails() async {
     try {
       final response = await _dio.get('/user/detail');
-      print(response.data);
+      appLog(redact(response.data), tag: 'auth');
       return LoginResponse.fromJson(response.data);
     } catch (e) {
       throw _handleError(e);
@@ -346,7 +347,7 @@ class AuthService {
       }
       _dio.options.headers["Authorization"] = "Bearer $token";
       final response = await _dio.post('/user/update', data: formData);
-      print(response.data);
+      appLog(redact(response.data), tag: 'auth');
       return BaseResponse.fromJson(response.data);
     } catch (e) {
       throw _handleError(e);
@@ -412,7 +413,7 @@ class AuthService {
       });
 
       final response = await _dio.post('/user/update', data: formData);
-      print('Document update response: ${response.data}');
+      appLog(redact(response.data), tag: 'auth.document');
       return BaseResponse.fromJson(response.data);
     } catch (e) {
       throw _handleError(e);
@@ -444,7 +445,7 @@ class AuthService {
 
       throw Exception('Email check returned unexpected response');
     } catch (err) {
-      print(err);
+      appLog(err);
       throw Exception('Email check unavailable');
     }
   }
@@ -456,10 +457,10 @@ class AuthService {
   Future<Map<String, dynamic>> deleteAccount() async {
     try {
       final response = await _dio.post('/user/delete');
-      print('Delete account response: ${response.data}');
+      appLog(redact(response.data), tag: 'auth.delete');
       return response.data;
     } catch (e) {
-      print('Error deleting account: $e');
+      appLog('Error deleting account: $e');
       throw Exception('Failed to delete account: $e');
     }
   }
@@ -469,7 +470,7 @@ class AuthService {
     // get_package.Get.offAll(() => const AuthPage());
     if (error is DioException) {
       final response = error.response?.data;
-      print('Error during API call: $response');
+      appLog('API error: ${redact(response)}', tag: 'auth');
       // NOT error.message: for a transport failure that is Dio's own
       // diagnostic string, and wrapping it in an Exception here defeats the
       // friendly mapping in handleApiError — the caller receives a plain
@@ -478,7 +479,7 @@ class AuthService {
       // which most likely cannot be solved by the library." reached a login
       // screen. Our API's own message still wins when there is one.
       final message = response?['message'] ?? friendlyTransportMessage(error);
-      print('Error during API call: $message');
+      appLog('Error during API call: $message');
       // Get.snackbar('Error', message, snackPosition: SnackPosition.TOP
       return Exception(message);
     }

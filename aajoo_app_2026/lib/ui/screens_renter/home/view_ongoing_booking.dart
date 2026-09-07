@@ -16,7 +16,8 @@ import 'package:rent_home/data/models/ongoing_reponse.dart';
 import 'package:rent_home/ui/screens_renter/checkout/checkout_page.dart';
 import 'package:rent_home/service/device_service.dart';
 import 'package:rent_home/utils/support_chat.dart';
-
+
+import 'package:rent_home/utils/app_log.dart';
 // Assuming BookingHistoryData is defined as provided
 class OngoingBookingView extends StatefulWidget {
   final Booking booking;
@@ -49,7 +50,7 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
 
   @override
   Widget build(BuildContext context) {
-    print(widget.booking.bookingStatusBsTitle);
+    appLog(widget.booking.bookingStatusBsTitle);
     return Scaffold(
       backgroundColor: kSand,
       // Was a solid teal slab with white-on-teal text — the pre-redesign

@@ -23,6 +23,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 /// Deliberately NOT `encryptedSharedPreferences: true`: switching backends
 /// would invalidate every token already on every device and sign everyone out
 /// at once. `resetOnError` heals the broken cases without touching the rest.
@@ -41,7 +42,7 @@ Future<String?> secureRead(String key) async {
   try {
     return await secureStore.read(key: key).timeout(_readTimeout);
   } catch (e) {
-    debugPrint('secureRead("$key") failed, treating as absent: $e');
+    appLog('secureRead("$key") failed, treating as absent: $e');
     return null;
   }
 }
@@ -54,7 +55,7 @@ Future<bool> secureWrite(String key, String? value) async {
         .timeout(_readTimeout);
     return true;
   } catch (e) {
-    debugPrint('secureWrite("$key") failed: $e');
+    appLog('secureWrite("$key") failed: $e');
     return false;
   }
 }
@@ -65,7 +66,7 @@ Future<void> secureDelete(String key) async {
   try {
     await secureStore.delete(key: key).timeout(_readTimeout);
   } catch (e) {
-    debugPrint('secureDelete("$key") failed: $e');
+    appLog('secureDelete("$key") failed: $e');
   }
 }
 
@@ -74,6 +75,6 @@ Future<void> secureWipe() async {
   try {
     await secureStore.deleteAll().timeout(_readTimeout);
   } catch (e) {
-    debugPrint('secureWipe failed: $e');
+    appLog('secureWipe failed: $e');
   }
 }

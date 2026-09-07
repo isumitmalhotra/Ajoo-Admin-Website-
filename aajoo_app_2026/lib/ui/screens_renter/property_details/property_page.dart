@@ -51,6 +51,7 @@ import 'package:rent_home/models/pet_policy.dart';
 import 'package:rent_home/ui/screens_renter/property_details/widgets/stay_cancellation_card.dart';
 import 'package:rent_home/service/cancellation_policy_service.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 class PropertyPage extends StatefulWidget {
   final String image;
   final String name;
@@ -2218,7 +2219,7 @@ onPressed: () async {
                         }
                         razorpay.open(options);
                       } catch (e) {
-                        debugPrint('Error: $e');
+                        appLog('Error: $e');
                       }
                     } else {
                       // Pay-at-property on an approval-required listing is a
@@ -2383,7 +2384,7 @@ onPressed: () async {
             controller: _pageScroll,
             slivers: [
               SliverAppBar(
-                expandedHeight: 400,
+                expandedHeight: _headerHeight,
                 automaticallyImplyLeading: false,
                 backgroundColor: kCream,
                 flexibleSpace: FlexibleSpaceBar(
@@ -2946,6 +2947,17 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
     );
   }
 
+  /// The height of the image header, in one place.
+  ///
+  /// The carousel asked for 900 and the images inside it for 400, and the
+  /// SliverAppBar that holds both expanded to 400. The 900 was inert — a
+  /// FlexibleSpaceBar background is a Stack with StackFit.expand, which hands
+  /// its children tight constraints, so the parent won and nobody ever saw a
+  /// 900dp header. Audit finding A-4 flagged it as an overflow risk; it was
+  /// not one, but a number that only behaves because something else overrides
+  /// it is a trap for whoever edits this next.
+  static const double _headerHeight = 400;
+
   Stack _higlightedPropertyImageHeaderSection(ThemeData theme) {
     return Stack(
       children: [
@@ -2961,7 +2973,7 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
                   autoPlayAnimationDuration: const Duration(milliseconds: 800),
                   autoPlayCurve: Curves.fastOutSlowIn,
                   enlargeCenterPage: false,
-                  height: 900,
+                  height: _headerHeight,
                 ),
                 items: _single!.images!.map((imageUrl) {
                   return Builder(
@@ -2969,7 +2981,7 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
                       return CachedNetworkImage(
                         imageUrl: imageUrl,
                         fit: BoxFit.cover,
-                        height: 400,
+                        height: _headerHeight,
                         width: double.infinity,
                         placeholder: (context, url) => const Center(
                           child: CircularProgressIndicator(),
@@ -2995,7 +3007,7 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
                           const Duration(milliseconds: 800),
                       autoPlayCurve: Curves.fastOutSlowIn,
                       enlargeCenterPage: false,
-                      height: 900,
+                      height: _headerHeight,
                     ),
                     items: widget.galleryImages.map((imageUrl) {
                       return Builder(
@@ -3003,7 +3015,7 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
                           return CachedNetworkImage(
                             imageUrl: imageUrl,
                             fit: BoxFit.cover,
-                            height: 400,
+                            height: _headerHeight,
                             width: double.infinity,
                             placeholder: (context, url) => const Center(
                               child: CircularProgressIndicator(),
@@ -3534,7 +3546,7 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
                 try {
                   razorpay.open(options);
                 } catch (e) {
-                  debugPrint('Retry failed: $e');
+                  appLog('Retry failed: $e');
                 }
               },
               style: ElevatedButton.styleFrom(

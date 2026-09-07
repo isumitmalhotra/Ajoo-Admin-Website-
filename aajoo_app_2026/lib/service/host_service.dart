@@ -11,7 +11,8 @@ import 'package:rent_home/models/transaction_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import '../utils/service_log.dart';
 import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
-
+
+import 'package:rent_home/utils/app_log.dart';
 class HostService {
   final Dio _dio = Dio();
   final String baseUrl = Apiconstants.baseUrl;
@@ -91,7 +92,7 @@ class HostService {
       final json = response.data;
       // Was: print the whole response, twice. That is a page of listings dumped
       // to the console on every load, and used to be the entire 38 MB.
-      print("Host properties: page $page, ${json['data']?['totalcount'] ?? '?'} total");
+      appLog("Host properties: page $page, ${json['data']?['totalcount'] ?? '?'} total");
 
       if (json['message'] == "no record found") {
         return hostResponse.HostPropertiesResponse(
@@ -112,10 +113,10 @@ class HostService {
 
       return hostResponse.HostPropertiesResponse.fromJson(responseData);
     } on DioException catch (err) {
-      print("DioException: $err");
+      appLog("DioException: $err");
       throw _handleError(err);
     } catch (e) {
-      print("Error in fetching property: ${e.toString()}");
+      appLog("Error in fetching property: ${e.toString()}");
       throw _handleError(e);
     }
   }
@@ -123,21 +124,21 @@ class HostService {
   Future<TransactionResponse> getHostTransactions() async {
     final url = '$baseUrl/host/transaction-history';
     final token = await const FlutterSecureStorage().read(key: "user_token");
-    print(token);
+    appLog(token);
     _dio.options.headers['Authorization'] = 'Bearer $token';
 
     try {
       final response = await _dio.post(url, data: {});
       final json = response.data;
-      print(json);
+      appLog(json);
       final model = TransactionResponse.fromJson(json);
-      // print("model contervet");
+      // appLog("model contervet");
       return model;
     } on DioException catch (err) {
-      print(err);
+      appLog(err);
       throw _handleError(err);
     } catch (e) {
-      print(e);
+      appLog(e);
       throw _handleError(e);
     }
   }
@@ -185,16 +186,16 @@ class HostService {
 
   Future<HostBookingHistoryResponse> getBookingHistory() async {
     final token = await const FlutterSecureStorage().read(key: "user_token");
-    print(token);
+    appLog(token);
     _dio.options.headers['Authorization'] = 'Bearer $token';
     try {
       final response = await _dio.post("/host/booking-history");
       final json = response.data;
-      print(json);
+      appLog(json);
       final model = HostBookingHistoryResponse.fromJson(json);
       return model;
     } catch (err) {
-      print(err);
+      appLog(err);
       throw _handleError(err);
     }
   }
@@ -535,7 +536,7 @@ class HostService {
       "description": description,
       "title": title,
     });
-    print(response.data);
+    appLog(redact(response.data));
     if (response.statusCode == 200) {
       return response.data['success'];
     } else {
@@ -547,14 +548,14 @@ class HostService {
     final url = '$baseUrl/booking/ongoing-host';
     final token = await const FlutterSecureStorage().read(key: "user_token");
     _dio.options.headers['Authorization'] = 'Bearer $token';
-    print("Getting Ongoing Booking");
+    appLog("Getting Ongoing Booking");
     try {
       final response = await _dio.post(url);
-      print(response.data);
+      appLog(redact(response.data));
       final model = HostOnGoingBookingResponse.fromJson(response.data);
       return model;
     } catch (e) {
-      print(e);
+      appLog(e);
       throw _handleError(e);
     }
   }

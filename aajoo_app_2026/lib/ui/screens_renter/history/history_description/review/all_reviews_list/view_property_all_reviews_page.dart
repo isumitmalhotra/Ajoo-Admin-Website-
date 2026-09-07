@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/screens_renter/history/history_description/property_review_controller.dart';
 
+import 'package:rent_home/utils/app_log.dart';
 class ViewPropertyAllReviewsPage extends StatefulWidget {
   const ViewPropertyAllReviewsPage({super.key, required this.propertyId});
   final int propertyId;
@@ -49,7 +50,7 @@ class _ViewPropertyAllReviewsPageState
           if (reviewData == null || reviewData.reviews == null) {
             return const Center(child: Text("No reviews available."));
           }
-          print("Review Data: ${reviewData.allRatings}");
+          appLog("Review Data: ${reviewData.allRatings}");
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(10.0),
