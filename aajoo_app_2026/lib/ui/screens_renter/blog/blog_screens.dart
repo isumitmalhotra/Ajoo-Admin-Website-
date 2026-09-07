@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
@@ -97,7 +98,7 @@ class _BlogListCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            BlogCover(post: post, height: 150),
+            BlogCardSlider(post: post, height: 150),
             Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
@@ -254,6 +255,143 @@ class _BlogGalleryState extends State<BlogGallery> {
         ],
       ),
     );
+  }
+}
+
+/// A preview card's picture, cycling on its own.
+///
+/// The post page's slider is driven — arrows, dots, swipe. A card is not: it
+/// sits inside a tap target that opens the post, so anything tappable on it
+/// would fight the card it lives in. This advances by itself and offers no
+/// controls.
+///
+/// THREE THINGS KEEP IT FROM BEING ANNOYING:
+///
+///  - A post with one picture never starts a timer. Most posts have one.
+///  - It stops when the widget leaves the tree, and Flutter stops the whole
+///    ticker when the app is backgrounded, so it costs nothing off-screen.
+///  - Cards start on a stagger derived from the post id, so a row of them does
+///    not flip in unison like a departures board.
+///
+/// Crossfade rather than slide: these sit side by side in a horizontal rail,
+/// and sideways movement inside a sideways-scrolling strip reads as the strip
+/// itself moving.
+class BlogCardSlider extends StatefulWidget {
+  final BlogPost post;
+  final double height;
+  final double? width;
+  final BorderRadius? radius;
+
+  const BlogCardSlider({
+    super.key,
+    required this.post,
+    required this.height,
+    this.width,
+    this.radius,
+  });
+
+  @override
+  State<BlogCardSlider> createState() => _BlogCardSliderState();
+}
+
+class _BlogCardSliderState extends State<BlogCardSlider> {
+  Timer? _timer;
+  Timer? _kickoff;
+  int _at = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    final count = widget.post.images.length;
+    if (count < 2) return;
+    // Derived from the id rather than random, so the same card does not
+    // re-stagger every time the list rebuilds.
+    final offset = Duration(milliseconds: (widget.post.id % 5) * 400);
+    _kickoff = Timer(offset, () {
+      if (!mounted) return;
+      _timer = Timer.periodic(const Duration(seconds: 4), (_) {
+        if (!mounted) return;
+        setState(() => _at = (_at + 1) % count);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _kickoff?.cancel();
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shots = widget.post.images;
+    final fallback = Container(
+      height: widget.height,
+      width: widget.width ?? double.infinity,
+      color: kIndigo50,
+      alignment: Alignment.center,
+      child: Icon(Icons.article_outlined,
+          size: widget.height / 4.5, color: kIndigo600),
+    );
+    if (shots.isEmpty) {
+      return BlogCover(post: widget.post, height: widget.height);
+    }
+
+    final image = Stack(
+      fit: StackFit.expand,
+      children: [
+        // Every frame stays in the tree and fades. Swapping the URL instead
+        // would show an empty box for as long as the next picture takes to
+        // arrive, which on a slow connection is most of the four seconds.
+        for (var i = 0; i < shots.length; i++)
+          AnimatedOpacity(
+            opacity: i == _at ? 1 : 0,
+            duration: const Duration(milliseconds: 600),
+            child: Image.network(
+              shots[i],
+              height: widget.height,
+              width: widget.width ?? double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => fallback,
+            ),
+          ),
+        if (shots.length > 1)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var i = 0; i < shots.length; i++)
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                      width: i == _at ? 14 : 5,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: i == _at
+                            ? Colors.white
+                            : Colors.white.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+
+    final sized = SizedBox(
+      height: widget.height,
+      width: widget.width,
+      child: image,
+    );
+    return widget.radius == null
+        ? sized
+        : ClipRRect(borderRadius: widget.radius!, child: sized);
   }
 }
 
