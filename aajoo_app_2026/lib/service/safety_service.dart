@@ -152,8 +152,8 @@ class SafetyService {
           uncertain: true,
           message:
               "We couldn't confirm that was sent — it may still have reached us. "
-              'If you are in danger, call 112. Check Help & Support in a minute: '
-              'if a ticket is there, we have it.',
+              'If you are in danger, call 112. Check Help & Support › Your tickets '
+              'in a minute: if a ticket is there, we have it.',
         );
       }
       return SafetyResult(

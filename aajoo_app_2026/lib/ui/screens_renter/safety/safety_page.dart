@@ -490,7 +490,7 @@ class _SafetyPageState extends State<SafetyPage> {
       _ok = res.ok;
       _uncertain = res.uncertain;
       _result = res.ok
-          ? 'Thank you — our safety team has this (${res.reference}). You can follow it in Help & Support.'
+          ? 'Thank you — our safety team has this (${res.reference}). You can follow it in Help & Support › Your tickets.'
           : (res.message ?? "Couldn't send that report.");
     });
   }

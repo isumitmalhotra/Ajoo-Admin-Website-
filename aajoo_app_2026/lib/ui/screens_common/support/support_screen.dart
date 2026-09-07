@@ -12,6 +12,8 @@
 // StaticPageController. The one thing that used to be genuinely hard to find —
 // the support chat — is now the primary button rather than a small circle
 // tucked into the corner of a card, which is what the client asked for.
+import 'package:rent_home/ui/screens_renter/support/my_tickets_screen.dart';
+import 'package:rent_home/service/guest_ticket_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
@@ -67,6 +69,8 @@ class SupportScreen extends StatelessWidget {
               const SizedBox(height: 18),
               const _ChatCard(),
               const SizedBox(height: 14),
+              const _MyTicketsCard(),
+              const SizedBox(height: 14),
               const _ContactChannels(),
               const SizedBox(height: 26),
               const _SectionHeading(
@@ -106,6 +110,118 @@ class SupportScreen extends StatelessWidget {
 /// which is where you put something you do not want found. Chat is the fastest
 /// channel we have, so it leads: full-width, labelled, with WhatsApp beside it
 /// as the equal alternative rather than another anonymous circle.
+
+/// The way into the guest's own tickets — and their replies.
+///
+/// This screen had no route to them at all: a ticket could be raised from the
+/// safety flow or the chatbot and support's answer had nowhere to appear. The
+/// safety screen even said "you can follow it in Help & Support", which was
+/// not true until this card existed.
+class _MyTicketsCard extends StatefulWidget {
+  const _MyTicketsCard();
+
+  @override
+  State<_MyTicketsCard> createState() => _MyTicketsCardState();
+}
+
+class _MyTicketsCardState extends State<_MyTicketsCard> {
+  int _open = 0;
+  int _unread = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _count();
+  }
+
+  Future<void> _count() async {
+    final rows = await GuestTicketService.instance.list();
+    // A failed load must not read as "no tickets" on the card either.
+    if (rows == null) return;
+    if (!mounted) return;
+    setState(() {
+      _open = rows
+          .where((t) => !{'RESOLVED', 'CLOSED'}.contains(t.status.toUpperCase()))
+          .length;
+      _unread = rows.fold(0, (n, t) => n + t.unread);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitle = _unread > 0
+        ? '$_unread new ${_unread == 1 ? 'reply' : 'replies'} from support'
+        : (_open > 0
+            ? '$_open open ${_open == 1 ? 'ticket' : 'tickets'}'
+            : 'Anything you raise with us appears here');
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const MyTicketsScreen()),
+        );
+        _count();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: kSurface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: kLine),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: kIndigo50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.confirmation_number_outlined,
+                  size: 21, color: kIndigo600),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Your tickets',
+                      style: inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: kInk)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style: inter(fontSize: 12.5, color: kMuted)),
+                ],
+              ),
+            ),
+            if (_unread > 0)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: kprimaryColor,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Text('$_unread',
+                    style: inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white)),
+              )
+            else
+              const Icon(Icons.chevron_right_rounded, color: kMuted),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ChatCard extends StatelessWidget {
   const _ChatCard();
 
