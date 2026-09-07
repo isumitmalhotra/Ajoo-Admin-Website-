@@ -44,13 +44,13 @@ money and is not. The second gates every honest SEO number on the site.
 
 | # | Item | Why it is blocking | Evidence |
 |---|---|---|---|
-| **1.1** | **Delete the 29,227 seed listings** | 29,236 undeleted listings; **29,227 belong to host 100 and are live**, 16 belong to real hosts. Sitemap excludes host 100, so the public site is **26 URLs** (5 property, 7 blog, 14 pages). Every SEO figure, every bulk preview and every template test is measured against fabricated data until these go. | verified 09-05 — DB count, live sitemap |
+| ~~1.1~~ | ~~**Delete the 29,227 seed listings**~~ **DONE (not by me)** | **Re-counted 2026-09-08: `tbl_properties` holds 4 rows, 1 of them host 100.** The 29k seed set has been removed since the 09-05 edition — not by me, and I did not see it happen. Public surface is now **24 URLs** (2 property, 5 blog, 17 pages). SEO figures now measure real data. | verified 09-08 — `SELECT COUNT(*)`, live child sitemaps |
 | **1.2** | **Switch analytics on — after two sign-offs** | The consent banner is **built and live** (the earlier wording here was stale): three categories, "Only essential" at equal weight, Consent Mode v2 defaults denied, Hotjar barred from host/booking/account/admin routes, chat widget off the public pages. Nothing loads until the admin switch is on **and** the visitor grants the category. What is still the client's: (1) counsel reads the Privacy Policy's cookie section (`/Privacy-Policy#cookies`, drafted 09-05, names every provider); (2) if Hotjar is used, set its URL targeting to public pages only; then flip **Admin → Global SEO → Load tracking scripts**. | verified 09-05 — live banner, storage and script list on an anonymous visit |
 | **1.3** | **Cash / UPI collection — 4 decisions** | The rail is **built** (`tbl_host_dues`, 24 rows, offset against payouts). What is still missing is policy: who confirms collection, when, how the 15% + GST is recovered, and what happens if the host never confirms. Detail in §7. | verified — 24 rows in `tbl_host_dues` |
 | **1.4** | **Cancellation policy — the admin controls the document asks for** (was E-4; the copy itself shipped 09-05, see §8a) | Policy v1.0 is implemented and live on web + app (build 17). What the document's *Admin Panel* section asks for and is **not** built: enable/disable a policy, create new policy types, restrict a policy to approved hosts, and an override in exceptional cases. Today the five policies are code-defined; Super Strict is assigned by an admin through the Edit-property form, which is the "business approval" in practice. Building the admin module is ~1.5 days; decide whether it is wanted before launch or after. Also unbuilt from §4 of the document: a guest-initiated *booking modification* flow (dates/guests/duration with host approval and a price difference) — bookings are cancelled and rebooked instead. | verified 09-05 — code + live endpoints |
 | **1.5** | **Weather provider + key** (was E-2, RENT-7) | Renter-dashboard weather widget cannot start without a provider choice. | carried |
 | **1.6** | **Brand assets** — logo set, favicon/PWA icons, animated illustrations, WhatsApp number, social links, reference designs (was E-5, S0-ASSET-1…5) | Gates most of Section-0. | carried |
-| **1.7** | **The five test listings that are now the public catalogue** | Of the 6 live real-host listings, **5 are tester approvals**: four on 2026-09-04 so the site was not empty after approval started gating visibility — Garg Resorts (29263), Tharamani Farm Retreat (29265), Vrindavan Garden Farm Stay (29277), Delhi Green Farm Stay (29279 — the last two renamed from "Aish mobile host property…") — and Aish camping in the hills (29289) on 09-05, approved to prove the audit-trail fix. They are tester accounts' listings with tester phone numbers. Decide whether they stay through launch or come down with the seed data. | verified 09-05 — `property_submission` + `tbl_properties` |
+| ~~1.7~~ | ~~**The five test listings that are now the public catalogue**~~ **MOOT** | Of the 6 live real-host listings, **5 are tester approvals**: four on 2026-09-04 so the site was not empty after approval started gating visibility — Garg Resorts (29263), Tharamani Farm Retreat (29265), Vrindavan Garden Farm Stay (29277), Delhi Green Farm Stay (29279 — the last two renamed from "Aish mobile host property…") — and Aish camping in the hills (29289) on 09-05, approved to prove the audit-trail fix. They are tester accounts' listings with tester phone numbers. Decide whether they stay through launch or come down with the seed data. | **2026-09-08: all five are gone** with the rest of the wipe. The catalogue is now property ids 29291-29294, of which 2 are publicly listed: "Heritage stay aish for testing" and "Ben Tree House". Both are still test names on a public site — that part of the decision survives. | verified 09-08 — sitemap-properties.xml |
 | **1.8** | **Where the platform runs after UAT** | `Deployment_Options_2026-09-05.docx` compares staying on Render + Vercel with AWS, Azure, GCP, DigitalOcean and a VPS, with indicative costs. Recommendation: stay through UAT (Render Starter, $7/mo), then **DigitalOcean Bangalore** (~$45–75/mo) as the first managed home in India; hyperscaler only with an owner or credits; VPS only with a named operator. Needs the client's answers to §8 of that document: expected traffic, budget, who operates, existing cloud agreements. | doc |
 
 ---
@@ -78,13 +78,13 @@ money and is not. The second gates every honest SEO number on the site.
 
 | # | Item | Notes | Evidence |
 |---|---|---|---|
-| **3.1** | **Purge junk categories** | `/common/categories` serves **13** to the public, including `Resort`, `couple`, `party` and `Pool House`. `tbl_categories` also holds `test`, `test`, `add one cate`, `Test Api Category updat`. One UPDATE fixes web **and** app. This is the app sheet's A-52. | verified — public endpoint |
-| **3.2** | **64 of 65 images have no ALT text** | Blocks image-sitemap captions, which cannot populate until descriptions exist. | verified — Image SEO screen |
+| ~~3.1~~ | ~~**Purge junk categories**~~ **CLOSED 2026-09-08** (`68a57de`) | `/common/categories` now requires a slug, so it serves **11**; `couple` and `party` are gone from the website filter and the app's category row without an app release. The two rows still exist and are still `cat_isActive='1'` — they are simply no longer offered — so the admin Categories screen still lists them. **Still open, and a data change needing sign-off:** `Resort` is the only singular title among plurals. | verified 09-08 — live endpoint + live search page |
+| **3.2** | **13 of 32 images have no ALT text** (was "64 of 65" — that counted the seed catalogue, which is gone) | Blocks image-sitemap captions, which cannot populate until descriptions exist. Much smaller job than it was. | verified 09-08 — `image_seo` row counts |
 | **3.3** | **WebP / `f_auto` delivery** | Cloudinary URLs carry no `f_auto`. Core Web Vitals, not indexing. | verified — sitemap image URLs |
 | **3.4** | **`/` and `/explore` have identical titles** | Two pages competing for one query. One line of copy, or canonical `/explore` → `/`. | verified — SEO Health |
 | **3.5** | **Orphan pages / broken internal links** | Needs a crawl of the rendered site; nothing in the admin does one. The health dashboard lists it as unchecked rather than reporting a false zero. | verified — SEO Health |
 | **3.6** | **Cloudinary account audit** | Shared/polluted account, ~704 assets. It has already published a real person's CV as a property photo once. Nobody has swept the rest. | carried |
-| **3.7** | **Host `whatsapp` field** (was HOST-17) | Column still absent from `tbl_users`; a front-end-only change is dropped by `stripUnknown`. Needs a migration first. | verified — `SHOW COLUMNS` |
+| ~~3.7~~ | ~~**Host `whatsapp` field**~~ **CLOSED 2026-09-07** (`5e2b91a`) | `user_whatsapp` exists on `tbl_users`; migration `20260907140000-host-whatsapp.js` applied to the live DB. | verified 09-08 — `information_schema.columns` |
 | **3.8** | **Admin Notification Management** (part of S0-ADM-1) | The only module from that list with no route. CMS, SEO, Coupons and Analytics all exist. | verified — 0 routes in `App.tsx` |
 | **3.9** | **Lucide icon migration** (S0-BRAND-3) | `lucide-react` installed; MUI icons still in use app-wide. Cosmetic, and cheaper to do inside Section-0. | carried |
 | **3.10** | **Web lint baseline is red** | `npm run lint` reports **~600 problems, 540 of them `no-explicit-any`**, so lint cannot gate the Vercel build (which runs `tsc -b` only). The empty-catch rule added on 09-05 therefore only bites when someone runs lint by hand. Either downgrade `no-explicit-any` to a warning and clean the rest, or fix the anys — then add `lint` to the build. | verified 09-05 — `eslint .` |
@@ -176,6 +176,31 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a10. Closed 2026-09-07 → 09-08
+
+Shipped and verified live unless the line says otherwise.
+
+**Web**
+- Home hero: white wash removed, CMS-managed slider with 4 placeholder images advancing every 6s, upload at Admin → CMS → Home → Hero (`f6ebdbd`, `898047a`). Dots now announce the active slide (`c6e2859`).
+- **The sticky header stopped dragging the page.** Its search bar sat in flow, so collapsing it took 61px off the top of the document and slid the whole page — measured 62.9px of movement for 2px of scroll. Out of flow on `.hero-top`: 1.6px. Background and shape now change at one moment instead of two, with hysteresis (64px collapse / 8px reopen) (`7428616`).
+- Phone home: the search bar shows place **and** dates **and** party (they were `display:none`); map decluttered, zoom buttons dropped, Google's grey loading colour replaced (`40c109e`).
+- Blog preview cards cycle their gallery (`e917588`).
+- Nearby: eight named sections a guest reads, host picks real places instead of typing distances, phone swipe rail (`6344e50`, `dcd12dd`, `ea9013a`, `fe7a481`).
+- **Listing photos must be landscape** — web picker, admin cover, app, and the server, which measures via Cloudinary and destroys a refused asset. Ratio 1.2 in three repos, pinned by a test (`633fe69`, `5ef9bad`, `380750a`).
+- **The identity check is explained before the guest leaves.** Pressing Pay ran `window.location.href` to Didit in the same tick; a client filmed a checkout replaced by a stranger's ID form. Now a panel, then a button (`d12267e`). The app already did this.
+
+**API**
+- Guests are only offered property types they can browse — see 3.1.
+- Safety/SOS, blog galleries, WhatsApp on the host profile, SMS signup code, Google-identity fixes.
+
+**Two outages I caused and fixed on 09-07, both invisible to every check we had**
+1. `uploadImages` was hung off `exports.` in a controller that reassigns `module.exports`, so the routes file threw, `app.js` swallowed it, and **every CMS endpoint 404'd** — including the public read that had worked for weeks. Health checks passed. Guarded by `tests/routesLoad.test.js` (`b68b74b`).
+2. `seo-render` cached the **previous** build's `index.html` from the CDN, so every page asked for hashed assets the deploy had already deleted: **blank white page on every route, behind a valid 200 with a correct title.** My first fix made it worse — it read the shell from `VERCEL_URL`, which is behind Deployment Protection and returned **Vercel's own login page**, cached as the app shell. Fixed by requiring the shell to be recognisably ours and busting the CDN with the deployment id (`92f028f`, `1e2317c`), guarded by `tests/seoRenderShell.test.mjs`.
+
+**Verification lesson, now in the deploy notes:** never confirm a deploy by comparing a local `dist/` hash to production. Vercel inlines its own env vars, so the JS hash differs for the same commit. CSS usually matches, which makes the method look sound until a commit touches only `.tsx` — then the unchanged CSS matches instantly and the poll reports success having checked nothing. That happened. Grep the served bundle for a string from the change.
+
+---
 
 ### 8a9. Closed 2026-09-05 — response time required, and the app was discarding it
 
