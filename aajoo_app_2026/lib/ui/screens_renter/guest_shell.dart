@@ -131,15 +131,19 @@ class _GuestShellState extends State<GuestShell> {
           // the smaller base size above. Everything else in the app still
           // scales the whole way; this cap is local to the one bar whose
           // height cannot move.
-          child: MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaler: TextScaler.linear(
-                MediaQuery.textScalerOf(context).scale(1.0).clamp(
-                      1.0,
-                      MediaQuery.sizeOf(context).width < 360 ? 1.05 : 1.15,
-                    ),
-              ),
-            ),
+          //
+          // withClampedTextScaling, NOT MediaQuery(data: MediaQuery.of(context)
+          // .copyWith(...)). The first version did the latter and made the bar
+          // visibly taller on every screen. `context` there is the BUILD
+          // METHOD's context, which sits above the Scaffold and still carries
+          // the full bottom inset; re-injecting it underneath restored padding
+          // the Scaffold had already accounted for, and NavigationBar's own
+          // internal SafeArea then applied it a second time. This helper
+          // touches the text scaler and nothing else, so the bar keeps exactly
+          // the height it always had.
+          child: MediaQuery.withClampedTextScaling(
+            maxScaleFactor:
+                MediaQuery.sizeOf(context).width < 360 ? 1.05 : 1.15,
             child: NavigationBar(
             selectedIndex: _index,
             onDestinationSelected: (i) => setState(() => _index = i),
