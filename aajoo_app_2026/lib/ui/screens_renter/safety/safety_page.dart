@@ -1,3 +1,7 @@
+import 'package:rent_home/utils/safe_bottom.dart';
+import 'package:rent_home/service/safety_service.dart';
+import 'package:rent_home/service/device_service.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/service/static_page_service.dart';
@@ -108,6 +112,11 @@ const Map<String, IconData> _icons = {
 };
 
 class _SafetyPageState extends State<SafetyPage> {
+  /// A safety action in flight, and what it said when it finished.
+  bool _busy = false;
+  bool _ok = false;
+  String? _result;
+
   Map<String, String> _copy = _defaults;
 
   @override
@@ -162,9 +171,319 @@ class _SafetyPageState extends State<SafetyPage> {
           ..._section(_t('pay.heading'), _money),
           ..._section(_t('stay.heading'), _during),
           _emergency(),
+          const SizedBox(height: 16),
+          _actions(),
         ],
       ),
     );
+  }
+
+  /// The half a person can act on — audit finding A-2.
+  ///
+  /// Deliberately AFTER the numbers. Aajoo cannot send help; the honest order
+  /// is call the emergency services first, tell us second, and nothing here
+  /// says otherwise.
+  Widget _actions() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: const BorderRadius.all(Radius.circular(14)),
+        border: Border.all(color: kLine),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('If something is wrong right now',
+              style: fraunces(
+                  fontSize: 17, fontWeight: FontWeight.w700, color: kInk)),
+          const SizedBox(height: 8),
+          Text(
+            'Aajoo is not an emergency service and cannot send help. Call 112 '
+            'first — then tell us, so we can act on the listing and reach the '
+            'host.',
+            style: inter(fontSize: 13.5, color: kMuted, height: 1.6),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              onPressed: () => DeviceService.launchDialPad('112'),
+              icon: const Icon(Icons.call_rounded, size: 19),
+              label: Text('Call 112 now',
+                  style: inter(fontSize: 15, fontWeight: FontWeight.w700)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFB42318),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _busy ? null : _raiseSos,
+                  icon: _busy
+                      ? const SizedBox(
+                          width: 15,
+                          height: 15,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.campaign_outlined, size: 18),
+                  label: Text(_busy ? 'Sending…' : 'Alert Aajoo',
+                      style:
+                          inter(fontSize: 13.5, fontWeight: FontWeight.w600)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: kInk,
+                    side: const BorderSide(color: kLine),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _busy ? null : _openReport,
+                  icon: const Icon(Icons.flag_outlined, size: 18),
+                  label: Text('Report',
+                      style:
+                          inter(fontSize: 13.5, fontWeight: FontWeight.w600)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: kInk,
+                    side: const BorderSide(color: kLine),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (_result != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _result!,
+              style: inter(
+                  fontSize: 13,
+                  height: 1.5,
+                  fontWeight: FontWeight.w600,
+                  color: _ok ? kSuccess : const Color(0xFFB42318)),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Tell Aajoo. Confirmed first, and the confirmation says plainly that we
+  /// cannot send help — this is the moment that promise would matter most.
+  Future<void> _raiseSos() async {
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Alert Aajoo that you need help?',
+            style: fraunces(fontSize: 17, fontWeight: FontWeight.w700)),
+        content: Text(
+          'If you are in danger, call 112 first — we cannot send help '
+          'ourselves. This tells our safety team, with your location if your '
+          'phone allows it, so we can act on the stay and reach the host.',
+          style: inter(fontSize: 13.5, color: kMuted, height: 1.6),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('Cancel', style: inter(fontSize: 14))),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFB42318),
+                foregroundColor: Colors.white),
+            child: Text('Alert Aajoo',
+                style: inter(fontSize: 14, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (go != true) return;
+
+    setState(() {
+      _busy = true;
+      _result = null;
+    });
+
+    // Best effort and never blocking: a refused or slow permission prompt must
+    // not hold up an SOS.
+    double? lat, lng;
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.always ||
+          permission == LocationPermission.whileInUse) {
+        final p = await Geolocator.getCurrentPosition(
+                locationSettings:
+                    const LocationSettings(accuracy: LocationAccuracy.medium))
+            .timeout(const Duration(seconds: 4));
+        lat = p.latitude;
+        lng = p.longitude;
+      }
+    } catch (_) {
+      // No location. The alert still goes.
+    }
+
+    final res = await SafetyService.instance
+        .report(kind: 'sos', lat: lat, lng: lng);
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _ok = res.ok;
+      _result = res.ok
+          ? 'Aajoo has been alerted (${res.reference}). If you are in danger, call 112 now.'
+          : (res.message ?? "Couldn't send that. Please call 112.");
+    });
+  }
+
+  /// The report form — a reason and a description.
+  Future<void> _openReport() async {
+    final reasons = await SafetyService.instance.reasons();
+    if (!mounted) return;
+    var picked = reasons.first.key;
+    final controller = TextEditingController();
+
+    final sent = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheet) => Padding(
+          padding: EdgeInsets.only(
+              bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: kCream,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+            ),
+            padding: safeBottomInsets(sheetContext,
+                left: 18, top: 18, right: 18, bottom: 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Report a safety concern',
+                    style: fraunces(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: kInk)),
+                const SizedBox(height: 4),
+                Text('Our safety team reads every one of these.',
+                    style: inter(fontSize: 12.5, color: kMuted)),
+                const SizedBox(height: 16),
+                Text('What happened?',
+                    style:
+                        inter(fontSize: 13, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: kLine),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: picked,
+                      isExpanded: true,
+                      items: [
+                        for (final r in reasons)
+                          DropdownMenuItem(
+                            value: r.key,
+                            child: Text(r.label,
+                                style: inter(fontSize: 13.5, color: kInk),
+                                overflow: TextOverflow.ellipsis),
+                          ),
+                      ],
+                      onChanged: (v) =>
+                          setSheet(() => picked = v ?? picked),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: controller,
+                  minLines: 4,
+                  maxLines: 7,
+                  maxLength: 4000,
+                  style: inter(fontSize: 14, color: kInk),
+                  decoration: InputDecoration(
+                    hintText:
+                        'Dates, what happened, who was involved. Anything you can give us helps.',
+                    hintStyle: inter(fontSize: 13, color: kMuted),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: kLine),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      if (controller.text.trim().length < 10) {
+                        ScaffoldMessenger.of(sheetContext).showSnackBar(
+                          const SnackBar(
+                              content: Text(
+                                  'Please tell us what happened — a sentence or two is enough.')),
+                        );
+                        return;
+                      }
+                      Navigator.pop(sheetContext, true);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kprimaryColor,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text('Send report',
+                        style: inter(
+                            fontSize: 15, fontWeight: FontWeight.w700)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (sent != true || !mounted) return;
+    setState(() {
+      _busy = true;
+      _result = null;
+    });
+    final res = await SafetyService.instance.report(
+      kind: 'report',
+      reason: picked,
+      message: controller.text.trim(),
+    );
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _ok = res.ok;
+      _result = res.ok
+          ? 'Thank you — our safety team has this (${res.reference}). You can follow it in Help & Support.'
+          : (res.message ?? "Couldn't send that report.");
+    });
   }
 
   List<Widget> _section(String heading, List<List<String>> items) => [
@@ -251,21 +570,32 @@ class _SafetyPageState extends State<SafetyPage> {
           Text(_t('emergency.desc'),
               style: inter(fontSize: 13.5, color: kMuted, height: 1.6)),
           const SizedBox(height: 14),
+          // Every line is a number you can actually dial. They were plain
+          // text, which is the one thing that is no use in a hurry.
           for (final line in lines)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  const Icon(Icons.call_outlined, size: 16, color: kClay),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(line,
-                        style: inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: kInk)),
-                  ),
-                ],
+            InkWell(
+              onTap: () {
+                final n = RegExp(r'^\s*(\d{3,4})').firstMatch(line)?.group(1);
+                if (n != null) DeviceService.launchDialPad(n);
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.call_outlined, size: 16, color: kClay),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(line,
+                          style: inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: kInk)),
+                    ),
+                    const Icon(Icons.chevron_right_rounded,
+                        size: 18, color: kMuted),
+                  ],
+                ),
               ),
             ),
         ],
