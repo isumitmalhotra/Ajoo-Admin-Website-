@@ -32,6 +32,8 @@ import 'package:rent_home/ui/screens_host/listing/components/state_city_fields.d
 import 'package:rent_home/service/geocode_service.dart';
 import 'package:rent_home/ui/screens_host/listing/components/agreement_block.dart';
 import 'package:rent_home/utils/safe_bottom.dart';
+import 'package:rent_home/ui/screens_renter/property_details/components/property_tabs.dart'
+    show nearbyIcon;
 
 class ListingWizardScreen extends StatefulWidget {
   const ListingWizardScreen({super.key, this.propertyId});
@@ -888,6 +890,16 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
           ],
         ),
 
+        // What's around this property — the same picker the website has.
+        //
+        // The host is the EDITOR here, not the typist. Google is good at
+        // "there is a temple 1.5km away" and bad at "which of these forty
+        // places matter to someone staying here", so it suggests and the host
+        // cuts. That is why unticking is exactly as easy as ticking.
+        _NearbyPicker(controller: c),
+
+        // The original distance grid, kept for anything the search does not
+        // find. Both are sent; the server tells them apart.
         for (final g in s.nearbyGroups)
           ListingSection(
             title: g.label,
@@ -2476,5 +2488,158 @@ class _NearbyFieldState extends State<_NearbyField> {
         ],
       ),
     );
+  }
+}
+
+/// The host's "what's around this property" picker.
+///
+/// Loads its suggestions when the host actually reaches the step — seven
+/// sections is seven billed Google requests, and a host who only edits their
+/// price should not pay for a lookup they never see.
+class _NearbyPicker extends StatefulWidget {
+  final ListingWizardController controller;
+  const _NearbyPicker({required this.controller});
+
+  @override
+  State<_NearbyPicker> createState() => _NearbyPickerState();
+}
+
+class _NearbyPickerState extends State<_NearbyPicker> {
+  @override
+  void initState() {
+    super.initState();
+    // After the first frame: this runs during a build of the step, and
+    // touching an Rx synchronously here would rebuild the tree mid-build.
+    WidgetsBinding.instance.addPostFrameCallback(
+        (_) => widget.controller.loadNearbySuggestions());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.controller;
+    return Obx(() {
+      final state = c.nearbyState.value;
+      final sections = c.nearbySuggestions;
+
+      return ListingSection(
+        title: "What's around this property",
+        sub: 'Pick the places worth showing a guest. Tap to add or remove — '
+            'only the sections you fill in appear on your listing.',
+        children: [
+          if (state == 'loading')
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Text('Looking up places around your property…',
+                  style: inter(fontSize: 13, color: kMuted)),
+            ),
+          if (state == 'off')
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Text(
+                  "We couldn't find anything nearby right now — you can still "
+                  'enter distances by hand below.',
+                  style: inter(fontSize: 13, color: kMuted)),
+            ),
+          for (final sec in sections) ..._section(c, sec),
+        ],
+      );
+    });
+  }
+
+  List<Widget> _section(ListingWizardController c, Map<String, dynamic> sec) {
+    final key = '${sec['key']}';
+    final places = (sec['places'] is List)
+        ? List<Map<String, dynamic>>.from(
+            (sec['places'] as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)))
+        : <Map<String, dynamic>>[];
+
+    // A place the host ticked that this refresh no longer returns still
+    // belongs in the list and stays ticked. They chose it; a search result
+    // changing is not a reason to drop their answer.
+    final extras = c.nearbyPicked
+        .where((p) =>
+            p['section'] == key &&
+            !places.any((o) =>
+                '${o['name']}'.trim().toLowerCase() ==
+                '${p['name']}'.trim().toLowerCase()))
+        .toList();
+    final rows = [...places, ...extras];
+    if (rows.isEmpty) return const [];
+
+    final chosen = c.nearbyPicked.where((p) => p['section'] == key).length;
+
+    return [
+      Padding(
+        padding: const EdgeInsets.only(top: 6, bottom: 2),
+        child: Row(
+          children: [
+            Icon(nearbyIcon('${sec['icon']}'), size: 16, color: kIndigo600),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text('${sec['label']}',
+                  style: inter(fontSize: 13.5, fontWeight: FontWeight.w700, color: kInk)),
+            ),
+            Text(chosen > 0 ? '$chosen selected' : 'none selected',
+                style: inter(fontSize: 11.5, color: kMuted)),
+          ],
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: rows.map((o) {
+            final name = '${o['name']}';
+            final on = c.isNearbyPicked(key, name);
+            final km = double.tryParse('${o['km']}') ?? 0;
+            return InkWell(
+              onTap: () => c.toggleNearbyPlace({
+                'section': key,
+                'name': name,
+                'km': km,
+                'lat': o['lat'],
+                'lng': o['lng'],
+                'placeId': o['placeId'],
+              }),
+              borderRadius: BorderRadius.circular(999),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+                decoration: BoxDecoration(
+                  color: on ? kIndigo600 : Colors.transparent,
+                  border: Border.all(color: on ? kIndigo600 : kLine),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(on ? Icons.check_rounded : Icons.add_rounded,
+                        size: 14, color: on ? Colors.white : kMuted),
+                    const SizedBox(width: 5),
+                    // Constrained, or a long place name pushes the distance
+                    // off the chip and the chip off the screen.
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 165),
+                      child: Text(name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: inter(
+                              fontSize: 12.5,
+                              color: on ? Colors.white : kInk)),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(km < 1 ? '${(km * 1000).round()} m' : '$km km',
+                        style: inter(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: on ? Colors.white70 : kMuted)),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    ];
   }
 }

@@ -91,6 +91,23 @@ class DeviceService {
     return _open(googleMapsUrl);
   }
 
+  /// Turn-by-turn directions TO a place, rather than a pin on a map.
+  ///
+  /// `launchGoogleMaps` above drops a marker and leaves the guest to work out
+  /// the rest. On the nearby list the question is always "how do I get there",
+  /// so this opens the directions view with the destination already set. The
+  /// place id is passed when we have it: two temples in one town share a
+  /// coordinate to three decimals, and the id is what tells them apart.
+  static Future<bool> launchDirections(double latitude, double longitude,
+      {String? placeId}) {
+    final id = placeId == null || placeId.isEmpty
+        ? ''
+        : '&destination_place_id=${Uri.encodeComponent(placeId)}';
+    return _open(
+      'https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude$id',
+    );
+  }
+
   static Future<bool> launchWhatsapp({
     String? phoneNumber,
     String? message,

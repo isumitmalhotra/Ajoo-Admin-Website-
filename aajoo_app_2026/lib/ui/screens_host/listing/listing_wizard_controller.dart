@@ -89,6 +89,21 @@ class ListingWizardController extends GetxController {
   final RxList<String> views = <String>[].obs;
   final RxMap<String, Map<String, dynamic>> nearby =
       <String, Map<String, dynamic>>{}.obs;
+
+  /// The real places around this property.
+  ///
+  /// [nearbyPicked] is what the host ticked and what gets saved.
+  /// [nearbySuggestions] is only ever a source of candidates — a place stays
+  /// picked even when a later refresh no longer returns it, because the host
+  /// chose it and a search result changing is not a reason to drop their
+  /// answer.
+  final RxList<Map<String, dynamic>> nearbyPicked = <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> nearbySuggestions =
+      <Map<String, dynamic>>[].obs;
+
+  /// idle | loading | ready | off — `off` covers every reason there is nothing
+  /// to suggest, because to the host they are the same situation.
+  final RxString nearbyState = 'idle'.obs;
   final RxMap<String, dynamic> details = <String, dynamic>{}.obs;
   final RxList<Map<String, dynamic>> media = <Map<String, dynamic>>[].obs;
   final RxMap<String, dynamic> photoReadiness = <String, dynamic>{}.obs;
@@ -431,6 +446,16 @@ class ListingWizardController extends GetxController {
           k.toString(),
           v is Map ? Map<String, dynamic>.from(v) : <String, dynamic>{})));
     }
+    // What the host already ticked. Without this an edit re-opens with every
+    // place unticked and the next save wipes them — the form would look like
+    // it had simply forgotten.
+    if (d['nearbyPlaces'] is List) {
+      nearbyPicked.assignAll((d['nearbyPlaces'] as List)
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .where((e) =>
+              '${e['section'] ?? ''}'.isNotEmpty && '${e['name'] ?? ''}'.isNotEmpty));
+    }
     if (d['media'] is List) {
       media.assignAll((d['media'] as List)
           .whereType<Map>()
@@ -504,6 +529,43 @@ class ListingWizardController extends GetxController {
     }
     nearby[group] = g;
     nearby.refresh();
+  }
+
+  /// Is this place ticked? Keyed on section + name, not on the Google id —
+  /// a place added by hand has no id and has to de-duplicate the same way.
+  bool isNearbyPicked(String section, String name) => nearbyPicked.any((p) =>
+      p['section'] == section &&
+      '${p['name']}'.trim().toLowerCase() == name.trim().toLowerCase());
+
+  void toggleNearbyPlace(Map<String, dynamic> place) {
+    final section = '${place['section']}';
+    final name = '${place['name']}'.trim().toLowerCase();
+    final at = nearbyPicked.indexWhere((p) =>
+        p['section'] == section && '${p['name']}'.trim().toLowerCase() == name);
+    if (at >= 0) {
+      nearbyPicked.removeAt(at);
+    } else {
+      nearbyPicked.add(place);
+    }
+    nearbyPicked.refresh();
+  }
+
+  /// Fetch suggestions when the host reaches the step, not on mount.
+  ///
+  /// Seven sections is seven billed Google requests, and a host who only ever
+  /// edits their price should not pay for a lookup they never see. The server
+  /// caches by rounded coordinates for an hour, so coming back is free.
+  Future<void> loadNearbySuggestions() async {
+    // RxnInt, so null is "no property yet" — a distinct state from 0 and the
+    // one an unsaved draft is actually in.
+    final id = propertyId.value;
+    if (id == null || id == 0) return;
+    if (nearbyState.value == 'loading' || nearbyState.value == 'ready') return;
+    nearbyState.value = 'loading';
+    final sections = await _service.nearbySuggestions(id);
+    nearbySuggestions.assignAll(
+        sections.whereType<Map>().map((e) => Map<String, dynamic>.from(e)));
+    nearbyState.value = nearbySuggestions.isEmpty ? 'off' : 'ready';
   }
 
   void toggleMonth(String m) => toggleIn(seasonalMonths, m);
@@ -832,6 +894,7 @@ class ListingWizardController extends GetxController {
             'experiences': experiences.toList(),
             'views': views.toList(),
             'nearby': nearby,
+            'nearbyPlaces': nearbyPicked.toList(),
             'details': details,
           });
           if (res['photoReadiness'] is Map) {

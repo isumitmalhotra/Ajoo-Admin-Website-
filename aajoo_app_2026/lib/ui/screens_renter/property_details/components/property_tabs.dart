@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/models/host_profile.dart';
 import 'package:rent_home/models/single_property_response.dart';
+import 'package:rent_home/service/device_service.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/models/cancellation_policy.dart';
 import 'package:rent_home/ui/screens_common/cancellation_policy/cancellation_policy_page.dart';
@@ -193,79 +194,238 @@ List<T> trimGroups<T>(List<T> groups, int Function(T) size, int budget) {
   return out;
 }
 
-/// A-34/A-35 — how far the airport, hospital, bus stand and the rest are.
+/// The icon for a section, by the name the SERVER chose.
 ///
-/// Renders nothing when the host entered no distances, which is every listing
-/// created before the listing wizard. Showing "0 km" for those would be
-/// inventing the answer.
-class NearbySection extends StatefulWidget {
-  final List<NearbyGroup> groups;
-  const NearbySection({super.key, required this.groups});
-
-  @override
-  State<NearbySection> createState() => _NearbySectionState();
+/// The server sends a Lucide name so the app and the website show the same
+/// picture for the same section, which is the whole point of it deciding.
+/// Material has no exact twin for every one, so this is the nearest match —
+/// and it falls back to a pin rather than to nothing, because a card with a
+/// hole where its icon should be reads as broken.
+IconData nearbyIcon(String name) {
+  switch (name) {
+    case 'plane':
+      return Icons.flight_takeoff_rounded;
+    case 'landmark':
+      return Icons.account_balance_rounded;
+    case 'mountain':
+      return Icons.terrain_rounded;
+    case 'utensils':
+      return Icons.restaurant_rounded;
+    case 'shopping-bag':
+      return Icons.shopping_bag_outlined;
+    case 'cross':
+      return Icons.local_hospital_outlined;
+    case 'trees':
+      return Icons.park_outlined;
+    case 'star':
+      return Icons.star_rounded;
+    default:
+      return Icons.place_outlined;
+  }
 }
 
-class _NearbySectionState extends State<NearbySection> {
+/// One place, with a directions button when we know where it is.
+class _NearbyRow extends StatelessWidget {
+  final NearbyPlace place;
+  const _NearbyRow(this.place);
+
+  @override
+  Widget build(BuildContext context) {
+    final lat = place.lat, lng = place.lng;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: kLine)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(place.name, style: inter(fontSize: 13.5, color: kInk)),
+          ),
+          const SizedBox(width: 8),
+          Text(place.distanceLabel,
+              style: inter(
+                  fontSize: 13, fontWeight: FontWeight.w600, color: kMuted)),
+          // Only when the position is known. A directions link built from half
+          // a coordinate opens the middle of the ocean, and a guest would
+          // trust it, follow it, and blame the listing.
+          if (lat != null && lng != null) ...[
+            const SizedBox(width: 4),
+            InkWell(
+              onTap: () => DeviceService.launchDirections(lat, lng,
+                  placeId: place.placeId),
+              borderRadius: BorderRadius.circular(20),
+              child: const Padding(
+                padding: EdgeInsets.all(4),
+                child: Icon(Icons.directions_outlined,
+                    size: 17, color: kIndigo600),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// One section card.
+class _NearbyCard extends StatefulWidget {
+  final NearbyGroup group;
+  const _NearbyCard(this.group);
+
+  @override
+  State<_NearbyCard> createState() => _NearbyCardState();
+}
+
+class _NearbyCardState extends State<_NearbyCard> {
+  static const _limit = 5;
   bool _all = false;
 
   @override
   Widget build(BuildContext context) {
-    final groups = widget.groups;
+    final g = widget.group;
+    final shown = _all ? g.places : g.places.take(_limit).toList();
+    final hidden = g.places.length - shown.length;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: kLine),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(nearbyIcon(g.icon), size: 17, color: kIndigo600),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(g.label,
+                    style: inter(fontSize: 14.5, fontWeight: FontWeight.w700, color: kInk)),
+              ),
+            ],
+          ),
+          if (g.blurb.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(g.blurb, style: inter(fontSize: 12, color: kMuted)),
+          ],
+          const SizedBox(height: 4),
+          ...shown.map((p) => _NearbyRow(p)),
+          if (hidden > 0 || _all)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: InkWell(
+                onTap: () => setState(() => _all = !_all),
+                child: Text(
+                  _all ? 'Show less' : 'Show $hidden more',
+                  style: inter(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: kIndigo600),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "What's around this property" — the eight sections a guest reads.
+///
+/// THE SERVER DECIDES WHAT EXISTS. Sections arrive already filtered — an empty
+/// one is not sent — and Popular Nearby arrives derived rather than curated.
+/// Neither rule is re-implemented here, because the website renders the same
+/// payload and two copies of a rule is how two screens come to disagree.
+///
+/// Renders nothing at all when the host filled none of it in. A heading over an
+/// empty area reads as a broken page, and an invented "0 km to the airport"
+/// would be worse than saying nothing.
+class NearbySection extends StatelessWidget {
+  final List<NearbyGroup> groups;
+  final NearbyGroup? popular;
+  const NearbySection({super.key, required this.groups, this.popular});
+
+  @override
+  Widget build(BuildContext context) {
     if (groups.isEmpty) return const SizedBox.shrink();
-    final total = groups.fold<int>(0, (n, g) => n + g.places.length);
-    final shown =
-        _all ? groups : trimGroups<NearbyGroup>(groups, (g) => g.places.length, 8);
-    final hidden = total - shown.fold<int>(0, (n, g) => n + g.places.length);
+    final pop = popular;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 18),
-        const PanelTitle("What's nearby"),
-        ...shown.map((g) => Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    g.label.toUpperCase(),
-                    style: inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: .4,
-                        color: kMuted),
-                  ),
-                  const SizedBox(height: 6),
-                  ...g.places.map((p) => Container(
-                        padding: const EdgeInsets.symmetric(vertical: 7),
-                        decoration: const BoxDecoration(
-                          border: Border(bottom: BorderSide(color: kLine)),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(p.place,
-                                  style: inter(fontSize: 13.5, color: kInk)),
-                            ),
-                            Text(p.distanceLabel,
-                                style: inter(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: kMuted)),
-                          ],
-                        ),
-                      )),
-                ],
-              ),
-            )),
-        if (_all || hidden > 0)
-          ShowAllButton(
-            open: _all,
-            total: total,
-            noun: 'places',
-            onTap: () => setState(() => _all = !_all),
+        const PanelTitle("What's around this property"),
+        const SizedBox(height: 4),
+
+        // The highlights strip, first — it answers the question a guest asks
+        // before any of the others: is there anything here? These places
+        // appear again under their own headings, and that repetition is the
+        // point of a highlights strip rather than a fault in it.
+        if (pop != null && pop.places.isNotEmpty) ...[
+          Row(
+            children: [
+              const Icon(Icons.star_rounded, size: 17, color: kClay),
+              const SizedBox(width: 7),
+              Text(pop.label,
+                  style: inter(fontSize: 14.5, fontWeight: FontWeight.w700, color: kInk)),
+            ],
           ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: pop.places.map((p) {
+              final lat = p.lat, lng = p.lng;
+              return InkWell(
+                onTap: lat == null || lng == null
+                    ? null
+                    : () => DeviceService.launchDirections(lat, lng, placeId: p.placeId),
+                borderRadius: BorderRadius.circular(999),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: kLine),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Constrained, or a long place name pushes the distance
+                      // off the chip and the chip off the screen.
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 190),
+                        child: Text(p.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: inter(fontSize: 13, color: kInk)),
+                      ),
+                      const SizedBox(width: 7),
+                      Text(p.distanceLabel,
+                          style: inter(
+                              fontSize: 12, fontWeight: FontWeight.w600, color: kMuted)),
+                      if (lat != null && lng != null) ...[
+                        const SizedBox(width: 5),
+                        const Icon(Icons.directions_outlined, size: 14, color: kIndigo600),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 14),
+        ],
+
+        ...groups.map((g) => _NearbyCard(g)),
+
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Text(
+            'Distances are straight-line from the property, so the road route may be longer.',
+            style: inter(fontSize: 11.5, color: kMuted),
+          ),
+        ),
       ],
     );
   }
@@ -881,7 +1041,10 @@ class _PropertyDetailPanelsState extends State<PropertyDetailPanels> {
           ),
         const SizedBox(height: 12),
         PropertyAreaMap(lat: lat, lng: lng),
-        NearbySection(groups: _s?.nearby ?? const []),
+        NearbySection(
+          groups: _s?.nearby ?? const [],
+          popular: _s?.nearbyPopular,
+        ),
       ],
     );
   }

@@ -156,6 +156,30 @@ class ListingService {
   // ── Draft, readiness, submit ──────────────────────────────────────────────
 
   /// Everything already saved for a listing, so the wizard can be reopened.
+  /// What Google finds around this property, grouped into the guest's sections.
+  ///
+  /// Returns an EMPTY list rather than throwing when there is no key, no
+  /// billing or no pin on the map yet. The picker then says suggestions are
+  /// unavailable and the host types distances by hand, which is exactly what
+  /// this form did before suggestions existed — so this is safe to ship ahead
+  /// of Places billing.
+  Future<List<dynamic>> nearbySuggestions(int propertyId) async {
+    try {
+      final res = await _dio.get(
+        'listing/nearby/suggest?propertyId=$propertyId',
+        options: await _auth(),
+      );
+      final data = _unwrap(res);
+      if (data is Map && data['sections'] is List) {
+        return List<dynamic>.from(data['sections'] as List);
+      }
+      return const [];
+    } catch (e) {
+      logServiceError('listing_service:nearbySuggestions', e);
+      return const [];
+    }
+  }
+
   Future<Map<String, dynamic>> getDraft(int propertyId) async {
     try {
       final res =

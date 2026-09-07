@@ -78,6 +78,13 @@ class SinglePropertyData {
   /// "there is nothing nearby", so the section hides rather than showing zeros.
   final List<NearbyGroup> nearby;
 
+  /// The highlights strip — the nearest place in each section.
+  ///
+  /// DERIVED on the server from [nearby], so it can never disagree with the
+  /// sections below it, and a host never has to keep a shortlist in step with
+  /// a list. Null when there is nothing to highlight.
+  final NearbyGroup? nearbyPopular;
+
   /// Structured house rules from the listing wizard, or null when the host
   /// never filled them in (the legacy pet/smoking flags carry it then).
   final PropertyHouseRules? houseRules;
@@ -145,6 +152,7 @@ class SinglePropertyData {
     this.isVerify,
     this.verificationStatus,
     this.nearby = const [],
+    this.nearbyPopular,
     this.houseRules,
     this.amenityGroups = const [],
     this.experiences = const [],
@@ -220,6 +228,15 @@ class SinglePropertyData {
               .where((g) => g.places.isNotEmpty)
               .toList()
           : const [],
+      // The server already drops empty sections; this guard is for a payload
+      // that predates it, not a second opinion about the rule.
+      nearbyPopular: (json['nearbyPopular'] is Map)
+          ? () {
+              final g = NearbyGroup.fromJson(
+                  Map<String, dynamic>.from(json['nearbyPopular'] as Map));
+              return g.places.isEmpty ? null : g;
+            }()
+          : null,
       houseRules: json['houseRules'] is Map
           ? PropertyHouseRules.fromJson(
               Map<String, dynamic>.from(json['houseRules'] as Map))
@@ -434,20 +451,35 @@ class SpecLine {
       );
 }
 
+/// One section of "what's around this property".
+///
+/// The server sends these already filtered — an empty section is not sent —
+/// and in the order a guest asks the questions. Neither rule is repeated
+/// here, because the website renders the same payload and two copies of a
+/// rule is how two screens come to disagree.
 class NearbyGroup {
   final String key;
   final String label;
+
+  /// A Lucide-style name chosen server-side, so the app and the website show
+  /// the same picture for the same section. Empty for older payloads.
+  final String icon;
+  final String blurb;
   final List<NearbyPlace> places;
 
   const NearbyGroup({
     required this.key,
     required this.label,
+    this.icon = '',
+    this.blurb = '',
     required this.places,
   });
 
   factory NearbyGroup.fromJson(Map<String, dynamic> json) => NearbyGroup(
         key: (json['key'] ?? '').toString(),
         label: (json['label'] ?? '').toString(),
+        icon: (json['icon'] ?? '').toString(),
+        blurb: (json['blurb'] ?? '').toString(),
         places: (json['places'] is List)
             ? (json['places'] as List)
                 .whereType<Map>()
@@ -458,17 +490,57 @@ class NearbyGroup {
 }
 
 class NearbyPlace {
+  /// The place's own name — "Hidimba Devi Temple", not "Temple".
+  ///
+  /// Falls back to [place] so a payload from before this feature still reads:
+  /// the server sends both for exactly that reason.
+  final String name;
+
+  /// The older field name. Same value on a current payload.
   final String place;
   final String slug;
   final double km;
 
-  const NearbyPlace({required this.place, required this.slug, required this.km});
+  /// Where it is. BOTH or NEITHER — a directions link built from half a
+  /// coordinate opens the middle of the ocean, and a guest would trust it,
+  /// follow it, and blame the listing.
+  final double? lat;
+  final double? lng;
+  final String? placeId;
 
-  factory NearbyPlace.fromJson(Map<String, dynamic> json) => NearbyPlace(
-        place: (json['place'] ?? '').toString(),
-        slug: (json['slug'] ?? '').toString(),
-        km: double.tryParse('${json['km']}') ?? 0,
-      );
+  const NearbyPlace({
+    required this.name,
+    required this.place,
+    required this.slug,
+    required this.km,
+    this.lat,
+    this.lng,
+    this.placeId,
+  });
+
+  factory NearbyPlace.fromJson(Map<String, dynamic> json) {
+    final place = (json['place'] ?? '').toString();
+    final name = (json['name'] ?? '').toString();
+    final lat = double.tryParse('${json['lat']}');
+    final lng = double.tryParse('${json['lng']}');
+    final located = lat != null && lng != null;
+    return NearbyPlace(
+      name: name.isNotEmpty ? name : place,
+      place: place.isNotEmpty ? place : name,
+      slug: (json['slug'] ?? '').toString(),
+      km: double.tryParse('${json['km']}') ?? 0,
+      lat: located ? lat : null,
+      lng: located ? lng : null,
+      placeId: (json['placeId'] ?? '').toString().isEmpty ? null : json['placeId'].toString(),
+    );
+  }
+
+  /// A Google Maps directions URL, or null when the position is unknown.
+  String? get directionsUrl {
+    if (lat == null || lng == null) return null;
+    final id = placeId == null ? '' : '&destination_place_id=$placeId';
+    return 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng$id';
+  }
 
   /// "600 m" reads better than "0.6 km" and is what the spec asks for.
   String get distanceLabel =>
