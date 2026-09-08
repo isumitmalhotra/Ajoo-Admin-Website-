@@ -9,8 +9,8 @@
 > **Repos:** FE `D:/Projects/aajao-frontend-vercel` (React/Vite → Vercel) ·
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
-> Tester build in circulation: **48 (1.0.0+48)**, `aajoo-homes-1.0.0-build48-release.apk` at repo root
-> (2026-09-08, sha256 `f8d8e1fd…07a2a0`, against `aajaodev.onrender.com` with the sandbox
+> Tester build in circulation: **49 (1.0.0+49)**, `aajoo-homes-1.0.0-build49-release.apk` at repo root
+> (2026-09-08, sha256 `83c6d4d5…7ab9b5`, against `aajaodev.onrender.com` with the sandbox
 > Razorpay key — the platform is still in test mode, so a QA build is the only honest one).
 > **The build number is internal and is not shown in the app** — Settings reads `Version 1.0.0`.
 > Identify a build from the artifact: its filename, its sha256, or
