@@ -11,6 +11,14 @@ import 'package:rent_home/ui/screens_renter/property_details/components/property
 /// These tests pin the two halves of the fix: every section is on the page at
 /// once, and the long lists still open trimmed so the sections underneath stay
 /// reachable.
+///
+/// Updated 2026-09-08. Three of them had been failing since e485778 ("what's
+/// around this property") and nobody noticed, because a red suite is easy to
+/// stop reading. That commit renamed the heading from "What's nearby" and
+/// replaced the flat list — one budget of six places across every group, with
+/// a single "Show all 15 places" — with a CARD PER GROUP, each showing five
+/// and carrying its own "Show N more". The section still trims; it trims
+/// somewhere else. The assertions below follow the design that exists.
 void main() {
   /// A listing with more amenities and landmarks than fit on one screen.
   SinglePropertyData listing() => SinglePropertyData.fromJson({
@@ -32,13 +40,16 @@ void main() {
               ],
             },
         ],
+        // Group 0 holds EIGHT places against a card limit of five, so the
+        // trimming has something to trim. Groups 1 and 2 sit exactly on the
+        // limit, which is what proves a full card shows no "Show more" link.
         'nearby': [
           for (var g = 0; g < 3; g++)
             {
               'key': 'n$g',
               'label': 'Nearby $g',
               'places': [
-                for (var i = 0; i < 5; i++)
+                for (var i = 0; i < (g == 0 ? 8 : 5); i++)
                   {'place': 'Place ${g}_$i', 'distance': '${i + 1}'},
               ],
             },
@@ -66,7 +77,7 @@ void main() {
     expect(find.text('What this place offers'), findsOneWidget);
     expect(find.text('House rules'), findsOneWidget);
     expect(find.text("Where you'll be"), findsOneWidget);
-    expect(find.text("What's nearby"), findsOneWidget);
+    expect(find.text("What's around this property"), findsOneWidget);
   });
 
   testWidgets('long lists open trimmed and expand on Show all', (tester) async {
@@ -89,13 +100,32 @@ void main() {
     expect(find.text('Show less'), findsWidgets);
   });
 
-  testWidgets("what's nearby trims too", (tester) async {
+  testWidgets("what's nearby trims inside each card, not across them",
+      (tester) async {
     await pump(tester);
 
-    // 15 places across 3 groups of 5, budget 6 → one group.
+    // Each group is its own card and trims on its own. Group 0 has eight
+    // places against a limit of five.
     expect(find.text('Place 0_0'), findsOneWidget);
-    expect(find.text('Place 1_0'), findsNothing);
-    expect(find.text('Show all 15 places'), findsOneWidget);
+    expect(find.text('Place 0_4'), findsOneWidget);
+    expect(find.text('Place 0_5'), findsNothing);
+
+    // A card is never held back because an earlier one was long — that is the
+    // difference from the flat budget this replaced, and the reason a guest
+    // can see every CATEGORY of landmark without expanding anything.
+    expect(find.text('Place 1_0'), findsOneWidget);
+    expect(find.text('Place 2_0'), findsOneWidget);
+
+    // Exactly one link, on the only card with anything hidden.
+    final more = find.text('Show 3 more');
+    expect(more, findsOneWidget);
+
+    await tester.ensureVisible(more);
+    await tester.tap(more);
+    await tester.pump();
+
+    expect(find.text('Place 0_7'), findsOneWidget);
+    expect(find.text('Show less'), findsOneWidget);
   });
 
   testWidgets('the section row is a jump nav, not a switch', (tester) async {
@@ -106,6 +136,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('What this place offers'), findsOneWidget);
-    expect(find.text("What's nearby"), findsOneWidget);
+    expect(find.text("What's around this property"), findsOneWidget);
   });
 }
