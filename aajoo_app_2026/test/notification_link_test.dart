@@ -47,15 +47,38 @@ void main() {
   });
 
   group('notificationDestination', () {
-    test('a cancellation opens the cancelled tab for either side', () {
-      for (final isHost in [true, false]) {
-        final d = notificationDestination(
-          title: 'Booking cancelled',
-          isHost: isHost,
-        );
-        expect(d.route, '/history');
-        expect(d.arguments['tab'], 'Cancelled');
-      }
+    test('a guest cancellation opens the guest cancelled tab', () {
+      final d = notificationDestination(
+        title: 'Booking cancelled',
+        isHost: false,
+      );
+      expect(d.route, '/history');
+      expect(d.arguments['tab'], 'Cancelled');
+    });
+
+    // This used to assert '/history' "for either side". /history is the
+    // GUEST's My Bookings: it asks the guest booking endpoint what stays the
+    // reader has booked. A host sent there saw their own (usually empty) travel
+    // history in answer to a notice about their property, and the test called
+    // that correct.
+    test('a host cancellation opens the host portal, not guest bookings', () {
+      final d = notificationDestination(
+        title: 'Booking cancelled',
+        isHost: true,
+        bookingId: 'B780678',
+      );
+      expect(d.route, '/host/home');
+      expect(d.arguments['hostTab'], kHostBookingsTab);
+    });
+
+    test('a host booking notice opens the host bookings tab', () {
+      final d = notificationDestination(
+        title: 'Your Property has been Booked',
+        isHost: true,
+        bookingId: 'B719836',
+      );
+      expect(d.route, '/host/home');
+      expect(d.arguments['hostTab'], kHostBookingsTab);
     });
 
     test('a chat notification opens that conversation when we know the property', () {

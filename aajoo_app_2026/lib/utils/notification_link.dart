@@ -44,6 +44,11 @@ const Set<String> kKnownRoutes = {
   '/webview',
 };
 
+/// The host portal's Bookings tab, in HostTabProvider's numbering (2 Dashboard,
+/// 3 Bookings, 5 Profile, 6 Messages). Passed as `hostTab` so a notification
+/// can open the portal on the tab it is about instead of its dashboard.
+const int kHostBookingsTab = 3;
+
 /// Where a tap should land, and what the destination needs to know.
 class NotifDestination {
   const NotifDestination(this.route, {this.arguments = const {}});
@@ -159,12 +164,29 @@ NotifDestination notificationDestination({
           : NotifDestination(home);
 
     case NotifKind.cancellation:
-      return NotifDestination('/history',
-          arguments: {'tab': 'Cancelled', if (hasBooking) 'highlight': bookingId});
+      // /history is the GUEST's My Bookings, and it was where a host's own
+      // cancellation notice sent them: a screen that asks the guest booking
+      // endpoint what stays THEY have booked, and answers "No cancelled
+      // bookings" to a host whose calendar just lost a night. The host portal
+      // has its own bookings tab; this opens it.
+      return isHost
+          ? const NotifDestination('/host/home',
+              arguments: {'hostTab': kHostBookingsTab})
+          : NotifDestination('/history',
+              arguments: {
+                'tab': 'Cancelled',
+                if (hasBooking) 'highlight': bookingId
+              });
 
     case NotifKind.booking:
-      return NotifDestination('/history',
-          arguments: {'tab': 'Upcoming', if (hasBooking) 'highlight': bookingId});
+      return isHost
+          ? const NotifDestination('/host/home',
+              arguments: {'hostTab': kHostBookingsTab})
+          : NotifDestination('/history',
+              arguments: {
+                'tab': 'Upcoming',
+                if (hasBooking) 'highlight': bookingId
+              });
 
     case NotifKind.payment:
       // Guests find charges and refunds against the stay itself; a host's

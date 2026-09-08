@@ -58,7 +58,21 @@ class _MainScreenState extends State<MainScreen> {
     // and fire-and-forget so a slow network never delays the portal.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) maybeShowAgreementGate(context);
+      if (mounted) _openRequestedTab();
     });
+  }
+
+  /// A notification can ask for a tab.
+  ///
+  /// A booking or cancellation notice used to open the GUEST's My Bookings —
+  /// the wrong portal entirely for a host. It opens this one now, and this is
+  /// what carries it to the right tab rather than the dashboard.
+  void _openRequestedTab() {
+    final args = Get.arguments;
+    if (args is! Map) return;
+    final wanted = args['hostTab'];
+    if (wanted is! int || !_tabToIndex.containsKey(wanted)) return;
+    context.read<HostTabProvider>().setTab(wanted);
   }
 
   @override

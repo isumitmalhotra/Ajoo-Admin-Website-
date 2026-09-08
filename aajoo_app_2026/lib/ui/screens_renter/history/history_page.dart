@@ -12,6 +12,42 @@ import 'package:rent_home/ui/responsive.dart';
 import 'package:rent_home/ui/screens_renter/guest_shell.dart';
 import 'package:rent_home/utils/stay_clock.dart';
 
+/// Bucket a booking into one of the four tabs.
+///
+/// Status alone is not enough. A stay that has been paid for keeps the status
+/// "Paid" for its whole life — nothing moves it on when the guest checks out —
+/// so bucketing on the title left finished stays sitting under Upcoming
+/// indefinitely, disagreeing with the dashboard count beside it. The dates
+/// decide, using the same 2 PM / 11 AM window as the web and the rest of this
+/// app; the title only settles what the dates cannot say (cancelled), and is
+/// the fallback when they cannot be read.
+int bookingTabIndex(String? title, {String? from, String? to}) {
+  final s = (title ?? '').toLowerCase();
+  if (s.contains('cancel')) return 3; // Cancelled — dates are irrelevant.
+
+  // A host who has CHECKED THE GUEST IN has said the stay is happening —
+  // that beats the clock. Without this, a guest checked in at 9am sat under
+  // Upcoming until the 2pm check-in hour while their own card read
+  // "Staying now": the same card disagreeing with the tab it was filed in.
+  final checkedIn = s.contains('check in') || s.contains('check-in');
+
+  if (parseStayDate(from) != null && parseStayDate(to) != null) {
+    if (hasEnded(to)) return 2; // Completed
+    if (checkedIn || isStaying(from, to)) return 1; // Ongoing
+    return 0; // Upcoming
+  }
+
+  // No usable dates — fall back to whatever the status says.
+  if (s.contains('complet') || s.contains('checkout') || s.contains('checked-out')) {
+    return 2;
+  }
+  if (s.contains('running') || s.contains('checkin') ||
+      s.contains('checked-in') || s.contains('ongoing') || s.contains('stay')) {
+    return 1;
+  }
+  return 0;
+}
+
 /// My Bookings — 4 status tabs (Upcoming / Ongoing / Completed / Cancelled)
 /// over the same getUserHistory data; the tabs only filter, they never refetch.
 ///
@@ -28,48 +64,16 @@ class HistoryPage extends StatefulWidget {
 class _HistoryPageState extends State<HistoryPage> {
   final UserController userController = Get.put(UserController());
 
+  /// Whether the tab has already been moved to the booking a notification
+  /// pointed at. Once only — after that the tabs are the reader's to choose.
+  bool _tabSnapped = false;
+
   @override
   void initState() {
     super.initState();
     SchedulerBinding.instance.addPostFrameCallback((_) {
       userController.getUserHistory();
     });
-  }
-
-  /// Bucket a booking into one of the four tabs.
-  ///
-  /// Status alone is not enough. A stay that has been paid for keeps the status
-  /// "Paid" for its whole life — nothing moves it on when the guest checks out —
-  /// so bucketing on the title left finished stays sitting under Upcoming
-  /// indefinitely, disagreeing with the dashboard count beside it. The dates
-  /// decide, using the same 2 PM / 11 AM window as the web and the rest of this
-  /// app; the title only settles what the dates cannot say (cancelled), and is
-  /// the fallback when they cannot be read.
-  int _bucket(String? title, {String? from, String? to}) {
-    final s = (title ?? '').toLowerCase();
-    if (s.contains('cancel')) return 3; // Cancelled — dates are irrelevant.
-
-    // A host who has CHECKED THE GUEST IN has said the stay is happening —
-    // that beats the clock. Without this, a guest checked in at 9am sat under
-    // Upcoming until the 2pm check-in hour while their own card read
-    // "Staying now": the same card disagreeing with the tab it was filed in.
-    final checkedIn = s.contains('check in') || s.contains('check-in');
-
-    if (parseStayDate(from) != null && parseStayDate(to) != null) {
-      if (hasEnded(to)) return 2; // Completed
-      if (checkedIn || isStaying(from, to)) return 1; // Ongoing
-      return 0; // Upcoming
-    }
-
-    // No usable dates — fall back to whatever the status says.
-    if (s.contains('complet') || s.contains('checkout') || s.contains('checked-out')) {
-      return 2;
-    }
-    if (s.contains('running') || s.contains('checkin') ||
-        s.contains('checked-in') || s.contains('ongoing') || s.contains('stay')) {
-      return 1;
-    }
-    return 0;
   }
 
   static const List<String> _tabNames = [
@@ -116,6 +120,39 @@ class _HistoryPageState extends State<HistoryPage> {
       }
     });
     return BookingCard(key: key, booking: booking, highlight: true);
+  }
+
+  /// Open the tab the booking is actually in.
+  ///
+  /// The tab came from the notification's wording, so "Booking Successfull"
+  /// always asked for Upcoming. But a notification outlives the stay it is
+  /// about: on build 51, tapping the confirmation for B719836 landed on
+  /// Upcoming, which said "No upcoming bookings" — while that very stay sat
+  /// under Completed, one tab away, with no sign it was there.
+  ///
+  /// The bookings are the authority, not the wording. Once they have loaded
+  /// the tab follows the one being pointed at; a booking that is not among
+  /// them leaves the requested tab alone.
+  void _snapToBookingTab(
+      BuildContext ctx, List<BookingHistoryData> all, String? highlightId) {
+    if (_tabSnapped || highlightId == null || all.isEmpty) return;
+    BookingHistoryData? target;
+    for (final b in all) {
+      if ((b.bookId ?? '').toString().trim() == highlightId) {
+        target = b;
+        break;
+      }
+    }
+    if (target == null) return;
+    _tabSnapped = true;
+    final bucket = bookingTabIndex(target.bookingStatusBsTitle,
+        from: target.bookDetailsBtBookFrom, to: target.bookDetailsBtBookTo);
+    final controller = DefaultTabController.maybeOf(ctx);
+    if (controller == null || controller.index == bucket) return;
+    // Not during a build: this runs inside the Obx that renders the list.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) controller.animateTo(bucket);
+    });
   }
 
   int _initialTab(BuildContext context) {
@@ -167,7 +204,9 @@ class _HistoryPageState extends State<HistoryPage> {
             tabs: [for (final name in _tabNames) Tab(text: name)],
           ),
         ),
-        body: RefreshIndicator(
+        // A context BELOW the DefaultTabController, so the list can move the
+        // tab once it knows which one holds the booking.
+        body: Builder(builder: (ctx) => RefreshIndicator(
           onRefresh: () async => userController.getUserHistory(),
           child: Obx(() {
             if (userController.isLoading.value) {
@@ -189,12 +228,13 @@ class _HistoryPageState extends State<HistoryPage> {
               if (da == null || db == null) return 0;
               return db.compareTo(da);
             });
+            _snapToBookingTab(ctx, all, _highlightId(ctx));
             return TabBarView(
               children: List.generate(4, (bucket) {
                 final items =
                     all
                         .where((b) =>
-                            _bucket(b.bookingStatusBsTitle,
+                            bookingTabIndex(b.bookingStatusBsTitle,
                                 from: b.bookDetailsBtBookFrom,
                                 to: b.bookDetailsBtBookTo) ==
                             bucket)
@@ -238,7 +278,7 @@ class _HistoryPageState extends State<HistoryPage> {
               }),
             );
           }),
-        ),
+        )),
       ),
     );
   }
