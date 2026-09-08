@@ -11,7 +11,8 @@ import '../controller/user_controller.dart';
 import '../models/properties_response_model.dart';
 import '../utils/notification_link.dart';
 import 'package:rent_home/data/ApiConstants.dart';
-
+
+
 import 'package:rent_home/utils/app_log.dart';
 class NotificationRoutingService extends GetxService {
   final _storage = const FlutterSecureStorage();
@@ -155,6 +156,9 @@ class NotificationRoutingService extends GetxService {
       payloadRoute: route,
       isHost: Get.find<AuthController>().authIsHost.value,
       propertyId: propertyId.isEmpty ? null : propertyId,
+      bookingId: (data['bookingId'] ?? '').toString().isEmpty
+          ? null
+          : (data['bookingId']).toString(),
     );
     final target =
         destination.route == '/negotiation' ? _homeRoute() : destination.route;

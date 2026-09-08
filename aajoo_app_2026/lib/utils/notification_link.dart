@@ -72,7 +72,16 @@ NotifKind _classify(String text) {
   }
   if (has(['review', 'rating'])) return NotifKind.review;
   if (has(['password', 'kyc', 'security'])) return NotifKind.account;
-  if (has(['book', 'stay', 'check-in', 'checkin', 'check-out'])) {
+  // "check_in" is the payload type the server sends and "checked in" is how
+  // the title reads — neither matches "check-in", so the check-in notice
+  // classified as unknown and landed on the home screen rather than the stay
+  // it was about. Both spellings, both separators. Kept identical to the
+  // website's classifier in notificationLink.ts.
+  if (has([
+    'book', 'stay',
+    'check-in', 'check_in', 'checkin', 'checked in',
+    'check-out', 'check_out', 'checked out',
+  ])) {
     return NotifKind.booking;
   }
   return NotifKind.unknown;
@@ -113,6 +122,11 @@ NotifDestination notificationDestination({
   String? payloadRoute,
   required bool isHost,
   String? propertyId,
+  /// The stay this is about, e.g. "B931569". Carried into the destination so
+  /// the list can point at the row instead of dropping the guest at the top of
+  /// it — on an account with nine bookings that is most of the value of having
+  /// been notified.
+  String? bookingId,
 }) {
   final home = isHost ? '/host/home' : '/home';
   final kind = notificationKind(
@@ -121,6 +135,7 @@ NotifDestination notificationDestination({
     payloadType: payloadType,
   );
   final hasProperty = (propertyId ?? '').trim().isNotEmpty;
+  final hasBooking = (bookingId ?? '').trim().isNotEmpty;
 
   switch (kind) {
     case NotifKind.message:
@@ -132,17 +147,20 @@ NotifDestination notificationDestination({
           : NotifDestination(home);
 
     case NotifKind.cancellation:
-      return const NotifDestination('/history', arguments: {'tab': 'Cancelled'});
+      return NotifDestination('/history',
+          arguments: {'tab': 'Cancelled', if (hasBooking) 'highlight': bookingId});
 
     case NotifKind.booking:
-      return const NotifDestination('/history', arguments: {'tab': 'Upcoming'});
+      return NotifDestination('/history',
+          arguments: {'tab': 'Upcoming', if (hasBooking) 'highlight': bookingId});
 
     case NotifKind.payment:
       // Guests find charges and refunds against the stay itself; a host's
       // earnings live behind their own home shell.
       return isHost
           ? NotifDestination(home)
-          : const NotifDestination('/history', arguments: {'tab': 'Completed'});
+          : NotifDestination('/history',
+              arguments: {'tab': 'Completed', if (hasBooking) 'highlight': bookingId});
 
     case NotifKind.listing:
     case NotifKind.review:

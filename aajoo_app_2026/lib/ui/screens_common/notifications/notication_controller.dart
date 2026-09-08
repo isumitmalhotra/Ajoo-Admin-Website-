@@ -28,11 +28,10 @@ class NotificationController extends GetxController {
       isLoading.value = true;
       final response = await notificationService.getNotification();
       notificationData.value = response;
-      if (response.success) {
-        notificationCount.value = response.data.notifications.length;
-      } else {
-        notificationCount.value = 0;
-      }
+      // The server's COUNT, not the length of what came back. The list is the
+      // history now — read rows included — so counting it would have shown a
+      // badge for notifications the guest had already opened.
+      notificationCount.value = response.success ? response.data.unreadCount : 0;
     } catch (e) {
       if (e is ApiException) {
         error.value = true;
@@ -64,12 +63,56 @@ class NotificationController extends GetxController {
     notif.unIsRead = 1;
     notificationData.refresh();
 
+    // The badge comes down with it. It sits on the bell the guest is looking
+    // at, and leaving it until the next fetch reads as the app not noticing.
+    if (notificationCount.value > 0) notificationCount.value -= 1;
+
     final ok =
         await notificationService.markNotificationAsRead(notificationId);
     if (!ok) {
       // Revert if the server rejected us
       notif.unIsRead = 0;
+      notificationCount.value += 1;
       notificationData.refresh();
+    }
+  }
+
+  /// Clear everything unread, in one call rather than one per row.
+  Future<void> markAllAsRead() async {
+    final response = notificationData.value;
+    if (response == null) return;
+    final unread = response.data.notifications.where((n) => n.unIsRead != 1).toList();
+    if (unread.isEmpty && notificationCount.value == 0) return;
+
+    for (final n in unread) {
+      n.unIsRead = 1;
+    }
+    final previous = notificationCount.value;
+    notificationCount.value = 0;
+    notificationData.refresh();
+
+    final after = await notificationService.markAllRead();
+    if (after == null) {
+      // The server refused. Put it back rather than showing "all caught up"
+      // over notifications that are still unread.
+      for (final n in unread) {
+        n.unIsRead = 0;
+      }
+      notificationCount.value = previous;
+      notificationData.refresh();
+    } else {
+      notificationCount.value = after;
+    }
+  }
+
+  /// Refresh just the count, for surfaces that show a badge but no list.
+  Future<void> refreshCount() async {
+    try {
+      final response = await notificationService.getNotification(history: false);
+      if (response.success) notificationCount.value = response.data.unreadCount;
+    } catch (_) {
+      // Signed out or offline — keep the last figure rather than flashing a
+      // zero that claims everything has been read.
     }
   }
 

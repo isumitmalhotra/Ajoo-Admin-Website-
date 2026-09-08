@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:rent_home/ui/screens_common/notifications/notication_controller.dart';
 import 'package:animations/animations.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:iconsax/iconsax.dart';
@@ -29,7 +30,8 @@ import '../../../data/models/update_user_model.dart';
 import '../../../data/models/user_models.dart';
 import 'package:rent_home/ui/screens_host/add_property/widgets/state_city_dropdowns.dart';
 import 'package:rent_home/ui/screens_common/refer/refer_screen.dart';
-
+
+
 import 'package:rent_home/utils/app_log.dart';
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -43,6 +45,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   final AuthController authController = Get.find<AuthController>();
   final UserController userController = Get.find<UserController>();
   final CommonController commonController = Get.find<CommonController>();
+  /// put, not find: the profile tab can be the first screen a deep link opens,
+  /// and Get.find on an unregistered controller throws.
+  final NotificationController _notifications = Get.put(NotificationController(), permanent: true);
   late AnimationController _animationController;
   final _formKey = GlobalKey<FormState>();
   final _scrollController = ScrollController();
@@ -1685,9 +1690,15 @@ class _ProfileScreenState extends State<ProfileScreen>
       _buildSettingItem('Messages', Icons.forum_outlined, () {
         Get.to(() => const MessagesScreen());
       }),
-      _buildSettingItem('Notifications', Icons.notifications, () {
-        Get.toNamed('/notifications');
-      }),
+      Obx(() => _buildSettingItem(
+            'Notifications',
+            Icons.notifications,
+            () async {
+              await Get.toNamed('/notifications');
+              await _notifications.refreshCount();
+            },
+            badge: _notifications.notificationCount.value,
+          )),
       _buildSettingItem('Refer & Earn', Icons.card_giftcard_outlined, () {
         Get.to(() => const ReferScreen());
       }),
@@ -1719,7 +1730,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildSettingItem(String title, IconData icon, VoidCallback onTap,
-      {bool isLogout = false}) {
+      {bool isLogout = false, int badge = 0}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       child: Material(
@@ -1749,6 +1760,30 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                   ),
                 ),
+                // An unread count, where the menu is the way in. Without it
+                // this row gave no sign there was anything behind it, so the
+                // only prompt to look was remembering to.
+                if (badge > 0)
+                  Container(
+                    constraints: const BoxConstraints(minWidth: 20),
+                    height: 20,
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDC2626),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      badge > 9 ? '9+' : '$badge',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        height: 1.1,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
                 const Icon(Icons.arrow_forward_ios, size: 16),
               ],
             ),

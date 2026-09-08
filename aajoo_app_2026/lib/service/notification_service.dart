@@ -14,7 +14,8 @@ import 'package:rent_home/data/ApiConstants.dart';
 import '../models/notification_response_model.dart';
 import 'notification_routing_service.dart';
 import '../utils/service_log.dart';
-
+
+
 import 'package:rent_home/utils/app_log.dart';
 /// Background FCM handler.
 ///
@@ -125,12 +126,22 @@ class NotificationService {
     }
   }
 
-  Future<AppNotificationResponse> getNotification() async {
+  Future<AppNotificationResponse> getNotification({bool history = true}) async {
     final token = await const FlutterSecureStorage().read(key: "user_token");
     _dio.options.baseUrl = baseUrl;
     _dio.options.headers["Authorization"] = 'Bearer $token';
     try {
-      final response = await _dio.get("/user/notification/Listing");
+      // scope=all asks for the HISTORY — read and unread, paged.
+      //
+      // Without it the server returns unread rows only, which is what it has
+      // always done and what older builds depend on: reading a notification
+      // removed it from the one screen that listed it, so nobody could go back
+      // and find what they had been told. An older server ignores the query and
+      // answers exactly as before, so this is safe against either.
+      final response = await _dio.get(
+        "/user/notification/Listing",
+        queryParameters: history ? {"scope": "all", "limit": 50} : null,
+      );
       if (response.statusCode == 200) {
         return AppNotificationResponse.fromJson(response.data);
       } else {
@@ -140,6 +151,27 @@ class NotificationService {
       logger.w(e.response);
       throw Exception("Error fetching notifications: $e");
     }
+  }
+
+  /// Clear the badge in one action.
+  ///
+  /// Marking twenty rows one tap at a time is not a thing anyone does, so a
+  /// count that could only come down that way never came down. Returns the
+  /// server's count afterwards rather than assuming zero.
+  Future<int?> markAllRead() async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.baseUrl = baseUrl;
+    _dio.options.headers["Authorization"] = 'Bearer $token';
+    try {
+      final response = await _dio.post("/user/notification/read-all");
+      if (response.statusCode == 200 && response.data?["success"] == true) {
+        final n = response.data?["data"]?["unreadCount"];
+        return n is num ? n.toInt() : 0;
+      }
+    } on DioException catch (e) {
+      logger.w("markAllRead failed: ${e.response?.data}");
+    } catch (_) {}
+    return null;
   }
 
   /// Marks a single notification as read on the backend. Returns true on

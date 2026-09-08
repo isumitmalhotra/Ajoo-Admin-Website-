@@ -85,6 +85,39 @@ class _HistoryPageState extends State<HistoryPage> {
   /// Only when opened as its own route. As the shell's Bookings tab, Get
   /// .arguments belongs to the shell's route, not to this screen, so reading it
   /// here would let an unrelated argument choose the tab.
+  /// The booking a notification pointed at, if this screen was opened by one.
+  ///
+  /// Guarded exactly as the tab is: as the shell's Bookings tab, Get.arguments
+  /// belongs to the shell's route, and an unrelated argument would otherwise
+  /// flash a card nobody asked about.
+  String? _highlightId(BuildContext context) {
+    if (GuestShellScope.maybeOf(context) != null) return null;
+    final args = Get.arguments;
+    if (args is! Map) return null;
+    final id = (args['highlight'] ?? '').toString().trim();
+    return id.isEmpty ? null : id;
+  }
+
+  /// A card, flashed and scrolled to when it is the one the guest was sent for.
+  Widget _maybeHighlight(dynamic booking, String? highlightId) {
+    final isTarget = highlightId != null &&
+        (booking.bookId ?? '').toString().trim() == highlightId;
+    if (!isTarget) return BookingCard(booking: booking);
+    final key = GlobalKey();
+    // After the frame it is built in — ensureVisible needs a laid-out element,
+    // and this is the first moment there is one.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = key.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(ctx,
+            duration: const Duration(milliseconds: 400),
+            alignment: 0.2,
+            curve: Curves.easeOut);
+      }
+    });
+    return BookingCard(key: key, booking: booking, highlight: true);
+  }
+
   int _initialTab(BuildContext context) {
     if (GuestShellScope.maybeOf(context) != null) return 0;
     final args = Get.arguments;
@@ -171,13 +204,18 @@ class _HistoryPageState extends State<HistoryPage> {
                 // cards are self-contained, so this is a layout change only —
                 // same cards, same order, same tap target.
                 final columns = context.gridColumns(target: 400, max: 3);
+                final highlightId = _highlightId(context);
+                // Far enough that a highlighted card a few rows down is built
+                // and can be scrolled to, without building the whole list.
+                const cache = 2000.0;
                 if (columns == 1) {
                   return ListView.builder(
                     padding: const EdgeInsets.only(top: 6, bottom: 20),
                     itemCount: items.length,
+                    cacheExtent: cache,
                     itemBuilder: (context, i) => Reveal(
                       delay: Reveal.staggerDelay(i),
-                      child: BookingCard(booking: items[i]),
+                      child: _maybeHighlight(items[i], highlightId),
                     ),
                   );
                 }
@@ -191,9 +229,10 @@ class _HistoryPageState extends State<HistoryPage> {
                     // card sizes itself and this only reserves the space.
                     mainAxisExtent: 348,
                   ),
+                  cacheExtent: cache,
                   itemBuilder: (context, i) => Reveal(
                     delay: Reveal.staggerDelay(i),
-                    child: BookingCard(booking: items[i]),
+                    child: _maybeHighlight(items[i], highlightId),
                   ),
                 );
               }),

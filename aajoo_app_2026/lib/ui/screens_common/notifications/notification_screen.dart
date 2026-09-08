@@ -48,6 +48,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
         centerTitle: true,
         backgroundColor: Theme.of(context).primaryColor,
+        actions: [
+          // One action for the whole account, not one tap per row. A badge
+          // that could only be cleared row by row never got cleared.
+          Obx(() {
+            final unread = notificationController.notificationCount.value;
+            if (unread == 0) return const SizedBox.shrink();
+            return TextButton(
+              onPressed: notificationController.markAllAsRead,
+              child: const Text(
+                'Mark all read',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+            );
+          }),
+        ],
       ),
       body: Stack(
         children: [
@@ -150,6 +165,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           payloadRoute: payload?.route,
           isHost: authController.authIsHost.value,
           propertyId: payload?.propertyId,
+          // The stored row knows which booking it was about; the list can then
+          // point at that row rather than opening a tab and stopping.
+          bookingId: notification.unBookingId,
         );
         Get.toNamed(destination.route, arguments: destination.arguments);
         return;

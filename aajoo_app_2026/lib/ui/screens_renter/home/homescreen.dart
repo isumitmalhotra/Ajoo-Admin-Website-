@@ -217,20 +217,30 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    BrandedHeader(
-                      onWishlistTap: () => Navigator.push(
-                        context,
-                        CupertinoPageRoute(
-                          builder: (_) => const BookmarkedPropertiesPage(),
-                        ),
-                      ),
-                      onNotificationsTap: () => Navigator.push(
-                        context,
-                        CupertinoPageRoute(
-                          builder: (_) => const NotificationsScreen(),
-                        ),
-                      ),
-                    ),
+                    // Obx so the badge falls the moment a notification is
+                    // opened, rather than on the next fetch — the guest comes
+                    // straight back to this screen and would otherwise see the
+                    // old number.
+                    Obx(() => BrandedHeader(
+                          unreadCount: notificationController.notificationCount.value,
+                          onWishlistTap: () => Navigator.push(
+                            context,
+                            CupertinoPageRoute(
+                              builder: (_) => const BookmarkedPropertiesPage(),
+                            ),
+                          ),
+                          onNotificationsTap: () async {
+                            await Navigator.push(
+                              context,
+                              CupertinoPageRoute(
+                                builder: (_) => const NotificationsScreen(),
+                              ),
+                            );
+                            // Coming back from the list: take the count from
+                            // the server, in case they read some there.
+                            await notificationController.refreshCount();
+                          },
+                        )),
                     const SizedBox(height: 12),
                     // Was hardcoded to "Goa" while the properties underneath
                     // were already being fetched around the user's real

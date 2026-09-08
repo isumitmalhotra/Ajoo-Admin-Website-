@@ -44,9 +44,19 @@ class BookingCard extends StatelessWidget {
   const BookingCard({
     super.key,
     required this.booking,
+    this.highlight = false,
   });
 
   final BookingHistoryData booking;
+
+  /// Arrived here from a notification about THIS stay.
+  ///
+  /// A booking notification could only open the tab, leaving the guest to find
+  /// the right card themselves — which on an account with several bookings is
+  /// most of the point of having been told. One pulse of the brand ring, then
+  /// the card looks like every other card: a highlight is an arrival, not a
+  /// state the row keeps.
+  final bool highlight;
 
   int get _nights {
     final a = parseStayDate(booking.bookDetailsBtBookFrom);
@@ -92,10 +102,24 @@ class BookingCard extends StatelessWidget {
         child: InkWell(
           onTap: _open,
           borderRadius: BorderRadius.circular(18),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: kLine),
+          child: TweenAnimationBuilder<double>(
+            // 0 -> 1 over the first two seconds, used to fade the ring OUT, so
+            // it runs once when the card appears and never again.
+            tween: Tween(begin: highlight ? 1 : 0, end: 0),
+            duration: Duration(milliseconds: highlight ? 2200 : 0),
+            curve: Curves.easeOut,
+            builder: (context, t, child) => Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: Color.lerp(kLine, kprimaryColor, t)!,
+                  width: 1 + (2 * t),
+                ),
+                boxShadow: t > 0
+                    ? [BoxShadow(color: kprimaryColor.withOpacity(0.25 * t), blurRadius: 12, spreadRadius: 2)]
+                    : null,
+              ),
+              child: child,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

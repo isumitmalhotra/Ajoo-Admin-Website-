@@ -44,8 +44,23 @@ class AppNotificationResponse {
 class Data {
   List<AppNotification> notifications;
 
+  /// Unread across the whole account, from the server's own COUNT.
+  ///
+  /// The badge used to be `notifications.length`, which was only ever right
+  /// while the endpoint returned every unread row and nothing else. With a
+  /// paged history it counts one page. Older servers omit it, and the fallback
+  /// below is what those builds did anyway.
+  final int unreadCount;
+
+  /// How many notifications exist in total (history), for paging.
+  final int totalRecords;
+  final int totalPages;
+
   Data({
     required this.notifications,
+    this.unreadCount = 0,
+    this.totalRecords = 0,
+    this.totalPages = 1,
   });
 
   factory Data.fromJson(Map<String, dynamic> json) {
@@ -57,7 +72,15 @@ class Data {
             .map((m) => AppNotification.fromJson(m))
             .toList()
         : <AppNotification>[];
-    return Data(notifications: items);
+    final int unread = json['unreadCount'] is num
+        ? (json['unreadCount'] as num).toInt()
+        : items.where((n) => n.unIsRead != 1).length;
+    return Data(
+      notifications: items,
+      unreadCount: unread,
+      totalRecords: json['totalRecords'] is num ? (json['totalRecords'] as num).toInt() : items.length,
+      totalPages: json['totalPages'] is num ? (json['totalPages'] as num).toInt() : 1,
+    );
   }
 
   Map<String, dynamic> toJson() => {
@@ -72,6 +95,12 @@ class AppNotification {
   DateTime? createdAt; // made nullable to avoid parse crashes
   int unIsRead;
   int? unPropId;
+
+  /// The booking this is about, e.g. "B931569".
+  ///
+  /// The server has always returned it and this model dropped it, so a
+  /// notification about one stay could only ever open a list of stays.
+  String? unBookingId;
   NotificationPayload? payload;
 
   AppNotification({
@@ -81,6 +110,7 @@ class AppNotification {
     required this.createdAt,
     required this.unIsRead,
     required this.unPropId,
+    this.unBookingId,
     this.payload,
   });
 
@@ -105,6 +135,9 @@ class AppNotification {
                   json['un_propId'].toString().isNotEmpty
               ? int.tryParse(json['un_propId'].toString())
               : null),
+      unBookingId: (json['un_bookingId']?.toString().isEmpty ?? true)
+          ? null
+          : json['un_bookingId'].toString(),
       payload: (json['payload'] is Map<String, dynamic>)
           ? NotificationPayload.fromJson(
               json['payload'] as Map<String, dynamic>)
