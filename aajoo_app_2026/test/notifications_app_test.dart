@@ -128,6 +128,26 @@ void main() {
     });
   });
 
+  group('support routing', () {
+    // Found by driving production on the website: "Support replied to your
+    // ticket" opened the dashboard. There was no support kind at all, so the
+    // row fell through to unknown — and unknown means home. The app carried
+    // the identical gap.
+    test('a support reply opens Support, not the home screen', () {
+      expect(link.contains('NotifKind.support'), isTrue, reason: 'there must be a kind');
+      expect(link.contains("NotifDestination('/support')"), isTrue,
+          reason: 'and it has to resolve to the support screen');
+    });
+
+    test('an offer still wins over the word replied', () {
+      final offer = link.indexOf('return NotifKind.offer;');
+      final support = link.indexOf('return NotifKind.support;');
+      expect(offer >= 0 && support > offer, isTrue,
+          reason: "'the guest replied to your offer' is an offer; support "
+              'first would capture it on the word reply');
+    });
+  });
+
   group('preferences', () {
     final page = read('lib/ui/screens_common/settings/notification_preferences_page.dart');
     final settings = read('lib/ui/screens_common/settings/settings_page.dart');

@@ -28,6 +28,7 @@ enum NotifKind {
   cancellation,
   booking,
   payment,
+  support,
   listing,
   review,
   account,
@@ -63,6 +64,17 @@ NotifKind _classify(String text) {
   if (has(['chat', 'message'])) return NotifKind.message;
   if (has(['offer', 'negotiat', 'counter', 'coupon', 'deal'])) {
     return NotifKind.offer;
+  }
+  // Support had no kind at all, so "Support replied to your ticket" — whose own
+  // body says "open Support to read the reply" — fell through to unknown and
+  // landed on the home screen. Found on the website, on a real account; the
+  // same rule and the same gap live here.
+  //
+  // AFTER offer, deliberately, and in the order the server's category rule
+  // uses: "the guest replied to your offer" is an offer, and `reply` would
+  // otherwise capture it.
+  if (has(['support', 'ticket', 'reply', 'replied', 'complaint'])) {
+    return NotifKind.support;
   }
   if (has(['refund', 'payment', 'payout', 'paid', 'invoice', 'transaction'])) {
     return NotifKind.payment;
@@ -161,6 +173,11 @@ NotifDestination notificationDestination({
           ? NotifDestination(home)
           : NotifDestination('/history',
               arguments: {'tab': 'Completed', if (hasBooking) 'highlight': bookingId});
+
+    case NotifKind.support:
+      // One screen, both roles — the host support screen is reached from the
+      // host shell, and a notification that says "open Support" has to open it.
+      return const NotifDestination('/support');
 
     case NotifKind.listing:
     case NotifKind.review:
