@@ -10,6 +10,9 @@ import 'package:rent_home/ui/screens_host/support/host_support_screen.dart';
 import 'package:rent_home/ui/screens_host/negotiations/host_negotiations_screen.dart';
 import 'package:rent_home/ui/screens_host/earnings/host_earnings_screen.dart';
 import 'package:rent_home/ui/screens_host/calendar/host_calendar_screen.dart';
+import 'package:rent_home/ui/screens_host/host_tab_provider.dart';
+import 'package:rent_home/utils/notification_link.dart';
+import 'package:provider/provider.dart';
 
 /// The host's notification list — the mobile counterpart of the web's
 /// /host/notifications.
@@ -79,11 +82,54 @@ class _HostNotificationsScreenState extends State<HostNotificationsScreen> {
       }
     }
 
-    final path = (n.linkPath ?? '').toLowerCase();
-    if (path.isEmpty) return;
     // Pushed directly rather than by name: this app has no named host routes,
     // so Get.toNamed('/host/support') would quietly do nothing — the exact
     // shape of dead button this screen exists to replace.
+    if (_openByPath((n.linkPath ?? '').toLowerCase())) return;
+
+    // No usable path — and that is the COMMON case, not the rare one.
+    //
+    // This feed is merged from two tables. Rows from tbl_user_notifications
+    // get their link synthesised by hostSearch, which only produces one when
+    // the row names a property: `un_propId ? '/property?id=…' : null`. A
+    // support reply, a payout notice, a message — none carry a property, so
+    // all of them arrived with a null path, hit `if (path.isEmpty) return`
+    // and went nowhere. Half the list was the dead tap this screen was built
+    // to abolish. And the rows that DID carry a path got '/property?id=…',
+    // which none of the branches below match, so those were dead too.
+    //
+    // Seen on host 100, build 52: tapping "Support replied to your ticket"
+    // marked it read, dropped the badge, and stayed put.
+    //
+    // The words decide, exactly as they do in the guest list and the push
+    // router. Same classifier, so one row cannot mean two things.
+    switch (notificationKind(title: n.title, message: n.body)) {
+      case NotifKind.support:
+        Get.to(() => const HostSupportScreen());
+        return;
+      case NotifKind.offer:
+      case NotifKind.message:
+        Get.to(() => const HostNegotiationsScreen());
+        return;
+      case NotifKind.payment:
+        Get.to(() => const HostEarningsScreen());
+        return;
+      case NotifKind.booking:
+      case NotifKind.cancellation:
+        _openHostBookings();
+        return;
+      case NotifKind.listing:
+      case NotifKind.review:
+      case NotifKind.account:
+      case NotifKind.unknown:
+        // Nothing this screen can open. Staying put beats guessing.
+        return;
+    }
+  }
+
+  /// The website path, when the row carries one this app has a screen for.
+  bool _openByPath(String path) {
+    if (path.isEmpty) return false;
     if (path.contains('support')) {
       Get.to(() => const HostSupportScreen());
     } else if (path.contains('negotiation')) {
@@ -92,8 +138,21 @@ class _HostNotificationsScreenState extends State<HostNotificationsScreen> {
       Get.to(() => const HostEarningsScreen());
     } else if (path.contains('calendar')) {
       Get.to(() => const HostCalendarScreen());
+    } else if (path.contains('booking')) {
+      _openHostBookings();
+    } else {
+      return false;
     }
-    // Anything we have no screen for stays put rather than guessing.
+    return true;
+  }
+
+  /// Host bookings is a TAB of the shell, not a pushed page — so this closes
+  /// the notification list and moves the shell underneath rather than stacking
+  /// a second copy of the screen on top of it.
+  void _openHostBookings() {
+    final provider = context.read<HostTabProvider>();
+    Get.back();
+    provider.setTab(kHostBookingsTab);
   }
 
   String _when(DateTime? d) {
@@ -115,6 +174,10 @@ class _HostNotificationsScreenState extends State<HostNotificationsScreen> {
         return Icons.account_balance_wallet_outlined;
       case 'NEGOTIATION':
         return Icons.handshake_outlined;
+      case 'SUPPORT':
+        return Icons.support_agent_outlined;
+      case 'PROMOTION':
+        return Icons.campaign_outlined;
       default:
         return Icons.notifications_none_rounded;
     }
