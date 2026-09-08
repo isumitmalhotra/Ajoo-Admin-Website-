@@ -83,11 +83,21 @@ class NotificationService {
       headers: {
         'Accept': 'application/json',
       },
-      // Short timeouts — failed/missing endpoints bail quickly so the UI
-      // doesn't stall while waiting on a dead backend. Defaults are ~30s.
-      connectTimeout: const Duration(seconds: 5),
-      sendTimeout: const Duration(seconds: 8),
-      receiveTimeout: const Duration(seconds: 8),
+      // Long enough for a COLD BACKEND, which is the normal case here.
+      //
+      // These were 5s connect / 8s receive, chosen so a dead endpoint would
+      // bail fast rather than stall the UI. The backend sleeps when idle and
+      // takes tens of seconds to wake, so the fast bail fired on a server that
+      // was merely waking up: opening Settings > Notifications after a few
+      // quiet minutes showed "We couldn't load your preferences", and the same
+      // screen loaded perfectly on the next attempt. Observed on build 50.
+      //
+      // A user reads that as broken, not as slow. Waiting is the lesser harm —
+      // every screen here shows a spinner while it waits and an honest failure
+      // afterwards.
+      connectTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
     ),
   )..interceptors.add(PrettyDioLogger(
       requestHeader: kDebugMode,

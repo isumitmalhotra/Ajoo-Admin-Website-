@@ -185,6 +185,29 @@ void main() {
               'person believes they turned something off and did not');
     });
 
+    /**
+     * Both found by driving build 50 on the emulator.
+     */
+    test('the retry it offers can actually be performed', () {
+      expect(page.contains('AlwaysScrollableScrollPhysics'), isTrue,
+          reason: 'the error state said "pull down to try again" inside a '
+              'widget that does not scroll — there was nothing to pull, and '
+              'the screen sat on a stale error until you left and came back');
+      expect(page.contains("Text('Try again'"), isTrue,
+          reason: 'and a button beats a gesture nobody discovers');
+    });
+
+    test('the client waits long enough for a sleeping backend', () {
+      final m = RegExp(r'connectTimeout: const Duration\(seconds: (\d+)\)')
+          .firstMatch(service);
+      expect(m, isNotNull, reason: 'the connect timeout is gone');
+      expect(int.parse(m!.group(1)!) >= 30, isTrue,
+          reason: 'it was 5 seconds. The backend sleeps when idle and takes '
+              'tens of seconds to wake, so the fast bail fired on a server '
+              'that was only waking up — and a person reads that as broken, '
+              'not as slow');
+    });
+
     test('what cannot be switched off is said, not shown as a dead control', () {
       expect(page.contains('_emailNote'), isTrue);
       expect(page.contains('always keeps a record'), isTrue,

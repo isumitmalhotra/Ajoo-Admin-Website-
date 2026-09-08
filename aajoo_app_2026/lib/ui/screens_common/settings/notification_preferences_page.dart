@@ -129,12 +129,42 @@ class _NotificationPreferencesPageState
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _failed
-              ? Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    "We couldn't load your preferences just now. Nothing has "
-                    'changed — pull down to try again.',
-                    style: inter(fontSize: 13.5, color: kMuted, height: 1.5),
+              // A LIST, not a Padding, and with a button.
+              //
+              // This said "pull down to try again" inside a widget that does
+              // not scroll, so there was nothing to pull: the retry it offered
+              // could not be performed, and the screen sat on a stale error
+              // until you left and came back. Seen on build 50.
+              ? RefreshIndicator(
+                  onRefresh: _load,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(24),
+                    children: [
+                      Text(
+                        "We couldn't load your preferences just now. Nothing "
+                        'has changed.',
+                        style: inter(fontSize: 13.5, color: kMuted, height: 1.5),
+                      ),
+                      const SizedBox(height: 14),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _loading = true;
+                              _failed = false;
+                            });
+                            _load();
+                          },
+                          child: Text('Try again',
+                              style: inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: kprimaryColor)),
+                        ),
+                      ),
+                    ],
                   ),
                 )
               : RefreshIndicator(
