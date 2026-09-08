@@ -20,6 +20,24 @@ class SettingsPage extends StatefulWidget {
   _SettingsPageState createState() => _SettingsPageState();
 }
 
+
+/// What this build actually is, from the build that made it.
+///
+/// APP_VERSION is injected by tool/build_release.ps1 from pubspec. Without it
+/// — a `flutter run`, or a build made by hand — the screen says so instead of
+/// naming a version nobody set.
+String _versionLabel() {
+  const injected = String.fromEnvironment('APP_VERSION');
+  if (injected.isEmpty) return 'Version — development build';
+  // pubspec spells it x.y.z+n; a tester says "build n". Print both, in the
+  // shape the QA sheet already uses, so a defect report names something the
+  // build script can be asked about.
+  final parts = injected.split('+');
+  return parts.length == 2
+      ? 'Version ${parts[0]} (build ${parts[1]})'
+      : 'Version $injected';
+}
+
 class _SettingsPageState extends State<SettingsPage> {
   final authController = Get.find<AuthController>();
 
@@ -348,7 +366,17 @@ class _SettingsPageState extends State<SettingsPage> {
             onTap: _handleRateApp,
           ),
           const SizedBox(height: 20),
-          const SectionHeader(title: "Version 1.0.0 (build 45)"),
+          // Typed by hand until now, and therefore wrong the moment anyone
+          // built anything: it still said "build 45" while build 46 was being
+          // cut. That is not cosmetic — a tester who cannot say which build
+          // they are on re-reports fixed defects, which is exactly what
+          // happened with rows 20-26 of the QA sheet.
+          //
+          // tool/build_release.ps1 passes the real pubspec version through
+          // --dart-define, so the number on this screen is the number of the
+          // artifact it is running in. A build made without it says so rather
+          // than claiming a version it cannot vouch for.
+          SectionHeader(title: _versionLabel()),
           LogoutTile(
             onTap: _handleLogout,
           ),

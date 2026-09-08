@@ -48,13 +48,19 @@ def scanned_entries(zf):
 
 def main() -> int:
     if len(sys.argv) < 2:
-        print("usage: verify_release_apk.py <apk> [expected-api-base-url]")
+        print("usage: verify_release_apk.py <apk> [expected-api-base-url] "
+              "[--allow-test-payments] [--expect-version=1.0.0+46]")
         return 2
 
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     # A QA build may legitimately carry the sandbox gateway, but only when the
     # person building it said so — the same flag the build script demands.
     allow_test_payments = "--allow-test-payments" in sys.argv
+    # The version this build claims to be, asserted against the file.
+    expect_version = next(
+        (a.split("=", 1)[1] for a in sys.argv if a.startswith("--expect-version=")),
+        None,
+    )
 
     apk_path = args[0]
     expected_api = args[1].encode() if len(args) > 1 else None
@@ -98,6 +104,21 @@ def main() -> int:
                   for m in re.finditer(rb"[a-z0-9\-]+\.onrender\.com", data)}:
             if m != host:
                 failures.append(f"an endpoint this build was NOT given is in the APK: {m.decode()}")
+
+    # Does the artifact know which build it is?
+    #
+    # Not a security check — a QA one, and it earned its place. The Settings
+    # screen used to carry a hand-typed version string, so build 46 introduced
+    # itself as build 45. Testers could not say which APK they were holding,
+    # re-tested fixed defects against stale code, and re-reported seven of them
+    # (QA sheet rows 20-26). A build that cannot name itself costs a QA cycle.
+    if expect_version:
+        want = expect_version.encode()
+        if not any(want in data for data in blobs.values()):
+            failures.append(
+                f"this build does not carry its own version ({expect_version}) — "
+                "APP_VERSION was not passed, so Settings will say 'development build'"
+            )
 
     print(f"scanned: {', '.join(sorted(blobs))}")
     if failures:

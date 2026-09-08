@@ -103,9 +103,24 @@ building offline and know the host is right.
 }
 }
 
+# Read straight out of pubspec rather than passed in: a version somebody has
+# to remember to supply is a version that will eventually be wrong.
+$AppVersion = (Select-String -Path (Join-Path $root 'pubspec.yaml') -Pattern '^version:\s*(.+)$').Matches[0].Groups[1].Value.Trim()
+if (-not $AppVersion) { throw "Could not read the version from pubspec.yaml" }
+Write-Host "Building $AppVersion" -ForegroundColor Cyan
+
 $defines = @(
     "--dart-define=API_BASE_URL=$ApiBaseUrl",
-    "--dart-define=RAZORPAY_KEY=$RazorpayKey"
+    "--dart-define=RAZORPAY_KEY=$RazorpayKey",
+    # The version this artifact will REPORT on its Settings screen.
+    #
+    # Taken from pubspec, so the number a tester reads is the number of the
+    # build in their hands. It used to be typed into settings_page by hand and
+    # was therefore wrong as soon as anyone built anything -- it still claimed
+    # build 45 while 46 was being cut. A tester who cannot say which build they
+    # are on re-reports fixed defects, which is exactly what happened with rows
+    # 20-26 of the QA sheet.
+    "--dart-define=APP_VERSION=$AppVersion"
 )
 if ($AllowTestPayments) { $defines += "--dart-define=ALLOW_TEST_PAYMENTS=true" }
 
@@ -124,6 +139,9 @@ Write-Host "`nVerifying the artifact" -ForegroundColor Cyan
 # build was asked for. The switch reached this script and stopped here.
 $verifyArgs = @((Join-Path $PSScriptRoot 'verify_release_apk.py'), $apk, $ApiBaseUrl)
 if ($AllowTestPayments) { $verifyArgs += '--allow-test-payments' }
+# And that the artifact can name itself, which is the only way a tester's
+# defect report can be tied to a build.
+$verifyArgs += "--expect-version=$AppVersion"
 & python @verifyArgs
 if ($LASTEXITCODE -ne 0) { throw "APK verification failed — do not ship this build" }
 
