@@ -52,15 +52,47 @@ class _StayCancellationCardState extends State<StayCancellationCard> {
     if (_checkInKey != _loadedFor) _load();
   }
 
+  /// Fetch the ladder, and do not give up on the first stumble.
+  ///
+  /// One dropped request used to leave "we couldn't load the refund dates"
+  /// on screen for the rest of the session: nothing retried, and the only way
+  /// back was to change the check-in date. Seen once on a stay whose dates the
+  /// endpoint served correctly a moment later, which is exactly the shape of a
+  /// transient failure.
+  ///
+  /// Three attempts, backing off, and the last word is left to the guest via
+  /// the Try again control — because the alternative to showing these dates is
+  /// asking somebody to accept terms they were never shown.
   Future<void> _load() async {
     final key = _checkInKey;
     _loadedFor = key;
-    final s = await CancellationPolicyService.instance.schedule(widget.propertyId, key);
-    if (!mounted || key != _loadedFor) return;
+    setState(() => _failed = false);
+
+    const backoff = [Duration.zero, Duration(milliseconds: 400), Duration(milliseconds: 1200)];
+    for (final wait in backoff) {
+      if (wait > Duration.zero) await Future.delayed(wait);
+      // The date changed under us; that request owns the card now.
+      if (!mounted || key != _loadedFor) return;
+      final s = await CancellationPolicyService.instance.schedule(widget.propertyId, key);
+      if (!mounted || key != _loadedFor) return;
+      if (s != null) {
+        setState(() {
+          _schedule = s;
+          _failed = false;
+        });
+        return;
+      }
+    }
+
     setState(() {
-      _schedule = s;
-      _failed = s == null;
+      // The OLD ladder must go with it. Leaving it up would show one stay's
+      // deadlines above another stay's dates.
+      _schedule = null;
+      _failed = true;
     });
+    // An acknowledgement given for the previous dates does not carry over to
+    // dates nobody has seen.
+    if (widget.accepted) widget.onAccepted(false);
   }
 
   // The server's instants are UTC; the guest is told IST, which is what the
@@ -97,12 +129,30 @@ class _StayCancellationCardState extends State<StayCancellationCard> {
           ]),
           const SizedBox(height: 6),
           if (s == null)
-            Text(
-              _failed
-                  ? "We couldn't load the refund dates for this stay. Read the full policy below."
-                  : 'Loading the refund dates for this stay…',
-              style: inter(fontSize: 12.5, color: kMuted, height: 1.45),
-            )
+            _failed
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "We couldn't load the refund dates for this stay, so we can't ask you to accept them yet.",
+                        style: inter(fontSize: 12.5, color: kMuted, height: 1.45),
+                      ),
+                      const SizedBox(height: 6),
+                      GestureDetector(
+                        onTap: _load,
+                        child: Text('Try again',
+                            style: inter(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: kprimaryColor)
+                                .copyWith(decoration: TextDecoration.underline)),
+                      ),
+                    ],
+                  )
+                : Text(
+                    'Loading the refund dates for this stay…',
+                    style: inter(fontSize: 12.5, color: kMuted, height: 1.45),
+                  )
           else ...[
             RichText(
               text: TextSpan(
@@ -140,14 +190,22 @@ class _StayCancellationCardState extends State<StayCancellationCard> {
           const SizedBox(height: 2),
           // The acknowledgement. Book Now refuses until this is ticked — named
           // on the button's snackbar, so it is a step and not a dead button.
+          //
+          // Dead while the ladder is missing, on purpose. Policy v1.0 §15 asks
+          // that the guest SEE the percentages and the dates before they accept
+          // them; a tickable box above "we couldn't load the refund dates"
+          // collects an acknowledgement of something nobody was shown. Try
+          // again is the way forward, not a tick.
           InkWell(
-            onTap: () => widget.onAccepted(!widget.accepted),
-            child: Row(
+            onTap: _failed ? null : () => widget.onAccepted(!widget.accepted),
+            child: Opacity(
+              opacity: _failed ? 0.45 : 1,
+              child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Checkbox(
                   value: widget.accepted,
-                  onChanged: (v) => widget.onAccepted(v ?? false),
+                  onChanged: _failed ? null : (v) => widget.onAccepted(v ?? false),
                   activeColor: kprimaryColor,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   visualDensity: VisualDensity.compact,
@@ -160,6 +218,7 @@ class _StayCancellationCardState extends State<StayCancellationCard> {
                   ),
                 ),
               ],
+              ),
             ),
           ),
         ],
