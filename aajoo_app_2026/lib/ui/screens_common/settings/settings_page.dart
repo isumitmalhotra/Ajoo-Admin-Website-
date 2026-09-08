@@ -29,13 +29,15 @@ class SettingsPage extends StatefulWidget {
 String _versionLabel() {
   const injected = String.fromEnvironment('APP_VERSION');
   if (injected.isEmpty) return 'Version — development build';
-  // pubspec spells it x.y.z+n; a tester says "build n". Print both, in the
-  // shape the QA sheet already uses, so a defect report names something the
-  // build script can be asked about.
-  final parts = injected.split('+');
-  return parts.length == 2
-      ? 'Version ${parts[0]} (build ${parts[1]})'
-      : 'Version $injected';
+  // The build number is INTERNAL. It identifies an artifact for us and means
+  // nothing to a guest, so only the marketing version is shown.
+  //
+  // The full string is still in the binary — .split() runs at runtime, so the
+  // literal cannot be folded away — which is what verify_release_apk.py's
+  // --expect-version reads. A build therefore remains identifiable from the
+  // artifact (that, its filename, its sha256 and the manifest versionCode)
+  // without the number being on anybody's screen.
+  return 'Version ${injected.split('+').first}';
 }
 
 class _SettingsPageState extends State<SettingsPage> {

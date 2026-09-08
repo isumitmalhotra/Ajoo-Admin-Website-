@@ -9,12 +9,15 @@
 > **Repos:** FE `D:/Projects/aajao-frontend-vercel` (React/Vite → Vercel) ·
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
-> Tester build in circulation: **46 (1.0.0+46)**, `aajoo-homes-1.0.0-build46-release.apk` at repo root
-> (2026-09-08, sha256 `bc65de03…50143`, against `aajaodev.onrender.com` with the sandbox
+> Tester build in circulation: **47 (1.0.0+47)**, `aajoo-homes-1.0.0-build47-release.apk` at repo root
+> (2026-09-08, sha256 `12a93f1c…067288`, against `aajaodev.onrender.com` with the sandbox
 > Razorpay key — the platform is still in test mode, so a QA build is the only honest one).
-> **Ask a tester for the number on Settings before accepting a defect report.** Until build 46 that
-> number was hand-typed and stuck at 45, which is how the seven already-fixed defects in QA sheet
-> rows 20–26 came back re-reported; it is now injected from pubspec and asserted in the artifact.
+> **The build number is internal and is not shown in the app** — Settings reads `Version 1.0.0`.
+> Identify a build from the artifact: its filename, its sha256, or
+> `adb shell dumpsys package com.aajoo.aajoohomes | grep versionCode`. Keep one number to one
+> artifact; never rebuild an existing number with different content. (Until 46 the number WAS on
+> screen and was hand-typed, stuck at 45 — which is how the seven already-fixed defects in QA sheet
+> rows 20–26 came back re-reported. It is now injected from pubspec and asserted in the APK.)
 > Documents delivered 2026-09-05 (repo root): `UAT_WebApp_2026-09-05.docx` (81 cases) · `UAT_AndroidApp_2026-09-05.docx` (55 cases) ·
 > `Delivery_Delay_Analysis_2026-09-05.docx` · `Deployment_Options_2026-09-05.docx`.
 >
