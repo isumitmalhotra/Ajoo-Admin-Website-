@@ -47,7 +47,7 @@ money and is not. The second gates every honest SEO number on the site.
 | ~~1.1~~ | ~~**Delete the 29,227 seed listings**~~ **DONE (not by me)** | **Re-counted 2026-09-08: `tbl_properties` holds 4 rows, 1 of them host 100.** The 29k seed set has been removed since the 09-05 edition — not by me, and I did not see it happen. Public surface is now **24 URLs** (2 property, 5 blog, 17 pages). SEO figures now measure real data. | verified 09-08 — `SELECT COUNT(*)`, live child sitemaps |
 | **1.2** | **Switch analytics on — after two sign-offs** | The consent banner is **built and live** (the earlier wording here was stale): three categories, "Only essential" at equal weight, Consent Mode v2 defaults denied, Hotjar barred from host/booking/account/admin routes, chat widget off the public pages. Nothing loads until the admin switch is on **and** the visitor grants the category. What is still the client's: (1) counsel reads the Privacy Policy's cookie section (`/Privacy-Policy#cookies`, drafted 09-05, names every provider); (2) if Hotjar is used, set its URL targeting to public pages only; then flip **Admin → Global SEO → Load tracking scripts**. | verified 09-05 — live banner, storage and script list on an anonymous visit |
 | **1.3** | **Cash / UPI collection — 4 decisions** | The rail is **built** (`tbl_host_dues`, 24 rows, offset against payouts). What is still missing is policy: who confirms collection, when, how the 15% + GST is recovered, and what happens if the host never confirms. Detail in §7. | verified — 24 rows in `tbl_host_dues` |
-| **1.4** | **Cancellation policy — the admin controls the document asks for** (was E-4; the copy itself shipped 09-05, see §8a) | Policy v1.0 is implemented and live on web + app (build 17). What the document's *Admin Panel* section asks for and is **not** built: enable/disable a policy, create new policy types, restrict a policy to approved hosts, and an override in exceptional cases. Today the five policies are code-defined; Super Strict is assigned by an admin through the Edit-property form, which is the "business approval" in practice. Building the admin module is ~1.5 days; decide whether it is wanted before launch or after. Also unbuilt from §4 of the document: a guest-initiated *booking modification* flow (dates/guests/duration with host approval and a price difference) — bookings are cancelled and rebooked instead. | verified 09-05 — code + live endpoints |
+| ~~1.4~~ | ~~**Cancellation policy — the admin controls the document asks for**~~ **CLOSED 2026-09-08** | All four Admin Panel controls built and live: enable/disable a policy, create new policy types with their own refund ladder, restrict a policy to approved hosts, and an exceptional-refund override (`1b9a4f9`, `195fa93`, `34e80ba`, `ae51f23`). Two migrations applied to the live DB. The guest-initiated **booking modification** from §4 of the document is also built — request, host approval, and the price difference charged or refunded (`7ace67d`, `99f73aa`). **The line that governs the whole module:** the registry decides what is OFFERED, never what a published policy PAYS. A booking snapshots the policy KEY, not the ladder, so editing "Firm" would rewrite what is owed to guests who already booked on it; built-in ladders stay in code and the API refuses to edit them, pinned by three separate assertions. **Not driven end to end:** the two modification screens. The renter test account's only bookings are in the past, so nothing on it is modifiable; the one future modifiable booking belongs to rentertest003@yopmail.com / hosttest002@yopmail.com. | verified 09-08 — live API, live DB, both admin screens driven |
 | **1.5** | **Weather provider + key** (was E-2, RENT-7) | Renter-dashboard weather widget cannot start without a provider choice. | carried |
 | **1.6** | **Brand assets** — logo set, favicon/PWA icons, animated illustrations, WhatsApp number, social links, reference designs (was E-5, S0-ASSET-1…5) | Gates most of Section-0. | carried |
 | ~~1.7~~ | ~~**The five test listings that are now the public catalogue**~~ **MOOT** | Of the 6 live real-host listings, **5 are tester approvals**: four on 2026-09-04 so the site was not empty after approval started gating visibility — Garg Resorts (29263), Tharamani Farm Retreat (29265), Vrindavan Garden Farm Stay (29277), Delhi Green Farm Stay (29279 — the last two renamed from "Aish mobile host property…") — and Aish camping in the hills (29289) on 09-05, approved to prove the audit-trail fix. They are tester accounts' listings with tester phone numbers. Decide whether they stay through launch or come down with the seed data. | **2026-09-08: all five are gone** with the rest of the wipe. The catalogue is now property ids 29291-29294, of which 2 are publicly listed: "Heritage stay aish for testing" and "Ben Tree House". Both are still test names on a public site — that part of the decision survives. | verified 09-08 — sitemap-properties.xml |
@@ -176,6 +176,71 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a11. Closed 2026-09-08 (later)
+
+**The cancellation module, finished.** All four Admin Panel controls plus the
+guest booking modification from §4 — see 1.4 above for what governs it.
+
+**QA sheet, two rows.** Both reproduced first; neither had been fixed, despite
+looking like day-before work.
+
+- *Ownership documents duplicated and would not open.* Two causes. The wizard's
+  Replace button uploads a new `property_media` row and retires nothing, and two
+  admin views listed every version ever uploaded — one of them alongside the
+  current documents, so a live document appeared twice on its own. And PDFs went
+  up with `resource_type: "auto"`, filing them as IMAGES on `/image/upload/`,
+  where Cloudinary blocks public PDF delivery: measured `.jpg` 200 / `.pdf` 401
+  before, `.pdf` 200 `application/pdf` after (`4e14a90`).
+  **A third thing nobody reported: those documents answered 200 to an
+  unauthenticated request.** Ownership proof readable by anyone holding the URL.
+  Signed, expiring links now.
+  One property's asset is gone from Cloudinary entirely — confirmed through the
+  Admin API — so it answers an honest 404 and that host must re-upload.
+
+- *LUXE readability.* The primary colour is dark teal classic and GOLD in LUXE;
+  components painted white on it regardless — 2.10:1. Then the booking pages
+  (`/booking/review`, `/payment`, `/confirmed` — all public routes) wrapped
+  themselves in a literal white while their text followed `--ink`, which is
+  `#F2F0EA` in LUXE: **1.14:1**. Same fault in the legal card and in the global
+  toast style, so every toast on every public page was unreadable. `--on-primary`
+  and `--page`/`--surface-pop` fix both; measured 8.65:1 and 17.36:1 after, with
+  the classic skin unchanged because those tokens are `#ffffff` there
+  (`8b9846a`, `dda7b60`).
+
+**BotPenguin's report.** Their team found the login-to-chat handoff made ONE
+attempt and, on failure, opened the chat signed-out with no retry — and nothing
+recovered, because the next mount short-circuits once the script tag exists. Now
+three attempts, a 401/403 deliberately not retried, and a visible "Reconnect my
+account" when it still fails (`63db8bd`). Their second report — `/account/dashboard`
+serving a Vercel login page — was MY outage, already fixed; no URL change needed.
+
+**Two outages I caused and fixed on 09-07/08.** `seo-render` cached the previous
+build's `index.html` from the CDN, so every page asked for hashed assets the
+deploy had deleted: blank white page site-wide behind a valid 200. My first fix
+made it worse — it read the shell from `VERCEL_URL`, which is behind Deployment
+Protection and returned **Vercel's own login page**, cached as the app shell.
+Both fixed and guarded (`92f028f`, `1e2317c`).
+
+---
+
+**What this session should change about how the next one works.**
+
+Twelve defects were found by RUNNING the thing and essentially none by
+re-reading the diff. A representative few, all of which looked correct in
+review: `CHANGEABLE` silently collapsed to `[5]` because two of three
+`commonConfig` constants do not exist and a tidy `.filter(v => v !== undefined)`
+swallowed them, so every "Booking Confirmed" stay was refused; a finished stay
+could be moved to a future date; the refund looked up `tbl_payments` /
+`pay_book_id` / `pay_payment_id`, none of which exist; a `logger?.error?.()`
+on an identifier that was never imported; the admin policies screen drew the
+whole chrome twice; "1 days before".
+
+And **three separate deploy checks reported success having checked nothing** —
+a CSS hash on a commit that touched only `.tsx`, a local-vs-production bundle
+hash (Vercel inlines its own env vars, so they legitimately differ), and a
+marker string that already existed in the previous build. The rule that works:
+grep the SERVED bundle for a string unique to the change.
 
 ### 8a10. Closed 2026-09-07 → 09-08
 
