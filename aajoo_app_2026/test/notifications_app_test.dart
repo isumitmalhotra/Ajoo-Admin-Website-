@@ -88,6 +88,46 @@ void main() {
     });
   });
 
+  group('the host side', () {
+    final hostHome = read('lib/ui/screens_host/home/host_home_screen.dart');
+    final hostMenu = read('lib/ui/screens_host/profile/host_menu.dart');
+    final count = read('lib/ui/screens_host/notifications/host_notification_count.dart');
+
+    // The host notifications SCREEN has always counted unread and shown it at
+    // the top. Both ways IN to that screen were silent, so a host had no reason
+    // to open it — and since hosts are now pushed to their phones, a silent
+    // bell is worse than it was: the push arrives and the app looks empty.
+    test('the host home bell carries a count', () {
+      expect(hostHome.contains('_notifCount.unread.value'), isTrue);
+      expect(hostHome.contains('Obx(() {'), isTrue,
+          reason: 'without Obx the badge is frozen at whatever it was on build');
+      expect(hostHome.contains('_notifCount.reload()'), isTrue,
+          reason: 'and it needs a number before the host looks, not after');
+    });
+
+    test('the host menu row carries the same one', () {
+      expect(hostMenu.contains('badge: Get.isRegistered<HostNotificationCount>()'), isTrue);
+      expect(hostMenu.contains('return Obx(() {'), isTrue,
+          reason: 'the entries read the count as they are built, so the list '
+              'itself has to be the reactive scope');
+    });
+
+    test('one owner for the number', () {
+      expect(hostHome.contains('Get.put(HostNotificationCount(), permanent: true)'), isTrue,
+          reason: 'two owners would disagree about how many are waiting');
+      expect(count.contains('Future<void> reload()'), isTrue);
+      expect(count.contains('Future<void> refresh()'), isFalse,
+          reason: 'GetxController.refresh() is its own thing, used internally '
+              'to rebuild — shadowing it is asking for trouble');
+    });
+
+    test('a failed count keeps the last figure', () {
+      expect(count.contains('// Signed out, offline, or the endpoint is unwell.'), isTrue,
+          reason: 'flashing a zero claims all-clear on a request that never '
+              'answered');
+    });
+  });
+
   group('it lands on the right thing', () {
     test('a check-in notice is a booking, not an unknown', () {
       // Anchored between the previous rule and this one, so the captured list

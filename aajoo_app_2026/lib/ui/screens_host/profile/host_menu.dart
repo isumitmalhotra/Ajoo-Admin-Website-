@@ -19,6 +19,7 @@ import 'package:rent_home/ui/screens_host/performance/host_performance_screen.da
 import 'package:rent_home/ui/screens_host/boost/host_boost_screen.dart';
 import 'package:rent_home/ui/screens_host/offers/host_offers_screen.dart';
 import 'package:rent_home/ui/screens_host/notifications/host_notifications_screen.dart';
+import 'package:rent_home/ui/screens_host/notifications/host_notification_count.dart';
 import 'package:rent_home/ui/screens_common/refer/refer_screen.dart';
 import 'package:rent_home/ui/screens_host/settlements/host_settlements_screen.dart';
 import 'package:rent_home/ui/screens_common/cancellation_policy/cancellation_policy_page.dart';
@@ -38,12 +39,18 @@ class HostMenuEntry {
   final VoidCallback onTap;
   final bool danger;
 
+  /// Unread count shown on the row. Zero means no badge at all — a row that
+  /// always carries a "0" trains people to ignore the place the number
+  /// appears.
+  final int badge;
+
   const HostMenuEntry({
     required this.icon,
     required this.label,
     required this.onTap,
     this.subtitle,
     this.danger = false,
+    this.badge = 0,
   });
 }
 
@@ -103,7 +110,14 @@ List<HostMenuEntry> hostMenuEntries({VoidCallback? beforeNavigate}) {
       icon: Icons.notifications_none_rounded,
       label: 'Notifications',
       subtitle: 'Requests, replies and payout updates',
-      onTap: () => go(() => const HostNotificationsScreen()),
+      // The count the home bell shows, from the same owner, so the two cannot
+      // disagree about how many are waiting.
+      badge: Get.isRegistered<HostNotificationCount>()
+          ? Get.find<HostNotificationCount>().unread.value
+          : 0,
+      onTap: () async {
+        go(() => const HostNotificationsScreen());
+      },
     ),
     HostMenuEntry(
       icon: Icons.card_giftcard_outlined,
@@ -228,8 +242,12 @@ class HostMenuList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final entries = hostMenuEntries(beforeNavigate: beforeNavigate);
-    return Column(
+    // Obx, because the entries read the unread count as they are built: without
+    // it the badge would be whatever the number was the first time this menu
+    // rendered, and would never move again.
+    return Obx(() {
+      final entries = hostMenuEntries(beforeNavigate: beforeNavigate);
+      return Column(
       children: [
         for (final e in entries)
           Padding(
@@ -280,6 +298,26 @@ class HostMenuList extends StatelessWidget {
                           ],
                         ),
                       ),
+                      if (e.badge > 0)
+                        Container(
+                          constraints: const BoxConstraints(minWidth: 20),
+                          height: 20,
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          margin: const EdgeInsets.only(right: 10),
+                          decoration: BoxDecoration(
+                            color: kDanger,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            e.badge > 9 ? '9+' : '${e.badge}',
+                            style: inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                       Icon(Icons.arrow_forward_ios,
                           size: 14, color: e.danger ? kDanger : kMuted),
                     ],
@@ -289,7 +327,8 @@ class HostMenuList extends StatelessWidget {
             ),
           ),
       ],
-    );
+      );
+    });
   }
 }
 

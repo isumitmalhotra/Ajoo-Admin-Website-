@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:rent_home/utils/money.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
-import 'package:rent_home/ui/screens_common/notifications/notification_screen.dart';
 import 'package:rent_home/ui/screens_host/host_controller.dart';
 import 'package:rent_home/ui/screens_host/earnings/host_earnings_screen.dart';
 import 'package:rent_home/ui/widgets/verify_nudge.dart';
@@ -30,6 +29,7 @@ import 'package:rent_home/utils/booking_status.dart';
 import 'package:rent_home/ui/screens_host/host_tab_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:rent_home/ui/screens_host/notifications/host_notifications_screen.dart';
+import 'package:rent_home/ui/screens_host/notifications/host_notification_count.dart';
 
 /// Host Dashboard — re-skinned to the new teal/orange design (scaffold
 /// host_dashboard): in-body header, greeting, earnings card, stat grid,
@@ -44,6 +44,11 @@ class HostHomeScreen extends StatefulWidget {
 }
 
 class _HostHomeScreenState extends State<HostHomeScreen> {
+  /// permanent, because the host menu reads the same count and the two must
+  /// not disagree about how many are unread.
+  final HostNotificationCount _notifCount =
+      Get.put(HostNotificationCount(), permanent: true);
+
   final hostController = Get.find<HostController>();
   static const Color _teal50 = kIndigo50;
   static const Color _orange50 = Color(0xFFFFF1E6);
@@ -56,6 +61,9 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
   void initState() {
     super.initState();
     _refresh();
+    // The badge needs a number before the host looks at it, not after they
+    // open the list.
+    _notifCount.reload();
   }
 
   @override
@@ -203,13 +211,62 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
           icon: const Icon(Icons.chat_bubble_outline, size: 21, color: kInk2),
           onPressed: () => Get.to(() => const HostSupportScreen()),
         ),
-        IconButton(
-          // The HOST list. This opened NotificationsScreen — the guest one —
-          // so a host's own bell showed them a feed that was never theirs.
-          icon: const Icon(Ionicons.notifications_outline,
-              size: 22, color: kInk2),
-          onPressed: () => Get.to(() => const HostNotificationsScreen()),
-        ),
+        // The HOST list. This opened NotificationsScreen — the guest one — so
+        // a host's own bell showed them a feed that was never theirs.
+        //
+        // And it carried no count, so there was nothing to say the platform had
+        // told them anything: a booking waiting on their approval looked
+        // exactly like an empty inbox until they went and checked.
+        Obx(() {
+          final unread = _notifCount.unread.value;
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              IconButton(
+                // The badge is the signal; the icon stays the same shape so
+                // the header does not change silhouette as counts come and go.
+                icon: const Icon(Ionicons.notifications_outline,
+                    size: 22, color: kInk2),
+                tooltip: unread > 0
+                    ? '$unread unread notification${unread == 1 ? '' : 's'}'
+                    : 'Notifications',
+                onPressed: () async {
+                  await Get.to(() => const HostNotificationsScreen());
+                  // Back from the list: take the count from the server, since
+                  // they may have read several while they were in there.
+                  await _notifCount.reload();
+                },
+              ),
+              if (unread > 0)
+                Positioned(
+                  right: 6,
+                  top: 6,
+                  child: IgnorePointer(
+                    child: Container(
+                      constraints: const BoxConstraints(minWidth: 17),
+                      height: 17,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFDC2626),
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        unread > 9 ? '9+' : '$unread',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9.5,
+                          height: 1.1,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        }),
       ],
     );
   }
