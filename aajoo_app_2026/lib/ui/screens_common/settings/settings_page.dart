@@ -8,6 +8,7 @@ import 'package:rent_home/ui/screens_common/about/about_page.dart';
 import 'package:rent_home/ui/screens_common/privacy_policy/privacy-policy_page.dart';
 import 'package:rent_home/ui/screens_common/terms_and_conditions/terms_condition_user_page.dart';
 import 'package:rent_home/ui/screens_common/settings/change_password_page.dart';
+import 'package:rent_home/ui/screens_common/settings/notification_preferences_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:rent_home/ui/screens_common/cancellation_policy/cancellation_policy_page.dart';
 import 'package:rent_home/ui/screens_common/legal/legal_document_page.dart';
@@ -306,6 +307,19 @@ class _SettingsPageState extends State<SettingsPage> {
                   context,
                   MaterialPageRoute(
                       builder: (context) => const ChangePasswordPage()));
+            },
+          ),
+          // What reaches your phone. There were no preferences at all: the
+          // only way to stop a push was to silence the whole app, which also
+          // silences the one telling you a guest has arrived.
+          SettingsTile(
+            title: "Notifications",
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const NotificationPreferencesPage()),
+              );
             },
           ),
           const SizedBox(height: 20),

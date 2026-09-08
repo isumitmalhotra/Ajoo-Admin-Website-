@@ -153,6 +153,46 @@ class NotificationService {
     }
   }
 
+  /// What this person wants to be interrupted about.
+  ///
+  /// Absent keys mean the default, which is on — a category added to the
+  /// server later must not arrive switched off on an older build.
+  Future<Map<String, dynamic>?> getPreferences() async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.baseUrl = baseUrl;
+    _dio.options.headers["Authorization"] = 'Bearer $token';
+    try {
+      final res = await _dio.get("/user/notification/preferences");
+      final data = res.data?["data"];
+      return data is Map ? Map<String, dynamic>.from(data) : null;
+    } catch (e) {
+      logger.w("getPreferences failed: $e");
+      return null;
+    }
+  }
+
+  /// Save ONE switch. The server merges, so the categories this build does not
+  /// know about are left alone rather than wiped.
+  Future<Map<String, dynamic>?> setPreference(
+      String channel, String key, bool value) async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.baseUrl = baseUrl;
+    _dio.options.headers["Authorization"] = 'Bearer $token';
+    try {
+      final res = await _dio.put(
+        "/user/notification/preferences",
+        data: {
+          channel: {key: value}
+        },
+      );
+      final prefs = res.data?["data"]?["preferences"];
+      return prefs is Map ? Map<String, dynamic>.from(prefs) : null;
+    } catch (e) {
+      logger.w("setPreference failed: $e");
+      return null;
+    }
+  }
+
   /// Clear the badge in one action.
   ///
   /// Marking twenty rows one tap at a time is not a thing anyone does, so a

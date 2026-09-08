@@ -128,6 +128,51 @@ void main() {
     });
   });
 
+  group('preferences', () {
+    final page = read('lib/ui/screens_common/settings/notification_preferences_page.dart');
+    final settings = read('lib/ui/screens_common/settings/settings_page.dart');
+    final service = read('lib/service/notification_service.dart');
+
+    test('there is a way in from Settings', () {
+      expect(settings.contains('NotificationPreferencesPage()'), isTrue,
+          reason: 'the only way to stop a push was to silence the whole app, '
+              'which also silences the one saying a guest has arrived');
+    });
+
+    test('the categories match the website, word for word', () {
+      for (final label in const [
+        'Bookings and stays',
+        'Payments and refunds',
+        'Offers and negotiations',
+        'Support replies',
+        'Deals and news',
+      ]) {
+        expect(page.contains(label), isTrue,
+            reason: 'one account read from two apps must not offer two '
+                'different sets of switches');
+      }
+    });
+
+    test('one switch saves one key, so the others are left alone', () {
+      expect(service.contains('channel: {key: value}'), isTrue,
+          reason: 'sending the whole object would wipe any category this '
+              'build does not know about');
+    });
+
+    test('a refused save puts the switch back', () {
+      expect(page.contains('target[key] = before;'), isTrue,
+          reason: 'what is on screen has to be what the server holds, or the '
+              'person believes they turned something off and did not');
+    });
+
+    test('what cannot be switched off is said, not shown as a dead control', () {
+      expect(page.contains('_emailNote'), isTrue);
+      expect(page.contains('always keeps a record'), isTrue,
+          reason: 'in-app is the ledger and email is all receipts; a switch '
+              'that does nothing is worse than a sentence');
+    });
+  });
+
   group('it lands on the right thing', () {
     test('a check-in notice is a booking, not an unknown', () {
       // Anchored between the previous rule and this one, so the captured list
