@@ -224,7 +224,14 @@ class NotificationService {
     try {
       final response = await _dio.post(
         "/user/notification/mark-read",
-        data: {"notificationId": notificationId},
+        // A LIST. The endpoint's schema takes an array — a bare integer was
+        // rejected at validation, so every mark-read from the app failed
+        // silently and no notification was ever marked read. The server now
+        // coerces a scalar too, so builds already on phones work, but sending
+        // the right shape is the actual contract.
+        data: {
+          "notificationId": [notificationId]
+        },
       );
       final ok = response.statusCode == 200 && response.data?["success"] == true;
       if (!ok) {
