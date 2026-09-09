@@ -19,6 +19,9 @@ class GuestNegotiationMessage {
   final String? bookFrom;
   final String? bookTo;
 
+  /// When this price was named. Null on rows written before it was sent.
+  final DateTime? createdAt;
+
   const GuestNegotiationMessage({
     required this.offerId,
     required this.from,
@@ -27,6 +30,7 @@ class GuestNegotiationMessage {
     required this.status,
     this.bookFrom,
     this.bookTo,
+    this.createdAt,
   });
 
   bool get mine => from == 'you';
@@ -40,6 +44,7 @@ class GuestNegotiationMessage {
         status: j['status']?.toString() ?? 'pending',
         bookFrom: _s(j['bookFrom']),
         bookTo: _s(j['bookTo']),
+        createdAt: DateTime.tryParse(j['createdAt']?.toString() ?? '')?.toLocal(),
       );
 }
 
@@ -54,6 +59,17 @@ class GuestNegotiation {
   final int hostId;
   final String hostName;
   final List<GuestNegotiationMessage> messages;
+
+  /// The same messages, grouped into the negotiations they belong to.
+  ///
+  /// A stay can be negotiated more than once, weeks apart, and the whole
+  /// history arrives as one list. Without this the screen ran two separate
+  /// conversations together as though they were one argument. The grouping
+  /// is the SERVER's — the same one that decides how many offers are left —
+  /// so the transcript and the allowance can never disagree.
+  ///
+  /// Falls back to one group on an older payload.
+  final List<List<GuestNegotiationMessage>> sessions;
   final double latestPrice;
 
   /// awaiting_you | awaiting_host | accepted | declined | expired
@@ -103,6 +119,7 @@ class GuestNegotiation {
     required this.hostId,
     required this.hostName,
     required this.messages,
+    this.sessions = const [],
     required this.latestPrice,
     required this.status,
     required this.awaitingYou,
@@ -119,6 +136,21 @@ class GuestNegotiation {
 
   factory GuestNegotiation.fromJson(Map<String, dynamic> j) {
     final raw = j['messages'];
+    final rawSessions = j['sessions'];
+    List<List<GuestNegotiationMessage>> groups = const [];
+    if (rawSessions is List) {
+      groups = rawSessions
+          .whereType<Map>()
+          .map((g) => (g['messages'] is List)
+              ? (g['messages'] as List)
+                  .whereType<Map>()
+                  .map((m) => GuestNegotiationMessage.fromJson(
+                      Map<String, dynamic>.from(m)))
+                  .toList()
+              : <GuestNegotiationMessage>[])
+          .where((g) => g.isNotEmpty)
+          .toList();
+    }
     return GuestNegotiation(
       propertyId: _i(j['propertyId']),
       propertyName: j['propertyName']?.toString() ?? 'Property',
@@ -131,6 +163,7 @@ class GuestNegotiation {
       hostResponseHours: (int.tryParse(j['hostResponseHours']?.toString() ?? '') ?? 0) > 0
           ? int.parse(j['hostResponseHours'].toString())
           : null,
+      sessions: groups,
       messages: raw is List
           ? raw
               .whereType<Map>()

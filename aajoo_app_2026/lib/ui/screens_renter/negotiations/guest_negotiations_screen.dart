@@ -457,6 +457,115 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
         ),
       );
 
+  /// A divider with a word in the middle.
+  Widget _rule(String text, {bool strong = false}) => Padding(
+        padding: EdgeInsets.only(top: strong ? 14 : 8, bottom: strong ? 8 : 4),
+        child: Row(children: [
+          const Expanded(child: Divider(color: kLine, height: 1)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(text,
+                style: inter(
+                    fontSize: strong ? 11.5 : 11,
+                    color: kMuted,
+                    fontWeight: strong ? FontWeight.w700 : FontWeight.w500)),
+          ),
+          const Expanded(child: Divider(color: kLine, height: 1)),
+        ]),
+      );
+
+
+  String _day(DateTime d) =>
+      '${d.day} ${_months[d.month]} ${d.year}';
+
+  String _time(DateTime d) =>
+      '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+
+  static const _outcomeWords = {
+    'accepted': 'Agreed',
+    'declined': 'Declined',
+    'expired': 'Expired unanswered',
+  };
+
+  /// The whole conversation, grouped by negotiation and then by day.
+  List<Widget> _transcript(GuestNegotiation n) {
+    // The server groups these; one group is the honest fallback for a payload
+    // that predates it — better a transcript with no dividers than none.
+    final groups = n.sessions.isNotEmpty
+        ? n.sessions
+        : <List<GuestNegotiationMessage>>[n.messages];
+
+    final out = <Widget>[];
+    for (var gi = 0; gi < groups.length; gi++) {
+      final g = groups[gi];
+      if (g.isEmpty) continue;
+      final current = gi == groups.length - 1;
+
+      if (groups.length > 1) {
+        final started = g.first.createdAt;
+        final outcome = _outcomeWords[g.last.status] ?? 'In progress';
+        out.add(_rule(
+            current
+                ? 'This negotiation${started != null ? ' · ${_day(started)}' : ''}'
+                : 'Earlier negotiation · $outcome${started != null ? ' · ${_day(started)}' : ''}',
+            strong: true));
+      }
+
+      String lastDay = "";
+      for (final m in g) {
+        final at = m.createdAt;
+        if (at != null && _day(at) != lastDay) {
+          lastDay = _day(at);
+          out.add(_rule(lastDay));
+        }
+        out.add(Align(
+          alignment: m.mine ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            constraints: const BoxConstraints(maxWidth: 260),
+            decoration: BoxDecoration(
+              color: m.mine ? kIndigo50 : kSand,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: kLine),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(m.mine ? 'You offered' : 'Host countered',
+                    style: inter(fontSize: 11, color: kMuted)),
+                const SizedBox(height: 2),
+                Text('${_inr(m.price)} /night',
+                    style: inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: kInk)),
+                if (m.message.isNotEmpty) ...[
+                  const SizedBox(height: 5),
+                  // inter() has no fontStyle; copyWith carries the italic
+                  // without losing the font variations it sets.
+                  Text('“${m.message}”',
+                      style: inter(fontSize: 12.5, color: kMuted, height: 1.4)
+                          .copyWith(fontStyle: FontStyle.italic)),
+                ],
+                if (at != null) ...[
+                  const SizedBox(height: 5),
+                  Align(
+                    alignment:
+                        m.mine ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Text(_time(at),
+                        style: inter(fontSize: 10.5, color: kMuted)),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ));
+      }
+    }
+    return out;
+  }
+
   /// "The host is away — they usually reply within N hours."
   ///
   /// Only while genuinely waiting on a person, and only once that person has
@@ -548,45 +657,14 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
           _awayNote(n),
           const SizedBox(height: 12),
 
-          // The exchange itself, in order. Neither side could see this before.
-          ...n.messages.map((m) => Align(
-                alignment:
-                    m.mine ? Alignment.centerRight : Alignment.centerLeft,
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 9),
-                  constraints: const BoxConstraints(maxWidth: 260),
-                  decoration: BoxDecoration(
-                    color: m.mine ? kIndigo50 : kSand,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: kLine),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(m.mine ? 'You offered' : 'Host countered',
-                          style: inter(fontSize: 11, color: kMuted)),
-                      const SizedBox(height: 2),
-                      Text('${_inr(m.price)} /night',
-                          style: inter(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: kInk)),
-                      if (m.message.isNotEmpty) ...[
-                        const SizedBox(height: 5),
-                        // inter() has no fontStyle; copyWith carries the
-                        // italic without losing the font variations it sets.
-                        Text('“${m.message}”',
-                            style: inter(
-                                    fontSize: 12.5, color: kMuted, height: 1.4)
-                                .copyWith(fontStyle: FontStyle.italic)),
-                      ],
-                    ],
-                  ),
-                ),
-              )),
-
+          // The exchange itself, in order — with the time each price was
+          // named, and a line where one negotiation ended and the next began.
+          //
+          // A stay can be negotiated more than once, weeks apart. Read as one
+          // column with no dates, two separate conversations looked like a
+          // single argument in which somebody had changed their mind by a
+          // thousand rupees.
+          ..._transcript(n),
           if (n.awaitingYou && n.actionableOfferId != null) ...[
             const Divider(height: 22, color: kLine),
             Obx(() {
