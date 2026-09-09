@@ -507,6 +507,58 @@ class _PropertyPageState extends State<PropertyPage>
     return false;
   }
 
+  /// Would a stay running from [from] to [d] cross nights somebody else has?
+  ///
+  /// A CHECKOUT DAY IS NOT A NIGHT. Greying out booked days on both ends of
+  /// the range is right for a check-in and wrong for a checkout: with nights
+  /// 10 and 11 sold, a guest arriving on the 9th had no selectable checkout
+  /// at all, so a one-night stay that takes nobody else's room could not be
+  /// expressed. They leave on the morning of the 10th; the next guest arrives
+  /// that afternoon.
+  ///
+  /// This is the server's own guard, half-open on both ends:
+  ///
+  ///     bt_book_from < :to AND bt_book_to > :from
+  ///
+  /// Days on or before the start keep the plain test, because picking one
+  /// restarts the range and must not land on a night that is taken.
+  bool _checkoutBlocked(DateTime from, DateTime d) {
+    final a = DateTime(from.year, from.month, from.day);
+    final b = DateTime(d.year, d.month, d.day);
+    if (!b.isAfter(a)) return _isBookedDay(d);
+    for (final r in _bookedRanges) {
+      if (a.isBefore(r.end) && b.isAfter(r.start)) return true;
+    }
+    return false;
+  }
+
+  /// A checkout the picker will accept.
+  ///
+  /// showDatePicker ASSERTS that initialDate satisfies selectableDayPredicate,
+  /// so a remembered checkout that is no longer valid crashes the picker
+  /// rather than being quietly corrected. _safeInitialDate cannot do this job:
+  /// it only skips days that are themselves booked, and the dates this rule
+  /// rejects are ones that merely RUN THROUGH a booking.
+  DateTime _safeCheckoutDate(DateTime? candidate, DateTime from) {
+    bool ok(DateTime d) =>
+        !_checkoutBlocked(from, d) && (_checkInWindow?.sellsDay(d) ?? true);
+    final start = DateTime(from.year, from.month, from.day);
+    final nextDay = start.add(const Duration(days: 1));
+    var d = (candidate != null && candidate.isAfter(start))
+        ? DateTime(candidate.year, candidate.month, candidate.day)
+        : nextDay;
+    // The night after the arrival is all but always available — the arrival
+    // itself had to be, to get this far — so it is the fallback before any
+    // forward search.
+    if (!ok(d)) d = nextDay;
+    var guard = 0;
+    while (!ok(d) && guard < 400) {
+      d = d.add(const Duration(days: 1));
+      guard++;
+    }
+    return d;
+  }
+
   /// The host's arrival window — how much notice they need, how far ahead they
   /// take bookings, whether today is allowed. Null on a listing that predates
   /// the wizard, which means no restriction.
@@ -1163,8 +1215,8 @@ class _PropertyPageState extends State<PropertyPage>
                 onTap: _dealFixesDates ? null : () async {
                   final DateTime? picked = await showDatePicker(
                     context: context,
-                    initialDate: _safeInitialDate(
-                        selectedDateTo ?? selectedDate, selectedDate),
+                    initialDate:
+                        _safeCheckoutDate(selectedDateTo, selectedDate),
                     firstDate: selectedDate,
                     // One month at a time (client rule, 2026-09-05): the real
                     // length of the month the stay STARTS in — 31 from
@@ -1178,7 +1230,7 @@ class _PropertyPageState extends State<PropertyPage>
                     // refuses. Found on the web with a September-only season,
                     // where the calendar happily offered all of October.
                     selectableDayPredicate: (d) =>
-                        !_isBookedDay(d) &&
+                        !_checkoutBlocked(selectedDate, d) &&
                         (_checkInWindow?.sellsDay(d) ?? true),
                     builder: (context, child) {
                       return Theme(
