@@ -508,6 +508,17 @@ class NearbyPlace {
   final double? lng;
   final String? placeId;
 
+  /// Who says so: 'google' for a place the host picked off the map, 'manual'
+  /// for a name and a distance they typed themselves.
+  ///
+  /// A Google-picked place carries a place_id, a real position and a
+  /// directions link — the platform can stand behind the distance. A manual
+  /// entry has nothing checking either half of it, and rendered in the same
+  /// row a guest cannot tell the two apart.
+  final String source;
+
+  bool get isHostProvided => source == 'manual';
+
   const NearbyPlace({
     required this.name,
     required this.place,
@@ -516,6 +527,7 @@ class NearbyPlace {
     this.lat,
     this.lng,
     this.placeId,
+    this.source = 'manual',
   });
 
   factory NearbyPlace.fromJson(Map<String, dynamic> json) {
@@ -532,6 +544,11 @@ class NearbyPlace {
       lat: located ? lat : null,
       lng: located ? lng : null,
       placeId: (json['placeId'] ?? '').toString().isEmpty ? null : json['placeId'].toString(),
+      // Defaults to 'manual' — the cautious answer. An older payload with no
+      // source is more likely a typed entry than a verified one, and marking
+      // a verified place "Host provided" costs nothing while the reverse
+      // vouches for something nobody checked.
+      source: (json['source'] ?? 'manual').toString(),
     );
   }
 

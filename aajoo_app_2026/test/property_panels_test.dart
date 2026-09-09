@@ -104,17 +104,25 @@ void main() {
       (tester) async {
     await pump(tester);
 
+    // findRichText, because a place row is a Text.rich now: a host-typed
+    // entry carries a "Host provided" span after the name, so a guest can tell
+    // it from one picked off the map. find.text ignores rich text by default
+    // and would report every row missing.
+    // textContaining, not text: find.text matches the WHOLE string, and a
+    // host-typed row reads "Place 0_0  · Host provided".
+    Finder place(String name) => find.textContaining(name, findRichText: true);
+
     // Each group is its own card and trims on its own. Group 0 has eight
     // places against a limit of five.
-    expect(find.text('Place 0_0'), findsOneWidget);
-    expect(find.text('Place 0_4'), findsOneWidget);
-    expect(find.text('Place 0_5'), findsNothing);
+    expect(place('Place 0_0'), findsOneWidget);
+    expect(place('Place 0_4'), findsOneWidget);
+    expect(place('Place 0_5'), findsNothing);
 
     // A card is never held back because an earlier one was long — that is the
     // difference from the flat budget this replaced, and the reason a guest
     // can see every CATEGORY of landmark without expanding anything.
-    expect(find.text('Place 1_0'), findsOneWidget);
-    expect(find.text('Place 2_0'), findsOneWidget);
+    expect(place('Place 1_0'), findsOneWidget);
+    expect(place('Place 2_0'), findsOneWidget);
 
     // Exactly one link, on the only card with anything hidden.
     final more = find.text('Show 3 more');
@@ -124,7 +132,7 @@ void main() {
     await tester.tap(more);
     await tester.pump();
 
-    expect(find.text('Place 0_7'), findsOneWidget);
+    expect(place('Place 0_7'), findsOneWidget);
     expect(find.text('Show less'), findsOneWidget);
   });
 

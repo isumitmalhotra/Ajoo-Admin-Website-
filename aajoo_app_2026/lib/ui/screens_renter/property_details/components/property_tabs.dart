@@ -240,7 +240,32 @@ class _NearbyRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(place.name, style: inter(fontSize: 13.5, color: kInk)),
+            // Who says so. A Google-picked place carries a place_id, a real
+            // position and a directions link — the platform can stand behind
+            // the distance. A manual entry is a name and a number the host
+            // typed, with nothing checking either, and it rendered in exactly
+            // the same row. A guest reading "Airport - 4 km" had no way to
+            // tell which kind they were looking at.
+            //
+            // Wrap, not ellipsis: on a narrow screen the marker is the part
+            // that would be cut, which is the part worth keeping.
+            child: Text.rich(
+              TextSpan(
+                text: place.name,
+                children: place.isHostProvided
+                    ? [
+                        TextSpan(
+                          text: '  · Host provided',
+                          style: inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: kMuted),
+                        ),
+                      ]
+                    : const [],
+              ),
+              style: inter(fontSize: 13.5, color: kInk),
+            ),
           ),
           const SizedBox(width: 8),
           Text(place.distanceLabel,
