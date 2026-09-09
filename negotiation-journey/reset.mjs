@@ -63,7 +63,11 @@ if (!SHOW_ONLY) {
   await db.query(`DELETE FROM tbl_coupons WHERE cpn_property_id = ${PROPERTY} AND cpn_code LIKE 'DEAL%'`);
   const titles = NEGOTIATION_TITLES.map((t) => `'${t.replace(/'/g, "''")}'`).join(", ");
   const [n] = await db.query(
-    `DELETE FROM tbl_user_notification
+    // PLURAL. The model is tbl_user_notification and Sequelize pluralises it
+    // when no tableName is given, so the physical table is …notifications —
+    // the singular name throws ER_NO_SUCH_TABLE, which this script would have
+    // done on its first real run.
+    `DELETE FROM tbl_user_notifications
       WHERE un_propId = ${PROPERTY} AND un_title IN (${titles})`
   );
   await db.query(`DELETE FROM tbl_negotiation_log WHERE nl_property_id = ${PROPERTY}`);
