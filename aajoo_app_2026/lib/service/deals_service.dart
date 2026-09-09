@@ -102,6 +102,11 @@ class DealsService {
         price: (data['price'] as num?)?.toDouble(),
         couponCode: data['couponCode']?.toString(),
         message: data['message']?.toString(),
+        // Money can arrive as a string from this backend, so parse the text
+        // rather than casting: a cast returns null and the sheet would show
+        // a counter of nothing.
+        counterPrice: double.tryParse(data['counterPrice']?.toString() ?? ''),
+        offerId: int.tryParse(data['offerId']?.toString() ?? ''),
       );
     } on DioException catch (e) {
       final body = e.response?.data;
@@ -111,6 +116,46 @@ class DealsService {
       );
     } catch (_) {
       return const OfferOutcome.failed('Could not send that offer.');
+    }
+  }
+
+  /// Take the price the platform quoted, and get the deal code back.
+  ///
+  /// respondToNegotiation answers with an error string or nothing, which is
+  /// all its other callers need. Accepting a counter from the offer sheet
+  /// needs the coupon as well — the guest is looking at the sheet and the
+  /// code is what carries the price into checkout.
+  Future<OfferOutcome> acceptCounter({required int offerId}) async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    if (token == null || token.isEmpty) {
+      return const OfferOutcome.failed('Please sign in again.');
+    }
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final res = await _dio.post(
+        '${Apiconstants.baseUrl}/user/negotiations/respond',
+        data: {'offerId': offerId, 'action': 'accept'},
+      );
+      final body = res.data;
+      if (body is! Map || body['success'] != true) {
+        return OfferOutcome.failed(
+          (body is Map ? body['message']?.toString() : null) ??
+              'Could not accept that price.',
+        );
+      }
+      final data = Map<String, dynamic>.from(body['data'] ?? const {});
+      return OfferOutcome(
+        action: 'accept',
+        couponCode: data['couponCode']?.toString(),
+      );
+    } on DioException catch (e) {
+      final d = e.response?.data;
+      return OfferOutcome.failed(
+        (d is Map ? d['message']?.toString() : null) ??
+            'Could not accept that price. Please try again.',
+      );
+    } catch (_) {
+      return const OfferOutcome.failed('Could not accept that price.');
     }
   }
 
@@ -232,13 +277,17 @@ class OfferOutcome {
     this.couponCode,
     this.message,
     this.error,
+    this.counterPrice,
+    this.offerId,
   });
 
   const OfferOutcome.failed(String this.error)
       : action = 'error',
         price = null,
         couponCode = null,
-        message = null;
+        message = null,
+        counterPrice = null,
+        offerId = null;
 
   final String action;
   final double? price;
@@ -246,6 +295,17 @@ class OfferOutcome {
   final String? message;
   final String? error;
 
+  /// The host's rate for these nights, quoted back by the platform.
+  ///
+  /// Present on an auto_counter, which since 2026-09-09 is the usual answer
+  /// to a first offer: the server replies with the price the host already
+  /// published rather than waking them for it.
+  final double? counterPrice;
+
+  /// The counter to accept or argue with, through respondToNegotiation.
+  final int? offerId;
+
   bool get accepted => action == 'accept';
+  bool get countered => action == 'auto_counter';
   bool get failed => error != null;
 }

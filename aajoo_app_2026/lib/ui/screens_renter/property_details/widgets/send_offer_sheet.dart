@@ -77,6 +77,77 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
   String? _error;
   OfferOutcome? _outcome;
 
+  /// Answering the platform's counter without leaving this sheet.
+  ///
+  /// Since 2026-09-09 the usual answer to a first offer is the host's own
+  /// rate quoted straight back, so the next thing a guest does is take it or
+  /// argue with it. Sending them to the Negotiations tab to do that would
+  /// lose most of them: the price is on the screen in front of them.
+  bool _counterMode = false;
+  final TextEditingController _counter = TextEditingController();
+  bool _counterBusy = false;
+  String? _counterError;
+
+  Future<void> _acceptCounter() async {
+    final id = _outcome?.offerId;
+    if (id == null) return;
+    setState(() {
+      _counterBusy = true;
+      _counterError = null;
+    });
+    final res = await DealsService().acceptCounter(offerId: id);
+    if (!mounted) return;
+    if (res.failed) {
+      setState(() {
+        _counterBusy = false;
+        _counterError = res.error;
+      });
+      return;
+    }
+    setState(() {
+      _counterBusy = false;
+      _outcome = OfferOutcome(
+        action: 'accept',
+        price: _outcome?.counterPrice,
+        couponCode: res.couponCode,
+      );
+    });
+    widget.onAccepted?.call();
+  }
+
+  /// Argue with it. THIS is what reaches the host — round one never does.
+  Future<void> _sendCounterBack() async {
+    final id = _outcome?.offerId;
+    if (id == null) return;
+    final amount = double.tryParse(_counter.text.trim()) ?? 0;
+    final quoted = _outcome?.counterPrice ?? 0;
+    if (amount <= 0) {
+      setState(() => _counterError = 'Enter the price you would like to counter with.');
+      return;
+    }
+    if (quoted > 0 && amount >= quoted) {
+      setState(() => _counterError =
+          'A counter has to be below ${rupees(quoted)} — otherwise just accept it.');
+      return;
+    }
+    setState(() {
+      _counterBusy = true;
+      _counterError = null;
+    });
+    final err = await DealsService()
+        .respondToNegotiation(offerId: id, action: 'counter', counterPrice: amount);
+    if (!mounted) return;
+    setState(() {
+      _counterBusy = false;
+      _counterError = err;
+      if (err == null) {
+        _outcome = const OfferOutcome(action: 'escalate_to_host');
+        _counterMode = false;
+        _counter.clear();
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -337,9 +408,11 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
         ],
       );
 
-  /// Two answers, and only two — the same pair the website reports.
+  /// Three answers now, the same three the website reports: taken, quoted
+  /// back at the host's own rate, or with the host for a decision.
   Widget _result(AajooSkin skin) {
     final o = _outcome!;
+    if (o.countered) return _counterPanel(skin, o);
     final accepted = o.accepted;
     return Padding(
       padding: const EdgeInsets.only(top: 4),
@@ -412,6 +485,113 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
               ),
               child: Text(accepted ? 'Book at this price' : 'Done',
                   style: inter(fontSize: 15, fontWeight: FontWeight.w700)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The host's price, and the two things a guest can do with it.
+  Widget _counterPanel(AajooSkin skin, OfferOutcome o) {
+    final quoted = o.counterPrice ?? 0;
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Column(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: skin.primaryWash,
+            ),
+            child: Icon(Icons.sell_outlined, size: 26, color: skin.primary),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Their price is ${rupees(quoted)}/night',
+            textAlign: TextAlign.center,
+            style: fraunces(
+                fontSize: 17, fontWeight: FontWeight.w700, color: skin.ink),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            "That's this host's rate for the nights you picked. Take it and "
+            "it's yours — or counter, and we'll put your price to them "
+            'directly.',
+            textAlign: TextAlign.center,
+            style: inter(fontSize: 13, color: skin.muted, height: 1.45),
+          ),
+          if (_counterMode) ...[
+            const SizedBox(height: 14),
+            TextField(
+              controller: _counter,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(7),
+              ],
+              style: inter(fontSize: 15, color: skin.ink),
+              decoration: InputDecoration(
+                labelText: 'Your counter, per night',
+                labelStyle: inter(fontSize: 13, color: skin.muted),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+          if (_counterError != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              _counterError!,
+              textAlign: TextAlign.center,
+              style: inter(fontSize: 12.5, color: kDanger),
+            ),
+          ],
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: _counterBusy
+                  ? null
+                  : (_counterMode ? _sendCounterBack : _acceptCounter),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _counterMode ? skin.primary : kClay,
+                foregroundColor: _counterMode ? skin.onPrimary : kAccentInk,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text(
+                _counterBusy
+                    ? 'Just a moment…'
+                    : (_counterMode
+                        ? 'Send to the host'
+                        : 'Accept ${rupees(quoted)}/night'),
+                style: inter(fontSize: 15, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: TextButton(
+              onPressed: _counterBusy
+                  ? null
+                  : () => setState(() {
+                        _counterMode = !_counterMode;
+                        _counterError = null;
+                      }),
+              child: Text(
+                _counterMode ? 'Back' : 'Counter this price',
+                style: inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: skin.primary),
+              ),
             ),
           ),
         ],

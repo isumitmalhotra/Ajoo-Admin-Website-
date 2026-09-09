@@ -459,11 +459,17 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
 
   /// "The host is away — they usually reply within N hours."
   ///
-  /// Only while genuinely waiting on a person. The platform answers a first
-  /// offer within ninety seconds using the host's own ideal price, so a thread
-  /// that reaches this state is one the guest pushed past that.
+  /// Only while genuinely waiting on a person, and only once that person has
+  /// actually had their ninety seconds. The platform answers a first offer
+  /// itself, so a thread that reaches this state is one the guest pushed past
+  /// that — and until the window elapses the host may simply be typing.
+  ///
+  /// hostAway is the SERVER's answer. Timing the window here would pit the
+  /// device clock against the API's, and those two have disagreed before.
   Widget _awayNote(GuestNegotiation n) {
-    if (n.status != 'awaiting_host' || n.hostResponseHours == null) {
+    if (n.status != 'awaiting_host' ||
+        !n.hostAway ||
+        n.hostResponseHours == null) {
       return const SizedBox.shrink();
     }
     final h = n.hostResponseHours!;

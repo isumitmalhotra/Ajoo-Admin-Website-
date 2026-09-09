@@ -88,6 +88,13 @@ class GuestNegotiation {
   /// nobody promised is worse than silence.
   final int? hostResponseHours;
 
+  /// The host has had their ninety seconds and has not answered.
+  ///
+  /// The server's call, on the server's clock. This app cannot time the
+  /// window itself without trusting the device clock against the API, and
+  /// those have disagreed before.
+  final bool hostAway;
+
   const GuestNegotiation({
     required this.propertyId,
     required this.propertyName,
@@ -107,6 +114,7 @@ class GuestNegotiation {
     this.bookTo,
     this.guests,
     this.hostResponseHours,
+    this.hostAway = false,
   });
 
   factory GuestNegotiation.fromJson(Map<String, dynamic> j) {
@@ -119,6 +127,7 @@ class GuestNegotiation {
       hostId: _i(j['hostId']),
       hostName: j['hostName']?.toString() ?? 'Host',
       // Absent, zero or unparseable all mean "the host never said".
+      hostAway: j['hostAway'] == true || j['hostAway']?.toString() == '1',
       hostResponseHours: (int.tryParse(j['hostResponseHours']?.toString() ?? '') ?? 0) > 0
           ? int.parse(j['hostResponseHours'].toString())
           : null,
