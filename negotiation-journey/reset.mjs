@@ -39,10 +39,35 @@ for (const o of offers) {
 }
 console.log(`  ${offers.length} offer(s), ${coupons.length} deal coupon(s) on listing ${PROPERTY}`);
 
+// The notifications those offers sent.
+//
+// Left behind on 2026-09-09, and it cost an hour: the host's Negotiations
+// tab was empty while their bell held 23 notices about offers on the same
+// listing, which read exactly like a broken screen. It was not — this
+// script had deleted the offers between screenshots and nothing had told
+// the notifications. A cleanup that removes a record but not the messages
+// pointing at it does not undo the test, it fakes a bug.
+//
+// Titles, not a category column: tbl_user_notification has none, which is
+// also why the host feed derives the category from the words.
+const NEGOTIATION_TITLES = [
+  "The guest countered back",
+  "Offer accepted automatically",
+  "We answered an offer for you",
+  "Your counter was accepted",
+  "New price offer",
+];
+
 if (!SHOW_ONLY) {
   await db.query(`DELETE FROM tbl_negotiation_offers WHERE property_id = ${PROPERTY}`);
   await db.query(`DELETE FROM tbl_coupons WHERE cpn_property_id = ${PROPERTY} AND cpn_code LIKE 'DEAL%'`);
-  console.log("  cleared.");
+  const titles = NEGOTIATION_TITLES.map((t) => `'${t.replace(/'/g, "''")}'`).join(", ");
+  const [n] = await db.query(
+    `DELETE FROM tbl_user_notification
+      WHERE un_propId = ${PROPERTY} AND un_title IN (${titles})`
+  );
+  await db.query(`DELETE FROM tbl_negotiation_log WHERE nl_property_id = ${PROPERTY}`);
+  console.log("  cleared — offers, deal coupons, ledger rows and their notifications.");
 }
 
 await db.close();

@@ -25,6 +25,14 @@ class HostNegotiation {
   final String? bookFrom;
   final String? bookTo;
 
+  /// The guest's offer came in under the minimum this host set.
+  ///
+  /// HOST PAYLOAD ONLY, and it must stay that way — it says which side of
+  /// the floor an offer landed on, and a guest able to ask that twice has
+  /// bracketed the floor. The escalation email and the push have said it
+  /// since 2026-09-09; the screen the host decides on said nothing.
+  final bool belowMinimum;
+
   const HostNegotiation({
     required this.offerId,
     required this.propertyId,
@@ -38,6 +46,7 @@ class HostNegotiation {
     this.createdAt,
     this.bookFrom,
     this.bookTo,
+    this.belowMinimum = false,
     this.rounds = 0,
     this.maxRounds = 3,
   });
@@ -104,6 +113,9 @@ class HostNegotiation {
       createdAt: created,
       bookFrom: nonEmpty(json['bookFrom']),
       bookTo: nonEmpty(json['bookTo']),
+      // Absent on an older payload, and absent means NOT below — never
+      // guess an alarm from a missing field.
+      belowMinimum: json['belowMinimum'] == true,
       // Every offer that has crossed, from either side.
       rounds: json['messages'] is List ? (json['messages'] as List).length : 0,
       maxRounds: _i(json['maxRounds']) > 0 ? _i(json['maxRounds']) : 3,

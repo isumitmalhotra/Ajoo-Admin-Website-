@@ -124,6 +124,49 @@ class NegotiationCard extends StatelessWidget {
                           color: kClay)),
               ],
             ),
+            // The one thing the host could not see here.
+            //
+            // The escalation email and the push have both said this since
+            // 2026-09-09; the card the host decides on said nothing, so the
+            // same offer read as ordinary in the place that mattered most.
+            // Only while it is still theirs to answer — on a settled thread
+            // it is an alarm about a decision already taken.
+            //
+            // Their own number, and it is not printed: which side of it the
+            // offer fell on is the useful part, and the figure itself only
+            // adds something to leak in a screenshot.
+            if (n.belowMinimum && n.isPending) ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFDECEC),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        size: 15, color: kDanger),
+                    const SizedBox(width: 7),
+                    // Expanded, or a 320dp screen breaks the sentence
+                    // mid-word instead of wrapping it.
+                    Expanded(
+                      child: Text(
+                        'This is below the minimum you set for this stay.',
+                        style: inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: kDanger,
+                            height: 1.35),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (n.bookFrom != null && n.bookTo != null) ...[
               const SizedBox(height: 10),
               Row(
