@@ -1128,7 +1128,23 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             // nothing was ever stored, booking had no limit to enforce and
             // took a one-night stay on a property with a three-night minimum.
             _p4Text('min_stay_nights', 'Minimum nights', numeric: true),
-            _p4Text('max_stay_nights', 'Maximum nights', numeric: true),
+            // C8 — blank HAS meant "no limit" since the field shipped, and 5
+            // of the 6 live listings store NULL. Nothing said so, so a host
+            // either typed a number they did not mean or left it blank not
+            // knowing what blank did.
+            _p4Text('max_stay_nights', 'Maximum nights',
+                numeric: true,
+                help: 'Leave blank for no limit — guests can book any length '
+                    'of stay.'),
+            // Neither of the next two existed in this wizard. The website has
+            // had both since it shipped, so a host who listed from their phone
+            // could not say they need warning before an arrival, nor refuse
+            // same-day bookings — the listing simply took whatever the
+            // permissive default gave them.
+            _p4Text('minimum_notice_hours', 'Minimum notice (hours)',
+                numeric: true,
+                help: 'How much warning you need before a guest arrives. '
+                    'Blank or 0 means none.'),
             // Absent entirely until now. The website has had both since the
             // wizard shipped; the app never asked, so a host who listed from
             // their phone had no way to say when guests may arrive or must
@@ -1138,6 +1154,58 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
                 help: 'When guests may arrive, e.g. 14:00'),
             _p4Text('checkout_time', 'Check-out time',
                 help: 'When guests must leave, e.g. 11:00'),
+            ListingToggle(
+              label: 'Accept same-day bookings',
+              value: c.p4['same_day_booking'] != false,
+              onChanged: (v) => c.setP4('same_day_booking', v),
+            ),
+            // C7 — these two settings can cancel each other out.
+            //
+            // Saying yes to same-day and then asking for 24 hours' notice
+            // means the earliest arrival the engine allows is tomorrow: the
+            // notice is measured to the check-in time, so today can never
+            // satisfy it. The host has switched same-day on and switched it
+            // off again in the box above, and nothing told them.
+            //
+            // The guest side was never the problem — utils/bookingWindow
+            // already sends a reason and both calendars print it. This is for
+            // the host, who otherwise waits for bookings that cannot arrive.
+            // A warning, not a block: "same-day, but give me a day's warning"
+            // is a coherent thing to want, it just is not what these two
+            // controls produce.
+            if (c.p4['same_day_booking'] != false &&
+                (int.tryParse('${c.p4['minimum_notice_hours'] ?? ''}') ?? 0) >= 24)
+              Container(
+                margin: const EdgeInsets.only(top: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF6E5),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        size: 15, color: kClay),
+                    const SizedBox(width: 7),
+                    // Expanded, or a 320dp screen breaks the sentence mid-word.
+                    Expanded(
+                      child: Text(
+                        "${c.p4['minimum_notice_hours']} hours' notice means the earliest a "
+                        'guest can arrive is tomorrow, so same-day bookings will never '
+                        'actually happen. Lower the notice period below 24 hours if you '
+                        'want them.',
+                        style: inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: kClay,
+                            height: 1.35),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
         ListingSection(
