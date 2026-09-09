@@ -1790,6 +1790,43 @@ class _PropertyPageState extends State<PropertyPage>
                                     ),
                                   ],
                                 ),
+                                // The deposit the host will ask for.
+                                //
+                                // Collected by the wizard since it shipped and
+                                // shown to nobody, so the first a guest heard
+                                // of a deposit was on arrival with their bags.
+                                // Stated BELOW the total and outside it: it is
+                                // not taken through the platform, so folding
+                                // it in would make the total wrong. Same words
+                                // as the website, from the same field.
+                                if ((_single?.pricing?.securityDeposit ?? 0) > 0) ...[
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Padding(
+                                        padding: EdgeInsets.only(top: 2),
+                                        child: Icon(Icons.shield_outlined,
+                                            size: 14, color: kMuted),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          'The host asks for a '
+                                          '${rupees(_single!.pricing!.securityDeposit)} '
+                                          'security deposit, collected directly by them '
+                                          'and not included in this total. '
+                                          '${_single!.pricing!.depositRefundable ? 'It is refundable at the end of your stay.' : 'Ask the host what it covers before you arrive.'}',
+                                          style: inter(
+                                              fontSize: 12,
+                                              color: kMuted,
+                                              height: 1.4),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                                 // "Weekly Min Price" and "Weekly Max Price"
                                 // used to print below the total. Those are the
                                 // host's own pricing band — the floor and

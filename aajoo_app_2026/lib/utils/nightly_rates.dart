@@ -46,6 +46,8 @@ class PricingRule {
     this.monthlyDiscountPercent = 0,
     this.weeklyPrice,
     this.monthlyPrice,
+    this.securityDeposit = 0,
+    this.depositRefundable = false,
   });
 
   final double base;
@@ -71,6 +73,15 @@ class PricingRule {
   /// not offer one, in which case the stay is quoted night by night.
   final double? weeklyPrice;
   final double? monthlyPrice;
+
+  /// The deposit the host will ask for, and whether it comes back.
+  ///
+  /// Collected by the wizard since it shipped and shown to nobody, so the
+  /// first a guest heard of a deposit was on arrival. It is NOT taken through
+  /// the platform and must never be added to a total — only said, and said
+  /// before booking.
+  final double securityDeposit;
+  final bool depositRefundable;
 
   /// Positive, finite money only — rejects null, "", 0 and rubbish, so a blank
   /// override falls back to base rather than producing a free night.
@@ -114,6 +125,11 @@ class PricingRule {
       monthlyDiscountPercent: _percent(j['monthlyDiscountPercent']),
       weeklyPrice: _money(j['weeklyPrice']),
       monthlyPrice: _money(j['monthlyPrice']),
+      securityDeposit: _money(j['securityDeposit']) ?? 0,
+      // Only an explicit true is refundable. Telling a guest their deposit
+      // comes back when the host never said so is the worst way to be wrong
+      // about somebody's money.
+      depositRefundable: j['depositRefundable'] == true,
     );
   }
 
