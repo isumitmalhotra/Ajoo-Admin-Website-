@@ -90,6 +90,8 @@ about it.
 | ~~C4~~ | "Advanced limits — saved, but not applied yet" | **Done 10 Sep.** The label was true when written, over three thresholds the engine ignored — those were removed on 9 Sep, and both settings still inside are live (the expiry drives `negotiationExpiry`, the attempt cap is passed to `claimNextRound`). It had become the lie it was written to prevent. Now "Offer timing & attempts". |
 | ~~C10~~ | Duplicate ownership question | **Done 10 Sep, web AND app.** `is_owner` is derived from `host_type` on save and on draft load; the second question is gone from both wizards. Nothing had reconciled them: a host could answer Owner at the top and No further down, and the listing carried both. |
 | ~~C11~~ | Manager → authorisation document | **Done 10 Sep, web AND app.** `pvf_authorization_doc` on the verification row; a manager's submission is REFUSED without it — a hard gate, not a score weighting, because the 70% readiness bar is a completeness heuristic a manager can clear with everything else filled in. The checklist names it, and only for managers. The unused `pf_authorization_doc` write on step 1 was removed so the document has one home. Migration live. |
+| ~~C2~~ | The second deposit question | **Done 10 Sep.** The damage-policy yes/no is gone; `phr_damage_deposit` is derived from the Step-4 amount. Nothing had reconciled them — a host could enter ₹5,000 above and tick No below, and the property page told the guest no deposit applies while the host expected ₹5,000 at the door. The app never had the question. |
+| ~~C9~~ | Tiered photo minimum | **Done 10 Sep, web AND app.** `photoRulesFor(accommodationType, categoryMinimum)`: 10 + exterior for an entire property, 5 and no exterior for a room or PG bed. Precedence is asymmetric — an admin's per-category floor stacks on a whole property and is ignored for a room. Unknown type gets the strict default, so no existing listing is quietly halved. Both enforcement points use it. |
 | ~~C3~~ | Check-in default 02:01 → 14:00 | **Code was already right**: `DEFAULT_CHECKIN_TIME = "14:00"` in `utils/cancellationPolicy.js`, and NULL falls back to it. Only the DATA was stale, and only barely — **1 live listing** carries 02:01 (the rest: two at 14:00, two NULL, one at 12:00). A one-row fix, not a code change. |
 
 ### P0 — still open
@@ -102,10 +104,8 @@ about it.
 
 | # | Task | Status |
 |---|---|---|
-| C2 | The second deposit question | Open, but **smaller than first reported**: Step 4 collects the deposit AMOUNT (`security_deposit`), and Damage policy asks a separate yes/no "Take a damage deposit?" (`damage_deposit`). Not two conflicting numbers — one redundant question that can contradict the amount above it. |
 | C7 | Same-day booking ON **and** minimum notice ≥ 24 h | Open. No conflict check. |
 | C8 | Max stay "unlimited" | Open **in the UI only** — the storage is already right. NULL is unlimited and 5 of the 6 live listings store NULL; the form just offers no way to say so deliberately. |
-| C9 | Tiered photo minimum (5 room / 10 whole property) | Open. `PHOTO_RULES.minimum = 10` flat, and Exterior is required of every listing. |
 | C12 | Nearby: drop non-operational places | Open. `business_status` appears nowhere in the Places code. |
 | C13 | Nearby: mark manual entries "Host provided" | Open. |
 | C14 | Cross-field warning: "2BHK but 1 bedroom" | Open. |

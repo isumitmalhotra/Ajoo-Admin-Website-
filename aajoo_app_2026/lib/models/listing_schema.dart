@@ -205,6 +205,7 @@ class PhotoRules {
     this.required = const [],
     this.videoMaxMinutes = 0,
     this.byCategory = const {},
+    this.byAccommodation = const {},
   });
 
   final int minimum;
@@ -219,6 +220,37 @@ class PhotoRules {
   /// and was dropped here, so the app quoted the platform default for every
   /// category while the web enforced the category's own number.
   final Map<String, int> byCategory;
+
+  /// Tiered by what is being LET: 10 photos and an exterior for a whole
+  /// property, 5 and no exterior for a room or a PG bed.
+  ///
+  /// A single room cannot produce ten distinct photographs, and there is no
+  /// exterior belonging to the guest. A host asked for them either uploads ten
+  /// near-identical shots of one wall to clear the bar, or never publishes.
+  final Map<String, PhotoTier> byAccommodation;
+
+  /// The rule THIS listing is held to.
+  ///
+  /// Mirrors config/listingSchema.photoRulesFor on the server, asymmetric
+  /// precedence included: an admin's per-category floor stacks on top of the
+  /// whole-property tier and is IGNORED for a room, where "villas need fifteen
+  /// photos" would recreate the problem the tier exists to solve.
+  PhotoTier ruleFor(String? accommodationType, String? category) {
+    final tier = byAccommodation[(accommodationType ?? '').toLowerCase()];
+    if (tier == null) {
+      return PhotoTier(minimum: minimumFor(category), required: required);
+    }
+    final isRoom = tier.minimum < minimum;
+    final adminMin = (category == null || category.isEmpty)
+        ? 0
+        : (byCategory[category] ?? 0);
+    return PhotoTier(
+      minimum: !isRoom && adminMin > 0
+          ? (adminMin > tier.minimum ? adminMin : tier.minimum)
+          : tier.minimum,
+      required: tier.required,
+    );
+  }
 
   /// The minimum for THIS category — its own rule when the admin set one,
   /// the platform default otherwise. Same resolution as the web wizard.
@@ -236,6 +268,20 @@ class PhotoRules {
         if (min > 0) byCat[k.toString()] = min;
       });
     }
+    final byAccom = <String, PhotoTier>{};
+    final rawAccom = j['byAccommodation'];
+    if (rawAccom is Map) {
+      rawAccom.forEach((k, v) {
+        if (v is Map) {
+          byAccom[k.toString()] = PhotoTier(
+            minimum: _int(v['minimum']),
+            required: (v['required'] is List)
+                ? (v['required'] as List).map((e) => e.toString()).toList()
+                : const [],
+          );
+        }
+      });
+    }
     return PhotoRules(
       minimum: _int(j['minimum']),
       recommended: _int(j['recommended']),
@@ -245,8 +291,16 @@ class PhotoRules {
           : const [],
       videoMaxMinutes: _int(j['videoMaxMinutes']),
       byCategory: byCat,
+      byAccommodation: byAccom,
     );
   }
+}
+
+/// One photo rule: how many, and which categories must be tagged.
+class PhotoTier {
+  const PhotoTier({required this.minimum, required this.required});
+  final int minimum;
+  final List<String> required;
 }
 
 class PricingRules {
