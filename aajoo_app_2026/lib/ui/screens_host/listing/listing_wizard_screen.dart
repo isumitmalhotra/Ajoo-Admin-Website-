@@ -585,25 +585,12 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
           ],
         ),
 
-        ListingSection(
-          title: 'Ownership',
-          children: [
-            Text('Do you own this property?',
-                style: inter(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                    color: kInk)),
-            const SizedBox(height: 8),
-            SingleChoiceRow(
-              options: const [
-                Option(value: 'yes', label: 'Yes'),
-                Option(value: 'no', label: 'No'),
-              ],
-              value: c.f['is_owner'] == false ? 'no' : 'yes',
-              onSelect: (v) => c.setF('is_owner', v == 'yes'),
-            ),
-          ],
-        ),
+        // "Do you own this property?" stood here — the same question as "Who
+        // is listing this property?" at the top of this step, asked a second
+        // time in different words, with nothing reconciling the two: a host
+        // could answer Owner up there and No down here and the listing carried
+        // both. host_type is the answer that means something, so is_owner is
+        // derived from it on save. Removed on web the same day.
 
         ListingSection(
           title: 'Property status',
@@ -1274,6 +1261,19 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
               },
               onType: (v) => c.setP5('ownership_doc_type', v),
             ),
+            // The owner's authorisation, for a listing put up by a MANAGER.
+            //
+            // Step 1 has asked a manager to CONFIRM they hold one since the
+            // wizard shipped and blocked them if they said no, then never
+            // asked for the document. The server now REFUSES a manager's
+            // submission without it, so without this field a manager listing
+            // from their phone would be blocked with no way to comply.
+            if (c.f['host_type'] == 'manager')
+              _DocumentField(
+                label: "Owner's written authorisation",
+                value: c.p5['authorization_doc']?.toString(),
+                onPick: (file) => c.uploadDocument(file, 'authorization_doc'),
+              ),
           ],
         ),
         // The account that actually receives money lives on the host's

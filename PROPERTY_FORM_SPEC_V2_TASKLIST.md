@@ -87,6 +87,9 @@ about it.
 |---|---|---|
 | ~~C5~~ | Backend validation of `min ≤ ideal ≤ displayed` | **Already existed at audit time — my audit was wrong.** `utils/pricingGrid.validateGrid` is called by `listingEngine.controller.js:894` AND `adminProperty.controller.js:683`. I reported it missing because I searched the controller for the arithmetic instead of for the helper that holds it. |
 | ~~C6~~ | Response time required | Already required — `listingEngine.controller` rejects a save without it, from the schema's own list. |
+| ~~C4~~ | "Advanced limits — saved, but not applied yet" | **Done 10 Sep.** The label was true when written, over three thresholds the engine ignored — those were removed on 9 Sep, and both settings still inside are live (the expiry drives `negotiationExpiry`, the attempt cap is passed to `claimNextRound`). It had become the lie it was written to prevent. Now "Offer timing & attempts". |
+| ~~C10~~ | Duplicate ownership question | **Done 10 Sep, web AND app.** `is_owner` is derived from `host_type` on save and on draft load; the second question is gone from both wizards. Nothing had reconciled them: a host could answer Owner at the top and No further down, and the listing carried both. |
+| ~~C11~~ | Manager → authorisation document | **Done 10 Sep, web AND app.** `pvf_authorization_doc` on the verification row; a manager's submission is REFUSED without it — a hard gate, not a score weighting, because the 70% readiness bar is a completeness heuristic a manager can clear with everything else filled in. The checklist names it, and only for managers. The unused `pf_authorization_doc` write on step 1 was removed so the document has one home. Migration live. |
 | ~~C3~~ | Check-in default 02:01 → 14:00 | **Code was already right**: `DEFAULT_CHECKIN_TIME = "14:00"` in `utils/cancellationPolicy.js`, and NULL falls back to it. Only the DATA was stale, and only barely — **1 live listing** carries 02:01 (the rest: two at 14:00, two NULL, one at 12:00). A one-row fix, not a code change. |
 
 ### P0 — still open
@@ -94,7 +97,6 @@ about it.
 | # | Task | Status |
 |---|---|---|
 | **C1** | **Set `FIELD_ENCRYPTION_KEY` on Render** | **Open, and I cannot verify it from here.** `/health/env` deliberately answers `{ready:true}` and nothing else in public — the per-variable detail was closed off under BE-15, so the only way to know is the Render dashboard. Hosts cannot save payout bank details until it is set (`hostV2.controller.js:652` refuses and logs). |
-| **C4** | **Remove "Advanced limits — saved, but not applied yet"** | **Open, and now actively false.** Still at `ListProperty.tsx:2144`. The engine reads min/ideal — and, since 9 Sep, the weekend pair too — so the form tells the host the opposite of the truth. |
 
 ### P1 — still open
 
@@ -104,8 +106,6 @@ about it.
 | C7 | Same-day booking ON **and** minimum notice ≥ 24 h | Open. No conflict check. |
 | C8 | Max stay "unlimited" | Open **in the UI only** — the storage is already right. NULL is unlimited and 5 of the 6 live listings store NULL; the form just offers no way to say so deliberately. |
 | C9 | Tiered photo minimum (5 room / 10 whole property) | Open. `PHOTO_RULES.minimum = 10` flat, and Exterior is required of every listing. |
-| C10 | Duplicate ownership question | Open, **confirmed**: `host_type` (Owner/Manager) at `ListProperty.tsx:1245` and "Do you own this property?" at `:1444`. Two questions, one answer. |
-| C11 | Manager → authorisation document at verification | Open. The form promises it ("You'll be asked to upload an authorisation letter during verification") and nothing collects it. |
 | C12 | Nearby: drop non-operational places | Open. `business_status` appears nowhere in the Places code. |
 | C13 | Nearby: mark manual entries "Host provided" | Open. |
 | C14 | Cross-field warning: "2BHK but 1 bedroom" | Open. |

@@ -72,6 +72,9 @@ class ListingWizardController extends GetxController {
   // ── Step 1 — foundation ───────────────────────────────────────────────────
   final RxMap<String, dynamic> f = <String, dynamic>{
     'host_type': 'owner',
+    // Derived from host_type on save — the duplicate question that used to
+    // set it directly is gone. Kept in the initial map so an owner listing
+    // still posts a value on step 1.
     'is_owner': true,
     'country': 'India',
     'property_status': 'ready',
@@ -949,6 +952,12 @@ class ListingWizardController extends GetxController {
             // loaded — or nothing on a new listing — and leave the capacity
             // guests search on stale.
             'total_guests': derivedTotalGuests,
+            // DERIVED, not asked. "Do you own this property?" used to sit
+            // further down this step asking the same thing as "Who is listing
+            // this property?" at the top, and nothing reconciled them — a host
+            // could answer Owner up there and No down here and the listing
+            // carried both. host_type is the answer that means something.
+            'is_owner': f['host_type'] != 'manager',
             if (propertyId.value != null) 'property_id': propertyId.value,
             if (seasonalMonths.isNotEmpty)
               'seasonal_months': seasonalMonths.toList(),
