@@ -510,16 +510,20 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Their price is ${rupees(quoted)}/night',
+            'The best we can do is ${rupees(quoted)}/night',
             textAlign: TextAlign.center,
             style: fraunces(
                 fontSize: 17, fontWeight: FontWeight.w700, color: skin.ink),
           ),
           const SizedBox(height: 6),
+          // The server's own sentence, not a second version written here. One
+          // wording for this sheet, the website and the negotiation thread, so
+          // a guest who sees it twice sees the same words both times.
           Text(
-            "That's this host's rate for the nights you picked. Take it and "
-            "it's yours — or counter, and we'll put your price to them "
-            'directly.',
+            o.message ??
+                'Thank you for the offer — it sits a little under what these '
+                    'dates go for. Say yes and the stay is yours; or name '
+                    'another price and we will take it straight to the host.',
             textAlign: TextAlign.center,
             style: inter(fontSize: 13, color: skin.muted, height: 1.45),
           ),
