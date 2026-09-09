@@ -499,11 +499,35 @@ class _PropertyPageState extends State<PropertyPage>
     return false;
   }
 
+  /// The host's arrival window — how much notice they need, how far ahead they
+  /// take bookings, whether today is allowed. Null on a listing that predates
+  /// the wizard, which means no restriction.
+  CheckInWindow? _checkInWindow;
+
+  /// The earliest arrival this host accepts, never earlier than today.
+  DateTime get _firstCheckIn {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final e = _checkInWindow?.earliest;
+    return (e != null && e.isAfter(today)) ? e : today;
+  }
+
+  /// The latest arrival offered: the platform's year, or the host's own cap
+  /// when it is tighter. A host who takes bookings 30 days out must not have
+  /// the picker offer 365.
+  DateTime get _lastCheckIn {
+    final platform = DateTime.now().add(const Duration(days: 365));
+    final l = _checkInWindow?.latest;
+    return (l != null && l.isBefore(platform)) ? l : platform;
+  }
+
   Future<void> _loadAvailability() async {
-    final ranges = await _bookingSvc.getBookedRanges(widget.id);
+    final availability = await _bookingSvc.getAvailability(widget.id);
+    final ranges = availability.ranges;
     if (!mounted) return;
     setState(() {
       _bookedRanges = ranges;
+      _checkInWindow = availability.window;
       // A deal prefill (_applyDealDates) lands before this response and enables
       // Book with no availability check at all — the dates were agreed days ago
       // and the host may have blocked or sold them since. Re-check the moment
@@ -1045,9 +1069,15 @@ class _PropertyPageState extends State<PropertyPage>
                 onTap: _dealFixesDates ? null : () async {
                   final DateTime? picked = await showDatePicker(
                     context: context,
-                    initialDate: _safeInitialDate(selectedDate, DateTime.now()),
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                    // Bounded by what the HOST accepts, not just by the
+                    // platform's year. Their notice period, their ceiling on
+                    // how far ahead they take bookings, and their refusal of
+                    // same-day arrivals were all collected by the listing
+                    // wizard and read by nothing — so the picker offered dates
+                    // the booking call was always going to refuse.
+                    initialDate: _safeInitialDate(selectedDate, _firstCheckIn),
+                    firstDate: _firstCheckIn,
+                    lastDate: _lastCheckIn,
                     selectableDayPredicate: (d) => !_isBookedDay(d),
                     builder: (context, child) {
                       return Theme(
@@ -1167,6 +1197,43 @@ class _PropertyPageState extends State<PropertyPage>
                     ? null
                     : const Icon(Icons.arrow_forward_ios, size: 16),
               ),
+              // The host's own arrival rule, in their terms.
+              //
+              // The picker already refuses these dates, but a date that is
+              // simply absent teaches a guest nothing — they hunt for one that
+              // works and conclude the listing is broken. Same sentence the
+              // website shows under its calendar, from the same server field,
+              // so the two platforms cannot describe one rule two ways.
+              if (!_dealFixesDates &&
+                  (_checkInWindow?.reason != null ||
+                      (_checkInWindow?.maxAdvanceDays ?? 0) > 0))
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(top: 2),
+                        child: Icon(Icons.schedule_rounded,
+                            size: 14, color: kMuted),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          [
+                            if (_checkInWindow?.reason != null)
+                              _checkInWindow!.reason!,
+                            if ((_checkInWindow?.maxAdvanceDays ?? 0) > 0)
+                              'This host takes bookings up to '
+                                  '${_checkInWindow!.maxAdvanceDays} days ahead.',
+                          ].join(' '),
+                          style:
+                              inter(fontSize: 12, color: kMuted, height: 1.35),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               // Say why the two rows above stopped responding, and offer the
               // way out. A control that silently ignores a tap reads as broken.
               if (_dealFixesDates)

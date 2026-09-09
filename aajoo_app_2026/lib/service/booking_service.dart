@@ -11,8 +11,46 @@ import 'package:rent_home/models/single_property_response.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import '../utils/service_log.dart';
 import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
-
+
+
 import 'package:rent_home/utils/app_log.dart';
+/// When this host will take an arrival, and why.
+///
+/// The listing wizard has always asked how much notice a host needs, how far
+/// ahead they take bookings and whether same-day is allowed — and until now
+/// nothing read any of the three. The server computes the window from those
+/// answers so the picker can stop offering dates the booking call would refuse,
+/// and say why instead of failing at the end.
+///
+/// Null for a listing with no rules row, which is every listing that predates
+/// the wizard. Callers must read that as "no restriction".
+class CheckInWindow {
+  const CheckInWindow({this.earliest, this.latest, this.reason, this.maxAdvanceDays = 0});
+
+  /// Earliest arrival the host accepts — notice period and same-day rule
+  /// already applied by the server, so this is one date rather than two rules.
+  final DateTime? earliest;
+
+  /// Latest arrival, when the host capped how far ahead they take bookings.
+  final DateTime? latest;
+
+  /// The host's rule in words, for a guest wondering why a date is greyed out.
+  final String? reason;
+
+  final int maxAdvanceDays;
+}
+
+/// Booked nights AND the host's arrival window, from one call.
+///
+/// Returned together because they are asked together: a date is offerable only
+/// if it is neither taken nor outside what the host accepts, and two calls
+/// would let those two answers arrive apart and disagree on screen.
+class PropertyAvailability {
+  const PropertyAvailability({required this.ranges, this.window});
+  final List<DateTimeRange> ranges;
+  final CheckInWindow? window;
+}
+
 class BookingService {
   final Dio _dio = Dio(
     BaseOptions(
@@ -80,13 +118,18 @@ class BookingService {
   // Booked (unavailable) date ranges for a property → [{from, to}] as DateTime
   // (parsed from the backend's DD-MM-YYYY). Public — no auth needed. Used to grey
   // out taken nights in the date picker (parity with web's availability calendar).
-  Future<List<DateTimeRange>> getBookedRanges(int propertyId) async {
+  /// Kept for callers that only care which nights are taken.
+  Future<List<DateTimeRange>> getBookedRanges(int propertyId) async =>
+      (await getAvailability(propertyId)).ranges;
+
+  /// Booked nights and the host's arrival window, from one request.
+  Future<PropertyAvailability> getAvailability(int propertyId) async {
     final url = '$baseUrl/booking/property-availability';
     try {
       final response = await _dio.post(url, data: {"propertyId": propertyId});
       final data = response.data is Map ? response.data['data'] : null;
       final ranges = (data is Map ? data['bookedRanges'] : null) ?? [];
-      if (ranges is! List) return [];
+      if (ranges is! List) return const PropertyAvailability(ranges: []);
       DateTime? parse(String? s) {
         if (s == null || s.isEmpty) return null;
         final p = s.split('-');
@@ -115,10 +158,25 @@ class BookingService {
         }
         out.add(DateTimeRange(start: from, end: to));
       }
-      return out;
+
+      // The host's own window. Absent on every listing that predates the
+      // wizard, and absent is not an error — it means "no restriction".
+      CheckInWindow? window;
+      final w = data is Map ? data['checkInWindow'] : null;
+      if (w is Map) {
+        window = CheckInWindow(
+          earliest: parse(w['earliest']?.toString()),
+          latest: parse(w['latest']?.toString()),
+          reason: (w['reason']?.toString().isNotEmpty ?? false)
+              ? w['reason'].toString()
+              : null,
+          maxAdvanceDays: int.tryParse('${w['maxAdvanceDays'] ?? 0}') ?? 0,
+        );
+      }
+      return PropertyAvailability(ranges: out, window: window);
     } catch (e) {
       logServiceError('booking_service:114', e);
-      return [];
+      return const PropertyAvailability(ranges: []);
     }
   }
 
