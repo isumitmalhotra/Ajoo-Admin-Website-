@@ -21,6 +21,7 @@ import 'package:rent_home/utils/money.dart';
 import '../../../utils/email_validation.dart';
 import '../../../models/legal_document.dart';
 import '../../../service/legal_service.dart';
+import 'package:rent_home/service/geocode_service.dart';
 
 /// The seven declarations. All must be true before a listing can be submitted.
 const List<MapEntry<String, String>> kListingDeclarations = [
@@ -775,6 +776,95 @@ class ListingWizardController extends GetxController {
   /// exactly this in utils/pricingGrid; this copy exists so the host is told
   /// which field is wrong beside the field, rather than by one message about
   /// whichever problem the server reached first.
+  /// Where the PIN says the property is, in words.
+  ///
+  /// C15. The picker fills the address block from the pin, and that part is
+  /// solid. What it cannot stop is a host correcting the city afterwards to
+  /// the one they think of the place as being in. Then the listing says one
+  /// place and the map shows another — and every distance, every "stays near
+  /// X" search it answers, and the directions a guest actually follows all
+  /// come from the map.
+  ///
+  /// Resolved from the coordinates rather than remembered from the pick, so it
+  /// still works on a draft reopened days later: the pick is long gone by
+  /// then and the disagreement is not.
+  final pinPlace = Rxn<PickedAddress>();
+
+  /// The last coordinates looked up, so panning does not re-request the same
+  /// point and a redraw does not fire a network call.
+  String _pinLookedUp = '';
+
+  Future<void> refreshPinPlace() async {
+    final lat = double.tryParse('${f['latitude'] ?? ''}');
+    final lng = double.tryParse('${f['longitude'] ?? ''}');
+    if (lat == null || lng == null || (lat == 0 && lng == 0)) {
+      pinPlace.value = null;
+      _pinLookedUp = '';
+      return;
+    }
+    final key = '$lat,$lng';
+    if (key == _pinLookedUp) return;
+    _pinLookedUp = key;
+    // Never throws; a failed lookup costs a warning, never a save.
+    pinPlace.value = await GeocodeService.instance.reverse(lat, lng);
+  }
+
+  /// What the pin and the typed address disagree about, if anything.
+  ///
+  /// A WARNING. A host who lets a village near a larger town, and calls it by
+  /// the town, is not making a mistake — they are naming it the way a guest
+  /// would search for it.
+  String? get addressMismatch {
+    final p = pinPlace.value;
+    if (p == null) return null;
+    bool same(String? a, String? b) =>
+        (a ?? '').trim().toLowerCase() == (b ?? '').trim().toLowerCase();
+    final typedState = f['state']?.toString() ?? '';
+    final typedCity = f['city']?.toString() ?? '';
+    if (p.state.isNotEmpty && typedState.isNotEmpty && !same(p.state, typedState)) {
+      return 'Your pin is in ${p.state} but you have typed $typedState. '
+          'Guests search, and travel, by the pin.';
+    }
+    if (p.city.isNotEmpty && typedCity.isNotEmpty && !same(p.city, typedCity)) {
+      return 'Your pin is in ${p.city} but you have typed $typedCity. '
+          'Guests search, and travel, by the pin.';
+    }
+    return null;
+  }
+
+  /// "2 BHK" against one bedroom, and anything like it.
+  ///
+  /// C14. The Apartment Type on step 2 states a bedroom count in its own name
+  /// — a 2 BHK has two — and step 1 asks for the bedroom count separately, on
+  /// a different screen. Nothing compared them, so a listing could advertise a
+  /// 2 BHK and sleep a party in one room. Whichever number is wrong, the guest
+  /// finds out on arrival, and a host arguing "it says 2 BHK" against a
+  /// booking made for one bedroom is an argument the platform caused.
+  ///
+  /// Studio is the same fault with a different number: it means no separate
+  /// bedroom at all, so two of them is not a studio.
+  ///
+  /// A WARNING, returned for display rather than added to fieldErrors. Neither
+  /// number is knowably the wrong one, and a host who converted a bedroom, or
+  /// lets two rooms of a 3 BHK, has a real listing a block would refuse.
+  String? get bhkMismatch {
+    final type = (attrs['apartment_type'] ?? '').toString();
+    final bedrooms = int.tryParse('${f['bedrooms'] ?? ''}');
+    if (type.isEmpty || bedrooms == null || bedrooms < 0) return null;
+    if (RegExp('studio', caseSensitive: false).hasMatch(type)) {
+      return bedrooms > 1
+          ? 'A Studio has no separate bedroom, but you have entered '
+              '$bedrooms bedrooms.'
+          : null;
+    }
+    final m = RegExp('^([0-9]+)[ ]*BHK', caseSensitive: false).firstMatch(type);
+    final bhk = m == null ? 0 : int.parse(m.group(1)!);
+    if (bhk <= 0) return null; // Penthouse, Duplex — no count in the name
+    if (bhk == bedrooms) return null;
+    return 'You have chosen $type but entered $bedrooms '
+        'bedroom${bedrooms == 1 ? '' : 's'} on the first step. Guests read both.';
+  }
+
   Map<String, String> validateStep4() {
     final errs = <String, String>{};
     final rules = schema.value?.pricingRules;

@@ -96,6 +96,8 @@ about it.
 | ~~C8~~ | Max stay "unlimited" stores NULL | **Done 10 Sep, web AND app.** Storage was always right (`asInt("")` is null; booking treats null and 0 alike as unlimited, and 5 of 6 live listings store NULL). Only the forms were silent — now placeholder "No limit" plus a line saying what blank does. |
 | ~~C12~~ | Nearby: drop non-operational places | **Done 10 Sep.** Google keeps closed businesses in nearbysearch and they rank WELL — a restaurant shut last year keeps every rating it earned, so the prominence sort actively promoted it over its replacement. Filtered in both passes. Absent `business_status` means OPERATIONAL, so a missing value must pass or the section empties. |
 | ~~C13~~ | Nearby: mark manual entries | **Done 10 Sep, web AND app.** `pnp_source` has recorded the difference since the table was built and the guest was never shown it. Typed entries now read "· Host provided". "manual" is the cautious default everywhere. |
+| ~~C14~~ | "2BHK but 1 bedroom" warning | **Done 10 Sep, web AND app.** Apartment Type names a bedroom count; step 1 asks for one separately, on another screen. Studio covered too; Penthouse/Duplex left alone (no count in the name). A warning — neither number is knowably the wrong one. |
+| ~~C15~~ | Address vs pin disagreement | **Done 10 Sep, web AND app.** Resolved from the COORDINATES, not remembered from the pick, so it survives a draft reopened days later. The picker already replaced the whole address block on a pin *move*; this catches a host typing over the city afterwards. |
 | ~~C3~~ | Check-in default 02:01 → 14:00 | **Code was already right**: `DEFAULT_CHECKIN_TIME = "14:00"` in `utils/cancellationPolicy.js`, and NULL falls back to it. Only the DATA was stale, and only barely — **1 live listing** carries 02:01 (the rest: two at 14:00, two NULL, one at 12:00). A one-row fix, not a code change. |
 
 ### P0 — still open
@@ -108,8 +110,6 @@ about it.
 
 | # | Task | Status |
 |---|---|---|
-| C14 | Cross-field warning: "2BHK but 1 bedroom" | Open. |
-| C15 | Address vs pin disagreement warning | Open. |
 
 ### P2 — still open
 

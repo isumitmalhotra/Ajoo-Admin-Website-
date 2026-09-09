@@ -560,6 +560,15 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
                   stateError: c.fieldErrors['state'],
                   cityError: c.fieldErrors['city'],
                 )),
+            // C15 — the address and the map are describing two places.
+            //
+            // Every distance on the listing, every "stays near X" search it
+            // answers, and the directions a guest actually follows come from
+            // the PIN. The typed address is what they read before they book.
+            // When those disagree the guest finds out on the day.
+            Obx(() => c.addressMismatch == null
+                ? const SizedBox.shrink()
+                : _warn(c.addressMismatch!)),
             const SizedBox(height: 14),
             _text('district', 'District'),
             _text('village', 'Village (optional)'),
@@ -715,6 +724,11 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             children: [
               for (final field in flow.fields)
                 _field(field, c.attrs, c.setAttr),
+              // C14 — the Apartment Type names a bedroom count and step 1 asks
+              // for one separately, on another screen. Nothing compared them,
+              // so a listing could advertise a 2 BHK and sleep a party in one
+              // room.
+              if (c.bhkMismatch != null) _warn(c.bhkMismatch!),
             ],
           )
         else
@@ -1445,6 +1459,35 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
         child: Text(msg, style: inter(fontSize: 11.5, color: kDanger)),
       );
 
+  /// A cross-field contradiction the host should look at, not be stopped by.
+  ///
+  /// Amber rather than red: nothing here is invalid, two answers simply
+  /// disagree and only the host knows which one is wrong.
+  Widget _warn(String text) => Container(
+        margin: const EdgeInsets.only(top: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF6E5),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.warning_amber_rounded, size: 15, color: kClay),
+            const SizedBox(width: 8),
+            // Expanded, or a 320dp screen breaks the sentence mid-word.
+            Expanded(
+              child: Text(text,
+                  style: inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: kClay,
+                      height: 1.35)),
+            ),
+          ],
+        ),
+      );
+
   Widget _note(String text) => Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -1607,6 +1650,10 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
 
     c.f['latitude'] = a.lat.toString();
     c.f['longitude'] = a.lng.toString();
+    // What the pin itself resolves to, kept so the address block can say when
+    // the two stop agreeing. Fire-and-forget: a failed lookup costs a warning,
+    // never a save.
+    c.refreshPinPlace();
     c.f['state'] = take(a.state, currentState);
     c.f['city'] = take(a.city, currentCity);
     c.f['district'] = take(a.district, (c.f['district'] ?? '').toString());
