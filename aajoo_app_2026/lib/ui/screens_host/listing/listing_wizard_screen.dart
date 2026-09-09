@@ -986,7 +986,13 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
                 numeric: true,
                 help: 'Held against damage, commonly about one night\'s rate. '
                     'Leave blank for none.'),
-            _p4Text('extra_guest_fee', 'Extra guest fee (₹)', numeric: true),
+            // 'extra_guest_price', not 'extra_guest_fee'. Same fault again:
+            // the save endpoint reads b.extra_guest_price and the draft
+            // loader strips 'ppr_' from ppr_extra_guest_price, so both
+            // directions wanted this name and the form used another.
+            // ppr_extra_guest_price was NULL on every listing in the
+            // database — the charge has never once been saved from the app.
+            _p4Text('extra_guest_price', 'Extra guest fee (₹)', numeric: true),
           ],
         ),
         ListingSection(
@@ -1075,8 +1081,28 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             if (b.selfCheckinMethods.isNotEmpty)
               _p4Choice('self_checkin_method', 'Self check-in',
                   b.selfCheckinMethods),
-            _p4Text('min_nights', 'Minimum nights', numeric: true),
-            _p4Text('max_nights', 'Maximum nights', numeric: true),
+            // 'min_stay_nights' / 'max_stay_nights', not 'min_nights' /
+            // 'max_nights' — the THIRD instance of this fault on this one
+            // step, after response_time_hours above and the pricing prefix in
+            // the controller. The keys are the contract in both directions:
+            // the save endpoint reads b.min_stay_nights, and the draft loader
+            // strips 'pbr_' from pbr_min_stay_nights to get the same name. So
+            // under the old key the host's answer was posted and dropped, the
+            // field came back empty every time they reopened the listing —
+            // "not updating even after updating multiple times" — and, because
+            // nothing was ever stored, booking had no limit to enforce and
+            // took a one-night stay on a property with a three-night minimum.
+            _p4Text('min_stay_nights', 'Minimum nights', numeric: true),
+            _p4Text('max_stay_nights', 'Maximum nights', numeric: true),
+            // Absent entirely until now. The website has had both since the
+            // wizard shipped; the app never asked, so a host who listed from
+            // their phone had no way to say when guests may arrive or must
+            // leave, and every screen that shows those times — the app's own
+            // Property Details among them — displayed a dash for ever.
+            _p4Text('checkin_time', 'Check-in time',
+                help: 'When guests may arrive, e.g. 14:00'),
+            _p4Text('checkout_time', 'Check-out time',
+                help: 'When guests must leave, e.g. 11:00'),
           ],
         ),
         ListingSection(

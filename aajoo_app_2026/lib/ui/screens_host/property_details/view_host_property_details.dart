@@ -10,6 +10,7 @@ import 'package:rent_home/data/models/host_properties_reponse.dart';
 import 'package:rent_home/widgets/app_ui.dart' show withDividers, InfoRow;
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/ui/screens_host/listing/listing_wizard_screen.dart';
+import 'package:rent_home/utils/safe_bottom.dart';
 
 class HostPropertyDetails extends StatefulWidget {
   final Property property;
@@ -88,7 +89,13 @@ class _HostPropertyDetailsState extends State<HostPropertyDetails> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+        // The Edit and Delete buttons are the LAST thing in this scroll view,
+        // so the bottom padding is the only thing holding them clear of the
+        // device's navigation. A fixed 28 is right on a phone with no inset
+        // and wrong on every phone that has one — the buttons sat half under
+        // the three-button bar, which is where this was reported from.
+        // Fourth screen with this exact shape; see utils/safe_bottom.dart.
+        padding: safeBottomInsets(context, left: 16, top: 16, right: 16, bottom: 28),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
