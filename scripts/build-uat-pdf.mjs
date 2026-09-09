@@ -131,6 +131,27 @@ const page = `<!doctype html>
   blockquote p { margin: 0 0 6px; }
   blockquote p:last-child { margin-bottom: 0; }
 
+  /* ---- screenshots -------------------------------------------------- */
+  /* A screenshot is evidence, so it is framed like one: a hairline border
+     so the page edge is visible against white, and never split across a
+     page break, because half a screen proves nothing. */
+  img {
+    display: block; max-width: 100%; height: auto; margin: 10px auto 4px;
+    border: 1px solid var(--line); border-radius: 5px;
+    page-break-inside: avoid;
+  }
+  /* Markdown puts a lone image in its own paragraph; the alt text follows
+     as the caption. */
+  p > img + em, p > em:only-child {
+    display: block; text-align: center;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.2pt;
+    color: var(--muted); font-style: normal; margin-top: 2px;
+  }
+  p:has(> img) { page-break-inside: avoid; margin: 14px 0 18px; }
+
+  /* The cover meta and the first paragraph of the body were touching. */
+  .cover { margin-bottom: 26px; }
+
   hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
 
   /* Keep a section heading with the text that follows it. */
@@ -140,11 +161,11 @@ const page = `<!doctype html>
   <section class="cover">
     <div class="rule"></div>
     <h1>${title}</h1>
-    <p class="sub">Developer setup for the controlled UAT run — every record section 4 of the Execution Pack asks for, the defects found while preparing them, and what remains open.</p>
+    <p class="sub">${process.env.PDF_SUBTITLE || "Developer setup for the controlled UAT run — every record section 4 of the Execution Pack asks for, the defects found while preparing them, and what remains open."}</p>
     <div class="meta">
-      <strong>Aajoo Homes &mdash; BotPenguin controlled UAT</strong><br>
-      Prepared 5 September 2026 by the Zyphex Tech development team<br>
-      Verified against the live development backend
+      <strong>${process.env.PDF_EYEBROW || "Aajoo Homes &mdash; BotPenguin controlled UAT"}</strong><br>
+      ${process.env.PDF_PREPARED || "Prepared 5 September 2026 by the Zyphex Tech development team"}<br>
+      ${process.env.PDF_VERIFIED || "Verified against the live development backend"}
     </div>
   </section>
   ${html}
@@ -164,7 +185,7 @@ await tab.goto("file:///" + htmlPath.replace(/\\/g, "/"), { waitUntil: "networki
 const foot = `
   <div style="width:100%;font-family:'Segoe UI',Calibri,sans-serif;font-size:7.5pt;
               color:#8A93A2;padding:0 17mm;display:flex;justify-content:space-between;">
-    <span>Aajoo Homes &mdash; BotPenguin UAT: developer setup</span>
+    <span>${process.env.PDF_FOOTER || "Aajoo Homes &mdash; BotPenguin UAT: developer setup"}</span>
     <span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
   </div>`;
 

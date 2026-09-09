@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Negotiation Engine — Every Journey, Both Sides</title>
+<style>
+  @page { size: A4; margin: 20mm 17mm 22mm; }
+
+  :root {
+    --navy: #1B2447;
+    --teal: #0F766E;
+    --ink:  #1F2937;
+    --muted:#5B6472;
+    --line: #D9DEE7;
+    --soft: #F4F6F9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: #fff;
+    /* Cambria before Georgia deliberately: Georgia ships OLD-STYLE figures, so
+       "six P0s" reads as "six Pos" and every number sits at a different
+       height. This document is full of IDs and money. Cambria has lining
+       figures and prints just as well. */
+    font-family: Cambria, "Palatino Linotype", Georgia, "Times New Roman", serif;
+    font-variant-numeric: lining-nums;
+    font-size: 10.4pt;
+    line-height: 1.58;
+    color: var(--ink);
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---- cover ------------------------------------------------------- */
+  .cover { page-break-after: always; padding-top: 58mm; }
+  .cover .rule { width: 54px; height: 4px; background: var(--teal); margin-bottom: 22px; }
+  .cover h1 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    font-size: 27pt; line-height: 1.2; color: var(--navy);
+    margin: 0 0 16px; font-weight: 600; letter-spacing: -0.4px;
+  }
+  .cover .sub { font-size: 11.5pt; color: var(--muted); margin: 0 0 40px; max-width: 118mm; }
+  .cover .meta {
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 9pt;
+    color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px;
+  }
+  .cover .meta strong { color: var(--navy); font-weight: 600; }
+
+  /* ---- headings ---------------------------------------------------- */
+  h2, h3, h4 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    color: var(--navy); font-weight: 600; page-break-after: avoid;
+  }
+  h2 {
+    font-size: 15pt; margin: 26px 0 12px; padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--line); letter-spacing: -0.2px;
+  }
+  h3 {
+    font-size: 11.4pt; margin: 18px 0 7px; color: var(--teal);
+    letter-spacing: .1px;
+  }
+  h4 { font-size: 10.6pt; margin: 14px 0 6px; }
+
+  p { margin: 0 0 10px; orphans: 3; widows: 3; }
+
+  /* ---- lists ------------------------------------------------------- */
+  ul, ol { margin: 0 0 11px; padding-left: 20px; }
+  li { margin-bottom: 5px; }
+  li > ul, li > ol { margin-top: 5px; }
+
+  /* ---- emphasis & code --------------------------------------------- */
+  strong { color: var(--navy); font-weight: 700; }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 8.7pt; background: var(--soft);
+    border: 1px solid var(--line); border-radius: 3px;
+    padding: 0.5px 4px; color: #33405A;
+    /* long identifiers must not push the page sideways */
+    word-break: break-word;
+  }
+  pre { background: var(--soft); border: 1px solid var(--line); border-radius: 5px;
+        padding: 10px 12px; overflow-x: auto; page-break-inside: avoid; }
+  pre code { border: 0; background: none; padding: 0; font-size: 8.6pt; }
+
+  /* ---- tables ------------------------------------------------------ */
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 16px;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.7pt;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }   /* repeat header across pages */
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  th {
+    background: var(--navy); color: #fff; text-align: left; font-weight: 600;
+    padding: 7px 9px; border: 1px solid var(--navy); line-height: 1.35;
+  }
+  td {
+    padding: 6px 9px; border: 1px solid var(--line); vertical-align: top;
+    line-height: 1.45;
+  }
+  tbody tr:nth-child(even) td { background: #FAFBFD; }
+  td code { font-size: 8.1pt; }
+
+  /* ---- callouts ---------------------------------------------------- */
+  blockquote {
+    margin: 14px 0; padding: 10px 14px;
+    background: #F2F8F7; border-left: 3px solid var(--teal);
+    page-break-inside: avoid;
+  }
+  blockquote p { margin: 0 0 6px; }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  /* ---- screenshots -------------------------------------------------- */
+  /* A screenshot is evidence, so it is framed like one: a hairline border
+     so the page edge is visible against white, and never split across a
+     page break, because half a screen proves nothing. */
+  img {
+    display: block; max-width: 100%; height: auto; margin: 10px auto 4px;
+    border: 1px solid var(--line); border-radius: 5px;
+    page-break-inside: avoid;
+  }
+  /* Markdown puts a lone image in its own paragraph; the alt text follows
+     as the caption. */
+  p > img + em, p > em:only-child {
+    display: block; text-align: center;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.2pt;
+    color: var(--muted); font-style: normal; margin-top: 2px;
+  }
+  p:has(> img) { page-break-inside: avoid; margin: 14px 0 18px; }
+
+  /* The cover meta and the first paragraph of the body were touching. */
+  .cover { margin-bottom: 26px; }
+
+  hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+
+  /* Keep a section heading with the text that follows it. */
+  h2 + p, h3 + p, h2 + table, h3 + table, h2 + ul, h3 + ul { page-break-before: avoid; }
+</style></head>
+<body>
+  <section class="cover">
+    <div class="rule"></div>
+    <h1>Negotiation Engine — Every Journey, Both Sides</h1>
+    <p class="sub">Every scenario in the negotiation engine, photographed on the live site — what the guest sees and what the host sees, side by side.</p>
+    <div class="meta">
+      <strong>Aajoo Homes &mdash; Negotiation engine</strong><br>
+      Prepared 9 September 2026 by the Zyphex Tech development team<br>
+      Every screen photographed on www.aajoohomes.com, driving the live flow
+    </div>
+  </section>
+  <p>This document walks the complete negotiation engine as it now runs on
+<strong><a href="http://www.aajoohomes.com">www.aajoohomes.com</a></strong>. Every screen in it is a photograph of the live site,
+taken while driving the real flow against a real listing with a real guest
+account and a real host account — nothing here is a mock-up or a design comp.</p>
+<p>Each scenario shows <strong>what the guest sees</strong> and, where the host is involved,
+<strong>what the host sees</strong> for the same moment.</p>
+<h2>1. The three prices</h2>
+<p>Every listing carries three prices. The host sets them once, in Step 4 of the
+listing wizard.</p>
+<table>
+<thead>
+<tr>
+<th>Price</th>
+<th>Who sees it</th>
+<th>What it means</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Maximum</strong> (list price)</td>
+<td><strong>The guest</strong> — it is the price on the page</td>
+<td>What the stay costs without negotiating</td>
+</tr>
+<tr>
+<td><strong>Ideal</strong></td>
+<td>Nobody outside the platform</td>
+<td>The host&#39;s target. An offer at or above it is accepted with no host involvement</td>
+</tr>
+<tr>
+<td><strong>Minimum</strong></td>
+<td><strong>Nobody. Ever.</strong></td>
+<td>The host&#39;s floor. Only the host may sell below their target, and only by saying so themselves</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>The rule everything else protects:</strong> a guest must never be able to work out
+the minimum. If they could, every guest would offer exactly that and the
+margin above it would be gone. Section 5 shows how the engine makes that
+impossible rather than merely unlikely.</p>
+</blockquote>
+<p><strong>The listing used throughout</strong> — a real listing on the live site, so the
+numbers below are the numbers in the screenshots:</p>
+<table>
+<thead>
+<tr>
+<th>The listing</th>
+<th>Per night</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>List price</td>
+<td><strong>₹2,000</strong></td>
+</tr>
+<tr>
+<td>Ideal</td>
+<td><strong>₹1,700</strong></td>
+</tr>
+<tr>
+<td>Minimum</td>
+<td><strong>₹1,500</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>2. The decision, in one table</h2>
+<table>
+<thead>
+<tr>
+<th>The guest offers</th>
+<th>What happens</th>
+<th>Is the host contacted?</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Above ₹2,000 (the list price)</td>
+<td>Refused — there is nothing to negotiate upward</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>₹1,700 or more</strong> (at or above the ideal)</td>
+<td><strong>Accepted instantly, at the price they offered</strong></td>
+<td>Told, not asked</td>
+</tr>
+<tr>
+<td>Below ₹1,700</td>
+<td><strong>Countered instantly</strong>, between the ideal and the list price</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Below ₹1,500 (under the minimum)</td>
+<td>Countered the same way — no difference the guest can detect</td>
+<td>No</td>
+</tr>
+<tr>
+<td><em>…guest accepts the counter</em></td>
+<td>Deal struck, discount code issued, valid until midnight</td>
+<td>Told</td>
+</tr>
+<tr>
+<td><em>…guest counters back, below the ideal</em></td>
+<td><strong>Goes to the host</strong> — email, and a notification on web and app</td>
+<td><strong>Asked</strong>, with 90 seconds before the guest is told they are away</td>
+</tr>
+<tr>
+<td><em>…guest counters back, at or above the ideal</em></td>
+<td>Accepted on the spot</td>
+<td>Told</td>
+</tr>
+<tr>
+<td>Stay starts <strong>tomorrow or later</strong></td>
+<td>Not negotiable — an advance booking at the listed price, reservable with 10% now</td>
+<td>No</td>
+</tr>
+</tbody></table>
+<p>Two design decisions worth stating plainly, because they are the ones that
+earn money:</p>
+<ol>
+<li><strong>The counter runs downward from the list price, not up from the ideal.</strong>
+The worse the offer, the firmer the answer — a guest offering ₹100 is quoted
+₹1,900, one offering ₹1,600 is quoted ₹1,700. <strong>Every counter is worth at
+least as much to the host as an instant acceptance would have been.</strong></li>
+<li><strong>The host is not woken for round one.</strong> The platform answers using the
+host&#39;s own published rate. Their judgement is asked for only once a guest
+has argued back — the point at which it actually adds something.</li>
+</ol>
+<hr>
+<h2>3. Scenario 1 — The guest offers at or above the ideal</h2>
+<p><strong>Accepted on the spot, at the price the guest offered.</strong> The host is informed;
+nothing is asked of them.</p>
+<p><img src="shots/s0-listing-rail.png" alt="The booking rail"></p>
+<p><em>The listing as a guest finds it. &quot;Send an Offer — negotiate and save more&quot; sits under &quot;Book Now&quot;: negotiating is offered, never forced.</em></p>
+<p><img src="shots/s1a-offer-1750.png" alt="Offering ₹1,750 for tonight"></p>
+<p><em>The guest names their price and the nights they want. The deal will be locked to exactly these dates.</em></p>
+<p><img src="shots/s1b-accepted.png" alt="Accepted at ₹1,750"></p>
+<p><em>Accepted immediately at ₹1,750 — the price the guest offered, not the ideal and not the list price. The code carries that rate into checkout.</em></p>
+<p><img src="shots/s1c-rail-deal.png" alt="The booking rail carries the deal"></p>
+<p><em>The rail updates itself: the agreed rate against the struck-through list price, the discount as a line item, tax on the discounted amount, and the total actually payable.</em></p>
+<hr>
+<h2>4. Scenario 2 — The guest offers below the ideal</h2>
+<p><strong>Answered in about a second, by the platform, at a price between the ideal and
+the list price.</strong> The host is not contacted at all.</p>
+<p><img src="shots/s2a-offer-1100.png" alt="Offering ₹1,100"></p>
+<p><em>₹1,100 against a ₹2,000 listing.</em></p>
+<p><img src="shots/s2b-counter.png" alt="Countered at ₹1,750"></p>
+<p><em>The answer, immediately. Note the wording: it thanks the guest, says plainly that the offer is under what the dates go for, names a price they can actually take, and names the next step. It never sounds automated, and it never claims the host has been asked.</em></p>
+<p>Before this was built, an offer like this went to the host&#39;s inbox and the
+guest waited up to ninety seconds. Now the common case is settled while they
+are still looking at the listing.</p>
+<h3>A lowball buys a firmer answer, not a cheaper one</h3>
+<p><img src="shots/s3-below-floor-counter.png" alt="₹100 is answered with ₹1,900"></p>
+<p><em>An offer of ₹100 is countered at ₹1,900 — nearly the full list price. The further below the mark the offer sits, the closer to the screen price the answer comes back.</em></p>
+<hr>
+<h2>5. Scenario 3 — Why the minimum cannot be found</h2>
+<p>This is the scenario that protects the host&#39;s floor.</p>
+<p>A guest hunting for the minimum would look for the point where the platform&#39;s
+behaviour changes. <strong>There is no such point.</strong> Here are three offers — one
+below the ₹1,500 minimum, one exactly on it, one above it:</p>
+<p><img src="shots/s3-offer-1490.png" alt="₹1,490 — below the minimum"></p>
+<p><em>Offered ₹1,490, which is <strong>under</strong> the host&#39;s floor.</em></p>
+<p><img src="shots/s3-offer-1500.png" alt="₹1,500 — exactly the minimum"></p>
+<p><em>Offered ₹1,500, which is <strong>exactly</strong> the host&#39;s floor.</em></p>
+<p><img src="shots/s3-offer-1510.png" alt="₹1,510 — above the minimum"></p>
+<p><em>Offered ₹1,510, which is <strong>above</strong> it.</em></p>
+<blockquote>
+<p><strong>All three come back identical: ₹1,700, in the same words.</strong></p>
+<p>The counter is calculated from the ideal and the list price. The minimum is
+not part of the arithmetic at all, so no offer&#39;s answer changes when the
+minimum changes — and a guest lowballing twice learns nothing the first
+attempt did not already tell them.</p>
+<p>The floor is not merely hidden. There is no question a guest can ask that
+finds it.</p>
+</blockquote>
+<hr>
+<h2>6. Scenario 4 — The guest takes the counter</h2>
+<p><img src="shots/s4a-deal-struck.png" alt="The deal is struck"></p>
+<p><em>Accepted, with the code that carries the rate into checkout.</em></p>
+<p><img src="shots/s4b-rail-deal.png" alt="Priced through to the total"></p>
+<p><em>The deal is fixed to these dates, and expires at midnight.</em></p>
+<hr>
+<h2>7. Scenario 5 — The guest argues back, below the ideal</h2>
+<p><strong>This is the only point at which the host is interrupted.</strong></p>
+<h3>The guest&#39;s side</h3>
+<p><img src="shots/s5a-counter-back-1600.png" alt="Countering back at ₹1,600"></p>
+<p><em>The guest names a different price. It must be below the counter — a guest trying to &quot;counter&quot; at or above it is told to simply accept instead.</em></p>
+<p><img src="shots/s5b-with-the-host.png" alt="With the host"></p>
+<p><em>The guest is told plainly where their price has gone, and that the host has been emailed as well as notified.</em></p>
+<h3>The host&#39;s side</h3>
+<p><img src="shots/h1-host-negotiations.png" alt="The host&#39;s negotiations screen"></p>
+<p><em>The whole exchange, in order: the guest&#39;s ₹1,100, the counter sent at ₹1,750 on the host&#39;s behalf — labelled so the host knows it was not their typing — and the guest&#39;s ₹1,600 now awaiting a decision. Accept, Counter and Decline, with the number of counters left.</em></p>
+<p><img src="shots/h2-host-notifications.png" alt="The host&#39;s notification feed"></p>
+<p><em>The host is reached three ways at once — email, a web notification and a push notification on the app — because an offer nobody sees is an offer that expires. Note that automatic acceptances are reported too: the host is kept informed of every outcome, and asked only about this one.</em></p>
+<p><strong>The 90-second rule.</strong> If the host has not answered within ninety seconds,
+the guest is told the host is away <em>and how long that host says they take to
+reply</em> — the figure the host themselves entered in the listing wizard. It is
+visible in section 11: <strong>&quot;Sam Tao is away at the moment. They usually reply
+within 1 hour.&quot;</strong> Nothing is decided on the host&#39;s behalf; the guest is told
+the truth rather than left watching a spinner.</p>
+<hr>
+<h2>8. Scenario 6 — The guest argues back, at or above the ideal</h2>
+<p><img src="shots/s6-counter-back-accepted.png" alt="Taken on the spot"></p>
+<p><em>A counter-back that clears the ideal is accepted immediately and the code is issued. Sending this to the host would have meant waiting for a yes the engine already gives.</em></p>
+<hr>
+<h2>9. Scenario 7 — An offer above the list price</h2>
+<p><img src="shots/s7-above-list.png" alt="Refused"></p>
+<p><em>There is nothing to negotiate above the price already on the page. Caught before it reaches the host, and the guest is pointed at the Book button instead.</em></p>
+<hr>
+<h2>10. Scenario 8 — A stay starting tomorrow</h2>
+<p>Negotiation applies to stays <strong>starting today</strong>. A stay starting tomorrow or
+later is an <strong>advance booking</strong>: it goes at the listed price, reservable with
+10% now and the balance before check-in.</p>
+<p><img src="shots/s8a-advance-refused.png" alt="Offers are for stays starting today"></p>
+<p><em>The refusal names the alternative rather than just saying no.</em></p>
+<p><img src="shots/s8b-advance-rail.png" alt="The rail says the same thing"></p>
+<p><em>The booking rail explains the 10% route, so the guest is never left guessing why the price will not move.</em></p>
+<hr>
+<h2>11. The guest&#39;s own record</h2>
+<p><img src="shots/s9-guest-negotiations.png" alt="My negotiations"></p>
+<p><em>The same conversation from the guest&#39;s side: their ₹1,100, the counter at ₹1,750, their ₹1,600 — and, because the host has now had their ninety seconds, the line telling them how long this host says they take. The response time is the host&#39;s own figure from the listing wizard; a host who never gave one is never quoted a number.</em></p>
+<hr>
+<h2>12. What protects the host</h2>
+<table>
+<thead>
+<tr>
+<th>Protection</th>
+<th>How it works</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>The minimum never leaks</td>
+<td>The counter is calculated from the ideal and the list price. The minimum is not in the arithmetic, so no offer&#39;s answer moves when it moves</td>
+</tr>
+<tr>
+<td>No counter is worth less than an acceptance</td>
+<td>Every counter sits at or above the ideal</td>
+</tr>
+<tr>
+<td>A lowball is never rewarded</td>
+<td>The lower the offer, the higher the counter</td>
+</tr>
+<tr>
+<td>The host is never interrupted needlessly</td>
+<td>Round one is answered by the platform; only a guest who argues reaches a person</td>
+</tr>
+<tr>
+<td>The host always knows what was done for them</td>
+<td>Every automatic acceptance and every counter sent on their behalf is reported, and marked as automatic on their own screen</td>
+</tr>
+<tr>
+<td>Offers cannot run forever</td>
+<td>Each guest gets a limited number of offers per stay (the host sets this; the default is 3), and an offer waiting on a host expires after 30 minutes</td>
+</tr>
+<tr>
+<td>A deal cannot drift</td>
+<td>An accepted price is locked to the exact nights and party it was agreed for, and expires at midnight</td>
+</tr>
+<tr>
+<td>Nothing is sold below the target without the host</td>
+<td>The platform never accepts a below-ideal price on the host&#39;s behalf. Only the host can</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>13. What we would like you to confirm</h2>
+<ol>
+<li><strong>The ladder</strong> — accept at or above the ideal; counter between the ideal and
+the list price; the host only for round two.</li>
+<li><strong>Where the counter sits.</strong> It currently runs down from the list price, so
+it earns more than an instant acceptance. The alternative is to place it
+between the guest&#39;s offer and the ideal, which conceals the ideal more
+thoroughly but earns less. <strong>We recommend the current setting.</strong></li>
+<li><strong>The wording of the counter</strong>, shown in section 4.</li>
+<li><strong>The 90-second window</strong> before a guest is told the host is away.</li>
+<li><strong>The three-offer limit</strong> per guest per stay, and the 30-minute expiry on an
+offer waiting with a host.</li>
+</ol>
+<p>Once these are confirmed we will close the module.</p>
+<hr>
+<p><em>Every screenshot in this document was taken on the live site on 9 September
+2026, driving the real flow against a live listing with a real guest and host
+account. The test records created for these photographs have been removed.</em></p>
+
+</body></html>
