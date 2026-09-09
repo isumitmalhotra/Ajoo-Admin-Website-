@@ -143,6 +143,14 @@ class _PropertyPageState extends State<PropertyPage>
   double get _partyFee =>
       _single?.pricing?.extraGuestFee(_guests, totalDays) ?? 0;
 
+  /// How many of the party are children.
+  ///
+  /// Part of `_guests`, not additional to it — the same shape the website has
+  /// always used, where the guest total is adults + children. Kept so the
+  /// host's child rate or "children stay free" can apply; before this the app
+  /// had one guest integer and every child was billed as a full adult head.
+  int _children = 0;
+
   /// How many pets are coming.
   ///
   /// Counted apart from guests because they do not occupy beds — the same
@@ -798,6 +806,7 @@ class _PropertyPageState extends State<PropertyPage>
       bookTo: DateFormat('dd-MM-yyyy').format(to),
       guests: _guests,
       pets: _pets,
+      children: _children,
     );
     if (!mounted || seq != _quoteSeq) return;
     setState(() => _serverQuote = q);
@@ -1443,7 +1452,14 @@ class _PropertyPageState extends State<PropertyPage>
                                 iconSize: 26,
                                 onPressed: _guests > 1
                                     ? () {
-                                        setState(() => _guests -= 1);
+                                        setState(() {
+                                          _guests -= 1;
+                                          // Children are part of the party, so
+                                          // they can never outnumber it.
+                                          if (_children > _guests) {
+                                            _children = _guests;
+                                          }
+                                        });
                                         _restayed();
                                       }
                                     : null,
@@ -1463,6 +1479,68 @@ class _PropertyPageState extends State<PropertyPage>
                                         _guests < _guestCeiling!)
                                     ? () {
                                         setState(() => _guests += 1);
+                                        _restayed();
+                                      }
+                                    : null,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      // Children, counted WITHIN the guest total rather than
+                      // added to it — the same shape the website uses, where
+                      // the total is adults + children. The app had a single
+                      // guest integer, so a host's child rate or "children
+                      // stay free" could never apply to a booking made here.
+                      //
+                      // Infants are deliberately absent: they occupy no bed,
+                      // are excluded from the guest total on the website, and
+                      // adding them would make this disagree with it.
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Children',
+                                  style: inter(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600)),
+                              Text('Included in the guest count above',
+                                  style:
+                                      inter(fontSize: 11.5, color: kMuted)),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove_circle_outline),
+                                iconSize: 26,
+                                onPressed: _children > 0
+                                    ? () {
+                                        setState(() => _children -= 1);
+                                        _restayed();
+                                      }
+                                    : null,
+                              ),
+                              SizedBox(
+                                width: 28,
+                                child: Text('$_children',
+                                    textAlign: TextAlign.center,
+                                    style: inter(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700)),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add_circle_outline),
+                                iconSize: 26,
+                                // Never more children than guests: they are
+                                // part of the party, not additional to it.
+                                onPressed: _children < _guests
+                                    ? () {
+                                        setState(() => _children += 1);
                                         _restayed();
                                       }
                                     : null,
@@ -2202,6 +2280,7 @@ onPressed: () async {
                       // so the two must be sent together or not at all.
                       "price": p.chargeable,
                       "no_of_guests": _guests,
+                      "no_of_children": _children,
                       // Declared pets. The server prices them from its own
                       // policy and refuses a pet at a host who does not take
                       // them — but without this the booking records none and

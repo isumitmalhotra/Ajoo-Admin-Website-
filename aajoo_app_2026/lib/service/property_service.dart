@@ -11,7 +11,8 @@ import 'package:rent_home/models/destination_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/utils/upload_media_type.dart';
 import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
-
+
+
 import 'package:rent_home/utils/app_log.dart';
 class PropertyService {
   /// Why the last addProperties call failed, straight from the server.
@@ -316,6 +317,7 @@ class PropertyService {
     required String bookTo,
     int guests = 1,
     int pets = 0,
+    int children = 0,
   }) async {
     try {
       final response = await dio.post('pricing/quote', data: {
@@ -324,6 +326,11 @@ class PropertyService {
         'bookTo': bookTo,
         'guests': guests < 1 ? 1 : guests,
         'pets': pets < 0 ? 0 : pets,
+        // How many of `guests` are children, so the host's child rate or
+        // "children stay free" can apply. Clamped to the party, as the server
+        // clamps it — the quote shown and the price charged are computed from
+        // the same inputs or the clamp itself becomes a discrepancy.
+        'children': children < 0 ? 0 : (children > guests ? guests : children),
       });
       if (response.statusCode != 200) return null;
       final body = response.data;
