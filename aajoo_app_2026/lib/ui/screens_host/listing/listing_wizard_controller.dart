@@ -10,6 +10,7 @@
 // 1 can run until it has one. That is also what makes the wizard resumable —
 // a listing exists from the first Continue, and closing the app costs one
 // step rather than the whole form.
+import 'dart:convert';
 import 'dart:io';
 
 
@@ -343,6 +344,30 @@ class ListingWizardController extends GetxController {
       if (v != null) p4[formKey] = v;
     });
     merge(p4, d['bookingRules'], 'pbr_');
+    // open_months is stored as a JSON STRING and edited as a list of month
+    // numbers. Without this the picker would come back empty every time a host
+    // reopened a seasonal listing — the same "saved it, it's gone" complaint
+    // the step-4 key mismatches produced.
+    final rawMonths = p4['open_months'];
+    if (rawMonths is String && rawMonths.trim().isNotEmpty) {
+      try {
+        final parsed = jsonDecode(rawMonths);
+        p4['open_months'] = parsed is List
+            ? parsed
+                .map((e) => int.tryParse('$e'))
+                .whereType<int>()
+                .where((m) => m >= 1 && m <= 12)
+                .toList()
+            : <int>[];
+      } catch (_) {
+        p4['open_months'] = <int>[];
+      }
+    } else if (rawMonths is List) {
+      p4['open_months'] = rawMonths
+          .map((e) => int.tryParse('$e'))
+          .whereType<int>()
+          .toList();
+    }
     merge(p4, d['settlement'], 'pst_');
     // 'phr_', not 'ph_' — the columns are phr_pets_allowed, phr_smoking and so
     // on, so stripping 'ph_' left every key as r_pets_allowed and the house

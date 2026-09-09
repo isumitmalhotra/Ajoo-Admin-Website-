@@ -65,9 +65,24 @@ void main() {
     'lib/ui/screens_host/listing/listing_wizard_screen.dart',
   ).readAsStringSync();
 
-  Set<String> keysFor(String prefix) => RegExp(
-        "_${prefix}(?:Text|Choice|Toggle)\\('([a-z0-9_]+)'",
-      ).allMatches(source).map((m) => m.group(1)!).toSet();
+  /// Every key the step sends, however it is written.
+  ///
+  /// Both the _p4Text/_p4Choice/_p4Toggle helpers AND direct setP4 calls — the
+  /// month picker sets its value straight through setP4, and a guard that knew
+  /// only about the helpers would wave the next such field past without
+  /// looking.
+  ///
+  /// Raw strings and concatenation, not interpolation: the escapes in this
+  /// pattern have been mangled twice by the tooling that wrote this file, and
+  /// a broken regex here fails open — it finds no keys and every check passes.
+  Set<String> keysFor(String prefix) => {
+        ...RegExp('_' + prefix + r"(?:Text|Choice|Toggle)\('([a-z0-9_]+)'")
+            .allMatches(source)
+            .map((m) => m.group(1)!),
+        ...RegExp('setP' + prefix.substring(1) + r"\('([a-z0-9_]+)'")
+            .allMatches(source)
+            .map((m) => m.group(1)!),
+      };
 
   test('every step-4 key the app sends is one the server reads', () {
     final appKeys = keysFor('p4');
@@ -93,6 +108,9 @@ void main() {
       // listed from their phone left every screen showing a dash for these.
       'checkin_time',
       'checkout_time',
+      // The follow-up question "Seasonal" never had. Set through setP4 rather
+      // than a _p4 helper, which is why the extractor above reads both.
+      'open_months',
     ]) {
       expect(appKeys, contains(k), reason: '$k is not asked for on step 4');
     }

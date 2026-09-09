@@ -1076,6 +1076,13 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
                       'time you have to approve a booking request.'),
             if (b.availability.isNotEmpty)
               _p4Choice('availability', 'Availability', b.availability),
+            // Which months — the follow-up question "Seasonal" never had.
+            //
+            // The host could say their listing is seasonal and was never asked
+            // which season, so the server had nothing to enforce and the
+            // listing stayed bookable all year. Only shown for seasonal; it
+            // means nothing for the other three answers.
+            if (c.p4['availability'] == 'seasonal') _monthPicker(),
             if (b.earlyCheckin.isNotEmpty)
               _p4Choice('early_checkin', 'Early check-in', b.earlyCheckin),
             if (b.selfCheckinMethods.isNotEmpty)
@@ -1537,6 +1544,81 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
       formatters: formatters,
       error: c.fieldErrors[key],
       onChanged: (v) => c.setF(key, v),
+    );
+  }
+
+  /// The months a seasonal host takes bookings.
+  ///
+  /// Leaving every month off means no restriction, not "closed all year" —
+  /// the same rule the server applies. Said in words under the label, because
+  /// an empty picker is otherwise ambiguous in exactly the wrong direction.
+  Widget _monthPicker() {
+    const labels = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final chosen = <int>{
+      ...((c.p4['open_months'] as List?)?.map((e) => int.tryParse('$e')).whereType<int>() ??
+          const <int>[]),
+    };
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Months you take bookings',
+              style: inter(
+                  fontSize: 13.5, fontWeight: FontWeight.w700, color: kInk)),
+          const SizedBox(height: 2),
+          Text(
+            'Guests cannot book nights in the months you leave off. '
+            'Choose none and your listing stays open all year.',
+            style: inter(fontSize: 12, color: kMuted, height: 1.4),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (var i = 0; i < labels.length; i++)
+                Builder(builder: (_) {
+                  final month = i + 1;
+                  final on = chosen.contains(month);
+                  return GestureDetector(
+                    onTap: () {
+                      final next = {...chosen};
+                      if (on) {
+                        next.remove(month);
+                      } else {
+                        next.add(month);
+                      }
+                      final sorted = next.toList()..sort();
+                      c.setP4('open_months', sorted);
+                      setState(() {});
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: on ? kIndigo : Colors.transparent,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: on ? kIndigo : kLine),
+                      ),
+                      child: Text(
+                        labels[i],
+                        style: inter(
+                          fontSize: 13,
+                          fontWeight: on ? FontWeight.w700 : FontWeight.w500,
+                          color: on ? Colors.white : kInk,
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
