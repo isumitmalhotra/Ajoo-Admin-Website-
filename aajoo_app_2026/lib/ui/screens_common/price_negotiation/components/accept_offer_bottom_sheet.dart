@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/screens_renter/property_details/widgets/traveller_picker.dart';
 import 'package:rent_home/utils/money.dart';
+import 'package:rent_home/utils/gst.dart';
 
 /// Confirming a negotiated booking.
 ///
@@ -28,8 +29,10 @@ class _AcceptOfferBottomSheetState extends State<AcceptOfferBottomSheet> {
 
   double get price => widget.price;
 
-  // ≤₹7500 => 5%, >₹7500 => 18% (matches backend tariff GST)
-  double get _gstRate => price <= 7500 ? 0.05 : 0.18;
+  // The slab is per night and turns AT 7,500, not above it — see
+  // utils/gst.dart. This read `<= 7500 => 5%`, so a 7,500 night was taxed at
+  // the low rate while the server charged the high one.
+  double get _gstRate => gstRateForNight(price);
   double get _gstAmount => price * _gstRate;
   double get _totalAmount => price * (1 + _gstRate);
 

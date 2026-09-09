@@ -27,6 +27,7 @@ import 'package:rent_home/utils/safe_bottom.dart';
 import '../auth/auth_controller.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/utils/money.dart';
+import 'package:rent_home/utils/gst.dart';
 
 class PriceNegotiationPage extends StatefulWidget {
   final String userId;
@@ -1081,7 +1082,9 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                       negotiationController.currentPrice.value);
                               final isRenter =
                                   authController.userData.value?.isUser == true;
-                              final gstRate = price <= 7500 ? 0.05 : 0.18;
+                              // Per night, and 7,500 exactly is the HIGH
+                              // band — see utils/gst.dart.
+                              final gstRate = gstRateForNight(price);
                               final totalWithGst = price * (1 + gstRate);
 
                               return Column(

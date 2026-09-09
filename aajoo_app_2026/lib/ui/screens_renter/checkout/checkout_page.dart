@@ -17,6 +17,8 @@ import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/utils/upload_media_type.dart';
 
 import 'package:rent_home/utils/app_log.dart';
+import 'package:rent_home/utils/gst.dart';
+
 class HotelCheckoutPage extends StatefulWidget {
   const HotelCheckoutPage(
       {super.key, required this.property, required this.booking});
@@ -288,9 +290,17 @@ class _HotelCheckoutPageState extends State<HotelCheckoutPage> {
     final roomCharges = widget.booking.bookPrice.toDouble();
     final serverTotal = widget.booking.bookTotalAmt;
     final serverTax = widget.booking.taxesAndFees;
-    final gstRate = roomCharges <= 7500 ? 0.05 : 0.18;
-    final taxesAndFees =
-        serverTotal > roomCharges ? serverTax : roomCharges * gstRate;
+    // The fallback banded on the WHOLE STAY: two nights at 5,000 come to
+    // 10,000 and were taxed at 18%, a rate neither night is near. GST on
+    // accommodation is a per-night slab, so band on one night — and at 7,500
+    // exactly it is the higher one. See utils/gst.dart.
+    // From the dates on this screen, not from the booking: the Booking model
+    // this page is handed carries the money and no dates at all. Floored at
+    // one, so a same-day range cannot divide by zero.
+    final nights = checkOutDate.difference(checkInDate).inDays;
+    final taxesAndFees = serverTotal > roomCharges
+        ? serverTax
+        : gstOnStay(roomCharges, nights: nights);
     final totalPrice = serverTotal > roomCharges
         ? serverTotal
         : roomCharges + taxesAndFees;
