@@ -98,6 +98,10 @@ about it.
 | ~~C13~~ | Nearby: mark manual entries | **Done 10 Sep, web AND app.** `pnp_source` has recorded the difference since the table was built and the guest was never shown it. Typed entries now read "· Host provided". "manual" is the cautious default everywhere. |
 | ~~C14~~ | "2BHK but 1 bedroom" warning | **Done 10 Sep, web AND app.** Apartment Type names a bedroom count; step 1 asks for one separately, on another screen. Studio covered too; Penthouse/Duplex left alone (no count in the name). A warning — neither number is knowably the wrong one. |
 | ~~C15~~ | Address vs pin disagreement | **Done 10 Sep, web AND app.** Resolved from the COORDINATES, not remembered from the pick, so it survives a draft reopened days later. The picker already replaced the whole address block on a pin *move*; this catches a host typing over the city afterwards. |
+| ~~C16~~ | Seasonal/festival rates | **Done 10 Sep.** The FORM was already right — type, name, date range, price — my audit was wrong about that. What was wrong is that `property_rate_periods` was never queried: a host who priced Diwali at 3× was paid their usual rate. Now loaded and applied; a dated period beats the weekend rate, and the narrowest of overlapping periods wins. |
+| ~~C17~~ | Internet speed as bands | **Done 10 Sep.** Download was already a band; upload was a free-text Mbps box and is now a band too. |
+| ~~C18~~ | Cleaning fee | **Done 10 Sep.** It was collected and **charged nowhere** — the frequency was the smaller half of the problem. Now charged in the quote, the shared pricer AND the booking price clamp (a fee in the quote but not the clamp would reject every booking), with an escape for app builds that predate it. Frequency required in the form and on the server. |
+| ~~C19~~ | Payout "Custom" needs approval | **Done 10 Sep.** The option said "admin approval" and picking it simply wrote Custom. The request is recorded, the cycle in force does not change until granted, and re-saving cannot re-open an approval already given. |
 | ~~C3~~ | Check-in default 02:01 → 14:00 | **Code was already right**: `DEFAULT_CHECKIN_TIME = "14:00"` in `utils/cancellationPolicy.js`, and NULL falls back to it. Only the DATA was stale, and only barely — **1 live listing** carries 02:01 (the rest: two at 14:00, two NULL, one at 12:00). A one-row fix, not a code change. |
 
 ### P0 — still open
@@ -111,12 +115,9 @@ about it.
 | # | Task | Status |
 |---|---|---|
 
-### P2 — still open
+### P2 — all closed
 
-C16 seasonal/festival rates as a named list · C17 internet speed bands (no
-speed field exists at all — confirm it is not wanted) · C18 cleaning-fee
-frequency (the fee is never charged anywhere, which is the bigger problem) ·
-C19 payout settlement "Custom" needs admin approval.
+C16, C17, C18 and C19 are in the DONE table above.
 
 ---
 
