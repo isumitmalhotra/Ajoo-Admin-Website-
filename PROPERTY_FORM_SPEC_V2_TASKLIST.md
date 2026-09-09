@@ -75,43 +75,68 @@ Checked and confirmed live.
 
 ---
 
-## C. Gaps — real work, in priority order
+## C. Gaps — re-verified against the code on 10 Sep 2026
 
-### P0 — blocks listing or leaks money/trust
+Every row below was re-checked, not carried forward. Three turned out to be
+already done — one of them was never a gap at all and my first audit was wrong
+about it.
 
-| # | Task | Detail |
+### DONE
+
+| # | Task | What was actually found |
 |---|---|---|
-| **C1** | **Set `FIELD_ENCRYPTION_KEY` on Render** | The doc names this as "the current live blocker" and it is right. The code refuses to store payout bank details without it. This is an env-var change, not a code change — 5 minutes, and hosts cannot be paid until it is done. |
-| **C2** | **Remove the second deposit field** | The wizard collects `security_deposit` (Step 4) **and** `damage_deposit` (damage policy). Two numbers for one thing, and nothing reconciles them. The damage section must *read* the Step-4 deposit, not collect its own. |
-| **C3** | **Fix the check-in default: 02:01 → 14:00** | The doc spotted this and it is real — it is visible in the live cancellation-policy text ("measured from the property's check-in time (02:01)"). Default check-in 2:00 PM, check-out 11:00 AM. Existing listings carrying 02:01 need a data fix too, not just a new default. |
-| **C4** | **Remove the "Advanced limits — saved, but not applied yet" label** | Still on the form at Step 4. Since this morning the engine *does* read min/ideal, so the label now tells the host the opposite of the truth. |
+| ~~C5~~ | Backend validation of `min ≤ ideal ≤ displayed` | **Already existed at audit time — my audit was wrong.** `utils/pricingGrid.validateGrid` is called by `listingEngine.controller.js:894` AND `adminProperty.controller.js:683`. I reported it missing because I searched the controller for the arithmetic instead of for the helper that holds it. |
+| ~~C6~~ | Response time required | Already required — `listingEngine.controller` rejects a save without it, from the schema's own list. |
+| ~~C3~~ | Check-in default 02:01 → 14:00 | **Code was already right**: `DEFAULT_CHECKIN_TIME = "14:00"` in `utils/cancellationPolicy.js`, and NULL falls back to it. Only the DATA was stale, and only barely — **1 live listing** carries 02:01 (the rest: two at 14:00, two NULL, one at 12:00). A one-row fix, not a code change. |
 
-### P1 — important, not blocking
+### P0 — still open
 
-| # | Task | Detail |
+| # | Task | Status |
 |---|---|---|
-| C5 | Backend validation of `min ≤ ideal ≤ displayed` | The wizard enforces it; **the API does not**. The doc asks for both, and it is right: a direct API call can still save a nonsense ladder. |
-| C6 | Response time required when negotiation is ON or booking = Approval Required | Currently optional. No longer blocked by A1: with the ladder settled, the host's figure is what the guest is shown after the 90-second wait on a round-two escalation, so a listing that negotiates and has no figure shows the guest nothing. |
-| C7 | Conflict check: same-day booking ON **and** minimum notice ≥ 24 h | Not implemented. The two settings contradict each other and the guest sees the result as a calendar that refuses today for no stated reason. |
-| C8 | Max stay "unlimited" must store NULL | Currently a plain number field with no unlimited option. |
-| C9 | Tiered photo minimum: 5 for a room / PG bed, 10 for an entire property | Currently a flat 10 for everything. Also: skip the **Exterior** requirement for room-only listings — today it is required of every listing. |
-| C10 | Owner vs Manager: hide the duplicate "Do you own this property?" | When host type is already Owner, the second question is redundant — visible in the client's video. |
-| C11 | Manager → collect authorisation document at verification | Not collected today. |
-| C12 | Nearby: drop non-operational places (`business_status != OPERATIONAL`) | We filter by type and rating but not by whether the business still exists. |
-| C13 | Nearby: mark manual entries "Host provided" | Manual adds are not distinguished from Google-verified ones on the property page. |
-| C14 | Cross-field warning: "2BHK but 1 bedroom" | Not implemented. Warning, not a block. |
-| C15 | Address vs pin disagreement warning | Not implemented. |
+| **C1** | **Set `FIELD_ENCRYPTION_KEY` on Render** | **Open, and I cannot verify it from here.** `/health/env` deliberately answers `{ready:true}` and nothing else in public — the per-variable detail was closed off under BE-15, so the only way to know is the Render dashboard. Hosts cannot save payout bank details until it is set (`hostV2.controller.js:652` refuses and logs). |
+| **C4** | **Remove "Advanced limits — saved, but not applied yet"** | **Open, and now actively false.** Still at `ListProperty.tsx:2144`. The engine reads min/ideal — and, since 9 Sep, the weekend pair too — so the form tells the host the opposite of the truth. |
 
-### P2 — polish
+### P1 — still open
 
-| # | Task | Detail |
+| # | Task | Status |
 |---|---|---|
-| C16 | Seasonal/festival rates as a repeatable list (type, name, range, price) | We have a season **month picker**, not named festival periods with their own price. |
-| C17 | Internet speed as **bands**, not an exact Mbps number | I could not find a speed field at all in the current wizard — may already be gone, worth confirming with the client that it is not wanted. |
-| C18 | Cleaning-fee frequency must have a value when a fee is set | The field exists (`cleaning_fee_type`) but is unused — cleaning fee is never actually charged anywhere. Bigger than a validation fix. |
-| C19 | Payout settlement: Custom requires admin approval | Field exists (`payout_cycle`), read by nothing. |
+| C2 | The second deposit question | Open, but **smaller than first reported**: Step 4 collects the deposit AMOUNT (`security_deposit`), and Damage policy asks a separate yes/no "Take a damage deposit?" (`damage_deposit`). Not two conflicting numbers — one redundant question that can contradict the amount above it. |
+| C7 | Same-day booking ON **and** minimum notice ≥ 24 h | Open. No conflict check. |
+| C8 | Max stay "unlimited" | Open **in the UI only** — the storage is already right. NULL is unlimited and 5 of the 6 live listings store NULL; the form just offers no way to say so deliberately. |
+| C9 | Tiered photo minimum (5 room / 10 whole property) | Open. `PHOTO_RULES.minimum = 10` flat, and Exterior is required of every listing. |
+| C10 | Duplicate ownership question | Open, **confirmed**: `host_type` (Owner/Manager) at `ListProperty.tsx:1245` and "Do you own this property?" at `:1444`. Two questions, one answer. |
+| C11 | Manager → authorisation document at verification | Open. The form promises it ("You'll be asked to upload an authorisation letter during verification") and nothing collects it. |
+| C12 | Nearby: drop non-operational places | Open. `business_status` appears nowhere in the Places code. |
+| C13 | Nearby: mark manual entries "Host provided" | Open. |
+| C14 | Cross-field warning: "2BHK but 1 bedroom" | Open. |
+| C15 | Address vs pin disagreement warning | Open. |
+
+### P2 — still open
+
+C16 seasonal/festival rates as a named list · C17 internet speed bands (no
+speed field exists at all — confirm it is not wanted) · C18 cleaning-fee
+frequency (the fee is never charged anywhere, which is the bigger problem) ·
+C19 payout settlement "Custom" needs admin approval.
 
 ---
+
+## E. Beyond the document — shipped 9–10 Sep
+
+Client instructions that arrived after the audit and are now live:
+
+- **Negotiation ladder settled** (§A1) — round one auto-counters AND notifies
+  the host; round two escalates saying "below the minimum you set".
+- **"Prices are tax exclusive?" removed** from Step 4 — it was never the
+  host's to answer.
+- **GST per night**, banded AT ₹7,500 (not above it), on the final
+  post-discount price. Was one band for a whole stay, taken from the base
+  rate, so a ₹9,000 weekend night on a ₹7,500 listing was taxed at 5%.
+- **Weekend Minimum and Ideal** added to the form (web AND app) so negotiation
+  works on a weekend night. The app had no weekend pricing at all.
+- **Negotiated price now actually charged** — the deal's percentage was
+  computed off the base nightly rate, so a guest who agreed ₹8,000 on a
+  weekend got no coupon and paid ₹9,000.
+- **Minimum stay blocked at the calendar**, not at the payment screen.
 
 ## D. Places the document and the product disagree, where I think we are right
 
