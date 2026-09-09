@@ -175,9 +175,9 @@ below the ₹1,500 minimum, one exactly on it, one above it:
 
 *The whole exchange, in order: the guest's ₹1,100, the counter sent at ₹1,750 on the host's behalf — labelled so the host knows it was not their typing — and the guest's ₹1,600 now awaiting a decision. Accept, Counter and Decline, with the number of counters left.*
 
-![The host's notification feed](shots/h2-host-notifications.png)
+![The host is notified](shots/h2-host-notifications.png)
 
-*The host is reached three ways at once — email, a web notification and a push notification on the app — because an offer nobody sees is an offer that expires. Note that automatic acceptances are reported too: the host is kept informed of every outcome, and asked only about this one.*
+*The same moment in the host's notification feed. They are reached three ways at once — this notification on the web, a push notification on the app, and an email — because an offer nobody sees is an offer that expires. Automatic acceptances are reported the same way, so the host is told of every outcome and asked about only this one.*
 
 **The 90-second rule.** If the host has not answered within ninety seconds,
 the guest is told the host is away *and how long that host says they take to

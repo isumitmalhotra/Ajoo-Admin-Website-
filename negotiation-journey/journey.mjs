@@ -339,10 +339,34 @@ const scenarios = {
     await page.goto(`${SITE}/host/notifications`, { waitUntil: "domcontentloaded" });
     await pause(4000);
     await dismissBanners(page);
-    // Viewport only. The feed runs to eight pages of history; the top of it
-    // is what shows the negotiation trail, and a full-page capture would be a
-    // wall of unrelated booking notices.
-    await shot(page, "h2-host-notifications");
+    // Framed on the counter-back notice, which is what this section is about:
+    // the one moment the host is actually asked something.
+    //
+    // Not the whole feed. It runs to eight pages, and older rows keep whatever
+    // wording the product had when they were written — including an
+    // acceptance notice corrected on 2026-09-09 that names the wrong price
+    // tier. Those rows cannot be rewritten after the fact, and showing a
+    // client copy we have already fixed would raise a question this document
+    // cannot answer.
+    const clip = await page.evaluate(() => {
+      const row = [...document.querySelectorAll("*")].find(
+        (n) => n.childElementCount === 0 && (n.textContent || "").trim() === "The guest countered back");
+      if (!row) return null;
+      let card = row;
+      for (let i = 0; i < 6 && card?.parentElement; i += 1) {
+        card = card.parentElement;
+        const r = card.getBoundingClientRect();
+        if (r.width > 600 && r.height > 60) break;
+      }
+      const r = card.getBoundingClientRect();
+      return {
+        x: Math.max(0, r.x - 12) + window.scrollX,
+        y: Math.max(0, r.y - 12) + window.scrollY,
+        width: Math.min(820, r.width + 24),
+        height: Math.min(200, r.height + 24),
+      };
+    });
+    await shot(page, "h2-host-notifications", clip ? { clip } : {});
   },
 
   async "h3-host-dashboard"(page) {
