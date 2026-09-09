@@ -104,11 +104,21 @@ about it.
 | ~~C19~~ | Payout "Custom" needs approval | **Done 10 Sep.** The option said "admin approval" and picking it simply wrote Custom. The request is recorded, the cycle in force does not change until granted, and re-saving cannot re-open an approval already given. |
 | ~~C3~~ | Check-in default 02:01 → 14:00 | **Code was already right**: `DEFAULT_CHECKIN_TIME = "14:00"` in `utils/cancellationPolicy.js`, and NULL falls back to it. Only the DATA was stale, and only barely — **1 live listing** carries 02:01 (the rest: two at 14:00, two NULL, one at 12:00). A one-row fix, not a code change. |
 
-### P0 — still open
+### P0 — one thing, and it is not code
 
 | # | Task | Status |
 |---|---|---|
-| **C1** | **Set `FIELD_ENCRYPTION_KEY` on Render** | **Open, and I cannot verify it from here.** `/health/env` deliberately answers `{ready:true}` and nothing else in public — the per-variable detail was closed off under BE-15, so the only way to know is the Render dashboard. Hosts cannot save payout bank details until it is set (`hostV2.controller.js:652` refuses and logs). |
+| **C1** | **Set `FIELD_ENCRYPTION_KEY` on Render** | **Only you can do this** — it is an environment variable on the Render dashboard, and the code has been correct throughout (`hostV2.controller.js` refuses to write a bank account without it, rather than storing one in plaintext). Hosts cannot save payout details until it is set. **Generate the value yourself** so it never passes through a chat log: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` → Render → Environment → Add `FIELD_ENCRYPTION_KEY` → Save (the service restarts). **Never rotate it** without re-encrypting the stored accounts. |
+
+**Why it stayed open unnoticed, and what changed 10 Sep.** The question "is
+the thing blocking payouts still blocking it?" had no answer outside the
+Render dashboard: `/health/env` returns `{ready:true}` in public and the
+per-variable detail was closed off under BE-15, behind a token that is itself
+unset. An unanswerable question is one nobody asks. Admin → Settings now
+leads with any capability that is missing, naming what it blocks in plain
+terms — and only when something is actually missing, because a card of green
+ticks is a card nobody reads. So once C1 is done it will visibly disappear,
+and the next gap of this kind surfaces on its own.
 
 ### P1 — still open
 
