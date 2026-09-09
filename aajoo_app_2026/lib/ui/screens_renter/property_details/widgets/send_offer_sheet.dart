@@ -510,7 +510,7 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
           ),
           const SizedBox(height: 12),
           Text(
-            'The best we can do is ${rupees(quoted)}/night',
+            'We can do ${rupees(quoted)}/night',
             textAlign: TextAlign.center,
             style: fraunces(
                 fontSize: 17, fontWeight: FontWeight.w700, color: skin.ink),
