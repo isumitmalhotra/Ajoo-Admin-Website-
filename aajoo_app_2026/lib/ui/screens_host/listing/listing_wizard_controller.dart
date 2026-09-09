@@ -333,6 +333,12 @@ class ListingWizardController extends GetxController {
     // The weekly and monthly tiers come off the pricing row under the names
     // the save endpoint reads, which are not the column names.
     const tierKeys = {
+      // The weekend pair. The draft loader strips 'ppr_', so the columns
+      // arrive as weekend_min / weekend_ideal and the save endpoint wants
+      // weekend_minimum_price / weekend_ideal_price — the same mismatch that
+      // left extra_guest_price NULL on every listing for a year.
+      'weekend_min': 'weekend_minimum_price',
+      'weekend_ideal': 'weekend_ideal_price',
       'weekly_min': 'weekly_minimum_price',
       'weekly_ideal': 'weekly_ideal_price',
       'monthly_min': 'monthly_minimum_price',
@@ -801,6 +807,50 @@ class ListingWizardController extends GetxController {
           // "₹1000000" against "₹10,00,000".
           'Price must be between ${rupees(rules.minBasePrice)} and '
           '${rupees(rules.maxBasePrice)}';
+    }
+
+    /**
+     * The weekend pair, when the host prices weekends apart.
+     *
+     * Checked against the CHEAPEST of Friday/Saturday/Sunday: one pair has to
+     * hold on all three days, and an ideal above the cheapest is an accept
+     * line nobody can reach on that night. Same rule as the web wizard and as
+     * utils/pricingGrid on the server — a rule enforced on two surfaces out of
+     * three is not a rule.
+     */
+    if (p4['weekend_pricing'] == true) {
+      final weekendRates = ['friday_price', 'saturday_price', 'sunday_price']
+          .where(set)
+          .map((k) => val(k)!)
+          .toList();
+      final cheapest = weekendRates.isEmpty
+          ? 0.0
+          : weekendRates.reduce((a, b) => a < b ? a : b);
+      if (!set('weekend_minimum_price')) {
+        errs['weekend_minimum_price'] =
+            "Required — the least you'd take for a weekend night";
+      }
+      if (!set('weekend_ideal_price')) {
+        errs['weekend_ideal_price'] =
+            'Required — weekend offers at or above this are accepted for you';
+      }
+      if (cheapest > 0 &&
+          set('weekend_minimum_price') &&
+          val('weekend_minimum_price')! > cheapest) {
+        errs['weekend_minimum_price'] =
+            "Can't be above your cheapest weekend rate (${rupees(cheapest)})";
+      }
+      if (cheapest > 0 &&
+          set('weekend_ideal_price') &&
+          val('weekend_ideal_price')! > cheapest) {
+        errs['weekend_ideal_price'] =
+            "Can't be above your cheapest weekend rate (${rupees(cheapest)})";
+      }
+      if (set('weekend_minimum_price') &&
+          set('weekend_ideal_price') &&
+          val('weekend_ideal_price')! < val('weekend_minimum_price')!) {
+        errs['weekend_ideal_price'] = "Can't be below your weekend minimum";
+      }
     }
 
     const periods = [

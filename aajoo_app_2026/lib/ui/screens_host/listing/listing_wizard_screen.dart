@@ -945,6 +945,47 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
               _p4Choice('currency', 'Currency', r.currencies),
           ],
         ),
+        // Weekend pricing — absent from this wizard until 2026-09-10.
+        //
+        // The web wizard has asked for a Friday/Saturday/Sunday rate since it
+        // shipped and this one never did, so a host who listed from their
+        // phone had no way to charge more at the weekend at all — and, once
+        // the weekend negotiation ladder was added, no way to set that
+        // either. The engine has read these columns all along.
+        ListingSection(
+          title: 'Weekend pricing',
+          sub: 'Charge more on Friday, Saturday and Sunday nights.',
+          children: [
+            ListingToggle(
+              label: 'Different on weekends',
+              value: c.p4['weekend_pricing'] == true,
+              onChanged: (v) => c.setP4('weekend_pricing', v),
+            ),
+            if (c.p4['weekend_pricing'] == true) ...[
+              const SizedBox(height: 8),
+              _p4Text('friday_price', 'Friday (₹)',
+                  numeric: true,
+                  help: 'Leave a day blank and it falls back to your nightly '
+                      'rate.'),
+              _p4Text('saturday_price', 'Saturday (₹)', numeric: true),
+              _p4Text('sunday_price', 'Sunday (₹)', numeric: true),
+              // The weekend's own negotiation ladder. Without it a Saturday
+              // was judged against the MIDWEEK floor: the platform accepted
+              // at the weekday ideal on a night the host prices higher.
+              _p4Text('weekend_minimum_price', 'Weekend minimum (₹)',
+                  required: true,
+                  numeric: true,
+                  help: 'The least you would take for a weekend night. '
+                      'Guests never see it.'),
+              _p4Text('weekend_ideal_price', 'Weekend ideal (₹)',
+                  required: true,
+                  numeric: true,
+                  help: 'A weekend offer at or above this is accepted for you. '
+                      'It must fit under your cheapest weekend rate, since one '
+                      'pair covers all three days.'),
+            ],
+          ],
+        ),
         ListingSection(
           title: 'Weekly & monthly price',
           sub: 'What a longer stay costs in total. A 12-night stay is charged '

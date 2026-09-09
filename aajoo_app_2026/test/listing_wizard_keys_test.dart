@@ -57,7 +57,8 @@ void main() {
     'property_id', 'quiet_hours', 'rate_periods', 'response_time_hours',
     'same_day_booking', 'saturday_price', 'security_deposit', 'self_checkin',
     'self_checkin_method', 'smoking', 'sunday_price', 'tax_exclusive',
-    'visitors', 'weekend_pricing', 'weekly_discount', 'weekly_ideal_price',
+    'visitors', 'weekend_ideal_price', 'weekend_minimum_price',
+    'weekend_pricing', 'weekly_discount', 'weekly_ideal_price',
     'weekly_minimum_price', 'weekly_price',
   };
 
@@ -83,6 +84,27 @@ void main() {
             .allMatches(source)
             .map((m) => m.group(1)!),
       };
+
+  test('the app can price a weekend at all, and negotiate it', () {
+    // Until 2026-09-10 this wizard had NO weekend pricing: not the rates, not
+    // the toggle. The website had asked for Friday/Saturday/Sunday since it
+    // shipped, so a host who listed from their phone simply could not charge
+    // more at the weekend — and once the weekend negotiation ladder existed,
+    // could not set that either, while the engine read the columns all along.
+    final appKeys = keysFor('p4');
+    for (final key in [
+      'weekend_pricing',
+      'friday_price',
+      'saturday_price',
+      'sunday_price',
+      'weekend_minimum_price',
+      'weekend_ideal_price',
+    ]) {
+      expect(appKeys, contains(key),
+          reason: 'the app cannot set $key, so the website and the phone '
+              'produce different listings from the same wizard');
+    }
+  });
 
   test('every step-4 key the app sends is one the server reads', () {
     final appKeys = keysFor('p4');
