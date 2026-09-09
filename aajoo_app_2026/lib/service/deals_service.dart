@@ -159,6 +159,62 @@ class DealsService {
     }
   }
 
+  /// Counter the price back, and find out whether that settled it.
+  ///
+  /// Since the first counter moved to sit above the accept line, a guest can
+  /// counter it and still clear that line — and the server then takes the
+  /// offer on the spot and mints the coupon rather than waking a host to
+  /// approve something the engine already accepts.
+  ///
+  /// respondToNegotiation answers with an error string or nothing, so a
+  /// caller using it CANNOT tell the two apart and has to guess. The website
+  /// guessed "with the host" and told a guest to wait while their deal
+  /// coupon already existed. This one reports what actually happened.
+  Future<OfferOutcome> counterBack({
+    required int offerId,
+    required double price,
+    String? message,
+  }) async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    if (token == null || token.isEmpty) {
+      return const OfferOutcome.failed('Please sign in again.');
+    }
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final res = await _dio.post(
+        '${Apiconstants.baseUrl}/user/negotiations/respond',
+        data: {
+          'offerId': offerId,
+          'action': 'counter',
+          'counterPrice': price,
+          if (message != null && message.isNotEmpty) 'message': message,
+        },
+      );
+      final body = res.data;
+      if (body is! Map || body['success'] != true) {
+        return OfferOutcome.failed(
+          (body is Map ? body['message']?.toString() : null) ??
+              'Could not send that counter.',
+        );
+      }
+      final data = Map<String, dynamic>.from(body['data'] ?? const {});
+      final taken = data['accepted'] == true;
+      return OfferOutcome(
+        action: taken ? 'accept' : 'escalate_to_host',
+        price: taken ? price : null,
+        couponCode: data['couponCode']?.toString(),
+      );
+    } on DioException catch (e) {
+      final d = e.response?.data;
+      return OfferOutcome.failed(
+        (d is Map ? d['message']?.toString() : null) ??
+            'Could not send that counter. Please try again.',
+      );
+    } catch (_) {
+      return const OfferOutcome.failed('Could not send that counter.');
+    }
+  }
+
   /// Accept or decline a host's counter. Accepting mints the same 24h personal
   /// coupon the host-accept path mints, so a deal struck either way checks out
   /// identically. Returns null on success, or a message to show the guest.

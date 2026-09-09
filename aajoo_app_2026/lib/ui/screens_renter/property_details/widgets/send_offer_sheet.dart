@@ -134,18 +134,20 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
       _counterBusy = true;
       _counterError = null;
     });
-    final err = await DealsService()
-        .respondToNegotiation(offerId: id, action: 'counter', counterPrice: amount);
+    final res = await DealsService().counterBack(offerId: id, price: amount);
     if (!mounted) return;
     setState(() {
       _counterBusy = false;
-      _counterError = err;
-      if (err == null) {
-        _outcome = const OfferOutcome(action: 'escalate_to_host');
+      _counterError = res.error;
+      if (!res.failed) {
+        // What the server did, not what this sheet assumed. A counter-back
+        // that clears the accept line is taken on the spot, coupon and all.
+        _outcome = res;
         _counterMode = false;
         _counter.clear();
       }
     });
+    if (!res.failed && res.accepted) widget.onAccepted?.call();
   }
 
   @override
