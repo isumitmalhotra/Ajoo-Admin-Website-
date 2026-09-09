@@ -25,7 +25,14 @@ import 'package:rent_home/utils/app_log.dart';
 /// Null for a listing with no rules row, which is every listing that predates
 /// the wizard. Callers must read that as "no restriction".
 class CheckInWindow {
-  const CheckInWindow({this.earliest, this.latest, this.reason, this.maxAdvanceDays = 0});
+  const CheckInWindow({
+    this.earliest,
+    this.latest,
+    this.reason,
+    this.maxAdvanceDays = 0,
+    this.closedMonths = const <int>[],
+    this.weekendsOnly = false,
+  });
 
   /// Earliest arrival the host accepts — notice period and same-day rule
   /// already applied by the server, so this is one date rather than two rules.
@@ -38,6 +45,26 @@ class CheckInWindow {
   final String? reason;
 
   final int maxAdvanceDays;
+
+  /// Months (1-12) this host is closed. Empty means open all year.
+  final List<int> closedMonths;
+
+  /// Only Friday and Saturday nights are sold.
+  final bool weekendsOnly;
+
+  /// Would the host take an arrival on this day?
+  ///
+  /// Season and weekends apply to the CHECKOUT side too — a stay cannot run
+  /// through a closed month — which is why this is a day test rather than a
+  /// bound like `earliest`.
+  bool sellsDay(DateTime d) {
+    if (closedMonths.contains(d.month)) return false;
+    // DateTime.friday == 5, saturday == 6.
+    if (weekendsOnly && d.weekday != DateTime.friday && d.weekday != DateTime.saturday) {
+      return false;
+    }
+    return true;
+  }
 }
 
 /// Booked nights AND the host's arrival window, from one call.
@@ -171,6 +198,13 @@ class BookingService {
               ? w['reason'].toString()
               : null,
           maxAdvanceDays: int.tryParse('${w['maxAdvanceDays'] ?? 0}') ?? 0,
+          closedMonths: (w['closedMonths'] is List)
+              ? (w['closedMonths'] as List)
+                  .map((e) => int.tryParse('$e'))
+                  .whereType<int>()
+                  .toList()
+              : const <int>[],
+          weekendsOnly: w['weekendsOnly'] == true,
         );
       }
       return PropertyAvailability(ranges: out, window: window);

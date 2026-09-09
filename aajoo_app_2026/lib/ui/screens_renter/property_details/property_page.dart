@@ -1078,7 +1078,14 @@ class _PropertyPageState extends State<PropertyPage>
                     initialDate: _safeInitialDate(selectedDate, _firstCheckIn),
                     firstDate: _firstCheckIn,
                     lastDate: _lastCheckIn,
-                    selectableDayPredicate: (d) => !_isBookedDay(d),
+                    // Season and weekends-only apply to BOTH ends: a stay
+                    // cannot run through a month the host is closed, so
+                    // offering such a checkout would build a range the server
+                    // refuses. Found on the web with a September-only season,
+                    // where the calendar happily offered all of October.
+                    selectableDayPredicate: (d) =>
+                        !_isBookedDay(d) &&
+                        (_checkInWindow?.sellsDay(d) ?? true),
                     builder: (context, child) {
                       return Theme(
                         data: Theme.of(context).copyWith(
@@ -1156,7 +1163,14 @@ class _PropertyPageState extends State<PropertyPage>
                     // refuses anything longer, so offering it here would only
                     // let a guest choose a stay and then be told no.
                     lastDate: latestCheckout(selectedDate),
-                    selectableDayPredicate: (d) => !_isBookedDay(d),
+                    // Season and weekends-only apply to BOTH ends: a stay
+                    // cannot run through a month the host is closed, so
+                    // offering such a checkout would build a range the server
+                    // refuses. Found on the web with a September-only season,
+                    // where the calendar happily offered all of October.
+                    selectableDayPredicate: (d) =>
+                        !_isBookedDay(d) &&
+                        (_checkInWindow?.sellsDay(d) ?? true),
                     builder: (context, child) {
                       return Theme(
                         data: Theme.of(context).copyWith(
