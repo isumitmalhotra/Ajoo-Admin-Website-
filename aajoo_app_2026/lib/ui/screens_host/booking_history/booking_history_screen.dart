@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:provider/provider.dart';
+import 'package:rent_home/ui/screens_host/host_tab_provider.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/data/models/host_booking_history_model.dart';
@@ -54,6 +56,36 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
       }
     });
   }
+
+  /// The shell tab this screen last saw. See [didChangeDependencies].
+  int? _lastTab;
+
+  /// Reload when this tab comes to the front.
+  ///
+  /// The host shell holds all four tabs in an IndexedStack, so this screen is
+  /// built ONCE when the portal opens and kept alive for the rest of the
+  /// session — `initState` runs at launch and never again. A host who opened
+  /// the app, took a booking, and then tapped Bookings was shown the list as
+  /// it stood at launch: "No upcoming bookings" above a stay that was paid for
+  /// and waiting on their approval. Only a pull-to-refresh corrected it, and
+  /// nothing on screen suggested one was needed.
+  ///
+  /// Refetching on the way IN, rather than rebuilding the screen, keeps the
+  /// scroll position and the chosen tab while making the data current. The
+  /// first visit is skipped because initState has just fetched.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final tab = context.watch<HostTabProvider>().currentTab;
+    if (_lastTab != null && _lastTab != tab && tab == _bookingsTab) {
+      controller.getHostBookingHistory();
+    }
+    _lastTab = tab;
+  }
+
+  /// Bookings is tab 3 in the shell's vocabulary (see main_screen's
+  /// `_tabToIndex`), not slot 1.
+  static const int _bookingsTab = 3;
 
   @override
   void dispose() {

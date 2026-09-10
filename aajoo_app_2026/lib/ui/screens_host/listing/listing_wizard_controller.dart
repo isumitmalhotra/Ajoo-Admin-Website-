@@ -365,6 +365,19 @@ class ListingWizardController extends GetxController {
       if (tierRow['property_ideal_price'] != null) {
         p4['negotiation_ideal_price'] = tierRow['property_ideal_price'];
       }
+      // The cancellation policy lives on the flat property row as
+      // `property_cancellation_policy`; the chips and the save endpoint both
+      // call it `cancellation_policy`. Unmapped, step 4 drew Flexible /
+      // Moderate / Firm / Strict with NONE selected on a listing that has a
+      // policy — a host reading that can only conclude none was ever chosen,
+      // and picking one to "fix" it changes what their guests are owed.
+      //
+      // Nothing was being erased: saveStep4 posts the whole of p4, and the
+      // server guards `if (b.cancellation_policy)`, so an absent key left the
+      // stored policy alone. This was a lie on screen, not data loss.
+      if (tierRow['property_cancellation_policy'] != null) {
+        p4['cancellation_policy'] = tierRow['property_cancellation_policy'];
+      }
     }
     // The weekly and monthly tiers come off the pricing row under the names
     // the save endpoint reads, which are not the column names.

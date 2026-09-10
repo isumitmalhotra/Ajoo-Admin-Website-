@@ -81,6 +81,32 @@ void main() {
             'switch would show on while it happened');
   });
 
+  test('the cancellation policy comes back selected', () async {
+    // Stored on the FLAT property row as property_cancellation_policy, while
+    // the chips and the save endpoint both say cancellation_policy. Unmapped,
+    // step 4 drew Flexible / Moderate / Firm / Strict with none selected on a
+    // listing that has a policy — and a host who "fixes" that by picking one
+    // changes what their guests are owed. Seen on 29291, which stores
+    // "flexible", on 2026-09-11.
+    final c = wizard({
+      'pricing': {'ppr_base_price': 2000},
+      'property': {'property_cancellation_policy': 'flexible'},
+    });
+    c.onInit();
+    await Future<void>.delayed(Duration.zero);
+    expect(c.p4['cancellation_policy'], 'flexible',
+        reason: 'the chips render with nothing selected on a listing that has '
+            'a cancellation policy');
+  });
+
+  test('a listing with no policy on file selects nothing', () async {
+    final c = wizard({'pricing': {'ppr_base_price': 2000}, 'property': {}});
+    c.onInit();
+    await Future<void>.delayed(Duration.zero);
+    expect(c.p4['cancellation_policy'], isNull,
+        reason: 'a policy was invented for a listing that has none');
+  });
+
   test('a host who left negotiation ON keeps it on', () async {
     final c = wizard({
       'pricing': {'ppr_base_price': 2000},
