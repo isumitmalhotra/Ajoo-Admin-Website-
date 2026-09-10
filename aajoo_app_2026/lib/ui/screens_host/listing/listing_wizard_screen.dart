@@ -2836,6 +2836,29 @@ class _ReadinessCard extends StatelessWidget {
                   '${missing.length > 4 ? '…' : ''}',
                   style: inter(fontSize: 12, color: kInk2, height: 1.45)),
             ],
+            // Photographs BLOCK a first publication and only WARN on an
+            // update: a listing that is already live stays live whether or not
+            // its host is allowed to fix a typo today, so refusing the edit
+            // would cost the correction and save nothing. Said anyway — a
+            // listing with no photographs is still a listing with no
+            // photographs.
+            if (controller.readiness['photoWarning'] is String) ...[
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info_outline_rounded, size: 15, color: kClay),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text(
+                      '${controller.readiness['photoWarning']} '
+                      'Your listing stays live in the meantime.',
+                      style: inter(fontSize: 12, color: kClay, height: 1.45),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       );
