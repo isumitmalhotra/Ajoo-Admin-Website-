@@ -123,6 +123,12 @@ class ListingWizardController extends GetxController {
   final RxMap<String, dynamic> p4 = <String, dynamic>{
     'currency': 'INR',
     'negotiation_enabled': true,
+    // The platform's own stay window, and the website's defaults for the same
+    // two fields. A listing that never touches them still has times a guest
+    // can be told and a refund ladder can be measured from, rather than a
+    // blank that every screen renders as a dash.
+    'checkin_time': '14:00',
+    'checkout_time': '11:00',
   }.obs;
   final RxList<Map<String, dynamic>> ratePeriods =
       <Map<String, dynamic>>[].obs;

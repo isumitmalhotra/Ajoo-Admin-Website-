@@ -1185,10 +1185,17 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             // their phone had no way to say when guests may arrive or must
             // leave, and every screen that shows those times — the app's own
             // Property Details among them — displayed a dash for ever.
-            _p4Text('checkin_time', 'Check-in time',
-                help: 'When guests may arrive, e.g. 14:00'),
-            _p4Text('checkout_time', 'Check-out time',
-                help: 'When guests must leave, e.g. 11:00'),
+            // A PICKER, not a text box. These were free text, and a host
+            // typing into them put "02:01" on a real listing — two minutes
+            // past two in the morning, offered to guests as the hour they may
+            // arrive, and measured from by the refund ladder. The website has
+            // always used <input type="time">; this widget already exists here
+            // for the schema's own `time` fields and was simply never used for
+            // the two that matter most.
+            _p4Time('checkin_time', 'Check-in time',
+                help: 'When guests may arrive.'),
+            _p4Time('checkout_time', 'Check-out time',
+                help: 'When guests must leave.'),
             ListingToggle(
               label: 'Accept same-day bookings',
               value: c.p4['same_day_booking'] != false,
@@ -1839,6 +1846,16 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
         formatters: formatters,
         error: c.fieldErrors[key],
         onChanged: (v) => c.setP5(key, v),
+      );
+
+  /// A time of day, picked rather than typed. Stores 24-hour HH:mm, which is
+  /// what the server keeps and what the website's <input type="time"> submits.
+  Widget _p4Time(String key, String label, {String? help}) => SchemaFieldInput(
+        field: SchemaField(
+            key: key, label: label, type: FieldType.time, help: help),
+        value: c.p4[key],
+        onChanged: (k, v) => c.setP4(k, v),
+        error: c.fieldErrors[key],
       );
 
   Widget _p4Choice(String key, String label, List<Option> options,
