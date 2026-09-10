@@ -433,6 +433,7 @@ class ListingSchema {
     required this.premiumFields,
     required this.accessibility,
     required this.petPolicyFields,
+    this.petDetailFields = const [],
     required this.familyFields,
     required this.familyAmenities,
     required this.experiencesByCategory,
@@ -467,7 +468,12 @@ class ListingSchema {
   final OptionGroup premiumAmenities;
   final List<SchemaField> premiumFields;
   final OptionGroup accessibility;
+  /// Empty since 2026-09-10 — the pet question moved wholesale to step 4,
+  /// where it persists and where the guest reads it.
   final List<SchemaField> petPolicyFields;
+
+  /// Pet beds / food / area, asked on STEP 4 once pets are allowed.
+  final List<SchemaField> petDetailFields;
   final List<SchemaField> familyFields;
   final OptionGroup familyAmenities;
   final Map<String, List<String>> experiencesByCategory;
@@ -528,6 +534,7 @@ class ListingSchema {
         premiumFields: SchemaField.listFrom(j['premiumFields']),
         accessibility: OptionGroup.single(j['accessibility']),
         petPolicyFields: SchemaField.listFrom(j['petPolicyFields']),
+        petDetailFields: SchemaField.listFrom(j['petDetailFields']),
         familyFields: SchemaField.listFrom(j['familyFields']),
         familyAmenities: OptionGroup.single(j['familyAmenities']),
         experiencesByCategory: _stringLists(j['experiencesByCategory']),

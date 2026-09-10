@@ -821,14 +821,6 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
         ),
 
         ListingSection(
-          title: 'Pet policy',
-          children: [
-            for (final field in s.petPolicyFields)
-              _field(field, c.details, c.setDetail),
-          ],
-        ),
-
-        ListingSection(
           title: 'Families & children',
           children: [
             for (final field in s.familyFields)
@@ -1241,6 +1233,18 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
                 value: c.houseRules[t.value] == true,
                 onChanged: (v) => c.toggleHouseRule(t.value, v),
               ),
+            // Moved off step 3 on 2026-09-10, along with the "Pets allowed?"
+            // question that used to be asked in BOTH places and written to two
+            // different records. Half the listings that answered both had them
+            // disagreeing, and only this copy is the one guests and the search
+            // filter read. One question, one screen, one answer.
+            if (c.houseRules['pets_allowed'] == true)
+              for (final f in s.petDetailFields)
+                ListingToggle(
+                  label: f.label,
+                  value: c.houseRules[f.key] == true,
+                  onChanged: (v) => c.toggleHouseRule(f.key, v),
+                ),
           ],
         ),
         ListingSection(

@@ -89,6 +89,14 @@ class SinglePropertyData {
   /// never filled them in (the legacy pet/smoking flags carry it then).
   final PropertyHouseRules? houseRules;
 
+  /// Whether this host takes offers at all (`pn_enabled` on the server).
+  ///
+  /// Until 2026-09-10 the only way a guest could find out was to open the
+  /// offer sheet, fill it in and have the server refuse it. Defaults to true —
+  /// "not stated" is not a refusal, and the server is still the real gate, so
+  /// failing open costs a wasted tap at worst and never hides a live feature.
+  final bool negotiationEnabled;
+
   /// What the host ticked in the 5-step wizard, grouped the way the FORM
   /// grouped it, with labels already resolved server-side from the same
   /// schema the wizard renders from. A group the host left empty never
@@ -154,6 +162,7 @@ class SinglePropertyData {
     this.nearby = const [],
     this.nearbyPopular,
     this.houseRules,
+    this.negotiationEnabled = true,
     this.amenityGroups = const [],
     this.experiences = const [],
     this.views = const [],
@@ -237,6 +246,11 @@ class SinglePropertyData {
               return g.places.isEmpty ? null : g;
             }()
           : null,
+      negotiationEnabled: json['negotiation'] is Map
+          ? (Map<String, dynamic>.from(json['negotiation'] as Map)['enabled']
+              as bool? ??
+              true)
+          : true,
       houseRules: json['houseRules'] is Map
           ? PropertyHouseRules.fromJson(
               Map<String, dynamic>.from(json['houseRules'] as Map))
@@ -572,6 +586,14 @@ class NearbyPlace {
 class PropertyHouseRules {
   final bool? petsAllowed;
   final double? petFee;
+
+  /// Asked of hosts since the wizard shipped and shown to nobody until
+  /// 2026-09-10 — they existed in the backend schema file and nowhere else.
+  /// Null when pets are not allowed, so a no-pets listing cannot advertise a
+  /// pet bed.
+  final bool? petBeds;
+  final bool? petFood;
+  final bool? petArea;
   final bool? smoking;
   final bool? alcohol;
   final bool? visitors;
@@ -587,6 +609,9 @@ class PropertyHouseRules {
   const PropertyHouseRules({
     this.petsAllowed,
     this.petFee,
+    this.petBeds,
+    this.petFood,
+    this.petArea,
     this.smoking,
     this.alcohol,
     this.visitors,
@@ -608,6 +633,9 @@ class PropertyHouseRules {
         petFee: json['petFee'] == null
             ? null
             : double.tryParse('${json['petFee']}'),
+        petBeds: _b(json['petBeds']),
+        petFood: _b(json['petFood']),
+        petArea: _b(json['petArea']),
         smoking: _b(json['smoking']),
         alcohol: _b(json['alcohol']),
         visitors: _b(json['visitors']),

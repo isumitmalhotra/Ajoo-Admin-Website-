@@ -234,6 +234,15 @@ class _PropertyPageState extends State<PropertyPage>
    */
   bool get isPrebooking => !_startsTodayIST(selectedDate);
 
+  /// Does this host take offers at all?
+  ///
+  /// `pn_enabled` now rides on the property payload the page already fetches.
+  /// Before, a guest could only discover a host had chosen "Fixed price only"
+  /// by opening the offer sheet, filling it in and having the server refuse
+  /// it — a wasted round trip presented as a feature. Defaults to true: "not
+  /// stated" is not a refusal, and the server is still the real gate.
+  bool get ownerNegotiates => _single?.negotiationEnabled ?? true;
+
   static const int _istOffsetMinutes = 330;
 
   static bool _startsTodayIST(DateTime? d, {DateTime? now}) {
@@ -2544,8 +2553,31 @@ onPressed: () async {
                 ),
               ),
               const SizedBox(height: 16),
+              // Say WHY the offer button is not here. A control that simply
+              // vanishes reads as something broken rather than a rule the host
+              // set.
+              if (!isPrebooking && !ownerNegotiates)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.info_outline_rounded,
+                          size: 15, color: kMuted),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'The host isn’t taking offers on this stay — '
+                          'the listed price applies.',
+                          style: inter(
+                              fontSize: 12, color: kMuted, height: 1.35),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Visibility(
-                visible: !isPrebooking,
+                visible: !isPrebooking && ownerNegotiates,
                 child: ElevatedButton(
                   onPressed: () async {
                     final AuthController authController =

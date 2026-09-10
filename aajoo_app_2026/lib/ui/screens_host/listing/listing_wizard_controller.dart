@@ -411,6 +411,18 @@ class ListingWizardController extends GetxController {
       houseRules.refresh();
     }
 
+    // The pet DETAILS live in property_attributes, not on the house-rules row,
+    // so they arrive in their own bucket. They are switches like the rest of
+    // the pet question, so they join the same map and ride the same save.
+    final petDetails = d['step4Details'];
+    if (petDetails is Map) {
+      for (final e in petDetails.entries) {
+        final v = e.value;
+        houseRules['${e.key}'] = v == 1 || v == true || v == '1';
+      }
+      houseRules.refresh();
+    }
+
     // Step 5's own four tables. The server saved them and did not return them,
     // so this could not restore them even in principle — a host who left the
     // wizard and came back found the last step empty and retyped their
