@@ -6,10 +6,14 @@
 // their field definitions, neither client hard-codes them; both just map over
 // whatever the server sends.
 //
-// Where the two differ, it is because a phone is not a browser: a `select` is
-// a bottom sheet rather than a dropdown, and `time` opens the platform time
-// picker rather than an <input type="time">. What is asked, in what order,
-// with what options, is identical.
+// Where the two differ, it is because a phone is not a browser: `time` opens
+// the platform time picker rather than an <input type="time">. What is asked,
+// in what order, with what options, is identical.
+//
+// A `select` WAS a bottom sheet on that reasoning, and stopped being one on
+// 2026-09-10: the client's objection was that the form asked in two voices,
+// not that a dropdown is wrong on a phone. Short lists are pills like every
+// other choice here; the sheet survives for a list long enough to need it.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:rent_home/constants.dart';
@@ -117,7 +121,48 @@ class SchemaFieldInput extends StatelessWidget {
 
   // ── select ────────────────────────────────────────────────────────────────
 
+  /// Above this many options a sheet beats a wall of pills.
+  ///
+  /// Nothing in the schema is close today — the longest list is six
+  /// (homestay_type) — so every category question renders as pills. The sheet
+  /// stays for the day somebody adds a list of thirty, where a Wrap would be a
+  /// paragraph of buttons and a searchable sheet is genuinely better.
+  static const int _pillLimit = 8;
+
   Widget _select(BuildContext context) {
+    /*
+     * Pills, matching every other choice on this form.
+     *
+     * This was a bottom sheet — reasonably, on the argument written at the top
+     * of this file that a phone is not a browser. But the client's objection
+     * (2026-09-10) was not about dropdown-versus-sheet, it was that the form
+     * asks in two voices: booleans are a pill pair, multiselects are a pill
+     * row, the property type is a pill row, and the category questions alone
+     * made you tap through to somewhere else to see what was on offer.
+     *
+     * A sheet also HIDES the options until it is opened, so a host cannot see
+     * that "Village Homestay" exists without going looking — the same fault
+     * the website's <select> had, in a different wrapper.
+     *
+     * Re-tapping the chosen pill clears it. The sheet could be dismissed
+     * without choosing; pills otherwise cannot un-answer an optional field.
+     */
+    if (field.options.length <= _pillLimit) {
+      final selected = value?.toString();
+      return Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final o in field.options)
+            _Pill(
+              label: o.label,
+              selected: selected == o.value,
+              onTap: () => _set(selected == o.value ? null : o.value),
+            ),
+        ],
+      );
+    }
+
     final current = field.options.where((o) => o.value == value).toList();
     final label = current.isEmpty ? 'Select…' : current.first.label;
     final chosen = current.isNotEmpty;

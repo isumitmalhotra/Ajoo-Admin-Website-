@@ -35,6 +35,7 @@ import 'package:rent_home/ui/screens_host/listing/components/agreement_block.dar
 import 'package:rent_home/utils/safe_bottom.dart';
 import 'package:rent_home/ui/screens_renter/property_details/components/property_tabs.dart'
     show nearbyIcon;
+import 'package:rent_home/ui/screens_host/listing/widgets/add_nearby_place.dart';
 
 class ListingWizardScreen extends StatefulWidget {
   const ListingWizardScreen({super.key, this.propertyId});
@@ -900,16 +901,14 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
         // cuts. That is why unticking is exactly as easy as ticking.
         _NearbyPicker(controller: c),
 
-        // The original distance grid, kept for anything the search does not
-        // find. Both are sent; the server tells them apart.
-        for (final g in s.nearbyGroups)
-          ListingSection(
-            title: g.label,
-            sub: 'Distance in km — leave blank if it does not apply.',
-            children: [
-              for (final o in g.options) _nearbyRow(g.key, o.value, o.label),
-            ],
-          ),
+        // The original distance grid stood here — one bare kilometre box per
+        // well-known place type, with no name field, no position, and no
+        // connection to the section a guest reads them under. Everything is
+        // added inside its own section now: Google suggests, the host ticks,
+        // and "Add a place" covers what Google has never heard of. Values
+        // saved under the old grid are folded into their section on load, so a
+        // host can see and change them rather than finding them frozen on
+        // their listing. Client, 2026-09-10; same change on the website.
 
         _PhotoStep(controller: c, rules: s.photoRules),
       ],
@@ -2833,7 +2832,7 @@ class _NearbyPickerState extends State<_NearbyPicker> {
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Text(
                   "We couldn't find anything nearby right now — you can still "
-                  'enter distances by hand below.',
+                  'add places yourself below.',
                   style: inter(fontSize: 13, color: kMuted)),
             ),
           for (final sec in sections) ..._section(c, sec),
@@ -2866,8 +2865,12 @@ class _NearbyPickerState extends State<_NearbyPicker> {
     final rows = [...places, ...extras]
       ..sort((a, b) => (double.tryParse('${a['km']}') ?? 0)
           .compareTo(double.tryParse('${b['km']}') ?? 0));
-    if (rows.isEmpty) return const [];
-
+    // EVERY section renders, including the empty ones.
+    //
+    // It returned nothing when Google found nothing, so a host had no idea
+    // "Getting There" or "Adventure & Activities" existed — the section that
+    // most needs a human answer was the one most likely to be missing, and
+    // the only way in was a separate grid of kilometre boxes further down.
     final chosen = c.nearbyPicked.where((p) => p['section'] == key).length;
 
     return [
@@ -2942,6 +2945,26 @@ class _NearbyPickerState extends State<_NearbyPicker> {
           }).toList(),
         ),
       ),
+      if (rows.isEmpty)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text(
+            'Nothing found here. Add one yourself if there is something worth '
+            'showing.',
+            style: inter(fontSize: 12.5, color: kMuted),
+          ),
+        ),
+      // The one thing Google cannot do: the family temple two villages over,
+      // the viewpoint everyone local knows and nobody has added to Maps. Per
+      // section, because a place belongs under a heading — the grid of bare
+      // kilometre boxes this replaces sat further down the step with nowhere
+      // to put the name.
+      AddNearbyPlace(
+        propertyLat: double.tryParse('${c.f['latitude'] ?? ''}'),
+        propertyLng: double.tryParse('${c.f['longitude'] ?? ''}'),
+        onAdd: (place) => c.addNearbyPlace(key, place),
+      ),
+      const SizedBox(height: 6),
     ];
   }
 }

@@ -158,6 +158,7 @@ class OptionGroup {
     required this.label,
     required this.options,
     this.showIf,
+    this.section,
   });
 
   final String key;
@@ -165,11 +166,21 @@ class OptionGroup {
   final List<Option> options;
   final ShowIf? showIf;
 
+  /// For the nearby groups only: the SECTION this group's places belong to.
+  ///
+  /// Sent by the server, resolved by the same helper the guest page uses, so
+  /// the wizard and the listing cannot disagree about which heading a place
+  /// sits under. Null on every other group, and on an older payload.
+  final String? section;
+
   factory OptionGroup.fromJson(Map<String, dynamic> j) => OptionGroup(
         key: (j['key'] ?? '').toString(),
         label: (j['label'] ?? '').toString(),
         options: Option.listFrom(j['options']),
         showIf: ShowIf.fromJson(j['showIf']),
+        section: (j['section'] ?? '').toString().isEmpty
+            ? null
+            : j['section'].toString(),
       );
 
   static List<OptionGroup> listFrom(dynamic v) => v is List

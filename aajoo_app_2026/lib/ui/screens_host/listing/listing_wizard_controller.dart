@@ -491,6 +491,49 @@ class ListingWizardController extends GetxController {
           .where((e) =>
               '${e['section'] ?? ''}'.isNotEmpty && '${e['name'] ?? ''}'.isNotEmpty));
     }
+
+    /*
+     * By-hand distances from before the wizard consolidated, folded into the
+     * section they belong to.
+     *
+     * The old grid — one bare kilometre box per well-known place type, with no
+     * name, no position and no connection to the heading a guest reads it
+     * under — is gone. A listing saved before that still HAS those values and
+     * they still show to a guest, so dropping them here would make them
+     * invisible and uneditable while remaining live: the worst of both.
+     *
+     * They come in as what they are: a name and a distance somebody typed,
+     * with nothing checking either. The group's section comes from the SERVER
+     * (`section` on each nearbyGroup, resolved by the same helper the guest
+     * page uses), so the wizard and the listing cannot disagree about which
+     * heading a place sits under.
+     */
+    final groupSection = <String, String>{};
+    for (final g in (schema.value?.nearbyGroups ?? const [])) {
+      if (g.section != null && g.section!.isNotEmpty) groupSection[g.key] = g.section!;
+    }
+    if (d['nearby'] is Map) {
+      (d['nearby'] as Map).forEach((cat, places) {
+        final section = groupSection['$cat'];
+        if (section == null || places is! Map) return;
+        places.forEach((label, km) {
+          final n = double.tryParse('$km');
+          if (n == null || n <= 0) return;
+          final name = '$label'.trim();
+          if (name.isEmpty || isNearbyPicked(section, name)) return;
+          nearbyPicked.add({
+            'section': section,
+            'name': name,
+            'km': n,
+            'lat': null,
+            'lng': null,
+            'placeId': null,
+            'source': 'manual',
+          });
+        });
+      });
+      nearbyPicked.refresh();
+    }
     if (d['media'] is List) {
       media.assignAll((d['media'] as List)
           .whereType<Map>()
@@ -582,6 +625,34 @@ class ListingWizardController extends GetxController {
     } else {
       nearbyPicked.add(place);
     }
+    nearbyPicked.refresh();
+  }
+
+  /// A place the host added because the search never returned it.
+  ///
+  /// Marked `source: 'manual'` — a Google-picked place carries a position and
+  /// a place id and the platform can stand behind its distance; a typed one
+  /// has nothing checking it, and the guest page shows the difference as
+  /// "Host provided". Sending "google" for something a host typed would make
+  /// that marker a lie in the one case it exists for.
+  ///
+  /// Replaces any existing entry with the same name in the same section, so
+  /// adding twice corrects rather than duplicates.
+  void addNearbyPlace(String section, Map<String, dynamic> place) {
+    final name = '${place['name']}'.trim();
+    if (name.isEmpty) return;
+    nearbyPicked.removeWhere((p) =>
+        p['section'] == section &&
+        '${p['name']}'.trim().toLowerCase() == name.toLowerCase());
+    nearbyPicked.add({
+      'section': section,
+      'name': name,
+      'km': place['km'],
+      'lat': place['lat'],
+      'lng': place['lng'],
+      'placeId': null,
+      'source': 'manual',
+    });
     nearbyPicked.refresh();
   }
 
