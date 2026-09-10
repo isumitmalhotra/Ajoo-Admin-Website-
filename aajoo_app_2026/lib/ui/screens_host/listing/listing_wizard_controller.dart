@@ -328,6 +328,32 @@ class ListingWizardController extends GetxController {
     merge(p4, d['pricing'], 'ppr_');
     merge(p4, d['negotiation'], 'pn_');
 
+    // MySQL hands booleans back as 1/0 and every read of this flag is
+    // `== true`, so a listing that DOES price weekends apart opened with the
+    // switch OFF. Not cosmetic: the whole of p4 is posted back on save, so the
+    // 1 went with it, the server read it as ON and demanded a weekend minimum
+    // for a section the screen was hiding — step 4 could not be saved from
+    // the app at all, and the refusal named a field the host could not see.
+    // Same coercion the house-rule toggles needed.
+    p4['weekend_pricing'] = p4['weekend_pricing'] == 1
+        || p4['weekend_pricing'] == true
+        || p4['weekend_pricing'] == '1';
+
+    // The negotiation switch, under the name the SAVE endpoint reads.
+    //
+    // Stripping 'pn_' gives `enabled`; the switch and the payload both use
+    // `negotiation_enabled`. So the switch read null and rendered ON (it tests
+    // `!= false`), and the key was missing from every save — where the server
+    // defaults it to 1. Editing ANY listing from the app therefore turned
+    // negotiation back on for a host who had switched it off, with the switch
+    // showing on the whole time, so nothing said it had happened. Same shape
+    // as the manager block above: the draft speaks in columns and the form
+    // speaks in fields.
+    if (p4['enabled'] != null) {
+      p4['negotiation_enabled'] = p4['enabled'] == 1
+          || p4['enabled'] == true
+          || p4['enabled'] == '1';
+    }
     // The two negotiation tiers live on the flat property row, not in the
     // modular negotiation table, and the form keys are the ones the save
     // endpoint reads — so they are mapped explicitly rather than by prefix.
