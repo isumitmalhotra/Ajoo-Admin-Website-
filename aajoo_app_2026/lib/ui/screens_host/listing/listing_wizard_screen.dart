@@ -351,7 +351,7 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
                 onPressed: c.busy.value
                     ? null
                     : (last
-                        ? (c.allDeclared ? _submit : null)
+                        ? ((c.allDeclared && c.serverAllowsSubmit) ? _submit : null)
                         : _continue),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: kIndigo,
@@ -1257,8 +1257,13 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             SingleChoiceRow(
               options: s.cancellationPolicies,
               value: c.p4['cancellation_policy']?.toString(),
-              onSelect: (v) => c.setP4('cancellation_policy', v),
+              onSelect: (v) {
+                c.setP4('cancellation_policy', v);
+                c.fieldErrors.remove('cancellation_policy');
+              },
             ),
+            if (c.fieldErrors['cancellation_policy'] != null)
+              _fieldError(c.fieldErrors['cancellation_policy']!),
           ],
         ),
         ListingSection(
@@ -2855,6 +2860,30 @@ class _ReadinessCard extends StatelessWidget {
               Text('Still to add: ${missing.take(4).join(', ')}'
                   '${missing.length > 4 ? '…' : ''}',
                   style: inter(fontSize: 12, color: kInk2, height: 1.45)),
+            ],
+            // What stops this listing being submitted at all, in the server's
+            // own words — the same sentence submitListing would refuse with.
+            // Without it the button was simply grey, and a host with no
+            // documents uploaded had no way of knowing that was why.
+            if (controller.blockedReason != null) ...[
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.block_rounded, size: 15, color: kDanger),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text(
+                      controller.blockedReason!,
+                      style: inter(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: kDanger,
+                          height: 1.45),
+                    ),
+                  ),
+                ],
+              ),
             ],
             // Photographs BLOCK a first publication and only WARN on an
             // update: a listing that is already live stays live whether or not

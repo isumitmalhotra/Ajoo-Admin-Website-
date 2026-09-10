@@ -182,6 +182,20 @@ class ListingWizardController extends GetxController {
       kListingDeclarations.every((d) => declarations[d.key] == true) &&
       agreementDone.value;
 
+  /// The server's own answer to "can this be submitted?", as reported by
+  /// getReadiness. It knows what this screen does not — whether the photos,
+  /// the documents and the cancellation policy are in place — and it is the
+  /// same rule submitListing applies, so the button and the refusal cannot
+  /// disagree. Absent (readiness not loaded yet) means "do not stand in the
+  /// way": the server still has the final word.
+  bool get serverAllowsSubmit => readiness['canSubmit'] != false;
+
+  /// Why the server would refuse, in its own words, or null.
+  String? get blockedReason {
+    final r = readiness['blockedReason'];
+    return r is String && r.trim().isNotEmpty ? r : null;
+  }
+
   /// Load the agreement and this host's standing. Safe to call more than once.
   Future<void> loadAgreement() async {
     final results = await Future.wait([
@@ -1005,6 +1019,15 @@ class ListingWizardController extends GetxController {
 
     num? val(String k) => num.tryParse(_s(p4[k]));
     bool set(String k) => (val(k) ?? 0) > 0;
+
+    // REQUIRED (client, 2026-09-11). It decides what a guest is owed when
+    // they cancel; a listing without one had guests reading "the host hasn't
+    // set a cancellation policy yet". The server refuses the step and the
+    // publication without it — this says so on the chips first.
+    if (_s(p4['cancellation_policy']).trim().isEmpty) {
+      errs['cancellation_policy'] =
+          'Choose a cancellation policy — guests see it before booking.';
+    }
 
     /**
      * Required (client, 2026-09-05).

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 import 'package:rent_home/models/listing_schema.dart';
 import 'package:rent_home/service/listing_service.dart';
 import 'package:rent_home/ui/screens_host/listing/listing_wizard_controller.dart';
@@ -105,6 +106,44 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     expect(c.p4['cancellation_policy'], isNull,
         reason: 'a policy was invented for a listing that has none');
+  });
+
+  test('the cancellation policy is REQUIRED', () async {
+    // Client's rule, 2026-09-11. A listing without one had guests reading
+    // "the host hasn't set a cancellation policy yet" on the booking page,
+    // and the policy decides what they are owed when they cancel. The server
+    // refuses the step and the publication; this is the app saying so on the
+    // chips, before the round trip.
+    final c = wizard({'pricing': {'ppr_base_price': 2000}, 'property': {}});
+    c.onInit();
+    await Future<void>.delayed(Duration.zero);
+    c.step.value = 3;
+    expect(c.validateStep4()['cancellation_policy'], isNotNull,
+        reason: 'step 4 lets a host continue with no cancellation policy');
+
+    c.setP4('cancellation_policy', 'moderate');
+    expect(c.validateStep4()['cancellation_policy'], isNull,
+        reason: 'a chosen policy is still being refused');
+  });
+
+  test('the server verdict gates Submit, and the reason is shown', () {
+    final c = ListingWizardController(propertyId: 77, service: _StubService({}));
+    // Not loaded yet: do not stand in the way — the server has the last word.
+    expect(c.serverAllowsSubmit, isTrue);
+    expect(c.blockedReason, isNull);
+
+    c.readiness.assignAll({
+      'canSubmit': false,
+      'blockedReason': 'Before publishing, upload your identity document.',
+    });
+    expect(c.serverAllowsSubmit, isFalse,
+        reason: 'the button stays green on a listing the server will refuse');
+    expect(c.blockedReason, contains('identity document'),
+        reason: 'the host is not told why the button is grey');
+
+    c.readiness.assignAll({'canSubmit': true, 'blockedReason': null});
+    expect(c.serverAllowsSubmit, isTrue);
+    expect(c.blockedReason, isNull);
   });
 
   test('a host who left negotiation ON keeps it on', () async {
