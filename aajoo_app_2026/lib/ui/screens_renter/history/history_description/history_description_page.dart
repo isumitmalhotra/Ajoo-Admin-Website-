@@ -107,7 +107,8 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
   }
 
   /// The stay is over once checkout has passed — nothing left to cancel.
-  bool get _stayOver => hasEnded(widget.bookingData.bookDetailsBtBookTo);
+  bool get _stayOver => hasEnded(widget.bookingData.bookDetailsBtBookTo,
+      hours: widget.bookingData.stayHours);
 
   bool get _canCancel => !_isCancelled && !_stayOver;
 
@@ -690,9 +691,10 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
             // question unanswered. See utils/booking_status.dart.
             _statusBadge(lifecycleLabel(
               booking.bookingStatusBsTitle,
-              ended: hasEnded(booking.bookDetailsBtBookTo),
+              ended: hasEnded(booking.bookDetailsBtBookTo, hours: booking.stayHours),
               started: isStaying(booking.bookDetailsBtBookFrom,
-                  booking.bookDetailsBtBookTo),
+                  booking.bookDetailsBtBookTo,
+                  hours: booking.stayHours),
             )),
             _payBadge(booking),
           ],

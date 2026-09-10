@@ -1,3 +1,4 @@
+import 'package:rent_home/utils/stay_clock.dart';
 // To parse this JSON data, do
 //
 //     final onGoingBookingResponse = onGoingBookingResponseFromJson(jsonString);
@@ -85,6 +86,12 @@ double? _money(dynamic v) {
 
 class Booking {
   int bookPriId;
+
+  /// This listing's own check-in and check-out hours, when the host set them.
+  /// Empty otherwise, and the platform's 2 PM / 11 AM stands — the behaviour
+  /// every screen had before this field existed.
+  StayHours stayHours = StayHours.platform;
+
   String bookId;
   String bookInvoice;
   /// The room subtotal, BEFORE tax. Never show this on its own — see
@@ -196,7 +203,14 @@ class Booking {
                 json["bookingProperty"] as Map<String, dynamic>)
             : null,
         propertyImage: json["property_image"],
-      );
+      )
+        // Set after construction: the generated constructor takes only the
+        // fields it was written with, and this one arrives on the same row.
+        ..stayHours = StayHours.fromJson(
+          json["stayWindow"] is Map
+              ? Map<String, dynamic>.from(json["stayWindow"] as Map)
+              : null,
+        );
 
   Map<String, dynamic> toJson() => {
         "book_pri_id": bookPriId,

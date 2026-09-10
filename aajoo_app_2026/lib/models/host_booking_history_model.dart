@@ -1,3 +1,4 @@
+import 'package:rent_home/utils/stay_clock.dart';
 // To parse this JSON data, do
 //
 //     final hostBookingHistoryResponse = hostBookingHistoryResponseFromJson(jsonString);
@@ -55,6 +56,15 @@ class HostBookingHistory {
   DateTime? bookAddedAt; // nullable safe parse
   String bookDetailsBtBookFrom;
   String bookDetailsBtBookTo;
+
+  /// This listing's own check-in and check-out hours.
+  ///
+  /// The tabs bucket a stay as upcoming, ongoing or completed, and did it on
+  /// the platform's 2 PM / 11 AM while the wizard asked every host for their
+  /// own times. A host who lets guests in at 9 AM had their arrivals sitting
+  /// under "Upcoming" until the afternoon. Empty when the host set none, and
+  /// then the platform hours stand exactly as before.
+  StayHours stayHours;
   String bookingStatusBsTitle;
   dynamic bookingStatusBsCode;
   String userDetailsUserFullName;
@@ -84,6 +94,7 @@ class HostBookingHistory {
     required this.bookAddedAt,
     required this.bookDetailsBtBookFrom,
     required this.bookDetailsBtBookTo,
+    this.stayHours = StayHours.platform,
     required this.bookingStatusBsTitle,
     required this.bookingStatusBsCode,
     required this.userDetailsUserFullName,
@@ -147,6 +158,11 @@ class HostBookingHistory {
       bookAddedAt: parsedAddedAt,
       bookDetailsBtBookFrom: json['bookDetails.bt_book_from']?.toString() ?? '',
       bookDetailsBtBookTo: json['bookDetails.bt_book_to']?.toString() ?? '',
+      stayHours: StayHours.fromJson(
+        json['stayWindow'] is Map
+            ? Map<String, dynamic>.from(json['stayWindow'] as Map)
+            : null,
+      ),
       bookingStatusBsTitle: json['bookingStatus.bs_title']?.toString() ?? '',
       bookingStatusBsCode: json['bookingStatus.bs_code'],
       userDetailsUserFullName:

@@ -37,6 +37,7 @@ class StayBanner extends StatelessWidget {
     final live = all.where((b) => isStaying(
           b.bookDetails?.btBookFrom,
           b.bookDetails?.btBookTo,
+          hours: b.stayHours,
         ));
     if (live.isNotEmpty) return live.first;
 

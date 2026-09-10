@@ -212,7 +212,7 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
               final allActive =
                   userController.ongoingBookings.value?.data.bookings ?? [];
               final upcoming = allActive
-                  .where((b) => isUpcoming(b.bookDetails?.btBookFrom))
+                  .where((b) => isUpcoming(b.bookDetails?.btBookFrom, hours: b.stayHours))
                   .length;
               final reviews =
                   userController.userReviews.value?.data.review.length ?? 0;
@@ -282,7 +282,7 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
               final all =
                   userController.ongoingBookings.value?.data.bookings ?? [];
               final list = all
-                  .where((b) => isUpcoming(b.bookDetails?.btBookFrom))
+                  .where((b) => isUpcoming(b.bookDetails?.btBookFrom, hours: b.stayHours))
                   .toList();
               if (userController.isLoading.value && list.isEmpty) {
                 return const Padding(

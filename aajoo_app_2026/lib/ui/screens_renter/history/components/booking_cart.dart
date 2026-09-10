@@ -77,9 +77,10 @@ class BookingCard extends StatelessWidget {
     // Lifecycle and payment are separate questions; see utils/booking_status.
     final life = lifecycleLabel(
       booking.bookingStatusBsTitle,
-      ended: hasEnded(booking.bookDetailsBtBookTo),
+      ended: hasEnded(booking.bookDetailsBtBookTo, hours: booking.stayHours),
       started: isStaying(
-          booking.bookDetailsBtBookFrom, booking.bookDetailsBtBookTo),
+          booking.bookDetailsBtBookFrom, booking.bookDetailsBtBookTo,
+          hours: booking.stayHours),
     );
     final pay =
         paymentBadge(isPaid: booking.bookIsPaid, isCod: booking.bookIsCod);

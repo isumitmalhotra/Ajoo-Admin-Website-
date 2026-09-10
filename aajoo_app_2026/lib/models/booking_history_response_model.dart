@@ -1,3 +1,4 @@
+import 'package:rent_home/utils/stay_clock.dart';
 // To parse this JSON data, do
 //
 //     final bookingHistoryResponse = bookingHistoryResponseFromJson(jsonString);
@@ -48,6 +49,11 @@ class BookingHistoryData {
   String? bookingStatusBsTitle;
   String? bookDetailsBtBookFrom;
   String? bookDetailsBtBookTo;
+
+  /// This listing's own check-in and check-out hours, when the host set them.
+  /// Empty otherwise, and the platform's 2 PM / 11 AM stands — which is what
+  /// every screen did before this field existed.
+  StayHours stayHours;
   dynamic book_price;
 
   /// The room subtotal as a number, whatever shape the DECIMAL arrived in.
@@ -111,6 +117,7 @@ class BookingHistoryData {
       this.bookingStatusBsTitle,
       this.bookDetailsBtBookFrom,
       this.bookDetailsBtBookTo,
+      this.stayHours = StayHours.platform,
       required this.book_price,
       this.bookTotalAmt,
       this.bookTax,
@@ -136,6 +143,11 @@ class BookingHistoryData {
           bookingStatusBsTitle: json["bookingStatus.bs_title"],
           bookDetailsBtBookFrom: json["bookDetails.bt_book_from"],
           bookDetailsBtBookTo: json["bookDetails.bt_book_to"],
+          stayHours: StayHours.fromJson(
+            json["stayWindow"] is Map
+                ? Map<String, dynamic>.from(json["stayWindow"] as Map)
+                : null,
+          ),
           book_price: json["book_price"],
           bookTotalAmt: _toDouble(json["book_total_amt"]),
           balanceDue: _toDouble(json["balanceDue"]) ?? 0,

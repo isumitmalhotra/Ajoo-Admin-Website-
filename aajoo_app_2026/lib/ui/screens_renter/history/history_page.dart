@@ -21,19 +21,20 @@ import 'package:rent_home/utils/stay_clock.dart';
 /// decide, using the same 2 PM / 11 AM window as the web and the rest of this
 /// app; the title only settles what the dates cannot say (cancelled), and is
 /// the fallback when they cannot be read.
-int bookingTabIndex(String? title, {String? from, String? to}) {
+int bookingTabIndex(String? title,
+    {String? from, String? to, StayHours? hours}) {
   final s = (title ?? '').toLowerCase();
   if (s.contains('cancel')) return 3; // Cancelled — dates are irrelevant.
 
   // A host who has CHECKED THE GUEST IN has said the stay is happening —
   // that beats the clock. Without this, a guest checked in at 9am sat under
-  // Upcoming until the 2pm check-in hour while their own card read
+  // Upcoming until the listing's check-in hour while their own card read
   // "Staying now": the same card disagreeing with the tab it was filed in.
   final checkedIn = s.contains('check in') || s.contains('check-in');
 
   if (parseStayDate(from) != null && parseStayDate(to) != null) {
-    if (hasEnded(to)) return 2; // Completed
-    if (checkedIn || isStaying(from, to)) return 1; // Ongoing
+    if (hasEnded(to, hours: hours)) return 2; // Completed
+    if (checkedIn || isStaying(from, to, hours: hours)) return 1; // Ongoing
     return 0; // Upcoming
   }
 
@@ -146,7 +147,9 @@ class _HistoryPageState extends State<HistoryPage> {
     if (target == null) return;
     _tabSnapped = true;
     final bucket = bookingTabIndex(target.bookingStatusBsTitle,
-        from: target.bookDetailsBtBookFrom, to: target.bookDetailsBtBookTo);
+        from: target.bookDetailsBtBookFrom,
+        to: target.bookDetailsBtBookTo,
+        hours: target.stayHours);
     final controller = DefaultTabController.maybeOf(ctx);
     if (controller == null || controller.index == bucket) return;
     // Not during a build: this runs inside the Obx that renders the list.
@@ -236,7 +239,8 @@ class _HistoryPageState extends State<HistoryPage> {
                         .where((b) =>
                             bookingTabIndex(b.bookingStatusBsTitle,
                                 from: b.bookDetailsBtBookFrom,
-                                to: b.bookDetailsBtBookTo) ==
+                                to: b.bookDetailsBtBookTo,
+                                hours: b.stayHours) ==
                             bucket)
                         .toList();
                 if (items.isEmpty) return _empty(bucket);

@@ -22,6 +22,56 @@ const int kCheckInHour = 14;
 /// look active for another 13 hours.
 const int kCheckOutHour = 11;
 
+/// The hours THIS stay actually runs to.
+///
+/// The two constants above are the platform's DEFAULT, not a rule. The listing
+/// wizard asks every host when guests may arrive and must leave, and the refund
+/// ladder is measured from the host's answer — while every screen here printed
+/// and bucketed on 2 PM / 11 AM regardless. One booking therefore carried two
+/// different check-in times. Client's call, 2026-09-11: the host's answer wins.
+///
+/// A null field means the host never said, and the platform hour stands — which
+/// is what this file did before [StayHours] existed, so a listing with no times
+/// set behaves exactly as it does today.
+class StayHours {
+  const StayHours({this.checkIn, this.checkOut});
+
+  final int? checkIn;
+  final int? checkOut;
+
+  static const StayHours platform = StayHours();
+
+  /// Reads `{ "checkIn": "14:00", "checkOut": "11:00" }` off an API row.
+  factory StayHours.fromJson(Map<String, dynamic>? j) => StayHours(
+        checkIn: parseStayHour(j?['checkIn']),
+        checkOut: parseStayHour(j?['checkOut']),
+      );
+
+  int get inHour => checkIn ?? kCheckInHour;
+  int get outHour => checkOut ?? kCheckOutHour;
+}
+
+/// `"14:00"` → 14. Anything that is not a real clock time → null.
+///
+/// Null, never 0, for "not set": hour 0 is midnight and a real answer, and a
+/// caller doing `hour ?? kCheckInHour` must be able to tell the two apart.
+int? parseStayHour(dynamic value) {
+  if (value is int) return value >= 0 && value <= 23 ? value : null;
+  final m = RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch('${value ?? ''}'.trim());
+  if (m == null) return null;
+  final h = int.tryParse(m.group(1)!);
+  final mi = int.tryParse(m.group(2)!);
+  if (h == null || mi == null || h > 23 || mi > 59) return null;
+  return h;
+}
+
+/// "2 PM", "9 AM" — how a person says an hour.
+String stayHourLabel(int hour) {
+  final suffix = hour < 12 ? 'AM' : 'PM';
+  final h12 = hour % 12 == 0 ? 12 : hour % 12;
+  return '$h12 $suffix';
+}
+
 /// Parses the `DD-MM-YYYY` the booking API returns. Returns null on anything
 /// unexpected so callers can fall back rather than show a wrong state.
 DateTime? parseStayDate(String? raw) {
@@ -76,30 +126,34 @@ DateTime? _stayMoment(DateTime? day, int hour) {
       .subtract(const Duration(minutes: _istOffsetMinutes));
 }
 
-DateTime? checkInAt(String? from) => _stayMoment(parseStayDate(from), kCheckInHour);
+DateTime? checkInAt(String? from, {StayHours? hours}) =>
+    _stayMoment(parseStayDate(from), (hours ?? StayHours.platform).inHour);
 
-DateTime? checkOutAt(String? to) => _stayMoment(parseStayDate(to), kCheckOutHour);
+DateTime? checkOutAt(String? to, {StayHours? hours}) =>
+    _stayMoment(parseStayDate(to), (hours ?? StayHours.platform).outHour);
 
-/// True once 2 PM IST on the check-in day has passed.
-bool hasStarted(String? from, {DateTime? now}) {
-  final t = checkInAt(from);
+/// True once check-in has opened on the check-in day.
+bool hasStarted(String? from, {DateTime? now, StayHours? hours}) {
+  final t = checkInAt(from, hours: hours);
   if (t == null) return false;
   return !(now ?? DateTime.now().toUtc()).isBefore(t);
 }
 
-/// True once 11 AM IST on the check-out day has passed.
-bool hasEnded(String? to, {DateTime? now}) {
-  final t = checkOutAt(to);
+/// True once check-out has passed on the check-out day.
+bool hasEnded(String? to, {DateTime? now, StayHours? hours}) {
+  final t = checkOutAt(to, hours: hours);
   if (t == null) return false;
   return !(now ?? DateTime.now().toUtc()).isBefore(t);
 }
 
 /// The guest is in the property right now.
-bool isStaying(String? from, String? to, {DateTime? now}) =>
-    hasStarted(from, now: now) && !hasEnded(to, now: now);
+bool isStaying(String? from, String? to, {DateTime? now, StayHours? hours}) =>
+    hasStarted(from, now: now, hours: hours) &&
+    !hasEnded(to, now: now, hours: hours);
 
 /// The stay has not begun yet.
-bool isUpcoming(String? from, {DateTime? now}) => !hasStarted(from, now: now);
+bool isUpcoming(String? from, {DateTime? now, StayHours? hours}) =>
+    !hasStarted(from, now: now, hours: hours);
 
 
 /// "19 Aug" from the DD-MM-YYYY the booking API speaks.

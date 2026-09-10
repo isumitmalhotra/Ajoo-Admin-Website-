@@ -49,7 +49,7 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
 
   /// Offer Check-in from the START OF THE CHECK-IN DAY until checkout.
   ///
-  /// Deliberately NOT isStaying(), which only turns true at the 14:00 check-in
+  /// Deliberately NOT isStaying(), which only turns true at the listing's check-in
   /// hour: a guest who arrives at noon could then be checked in from the
   /// website (which allows it from midnight) and from the API (same rule), but
   /// not from the phone in the host's hand. Same rule everywhere.
@@ -68,8 +68,9 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
   /// the first version of this button never appeared.
   String get _stage => lifecycleLabel(
         b.bookingStatusBsTitle,
-        ended: hasEnded(b.bookDetailsBtBookTo),
-        started: isStaying(b.bookDetailsBtBookFrom, b.bookDetailsBtBookTo),
+        ended: hasEnded(b.bookDetailsBtBookTo, hours: b.stayHours),
+        started: isStaying(b.bookDetailsBtBookFrom, b.bookDetailsBtBookTo,
+            hours: b.stayHours),
       );
 
   bool get _needsApproval =>
@@ -212,7 +213,7 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
     final today = DateTime.now();
     final startedToday = !DateTime(from.year, from.month, from.day)
         .isAfter(DateTime(today.year, today.month, today.day));
-    return startedToday && !hasEnded(b.bookDetailsBtBookTo);
+    return startedToday && !hasEnded(b.bookDetailsBtBookTo, hours: b.stayHours);
   }
 
   bool _checkingIn = false;
@@ -478,9 +479,11 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
                 // neither question is answered by guessing at the other.
                 child: Text(
                     lifecycleLabel(b.bookingStatusBsTitle,
-                        ended: hasEnded(b.bookDetailsBtBookTo),
+                        ended: hasEnded(b.bookDetailsBtBookTo,
+                            hours: b.stayHours),
                         started: isStaying(b.bookDetailsBtBookFrom,
-                            b.bookDetailsBtBookTo)),
+                            b.bookDetailsBtBookTo,
+                            hours: b.stayHours)),
                     style: inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,

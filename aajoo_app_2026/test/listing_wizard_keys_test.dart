@@ -77,7 +77,11 @@ void main() {
   /// pattern have been mangled twice by the tooling that wrote this file, and
   /// a broken regex here fails open — it finds no keys and every check passes.
   Set<String> keysFor(String prefix) => {
-        ...RegExp('_' + prefix + r"(?:Text|Choice|Toggle)\('([a-z0-9_]+)'")
+        // `Time` joined the list on 2026-09-11, when check-in and check-out
+        // stopped being free-text boxes and became a picker. The behaviour was
+        // better and this scan said the fields had vanished — the hazard of
+        // asking the source how it asks rather than what it asks for.
+        ...RegExp('_' + prefix + r"(?:Text|Choice|Toggle|Time)\('([a-z0-9_]+)'")
             .allMatches(source)
             .map((m) => m.group(1)!),
         ...RegExp('setP' + prefix.substring(1) + r"\('([a-z0-9_]+)'")

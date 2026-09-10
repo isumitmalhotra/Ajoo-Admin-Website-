@@ -102,7 +102,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
   /// sitting under Upcoming. #BPTEST02 (16-07 to 19-07) was showing there on
   /// 09-08. The title still settles what dates cannot say (cancelled), and is
   /// the fallback when they cannot be read.
-  int _bucket(String? title, {String? from, String? to}) {
+  int _bucket(String? title, {String? from, String? to, StayHours? hours}) {
     final s = (title ?? '').toLowerCase();
     if (s.contains('cancel')) return 3; // Cancelled — dates are irrelevant.
 
@@ -113,8 +113,8 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
     final checkedIn = s.contains('check in') || s.contains('check-in');
 
     if (parseStayDate(from) != null && parseStayDate(to) != null) {
-      if (hasEnded(to)) return 2; // Completed
-      if (checkedIn || isStaying(from, to)) return 1; // Ongoing
+      if (hasEnded(to, hours: hours)) return 2; // Completed
+      if (checkedIn || isStaying(from, to, hours: hours)) return 1; // Ongoing
       return 0; // Upcoming
     }
 
@@ -204,7 +204,8 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                         .where((b) =>
                             _bucket(b.bookingStatusBsTitle,
                                 from: b.bookDetailsBtBookFrom,
-                                to: b.bookDetailsBtBookTo) ==
+                                to: b.bookDetailsBtBookTo,
+                                hours: b.stayHours) ==
                             bucket)
                         .toList();
                 return RefreshIndicator(
@@ -285,9 +286,10 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
     // same thing. See utils/booking_status.dart.
     final life = lifecycleLabel(
       booking.bookingStatusBsTitle,
-      ended: hasEnded(booking.bookDetailsBtBookTo),
-      started: isStaying(
-          booking.bookDetailsBtBookFrom, booking.bookDetailsBtBookTo),
+      ended: hasEnded(booking.bookDetailsBtBookTo, hours: booking.stayHours),
+      started: isStaying(booking.bookDetailsBtBookFrom,
+          booking.bookDetailsBtBookTo,
+          hours: booking.stayHours),
       // So an online checkout that was never paid is not reported as a
       // confirmed stay, and a booking awaiting the host says so.
       isPaid: booking.bookIsPaid,
@@ -464,7 +466,8 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
               ),
               if (_bucket(booking.bookingStatusBsTitle,
                       from: booking.bookDetailsBtBookFrom,
-                      to: booking.bookDetailsBtBookTo) ==
+                      to: booking.bookDetailsBtBookTo,
+                      hours: booking.stayHours) ==
                   2) ...[
                 TextButton(
                   onPressed: () =>
