@@ -80,6 +80,29 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
     // a missing field did nothing visible at all. The reason was on screen,
     // just not on THIS screen. Same fix the website made: a toast at the
     // button, and the page scrolls back to the banner behind it.
+    //
+    // A HOLD is the other way round. The step saved; what is missing is the
+    // photographs, and they are at the BOTTOM of this step — scrolling to a
+    // banner at the top would move the host away from the one thing they came
+    // back for.
+    if (c.heldHere.value.isNotEmpty) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(
+          content: Text(c.heldHere.value, style: inter(fontSize: 13.5)),
+          backgroundColor: kClay,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 88),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10)),
+        ));
+      _scroll.animateTo(
+        _scroll.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      );
+      return;
+    }
     if (c.error.value.isNotEmpty) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
@@ -355,7 +378,14 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
                                   ? (c.isLive
                                       ? 'Update listing'
                                       : 'Submit for review')
-                                  : 'Continue',
+                                  // Named so the second press is a decision
+                                  // rather than a confused re-tap of a button
+                                  // that appeared to do nothing.
+                                  : (c.step.value == 2 &&
+                                          c.photoWarned.value &&
+                                          c.photoGapReason != null
+                                      ? 'Continue without photos'
+                                      : 'Continue'),
                               style: inter(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700)),
@@ -2017,7 +2047,11 @@ class _PhotoStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final count = controller.media.length;
+      // Photographs, not verification documents — those come back in the same
+      // list and used to be counted here AND drawn in the grid, so a host's
+      // Aadhaar card sat among the bedrooms and stood in for one of them.
+      final photos = controller.photos;
+      final count = photos.length;
       // What THIS listing is held to: tiered by what is being let, then the
       // admin's per-category floor on top for a whole property. Read inside
       // the Obx so changing either re-evaluates it live.
@@ -2026,13 +2060,20 @@ class _PhotoStep extends StatelessWidget {
         controller.f['property_category']?.toString(),
       );
       final minimum = rule.minimum;
-      final ready = count >= minimum;
-      final needed = rule.required
-          .map((r) => rules.categories
-              .firstWhere((c) => c.value == r,
-                  orElse: () => Option(value: r, label: r))
-              .label)
-          .join(', ');
+      String labelFor(String v) => rules.categories
+          .firstWhere((c) => c.value == v,
+              orElse: () => Option(value: v, label: v))
+          .label;
+      final tagged = photos
+          .map((m) => m['category']?.toString() ?? '')
+          .where((c) => c.isNotEmpty)
+          .toSet();
+      final missing = rule.required.where((r) => !tagged.contains(r)).toList();
+      // Ready means PUBLISHABLE, which is the count and the tags together. It
+      // used to mean the count alone, so twelve untagged photographs showed a
+      // green tick over a listing the server would refuse.
+      final ready = count >= minimum && missing.isEmpty;
+      final needed = rule.required.map(labelFor).join(', ');
       return ListingSection(
         title: 'Photos',
         sub: 'At least $minimum, ${rules.recommended} recommended. '
@@ -2056,34 +2097,59 @@ class _PhotoStep extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    '$count of $minimum required photos added',
-                    style: inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: ready ? kSuccess : kClay),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$count of $minimum required photos added',
+                        style: inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: ready ? kSuccess : kClay),
+                      ),
+                      if (missing.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          'Still to tag: ${missing.map(labelFor).join(', ')}',
+                          style: inter(fontSize: 12, color: kClay),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 14),
-          if (controller.media.isNotEmpty)
+          if (photos.isNotEmpty)
             Wrap(
               spacing: 10,
               runSpacing: 10,
               children: [
-                for (final m in controller.media)
+                for (final m in photos)
                   _Thumb(
                     url: m['url']?.toString(),
+                    // The tag, on the picture. Blank until the host says what
+                    // the room is — and the required ones cannot be satisfied
+                    // any other way from a phone.
+                    category: m['category']?.toString(),
+                    categoryLabel: (m['category']?.toString() ?? '').isEmpty
+                        ? null
+                        : labelFor(m['category'].toString()),
                     onRemove: () {
                       final id = m['id'];
                       if (id is num) controller.removePhoto(id.toInt());
                     },
+                    onTag: () {
+                      final id = m['id'];
+                      if (id is num) {
+                        _tag(context, id.toInt(), m['category']?.toString());
+                      }
+                    },
                   ),
               ],
             ),
-          if (controller.media.isNotEmpty) const SizedBox(height: 12),
+          if (photos.isNotEmpty) const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
@@ -2120,6 +2186,83 @@ class _PhotoStep extends StatelessWidget {
         ],
       );
     });
+  }
+
+  /// Say what a photograph is OF.
+  ///
+  /// The app never had this. Every picture it uploaded went up untagged (the
+  /// first one as the cover), and the code that did it said the rest stay
+  /// "uncategorised until the host says otherwise on the website" — fine while
+  /// tags were advisory, and impossible once publishing requires an exterior,
+  /// a bedroom, a bathroom and an entrance. A host listing from their phone
+  /// could add thirty photographs and never be allowed to publish, with
+  /// nothing on the screen able to tell them why.
+  Future<void> _tag(BuildContext context, int mediaId, String? current) async {
+    final chosen = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('What is this a photo of?',
+                  style: inter(
+                      fontSize: 15, fontWeight: FontWeight.w700, color: kInk)),
+              const SizedBox(height: 4),
+              Text(
+                'Tagging one of each required kind is what lets the listing '
+                'go live.',
+                style: inter(fontSize: 12.5, color: kMuted, height: 1.35),
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final option in rules.categories)
+                        ChoiceChip(
+                          label: Text(option.label,
+                              style: inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: option.value == current
+                                      ? Colors.white
+                                      : kInk)),
+                          selected: option.value == current,
+                          selectedColor: kIndigo,
+                          backgroundColor: kIndigo50,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20)),
+                          side: BorderSide.none,
+                          onSelected: (_) =>
+                              Navigator.pop(sheetContext, option.value),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (chosen == null || chosen == current || !context.mounted) return;
+    final problem = await controller.setPhotoCategory(mediaId, chosen);
+    if (problem != null && context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(problem)));
+    }
   }
 
   Future<void> _pick(BuildContext context) async {
@@ -2363,10 +2506,22 @@ class _PhotoStep extends StatelessWidget {
 }
 
 class _Thumb extends StatelessWidget {
-  const _Thumb({required this.url, required this.onRemove});
+  const _Thumb({
+    required this.url,
+    required this.onRemove,
+    this.category,
+    this.categoryLabel,
+    this.onTag,
+  });
 
   final String? url;
   final VoidCallback onRemove;
+
+  /// What this photograph is of, and the word for it. Null means untagged,
+  /// which is what every photograph the app uploaded used to be.
+  final String? category;
+  final String? categoryLabel;
+  final VoidCallback? onTag;
 
   @override
   Widget build(BuildContext context) {
@@ -2388,6 +2543,46 @@ class _Thumb extends StatelessWidget {
                           Container(color: kIndigo50)),
             ),
           ),
+          // The tag, written on the picture and tappable. An untagged photo
+          // says so rather than saying nothing: a blank strip reads as
+          // decoration, and this is the control that unblocks publishing.
+          if (onTag != null)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: GestureDetector(
+                onTap: onTag,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.58),
+                    borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(12)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          categoryLabel ?? 'Tag this',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: inter(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: categoryLabel == null
+                                ? const Color(0xFFFFD9A0)
+                                : Colors.white,
+                          ),
+                        ),
+                      ),
+                      const Icon(Icons.edit_outlined,
+                          size: 11, color: Colors.white70),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           Positioned(
             top: 2,
             right: 2,

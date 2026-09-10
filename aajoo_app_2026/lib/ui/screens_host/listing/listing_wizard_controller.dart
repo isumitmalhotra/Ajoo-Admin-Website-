@@ -53,10 +53,15 @@ const List<String> kMonths = [
 ];
 
 class ListingWizardController extends GetxController {
-  ListingWizardController({int? propertyId}) : _initialPropertyId = propertyId;
+  /// [service] is a test seam. The wizard builds its own in every real use;
+  /// a test supplies one so the save-then-hold path can be driven without a
+  /// network, which is the whole behaviour of the Photos gate.
+  ListingWizardController({int? propertyId, ListingService? service})
+      : _initialPropertyId = propertyId,
+        _service = service ?? ListingService();
 
   final int? _initialPropertyId;
-  final ListingService _service = ListingService();
+  final ListingService _service;
 
   // ── Lifecycle state ───────────────────────────────────────────────────────
   final Rx<ListingSchema?> schema = Rx<ListingSchema?>(null);
@@ -322,6 +327,7 @@ class ListingWizardController extends GetxController {
     // booking rules, whose columns are pbr_*.
     merge(p4, d['pricing'], 'ppr_');
     merge(p4, d['negotiation'], 'pn_');
+
     // The two negotiation tiers live on the flat property row, not in the
     // modular negotiation table, and the form keys are the ones the save
     // endpoint reads — so they are mapped explicitly rather than by prefix.
@@ -1144,7 +1150,18 @@ class ListingWizardController extends GetxController {
               'attributes': attrs,
             }));
       case 2:
-        return _run(() async {
+        return _run(hold: () {
+          // Checked AFTER the save, deliberately. Every amenity ticked and
+          // every place added on this step lives only in this controller until
+          // Continue posts it, so refusing before the save would throw that
+          // work away to enforce a rule about something else. The photographs
+          // themselves are already on the server — each one is sent as it is
+          // picked.
+          final gap = photoGapReason;
+          if (gap == null || photoWarned.value) return null;
+          photoWarned.value = true;
+          return gap;
+        }, () async {
           final res = await _service.saveStep3({
             'property_id': propertyId.value,
             'amenities': amenities,
@@ -1186,11 +1203,23 @@ class ListingWizardController extends GetxController {
         }));
   }
 
-  Future<bool> _run(Future<void> Function() body) async {
+  /// [hold] runs after a successful save and before the step advances. A
+  /// sentence back from it means "saved, but stay here and say this" — which
+  /// is not the same as a failure, and is why it returns false with
+  /// [heldHere] set rather than through the error path.
+  Future<bool> _run(Future<void> Function() body,
+      {String? Function()? hold}) async {
     busy.value = true;
+    heldHere.value = '';
     try {
       await body();
       fieldErrors.clear();
+      final holdReason = hold?.call();
+      if (holdReason != null) {
+        heldHere.value = holdReason;
+        error.value = holdReason;
+        return false;
+      }
       if (step.value < kListingSteps.length - 1) step.value++;
       return true;
     } catch (e) {
@@ -1244,6 +1273,71 @@ class ListingWizardController extends GetxController {
   }
 
   // ── Photos ────────────────────────────────────────────────────────────────
+  /// The photographs on this listing — not the verification documents, which
+  /// come back in the same list under type "document". Counting a sale deed as
+  /// a photograph of a room would clear the minimum with a set the host cannot
+  /// see, and showing it in the grid puts an identity document on a page about
+  /// bedrooms.
+  List<Map<String, dynamic>> get photos =>
+      media.where((m) => m['type']?.toString() != 'document').toList();
+
+  /// How far this listing is from a publishable set of photographs, said as
+  /// the thing to DO — or null when there is nothing left to do.
+  ///
+  /// The step has always told the host these are needed before publishing and
+  /// then let them walk past it, fill in pricing, fill in verification, and be
+  /// refused at the last button — by which point adding photographs means
+  /// going back to the property. Same arithmetic and the same sentence as
+  /// photoGapFor on the server, which stays the authority: this is here to say
+  /// it while the host is still standing in the room.
+  String? get photoGapReason {
+    final rules = schema.value?.photoRules;
+    if (rules == null) return null; // no rule in hand is not a rule to enforce
+    final rule = rules.ruleFor(
+      f['accommodation_type']?.toString(),
+      f['property_category']?.toString(),
+    );
+    final have = photos
+        .map((m) => m['category']?.toString() ?? '')
+        .where((c) => c.isNotEmpty)
+        .toSet();
+    final missing = [
+      for (final r in rule.required)
+        if (!have.contains(r))
+          rules.categories
+              .firstWhere((c) => c.value == r,
+                  orElse: () => Option(value: r, label: r))
+              .label,
+    ];
+    final count = photos.length;
+    final short = rule.minimum - count;
+    final parts = <String>[];
+    if (short > 0) {
+      parts.add(count == 0
+          ? 'add ${rule.minimum} photo${rule.minimum == 1 ? '' : 's'}'
+          : 'add $short more photo${short == 1 ? '' : 's'} '
+              '($count of ${rule.minimum})');
+    }
+    if (missing.isNotEmpty) {
+      parts.add('tag one photo as ${missing.join(', ')}');
+    }
+    if (parts.isEmpty) return null;
+    return 'Before publishing, ${parts.join(' and ')}.';
+  }
+
+  /// Set once the host has been told the photographs are short and has chosen
+  /// to carry on. They are stopped at the Photos step, not locked in it: a
+  /// host standing in front of the property with nothing photographed yet
+  /// still has pricing and house rules to fill in, and walling them out of the
+  /// rest of the wizard would send them out of it altogether.
+  final RxBool photoWarned = false.obs;
+
+  /// Why Continue stopped, when the step SAVED and stayed put. Empty for an
+  /// ordinary save failure, which the screen handles differently — that one
+  /// scrolls to the banner at the top, and this one belongs where the host was
+  /// already looking.
+  final RxString heldHere = ''.obs;
+
 
   Future<String?> uploadPhotos(
     List<File> files,
@@ -1274,6 +1368,38 @@ class ListingWizardController extends GetxController {
       return e is ListingException ? e.message : 'Upload failed.';
     } finally {
       uploading.value = false;
+    }
+  }
+
+  /// Tag a photograph that is already uploaded.
+  ///
+  /// Publishing asks for an exterior, a bedroom, a bathroom and an entrance
+  /// (fewer for a single room). Until this existed the app sent every photo up
+  /// untagged, so those four could only ever be satisfied on the website — a
+  /// host who lists from their phone could add thirty photographs and still be
+  /// refused, with nothing on screen able to explain why.
+  Future<String?> setPhotoCategory(int mediaId, String category) async {
+    final id = propertyId.value;
+    if (id == null) return 'Finish step 1 first.';
+    try {
+      final res = await _service.updateMedia(
+        propertyId: id,
+        media: [
+          {'id': mediaId, 'category': category},
+        ],
+      );
+      if (res['media'] is List) {
+        media.assignAll((res['media'] as List)
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e)));
+      }
+      if (res['photoReadiness'] is Map) {
+        photoReadiness
+            .assignAll(Map<String, dynamic>.from(res['photoReadiness']));
+      }
+      return null;
+    } catch (e) {
+      return e is ListingException ? e.message : 'Could not save the tag.';
     }
   }
 

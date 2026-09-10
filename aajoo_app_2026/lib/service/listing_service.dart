@@ -364,6 +364,30 @@ class ListingService {
     }
   }
 
+  /// Re-tag a photo that is already uploaded.
+  ///
+  /// The app had no way to do this at all. Every photograph it sent went up
+  /// under an empty category (the first one as the cover), and the comment
+  /// where that happens said the rest stay "uncategorised until the host says
+  /// otherwise on the website" — which is fine while tags are advisory and
+  /// impossible once they are not. Publishing requires an exterior, a bedroom,
+  /// a bathroom and an entrance, so a host listing from their phone could
+  /// upload twenty photographs and still never be allowed to publish.
+  Future<Map<String, dynamic>> updateMedia({
+    required int propertyId,
+    required List<Map<String, dynamic>> media,
+  }) async {
+    try {
+      final res = await _dio.patch('listing/media',
+          data: {'property_id': propertyId, 'media': media},
+          options: await _auth());
+      final data = _unwrap(res);
+      return data is Map ? Map<String, dynamic>.from(data) : {};
+    } catch (e) {
+      _rethrowFriendly(e);
+    }
+  }
+
   Future<Map<String, dynamic>> deleteMedia(int mediaId) async {
     try {
       final res =
