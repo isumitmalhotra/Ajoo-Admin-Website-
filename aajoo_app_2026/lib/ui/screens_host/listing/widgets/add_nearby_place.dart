@@ -22,6 +22,20 @@
 /// Only when nothing matches does the host type the distance, and then the
 /// entry is marked as theirs: source "manual", which the guest page shows as
 /// "Host provided".
+///
+/// A PICKED POSITION SURVIVES AN EDIT TO THE NAME. Every keystroke used to
+/// detach it while leaving the measured distance in the box, so a host who
+/// picked "Gurdwara Nada Sahib" and then added a word ended up saving a
+/// distance that looked measured with no position behind it — no directions
+/// for the guest, and nothing on screen saying so. Picking a match is an
+/// explicit act; typing in a name box is not. Only three things detach a
+/// position now: emptying the name (an unambiguous start-over), picking a
+/// different match, and the "Not this place" control.
+///
+/// AND THE POSITION IS NAMED. "Found on the map" never said WHICH map point,
+/// so a wrong one was invisible. The geocoder's own label is shown, which is
+/// exactly the text that makes a mismatch obvious — "Chaunki, Panchkula" under
+/// a name reading "Gurdwara Nada Sahib" is a question the host can answer.
 library;
 
 import 'dart:async';
@@ -53,6 +67,7 @@ class AddNearbyPlace extends StatefulWidget {
     required this.propertyLat,
     required this.propertyLng,
     required this.onAdd,
+    this.search,
   });
 
   final double? propertyLat;
@@ -60,6 +75,10 @@ class AddNearbyPlace extends StatefulWidget {
 
   /// {name, km, lat, lng} — lat/lng null when nothing matched.
   final void Function(Map<String, dynamic> place) onAdd;
+
+  /// The place lookup. Defaults to the real one; a test supplies its own so
+  /// the attach/detach rules can be driven without a network or a singleton.
+  final Future<List<GeoPlace>> Function(String query)? search;
 
   @override
   State<AddNearbyPlace> createState() => _AddNearbyPlaceState();
@@ -74,6 +93,12 @@ class _AddNearbyPlaceState extends State<AddNearbyPlace> {
   GeoPlace? _chosen;
   Timer? _debounce;
 
+  /// The exact text a match was picked for, so the search does not immediately
+  /// re-fire and reopen the list over the choice just made. Any further typing
+  /// differs from it and searching resumes — which is how a host corrects a
+  /// wrong pick without having to detach it first.
+  String? _suppressFor;
+
   @override
   void dispose() {
     _debounce?.cancel();
@@ -83,9 +108,12 @@ class _AddNearbyPlaceState extends State<AddNearbyPlace> {
   }
 
   void _onTyped(String v) {
-    setState(() => _chosen = null);
     _debounce?.cancel();
-    if (v.trim().length < 3) {
+    final text = v.trim();
+    // Emptying the box is the one unambiguous start-over, and the only edit
+    // that detaches a position on its own.
+    if (text.isEmpty) setState(() => _chosen = null);
+    if (text.length < 3 || text == _suppressFor) {
       setState(() => _hits = const []);
       return;
     }
@@ -94,7 +122,8 @@ class _AddNearbyPlaceState extends State<AddNearbyPlace> {
     _debounce = Timer(const Duration(milliseconds: 450), () async {
       if (!mounted) return;
       setState(() => _busy = true);
-      final r = await GeocodeService.instance.search(v.trim());
+      final lookup = widget.search ?? GeocodeService.instance.search;
+      final r = await lookup(text);
       if (!mounted) return;
       setState(() {
         _hits = r.take(5).toList();
@@ -107,6 +136,7 @@ class _AddNearbyPlaceState extends State<AddNearbyPlace> {
     setState(() {
       _chosen = p;
       _hits = const [];
+      _suppressFor = _name.text.trim();
       // Measured, not typed, whenever both ends are known. The NAME is left
       // alone — see the note at the top of this file.
       final lat = widget.propertyLat;
@@ -117,6 +147,19 @@ class _AddNearbyPlaceState extends State<AddNearbyPlace> {
     });
   }
 
+  /// Detach the position, keeping the distance.
+  ///
+  /// The number may well still be right, and the host has said nothing to
+  /// suggest otherwise — clearing it would throw away work to prove a point.
+  /// What changes is the claim: with no position the entry is a hand-typed
+  /// distance, which is what the line under the field now says.
+  void _detach() {
+    setState(() {
+      _chosen = null;
+      _suppressFor = null;
+    });
+  }
+
   void _reset() {
     _name.clear();
     _km.clear();
@@ -124,6 +167,7 @@ class _AddNearbyPlaceState extends State<AddNearbyPlace> {
       _open = false;
       _hits = const [];
       _chosen = null;
+      _suppressFor = null;
     });
   }
 
@@ -179,13 +223,36 @@ class _AddNearbyPlaceState extends State<AddNearbyPlace> {
               isDense: true,
             ),
           ),
-          Text(
-            _chosen != null
-                ? 'Found on the map — guests will get directions to it.'
-                : "We'll look it up as you type. If it isn't on the map, type "
-                    'the distance yourself.',
-            style: inter(fontSize: 11.5, color: kMuted, height: 1.35),
-          ),
+          if (_chosen != null)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Found on the map: ${_chosen!.label}\n'
+                    'Guests will get directions to it.',
+                    style: inter(fontSize: 11.5, color: kMuted, height: 1.35),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _detach,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: const Size(0, 32),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text('Not this place',
+                      style:
+                          inter(fontSize: 11.5, fontWeight: FontWeight.w600)),
+                ),
+              ],
+            )
+          else
+            Text(
+              "We'll look it up as you type. If it isn't on the map, type "
+              'the distance yourself.',
+              style: inter(fontSize: 11.5, color: kMuted, height: 1.35),
+            ),
           if (_busy)
             Padding(
               padding: const EdgeInsets.only(top: 8),

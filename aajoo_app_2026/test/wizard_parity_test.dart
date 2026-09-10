@@ -73,14 +73,18 @@ void main() {
     });
 
     test('the position is asked for, and the name is left alone', () {
-      expect(add.contains('GeocodeService.instance.search('), isTrue,
+      expect(add.contains('GeocodeService.instance.search'), isTrue,
           reason: 'the name is never looked up');
       expect(add.contains('nearbyDistanceKm(lat, lng, p.lat, p.lng)'), isTrue,
           reason: 'the distance is typed even when both ends are known');
       // The website briefly rewrote the box with the geocoder's first
       // comma-part, so "Gurdwara Nada Sahib" became "Chaunki" — the hamlet it
-      // stands in.
-      final pick = add.substring(add.indexOf('void _pick('), add.indexOf('void _reset('));
+      // stands in. What the host typed surviving a PICK, and surviving a later
+      // EDIT with its position intact, are both driven for real in
+      // add_nearby_place_test.dart — which is the check that would actually
+      // catch a regression. This one only pins the shape of the file.
+      final pick = add.substring(
+          add.indexOf('void _pick('), add.indexOf('/// Detach the position'));
       expect(pick.contains('_name.text ='), isFalse,
           reason: 'picking a match overwrites the name the host typed');
       // Debounced: a billed lookup on every keystroke otherwise.
