@@ -115,7 +115,12 @@ class BookingConfirmedScreen extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 awaitingApproval
-                    ? 'Your request has gone to the host. They have $responseHours hours to respond, and you\'ll be told either way.'
+                    // What happens on SILENCE is the half a guest actually
+                    // worries about. "You'll be told either way" was true and
+                    // answered the wrong question — until 2026-09-10 nothing
+                    // timed the host out at all, and now that something does,
+                    // saying so is the whole reassurance.
+                    ? 'Your request has gone to the host. They have $responseHours hours to respond — if they don\'t, your booking is confirmed automatically. Either way, you\'ll be told.'
                     : isPayOnArrival
                         ? 'Your stay is reserved. Pay when you arrive.'
                         : 'Your stay is all set. A confirmation is on its way to your email.',
