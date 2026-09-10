@@ -1384,9 +1384,17 @@ class ListingWizardController extends GetxController {
   final RxString heldHere = ''.obs;
 
 
+  /// [categories] is ONE PER FILE, parallel to [files].
+  ///
+  /// It used to be a single String applied to every file in the batch, and the
+  /// caller passed 'cover_photo' whenever the listing had no photos yet — so a
+  /// host who added their first five photographs in one go got FIVE cover
+  /// photos. Only one photograph can be the cover, and the other four arrived
+  /// carrying a tag that is not what they are, which the host then had to
+  /// correct one at a time before the listing could go live.
   Future<String?> uploadPhotos(
     List<File> files,
-    String category, {
+    List<String> categories, {
     List<String> alts = const [],
   }) async {
     final id = propertyId.value;
@@ -1396,7 +1404,10 @@ class ListingWizardController extends GetxController {
       final res = await _service.uploadMedia(
         propertyId: id,
         files: files,
-        categories: List.filled(files.length, category),
+        categories: [
+          for (var i = 0; i < files.length; i++)
+            i < categories.length ? categories[i] : '',
+        ],
         alts: alts,
       );
       if (res['media'] is List) {

@@ -149,6 +149,33 @@ void main() {
         reason: 'two identity documents made up the shortfall in a gallery');
   });
 
+  test('a batch of first photos yields ONE cover, not five', () {
+    // Found by listing a property from scratch on the device, 2026-09-11: five
+    // photographs added in one go all came back tagged "Cover Photo". The
+    // picker handed a single category to the whole batch and chose
+    // 'cover_photo' because the listing was empty. Only one photograph can be
+    // the cover; the other four wore a tag that was not what they were, and
+    // the host had to correct each one before the listing could publish.
+    //
+    // The rule, as the picker now builds it.
+    List<String> categoriesFor(int count, {required bool startingEmpty}) => [
+          for (var i = 0; i < count; i++)
+            (startingEmpty && i == 0) ? 'cover_photo' : '',
+        ];
+
+    final firstBatch = categoriesFor(5, startingEmpty: true);
+    expect(firstBatch.where((c) => c == 'cover_photo').length, 1,
+        reason: 'a batch of five produced ${firstBatch.where((c) => c == 'cover_photo').length} covers');
+    expect(firstBatch.first, 'cover_photo');
+    expect(firstBatch.skip(1), everyElement(''));
+
+    // A listing that already has photographs gets no new cover at all.
+    expect(categoriesFor(3, startingEmpty: false), everyElement(''));
+
+    // And a single first photograph is still the cover.
+    expect(categoriesFor(1, startingEmpty: true), ['cover_photo']);
+  });
+
   test('no schema in hand is not a rule to enforce', () {
     // An offline draft has no rules loaded. Refusing on a rule we do not have
     // would be a wizard that cannot be finished.

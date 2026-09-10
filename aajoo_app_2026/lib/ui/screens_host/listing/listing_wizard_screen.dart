@@ -1332,12 +1332,16 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             title: 'Identity verification',
             sub: 'Required before your listing can go live.',
             children: [
-              _p5Choice('id_type', 'Document type', const [
-                Option(value: 'aadhaar', label: 'Aadhaar'),
-                Option(value: 'passport', label: 'Passport'),
-                Option(value: 'driving_licence', label: 'Driving Licence'),
-                Option(value: 'voter_id', label: 'Voter ID'),
-              ]),
+              // "Document type" used to be asked TWICE here: this control,
+              // writing p5['id_type'], and the one inside _DocumentField
+              // below, writing p5['identity_type']. The server reads only
+              // `identity_type` (listingStep5.controller), so the first set of
+              // chips was dead — a host who answered it and moved on had told
+              // the platform nothing, and step 5 refused them for a document
+              // type they could see themselves having chosen. Nothing in three
+              // repositories reads `id_type`, and the website asks the
+              // question once. Removed 2026-09-11, found by listing a property
+              // from scratch on the device.
               _DocumentField(
                 label: 'Identity document',
                 // 'identity_doc', not 'id_document'. The server reads
@@ -1873,15 +1877,6 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
         error: c.fieldErrors[key],
       );
 
-  Widget _p5Choice(String key, String label, List<Option> options) =>
-      SchemaFieldInput(
-        field: SchemaField(
-            key: key, label: label, type: FieldType.select, options: options),
-        value: c.p5[key],
-        onChanged: (k, v) => c.setP5(k, v),
-        error: c.fieldErrors[key],
-      );
-
   /// "mountain_view" → "Mountain view", for the schema's bare string lists.
   static String _humanise(String raw) {
     final words = raw.replaceAll('_', ' ').trim();
@@ -2315,11 +2310,19 @@ class _PhotoStep extends StatelessWidget {
     final descriptions = await _describePhotos(context, keep);
     if (descriptions == null) return; // backed out
 
+    // The FIRST photo of an empty listing is its cover — and only the first.
+    // This used to hand one category to the whole batch, so a host adding
+    // their first five photographs in one go got five "Cover Photo" tags and
+    // had to correct four of them by hand before the listing could publish.
+    // Everything after the cover goes up untagged, and the host names it on
+    // the photo itself.
+    final startingEmpty = controller.photos.isEmpty;
     final problem = await controller.uploadPhotos(
       keep.map((x) => File(x.path)).toList(),
-      // The first photo of an empty listing is its cover; the rest are
-      // uncategorised until the host says otherwise on the website.
-      controller.media.isEmpty ? 'cover_photo' : '',
+      [
+        for (var i = 0; i < keep.length; i++)
+          (startingEmpty && i == 0) ? 'cover_photo' : '',
+      ],
       alts: descriptions,
     );
     if (problem != null && context.mounted) {
