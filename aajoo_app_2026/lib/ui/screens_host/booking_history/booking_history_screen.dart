@@ -11,6 +11,7 @@ import 'package:rent_home/ui/motion/aajoo_motion.dart';
 import 'package:rent_home/utils/stay_clock.dart';
 import '../../../utils/booking_status.dart';
 import 'package:rent_home/utils/money.dart';
+import 'host_change_requests.dart';
 
 /// Host Bookings — re-skinned to the new design (scaffold host_bookings): teal
 /// app bar + 4 status tabs (Upcoming/Ongoing/Completed/Cancelled) filtering the
@@ -195,7 +196,18 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
 
           return Stack(
             children: [
-              content,
+              // Change requests sit ABOVE the tabs, not inside one: a request
+              // is not a booking state, it is a decision waiting on the host,
+              // and burying it in "Upcoming" would hide the time-critical
+              // thing behind a tab they may not be on. Renders nothing when
+              // there is nothing waiting.
+              Column(
+                children: [
+                  HostChangeRequests(
+                      onApplied: controller.getHostBookingHistory),
+                  Expanded(child: content),
+                ],
+              ),
               if (controller.isSubmittingReview.value)
                 Container(
                   color: kInk.withOpacity(0.3),
