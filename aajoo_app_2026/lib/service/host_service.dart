@@ -210,9 +210,30 @@ class HostService {
     }
   }
 
+  /// When this host's bookings were made, for the dashboard chart — one
+  /// timestamp per booking over the last six months. Never throws: an empty
+  /// chart that says so is a correct dashboard, a dashboard that fails to
+  /// open is not.
+  Future<List<DateTime>> getBookingDates() async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final response = await _dio.get("/host/booking-dates");
+      final data = response.data is Map ? response.data['data'] : null;
+      final raw = data is Map ? data['dates'] : null;
+      if (raw is! List) return const [];
+      return raw
+          .map((v) => DateTime.tryParse(v.toString()))
+          .whereType<DateTime>()
+          .toList();
+    } catch (e) {
+      appLog("booking dates: $e");
+      return const [];
+    }
+  }
+
   Future<HostBookingHistoryResponse> getBookingHistory() async {
     final token = await const FlutterSecureStorage().read(key: "user_token");
-    appLog(token);
     _dio.options.headers['Authorization'] = 'Bearer $token';
     try {
       final response = await _dio.post("/host/booking-history");

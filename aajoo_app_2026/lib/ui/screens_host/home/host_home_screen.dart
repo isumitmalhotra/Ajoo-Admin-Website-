@@ -93,6 +93,9 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
       // host with 30 bookings, and grew from there. The bookings SCREEN still
       // loads rows — it shows them.
       hostController.getHostBookingCount(),
+      // ...and the DATES, for the chart. The chart read the list this
+      // screen no longer loads, and drew nothing for every host.
+      hostController.getBookingDates(),
       hostController.getNegotiations(),
     ]);
   }
@@ -135,16 +138,13 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
               const SizedBox(height: 16),
               _statGrid(),
               const SizedBox(height: 16),
-              // A-72 asked for a weekly/monthly bookings graph. Built from the
-              // booking history this screen already loads, so it costs no extra
-              // request — and it draws real counts or says there are none,
-              // rather than inventing a shape.
+              // A-72 asked for a weekly/monthly bookings graph. Drawn from one
+              // timestamp per booking — it draws real counts or says there are
+              // none, rather than inventing a shape.
               Reveal(
                 delay: Reveal.staggerDelay(2),
                 child: Obx(() => BookingsTrendCard(
-                      bookings: hostController
-                              .hostBookingHistoryResponse.value?.data ??
-                          const [],
+                      dates: hostController.bookingDates.toList(),
                     )),
               ),
               const SizedBox(height: 22),

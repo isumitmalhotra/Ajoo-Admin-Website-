@@ -1,22 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
-import 'package:rent_home/models/host_booking_history_model.dart';
 import 'package:rent_home/utils/fonts.dart';
 
 /// Bookings over time, for the host dashboard.
 ///
-/// A-72 asked for "the graph weekly and monthly bookings to the host". This is
-/// built entirely from the booking history the dashboard ALREADY loads —
-/// `book_added_at` is parsed into a DateTime on every row — so it needs no new
-/// endpoint and no new request.
+/// A-72 asked for "the graph weekly and monthly bookings to the host".
+///
+/// It is drawn from one timestamp per booking (`/host/booking-dates`), not
+/// from the booking list. It USED to read the list the dashboard loaded; the
+/// dashboard then stopped loading the list — it only needed the count — and
+/// this card, still reading it, drew "No bookings in this period yet." for
+/// every host from then on. Found 2026-09-11 on a host with five bookings
+/// that month. The dates are the only thing the chart needs, and they are
+/// a few hundred bytes for any host.
 ///
 /// It draws nothing when there is nothing to draw. An empty chart with invented
 /// bars would be the same fabrication as the "1,240 verified homes" card this
 /// dashboard used to carry; a host with no bookings gets told they have no
 /// bookings.
 class BookingsTrendCard extends StatefulWidget {
-  final List<HostBookingHistory> bookings;
-  const BookingsTrendCard({super.key, required this.bookings});
+  /// When each booking was made.
+  final List<DateTime> dates;
+  const BookingsTrendCard({super.key, required this.dates});
 
   @override
   State<BookingsTrendCard> createState() => _BookingsTrendCardState();
@@ -27,37 +32,8 @@ enum _Range { weekly, monthly }
 class _BookingsTrendCardState extends State<BookingsTrendCard> {
   _Range _range = _Range.monthly;
 
-  /// Buckets, oldest → newest, each as (label, count).
-  ///
-  /// Weekly is the last 8 weeks, monthly the last 6 months. Both are anchored
-  /// to today and include empty periods, because a gap IS the information — a
-  /// chart that silently skips quiet weeks makes a bad month look busy.
-  List<MapEntry<String, int>> get _buckets {
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    final now = DateTime.now();
-    final dates = widget.bookings
-        .map((b) => b.bookAddedAt)
-        .whereType<DateTime>()
-        .toList();
-
-    if (_range == _Range.monthly) {
-      return List.generate(6, (i) {
-        final m = DateTime(now.year, now.month - (5 - i), 1);
-        final next = DateTime(m.year, m.month + 1, 1);
-        final n = dates.where((d) => !d.isBefore(m) && d.isBefore(next)).length;
-        return MapEntry(months[m.month - 1], n);
-      });
-    }
-
-    // Weeks run back from the start of today, seven days at a time.
-    final today = DateTime(now.year, now.month, now.day);
-    return List.generate(8, (i) {
-      final start = today.subtract(Duration(days: 7 * (7 - i) + 6));
-      final end = start.add(const Duration(days: 7));
-      final n = dates.where((d) => !d.isBefore(start) && d.isBefore(end)).length;
-      return MapEntry('${start.day}/${start.month}', n);
-    });
-  }
+  List<MapEntry<String, int>> get _buckets =>
+      bucketBookingDates(widget.dates, monthly: _range == _Range.monthly);
 
   @override
   Widget build(BuildContext context) {
@@ -172,4 +148,40 @@ class _BookingsTrendCardState extends State<BookingsTrendCard> {
       ),
     );
   }
+}
+
+/// Buckets, oldest → newest, each as (label, count).
+///
+/// Weekly is the last 8 weeks, monthly the last 6 months. Both are anchored
+/// to [now] and include empty periods, because a gap IS the information — a
+/// chart that silently skips quiet weeks makes a bad month look busy.
+///
+/// Timestamps arrive in UTC from the server and are bucketed in the device's
+/// local day, which is what "this month" means to the person holding it.
+List<MapEntry<String, int>> bucketBookingDates(
+  List<DateTime> raw, {
+  required bool monthly,
+  DateTime? now,
+}) {
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  final at = now ?? DateTime.now();
+  final dates = raw.map((d) => d.toLocal()).toList();
+
+  if (monthly) {
+    return List.generate(6, (i) {
+      final m = DateTime(at.year, at.month - (5 - i), 1);
+      final next = DateTime(m.year, m.month + 1, 1);
+      final n = dates.where((d) => !d.isBefore(m) && d.isBefore(next)).length;
+      return MapEntry(months[m.month - 1], n);
+    });
+  }
+
+  // Weeks run back from the start of today, seven days at a time.
+  final today = DateTime(at.year, at.month, at.day);
+  return List.generate(8, (i) {
+    final start = today.subtract(Duration(days: 7 * (7 - i) + 6));
+    final end = start.add(const Duration(days: 7));
+    final n = dates.where((d) => !d.isBefore(start) && d.isBefore(end)).length;
+    return MapEntry('${start.day}/${start.month}', n);
+  });
 }

@@ -85,6 +85,13 @@ class HostController extends GetxController {
     }
   }
 
+  /// When each booking was made — what the dashboard's trend chart draws.
+  final RxList<DateTime> bookingDates = <DateTime>[].obs;
+
+  Future<void> getBookingDates() async {
+    bookingDates.assignAll(await hostService.getBookingDates());
+  }
+
   Future<void> getHostBookingHistory() async {
     try {
       loading.value = true;
