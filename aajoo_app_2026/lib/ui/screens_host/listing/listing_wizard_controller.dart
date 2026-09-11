@@ -474,6 +474,15 @@ class ListingWizardController extends GetxController {
      */
     final rules = d['houseRules'];
     if (rules is Map) {
+      // The self check-in METHOD is a step-4 chip (p4), not a step-5 field,
+      // so the merge into p5 above never reached it: the chip rendered with
+      // nothing chosen on a listing that had "keypad" on file, and because
+      // step 4 posts the whole of p4, the next save wrote NULL over it
+      // (29302, 2026-09-11). Same fault, third time: the row lands in one
+      // map and the control reads another.
+      if (rules['phr_self_checkin_method'] != null) {
+        p4['self_checkin_method'] = rules['phr_self_checkin_method'];
+      }
       for (final key in const [
         'pets_allowed', 'smoking', 'alcohol', 'visitors', 'parties',
         'loud_music', 'commercial_shoot', 'cooking_allowed', 'self_checkin',

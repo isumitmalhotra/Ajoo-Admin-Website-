@@ -175,6 +175,23 @@ void main() {
     expect(c.validateStep4()['guests_included'], isNull);
   });
 
+  test('the self check-in method comes back chosen, and is not saved over',
+      () async {
+    // Stored on the house-rules row (phr_self_checkin_method), which the
+    // loader merged into p5; the chip is on step 4 and reads p4. It rendered
+    // unchosen on a listing that had "keypad" on file, and the next save of
+    // step 4 — which posts the whole of p4 — wrote NULL over it.
+    final c = wizard({
+      'pricing': {'ppr_base_price': 2000},
+      'houseRules': {'phr_self_checkin': 1, 'phr_self_checkin_method': 'keypad'},
+    });
+    c.onInit();
+    await Future<void>.delayed(Duration.zero);
+    expect(c.p4['self_checkin_method'], 'keypad',
+        reason: 'the chip reads p4; the value landed only in p5, so the '
+            'host sees nothing chosen and the next save erases it');
+  });
+
   test('a host who left negotiation ON keeps it on', () async {
     final c = wizard({
       'pricing': {'ppr_base_price': 2000},
