@@ -190,6 +190,51 @@ that commission, four ledger rows per booking.
 
 ## 8. Closed since the last edition — do not redo
 
+### 8a18. Closed 2026-09-12 — "Only images or PDF documents are allowed" on ten real photographs
+
+Client report with a DevTools screenshot: uploading 10 photos to a listing
+on the WEBSITE answered `{"success":false,"message":"Only images or PDF
+documents are allowed."}` — every thumbnail had rendered in the page, so
+the browser could decode all ten. Second time it has been seen.
+
+**Cause.** The wizard's picker accepts `image/*` — whatever the operating
+system calls an image — and the server's allowlist was seven MIME types.
+AVIF (what a current Chrome or Android camera saves by default, and
+already present in this catalogue as `.avif` files), TIFF, `.jfif`, and
+the non-standard aliases Windows and older Androids send (`image/jpg`,
+`image/pjpeg`, `image/x-png`, `image/x-ms-bmp`) were all refused. A file
+whose type the sender's system could not name (`application/octet-stream`)
+was refused too. And multer stops at the FIRST bad file in a multipart
+request, so one odd photo failed all ten with a sentence naming none of
+them — which is why it could not be diagnosed without DevTools.
+
+**Fixed** (`240848f`, `d82a0ae`): the allowlist now covers every type a
+camera or browser really produces; an untyped file is judged on its
+extension; and the refusal names the file and what it claimed to be.
+
+**And the bigger one found underneath it.** The justification for a wider
+allowlist is that `verifyUploadedContent` reads the first bytes of every
+file after it lands and throws out anything whose contents contradict its
+extension. That check was wired into **2 of the ~20 upload routes** —
+blog and the property importer. The listing wizard, guest ID documents,
+signup, reviews and every admin CMS image were relying on the allowlist
+alone. It is now attached to multer itself, so every route has it and a
+new upload route cannot be added without it.
+
+Verified against production after deploy:
+
+| sent | before | now |
+|---|---|---|
+| `.jfif` as `image/jpeg` | refused by the filter | reaches auth ✓ |
+| `.jpg` as `application/octet-stream` | refused by the filter | reaches auth ✓ |
+| real `.avif` | refused by the filter | reaches auth ✓ |
+| SVG | refused | refused, and names the file ✓ |
+| `.png` whose bytes are an executable | **reached auth** | "contents don't match its type" ✓ |
+
+Tests: `realPhotosAreAccepted` (new — drives the real fileFilter over 15
+accepted shapes, the refusals, the named message, the byte check and the
+wiring of all four uploaders), `apkFindings` updated. 125/125.
+
 ### 8a17. Closed 2026-09-11 (late) — a Camping listing, filed by a PROPERTY MANAGER
 
 **29305 "QA Riverside Camp Rishikesh"** (host 194 acting as a manager for
