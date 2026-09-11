@@ -108,6 +108,9 @@ class NegotiationCard extends StatelessWidget {
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
                           color: kMuted)),
+                  // The round label and the struck-through asking price sat
+                  // flush against each other in the Row — "Round 3was ₹900".
+                  const SizedBox(width: 6),
                 ],
                 if (n.originalPrice > 0)
                   Text('was ₹${_money(n.originalPrice)}',

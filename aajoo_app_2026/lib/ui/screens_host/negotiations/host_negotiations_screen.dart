@@ -104,8 +104,14 @@ class _HostNegotiationsScreenState extends State<HostNegotiationsScreen> {
               ? 'You will host ${n.renterName} at ₹${n.offerPrice.round()}/night'
                   '${n.bookFrom != null ? ' for ${n.bookFrom} → ${n.bookTo}' : ''}. '
                   'They get a one-time deal valid for 24 hours.'
+              // Declining ENDS the negotiation and leaves this guest the last
+              // price the host named, for one hour, on those dates. A host who
+              // thinks Decline simply closes the thread would be surprised by
+              // a booking at their counter an hour later — the website's host
+              // page says so at the same moment, and this said nothing.
               : '${n.renterName} will be told the offer was declined. '
-                  'You can still counter instead.',
+                  'You can still counter instead.'
+                  '${n.rounds > 0 ? " Declining ends this negotiation, and your last counter stays open to them for 1 hour." : ""}',
           style: inter(fontSize: 13.5, color: kInk2, height: 1.5),
         ),
         actions: [
