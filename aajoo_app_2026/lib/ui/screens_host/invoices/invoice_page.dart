@@ -4,7 +4,6 @@ import 'package:rent_home/utils/money.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
-import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -35,62 +34,40 @@ class _InvoicePageState extends State<InvoicePage> {
     _hostController.getTransactionHistory();
   }
 
-  Future<String> _generatePdf(Transaction t) async {
-    final pdf = pw.Document();
-    final date = DateFormat('MMM dd, yyyy').format(t.payAddedAt);
-    pw.Widget row(String label, String value) => pw.Padding(
-          padding: const pw.EdgeInsets.only(bottom: 4),
-          child: pw.Text('$label: $value',
-              style: const pw.TextStyle(fontSize: 14)),
-        );
-
-    pdf.addPage(
-      pw.Page(
-        build: (pw.Context context) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text('Invoice #${t.payInvoice}',
-                style:
-                    pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
-            pw.SizedBox(height: 16),
-            row('Date', date),
-            row('Property', t.paymentPropertyPropertyName),
-            row('Guest', t.userPaymentUserFullName),
-            pw.SizedBox(height: 20),
-            pw.Text('Payment',
-                style:
-                    pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-            pw.SizedBox(height: 8),
-            row('Reference', t.payRazId),
-            row('Status', t.paymentStatusBsTitle),
-            pw.SizedBox(height: 16),
-            // rupeesFrom, not raw interpolation: pay_amount arrives as the
-            // string "67200.00", so this printed a downloadable invoice
-            // reading "Total: ₹67200.00" -- no grouping, trailing paise --
-            // while every other screen in the app shows ₹67,200. An invoice
-            // is the one artefact a host may forward to a guest.
-            pw.Text('Total: ${rupeesFrom(t.payAmount)}',
-                style:
-                    pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-          ],
-        ),
-      ),
-    );
-
-    final directory = await getTemporaryDirectory();
-    final file = File('${directory.path}/invoice_${t.payInvoice}.pdf');
-    await file.writeAsBytes(await pdf.save());
-    return file.path;
+  /// The server's invoice, written to a temp file so it can be shared or
+  /// printed. This used to build a PDF here — five lines, and a "Total" that
+  /// was the pre-tax subtotal, so the app and the website issued two
+  /// different invoices for one payment (₹5,000 and ₹5,250 for Inv_205678).
+  /// One renderer, on the server; the app only fetches it.
+  Future<String?> _fetchPdf(Transaction t) async {
+    try {
+      final bytes = await _hostController.hostService.downloadInvoicePdf(t.payId);
+      final directory = await getTemporaryDirectory();
+      final file = File('${directory.path}/invoice_${t.payInvoice}.pdf');
+      await file.writeAsBytes(bytes);
+      return file.path;
+    } catch (e) {
+      Get.snackbar(
+        'Invoice',
+        "That invoice couldn't be downloaded. Please try again.",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: kClay,
+        colorText: kAccentInk,
+      );
+      return null;
+    }
   }
 
   Future<void> _sharePdf(Transaction t) async {
-    final pdfPath = await _generatePdf(t);
+    final pdfPath = await _fetchPdf(t);
+    if (pdfPath == null) return;
     await Share.shareXFiles([XFile(pdfPath)],
         text: 'Invoice for ${t.paymentPropertyPropertyName}');
   }
 
   Future<void> _downloadPdf(Transaction t) async {
-    final pdfPath = await _generatePdf(t);
+    final pdfPath = await _fetchPdf(t);
+    if (pdfPath == null) return;
     await Printing.layoutPdf(
         onLayout: (format) async => File(pdfPath).readAsBytes());
   }
@@ -212,11 +189,17 @@ class _InvoicePageState extends State<InvoicePage> {
                     style: inter(fontSize: 12.5, color: kMuted)),
                 Text(date, style: inter(fontSize: 12, color: kMuted)),
                 const SizedBox(height: 6),
-                Text(rupeesFrom(t.payAmount),
+                // What the guest paid, with the tax under it. This printed
+                // payAmount — the pre-tax subtotal — beside a booking card
+                // that said the total.
+                Text(rupeesFrom(t.chargedAmount),
                     style: fraunces(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: kIndigo600)),
+                if (t.taxAmount > 0)
+                  Text('incl. ${rupeesFrom(t.taxAmount)} GST',
+                      style: inter(fontSize: 11.5, color: kMuted)),
               ],
             ),
           ),

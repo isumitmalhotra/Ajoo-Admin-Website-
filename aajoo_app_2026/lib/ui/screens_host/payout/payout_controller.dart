@@ -95,15 +95,4 @@ class PayoutController extends GetxController {
     }
   }
 
-  Future<bool> createPayoutRequest(int amount) async {
-    isLoading.value = true;
-    try {
-      final response = await _payoutService.createPayoutRequest(amount);
-      return response;
-    } catch (e) {
-      return false;
-    } finally {
-      isLoading.value = false;
-    }
-  }
 }

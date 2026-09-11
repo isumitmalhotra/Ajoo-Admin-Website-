@@ -7,7 +7,6 @@ import 'package:rent_home/ui/screens_host/payout/add_payout_account_page.dart';
 import 'package:rent_home/ui/screens_host/payout/components/plan_overview_card.dart';
 import 'package:rent_home/ui/screens_host/payout/payout_controller.dart';
 import 'package:rent_home/utils/fonts.dart';
-import 'package:rent_home/utils/input_sanitizers.dart';
 
 class PayoutPage extends StatefulWidget {
   const PayoutPage({super.key});
@@ -80,8 +79,15 @@ class _PayoutPageState extends State<PayoutPage> {
                 PlanOverviewCard(payoutController: _payoutController),
                 const SizedBox(height: 20),
                 _bankAccountCard(),
-                const SizedBox(height: 20),
-                _requestPayoutButton(context),
+                // No "Request payout" button. Payouts are raised by the
+                // platform once a stay completes and released on the
+                // account's schedule — the note at the foot of this page has
+                // said so since the payout engine shipped, and the website
+                // has never had a button. The one here wrote a request into
+                // a queue nothing processes, after checking it against a
+                // balance the payout engine does not use (uncommissioned,
+                // never reduced by a cancellation): "Payout request created
+                // successfully", and then nothing, ever. Removed 2026-09-11.
                 const SizedBox(height: 30),
                 Text(
                   'Payout history',
@@ -358,46 +364,6 @@ class _PayoutPageState extends State<PayoutPage> {
     }
   }
 
-  Widget _requestPayoutButton(BuildContext context) {
-    return Obx(() {
-      final hasAccount = _payoutController.hasAccount;
-      return Center(
-        child: ElevatedButton(
-          onPressed: hasAccount
-              ? () => _showPayoutRequestBottomSheet(context, _payoutController)
-              : () {
-                  Get.snackbar(
-                    'Add bank account',
-                    'Please add your bank account before requesting a payout.',
-                    snackPosition: SnackPosition.BOTTOM,
-                    backgroundColor: kClay,
-                    colorText: Colors.white,
-                  );
-                  _openAddAccount();
-                },
-          // A flat filled button, like every other primary action in the app.
-          // This was a transparent ElevatedButton wrapping an Ink gradient —
-          // the only gradient button left on the host side.
-          style: ElevatedButton.styleFrom(
-            backgroundColor: hasAccount ? kIndigo : kLine,
-            foregroundColor: hasAccount ? Colors.white : kMuted,
-            disabledBackgroundColor: kLine,
-            disabledForegroundColor: kMuted,
-            elevation: 0,
-            minimumSize: const Size(double.infinity, 50),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          child: Text(
-            hasAccount ? 'Request payout' : 'Add an account to request',
-            style: inter(fontSize: 15.5, fontWeight: FontWeight.w700),
-          ),
-        ),
-      );
-    });
-  }
-
   Widget _emptyState() {
     return SizedBox(
       height: 200,
@@ -512,147 +478,6 @@ class _PayoutPageState extends State<PayoutPage> {
     );
   }
 
-
-
-  void _showPayoutRequestBottomSheet(
-      BuildContext context, PayoutController payoutController) {
-    final TextEditingController amountController = TextEditingController();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 16,
-            right: 16,
-            top: 16,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Request Payout',
-                  style: fraunces(
-                      fontSize: 22, fontWeight: FontWeight.w500, color: kInk),
-                ),
-                const SizedBox(height: 8),
-                Obx(() {
-                  final acc = payoutController.accountDetails.value;
-                  if (acc == null) return const SizedBox.shrink();
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(
-                      'Payout will be sent to ${_maskAccount(acc.accountNumber)} (IFSC ${acc.accountIfsc.toUpperCase()})',
-                      style: const TextStyle(fontSize: 13, color: kMuted),
-                    ),
-                  );
-                }),
-                TextField(
-                  controller: amountController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: AppInputFormatters.digits(7),
-                  decoration: InputDecoration(
-                    labelText: 'Enter Amount (₹)',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    prefixIcon: const Icon(Icons.currency_rupee,
-                        color: kprimaryColor),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Center(
-                  child: Obx(
-                    () => ElevatedButton(
-                      onPressed: payoutController.isLoading.value
-                          ? null
-                          : () async {
-                              final amount =
-                                  int.tryParse(amountController.text);
-                              if (amount == null || amount <= 0) {
-                                Get.snackbar(
-                                  'Error',
-                                  'Please enter a valid amount',
-                                  snackPosition: SnackPosition.BOTTOM,
-                                  backgroundColor: kDanger,
-                                  colorText: Colors.white,
-                                );
-                                return;
-                              }
-                              final success = await payoutController
-                                  .createPayoutRequest(amount);
-                              if (success) {
-                                Get.snackbar(
-                                  'Success',
-                                  'Payout request created successfully',
-                                  snackPosition: SnackPosition.BOTTOM,
-                                  backgroundColor: kSuccess,
-                                  colorText: Colors.white,
-                                );
-                                payoutController.fetchPayoutList();
-                                Navigator.pop(context);
-                              } else {
-                                Get.snackbar(
-                                  'Error',
-                                  'Failed to create payout request',
-                                  snackPosition: SnackPosition.BOTTOM,
-                                  backgroundColor: kDanger,
-                                  colorText: Colors.white,
-                                );
-                              }
-                            },
-                      style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                      ),
-                      child: Ink(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              kprimaryColor,
-                              kprimaryColor.withOpacity(0.8)
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Container(
-                          constraints: const BoxConstraints(
-                              minWidth: 200, minHeight: 50),
-                          alignment: Alignment.center,
-                          child: payoutController.isLoading.value
-                              ? const CircularProgressIndicator(
-                                  color: Colors.white,
-                                )
-                              : const Text(
-                                  'Confirm Payout',
-                                  style: TextStyle(
-                                      fontSize: 18, color: Colors.white),
-                                ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 }
 
 /// What actually happens to a payout, in the platform's own words.

@@ -18,24 +18,6 @@ class HostPayoutService {
     _dio.options.headers['Authorization'] = 'Bearer $token';
   }
 
-  Future<bool> createPayoutRequest(int amount) async {
-    const endpoint = "payout/request/create";
-    await _attachAuth();
-
-    try {
-      final response = await _dio.post(endpoint, data: {
-        'amount': amount,
-      });
-      return response.data['success'] == true;
-    } on DioException catch (err) {
-      _handleError(err);
-      return false;
-    } catch (e) {
-      appLog("Error in creating payout request: $e");
-      return false;
-    }
-  }
-
   /// What the host has earned and what has been paid.
   ///
   /// This used to call `/payout/request/list`, the old "ask us for your money"

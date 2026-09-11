@@ -11,7 +11,8 @@ import 'package:rent_home/models/transaction_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import '../utils/service_log.dart';
 import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
-
+
+
 import 'package:rent_home/utils/app_log.dart';
 class HostService {
   final Dio _dio = Dio();
@@ -124,7 +125,6 @@ class HostService {
   Future<TransactionResponse> getHostTransactions() async {
     final url = '$baseUrl/host/transaction-history';
     final token = await const FlutterSecureStorage().read(key: "user_token");
-    appLog(token);
     _dio.options.headers['Authorization'] = 'Bearer $token';
 
     try {
@@ -140,6 +140,32 @@ class HostService {
     } catch (e) {
       appLog(e);
       throw _handleError(e);
+    }
+  }
+
+  /// The invoice PDF the SERVER renders for one of this host's payments —
+  /// the same document the website hands out, with the property address,
+  /// the nights, the tax line and the total the guest actually paid.
+  ///
+  /// The app used to draw its own: five lines and a "Total" that was the
+  /// pre-tax subtotal, so the two platforms issued two different invoices
+  /// for one payment. One renderer now; this only fetches it.
+  Future<Uint8List> downloadInvoicePdf(Object payId) async {
+    final url = '$baseUrl/host/invoice/$payId/download';
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final response = await _dio.get<List<int>>(
+        url,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      final bytes = response.data;
+      if (bytes == null || bytes.isEmpty) {
+        throw Exception("That invoice isn't available.");
+      }
+      return Uint8List.fromList(bytes);
+    } on DioException catch (err) {
+      throw _handleError(err);
     }
   }
 
