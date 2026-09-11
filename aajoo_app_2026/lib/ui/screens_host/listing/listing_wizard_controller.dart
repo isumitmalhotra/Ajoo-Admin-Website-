@@ -359,6 +359,15 @@ class ListingWizardController extends GetxController {
         || p4['weekend_pricing'] == true
         || p4['weekend_pricing'] == '1';
 
+    // The two extra-guest switches, same coercion. Absent from the draft
+    // (a listing saved before the app asked) they stay unset, which the
+    // screen reads as off — the engine reads a NULL flag as off too.
+    for (final k in ['charge_extra_guests', 'children_free']) {
+      if (p4[k] != null) {
+        p4[k] = p4[k] == 1 || p4[k] == true || p4[k] == '1';
+      }
+    }
+
     // The negotiation switch, under the name the SAVE endpoint reads.
     //
     // Stripping 'pn_' gives `enabled`; the switch and the payload both use
@@ -1068,6 +1077,19 @@ class ListingWizardController extends GetxController {
      * utils/pricingGrid on the server — a rule enforced on two surfaces out of
      * three is not a rule.
      */
+    // Charging extra guests needs to know who is extra. Without
+    // guests_included the engine charges nobody, so a fee typed here would
+    // be a fee nobody pays — the engine's rule, said before the save.
+    if (p4['charge_extra_guests'] == true) {
+      if (!set('guests_included') || val('guests_included')! < 1) {
+        errs['guests_included'] =
+            'Required — the fee applies to guests beyond this number';
+      }
+      if (!set('extra_guest_price')) {
+        errs['extra_guest_price'] = 'Required, and must be more than zero';
+      }
+    }
+
     if (p4['weekend_pricing'] == true) {
       final weekendRates = ['friday_price', 'saturday_price', 'sunday_price']
           .where(set)

@@ -146,6 +146,35 @@ void main() {
     expect(c.blockedReason, isNull);
   });
 
+  test('the extra-guest switch comes back on, and the fee needs a base', () async {
+    // The app asked for the extra guest FEE alone; the pricing engine charges
+    // it only when charge_extra_guests is on and guests_included says who is
+    // extra. Neither was ever sent, so a ₹400 fee reached nobody (29302,
+    // six guests, fee 0 — 2026-09-11). The section now matches the website.
+    final c = wizard({
+      'pricing': {
+        'ppr_base_price': 2000,
+        'ppr_charge_extra_guests': 1, // MySQL true
+        'ppr_guests_included': 4,
+        'ppr_extra_guest_price': 400,
+        'ppr_children_free': 0,
+      },
+    });
+    c.onInit();
+    await Future<void>.delayed(Duration.zero);
+    expect(c.p4['charge_extra_guests'], isTrue,
+        reason: 'a stored 1 renders the switch OFF and hides the fee');
+    expect(c.p4['children_free'], isFalse);
+
+    // A fee with nobody to charge it to is refused before the save.
+    c.step.value = 3;
+    c.setP4('guests_included', '');
+    expect(c.validateStep4()['guests_included'], isNotNull,
+        reason: 'a fee is accepted with no guests_included — the engine will charge nobody');
+    c.setP4('guests_included', '4');
+    expect(c.validateStep4()['guests_included'], isNull);
+  });
+
   test('a host who left negotiation ON keeps it on', () async {
     final c = wizard({
       'pricing': {'ppr_base_price': 2000},

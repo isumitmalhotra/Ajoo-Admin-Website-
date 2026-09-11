@@ -1049,13 +1049,55 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
                 numeric: true,
                 help: 'Held against damage, commonly about one night\'s rate. '
                     'Leave blank for none.'),
-            // 'extra_guest_price', not 'extra_guest_fee'. Same fault again:
-            // the save endpoint reads b.extra_guest_price and the draft
-            // loader strips 'ppr_' from ppr_extra_guest_price, so both
-            // directions wanted this name and the form used another.
-            // ppr_extra_guest_price was NULL on every listing in the
-            // database — the charge has never once been saved from the app.
-            _p4Text('extra_guest_price', 'Extra guest fee (₹)', numeric: true),
+          ],
+        ),
+        // The website's "Extra guests & children" section, missing here.
+        // This screen asked for the extra guest FEE alone; the pricing
+        // engine charges it only when charge_extra_guests is on and
+        // guests_included says who the fee starts after — neither of which
+        // the app ever sent. A host who typed ₹400 here saw it charged to
+        // nobody (29302, six guests, fee 0 — 2026-09-11).
+        ListingSection(
+          title: 'Extra guests & children',
+          sub: 'Charge beyond a number of guests, and decide whether children '
+              'count.',
+          children: [
+            ListingToggle(
+              label: 'Charge for extra guests',
+              value: c.p4['charge_extra_guests'] == true,
+              onChanged: (v) => c.setP4('charge_extra_guests', v),
+            ),
+            if (c.p4['charge_extra_guests'] == true) ...[
+              const SizedBox(height: 8),
+              _p4Text('guests_included', 'Guests included',
+                  required: true,
+                  numeric: true,
+                  help: 'The fee applies to every guest beyond this number.'),
+              // 'extra_guest_price', not 'extra_guest_fee': the save endpoint
+              // reads b.extra_guest_price and the draft loader strips 'ppr_'
+              // from ppr_extra_guest_price, so both directions want this
+              // name and the form once used another.
+              _p4Text('extra_guest_price', 'Extra guest fee (₹ per night)',
+                  required: true, numeric: true),
+              _p4Text('max_extra_guests', 'Maximum extra guests',
+                  numeric: true,
+                  help: 'Leave blank for no cap beyond your guest capacity.'),
+            ],
+            const SizedBox(height: 8),
+            ListingToggle(
+              label: 'Children stay free',
+              value: c.p4['children_free'] == true,
+              onChanged: (v) => c.setP4('children_free', v),
+            ),
+            if (c.p4['children_free'] != true) ...[
+              const SizedBox(height: 8),
+              _p4Text('child_price', 'Child price (₹ per night)',
+                  numeric: true,
+                  help: 'Leave blank to charge the extra guest fee for a '
+                      'child.'),
+              if (r.childAgeGroups.isNotEmpty)
+                _p4Choice('child_age_group', 'Age group', r.childAgeGroups),
+            ],
           ],
         ),
         ListingSection(
