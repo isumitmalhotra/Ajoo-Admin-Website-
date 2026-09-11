@@ -59,6 +59,7 @@ money and is not. The second gates every honest SEO number on the site.
 | **1.5** | **Weather provider + key** (was E-2, RENT-7) | Renter-dashboard weather widget cannot start without a provider choice. | carried |
 | **1.6** | **Brand assets** — logo set, favicon/PWA icons, animated illustrations, WhatsApp number, social links, reference designs (was E-5, S0-ASSET-1…5) | Gates most of Section-0. | carried |
 | ~~1.7~~ | ~~**The five test listings that are now the public catalogue**~~ **MOOT** | Of the 6 live real-host listings, **5 are tester approvals**: four on 2026-09-04 so the site was not empty after approval started gating visibility — Garg Resorts (29263), Tharamani Farm Retreat (29265), Vrindavan Garden Farm Stay (29277), Delhi Green Farm Stay (29279 — the last two renamed from "Aish mobile host property…") — and Aish camping in the hills (29289) on 09-05, approved to prove the audit-trail fix. They are tester accounts' listings with tester phone numbers. Decide whether they stay through launch or come down with the seed data. | **2026-09-08: all five are gone** with the rest of the wipe. The catalogue is now property ids 29291-29294, of which 2 are publicly listed: "Heritage stay aish for testing" and "Ben Tree House". Both are still test names on a public site — that part of the decision survives. | verified 09-08 — sitemap-properties.xml |
+| **1.12** | **Email delivery is unproven** | Brevo accepts every send (`tbl_send_emails` says "sent successfully" for the host booking notice, the balance reminder and two cancellation OTPs on 2026-09-11) and **nothing arrives** in the mailinator inboxes (`aajoo.host1`, `aajoo.renter1`). Either Brevo's sender/domain is unverified and it queues silently, or Brevo blocks disposable domains. Until an email is seen in a real inbox, signup OTP, password reset and cancellation OTP are all unverified on production. **Test:** on www.aajoohomes.com press "Forgot password" for a real account (e.g. sumit.m@zyphextech.com) and see whether the mail lands; then check the Brevo dashboard › Statistics › Transactional for the block reason. | DB `tbl_send_emails` + mailinator, 2026-09-11 |
 | **1.9** | **Ledger rows written by the broken verification code — run the repair** | Code fixed (`2014aeb`, `2e6aeb0`, `dfd3b69`); the data is one script, dry-run by default: `scripts/repairLedger_2026-09-11.js`. It corrects `book_amount_paid` on 4 bookings, `pay_amount` on 4 payments, `he_amount` on 3 earnings, voids the ₹511.50 due on B703473, and finishes two cancellations the old code left halfway — **B761983** (host cancel asked the gateway for ₹6,300 on a ₹630 capture → FAILED; owed ₹630) and **B283633** (chatbot cancel promised ₹6,500, sent nothing, left the host's ₹10,699 payout QUEUED; owed 50% of ₹13,650 = ₹6,825, ledger reversed, payout held). The refunds go through Razorpay **test mode**. My session's sandbox refuses production writes, so the client runs it: `ALLOW_TEST_PAYMENTS=true node scripts/repairLedger_2026-09-11.js --apply` in `aajaoBackend-render`. | dry run printed 2026-09-11 (`scripts/repairLedger_2026-09-11.js`) |
 | **1.11** | **Category 1 is titled "Villas -1"** | Every villa on the public site reads "Villas -1 · Listed category" (29302 and the card rail). A test rename left in `tbl_categories`; the slug `villas-1` is fine to keep. One click in Admin › Catalogue › Categories › pencil on "Villas -1" → "Villas" → Save name. My sandbox refused the edit. | admin Categories screen, 2026-09-11 |
 | ~~1.10~~ | ~~**Admin approval → public listing, end to end**~~ **DONE 2026-09-11** | 29302 "QA Sunrise Villa" filed from the app (all five steps, map pin at Christ Church Kasauli, 10 tagged photos with ALT text, ownership PDF, Moderate policy, approval required, weekend/weekly/monthly rates, pets, 15:00 check-in) → Submitted tab → Mark all checked → Approve & publish → live at `/property/qa-sunrise-villa-solan-himachal-pradesh` with map pin, gallery, rules, nearby, policy ladder, negotiation, `psb_reviewed_by` recorded. Quote engine: Fri ₹3,600 + Sat ₹3,800, 10% advance discount, ₹500 cleaning, 5% GST; extra guests ₹400 × 2 × 2 nights once the app could say who is included. Found and fixed on the way: the document-upload Submit deadlock (web + app), the self check-in method erased on re-save (app), the extra-guest section missing (app), "1800 sq_ft" / "Pet Area 1" on the public page (backend). **The listing is live test content on production — delete it when the client is done with it.** | driven 2026-09-11, builds 66–68 |
@@ -187,6 +188,23 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a14. Closed 2026-09-11 (afternoon) — a deposit booking, approved, then cancelled and refunded
+
+Guest booked 29302 on the website (B736755, 18–20 Sep, 2 guests + 1 pet,
+**10% deposit**, Razorpay test netbanking), host approved from the app,
+guest cancelled with the email OTP (read from the database — see 1.12),
+refund of the ₹751.80 actually received went through Razorpay
+(`rfnd_TacNrzdO8nmo8u`), ledger REVERSED, host card reads "Refunded ₹752".
+The deposit ledger was right at every step (amount_paid 751.80, host share
+₹716, ledger PENDING, no payout). Fixed on the way:
+
+- **Cleaning fee charged, never shown or sent** — both clients (host unpaid ₹500 on every booking since 09-10).
+- **"Confirmed outright" / "Paid ₹7,518"** on an approval-required deposit booking — approval rule now reaches checkout; confirmation prints paid + balance.
+- **Expired session = empty account** (app) — guard on all 17 HTTP clients; goes to login with a message.
+- **A failed account lookup answered 401** (backend) — one DB blip signed a guest out mid-cancellation; only token problems are 401 now.
+- **Deposit read "Paid" to the host**, refund never shown — host lists carry pay mode/amount paid/refund/pets; badges on web and app say "Deposit paid · ₹6,766 due" / "Refunded ₹752"; guest card says what is still due; "Pending Payments" counts it; four formatters that printed "₹6,766.2" share one.
+- Tester build **71**. Backend 118/118, web +3, app 315.
 
 ### 8a13. Closed 2026-09-11 (later) — every cancellation moves the money; a listing filed end to end
 
