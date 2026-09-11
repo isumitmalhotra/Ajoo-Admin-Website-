@@ -140,15 +140,24 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
         return StatefulBuilder(
           builder: (ctx, setDialogState) => AlertDialog(
             backgroundColor: Colors.white,
-            title: Text('Cancel this booking?',
+            title: Text(
+                _needsApproval ? 'Decline this request?' : 'Cancel this booking?',
                 style: fraunces(fontSize: 17, fontWeight: FontWeight.w700)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // What actually happens: a host cancellation refunds
+                // everything the guest has paid, whatever the property's
+                // policy ladder says — that ladder is for the GUEST calling
+                // off. "Refunded under the property policy" was the wrong
+                // promise in both directions.
                 Text(
-                  'The guest is refunded under the property policy and told why. '
-                  'Please give them a reason.',
+                  b.bookAmountPaid > 0
+                      ? 'The guest gets back everything they have paid '
+                          '(${rupees(b.bookAmountPaid)}) and is told why. '
+                          'Please give them a reason.'
+                      : 'The guest is told why. Please give them a reason.',
                   style: inter(fontSize: 13, color: kMuted, height: 1.45),
                 ),
                 const SizedBox(height: 10),
@@ -172,7 +181,7 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Keep booking'),
+                child: Text(_needsApproval ? 'Keep request' : 'Keep booking'),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -185,7 +194,7 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
                   }
                   Navigator.of(ctx).pop(controller.text);
                 },
-                child: const Text('Cancel booking'),
+                child: Text(_needsApproval ? 'Decline request' : 'Cancel booking'),
               ),
             ],
           ),
@@ -503,11 +512,17 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
                 rupees(b.bookRefundAmount)),
           ],
           const SizedBox(height: 14),
-          Row(
+          // Wrap, not Row: "Invoice Inv_434315 · Awaiting approval · Deposit
+          // paid · ₹1,890 due" is wider than a phone, and a Row cut the last
+          // chip to "₹1,890 du" (2026-09-11). A chip that does not fit goes
+          // to the next line whole.
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text('Invoice ${b.bookInvoice}',
                   style: inter(fontSize: 12, color: kMuted)),
-              const Spacer(),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -529,7 +544,6 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
                         fontWeight: FontWeight.w700,
                         color: kIndigo600)),
               ),
-              const SizedBox(width: 6),
               Builder(builder: (_) {
                 final pay =
                     paymentBadge(
@@ -659,7 +673,16 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
             onPressed: _cancelling ? null : _hostCancel,
             style: TextButton.styleFrom(foregroundColor: kDanger),
             icon: const Icon(Icons.cancel_outlined, size: 18),
-            label: Text(_cancelling ? 'Cancelling…' : 'Cancel this booking',
+            // A request the host has not yet approved is DECLINED; a booking
+            // they approved is CANCELLED. Same endpoint, same full refund,
+            // different act — the button said "Cancel this booking" under a
+            // "Confirm this booking" button, on a stay that was not yet one.
+            label: Text(
+                _cancelling
+                    ? (_needsApproval ? 'Declining…' : 'Cancelling…')
+                    : (_needsApproval
+                        ? 'Decline this request'
+                        : 'Cancel this booking'),
                 style: inter(fontSize: 13.5, fontWeight: FontWeight.w600)),
           ),
         ],
