@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:rent_home/data/ApiConstants.dart';
+import 'package:rent_home/data/source/remote/dio_config.dart';
 
 /// KYC verification (DIDIT) API client — mirrors the web `/verify/*` flow.
 ///
@@ -15,6 +16,7 @@ class VerifyService {
   final String _tokenKey = 'user_token';
 
   VerifyService() {
+    DioConfig.sessionGuard(_dio);
     _dio.options.baseUrl = baseUrl;
     _dio.options.connectTimeout = const Duration(seconds: 30);
     _dio.options.receiveTimeout = const Duration(seconds: 30);

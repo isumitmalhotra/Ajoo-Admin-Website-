@@ -5,6 +5,7 @@ import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:rent_home/models/host_calendar_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
+import 'package:rent_home/data/source/remote/dio_config.dart';
 
 /// The host calendar's three endpoints, all owner-scoped server-side by
 /// property_host_id — a host can only ever read or change their own listing.
@@ -16,6 +17,7 @@ class HostCalendarService {
   final String baseUrl = Apiconstants.baseUrl;
 
   HostCalendarService() {
+    DioConfig.sessionGuard(_dio);
     _dio.options.baseUrl = baseUrl;
     _dio.interceptors.add(PrettyDioLogger(
       requestHeader: kDebugMode,

@@ -14,12 +14,14 @@ import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
 
 
 import 'package:rent_home/utils/app_log.dart';
+import 'package:rent_home/data/source/remote/dio_config.dart';
 class HostService {
   final Dio _dio = Dio();
   final String baseUrl = Apiconstants.baseUrl;
   String? _token;
 
   HostService() {
+    DioConfig.sessionGuard(_dio);
     _dio.options.baseUrl = baseUrl;
     _dio.interceptors.add(PrettyDioLogger(
       requestHeader: kDebugMode,

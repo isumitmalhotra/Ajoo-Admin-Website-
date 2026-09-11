@@ -14,6 +14,7 @@ import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
 
 
 import 'package:rent_home/utils/app_log.dart';
+import 'package:rent_home/data/source/remote/dio_config.dart';
 /// When this host will take an arrival, and why.
 ///
 /// The listing wizard has always asked how much notice a host needs, how far
@@ -83,7 +84,9 @@ class BookingService {
     BaseOptions(
       contentType: 'application/json',
     ),
-  )..interceptors.add(PrettyDioLogger(
+  )
+    ..interceptors.add(DioConfig.sessionGuardInterceptor())
+    ..interceptors.add(PrettyDioLogger(
       requestHeader: kDebugMode,
       requestBody: kDebugMode,
       responseBody: kDebugMode,

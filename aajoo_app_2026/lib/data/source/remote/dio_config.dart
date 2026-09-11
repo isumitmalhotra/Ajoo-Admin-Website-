@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:get/get.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 /// Shared Dio setup: sensible timeouts, one retry for a sleeping backend, and
@@ -123,5 +125,89 @@ class DioConfig {
     dio.options = baseOptions(baseUrl);
     dio.interceptors.add(logger());
     dio.interceptors.add(coldStartRetry());
+    sessionGuard(dio);
+  }
+
+  /// True while a sign-out for an expired session is in progress, so twenty
+  /// parallel 401s from one dashboard load produce one redirect.
+  static bool _signingOut = false;
+
+  /// What the guard did last, for tests and for a screen that wants to know.
+  static int expiredSessionsHandled = 0;
+
+  /// A test seam: the storage wipe and the navigation, replaceable.
+  @visibleForTesting
+  static Future<void> Function()? onSessionExpired;
+
+  @visibleForTesting
+  static void resetSessionGuard() {
+    _signingOut = false;
+    expiredSessionsHandled = 0;
+  }
+
+  /// Signs the user out when their session has expired.
+  ///
+  /// Every service wrapped a Dio failure into a plain Exception(message) and
+  /// every controller caught that into `error.value` — so a 401 on a dead
+  /// token was indistinguishable from any other failure, and every screen
+  /// drew its empty state: "Hi, Sam!", Collected from guests ₹0, 0 bookings,
+  /// 0 properties, "No upcoming bookings", on an account with five bookings
+  /// and two listings (2026-09-11, the morning after the host signed in).
+  /// Nothing said "you are signed out"; the app looked like it had lost the
+  /// data. The website's axios interceptor has always done this.
+  ///
+  /// Only a request that CARRIED a token counts: a 401 with no bearer is a
+  /// signed-out guest hitting a signed-in endpoint, which the screens handle
+  /// themselves — and a wrong password on the login endpoint sends none.
+  static void sessionGuard(Dio dio) {
+    dio.interceptors.add(sessionGuardInterceptor());
+  }
+
+  /// The guard itself, for a Dio built with a cascade.
+  static Interceptor sessionGuardInterceptor() => InterceptorsWrapper(
+        onError: (DioException e, ErrorInterceptorHandler handler) async {
+          if (e.response?.statusCode == 401 &&
+              _carriedAToken(e.requestOptions)) {
+            await _expireSession();
+          }
+          handler.next(e);
+        },
+      );
+
+  static bool _carriedAToken(RequestOptions o) {
+    final auth = (o.headers['Authorization'] ?? '').toString().trim();
+    if (!auth.startsWith('Bearer ')) return false;
+    final token = auth.substring(7).trim();
+    return token.isNotEmpty && token != 'null';
+  }
+
+  static Future<void> _expireSession() async {
+    if (_signingOut) return;
+    _signingOut = true;
+    expiredSessionsHandled += 1;
+    try {
+      final override = onSessionExpired;
+      if (override != null) {
+        await override();
+        return;
+      }
+      try {
+        const storage = FlutterSecureStorage();
+        await storage.delete(key: 'user_token');
+        await storage.delete(key: 'user_data');
+      } catch (_) {}
+      if (Get.currentRoute != '/login') {
+        Get.offAllNamed('/login');
+        Get.snackbar(
+          'Signed out',
+          'Your session has expired. Please sign in again.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } finally {
+      // Hold the latch a moment so the burst of parallel 401s that follows a
+      // dashboard load cannot each restart the sign-out.
+      Future<void>.delayed(const Duration(seconds: 3), () => _signingOut = false);
+    }
   }
 }

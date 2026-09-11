@@ -12,11 +12,14 @@ import 'package:rent_home/models/user_review_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/utils/upload_media_type.dart';
 import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
-
+
+
 import 'package:rent_home/utils/app_log.dart';
+import 'package:rent_home/data/source/remote/dio_config.dart';
 class UserService {
   final _dio = Dio();
   UserService() {
+    DioConfig.sessionGuard(_dio);
     _dio.interceptors.add(PrettyDioLogger(
       requestHeader: true,
       requestBody: true,

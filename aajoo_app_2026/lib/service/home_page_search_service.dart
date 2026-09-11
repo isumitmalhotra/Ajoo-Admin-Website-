@@ -4,11 +4,13 @@ import 'package:rent_home/models/search_property_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 
 import 'package:rent_home/utils/app_log.dart';
+import 'package:rent_home/data/source/remote/dio_config.dart';
 class HomePageSearchService {
   final _dio = Dio();
   final String baseUrl = '${Apiconstants.baseUrl}/';
   String? _token;
   HomePageSearchService() {
+    DioConfig.sessionGuard(_dio);
     _dio.options.baseUrl = baseUrl;
     _dio.options.contentType = 'application/json';
     _dio.interceptors.add(InterceptorsWrapper(

@@ -14,6 +14,7 @@ import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
 
 
 import 'package:rent_home/utils/app_log.dart';
+import 'package:rent_home/data/source/remote/dio_config.dart';
 class PropertyService {
   /// Why the last addProperties call failed, straight from the server.
   ///
@@ -26,6 +27,7 @@ class PropertyService {
   final Dio dio = Dio();
   final String baseUrl = '${Apiconstants.baseUrl}/';
   PropertyService() {
+    DioConfig.sessionGuard(dio);
     dio.options.baseUrl = baseUrl;
     // Dio defaults every timeout to null, which means WAIT FOREVER. Submitting
     // a listing posts several megabytes of photos and documents in one

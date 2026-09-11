@@ -2,13 +2,16 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:rent_home/models/properties_response_model.dart';
 import 'package:rent_home/data/ApiConstants.dart';
-
+
+
 import 'package:rent_home/utils/app_log.dart';
+import 'package:rent_home/data/source/remote/dio_config.dart';
 class MapService {
   final String baseUrl = Apiconstants.baseUrl;
   final Dio _dio = Dio();
 
   MapService() {
+    DioConfig.sessionGuard(_dio);
     _dio.options.baseUrl = baseUrl;
     _dio.options.contentType = 'application/json';
     // Without these, a stalled request never returns and every caller waits

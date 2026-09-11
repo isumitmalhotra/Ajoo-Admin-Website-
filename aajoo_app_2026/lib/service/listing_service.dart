@@ -20,6 +20,7 @@ import 'package:rent_home/utils/upload_media_type.dart';
 import '../utils/service_log.dart';
 
 import 'package:rent_home/utils/app_log.dart';
+import 'package:rent_home/data/source/remote/dio_config.dart';
 /// What went wrong, in words the host can act on.
 class ListingException implements Exception {
   ListingException(this.message);
@@ -30,6 +31,7 @@ class ListingException implements Exception {
 
 class ListingService {
   ListingService() {
+    DioConfig.sessionGuard(_dio);
     _dio.options.baseUrl = baseUrl;
     _dio.options.contentType = 'application/json';
     // Never wait forever. Dio's default timeout is null, and this wizard
