@@ -59,6 +59,8 @@ money and is not. The second gates every honest SEO number on the site.
 | **1.5** | **Weather provider + key** (was E-2, RENT-7) | Renter-dashboard weather widget cannot start without a provider choice. | carried |
 | **1.6** | **Brand assets** — logo set, favicon/PWA icons, animated illustrations, WhatsApp number, social links, reference designs (was E-5, S0-ASSET-1…5) | Gates most of Section-0. | carried |
 | ~~1.7~~ | ~~**The five test listings that are now the public catalogue**~~ **MOOT** | Of the 6 live real-host listings, **5 are tester approvals**: four on 2026-09-04 so the site was not empty after approval started gating visibility — Garg Resorts (29263), Tharamani Farm Retreat (29265), Vrindavan Garden Farm Stay (29277), Delhi Green Farm Stay (29279 — the last two renamed from "Aish mobile host property…") — and Aish camping in the hills (29289) on 09-05, approved to prove the audit-trail fix. They are tester accounts' listings with tester phone numbers. Decide whether they stay through launch or come down with the seed data. | **2026-09-08: all five are gone** with the rest of the wipe. The catalogue is now property ids 29291-29294, of which 2 are publicly listed: "Heritage stay aish for testing" and "Ben Tree House". Both are still test names on a public site — that part of the decision survives. | verified 09-08 — sitemap-properties.xml |
+| **1.9** | **Ledger rows written by the broken verification code (2026-09-11)** | Code is fixed (`2014aeb`, `2e6aeb0`); the rows it wrote are not. All test data, so this is a one-off `UPDATE` needing a yes: **B761983** `book_amount_paid` 6000 → 630 (deposit; received ₹630, refunded ₹6,300 — the refund itself is not reversible here), `tbl_host_earnings` he_id 2 6000 → 600; **B339196** he_id 4 1784.79 → 1699.80; **B153001** he_id 5 38321.05 → 35530.60; **B703473** `tbl_host_dues` hd_id 29 PENDING → VOID ("settled online"). None of these feed the live payout engine (`tbl_financial_ledger` was right throughout) — they feed the legacy `he_amount` balance and the host's Settlements screen (B703473 shows "Payable now ₹512" today). | DB read 2026-09-11; detail in memory `inert_select_column_trap` |
+| **1.10** | **Admin approval → public listing, end to end** | Not driven. The only submitted listing was the QA one deleted on request; the queue's six `updated` rows are already live and 29291 has no engine photos, so "Photos approved" cannot honestly be ticked. Needs either 10 tagged photos on 29291 from the device (then re-approve, stays live) or a fresh throwaway listing that goes public for a minute. Client's call — both touch production content. | admin queue, 2026-09-11 |
 | **1.8** | **Where the platform runs after UAT** | `Deployment_Options_2026-09-05.docx` compares staying on Render + Vercel with AWS, Azure, GCP, DigitalOcean and a VPS, with indicative costs. Recommendation: stay through UAT (Render Starter, $7/mo), then **DigitalOcean Bangalore** (~$45–75/mo) as the first managed home in India; hyperscaler only with an owner or credits; VPS only with a named operator. Needs the client's answers to §8 of that document: expected traffic, budget, who operates, existing cloud agreements. | doc |
 
 ---
@@ -184,6 +186,38 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a12. Closed 2026-09-11 — the host money screens, driven on the device
+
+Tasks "4–6" of the host-onboarding readiness list: approve a booking from
+the app (B205678 → 8, guest sees Confirmed · Paid), documents (ownership PDF
+upload/replace round-trips; identity control correctly hidden on a
+DIDIT-verified host), and every Profile-menu screen — Performance, Payouts,
+Settlements, Invoices, server invoice PDF in the print sheet, Notifications
+(tap lands on the booking). All render. Four of them were wrong:
+
+- **Invoices said ₹5,000 for a ₹5,250 stay**, and the app's own PDF said so
+  too while the website's said ₹5,250. Both clients now show the booking's
+  tax-inclusive total with GST under it; the app fetches the server PDF.
+  Pulling on that thread found the verification lookup (W4, raw SQL) had
+  dropped `pay_gateway_amount`, so every booking since recorded the pre-tax
+  price as "received" — deposit balances, refunds (B761983 ₹6,300 on ₹630)
+  and host earnings all wrong, nothing errored. Fixed with
+  `hostShareOf()`; payLater's tax-inclusive `pay_amount` fixed too.
+- **Settlements: "Payable now ₹512" on B703473**, a cash stay the guest then
+  paid online. The due is now voided at verification.
+- **Dashboard chart "No bookings in this period yet"** on a host with five
+  that month: it read a list the dashboard had stopped loading. Now
+  `/host/booking-dates`.
+- **"Request payout" in the app** wrote to a queue nothing processes, against
+  the legacy uncommissioned balance. Removed; payouts are automatic and the
+  page has said so since the engine shipped.
+- Admin: **"7 Pending Approvals" → "Nothing submitted"**. A deleted listing's
+  row was counted, and six `updated` (live, host-edited) rows had no tab.
+  Count fixed; **Updated tab** added — re-approving records the look.
+
+Tester build: **65** (`aajoo-1.0.0-build65-qa.apk`). Tests: backend 114/114,
+web +1, app 302.
 
 ### 8a11. Closed 2026-09-08 (later)
 
