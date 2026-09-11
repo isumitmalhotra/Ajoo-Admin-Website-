@@ -83,6 +83,16 @@ class Transaction {
     num get chargedAmount =>
         _num(payTotalAmount) ?? _num(payGatewayAmount) ?? _num(payAmount) ?? 0;
 
+    /// What THIS payment brought in: the gateway's figure, else the row's
+    /// own amount. Not [chargedAmount], which is the stay's total and is
+    /// attached to every row of the stay — a deposit stay has two rows, and
+    /// summing that counted ₹2,100 twice.
+    num get receivedAmount => _num(payGatewayAmount) ?? _num(payAmount) ?? 0;
+
+    /// A payment that went back to the guest, wholly or in part.
+    bool get isRefunded =>
+        payStatusText.toLowerCase().contains('refunded');
+
     /// GST on the stay; 0 when the server did not say.
     num get taxAmount => _num(payTaxAmount) ?? 0;
 

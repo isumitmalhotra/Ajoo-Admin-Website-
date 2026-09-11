@@ -70,4 +70,27 @@ void main() {
     expect(t.userPaymentUserFullName, 'Guest');
     expect(t.paymentPropertyPropertyName, '');
   });
+
+  test('what a payment brought in is its own figure, not the stay total', () {
+    // A deposit stay has two rows that both carry the stay's total as
+    // pay_total_amount. Summing chargedAmount counted ₹2,100 twice on the
+    // dashboard; receivedAmount is the gateway's figure for THIS row.
+    final deposit = Transaction.fromJson(row({
+      'pay_amount': '200.00',
+      'pay_gateway_amount': '210.00',
+      'pay_total_amount': 2100,
+    }));
+    final balance = Transaction.fromJson(row({
+      'pay_amount': '1800.00',
+      'pay_gateway_amount': '1890.00',
+      'pay_total_amount': 2100,
+    }));
+    expect(deposit.receivedAmount + balance.receivedAmount, 2100);
+    expect(deposit.chargedAmount, 2100, reason: 'the invoice still reads the stay total');
+    expect(deposit.isRefunded, isFalse);
+    final back = Transaction.fromJson(row({'pay_status_text': 'Refunded'}));
+    expect(back.isRefunded, isTrue);
+    final part = Transaction.fromJson(row({'pay_status_text': 'Partly refunded ₹1050.00'}));
+    expect(part.isRefunded, isTrue);
+  });
 }

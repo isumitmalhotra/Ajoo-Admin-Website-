@@ -313,9 +313,14 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
       // booking whose payment never completed, and rows against bookings that
       // were later cancelled. On the live database that inflated the tile from
       // ₹74,829 collected to ₹1,77,723, and it was labelled "Total Earnings".
+      // ...and only what actually ARRIVED: the gateway's figure per payment,
+      // not the pre-tax subtotal. A deposit stay's two rows (₹210 + ₹1,890)
+      // read ₹3,800 here because the first row carried the whole subtotal
+      // (B434315, 2026-09-11), and a refunded payment still counted.
       final total = txns
-          .where((t) => t.payStatusText.toLowerCase().contains('paid'))
-          .fold<double>(0, (sum, t) => sum + (double.tryParse(t.payAmount) ?? 0));
+          .where((t) =>
+              t.payStatusText.toLowerCase().contains('paid') && !t.isRefunded)
+          .fold<double>(0, (sum, t) => sum + t.receivedAmount.toDouble());
       return InkWell(
         // Opens Earnings, not Payouts: the card is a summary of what was
         // earned, and the screen behind it should answer the same question.
