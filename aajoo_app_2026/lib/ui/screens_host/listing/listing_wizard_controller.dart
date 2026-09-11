@@ -1190,7 +1190,13 @@ class ListingWizardController extends GetxController {
       errs['account_number'] = 'Account numbers are 9–18 digits';
     }
     final gst = _s(p5['gst_number']);
-    if (gst.isNotEmpty && !_gstin.hasMatch(gst)) {
+    final commercial =
+        p5['commercial_property'] == true || p5['commercial_property'] == 1;
+    if (gst.isEmpty && commercial) {
+      // The website's rule, word for word: a commercial property is a GST
+      // registrant, and the listing cannot be verified without the number.
+      errs['gst_number'] = 'GST is required for commercial properties.';
+    } else if (gst.isNotEmpty && !_gstin.hasMatch(gst)) {
       errs['gst_number'] = "This isn't a valid 15-character GSTIN";
     }
     return errs;
@@ -1468,6 +1474,9 @@ class ListingWizardController extends GetxController {
         media.assignAll((res['media'] as List)
             .whereType<Map>()
             .map((e) => Map<String, dynamic>.from(e)));
+      } else {
+        // An answer with no list in it is not "no photos".
+        await syncMediaFromServer();
       }
       if (res['photoReadiness'] is Map) {
         photoReadiness
@@ -1475,9 +1484,39 @@ class ListingWizardController extends GetxController {
       }
       return null;
     } catch (e) {
+      // The server may well have every photograph. Five went up on
+      // 2026-09-11 and this screen went on saying "0 of 5" — then treated
+      // the next upload as the listing's first and tagged it the cover. Ask
+      // the server what it holds before telling the host anything: if the
+      // photographs are there, the upload did not fail.
+      final before = photos.length;
+      await syncMediaFromServer();
+      if (photos.length >= before + files.length) return null;
       return e is ListingException ? e.message : 'Upload failed.';
     } finally {
       uploading.value = false;
+    }
+  }
+
+  /// What the server holds for this listing's photographs, whatever this
+  /// screen believed a moment ago. Read from the draft, which is the same
+  /// list the wizard loads on opening.
+  Future<void> syncMediaFromServer() async {
+    final id = propertyId.value;
+    if (id == null) return;
+    try {
+      final d = await _service.getDraft(id);
+      if (d['media'] is List) {
+        media.assignAll((d['media'] as List)
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e)));
+      }
+      if (d['photoReadiness'] is Map) {
+        photoReadiness
+            .assignAll(Map<String, dynamic>.from(d['photoReadiness']));
+      }
+    } catch (_) {
+      // Whatever the screen had stays; this was a second opinion.
     }
   }
 

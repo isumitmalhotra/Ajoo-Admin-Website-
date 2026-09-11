@@ -1480,7 +1480,12 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             title: 'Bank details',
             sub: 'Where your payouts are sent.',
             children: [
-              _p5Text('account_holder_name', 'Account holder name',
+              // 'account_holder' is the key the server reads and the website
+              // sends. This field was 'account_holder_name' until 2026-09-11:
+              // the name a host typed was posted under a key nothing read,
+              // the row was saved with a blank holder, and the field came
+              // back empty on every return to the wizard.
+              _p5Text('account_holder', 'Account holder name',
                   formatters: AppInputFormatters.name),
               _p5Text('account_number', 'Account number', numeric: true),
               _p5Text('ifsc', 'IFSC code',
@@ -1509,11 +1514,39 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
                 numeric: true, maxLength: 10),
           ],
         ),
+        // The website's six questions, under the website's keys. Until
+        // 2026-09-11 this asked for a GSTIN and a "trade licence number" —
+        // the second under a key the server has never read, so it was typed
+        // and thrown away — and none of the six the compliance record
+        // actually holds. A phone listing and a web listing answered
+        // different questions on the same screen.
         ListingSection(
           title: 'Compliance',
           children: [
-            _p5Text('gst_number', 'GSTIN (optional)'),
-            _p5Text('trade_licence', 'Trade licence number (optional)'),
+            for (final q in const [
+              ('fire_safety', 'Fire safety available?'),
+              ('government_registration', 'Government registration?'),
+              ('gst_registered', 'GST registered?'),
+              ('commercial_property', 'Commercial property?'),
+              ('insurance', 'Insurance available?'),
+              ('local_authority_approval', 'Local authority approval?'),
+            ])
+              ListingToggle(
+                label: q.$2,
+                value: _p5Flag(q.$1),
+                onChanged: (v) => c.setP5(q.$1, v),
+              ),
+            if (_p5Flag('gst_registered') || _p5Flag('commercial_property'))
+              _p5Text(
+                'gst_number',
+                _p5Flag('commercial_property')
+                    ? 'GST number'
+                    : 'GST number (optional)',
+                help: _p5Flag('commercial_property')
+                    ? 'GST is required for commercial properties.'
+                    : null,
+                formatters: AppInputFormatters.upperAlnum(15),
+              ),
           ],
         ),
         ListingSection(
@@ -1882,6 +1915,14 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
         onChanged: (v) => c.setP4(key, v),
       );
 
+  /// A step-5 yes/no as the form holds it: true, or MySQL's 1 when it came
+  /// back from the draft, or the string '1' when it went through a text
+  /// channel. Anything else is "no".
+  bool _p5Flag(String key) {
+    final v = c.p5[key];
+    return v == true || v == 1 || v == '1';
+  }
+
   Widget _p5Text(String key, String label,
           {bool numeric = false,
           int? maxLength,
@@ -2192,8 +2233,11 @@ class _PhotoStep extends StatelessWidget {
                     // the room is — and the required ones cannot be satisfied
                     // any other way from a phone.
                     category: m['category']?.toString(),
+                    // The cover says so even before it is tagged: the flag is
+                    // the server's, and the tile should not read "Tag this"
+                    // over the picture that fronts the listing.
                     categoryLabel: (m['category']?.toString() ?? '').isEmpty
-                        ? null
+                        ? (m['isCover'] == true ? 'Cover Photo' : null)
                         : labelFor(m['category'].toString()),
                     onRemove: () {
                       final id = m['id'];

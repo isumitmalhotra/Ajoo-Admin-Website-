@@ -142,6 +142,39 @@ void main() {
     }
   });
 
+  /// Every key `saveStep5` reads from the request body.
+  /// Source: aajaoBackend-render/controllers/listingStep5.controller.js
+  const step5ServerReads = <String>{
+    'account_holder', 'account_number', 'authorization_doc', 'bank_name',
+    'cancelled_cheque', 'caretaker_available', 'caretaker_hours',
+    'caretaker_languages', 'caretaker_name', 'caretaker_phone',
+    'commercial_property', 'declaration_host_agreement',
+    'emergency_available_24x7', 'emergency_name', 'emergency_phone',
+    'emergency_relationship', 'fire_safety', 'government_registration',
+    'gst_number', 'gst_registered', 'identity_doc', 'identity_number',
+    'identity_type', 'ifsc', 'insurance', 'local_authority_approval',
+    'ownership_doc', 'ownership_doc_type', 'property_id', 'selfie_url',
+    'upi_id',
+  };
+
+  test('every step-5 key the app sends is one the server reads', () {
+    // The fifth time (2026-09-11): 'account_holder_name'. A new host filed a
+    // listing from the phone, typed their name over the bank account, and
+    // the bank row was saved with a blank holder — the server reads
+    // 'account_holder', which is also what the website sends and what the
+    // draft loader hands back. The step-4 guard above had been in place for
+    // two days and did not look at step 5.
+    final appKeys = keysFor('p5');
+    expect(appKeys, isNotEmpty, reason: 'the extractor stopped matching — fix it before trusting a pass');
+    final dropped = appKeys.difference(step5ServerReads).toList()..sort();
+    expect(
+      dropped,
+      isEmpty,
+      reason: 'these keys are posted and silently discarded by saveStep5: $dropped',
+    );
+    expect(appKeys, contains('account_holder'));
+  });
+
   test('the old names are gone, not merely joined by the new ones', () {
     final appKeys = keysFor('p4');
     for (final dead in [
@@ -153,5 +186,7 @@ void main() {
       expect(appKeys, isNot(contains(dead)),
           reason: '$dead is a name the server has never read');
     }
+    expect(keysFor('p5'), isNot(contains('account_holder_name')),
+        reason: 'account_holder_name is a name the server has never read');
   });
 }
