@@ -35,6 +35,34 @@ class GuestNegotiationMessage {
 
   bool get mine => from == 'you';
 
+  /// What to call this message.
+  ///
+  /// Every message used to be labelled by DIRECTION alone — "You offered" or
+  /// "Host countered" — which is right for the common case and wrong for the
+  /// one that closes a negotiation: an ACCEPTANCE is not a counter, and
+  /// calling it one is the last thing a guest reads before the thread ends.
+  ///
+  /// It became visible on 2026-09-12, when the auto-accept started writing its
+  /// answer into the thread. Before that an accepted offer wrote no answer at
+  /// all, so the thread read "You offered ₹8,400" and then nothing — several
+  /// accepted offers in a row rendered as a column of unanswered messages from
+  /// the renter, which is not a negotiation.
+  ///
+  /// Same wording as the website's lib/negotiationLabels.ts, so a guest who
+  /// reads the thread on both sees the same words.
+  String get label {
+    final s = status.toLowerCase();
+    if (mine) {
+      if (s == 'accepted') return 'You accepted';
+      if (s == 'declined') return 'You declined';
+      return 'You offered';
+    }
+    if (s == 'accepted') return 'Accepted';
+    if (s == 'declined') return 'Declined';
+    if (s == 'expired') return 'Expired';
+    return 'Host countered';
+  }
+
   factory GuestNegotiationMessage.fromJson(Map<String, dynamic> j) =>
       GuestNegotiationMessage(
         offerId: _i(j['offerId']),

@@ -532,7 +532,7 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(m.mine ? 'You offered' : 'Host countered',
+                Text(m.label,
                     style: inter(fontSize: 11, color: kMuted)),
                 const SizedBox(height: 2),
                 Text('${_inr(m.price)} /night',
