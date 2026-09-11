@@ -59,10 +59,11 @@ money and is not. The second gates every honest SEO number on the site.
 | **1.5** | **Weather provider + key** (was E-2, RENT-7) | Renter-dashboard weather widget cannot start without a provider choice. | carried |
 | **1.6** | **Brand assets** — logo set, favicon/PWA icons, animated illustrations, WhatsApp number, social links, reference designs (was E-5, S0-ASSET-1…5) | Gates most of Section-0. | carried |
 | ~~1.7~~ | ~~**The five test listings that are now the public catalogue**~~ **MOOT** | Of the 6 live real-host listings, **5 are tester approvals**: four on 2026-09-04 so the site was not empty after approval started gating visibility — Garg Resorts (29263), Tharamani Farm Retreat (29265), Vrindavan Garden Farm Stay (29277), Delhi Green Farm Stay (29279 — the last two renamed from "Aish mobile host property…") — and Aish camping in the hills (29289) on 09-05, approved to prove the audit-trail fix. They are tester accounts' listings with tester phone numbers. Decide whether they stay through launch or come down with the seed data. | **2026-09-08: all five are gone** with the rest of the wipe. The catalogue is now property ids 29291-29294, of which 2 are publicly listed: "Heritage stay aish for testing" and "Ben Tree House". Both are still test names on a public site — that part of the decision survives. | verified 09-08 — sitemap-properties.xml |
-| **1.12** | **Email delivery is unproven** | Brevo accepts every send (`tbl_send_emails` says "sent successfully" for the host booking notice, the balance reminder and two cancellation OTPs on 2026-09-11) and **nothing arrives** in the mailinator inboxes (`aajoo.host1`, `aajoo.renter1`). Either Brevo's sender/domain is unverified and it queues silently, or Brevo blocks disposable domains. Until an email is seen in a real inbox, signup OTP, password reset and cancellation OTP are all unverified on production. **Test:** on www.aajoohomes.com press "Forgot password" for a real account (e.g. sumit.m@zyphextech.com) and see whether the mail lands; then check the Brevo dashboard › Statistics › Transactional for the block reason. | DB `tbl_send_emails` + mailinator, 2026-09-11 |
-| **1.9** | **Ledger rows written by the broken verification code — run the repair** | Code fixed (`2014aeb`, `2e6aeb0`, `dfd3b69`); the data is one script, dry-run by default: `scripts/repairLedger_2026-09-11.js`. It corrects `book_amount_paid` on 4 bookings, `pay_amount` on 4 payments, `he_amount` on 3 earnings, voids the ₹511.50 due on B703473, and finishes two cancellations the old code left halfway — **B761983** (host cancel asked the gateway for ₹6,300 on a ₹630 capture → FAILED; owed ₹630) and **B283633** (chatbot cancel promised ₹6,500, sent nothing, left the host's ₹10,699 payout QUEUED; owed 50% of ₹13,650 = ₹6,825, ledger reversed, payout held). The refunds go through Razorpay **test mode**. My session's sandbox refuses production writes, so the client runs it: `ALLOW_TEST_PAYMENTS=true node scripts/repairLedger_2026-09-11.js --apply` in `aajaoBackend-render`. | dry run printed 2026-09-11 (`scripts/repairLedger_2026-09-11.js`) |
+| ~~1.12~~ | ~~**Email delivery is unproven**~~ **Working (client, 2026-09-11)** | The client reports the host2 signup OTP arrived and was verified within 23 s; the mailinator public inbox simply does not show mail for every alias. Signup OTP proven; password-reset and cancellation-OTP mails assumed to be on the same path. | client, 2026-09-11 |
+| ~~1.9~~ | ~~**Ledger rows written by the broken verification code — run the repair**~~ **DONE 2026-09-11** | Client ran `scripts/repairLedger_2026-09-11.js --apply`: 4 `book_amount_paid`, 4 `pay_amount`, 3 `he_amount` corrected, hd 29 voided, **B283633 refunded ₹6,825 (`rfnd_TadH9kNXzOMANG`, payout held)** and **B761983 refunded ₹630 (`rfnd_TadH27lRt7HINJ`)**, both COMPLETED in Razorpay test mode. Verified in the DB afterwards. | client-run script output + DB, 2026-09-11 |
 | **1.11** | **Category 1 is titled "Villas -1"** | Every villa on the public site reads "Villas -1 · Listed category" (29302 and the card rail). A test rename left in `tbl_categories`; the slug `villas-1` is fine to keep. One click in Admin › Catalogue › Categories › pencil on "Villas -1" → "Villas" → Save name. My sandbox refused the edit. | admin Categories screen, 2026-09-11 |
 | ~~1.10~~ | ~~**Admin approval → public listing, end to end**~~ **DONE 2026-09-11** | 29302 "QA Sunrise Villa" filed from the app (all five steps, map pin at Christ Church Kasauli, 10 tagged photos with ALT text, ownership PDF, Moderate policy, approval required, weekend/weekly/monthly rates, pets, 15:00 check-in) → Submitted tab → Mark all checked → Approve & publish → live at `/property/qa-sunrise-villa-solan-himachal-pradesh` with map pin, gallery, rules, nearby, policy ladder, negotiation, `psb_reviewed_by` recorded. Quote engine: Fri ₹3,600 + Sat ₹3,800, 10% advance discount, ₹500 cleaning, 5% GST; extra guests ₹400 × 2 × 2 nights once the app could say who is included. Found and fixed on the way: the document-upload Submit deadlock (web + app), the self check-in method erased on re-save (app), the extra-guest section missing (app), "1800 sq_ft" / "Pet Area 1" on the public page (backend). **The listing is live test content on production — delete it when the client is done with it.** | driven 2026-09-11, builds 66–68 |
+| **1.13** | **Two one-off data repairs — run them** (my sandbox refuses production writes) | Both dry-run by default and print what they will touch. In PowerShell: `cd D:\ProjectsajaoBackend-render; node scripts/cleanupImageSeo_2026-09-11.js --apply` — deletes **18** `image_seo` rows whose photograph no longer exists and resets **5** rows that pre-date their photograph (media 72–75 on 29303 carried a Dharamsala cottage's ALT text; media 67 on 29302 "Wood-panelled ceiling…"). Then `node scripts/maskPropertyBankNumbers_2026-09-11.js --apply` — masks the **2** plaintext account numbers `property_bank_details` was holding (29294, 29303). Why they exist: §8a15. | dry runs printed 2026-09-11 |
 | **1.8** | **Where the platform runs after UAT** | `Deployment_Options_2026-09-05.docx` compares staying on Render + Vercel with AWS, Azure, GCP, DigitalOcean and a VPS, with indicative costs. Recommendation: stay through UAT (Render Starter, $7/mo), then **DigitalOcean Bangalore** (~$45–75/mo) as the first managed home in India; hyperscaler only with an owner or credits; VPS only with a named operator. Needs the client's answers to §8 of that document: expected traffic, budget, who operates, existing cloud agreements. | doc |
 
 ---
@@ -188,6 +189,37 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a15. Closed 2026-09-11 (evening) — a brand-new host lists from the phone, is approved, and is paid to the right account
+
+Host **194** (aajoo.host2@mailinator.com, created and admin-verified by the
+client) filed **29303 "QA Metro PG Gurugram"** on build 71: PG/shared room,
+map pin on MG Road Sector 28, 12 amenities, safety, nearby (metro 100 m
+manual, Kingdom of Dreams 1.8 km, IGI 8.7 km), 6 photos with ALT text and
+tags, ₹900 / ₹5,600 / ₹18,000 with min–ideal ladders, ₹200 one-time
+cleaning, negotiation on, **approval required / 12 h**, Moderate policy,
+manual key, bank + emergency + caretaker, ownership PDF, six declarations,
+Host Agreement v1.0 (IP + device recorded). Admin: Submitted → Review →
+Mark all checked → Approve & publish (`psb_reviewed_by = 1` — proven at
+last). Public page 200 + indexable, `/property?id=29303` 301s, Google map
+at the pin, Moderate ladder, "Hosted by Sumit Malhotra", quote 2 nights =
+₹1,800 + ₹200 cleaning, availability says approval / 12 h, search by
+coordinates finds it, "Your listing is live" notification on the app.
+
+Found and fixed on the way (backend `9977e59`, `2586f76`; app `fb960cf`, build **72**):
+
+- **ALT text thrown away, old listing's words kept.** `image_seo` is keyed on the media id; `property_media` was rebuilt at the 09-04 cutover and its ids came round again; `findOrCreate` found the old rows. Upload now writes its row; delete removes it; cleanup script in 1.13.
+- **Two "Cover Photo" tiles.** The app sent `cover_photo` on a sixth photo it believed was the first (its list had not refreshed); the server kept the tag without the flag. Tag now follows the flag; tagging Cover Photo in the sheet makes it the cover.
+- **The app said "0 of 5" with five photos on the server**, then would have let the host upload them again. On any upload error or list-less answer the app now re-reads the server's list before telling the host anything.
+- **Ownership PDF answered 404 in the admin review panel.** A raw Cloudinary id keeps its extension; the reader stripped it before signing. Measured live: 404 → 200.
+- **Account holder never saved** — app posted `account_holder_name`, server reads `account_holder`. The step-4 key guard now covers step 5, and caught `trade_licence` (stored nowhere) as well.
+- **Compliance asked different questions on the phone** (GSTIN + trade licence) than on the web (six yes/no + GST when it applies). Same six on both now; GST required for a commercial property.
+- **"No bank account on file" after typing the bank details.** Step 5 wrote them per property, in plaintext, to a table payouts never read. One writer now (`payoutAccount.service.saveHostAccount`): encrypted, penny drop started, used by step 5 and the Payouts screen alike. Proven on the device: re-saved step 5 → Bank Account screen reads "Currently on file: ••••9012". Mask script in 1.13.
+- **"How your listing will appear" showed a URL that 404s** (the hierarchical path from the SEO doc, which nothing serves). Now `/property/<slug>`.
+
+Not changed, noted: the web's step 5 asks "Caretaker available?" while guests read the step-4 house-rule copy; `pbr_same_day_booking` is stored NULL when the app's default-on toggle is untouched (readers treat NULL as allowed, so harmless); the RazorpayX keys are still unset, so the new payout account sits at `verify_status = unconfigured` with the reason recorded (2.2).
+
+**Live test content on production:** 29302, 29303, host 194, bookings B205678 / B736755 — delete when the client is done.
 
 ### 8a14. Closed 2026-09-11 (afternoon) — a deposit booking, approved, then cancelled and refunded
 
