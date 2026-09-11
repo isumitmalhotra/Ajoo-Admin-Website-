@@ -2301,6 +2301,16 @@ class _PhotoStep extends StatelessWidget {
   /// could add thirty photographs and never be allowed to publish, with
   /// nothing on the screen able to tell them why.
   Future<void> _tag(BuildContext context, int mediaId, String? current) async {
+    // Put the keyboard away FIRST.
+    //
+    // Closing a bottom sheet hands focus back to whatever held it before —
+    // on this step that is whichever number field the host last typed in.
+    // The keyboard reopens, the form scrolls up to show that field, and the
+    // host is thrown from the photo grid back to "Hospital distance"; the
+    // next tap they make lands in it. Driven on 2026-09-11: tagging four
+    // photos of a camp put stray digits into two distance fields and moved
+    // the page three times.
+    FocusManager.instance.primaryFocus?.unfocus();
     final chosen = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -2360,6 +2370,8 @@ class _PhotoStep extends StatelessWidget {
         ),
       ),
     );
+    // ...and again once it closes: the sheet restores focus on its way out.
+    FocusManager.instance.primaryFocus?.unfocus();
     if (chosen == null || chosen == current || !context.mounted) return;
     final problem = await controller.setPhotoCategory(mediaId, chosen);
     if (problem != null && context.mounted) {
@@ -2369,8 +2381,13 @@ class _PhotoStep extends StatelessWidget {
   }
 
   Future<void> _pick(BuildContext context) async {
+    // Same reason as _tag: the photo picker and the describe sheet both
+    // return focus to the field behind them, and the first keystroke after
+    // an upload went into "Fire station distance" (2026-09-11).
+    FocusManager.instance.primaryFocus?.unfocus();
     final picker = ImagePicker();
     final picked = await picker.pickMultiImage(imageQuality: 82);
+    FocusManager.instance.primaryFocus?.unfocus();
     if (picked.isEmpty || !context.mounted) return;
 
     // Portrait photographs are refused before anything else happens — before
@@ -2399,6 +2416,7 @@ class _PhotoStep extends StatelessWidget {
     // 54 images and no descriptions. The one moment a host is looking at the
     // picture is the only moment this question gets a real answer.
     final descriptions = await _describePhotos(context, keep);
+    FocusManager.instance.primaryFocus?.unfocus();
     if (descriptions == null) return; // backed out
 
     // The FIRST photo of an empty listing is its cover — and only the first.
