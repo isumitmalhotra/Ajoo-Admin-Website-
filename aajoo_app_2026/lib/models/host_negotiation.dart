@@ -48,22 +48,22 @@ class HostNegotiation {
     this.bookTo,
     this.belowMinimum = false,
     this.rounds = 0,
-    this.maxRounds = 3,
   });
 
   /// How many offers have crossed in this thread, and the ceiling both sides
   /// are held to.
   ///
-  /// The guest's screen has always shown "2 of your 3 offers left"; the host's
-  /// showed the latest price with no sense of whether this was an opening bid
-  /// or the last word before the thread runs out. The list endpoint returns the
+  /// The host's card showed the latest price with no sense of whether this
+  /// was an opening bid or the fourth round. The list endpoint returns the
   /// whole `messages` array, so the count was there to be read.
+  ///
+  /// There is no denominator any more: the three-counter allowance was removed
+  /// on 2026-09-12 at the client's instruction, so "Round 2 of 3" would be
+  /// promising a ceiling that no longer exists.
   final int rounds;
-  final int maxRounds;
 
-  /// "Round 2 of 3" — omitted when nothing has been exchanged yet.
-  String? get roundLabel =>
-      rounds <= 0 ? null : 'Round $rounds of $maxRounds';
+  /// "Round 2" — omitted when nothing has been exchanged yet.
+  String? get roundLabel => rounds <= 0 ? null : 'Round $rounds';
 
   bool get isPending => status.toLowerCase() == 'pending';
 
@@ -118,7 +118,6 @@ class HostNegotiation {
       belowMinimum: json['belowMinimum'] == true,
       // Every offer that has crossed, from either side.
       rounds: json['messages'] is List ? (json['messages'] as List).length : 0,
-      maxRounds: _i(json['maxRounds']) > 0 ? _i(json['maxRounds']) : 3,
     );
   }
 }

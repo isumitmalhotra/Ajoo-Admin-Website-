@@ -32,18 +32,19 @@ class NegotiationController extends GetxController {
   final RxInt hostMessageCount = 0.obs;
   /// Two offers each — four messages to the whole negotiation.
   ///
-  /// This said 400 while the screen above it read "Messages: 0/4" and "Your
-  /// remaining: 400" on the same row, which is what a tester was looking at
-  /// when they said negotiations were not working. Four hundred rounds is not
-  /// a negotiation, and nothing enforces a cap server-side, so the number
-  /// here IS the rule; the original (still in the legacy controller) is two
-  /// per side, and the label has been telling guests four all along.
-  final RxInt maxMessagesPerUser = 2.obs;
-
-  /// The whole negotiation's budget — what the counter shows as the
-  /// denominator. Derived, so the label and the limit cannot drift apart
-  /// again.
-  int get maxTotalMessages => maxMessagesPerUser.value * 2;
+  /// ── There is no message allowance any more ──────────────────────────
+  ///
+  /// This was two per side, and the label above it had been telling guests
+  /// four. Both are gone: the client removed every counter limit on
+  /// 2026-09-12 — "unlimited counters" — and this screen's two-each was the
+  /// tightest of them, ending a negotiation after four lines.
+  ///
+  /// Nothing ever enforced a cap server-side here, so the number in this file
+  /// WAS the rule, and removing it is the whole change. What still ends a
+  /// chat negotiation is somebody accepting it, or the offer expiring.
+  ///
+  /// `chatLimitReached` stays, and stays false: several widgets read it, and a
+  /// flag nothing sets is cheaper than a change that reaches five files.
   final RxBool chatLimitReached = false.obs;
   final RxBool isUserTurn = true.obs; // User starts first
   final RxString lastMessageSenderId = ''.obs;
@@ -108,24 +109,9 @@ class NegotiationController extends GetxController {
     //   return false;
     // }
 
-    // Identify sender role
-    final isCurrentUserSender = currentUserIdStr != hostId;
-    //appLog('$logTag isCurrentUserSender: $isCurrentUserSender');
-
-    // Message limit checks
-    if (isCurrentUserSender) {
-      if (userMessageCount.value >= maxMessagesPerUser.value) {
-        // appLog('$logTag ❌ Blocked: User message limit reached '
-        //     '(${userMessageCount.value}/${maxMessagesPerUser.value})');
-        return false;
-      }
-    } else {
-      if (hostMessageCount.value >= maxMessagesPerUser.value) {
-        // appLog('$logTag ❌ Blocked: Host message limit reached '
-        //     '(${hostMessageCount.value}/${maxMessagesPerUser.value})');
-        return false;
-      }
-    }
+    // No allowance to check — a negotiation runs until somebody settles it.
+    // The sender's role used to be worked out here only to pick which of the
+    // two per-side counters to compare against; both are gone.
 
     //   appLog('$logTag ✅ Allowed: User can send message');
     return true;
@@ -144,23 +130,13 @@ class NegotiationController extends GetxController {
     lastMessageSenderId.value = senderId;
     isUserTurn.value = !isUserMessage;
 
-    // Check if chat limit is reached
-    final totalMessages = userMessageCount.value + hostMessageCount.value;
-    if (totalMessages >= maxTotalMessages) {
-      chatLimitReached.value = true;
-      isUserTurn.value = false; // No more turns
-    }
   }
 
-  // Get remaining message count for current user
-  int getRemainingMessages(String currentUserId, String hostId) {
-    final isUser = currentUserId != hostId;
-    final used = isUser ? userMessageCount.value : hostMessageCount.value;
-    // Never below zero. History replay can push a count past the cap on an
-    // old negotiation started before the limit existed, and "-3 remaining"
-    // is not a thing to tell anybody.
-    return (maxMessagesPerUser.value - used).clamp(0, maxMessagesPerUser.value);
-  }
+  /// How many prices this side has named. There is no remainder to report
+  /// since the allowance was removed on 2026-09-12, so the screen shows how
+  /// far in the negotiation is instead of how much of it is left.
+  int messagesSent(String currentUserId, String hostId) =>
+      currentUserId != hostId ? userMessageCount.value : hostMessageCount.value;
 
   // Get whose turn it is
   String getWhoseTurn(String userId, String hostId) {
@@ -326,17 +302,15 @@ class NegotiationController extends GetxController {
     // Check chat limits before sending
     if (!canUserSendMessage(senderId, hostId)) {
       String errorMsg;
-      if (chatLimitReached.value) {
-        errorMsg =
-            'Chat limit reached (4 messages total). Please accept the latest offer.';
-      } else if (lastMessageSenderId.value == senderId &&
+      // The only reason a send is refused now is that it is not your turn:
+      // you answer the price in front of you before naming another. There is
+      // no longer a total to run out of.
+      if (lastMessageSenderId.value == senderId &&
           lastMessageSenderId.value.isNotEmpty) {
         errorMsg =
             'Wait for the other party to respond before sending another message.';
       } else {
-        final remaining = getRemainingMessages(senderId, hostId);
-        errorMsg =
-            'You have reached your message limit ($remaining remaining).';
+        errorMsg = "You cannot send that right now.";
       }
 
       errorMessage.value = errorMsg;

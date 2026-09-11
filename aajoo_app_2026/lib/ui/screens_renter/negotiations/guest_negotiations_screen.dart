@@ -178,8 +178,8 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
                     fontSize: 17, fontWeight: FontWeight.w700, color: kInk)),
             const SizedBox(height: 3),
             Text(
-                '${n.hostName} · ${n.propertyName} · '
-                '${n.maxRounds - n.roundsYou} of ${n.maxRounds} offers left',
+                '${n.hostName} · ${n.propertyName}'
+                '${n.roundsYou > 1 ? " · Round ${n.roundsYou + 1}" : ""}',
                 style: inter(fontSize: 12.5, color: kMuted)),
             const SizedBox(height: 14),
             Row(children: [
@@ -729,12 +729,12 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
               );
             }),
             const SizedBox(height: 6),
-            Text(
-              n.canCounter
-                  ? '${n.maxRounds - n.roundsYou} of your ${n.maxRounds} offers left'
-                  : "You've used all ${n.maxRounds} of your offers",
-              style: inter(fontSize: 11.5, color: kMuted),
-            ),
+            // No allowance to count down. A negotiation now runs until
+            // somebody accepts, declines or lets it expire — client
+            // instruction, 2026-09-12.
+            if (n.roundsYou > 1)
+              Text('Round ${n.roundsYou + 1}',
+                  style: inter(fontSize: 11.5, color: kMuted)),
           ] else if (n.status == 'accepted') ...[
             const Divider(height: 22, color: kLine),
             // The web's accepted state books the deal from right here; this

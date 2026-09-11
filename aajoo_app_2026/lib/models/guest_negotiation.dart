@@ -81,8 +81,11 @@ class GuestNegotiation {
 
   /// Offers each side has sent, and the ceiling both are held to. A
   /// negotiation used to be one round each way and then stuck.
+  /// How many prices this side has named in the negotiation that is running.
+  /// Reported, never compared: the three-offer allowance was removed on
+  /// 2026-09-12 at the client's instruction, and the server no longer sends
+  /// a `maxRounds` to subtract it from.
   final int roundsYou;
-  final int maxRounds;
 
   /// Whether this guest may send another price into the thread right now.
   final bool canCounter;
@@ -125,7 +128,6 @@ class GuestNegotiation {
     required this.awaitingYou,
     this.actionableOfferId,
     this.roundsYou = 0,
-    this.maxRounds = 3,
     this.canCounter = false,
     this.bookFrom,
     this.bookTo,
@@ -177,7 +179,6 @@ class GuestNegotiation {
       actionableOfferId:
           j['actionableOfferId'] == null ? null : _i(j['actionableOfferId']),
       roundsYou: _i(j['roundsYou']),
-      maxRounds: j['maxRounds'] == null ? 3 : _i(j['maxRounds']),
       canCounter: j['canCounter'] == true,
       bookFrom: _s(j['bookFrom']),
       bookTo: _s(j['bookTo']),

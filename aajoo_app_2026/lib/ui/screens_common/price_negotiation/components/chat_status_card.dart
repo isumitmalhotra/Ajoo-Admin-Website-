@@ -45,8 +45,8 @@ class ChatStatusCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Obx(() {
-              final remainingMessages =
-                  negotiationController.getRemainingMessages(userId, hostId);
+              final yoursSoFar =
+                  negotiationController.messagesSent(userId, hostId);
 
               final whoseTurn =
                   negotiationController.getWhoseTurn(userId, hostId);
@@ -95,18 +95,18 @@ class ChatStatusCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 8),
+                      // No denominator: there is no allowance to spend since
+                      // 2026-09-12. What is worth knowing is how many prices
+                      // have been named and how many of them are yours.
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // Denominator comes from the controller, not a
-                          // literal. Hardcoding 4 here while the controller
-                          // capped at 400 is how this row came to read
-                          // "Messages: 0/4" beside "Your remaining: 400".
-                          Text(
-                              'Offers: $totalMessages/${negotiationController.maxTotalMessages}'),
-                          Text(remainingMessages == 1
-                              ? '1 offer left for you'
-                              : '$remainingMessages offers left for you'),
+                          Text(totalMessages == 1
+                              ? '1 offer so far'
+                              : '$totalMessages offers so far'),
+                          Text(yoursSoFar == 1
+                              ? '1 from you'
+                              : '$yoursSoFar from you'),
                         ],
                       ),
                       if (negotiationController.chatLimitReached.value)
