@@ -569,9 +569,28 @@ class HostService {
     } on DioException catch (err) {
       final data = err.response?.data;
       final msg = data is Map ? data['message'] : null;
+      // An answer with no words in it is still an answer: say what came
+      // back, so the next "couldn't" can be traced (2026-09-11: the server
+      // had checked the guest in and the host read a bare "could not").
+      final code = err.response?.statusCode;
       throw Exception(msg is List
           ? msg.join(', ')
-          : (msg?.toString() ?? 'Could not check the guest in.'));
+          : (msg?.toString() ??
+              'Could not check the guest in'
+                  '${code != null ? ' (the server answered $code)' : ' (no answer from the server)'}.'));
+    }
+  }
+
+  /// Did the server check this guest in? Asked after a check-in call that
+  /// failed, because "failed" and "did not happen" are different things.
+  Future<bool> isCheckedIn(String bookingId) async {
+    try {
+      final history = await getBookingHistory();
+      final row = history.data.where((b) => b.bookId == bookingId);
+      if (row.isEmpty) return false;
+      return row.first.bookingStatusBsTitle.trim().toLowerCase() == 'check in';
+    } catch (_) {
+      return false;
     }
   }
 

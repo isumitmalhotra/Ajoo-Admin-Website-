@@ -306,6 +306,19 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
       Fluttertoast.showToast(
           msg: "Guest checked in — they've been sent a welcome note.");
     } catch (e) {
+      // "Failed" and "did not happen" are different things. On B386357
+      // (2026-09-11) the server checked the guest in and the answer was lost
+      // on the way back; the host read "Could not check the guest in" over
+      // a booking that said "Staying now" on every other screen. Ask the
+      // server what it holds before saying so.
+      if (await HostService().isCheckedIn(b.bookId)) {
+        if (mounted) {
+          setState(() => b.bookingStatusBsTitle = 'Check In');
+          Fluttertoast.showToast(
+              msg: "Guest checked in — they've been sent a welcome note.");
+        }
+        return;
+      }
       // A failure here is worth reading — it names a state the host has to act
       // on — so it does not go out as a toast.
       if (mounted) {
@@ -630,7 +643,11 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
           ),
           const SizedBox(height: 10),
         ],
-        if (_canCheckIn) ...[
+        // Arrival controls belong to an APPROVED stay. An unapproved request
+        // offered Confirm, Check in, No-show and Decline in one column
+        // (B386357, 2026-09-11); a guest cannot fail to arrive for a stay
+        // the host has not yet said yes to.
+        if (_canCheckIn && !_needsApproval) ...[
           // The arrival control the host portal never had: one tap says
           // "the guest is here", flips the booking to Check In everywhere
           // (both apps read it as "Staying now") and thanks the guest by
