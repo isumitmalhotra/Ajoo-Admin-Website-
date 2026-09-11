@@ -190,6 +190,44 @@ that commission, four ledger rows per booking.
 
 ## 8. Closed since the last edition — do not redo
 
+### 8a17. Closed 2026-09-11 (late) — a Camping listing, filed by a PROPERTY MANAGER
+
+**29305 "QA Riverside Camp Rishikesh"** (host 194 acting as a manager for
+owner Rakesh Verma), the second category and the second host type through
+the wizard. Everything category-specific reached the database and the
+public page: camp type Riverside, 6 tents, shared washroom, electricity,
+bonfire, adventure activities (trekking / rafting / rock climbing);
+manager block (`property_manager` row with the owner's name, contact and
+`pm_authorization_available`); **Instant Book** (29303 tested
+approval-required), 3-hour reply, **Seasonal** availability with seven
+open months, 2-night minimum, 4-hour notice; weekend pricing Fri 3,200 /
+Sat 3,500 / Sun 3,000 with its own min–ideal pair; **Firm** cancellation
+policy; pets + pet food + pet area; ownership proof AND the owner's
+authorisation; GST number. Approved from the admin → live at
+`/property/qa-riverside-camp-rishikesh-tehri-garhwal-uttarakhand` (200,
+indexable), Firm ladder printed, nearby places found by lookup from the
+pin, and **September is greyed out in the guest's calendar while October
+is open** — the seasonal rule reaches the booking card.
+
+Found and fixed (backend `529fd51`, web `5da0c44`, app build **76**):
+
+- **A sheet that closes hands the keyboard back.** Closing the tag sheet, photo picker or describe sheet restored focus to the last number field, which reopened the keyboard and scrolled the form away from the photo grid; the next tap landed in that field. Two distance fields were silently rewritten ("129", "127") and the page jumped three times. All three sheets now drop focus on the way in and out (`sheets_do_not_steal_focus_test`).
+- **The owner's authorisation was shown to nobody.** Step 5 has required it from a manager since that path shipped; `currentDocumentsFor` never listed it, so the admin reviewing a manager's listing saw "Verification documents (1)" — the ownership proof alone.
+- **"Sleeps: 16 guests · bd · 4 ba"** on the review panel: a camp has tents, not bedrooms. Empty segments dropped.
+- **"Collected from guests" counted a stay twice and kept refunded money** (app dashboard): it summed `pay_amount` over every paid row — the pre-tax subtotal, whole on a deposit row — so a ₹2,000 stay read ₹3,800, and a refunded payment still counted. Sums each payment's gateway figure now, skipping rows marked Refunded.
+- **A refund was taken from the LAST payment only** (backend): a settled deposit stay is two payments, so a full refund would have been asked of the ₹1,890 row and refused. It now walks the captured payments newest first and marks each one refunded; what they cannot cover goes to MANUAL_REVIEW (`refundSpansPayments`).
+
+Confirmed working, not changed: the ALT text of all ten photos landed on
+the right photograph with clean filenames (yesterday's `image_seo` fix on
+a second listing); the cover tile reads "Cover Photo" from the flag;
+"10 of 10 required photos added" and the required-tag list updating as
+each was tagged; the weekend-ideal validation refusing ₹3,100 against a
+₹3,000 Sunday rate, marked on the field; step 5 reading "Earnings from
+this listing go to HDFC Bank XXXX9012" (yesterday's payout-account fix);
+the Host Agreement not re-asked for a second listing.
+
+**Live test content on production:** 29302, 29303, **29305**, host 194.
+
 ### 8a16. Closed 2026-09-11 (night) — deposit → approve → balance → check-in, driven on production
 
 **B434315** (29303, 12–14 Sep, ₹2,100): guest paid the ₹210 deposit on the
