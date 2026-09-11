@@ -96,6 +96,12 @@ class BookingHistoryData {
   /// positive value is therefore right by construction.
   double balanceDue;
   double amountPaid;
+  /// "deposit" while the balance is owed; "full" once settled.
+  String payMode;
+  /// What went back after a cancellation, and where that stands (COMPLETED,
+  /// PENDING, FAILED, MANUAL_REVIEW). 0 / empty when nothing did.
+  double refundAmount;
+  String refundStatus;
   int? bookNoOfGuests;
 
   /// The stay's cover photo. /user/booking-history has attached this for a
@@ -126,6 +132,9 @@ class BookingHistoryData {
       this.bookIsCod = false,
       this.balanceDue = 0,
       this.amountPaid = 0,
+      this.payMode = '',
+      this.refundAmount = 0,
+      this.refundStatus = '',
       this.bookNoOfGuests,
       this.coverImage});
 
@@ -152,6 +161,9 @@ class BookingHistoryData {
           bookTotalAmt: _toDouble(json["book_total_amt"]),
           balanceDue: _toDouble(json["balanceDue"]) ?? 0,
           amountPaid: _toDouble(json["amountPaid"]) ?? 0,
+          payMode: json["payMode"]?.toString() ?? '',
+          refundAmount: _toDouble(json["refundAmount"]) ?? 0,
+          refundStatus: json["refundStatus"]?.toString() ?? '',
           bookTax: _toDouble(json["book_tax"]),
           bookDiscountAmt: _toDouble(json["book_discount_amt"]),
           // MySQL sends these as 1/0, so a plain cast to bool would throw.

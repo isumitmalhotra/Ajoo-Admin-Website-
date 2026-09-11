@@ -1057,35 +1057,53 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
       taxes: booking.taxesAndFees,
       discount: booking.bookDiscountAmt ?? 0,
       total: booking.payableTotal,
-      totalLabel: booking.bookIsPaid
+      // "Total paid" was printed over a deposit stay that had paid a tenth
+      // of it, and over a cancelled stay whose money had gone back. The
+      // total is the total; what has been paid, owed or refunded is said
+      // underneath, in the words the host's screens use.
+      totalLabel: booking.bookIsPaid && booking.balanceDue <= 0 && booking.refundAmount <= 0
           ? 'Total paid'
-          : (booking.bookIsCod ? 'Total due' : 'Total'),
+          : (booking.bookIsCod && !booking.bookIsPaid ? 'Total due' : 'Total'),
       footnote: [
         if (booking.bookNoOfGuests != null)
           '${booking.bookNoOfGuests} guest'
               '${booking.bookNoOfGuests == 1 ? '' : 's'}',
-        if (!booking.bookIsPaid && booking.bookIsCod) 'Due at the property',
-        if (!booking.bookIsPaid && !booking.bookIsCod) 'Payment pending',
+        if (booking.refundAmount > 0)
+          (booking.refundStatus.toUpperCase() == 'COMPLETED' ||
+                  booking.refundStatus.toUpperCase() == 'PROCESSING')
+              ? 'Refunded ${rupees(booking.refundAmount)}'
+              : 'Refund of ${rupees(booking.refundAmount)} pending'
+        else if (booking.bookIsPaid && booking.balanceDue > 0)
+          'Paid ${rupees(booking.amountPaid)} · ${rupees(booking.balanceDue)} due before check-in'
+        else if (!booking.bookIsPaid && booking.bookIsCod)
+          'Due at the property'
+        else if (!booking.bookIsPaid && !booking.bookIsCod)
+          'Payment pending',
       ].join(' · '),
     );
   }
 
-  String _payLabel(BookingHistoryData booking) => booking.bookIsPaid
-      ? 'Paid'
-      : (booking.bookIsCod ? 'Pay at property' : 'Payment pending');
-
+  /// One badge, from utils/booking_status.dart, the same one the booking
+  /// cards and the host's screens draw — this page had its own three-word
+  /// copy that said "Paid" on a deposit stay and on a refunded one.
   Widget _payBadge(BookingHistoryData booking) {
-    final paid = booking.bookIsPaid;
-    final label = _payLabel(booking);
-    final color = paid ? kSuccess : (booking.bookIsCod ? kIndigo : kDanger);
+    final pay = paymentBadge(
+      isPaid: booking.bookIsPaid,
+      isCod: booking.bookIsCod,
+      payMode: booking.payMode,
+      total: booking.payableTotal,
+      amountPaid: booking.amountPaid,
+      refundAmount: booking.refundAmount,
+      refundStatus: booking.refundStatus,
+    );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: .12),
+        color: pay.bg,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(label,
-          style: inter(fontSize: 11.5, fontWeight: FontWeight.w700, color: color)),
+      child: Text(pay.label,
+          style: inter(fontSize: 11.5, fontWeight: FontWeight.w700, color: pay.fg)),
     );
   }
 

@@ -82,8 +82,6 @@ class BookingCard extends StatelessWidget {
           booking.bookDetailsBtBookFrom, booking.bookDetailsBtBookTo,
           hours: booking.stayHours),
     );
-    final pay =
-        paymentBadge(isPaid: booking.bookIsPaid, isCod: booking.bookIsCod);
     final lifeColors = lifecycleColors(life);
     final total = (booking.bookTotalAmt ?? 0) > 0
         ? booking.bookTotalAmt!
@@ -93,6 +91,19 @@ class BookingCard extends StatelessWidget {
         // take the whole card down on the first booking that has no
         // book_total_amt and a stringly-typed price.
         : _asNum(booking.book_price);
+    // The same facts the host's card reads: a deposit stay says what is
+    // still owed, a refunded one says what came back. The guest's card read
+    // "Paid" on a booking refunded in full (B229372, 2026-09-11) while the
+    // host's said "Refunded ₹210".
+    final pay = paymentBadge(
+      isPaid: booking.bookIsPaid,
+      isCod: booking.bookIsCod,
+      payMode: booking.payMode,
+      total: total.toDouble(),
+      amountPaid: booking.amountPaid,
+      refundAmount: booking.refundAmount,
+      refundStatus: booking.refundStatus,
+    );
     final nights = _nights;
 
     return Padding(

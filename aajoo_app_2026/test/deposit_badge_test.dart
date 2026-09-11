@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rent_home/models/booking_history_response_model.dart';
 import 'package:rent_home/models/host_booking_history_model.dart';
 import 'package:rent_home/utils/booking_status.dart';
 
@@ -74,5 +75,48 @@ void main() {
     expect(b.bookRefundAmount, 751.8);
     expect(b.bookRefundStatus, 'COMPLETED');
     expect(b.bookNoOfPets, 1);
+  });
+
+  test('the GUEST booking row carries the same facts, under the list keys', () {
+    // The guest's card read "Paid" on a booking refunded in full while the
+    // host's read "Refunded ₹210" (B229372, 2026-09-11). Same badge, same
+    // facts, on both sides.
+    final g = BookingHistoryData.fromJson({
+      'book_id': 'B229372',
+      'book_invoice': 'Inv_229372',
+      'book_prop_id': 29303,
+      'book_added_at': '2026-09-11T15:30:00.000Z',
+      'bookingProperty.property_name': 'QA Metro PG Gurugram',
+      'bookingProperty.property_address': 'Sector 28',
+      'bookingProperty.property_email': '',
+      'bookingProperty.property_desc': '',
+      'book_price': 2000,
+      'book_total_amt': '2100.00',
+      'book_is_paid': 1,
+      'book_is_cod': 0,
+      'payMode': 'deposit',
+      'amountPaid': 210,
+      'balanceDue': 1890,
+      'refundAmount': 210,
+      'refundStatus': 'COMPLETED',
+      'bookingStatus.bs_title': 'Cancelled',
+      'bookDetails.bt_book_from': '14-09-2026',
+      'bookDetails.bt_book_to': '16-09-2026',
+    });
+    expect(g.payMode, 'deposit');
+    expect(g.amountPaid, 210);
+    expect(g.refundAmount, 210);
+    expect(g.refundStatus, 'COMPLETED');
+    expect(
+        paymentBadge(
+                isPaid: g.bookIsPaid,
+                isCod: g.bookIsCod,
+                payMode: g.payMode,
+                total: g.payableTotal,
+                amountPaid: g.amountPaid,
+                refundAmount: g.refundAmount,
+                refundStatus: g.refundStatus)
+            .label,
+        'Refunded ₹210');
   });
 }

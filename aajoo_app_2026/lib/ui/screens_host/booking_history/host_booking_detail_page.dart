@@ -496,7 +496,11 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
           // A deposit stay: what came in, and what the guest still owes
           // before they can be checked in. "₹7,518 · Paid" said the money
           // was in the bank when a tenth of it was.
-          if (b.bookPayMode.toLowerCase() == 'deposit' &&
+          // Nothing is due on a booking that was cancelled — the ₹1,890
+          // "DUE BEFORE CHECK-IN" sat beside "REFUNDED TO GUEST ₹210" on
+          // B229372 (2026-09-11).
+          if (!_isCancelled &&
+              b.bookPayMode.toLowerCase() == 'deposit' &&
               b.bookAmountPaid > 0 &&
               (b.bookTotalAmt > 0 ? b.bookTotalAmt : b.bookPrice) -
                       b.bookAmountPaid >
