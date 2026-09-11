@@ -1507,6 +1507,14 @@ class ListingWizardController extends GetxController {
       final url = await _service.uploadDocument(propertyId: id, file: file);
       if (url == null) return 'The document did not upload.';
       setP5(key, url);
+      // Put it on file NOW, and ask the server again. The document gate
+      // reads the verification row, which only step 5's save writes — and
+      // the save used to run inside Submit, which the gate had greyed out
+      // for want of the document. Uploaded, "Before publishing, upload a
+      // document…", button dead: found on the device on 2026-09-11, on the
+      // first listing filed after the gate shipped.
+      await _service.saveStep5({'property_id': id, ...p5});
+      await refreshReadiness();
       return null;
     } catch (e) {
       return e is ListingException ? e.message : 'Upload failed.';
