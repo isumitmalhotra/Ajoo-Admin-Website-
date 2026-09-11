@@ -50,11 +50,16 @@ class GuestNegotiationMessage {
   ///
   /// Same wording as the website's lib/negotiationLabels.ts, so a guest who
   /// reads the thread on both sees the same words.
+  /// A status describes what happened TO a message, not who did it. A message
+  /// of yours marked `declined` was declined by the HOST — the first version
+  /// read it as your own action and told a renter "You declined ₹650" about an
+  /// offer they had made and the host had refused.
   String get label {
     final s = status.toLowerCase();
     if (mine) {
-      if (s == 'accepted') return 'You accepted';
-      if (s == 'declined') return 'You declined';
+      if (s == 'accepted') return 'Your offer was accepted';
+      if (s == 'declined') return 'Your offer was declined';
+      if (s == 'expired') return 'Your offer expired';
       return 'You offered';
     }
     if (s == 'accepted') return 'Accepted';
