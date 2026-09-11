@@ -81,6 +81,16 @@ class HostBookingHistory {
   int bookUserId;
   double bookTotalAmt;
   int bookNoOfGuests;
+
+  /// "deposit" when the guest paid 10% and owes the rest before check-in.
+  String bookPayMode;
+  /// What has actually been received for this stay.
+  double bookAmountPaid;
+  /// What went back to the guest, and where that stands (COMPLETED,
+  /// PENDING, FAILED, MANUAL_REVIEW). Zero / empty when nothing did.
+  double bookRefundAmount;
+  String bookRefundStatus;
+  int bookNoOfPets;
   String propertyName;
   String propertyAddress;
 
@@ -103,6 +113,11 @@ class HostBookingHistory {
     this.bookUserId = 0,
     this.bookTotalAmt = 0,
     this.bookNoOfGuests = 0,
+    this.bookPayMode = '',
+    this.bookAmountPaid = 0,
+    this.bookRefundAmount = 0,
+    this.bookRefundStatus = '',
+    this.bookNoOfPets = 0,
     this.propertyName = '',
     this.propertyAddress = '',
   });
@@ -173,6 +188,11 @@ class HostBookingHistory {
       bookUserId: parseInt(json['book_user_id']),
       bookTotalAmt: parseDouble(json['book_total_amt']),
       bookNoOfGuests: parseInt(json['book_no_of_guests']),
+      bookPayMode: json['book_pay_mode']?.toString() ?? '',
+      bookAmountPaid: parseDouble(json['book_amount_paid']),
+      bookRefundAmount: parseDouble(json['book_refund_amount']),
+      bookRefundStatus: json['book_refund_status']?.toString() ?? '',
+      bookNoOfPets: parseInt(json['book_no_of_pets']),
       propertyName:
           json['bookingProperty.property_name']?.toString() ?? '',
       propertyAddress:

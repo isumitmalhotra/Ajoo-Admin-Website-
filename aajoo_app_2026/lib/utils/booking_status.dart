@@ -13,6 +13,7 @@
 import 'package:flutter/material.dart';
 
 import '../constants.dart';
+import 'package:rent_home/utils/money.dart';
 
 /// Payment-flavoured titles are not lifecycle states — they mean "confirmed".
 const _paymentTitles = <String>[
@@ -114,8 +115,43 @@ class PaymentBadge {
   final Color fg;
 }
 
-PaymentBadge paymentBadge({required bool isPaid, required bool isCod}) {
-  if (isPaid) return const PaymentBadge('Paid', Color(0xFFEAF6EE), kSuccess);
+/// The money, on its own terms.
+///
+/// A DEPOSIT booking is paid and still owing: the host's card read "Paid"
+/// beside ₹7,518 on a stay that had received ₹752 with ₹6,766 owed before
+/// the guest could be checked in (B736755, 2026-09-11) — and after the
+/// guest cancelled and was refunded, the card went on saying "Paid". Pass
+/// [payMode], [total], [amountPaid] and the refund pair where the row has
+/// them; a caller with only the two booleans gets the old answers.
+PaymentBadge paymentBadge({
+  required bool isPaid,
+  required bool isCod,
+  String payMode = '',
+  double total = 0,
+  double amountPaid = 0,
+  double refundAmount = 0,
+  String refundStatus = '',
+}) {
+  final rs = refundStatus.toUpperCase();
+  if (refundAmount > 0 && (rs == 'COMPLETED' || rs == 'PROCESSING')) {
+    return PaymentBadge(
+        'Refunded ${rupees(refundAmount)}', const Color(0xFFEFEFEF), kMuted);
+  }
+  if (refundAmount > 0 &&
+      (rs == 'PENDING' || rs == 'FAILED' || rs == 'MANUAL_REVIEW')) {
+    return PaymentBadge('Refund of ${rupees(refundAmount)} pending',
+        const Color(0xFFFFF6E5), kClay);
+  }
+  if (isPaid) {
+    if (payMode.toLowerCase() == 'deposit' &&
+        total > 0 &&
+        amountPaid > 0 &&
+        total - amountPaid > 1) {
+      return PaymentBadge('Deposit paid · ${rupees(total - amountPaid)} due',
+          const Color(0xFFFFF6E5), kClay);
+    }
+    return const PaymentBadge('Paid', Color(0xFFEAF6EE), kSuccess);
+  }
   if (isCod) {
     return const PaymentBadge('Pay at property', Color(0xFFFFF6E5), kClay);
   }

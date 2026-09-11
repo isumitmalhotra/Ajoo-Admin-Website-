@@ -297,7 +297,14 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
     );
     final (badgeBg, badgeFg) = lifecycleColors(life);
     final pay = paymentBadge(
-        isPaid: booking.bookIsPaid, isCod: booking.bookIsCod);
+      isPaid: booking.bookIsPaid,
+      isCod: booking.bookIsCod,
+      payMode: booking.bookPayMode,
+      total: booking.bookTotalAmt > 0 ? booking.bookTotalAmt : booking.bookPrice,
+      amountPaid: booking.bookAmountPaid,
+      refundAmount: booking.bookRefundAmount,
+      refundStatus: booking.bookRefundStatus,
+    );
     final guest = booking.userDetailsUserFullName.trim().isEmpty
         ? "Guest"
         : booking.userDetailsUserFullName;

@@ -460,7 +460,47 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
           ),
           if (b.bookNoOfGuests > 0) ...[
             const SizedBox(height: 10),
-            _fact('GUESTS', '${b.bookNoOfGuests}'),
+            Row(
+              children: [
+                Expanded(child: _fact('GUESTS', '${b.bookNoOfGuests}')),
+                if (b.bookNoOfPets > 0) ...[
+                  const SizedBox(width: 10),
+                  // The host takes pets; the host should know one is coming.
+                  Expanded(child: _fact('PETS', '${b.bookNoOfPets}')),
+                ],
+              ],
+            ),
+          ],
+          // A deposit stay: what came in, and what the guest still owes
+          // before they can be checked in. "₹7,518 · Paid" said the money
+          // was in the bank when a tenth of it was.
+          if (b.bookPayMode.toLowerCase() == 'deposit' &&
+              b.bookAmountPaid > 0 &&
+              (b.bookTotalAmt > 0 ? b.bookTotalAmt : b.bookPrice) -
+                      b.bookAmountPaid >
+                  1) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(child: _fact('PAID SO FAR', rupees(b.bookAmountPaid))),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: _fact(
+                        'DUE BEFORE CHECK-IN',
+                        rupees((b.bookTotalAmt > 0
+                                ? b.bookTotalAmt
+                                : b.bookPrice) -
+                            b.bookAmountPaid))),
+              ],
+            ),
+          ],
+          if (b.bookRefundAmount > 0) ...[
+            const SizedBox(height: 10),
+            _fact(
+                b.bookRefundStatus.toUpperCase() == 'COMPLETED'
+                    ? 'REFUNDED TO GUEST'
+                    : 'REFUND (${b.bookRefundStatus.toLowerCase()})',
+                rupees(b.bookRefundAmount)),
           ],
           const SizedBox(height: 14),
           Row(
@@ -492,7 +532,15 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
               const SizedBox(width: 6),
               Builder(builder: (_) {
                 final pay =
-                    paymentBadge(isPaid: b.bookIsPaid, isCod: b.bookIsCod);
+                    paymentBadge(
+      isPaid: b.bookIsPaid,
+      isCod: b.bookIsCod,
+      payMode: b.bookPayMode,
+      total: b.bookTotalAmt > 0 ? b.bookTotalAmt : b.bookPrice,
+      amountPaid: b.bookAmountPaid,
+      refundAmount: b.bookRefundAmount,
+      refundStatus: b.bookRefundStatus,
+    );
                 return Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

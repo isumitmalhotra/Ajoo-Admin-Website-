@@ -604,6 +604,8 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
     // "Pending" was read out of the status word, which only some rows carry —
     // a pay-at-property booking stored as "Booking Confirmed" looked settled.
     // The payment flags say it outright.
+    // Ongoing stays only: a guest is checked in, so a deposit has been
+    // settled and the two booleans are the whole story.
     final pay = paymentBadge(isPaid: b.bookIsPaid, isCod: b.bookIsCod);
     final status = pay.label;
     final badgeColor = pay.fg;
