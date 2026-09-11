@@ -1,22 +1,22 @@
-/// A negotiation is not rationed.
-///
-/// Client instruction, 2026-09-12: remove the three-counter system entirely —
-/// unlimited counters. The app carried TWO separate allowances, and the
-/// tighter one was not the one anybody was talking about:
-///
-///   the REST offers list showed "N of your 3 offers left", and its model
-///     defaulted maxRounds to 3 whenever the server omitted it — so removing
-///     the field server-side would have left the app still counting down from
-///     a number nothing sent
-///
-///   the socket chat screen capped at TWO messages per side, client-side only,
-///     and refused the third send itself
-///
-/// The first of those is the trap worth a test: a default of 3 in a `fromJson`
-/// is invisible from the server, and the screen would have gone on promising
-/// an allowance that no longer existed.
-///
-///   flutter test test/counters_are_not_rationed_test.dart
+// A negotiation is not rationed.
+//
+// Client instruction, 2026-09-12: remove the three-counter system entirely —
+// unlimited counters. The app carried TWO separate allowances, and the
+// tighter one was not the one anybody was talking about:
+//
+//   the REST offers list showed "N of your 3 offers left", and its model
+//     defaulted maxRounds to 3 whenever the server omitted it — so removing
+//     the field server-side would have left the app still counting down from
+//     a number nothing sent
+//
+//   the socket chat screen capped at TWO messages per side, client-side only,
+//     and refused the third send itself
+//
+// The first of those is the trap worth a test: a default of 3 in a `fromJson`
+// is invisible from the server, and the screen would have gone on promising
+// an allowance that no longer existed.
+//
+//   flutter test test/counters_are_not_rationed_test.dart
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rent_home/models/guest_negotiation.dart';
 import 'package:rent_home/models/host_negotiation.dart';

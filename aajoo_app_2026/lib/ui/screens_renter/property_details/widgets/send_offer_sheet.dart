@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import 'package:rent_home/constants.dart';
+import 'package:get/get.dart';
 import 'package:rent_home/service/deals_service.dart';
+import 'package:rent_home/ui/screens_renter/negotiations/guest_negotiations_screen.dart';
 import 'package:rent_home/ui/design/aajoo_skin.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/utils/money.dart';
@@ -477,7 +479,15 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(accepted),
+              // An escalated offer used to end at "Done", which popped the
+              // sheet and left the guest on the listing with no sign anything
+              // had happened — the dead end the client reported on 2026-09-12:
+              // "after sending the request renter is blank what next is
+              // there". The offer has a screen of its own; this is the door.
+              onPressed: () {
+                Navigator.of(context).pop(accepted);
+                if (!accepted) Get.to(() => const GuestNegotiationsScreen());
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: accepted ? kClay : skin.primary,
                 foregroundColor: accepted ? kAccentInk : skin.onPrimary,
@@ -485,10 +495,17 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
-              child: Text(accepted ? 'Book at this price' : 'Done',
+              child: Text(
+                  accepted ? 'Book at this price' : 'View in My Negotiations',
                   style: inter(fontSize: 15, fontWeight: FontWeight.w700)),
             ),
           ),
+          if (!accepted)
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text('Keep browsing',
+                  style: inter(fontSize: 13.5, color: skin.muted)),
+            ),
         ],
       ),
     );
@@ -600,6 +617,21 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
               ),
             ),
           ),
+          // Somewhere to go if they want to think about it. The counter lived
+          // only in this sheet: close it and the price the platform had just
+          // quoted was gone, with no list to find it in. It is a real
+          // negotiation with a row of its own — say so.
+          if (!_counterMode)
+            TextButton(
+              onPressed: _counterBusy
+                  ? null
+                  : () {
+                      Navigator.of(context).pop(false);
+                      Get.to(() => const GuestNegotiationsScreen());
+                    },
+              child: Text('Not sure yet? Find it in My Negotiations',
+                  style: inter(fontSize: 12.5, color: skin.muted)),
+            ),
         ],
       ),
     );
