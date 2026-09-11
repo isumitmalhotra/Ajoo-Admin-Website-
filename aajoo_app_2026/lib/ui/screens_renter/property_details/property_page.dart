@@ -163,6 +163,12 @@ class _PropertyPageState extends State<PropertyPage>
   /// What the pets add, per pet per night. The server recomputes this and
   /// refuses a price that disagrees, exactly as it does for the party fee.
   double get _petFee => _petPolicy.feeFor(_pets, totalDays);
+
+  /// The host's cleaning fee for this stay — server only, like the pet fee:
+  /// the wizard's "per stay / per night" choice is the server's to apply.
+  /// Without it the page's lines did not add up to its own total, and the
+  /// price sent was accepted as an "old build" and the host went unpaid.
+  double get _cleaningFee => _serverQuote?.cleaningFee ?? 0;
   int totalDays = 1;
 
   /// The Razorpay options last opened, so a refusal can offer "Try again".
@@ -1468,6 +1474,7 @@ class _PropertyPageState extends State<PropertyPage>
                                   discount: _discountOnRoom,
                                   extraGuestFee: _partyFee,
                                   petFee: _petFee,
+                                  cleaningFee: _cleaningFee,
                                   pets: _pets,
                                   nightlyTotal: _nightlyTotal,
                                   longStayLabel: _longStay?.label,
@@ -1698,6 +1705,7 @@ class _PropertyPageState extends State<PropertyPage>
                               discount: _discountOnRoom,
                               extraGuestFee: _partyFee,
                               petFee: _petFee,
+                              cleaningFee: _cleaningFee,
                               pets: _pets,
                               nightlyTotal: _nightlyTotal,
                               longStayLabel: _longStay?.label,
@@ -1806,6 +1814,36 @@ class _PropertyPageState extends State<PropertyPage>
                                       ),
                                       Text(
                                         rupees(_petFee),
+                                        style: inter(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: kMuted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                                // The cleaning fee, named. A total that is
+                                // more than the lines above it is a mistake
+                                // until something says why.
+                                if (p.cleaningFee > 0) ...[
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        _serverQuote?.cleaningFeeType ==
+                                                'per_night'
+                                            ? 'Cleaning fee (per night)'
+                                            : 'Cleaning fee',
+                                        style: inter(
+                                          fontSize: 14,
+                                          color: kMuted,
+                                        ),
+                                      ),
+                                      Text(
+                                        rupees(p.cleaningFee),
                                         style: inter(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
@@ -2297,6 +2335,7 @@ onPressed: () async {
                       discount: _discountOnRoom,
                       extraGuestFee: _partyFee,
                       petFee: _petFee,
+                      cleaningFee: _cleaningFee,
                       pets: _pets,
                       nightlyTotal: _nightlyTotal,
                       longStayLabel: _longStay?.label,
@@ -3716,6 +3755,7 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
         discount: _discountOnRoom,
         extraGuestFee: _partyFee,
         petFee: _petFee,
+        cleaningFee: _cleaningFee,
         pets: _pets,
         nightlyTotal: _nightlyTotal,
         longStayLabel: _longStay?.label,

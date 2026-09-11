@@ -54,7 +54,15 @@ class StayPrice {
   /// How many pets were declared, so the line can name them.
   final int pets;
 
-  /// Room + party charge — the figure to send as `price`.
+  /// The host's cleaning fee for the stay, quoted by the server. Its own
+  /// line, and part of what is charged: the server adds it after any offer,
+  /// discounts and taxes the sum, and validates `price` against it. A price
+  /// sent without it was accepted (so an old build could still book) and
+  /// simply not paid to the host — which is what every build did until
+  /// 2026-09-11.
+  final double cleaningFee;
+
+  /// Room + party charge + pets + cleaning — the figure to send as `price`.
   final double chargeable;
 
   /// The coupon or negotiated-deal reduction applied to [chargeable].
@@ -94,6 +102,7 @@ class StayPrice {
     required this.roomSubtotal,
     required this.extraGuestFee,
     this.petFee = 0,
+    this.cleaningFee = 0,
     this.pets = 0,
     required this.chargeable,
     required this.discount,
@@ -125,6 +134,7 @@ StayPrice priceStay({
   double discount = 0,
   double extraGuestFee = 0,
   double petFee = 0,
+  double cleaningFee = 0,
   int pets = 0,
   double nightlyTotal = 0,
   String? longStayLabel,
@@ -142,9 +152,12 @@ StayPrice priceStay({
   final party =
       extraGuestFee.isFinite && extraGuestFee > 0 ? extraGuestFee : 0.0;
   final petCharge = petFee.isFinite && petFee > 0 ? petFee : 0.0;
-  // The party charge and the pets ride with the room through discount and tax,
-  // because that is what the backend does with them.
-  final chargeable = subtotal + party + petCharge;
+  final cleaning = cleaningFee.isFinite && cleaningFee > 0 ? cleaningFee : 0.0;
+  // The party charge, the pets and the cleaning fee ride with the room
+  // through discount and tax, because that is what the backend does with
+  // them (a coupon is applied to the whole sent price; GST is levied on
+  // the final price the guest pays).
+  final chargeable = subtotal + party + petCharge + cleaning;
   final off = discount.isFinite && discount > 0 ? discount : 0.0;
   final discountedRoom = (chargeable - off).clamp(0.0, chargeable).toDouble();
   final taxPct = perNightTariff > 7500 ? 18 : 5;
@@ -161,6 +174,7 @@ StayPrice priceStay({
     longStayLabel: saving > 0 ? longStayLabel : null,
     extraGuestFee: party,
     petFee: petCharge,
+    cleaningFee: cleaning,
     pets: pets,
     chargeable: chargeable,
     discount: chargeable - discountedRoom,

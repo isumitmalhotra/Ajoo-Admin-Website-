@@ -25,6 +25,13 @@ class StayQuote {
 
   final double extraGuestFee;
   final double petFee;
+
+  /// The host's cleaning fee for this stay (once per stay, or per night —
+  /// the server has already multiplied). Charged since 2026-09-10; a client
+  /// that leaves it out of `price` is treated as "not updated yet" and the
+  /// host is simply not paid it. See [cleaningFeeType].
+  final double cleaningFee;
+  final String? cleaningFeeType;
   final double total;
   final double taxes;
   final double taxPct;
@@ -45,6 +52,8 @@ class StayQuote {
     required this.advanceDiscount,
     required this.extraGuestFee,
     required this.petFee,
+    this.cleaningFee = 0,
+    this.cleaningFeeType,
     required this.total,
     required this.taxes,
     required this.taxPct,
@@ -80,6 +89,8 @@ class StayQuote {
       advanceDiscount: _num(j['advanceDiscount']),
       extraGuestFee: _num(j['extraGuestFee']),
       petFee: _num(j['petFee']),
+      cleaningFee: _num(j['cleaningFee']),
+      cleaningFeeType: j['cleaningFeeType']?.toString(),
       total: _num(j['total']),
       taxes: _num(j['taxes']),
       taxPct: _num(j['taxPct']),

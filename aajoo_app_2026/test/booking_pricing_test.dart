@@ -84,4 +84,28 @@ void main() {
     expect(p.discount, 0);
     expect(p.discountedRoom, 4000);
   });
+
+  test('the cleaning fee is charged, taxed and sent — 29302, 18–20 Sep 2026', () {
+    // The server quoted ₹6,660 for the room (after the 10% advance discount)
+    // and a ₹500 cleaning fee, 5% GST → ₹7,518. The page printed ₹7,518 as
+    // the total and lines that added to ₹7,018, and sent ₹6,660 + fees as
+    // `price` — which the server accepted as "a build that has not learned
+    // about cleaning yet" and simply did not pay the host the ₹500.
+    final p = priceStay(
+      roomSubtotal: 6660,
+      perNightTariff: 3000,
+      cleaningFee: 500,
+    );
+    expect(p.cleaningFee, 500);
+    expect(p.chargeable, 7160,
+        reason: 'the price sent must carry the cleaning fee, or the host is not paid it');
+    expect(p.taxes, 358, reason: 'GST is levied on the final price, cleaning included');
+    expect(p.total, 7518);
+  });
+
+  test('no cleaning fee is no line and no charge', () {
+    final p = priceStay(roomSubtotal: 6660, perNightTariff: 3000);
+    expect(p.cleaningFee, 0);
+    expect(p.chargeable, 6660);
+  });
 }
