@@ -190,6 +190,28 @@ that commission, four ledger rows per booking.
 
 ## 8. Closed since the last edition — do not redo
 
+### 8a16. Closed 2026-09-11 (night) — deposit → approve → balance → check-in, driven on production
+
+**B434315** (29303, 12–14 Sep, ₹2,100): guest paid the ₹210 deposit on the
+website, host approved on the app, guest paid the ₹1,890 balance, ledger
+promoted PENDING → COMPLETED (GUEST_PAYMENT 2,100 / HOST_EARNING 1,646).
+**B386357** (29303, today, pay-at-property ₹1,155): requested, approved,
+checked in from the app; guest's Ongoing page shows it; host's Settlements
+shows ₹250 due (₹165 commission + ₹30 GST on it + ₹55 accommodation GST,
+host keeps ₹905).
+
+Fixed on the way (backend `1acb276`, `99f3b00`; web `c2260a1`, `37c985b`; app builds **73–74**):
+
+- **The balance put an approved stay back to "awaiting approval"** (8 → 5), asked the host to approve again, wrote the approval history line twice and re-sent the new-booking chat message, emails and invoice. verifyPayment now knows a first payment (status 1) from the rest.
+- **"Refunded in full if the host doesn't answer"** on the payment page vs "confirmed automatically" on the confirmation page. The sweeper auto-confirms (client decision); both pages say so. Deposit button says "& request" on an approval listing.
+- **The cancellation ladder recited closed windows** ("100% refund if you cancel by 6 Sept" on 11 Sept; a same-day booking after check-in hour listed three past windows). Read from now: closed windows are said to be closed, the live one is "if you cancel now", a stay already begun says no refund.
+- **A guest's own abandoned checkout greyed out their night for 30 minutes** on the calendar (createBooking already ignored their own hold; the calendar did not). Own unpaid hold hidden when signed in.
+- **App:** "Cancel this booking" under "Confirm this booking" on an unapproved request → "Decline this request" with an honest refund line; chips wrap instead of clipping "₹1,890 du"; arrival controls appear only once approved; a check-in the server completed but whose answer was lost is re-read instead of reported as a failure (B386357 — the server said 6, the app said "Could not").
+
+Leftovers noted, not fixed: "Staying now" chip on a confirmed stay before the host has checked the guest in; the guest booking card's stock photo for 29302/29303; guest card "Paid" pill beside "₹1,890 is still due"; B205678 "CHECK-IN 25 Sept, 2 AM" (check-in time on 29291?); `createOrder` failures are logged only to console ("Something went wrong, while creating order" twice during a Render restart); B934179 (Ben Tree House, ₹10,030, awaiting approval) was made from the renter account at 19:58 IST by someone other than me.
+
+**Open on production:** B229372 (14–16 Sep, deposit) sits at payment-pending — the Razorpay test popup would not complete from my browser; pay ₹210 (Netbanking → any bank → Success) and I decline it from the app to prove the decline → full refund path. B968669 / B299521 are abandoned holds, harmless. No-show: mark B434315 tomorrow from the app.
+
 ### 8a15. Closed 2026-09-11 (evening) — a brand-new host lists from the phone, is approved, and is paid to the right account
 
 Host **194** (aajoo.host2@mailinator.com, created and admin-verified by the
