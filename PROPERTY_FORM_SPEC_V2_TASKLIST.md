@@ -71,7 +71,7 @@ Checked and confirmed live.
 | B11 | Booking type Instant / Approval Required | ✅ Built |
 | B12 | Nearby places categorised by Google **type**, not name | ✅ Queried per section by type; dedupes by `place_id`; excludes bad types |
 | B13 | House-rule chips + quiet hours | ✅ Built |
-| B14 | Bank details encrypted at rest, `FIELD_ENCRYPTION_KEY` or save fails | ✅ Code correct — but see C1, the key is still unset |
+| B14 | Bank details encrypted at rest, `FIELD_ENCRYPTION_KEY` or save fails | ✅ Code correct, and the key is set — confirmed from `/health/env` on 2026-09-11 |
 
 ---
 
@@ -108,7 +108,7 @@ about it.
 
 | # | Task | Status |
 |---|---|---|
-| **C1** | **Set `FIELD_ENCRYPTION_KEY` on Render** | **Only you can do this** — it is an environment variable on the Render dashboard, and the code has been correct throughout (`hostV2.controller.js` refuses to write a bank account without it, rather than storing one in plaintext). Hosts cannot save payout details until it is set. **Generate the value yourself** so it never passes through a chat log: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` → Render → Environment → Add `FIELD_ENCRYPTION_KEY` → Save (the service restarts). **Never rotate it** without re-encrypting the stored accounts. |
+| ~~**C1**~~ | ~~**Set `FIELD_ENCRYPTION_KEY` on Render**~~ **CLOSED 2026-09-11 — it was already set.** `/health/env`, run by the client with the health token, reports `FIELD_ENCRYPTION_KEY: true`. Hosts can save payout details. The row below is kept for the record of what was asked. | **Only you can do this** — it is an environment variable on the Render dashboard, and the code has been correct throughout (`hostV2.controller.js` refuses to write a bank account without it, rather than storing one in plaintext). Hosts cannot save payout details until it is set. **Generate the value yourself** so it never passes through a chat log: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` → Render → Environment → Add `FIELD_ENCRYPTION_KEY` → Save (the service restarts). **Never rotate it** without re-encrypting the stored accounts. |
 
 **Why it stayed open unnoticed, and what changed 10 Sep.** The question "is
 the thing blocking payouts still blocking it?" had no answer outside the
