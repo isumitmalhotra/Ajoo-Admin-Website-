@@ -2,11 +2,12 @@
 
 > **Reconciled 2026-09-04** against the live site, the live database and the three
 > repos; **updated 2026-09-05** after tester builds 14–16, the proactive defect
-> sweep, and a fresh set of DB counts; **updated 2026-09-12** with §8a19–8a21 — the negotiation
-> rebuild, the home page's card sections, cash at the door, and the booking-confirmed
-> redesign. Supersedes the 2026-07-11 edition, which
-> had drifted badly — nine of its open items were already done and two of its
-> "done" claims were wrong.
+> sweep, and a fresh set of DB counts; **updated 2026-09-13** with §8a19–8a23 — the negotiation
+> rebuild, the home page's card sections, cash at the door, the booking-confirmed
+> redesign, the app's inability to read its own API, a draft that reached public search,
+> and the Cloudinary sweep that took 111 personal records off public delivery.
+> Supersedes the 2026-07-11 edition, which had drifted badly — nine of its open
+> items were already done and two of its "done" claims were wrong.
 >
 > **Repos:** FE `D:/Projects/aajao-frontend-vercel` (React/Vite → Vercel) ·
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
@@ -137,7 +138,7 @@ Functional scope is delivered; these are the contractual artifacts. All still op
 | **4.3** | **FMS — Functional Specification** | |
 | **4.4** | **HMS — Functional Specification** | |
 | **4.5** | **Security & Compliance doc + RBAC matrix** | The RBAC itself exists (`config/adminRoles.js`, incl. `SEO_MANAGER`); the document does not. |
-| **4.6** | **Test suite to contract standard** | **135 backend tests pass** on `npm test`, **387 app tests** on `flutter test` and **37 web rule files** on `for f in tests/*.test.mjs; do node $f; done` (43 / 138 / — on 09-05; there is no `test:rules` script — the earlier wording here named one that does not exist), but the contract asks for >80% measured coverage, 200+ integration tests, plus load and OWASP reports. No coverage tooling is wired. |
+| **4.6** | **Test suite to contract standard** | **136 backend tests pass** on `npm test`, **387 app tests** on `flutter test` and **37 web rule files** on `for f in tests/*.test.mjs; do node $f; done` (43 / 138 / — on 09-05; there is no `test:rules` script — the earlier wording here named one that does not exist), but the contract asks for >80% measured coverage, 200+ integration tests, plus load and OWASP reports. No coverage tooling is wired. |
 | **4.7** | **Deployment guide + operational runbook + KT docs** | `DEPLOY_RUNBOOK.md` and the handoffs exist; `Deployment_Options_2026-09-05.docx` (05-09) covers requirements, sizing, tools, providers, cost and a migration plan. Still to formalise: the runbook for whichever host is chosen (§1.8) and the KT pack. |
 | **4.8** | **UAT test cases + sign-off package** | **Manuals delivered 2026-09-05** — web (81 cases, 8 modules) and Android (55 cases, 6 modules), each with environment, accounts, procedure, defect template and sign-off table. Execution and sign-off are the client's; **an internal dry run of both manuals is recommended first** — see §6 for the cases that have only code/test-level verification so far. |
 
@@ -237,6 +238,135 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a23. Closed 2026-09-13 — a draft on the public site, and a media account nobody owned
+
+**A host could publish a listing nobody had approved.** Reported with two
+screenshots: a listing badged **Draft** offered "Put live", and pressing
+it put it into public search with no photograph and ₹0/night, never
+submitted, never seen by anyone at Aajoo. W5 closed this on the ADMIN
+side and left the host's own switch beside it checking ownership and
+nothing else — its own comment reads "a state is only real if the
+transitions out of it are the only way to leave it", and the host's
+switch was the other way out. Same state machine now, with a refusal that
+names what to press next.
+
+The trap in fixing it: `stateOf` reads being on the site as the strongest
+signal of approval, because 29,216 legacy listings carry
+verification_status "unverified" and were published by the old admin
+flow. One of those, paused by its host, therefore reads as DRAFT — so a
+naive guard would have locked 29,216 owners out of their own listings.
+The handler asks it the other way round: with `is_active` forced on,
+would this read as approved? **The app already had this right**
+(`if (adminCleared && !rejected)`); the website was the platform with the
+hole, and the website is what the client was using. Listing 29308 was
+taken off the site afterwards; search near Bir and `/properties/29308`
+both answer "no record found".
+
+**And the Cloudinary account was a shared drawer.** §3.6 had said
+"nobody has swept it" since August. Swept: **1,003 assets**, not the 704
+on record, and **111 were taken off public delivery over two passes**.
+
+*What was public, measured unauthenticated against real assets:* 39
+property documents — ownership and identity papers photographed on a
+phone — answering HTTP 200; 12 guest-issue CSVs carrying `guest_name`
+and `guest_phone`, which the **chatbot was minting publicly and pasting
+into a chat message as a plain link**; and, among the 228 unfoldered
+assets, **22 legible identity documents belonging to several different
+people** (Aadhaar numbers and QR codes readable, a college ID with name,
+father's name, DOB, address, phone and blood group), 18 other personal
+records, and **11 of our own booking invoices** with a guest's name,
+email and address on them.
+
+The 6 PDFs beside the documents answered 401, **which reads like
+protection and is not**: this account blocks public PDF delivery by
+default, a free-plan setting that covers neither a JPEG of an Aadhaar nor
+a CSV. That distinction is the lesson worth keeping.
+
+*What changed:* both uploaders store `authenticated` now and both readers
+sign; the report link expires in 24 hours and says so; 111 assets
+migrated with our own rows repointed in the same pass. **Privatised, not
+deleted** — most of those documents belong to whoever else uses this
+account, and deleting could destroy their only copy.
+
+Two self-corrections, both found by asking what actually REFERENCES an
+asset rather than what it looks like: two "portraits" were user avatars
+and were put back public, and two identity documents were our own guests'
+KYC, which needed a signed reader (`getSignedImageUrl`) so the admin
+verification screen kept working. Closing an exposure and breaking the
+legitimate reader are the same edit unless you check.
+
+*Not closed:* the document IMAGES keep an edge-cache residue — the exact
+versioned old URL still answers 200 for anything fetched before the
+rename, `max-age` 2592000 — thirty days, or one invalidation in the
+Media Library. And **the account is shared, which is the root of every
+finding here**. Aajoo needs its own.
+
+Also this day, from four client notes: the internet SPEED pickers moved
+**under** the Internet group (the schema names where each question
+belongs now, so both platforms agree and cannot drift — and it exposed
+that `has_wifi` was never set on the app, so an app host could not state
+a speed **at all**); "not able to select from the listing" turned out to
+be **Chrome's saved-address dropdown drawn over ours**, fixed with
+`autoComplete="off"` on three place inputs; and password-reset codes now
+go by email only, with sign-in by mobile untouched, the SMS transport
+held rather than removed.
+
+### 8a22. Closed 2026-09-12 (night) — the app could not read its own API
+
+One listing would not open from the deal banner. It was never the network
+and never the id: `property_latitude` is a floating-point column, so the
+driver returns `28.47938` for one row and `"28.45936"` for the next, and
+a model that declared `String?` threw `type 'double' is not a subtype of
+type 'String?'` on the numeric form.
+
+**The type is decided by a HOST SETTING, not by when a row was written.**
+`blurProperty` replaces the coordinates with computed NUMBERS for any
+listing whose host answered "approximate location only", and leaves the
+DECIMAL string alone otherwise — so both shapes come back **in the same
+response**, and a host can flip a working listing into the broken shape
+at any time. Three endpoints blur. **Four models** parse coordinates and
+three had it wrong; the fourth (`ongoing_reponse`) had a `_coord()`
+converter and was fine. In the map/search model it was not one missing
+card: `Data.fromJson` maps the whole array, so one approximate listing
+took the **entire result list**.
+
+Then the same question one layer down. Every response comes from one
+helper whose signature ends `data = []`, so a handler that returns early
+sends an empty **ARRAY** while its populated answer sends an **OBJECT**,
+both 200, both `success: true`. Two models called `Data.fromJson(json["data"])`
+on that with no type check: **a host with nothing in progress** and **a
+guest no host has reviewed** — the second being every guest on the
+platform, since nothing has been reviewed yet. The backend added that
+200-with-empty branch precisely so the client could tell "you have none"
+from "the request failed"; the client could not.
+
+**Three faults turned a parse error into a hang**, and each was worth
+fixing alone: a TypeError is an Error, not an Exception, so `on Exception
+catch` walked past it; `getProperty` caught it but left the previous
+listing in the one shared slot, so a failure looked like the stay opened
+five minutes ago; and GetX 4.6.6's `back()` **closes an open SNACKBAR and
+returns**, so with the controller's error toast on screen it never
+reached the `barrierDismissible: false` dialog. Read out of the library
+source, not guessed.
+
+**And the answer to the location prompt was being thrown away.**
+`getCurrentLocation` read the permission once, called
+`requestPermission()` inside an un-awaited `.then`, and tested the stale
+value — so a guest who tapped Allow got `null` anyway, and the search ran
+from a hardcoded fallback in Delhi NCR where there are no listings. An
+empty home screen on the one run that makes a first impression. The
+position was also fetched at BEST accuracy with no time limit, which is a
+grey shimmer until the GPS chip answers; last known first now, eight
+seconds for a fresh fix, refine afterwards.
+
+Builds 81 through 87, each one withdrawn as the next found something:
+81 could not open some listings, 82 could not put them in a search
+result, 83 turned an empty list into a failure, 84 predates the client's
+step-3 note, 85 and 86 were superseded before they circulated. **87 is
+the one to hand out**; the tester had been on 49 since 09-08. Still
+unexplained and logged as §3.20: Nearby comes back empty on a cold
+relaunch at coordinates that answer with a listing from curl.
 
 ### 8a21. Closed 2026-09-12 (evening) — the booking-confirmed page, the host's photograph, and cash at the door
 
