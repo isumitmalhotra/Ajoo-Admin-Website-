@@ -138,15 +138,32 @@ class Property {
   });
 
   factory Property.fromJson(Map<String, dynamic> json) => Property(
-        propertyId: json["property_id"],
-        propertyName: json["property_name"],
-        propertyAddress: json["property_address"],
-        propertyDesc: json["property_desc"],
-        propertyPrice: json["property_price"],
-        propertyCity: json["property_city"],
-        propertyLongitude: json["property_longitude"],
-        propertyLatitude: json["property_latitude"],
-        propertyHostId: json["property_host_id"],
+        // Coerced, not assigned raw.
+        //
+        // Everything below this block already was; these eight were the
+        // holdouts, and every one of them is declared non-nullable. The
+        // coordinates are the ones that bit: the backend replaces them with
+        // computed NUMBERS for any listing whose host chose "approximate
+        // location" (utils/approximateLocation.js), so two of the eight rows
+        // in a live search response are numeric and six are DECIMAL strings.
+        //
+        // Data.fromJson maps the whole array in one go, so one such row threw
+        // a TypeError and took the ENTIRE result list with it -- and
+        // map_service catches `on Exception`, which an Error is not. The app
+        // said "No stays here yet" over a response holding eight stays.
+        //
+        // Stringified rather than retyped to double: every reader runs
+        // double.tryParse over these, so the pin does not move.
+        // Pinned by test/an_approximate_listing_still_parses_test.dart.
+        propertyId: (json["property_id"] as num?)?.toInt() ?? 0,
+        propertyName: json["property_name"]?.toString() ?? "",
+        propertyAddress: json["property_address"]?.toString() ?? "",
+        propertyDesc: json["property_desc"]?.toString() ?? "",
+        propertyPrice: json["property_price"]?.toString() ?? "0",
+        propertyCity: json["property_city"]?.toString() ?? "",
+        propertyLongitude: json["property_longitude"]?.toString() ?? "",
+        propertyLatitude: json["property_latitude"]?.toString() ?? "",
+        propertyHostId: (json["property_host_id"] as num?)?.toInt() ?? 0,
         propertyZip: json["property_zip"],
         propertyContact: json["property_contact"]?.toString(),
         propertyCancellationPolicy: json["property_cancellation_policy"]?.toString(),

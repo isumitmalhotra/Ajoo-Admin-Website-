@@ -155,8 +155,13 @@ class SearchPropertyModel {
         propertyHostId: json["property_host_id"],
         propertyName: json["property_name"],
         propertyAddress: json["property_address"],
-        propertyLongitude: json["property_longitude"],
-        propertyLatitude: json["property_latitude"],
+        // /properties/list is one of the three endpoints that blur a
+        // listing's location when its host asked them to, and blurring
+        // replaces these with computed NUMBERS. Same defect as the map model
+        // and the property page -- see
+        // test/an_approximate_listing_still_parses_test.dart.
+        propertyLongitude: json["property_longitude"]?.toString(),
+        propertyLatitude: json["property_latitude"]?.toString(),
         propertyDesc: json["property_desc"],
         propertyPrice: json["property_price"],
         propertyMiniPrice: json["property_mini_price"],

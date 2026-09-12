@@ -157,7 +157,14 @@ class MapService {
         message: networkFailure,
         data: Data(property: []),
       );
-    } on Exception catch (e) {
+    } catch (e) {
+      // `catch`, not `on Exception catch`.
+      //
+      // The whole array is parsed in one go above, so the likeliest failure
+      // here is a row this client cannot read -- and that arrives as a
+      // TypeError, an Error rather than an Exception. `on Exception` let it
+      // past, so a single unparseable listing escaped as an unhandled Error
+      // instead of the failure message below.
       appLog(e);
       return PropertiesResponse(
         success: false,

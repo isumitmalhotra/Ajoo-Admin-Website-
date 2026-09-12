@@ -310,8 +310,13 @@ class Property {
             propertyHostId: json["property_host_id"] ?? 0,
             propertyName: json["property_name"] ?? "",
             propertyAddress: json["property_address"] ?? "",
-            propertyLongitude: json["property_longitude"] ?? "",
-            propertyLatitude: json["property_latitude"] ?? "",
+            // `?? ""` answers for null and nothing else: a NUMBER walks
+            // straight past it into a String field. The host's own listings
+            // are not blurred today, so this one is defensive rather than
+            // observed -- but it is the same assignment that broke the guest
+            // surfaces, and the endpoint it reads is one schema change away.
+            propertyLongitude: json["property_longitude"]?.toString() ?? "",
+            propertyLatitude: json["property_latitude"]?.toString() ?? "",
             propertyDesc: json["property_desc"] ?? "",
             propertyPrice: json["property_price"] ?? "",
             propertyMiniPrice: json["property_mini_price"] ?? "",
