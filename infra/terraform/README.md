@@ -253,7 +253,153 @@ against production.
 user agent. The renderer is the piece most likely to behave differently behind
 a CDN, and the acceptance script is the thing that would notice.
 
+## Day 4 — deploying, without a key to leak
+
+Two files here (`oidc.tf`, `alarms.tf`), one variable (`cpu_architecture`), and
+a `.github/workflows/deploy.yml` in each application repository. Together they
+replace "somebody runs a deploy from their laptop" with a pipeline that has no
+standing credentials at all.
+
+### No AWS keys, anywhere
+
+`oidc.tf` registers GitHub as an OpenID Connect identity provider and creates
+one role, `aajoo-prod-github-deploy`, that only a GitHub Actions job can assume.
+The trust policy matches the `sub` claim exactly:
+
+```
+repo:nameeshPatiyal100/aajaoBackend:ref:refs/heads/main
+repo:nameeshPatiyal100/Aajao-Admin-WebSIite:ref:refs/heads/main
+```
+
+Repository **and** ref. A pull request from a fork, a feature branch, or any
+other repository in the account gets nothing. `StringEquals` on a list rather
+than `StringLike` on `repo:owner/*`, because the wildcard would trust every
+repository that owner ever creates, including ones that do not exist yet.
+
+The alternative — an IAM user's access key in GitHub secrets — is a credential
+that exists for ever, is readable by everyone with repository admin, and is
+rotated by nobody. There is no such key here to leak or to rotate.
+
+The role's own policy is scoped to the job it does: push to the two ECR
+repositories, register a task definition, update the two services in this
+cluster, run the migration task, invalidate the CDN. It cannot read the
+application's secrets from SSM, cannot touch the database, and cannot touch
+IAM. `iam:PassRole` is restricted to the two task roles and conditioned on
+`ecs-tasks.amazonaws.com` — unscoped, that single statement is the usual way a
+deploy pipeline quietly becomes an account administrator.
+
+### What each repository needs configured
+
+Actions **variables** (not secrets — none of these is one):
+
+| Name | Both repos? | Value |
+|---|---|---|
+| `AWS_DEPLOY_ROLE` | both | `terraform output github_deploy_role_arn` |
+| `CLOUDFRONT_DISTRIBUTION_ID` | website | `terraform output cloudfront_distribution_id` |
+| `WEB_HOSTNAME` | website | `www.aajoohomes.com` |
+| `VITE_*` (ten of them) | website | see below |
+
+Actions **secrets**:
+
+| Name | Repo | Value |
+|---|---|---|
+| `HEALTH_TOKEN` | API | the same value as the `HEALTH_TOKEN` SSM parameter |
+
+`HEALTH_TOKEN` is the only secret either workflow holds, and it buys one thing:
+the post-deploy call to `/health/env`, which reports which required variable
+names are **set** without ever printing a value.
+
+### The build-arg trap
+
+The website's ten `VITE_*` values are build arguments, not runtime
+configuration. Vite inlines them into the JavaScript at build time, so an image
+built without them is not "missing configuration to be supplied later" — it is
+a finished site with no map, no payment gateway and no push notifications, and
+nothing anywhere will say so until somebody opens it.
+
+The workflow passes all ten. If the Dockerfile ever gains an eleventh, it has
+to be added there in the same commit; there is no error for the one that was
+forgotten.
+
+They are repository variables rather than secrets because every one of them
+ships inside the public JS bundle either way. Marking them secret would only
+mean GitHub masks them in the log of a build that publishes them to the world.
+The real secrets live on the API and never enter a browser.
+
+### Order matters: migrate before the service updates
+
+```
+build → push → MIGRATE → update the service → wait for stable → /health/env
+```
+
+Migrations run against the live database **before** the new code serves
+traffic, as a one-off ECS task on the same task definition — so it reads the
+same credentials out of SSM and no password ever exists in GitHub. For the few
+minutes in between, the old code runs against the new schema. That is fine for
+an additive change (a new column, table or index) and it is not fine for a
+rename or a drop, which need two deploys: one that adds and writes both, one
+that removes. There are 165 migrations in the API repository and none of them
+should be the exception — this is simply the place somebody will find out.
+
+A non-zero exit from the migration task stops the deploy with the old code
+still serving. A half-applied migration underneath a half-deployed service is
+the worst of both.
+
+The service update itself takes the **current** task definition and changes
+only the image. Rendering a whole definition from a file in the repository
+would silently undo everything Terraform set — the secrets list, the log
+group, the health check — on every deploy.
+
+### The architecture trap
+
+`cpu_architecture` is now a variable (default `X86_64`) instead of `"ARM64"`
+written into two task definitions. Graviton is the better runtime choice, but
+GitHub's standard runners are x86 and building ARM images there means QEMU
+emulation on every deploy, for ever.
+
+It is a variable because a mismatch does not fail at build time. It fails when
+the task starts, with `exec format error`, which reads like a corrupt image
+rather than a mismatched one. Change it here, change `PLATFORM` in both
+workflows, and the two cannot drift apart quietly.
+
+### The alarms, and the one that matters
+
+`alarms.tf` creates an SNS topic and seven alarms, chosen against this
+platform's actual shape rather than a generic CPU dashboard:
+
+| Alarm | Fires when | Why this one |
+|---|---|---|
+| `api-no-running-tasks` | `RunningTaskCount < 1` for 2 min | the API runs at **one** task, so this is a total outage, not degradation |
+| `api-unhealthy` | ALB sees an unhealthy target for 3 min | the container is up and `/health` is not answering |
+| `api-5xx` | >10 target 5xx in 5 min | one 500 is a bug report; a stream is an incident |
+| `web-unhealthy` | ALB sees an unhealthy renderer | the SEO renderer is the reason the site is a container |
+| `rds-low-storage` | under 2 GB free | storage autoscaling is on, so if this fires autoscaling has failed |
+| `rds-cpu` | >85% for 15 min | on a `db.t4g.micro` this is usually a query, not traffic |
+| `rds-connections` | >50 for 10 min | a pool that is not releasing looks like slowness before it looks like an error |
+
+`api-no-running-tasks` sets `treat_missing_data = "breaching"` on purpose: a
+service with no tasks publishes no metric, so silence *is* the symptom. Every
+other alarm treats missing data as fine, because a metric that has not arrived
+yet is not an incident.
+
+Set `alarm_email` in `terraform.tfvars` or nothing subscribes and the alarms
+fire into an unattended topic. AWS then emails to ask for confirmation — **the
+link in that email has to be clicked**, or the topic still has no confirmed
+subscriber and the alarms still reach nobody. Container Insights is already
+enabled on the cluster, which is what publishes `RunningTaskCount`.
+
+### After `terraform apply`, by hand
+
+1. `terraform output github_deploy_role_arn` → both repositories' Actions variables.
+2. `terraform output cloudfront_distribution_id` → the website repository.
+3. Confirm the SNS subscription email.
+4. Re-point the **Razorpay webhook** at `https://api.aajoohomes.com/...` once
+   DNS moves. Terraform cannot do this; it lives in the Razorpay dashboard, and
+   a missed webhook is a payment that never reconciles.
+5. Re-point anything else that calls in by URL: BotPenguin's handoff endpoint
+   and the Cloudinary notification URL, if either is configured.
+
 ## Not here yet
 
-Day 4: the GitHub Actions OIDC role, build → ECR → ECS, migrations as a deploy
-step, webhook re-pointing, and CloudWatch alarms. Day 5 is the cutover.
+Day 5: the cutover itself — data copy, DNS, the rollback window, and switching
+Terraform's state to the S3 backend.

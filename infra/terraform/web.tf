@@ -94,7 +94,7 @@ resource "aws_ecs_task_definition" "web" {
 
   runtime_platform {
     operating_system_family = "LINUX"
-    cpu_architecture        = "ARM64"
+    cpu_architecture        = var.cpu_architecture
   }
 
   container_definitions = jsonencode([{

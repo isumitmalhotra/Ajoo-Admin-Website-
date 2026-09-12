@@ -31,6 +31,31 @@ variable "az_count" {
   default     = 2
 }
 
+/**
+ * x86 by default, and that is a CI decision rather than a runtime one.
+ *
+ * Graviton (ARM64) is the better runtime choice — same price, more of it. But
+ * the deploy pipeline builds the image, GitHub's standard runners are x86, and
+ * building ARM images there means QEMU emulation: several times slower, on
+ * every deploy, for ever. ARM runners exist and are worth switching to.
+ *
+ * The reason this is a variable and not a decision left in two files: an image
+ * built for the wrong architecture does not fail at build time. It fails when
+ * the task starts, with "exec format error", which reads like a broken image
+ * rather than a mismatched one. Change it here, change `platforms:` in both
+ * workflows, and the two cannot drift apart quietly.
+ */
+variable "cpu_architecture" {
+  description = "X86_64 or ARM64. Must match the platform the pipeline builds."
+  type        = string
+  default     = "X86_64"
+
+  validation {
+    condition     = contains(["X86_64", "ARM64"], var.cpu_architecture)
+    error_message = "cpu_architecture must be X86_64 or ARM64."
+  }
+}
+
 variable "db_instance_class" {
   description = "db.t4g.micro is ample for a 43 MB database; decision 5 revisits it."
   type        = string
