@@ -174,7 +174,7 @@ class _NotificationPreferencesPageState
                         left: 16, top: 12, right: 16, bottom: 16),
                     children: [
                       Text(
-                        'Choose what reaches your phone. '
+                        'Choose what interrupts you \u2014 on your phone and by email. '
                         '${_inAppNote ?? 'Your notifications list always keeps a record.'}',
                         style: inter(fontSize: 13, color: kMuted, height: 1.5),
                       ),

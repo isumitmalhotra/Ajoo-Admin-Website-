@@ -189,11 +189,26 @@ class NotificationService {
     _dio.options.baseUrl = baseUrl;
     _dio.options.headers["Authorization"] = 'Bearer $token';
     try {
+      // A category switch governs BOTH interrupting channels.
+      //
+      // Since 2026-09-12 every notification also goes out as mail, gated by
+      // the same category on the server's `email` map -- a map nothing on this
+      // screen could reach, so a guest who turned "Offers and negotiations"
+      // off went on receiving an email for every counter. WhatsApp is its own
+      // question (marketing only) and is left alone.
+      //
+      // One key per channel, never the whole object: the server merges, and
+      // this client may know about fewer categories than it does.
       final res = await _dio.put(
         "/user/notification/preferences",
-        data: {
-          channel: {key: value}
-        },
+        data: channel == 'push'
+            ? {
+                'push': {key: value},
+                'email': {key: value},
+              }
+            : {
+                channel: {key: value}
+              },
       );
       final prefs = res.data?["data"]?["preferences"];
       return prefs is Map ? Map<String, dynamic>.from(prefs) : null;

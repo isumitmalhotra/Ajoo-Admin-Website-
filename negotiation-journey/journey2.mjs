@@ -360,6 +360,51 @@ const scenarios = {
     await shot(page, "n11-calendar", clip ? { clip } : {});
   },
 
+  /**
+   * The bell, for the same events.
+   *
+   * The popup is the announcement; this is the record. They resolve the same
+   * notification through the same function, so a popup that opens Negotiations
+   * cannot sit beside a bell entry that opens Bookings.
+   */
+  async "n12-bell"(page) {
+    await page.goto(`${SITE}/account/notifications`, { waitUntil: "domcontentloaded" });
+    await pause(7000);
+    await dismissBanners(page);
+    await shotFull(page, "n12-bell");
+  },
+
+  /**
+   * Which of these reach you by email.
+   *
+   * The client's rule, 12 September: an email for everything EXCEPT payment
+   * receipts and ordinary chat messages -- a receipt already arrives as an
+   * invoice, and a chat that emails every line is a chat nobody reads. The
+   * screen is what a guest can change about that.
+   */
+  async "n14-prefs"(page) {
+    await page.goto(`${SITE}/account/settings`, { waitUntil: "domcontentloaded" });
+    await pause(8000);
+    await dismissBanners(page);
+    const clip = await page.evaluate(() => {
+      const head = [...document.querySelectorAll("h2, h3, h4")]
+        .find((h) => /notification/i.test(h.textContent || ""));
+      const box = head?.closest("div");
+      if (!box) return null;
+      box.scrollIntoView({ block: "start" });
+      window.scrollBy(0, -20);
+      const r = box.getBoundingClientRect();
+      return {
+        x: Math.max(0, r.x - 14) + window.scrollX,
+        y: Math.max(0, r.y - 14) + window.scrollY,
+        width: Math.min(1400, r.width + 28),
+        height: Math.min(1300, r.height + 28),
+      };
+    });
+    await pause(900);
+    await shot(page, "n14-prefs", clip && clip.width > 10 ? { clip } : {});
+  },
+
   /* ── the host's side ─────────────────────────────────────────────────── */
 
   /** The offer waiting on Sam, with the below-floor warning only he sees. */
@@ -379,6 +424,14 @@ const scenarios = {
     await clickExactButton(page, "Decline");
     await pause(5000);
     await shot(page, "h2-host-decline", { full: true });
+  },
+
+  /** The same events in the host's feed. An offer nobody sees is an offer that expires. */
+  async "h5-host-bell"(page) {
+    await page.goto(`${SITE}/host/notifications`, { waitUntil: "domcontentloaded" });
+    await pause(7000);
+    await dismissBanners(page);
+    await shotFull(page, "h5-host-bell");
   },
 
   /** The host's own thread, with the platform's words marked as such. */
