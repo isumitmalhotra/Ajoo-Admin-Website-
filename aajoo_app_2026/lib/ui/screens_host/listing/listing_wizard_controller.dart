@@ -687,6 +687,15 @@ class ListingWizardController extends GetxController {
     list.contains(value) ? list.remove(value) : list.add(value);
     amenities[group] = list;
     amenities.refresh();
+
+    // The internet SPEED questions are `showIf has_wifi`, and nothing on this
+    // platform ever set has_wifi -- so an app host could not state their
+    // internet speed at all, while a web host could. The website has derived
+    // it from this group since the fields were added; same rule here, so the
+    // two agree and the questions appear under the group they belong to.
+    if (group == 'internet') {
+      setDetail('has_wifi', list.any((v) => v.toLowerCase().contains('wifi')));
+    }
   }
 
   void toggleIn(RxList<String> list, String value) {

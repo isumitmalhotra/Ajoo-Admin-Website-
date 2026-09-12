@@ -106,6 +106,8 @@ class SchemaField {
     this.required = false,
     this.help,
     this.showIf,
+    this.under,
+    this.above,
   });
 
   final String key;
@@ -116,6 +118,19 @@ class SchemaField {
   final String? help;
   final ShowIf? showIf;
 
+  /// Which chip group this question belongs beside, if any.
+  ///
+  /// `under` puts it directly below that group, `above` directly on top of it.
+  /// A field with neither keeps its old place, so a schema cached before these
+  /// existed still renders.
+  ///
+  /// An `above` field must be drawn even when its group is HIDDEN: the kitchen
+  /// group only appears once kitchen_type says "Full Kitchen", so skipping the
+  /// field with the group would make the question that reveals it
+  /// unanswerable.
+  final String? under;
+  final String? above;
+
   factory SchemaField.fromJson(Map<String, dynamic> j) => SchemaField(
         key: (j['key'] ?? '').toString(),
         label: (j['label'] ?? '').toString(),
@@ -124,6 +139,8 @@ class SchemaField {
         required: j['required'] == true,
         help: j['help']?.toString(),
         showIf: ShowIf.fromJson(j['showIf']),
+        under: j['under']?.toString(),
+        above: j['above']?.toString(),
       );
 
   static List<SchemaField> listFrom(dynamic v) => v is List
@@ -141,6 +158,24 @@ class SchemaField {
 /// saved draft, so both spellings have to count.
 bool isFieldVisible(SchemaField field, Map<String, dynamic> values) {
   final cond = field.showIf;
+  if (cond == null) return true;
+  final current = values[cond.key];
+  final want = cond.equals;
+  if (want is bool) {
+    final asBool = current == true || current == '1' || current == 1;
+    return asBool == want;
+  }
+  return current == want;
+}
+
+/// The same question for a chip GROUP.
+///
+/// Groups carry `showIf` too and this screen never asked, so the kitchen
+/// appliances showed for a host who had said "No Kitchen". Invisible while the
+/// group sat four rows away from the question that governs it; obvious once
+/// the two are next to each other.
+bool isGroupVisible(OptionGroup group, Map<String, dynamic> values) {
+  final cond = group.showIf;
   if (cond == null) return true;
   final current = values[cond.key];
   final want = cond.equals;

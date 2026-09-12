@@ -784,15 +784,37 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
           title: 'Essential amenities',
           sub: 'Shown for every property.',
           children: [
-            for (final g in s.essentialAmenities)
-              OptionGroupPicker(
-                label: g.label,
-                options: g.options,
-                selected: c.amenities[g.key] ?? const [],
-                onToggle: (v) => c.toggleAmenity(g.key, v),
-              ),
-            for (final field in s.essentialAmenityFields)
+            // Each question beside the thing it is about.
+            //
+            // Client, 2026-09-12: "highlighted section should open under the
+            // internet section not on top". The web drew every scalar field
+            // first and every chip group after; this screen did the opposite,
+            // so the two platforms disagreed AND neither put the internet
+            // SPEED pickers next to the row where a host says whether there is
+            // internet at all. The schema names the group each field belongs
+            // beside now, and both renderers follow it.
+            //
+            // The groups are walked whether or not they are visible: an
+            // `above` field is often what decides its group's visibility, and
+            // kitchen_type is exactly that.
+            for (final field in s.essentialAmenityFields.where(
+                (f) => f.under == null && f.above == null))
               _field(field, c.details, c.setDetail),
+            for (final g in s.essentialAmenities) ...[
+              for (final field
+                  in s.essentialAmenityFields.where((f) => f.above == g.key))
+                _field(field, c.details, c.setDetail),
+              if (isGroupVisible(g, c.details))
+                OptionGroupPicker(
+                  label: g.label,
+                  options: g.options,
+                  selected: c.amenities[g.key] ?? const [],
+                  onToggle: (v) => c.toggleAmenity(g.key, v),
+                ),
+              for (final field
+                  in s.essentialAmenityFields.where((f) => f.under == g.key))
+                _field(field, c.details, c.setDetail),
+            ],
           ],
         ),
 
