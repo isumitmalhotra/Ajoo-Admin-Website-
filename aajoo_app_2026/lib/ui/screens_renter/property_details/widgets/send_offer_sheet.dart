@@ -352,7 +352,7 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
             _nights > 0
                 ? 'Your deal, if accepted, will be locked to these '
                     '$_nights night${_nights == 1 ? '' : 's'}.'
-                : 'The host sanctions these dates along with the price.',
+                : 'The host agrees to these dates along with the price.',
             style: inter(fontSize: 11.5, color: skin.muted),
           ),
           const SizedBox(height: 16),

@@ -48,6 +48,15 @@ export async function open(role, { headless = false } = {}) {
       "--no-first-run",
       "--no-default-browser-check",
       "--disable-features=Translate,MediaRouter",
+      // Two windows are open at once and only one of them can have focus, so
+      // the other is a background window -- and Chrome throttles timers there
+      // to about one tick a minute. The live-notification popup lasts eight
+      // seconds; it appeared and went inside a single throttled tick, and the
+      // page looked as though nothing had arrived. The socket was up the whole
+      // time (verified over CDP: handshake 101 on wss://.../socket.io/).
+      "--disable-background-timer-throttling",
+      "--disable-backgrounding-occluded-windows",
+      "--disable-renderer-backgrounding",
       "--window-size=1460,980",
     ],
   });
