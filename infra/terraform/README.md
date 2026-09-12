@@ -309,6 +309,15 @@ Actions **secrets**:
 the post-deploy call to `/health/env`, which reports which required variable
 names are **set** without ever printing a value.
 
+**`AWS_DEPLOY_ROLE` is also the on-switch.** Both `deploy` jobs are guarded
+with `if: vars.AWS_DEPLOY_ROLE != ''`, so until it is set every push to main
+runs the tests and skips deploying. Without that guard the pipeline would fail
+red on every commit until AWS is activated, and a pipeline that is always red
+is a pipeline nobody reads — so the day it fails for a real reason, nobody
+notices. On the website it is also a safety catch: Vercel is still the deploy
+today, and arming both would serve the site from two places at once. Set it
+during the cutover, not before.
+
 ### The build-arg trap
 
 The website's ten `VITE_*` values are build arguments, not runtime
