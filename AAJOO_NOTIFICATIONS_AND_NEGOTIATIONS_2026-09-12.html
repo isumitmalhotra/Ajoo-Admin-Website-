@@ -1,0 +1,975 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Notifications and Negotiations — How They Work</title>
+<style>
+  @page { size: A4; margin: 20mm 17mm 22mm; }
+
+  :root {
+    --navy: #1B2447;
+    --teal: #0F766E;
+    --ink:  #1F2937;
+    --muted:#5B6472;
+    --line: #D9DEE7;
+    --soft: #F4F6F9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: #fff;
+    /* Cambria before Georgia deliberately: Georgia ships OLD-STYLE figures, so
+       "six P0s" reads as "six Pos" and every number sits at a different
+       height. This document is full of IDs and money. Cambria has lining
+       figures and prints just as well. */
+    font-family: Cambria, "Palatino Linotype", Georgia, "Times New Roman", serif;
+    font-variant-numeric: lining-nums;
+    font-size: 10.4pt;
+    line-height: 1.58;
+    color: var(--ink);
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---- cover ------------------------------------------------------- */
+  .cover { page-break-after: always; padding-top: 58mm; }
+  .cover .rule { width: 54px; height: 4px; background: var(--teal); margin-bottom: 22px; }
+  .cover h1 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    font-size: 27pt; line-height: 1.2; color: var(--navy);
+    margin: 0 0 16px; font-weight: 600; letter-spacing: -0.4px;
+  }
+  .cover .sub { font-size: 11.5pt; color: var(--muted); margin: 0 0 40px; max-width: 118mm; }
+  .cover .meta {
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 9pt;
+    color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px;
+  }
+  .cover .meta strong { color: var(--navy); font-weight: 600; }
+
+  /* ---- headings ---------------------------------------------------- */
+  h2, h3, h4 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    color: var(--navy); font-weight: 600; page-break-after: avoid;
+  }
+  h2 {
+    font-size: 15pt; margin: 26px 0 12px; padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--line); letter-spacing: -0.2px;
+  }
+  h3 {
+    font-size: 11.4pt; margin: 18px 0 7px; color: var(--teal);
+    letter-spacing: .1px;
+  }
+  h4 { font-size: 10.6pt; margin: 14px 0 6px; }
+
+  p { margin: 0 0 10px; orphans: 3; widows: 3; }
+
+  /* ---- lists ------------------------------------------------------- */
+  ul, ol { margin: 0 0 11px; padding-left: 20px; }
+  li { margin-bottom: 5px; }
+  li > ul, li > ol { margin-top: 5px; }
+
+  /* ---- emphasis & code --------------------------------------------- */
+  strong { color: var(--navy); font-weight: 700; }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 8.7pt; background: var(--soft);
+    border: 1px solid var(--line); border-radius: 3px;
+    padding: 0.5px 4px; color: #33405A;
+    /* long identifiers must not push the page sideways */
+    word-break: break-word;
+  }
+  pre { background: var(--soft); border: 1px solid var(--line); border-radius: 5px;
+        padding: 10px 12px; overflow-x: auto; page-break-inside: avoid; }
+  pre code { border: 0; background: none; padding: 0; font-size: 8.6pt; }
+
+  /* ---- tables ------------------------------------------------------ */
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 16px;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.7pt;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }   /* repeat header across pages */
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  th {
+    background: var(--navy); color: #fff; text-align: left; font-weight: 600;
+    padding: 7px 9px; border: 1px solid var(--navy); line-height: 1.35;
+  }
+  td {
+    padding: 6px 9px; border: 1px solid var(--line); vertical-align: top;
+    line-height: 1.45;
+  }
+  tbody tr:nth-child(even) td { background: #FAFBFD; }
+  td code { font-size: 8.1pt; }
+
+  /* ---- callouts ---------------------------------------------------- */
+  blockquote {
+    margin: 14px 0; padding: 10px 14px;
+    background: #F2F8F7; border-left: 3px solid var(--teal);
+    page-break-inside: avoid;
+  }
+  blockquote p { margin: 0 0 6px; }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  /* ---- screenshots -------------------------------------------------- */
+  /* A screenshot is evidence, so it is framed like one: a hairline border
+     so the page edge is visible against white, and never split across a
+     page break, because half a screen proves nothing. */
+  img {
+    display: block; max-width: 100%; height: auto; margin: 10px auto 4px;
+    border: 1px solid var(--line); border-radius: 5px;
+    page-break-inside: avoid;
+  }
+  /* Markdown puts a lone image in its own paragraph; the alt text follows
+     as the caption. */
+  p > img + em, p > em:only-child {
+    display: block; text-align: center;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.2pt;
+    color: var(--muted); font-style: normal; margin-top: 2px;
+  }
+  p:has(> img) { page-break-inside: avoid; margin: 14px 0 18px; }
+
+  /* The cover meta and the first paragraph of the body were touching. */
+  .cover { margin-bottom: 26px; }
+
+  hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+
+  /* Keep a section heading with the text that follows it. */
+  h2 + p, h3 + p, h2 + table, h3 + table, h2 + ul, h3 + ul { page-break-before: avoid; }
+</style></head>
+<body>
+  <section class="cover">
+    <div class="rule"></div>
+    <h1>Notifications and Negotiations — How They Work</h1>
+    <p class="sub">How the notification spine and the negotiation engine actually work &mdash; the rules, the reasons the odd ones exist, and where the code is.</p>
+    <div class="meta">
+      <strong>Aajoo Homes &mdash; Technical reference</strong><br>
+      Prepared 12 September 2026 by the Zyphex Tech development team<br>
+      Verified against the code deployed to www.aajoohomes.com and build 81 of the Android app
+    </div>
+  </section>
+  <p>Two systems, written up as they stand on <strong>12 September 2026</strong>, after the rebuild
+of that day. Everything below is the behaviour of the code now running on
+<a href="http://www.aajoohomes.com">www.aajoohomes.com</a> and in build 81 of the Android app — not a design intent.</p>
+<p>It is written for whoever has to reason about these systems next: which function
+to change, which one not to, and why a given rule exists. Where a rule looks odd,
+the reason it looks odd is given, because those are the ones somebody
+well-meaning removes.</p>
+<h1>Part One — Notifications</h1>
+<h2>1. Two stores, and why it matters</h2>
+<p>There are <strong>two</strong> in-app notification tables, with different readers. Sending to
+the wrong one means the notification is written, and nobody ever sees it.</p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Whose notifications</th>
+<th>Read by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>tbl_user_notifications</code></td>
+<td><strong>Guest</strong></td>
+<td>the guest bell, <code>/account/notifications</code>, the app&#39;s renter notifications</td>
+</tr>
+<tr>
+<td><code>tbl_notifications</code></td>
+<td><strong>Host / Admin</strong></td>
+<td>the host portal, <code>/host/notifications</code>, the admin queue</td>
+</tr>
+</tbody></table>
+<p><code>tbl_notifications.notify()</code> <strong>refuses a <code>GUEST</code> role outright</strong> and logs why.
+A GUEST row in the host/admin table is read by nobody — that is how a check-in
+notice was lost once, and the guard exists so it cannot happen again.</p>
+<h2>2. Two choke points</h2>
+<p>Every notification on the platform passes through one of exactly two functions:</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Recipients</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>utils/methods.sendNotification(userId, title, message, propId, payload, bookingId, bookPriId)</code></td>
+<td>Guests</td>
+</tr>
+<tr>
+<td><code>models/tbl_notifications.notify({ role, recipientId, title, body, linkPath, category })</code></td>
+<td>Hosts and admins</td>
+</tr>
+</tbody></table>
+<p>Everything in the rest of this section is attached <strong>there</strong>, not at the twenty-odd
+call sites. That is the whole design decision: a call site that forgets its
+category, its email or its socket emit is a silent gap, and the next call site
+added would forget too.</p>
+<h2>3. What happens, in order</h2>
+<h3>Guest path — <code>sendNotification</code></h3>
+<ol>
+<li><strong>The row is written.</strong> Always, and first. This is the ledger: the record of
+what the platform told you and when. No preference can suppress it.</li>
+<li><strong><code>notification:new</code> is emitted</strong> on the socket to the room <code>user_&lt;id&gt;</code>. This
+is what makes a popup appear on whatever screen the person is looking at,
+with no reload and no navigation.</li>
+<li><strong>An email is queued</strong> — <code>notificationEmail.mailNotification()</code>. Not awaited,
+and it never rejects: a notification must not wait on a mail transport, and a
+mail failure must cost the mail and nothing else.</li>
+<li><strong>FCM push</strong> to <em>every</em> device this person has registered (<code>tbl_notify_device</code>),
+not only the most recent. Tokens FCM reports as dead are pruned on the
+response, so an uninstalled app is not retried for ever.</li>
+</ol>
+<h3>Host path — <code>notify</code></h3>
+<p>Row → push → socket → email. ADMIN is skipped throughout: admins are not users.
+They register no devices, have no personal socket room, and have no address on
+<code>tbl_user_creds</code>. A broadcast row (<code>recipientId</code> null) has nobody to reach either.</p>
+<h3>One detail worth knowing</h3>
+<p><code>un_bookingId</code> is the sixth positional argument and almost nobody passed it —
+236 of 367 live rows had none, including every <em>&quot;Your booking is confirmed&quot;</em>.
+That column is what both clients read to open <strong>that</strong> stay rather than a list,
+so without it the notification could only ever open Upcoming Stays, and on an
+account whose stay had since finished, an <strong>empty</strong> Upcoming Stays. It is now
+taken from the payload when the argument is absent.</p>
+<blockquote>
+<p><strong><code>tbl_users</code> has no email column.</strong> Every address lives on
+<code>tbl_user_creds.cred_user_email</code>, filtered by <code>cred_user_isDelete = 0</code>.
+<code>utils/userContact.js</code> is the only reader, with a 60-second cache.</p>
+<p>This matters because the old host-offer email selected <code>user_email</code> on
+<code>tbl_users</code> — a column that does not exist — and therefore <strong>threw on every
+single offer for as long as the feature had existed</strong>, caught and logged as a
+warning. No host was ever emailed about an offer until 12 September.</p>
+</blockquote>
+<h2>4. Categories are derived, never passed</h2>
+<p><code>utils/notificationCategory.js</code> decides what kind of thing a notification is, by
+reading the <strong>wording first</strong> and the stored <code>payload.type</code> only as a fallback.</p>
+<p>Five categories, chosen to be what a person would recognise on a settings screen
+rather than what the database calls things:</p>
+<p><code>booking</code> · <code>payment</code> · <code>offer</code> · <code>support</code> · <code>promotions</code></p>
+<p><strong>Order of matching is deliberate.</strong> <em>&quot;Offer accepted — book within 24 hours&quot;</em> is
+an <strong>offer</strong>, not a booking, even though the word &quot;book&quot; appears in it.
+<em>&quot;Booking cancelled&quot;</em> is a booking matter and still a cancellation.</p>
+<p>Why the wording and not the stored type: the stored types are demonstrably
+wrong. There is a live row titled <em>&quot;Your Property has been Booked&quot;</em>, body
+<em>&quot;Booking Successfull&quot;</em>, carrying the type <code>negotiation_request</code>. The title is
+written for a human to read and describes the event; the type was whatever the
+call site happened to pass.</p>
+<p><strong>An unmatched notification falls back to <code>booking</code>, never <code>promotions</code>.</strong> An
+unrecognised notification is far more likely to be something the person needs
+than something they can miss, and the cost of the two mistakes is not
+symmetric: a stray notification is an annoyance, a suppressed cancellation is a
+guest turning up at a house that is not expecting them.</p>
+<h2>5. Preferences</h2>
+<p><code>utils/notificationPrefs.js</code> is the only thing that reads
+<code>tbl_notification_prefs</code>. Everything else calls <code>allows(userId, channel, notification)</code>
+and gets a plain boolean.</p>
+<table>
+<thead>
+<tr>
+<th>Channel</th>
+<th>Switchable</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Push</strong></td>
+<td>Per category</td>
+<td>The interrupting channel. The one people actually want control of</td>
+</tr>
+<tr>
+<td><strong>Notification email</strong></td>
+<td>Per category</td>
+<td>A copy of the in-app notification, so it reaches someone with the app closed. Same interruption in a different place, so the same preference shape</td>
+</tr>
+<tr>
+<td><strong>WhatsApp</strong></td>
+<td>Promotions only</td>
+<td>The platform&#39;s one marketing channel, and marketing is what a person is entitled to stop</td>
+</tr>
+<tr>
+<td><strong>In-app</strong></td>
+<td><strong>No</strong></td>
+<td>It is the record. A cancellation never written because a box was unticked is a support case nobody can answer</td>
+</tr>
+<tr>
+<td><strong>Transactional email</strong></td>
+<td><strong>No</strong></td>
+<td>Receipts, confirmations, password resets. Offering to turn those off is offering to lose your own records — and they do not pass through here at all</td>
+</tr>
+</tbody></table>
+<p>Defaults are <strong>everything on</strong>. The absence of a row means exactly that. The
+notification-email default is on for every category deliberately: the whole
+point of adding it was that notifications were sitting silently in a bell nobody
+opened.</p>
+<h3>Every failed read answers <code>true</code></h3>
+<p>A database hiccup must not silently mute a person&#39;s notifications. The failure
+would be invisible both to them and to us, and the thing not delivered might be
+the one that mattered.</p>
+<h3>One switch, two channels</h3>
+<p>A category toggle now writes <strong>both</strong> the <code>push</code> and the <code>email</code> map. Until
+12 September it wrote <code>push</code> alone, while the email copy was gated by the same
+category on a map nothing on either client could reach — so a guest who turned
+&quot;Offers and negotiations&quot; off went on receiving an email for every counter, with
+no way to say otherwise.</p>
+<p>A second column of switches would be the other answer, and it is the wrong one:
+nobody wants a counter-offer by mail but not by push, and a grid of twelve
+toggles is how a preferences screen stops being read. The <strong>category</strong> is the
+question; the channels are how we ask it.</p>
+<h2>6. What is never emailed, whatever the preference says</h2>
+<p><code>notificationCategory.emailable()</code> excludes exactly two kinds:</p>
+<table>
+<thead>
+<tr>
+<th>Excluded</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Chat messages</strong></td>
+<td>A conversation produces a notification per line, and a mailbox is not a chat window. The in-app notification and the push already reach them, and the inbox is one tap away</td>
+</tr>
+<tr>
+<td><strong>Payment received</strong></td>
+<td>The confirmation a person gets when their own payment goes through. They are looking at the screen that just took the money, and a separate receipt and invoice already follow. Two mails about one payment is how a receipt gets ignored</td>
+</tr>
+</tbody></table>
+<p>Everything else is emailed: bookings, cancellations, check-ins, offers and
+counters, refunds, payouts, support replies, KYC, listing decisions.</p>
+<blockquote>
+<p><strong>Refunds, payouts and cancellations are matched FIRST and always return
+true</strong>, even though all three read as payment wording. Each is money the
+person is waiting on and will chase support about if they do not hear — the
+exact opposite of noise.</p>
+</blockquote>
+<p>The payment exclusion is deliberately narrow: it catches the <strong>success</strong>
+confirmation only. A payment that failed, is pending, is due or was declined is
+something a person very much needs to be told about, and is still emailed.</p>
+<h2>7. Where a tap goes — four readers, one rule</h2>
+<p>Four separate things resolve the destination of one notification:</p>
+<ul>
+<li><code>utils/notificationRoute.js</code> — the server, for the link in the email</li>
+<li><code>notificationLink.ts</code> — the website&#39;s bell, list and live popup</li>
+<li><code>notification_link.dart</code> — the app</li>
+<li>the live-popup handler, which asks the same function the bell does</li>
+</ul>
+<p>They read the same evidence in the same order, because <strong>a mail that opens
+Bookings beside a bell entry that opens Negotiations, for the same row, is a
+person who cannot work out what happened.</strong></p>
+<p>Offers route to <code>/account/negotiations</code> for guests and <code>/host/negotiations</code> for
+hosts. The web resolver used to send a guest&#39;s offer notification to the
+dashboard, on the reasoning that guests had no negotiations page — they have had
+one since 23 August, and sending them anywhere else was the dead end the client
+reported: an offer answered by an automatic counter, and no way to reach the
+counter.</p>
+<p>Routes are validated against a known set, so a stale or invented payload route is
+rejected rather than followed to a 404.</p>
+<h2>8. The live channel</h2>
+<table>
+<thead>
+<tr>
+<th>Side</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Server</td>
+<td><code>utils/liveChannel.js</code> — <code>emitToUser</code>, <code>emitToUsers</code>, <code>roomFor</code>, <code>isLive</code>. It never throws; a socket failure costs the popup and nothing else. <code>sockets/index.js</code> joins <code>user_&lt;id&gt;</code> from the authenticated handshake</td>
+</tr>
+<tr>
+<td>Web</td>
+<td><code>liveNotifications.ts</code>, a <strong>module singleton</strong> — one socket per person</td>
+</tr>
+<tr>
+<td>App</td>
+<td>FCM in the background, the same socket in the foreground</td>
+</tr>
+</tbody></table>
+<p>The web singleton is not a style preference. Four things want the same stream at
+once — the app-wide toast, the header bell&#39;s count, the guest and host
+negotiation panels, the notifications page. A hook per consumer is a socket per
+consumer: four connections for one person, four handshakes, against a server
+capped at a thousand.</p>
+<p><strong>The socket is an addition, never the only route.</strong> If it never connects —
+blocked, proxied, a sleeping laptop — every screen still works exactly as it did:
+the bell still polls, the lists still fetch. Nothing here is the sole way any
+fact arrives.</p>
+<p>The popup itself lasts 8 seconds, sits bottom-right with a 76px bottom margin to
+clear the support chat bubble, and suppresses itself when the person is already
+looking at the page it would send them to.</p>
+<hr>
+<h1>Part Two — Negotiations</h1>
+<h2>9. The three prices</h2>
+<p>Every listing carries three. The host sets them once, in Step 4 of the listing
+wizard.</p>
+<table>
+<thead>
+<tr>
+<th>Price</th>
+<th>Who sees it</th>
+<th>What it means</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>List</strong> (<code>property_price</code>)</td>
+<td><strong>The guest</strong> — it is the price on the page</td>
+<td>What the stay costs without negotiating</td>
+</tr>
+<tr>
+<td><strong>Ideal</strong> (<code>property_ideal_price</code>)</td>
+<td>Nobody outside the platform</td>
+<td>The host&#39;s target. An offer at or above it is accepted with no host involvement</td>
+</tr>
+<tr>
+<td><strong>Minimum</strong> (<code>property_mini_price</code>)</td>
+<td><strong>Nobody. Ever.</strong></td>
+<td>The host&#39;s floor. Only the host may sell below their target, and only by saying so themselves</td>
+</tr>
+</tbody></table>
+<h3>They are the prices for the nights being argued over</h3>
+<p>This is the change that touches every figure in the system. A listing&#39;s nightly
+column is what it costs on an ordinary night; weekend and seasonal rates make a
+particular night cost something else. <strong>Every number the engine quotes is now the
+number for the dates in the offer</strong> — the price the guest is shown, the ceiling
+an offer is measured against, the accept line, the automatic answer, the discount
+the coupon carries, and both sides&#39; negotiation cards.</p>
+<p><code>negotiationService.tiersForDates(property, from, to)</code> is the single way to ask.
+It falls back to the flat columns loudly if the rates engine cannot answer, so a
+quote hiccup degrades the number and never the feature.</p>
+<p>The reason this is stated so firmly is in Appendix A: <strong>eight</strong> separate surfaces
+were reading a dated price out of an undated column, and one of them cost the
+host money.</p>
+<h2>10. Where it is stored</h2>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Holds</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>tbl_negotiation_offers</code></td>
+<td>Every message in every thread — price, sender, status, <code>offer_number</code>, the stay dates</td>
+</tr>
+<tr>
+<td><code>tbl_negotiation_log</code></td>
+<td>The ledger: who did what and when, with the floor and ceiling snapshotted on each row</td>
+</tr>
+<tr>
+<td><code>tbl_nagotiate_messages</code></td>
+<td>The older socket-chat system</td>
+</tr>
+<tr>
+<td><code>property_negotiation</code></td>
+<td><code>pn_enabled</code>, <code>pn_minimum_price</code>, <code>pn_expiry_hours</code></td>
+</tr>
+<tr>
+<td><code>tbl_coupons</code></td>
+<td>Where a struck deal actually lives</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>There are two chat systems on this platform.</strong> Negotiations live in
+<code>tbl_nagotiate_messages</code>; booking conversations live in <code>tbl_messages</code>, the
+regular inbox, as the website has always done. Assuming there was only one is
+how a bug once got fixed on the wrong screen.</p>
+</blockquote>
+<p><code>tbl_negotiation_offers</code> has <code>created_at</code> and <strong>no</strong> <code>updated_at</code> — the model
+sets <code>updatedAt: false</code>. A declined row therefore cannot say <em>when</em> it was
+declined, which is why the same-day lockout reads the ledger instead.</p>
+<h2>11. The decision</h2>
+<p><code>services/negotiationEngine.js</code> — <code>decideOffer({ offer, min, ideal, max, round })</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Action</th>
+<th>What the guest sees</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>No floor set, or a nonsense offer</td>
+<td><code>unavailable</code></td>
+<td>This stay is not open to offers</td>
+</tr>
+<tr>
+<td>Above the <strong>dated</strong> list price</td>
+<td><code>reject</code></td>
+<td>&quot;These dates are ₹X a night — offer less than that, or just book it&quot;</td>
+</tr>
+<tr>
+<td>At or above <code>max(ideal, min)</code></td>
+<td><strong><code>accept</code></strong></td>
+<td>Accepted <strong>at the price they named</strong> — not the ideal, not the list</td>
+</tr>
+<tr>
+<td>Below it, <strong>round 1</strong></td>
+<td><strong><code>auto_counter</code></strong></td>
+<td>An answer in about a second, in the host&#39;s name</td>
+</tr>
+<tr>
+<td>Below it, <strong>round 2 or later</strong></td>
+<td><strong><code>escalate_to_host</code></strong></td>
+<td>It goes to a person</td>
+</tr>
+</tbody></table>
+<p>The accept line is the <strong>ideal</strong>, clamped up to the floor so a listing whose
+ideal was somehow set below its own minimum still never sells under it. The
+client moved that line from the minimum to the ideal and confirmed it again on
+9 September.</p>
+<p>An offer <strong>below the floor</strong> is countered exactly like one merely below the
+ideal. The floor is an internal number the guest was never shown, and answering
+it differently would be the probe that finds it.</p>
+<h2>12. What the automatic answer costs</h2>
+<pre><code>list      = max(accept, listPrice)
+ceiling   = max(accept, list − 50)                    COUNTER_STEP = 50
+closeness = clamp(offer ÷ accept, 0, 1)
+price     = floor( (ceiling − (ceiling − accept) × closeness) ÷ 50 ) × 50
+</code></pre>
+<p><strong>The worse the offer, the firmer the answer.</strong> On a ₹2,500 list with a ₹2,300
+accept line: an offer of ₹1,800 is answered ₹2,300; an offer of ₹100 would be
+answered ₹2,400.</p>
+<p>Two consequences worth stating to anyone who might &quot;simplify&quot; this:</p>
+<ol>
+<li><strong>No automatic answer is ever worth less to the host than an instant
+acceptance would have been.</strong> Every one sits at or above the accept line.</li>
+<li><strong>A token discount is always given</strong> — at worst <code>COUNTER_STEP</code> below the list
+price. Quoting the sticker price back at somebody is not a counter, and a
+feature called &quot;negotiate your stay&quot; that answers with the price already on
+the screen has not negotiated anything.</li>
+</ol>
+<h3>The floor is not in this arithmetic at all</h3>
+<p>Not clamped against, not guarded by a share of it, not mentioned. The answer is
+built from the accept line and the list price, and can never land below the
+accept line, which is itself never below the floor.</p>
+<p>So <strong>there is no offer whose answer moves when the minimum moves</strong>, and therefore
+nothing a guest can do to find it. This is stronger than the version it replaced,
+which needed a guard at 90% of the line purely to stay clear of the floor.</p>
+<p>The one number a determined guest can work backwards to is the <strong>ideal</strong>, and
+that is unavoidable in any rule that guarantees a counter at or above it. It
+costs nothing: knowing the ideal only tells them they could have offered it and
+been accepted at it — which is <strong>more</strong> than the counter in front of them, never
+less.</p>
+<h3>It was demonstrated, not asserted</h3>
+<p>Three offers a rupee apart, straddling the floor — one below, one exactly on it,
+one above — each sent as the opening offer of its own negotiation. The three
+answers came back as <strong>byte-for-byte identical PNG files</strong>. Section 6 of the
+user-journey document carries the photographs.</p>
+<h3>The removed settings</h3>
+<p>Step 4 of the wizard also collected <code>pn_auto_accept_above</code>,
+<code>pn_auto_reject_below</code> and <code>pn_max_negotiation_percent</code>, and the engine briefly
+read all three. It no longer does, and the controls are gone from the form: a
+reject line is only useful to a guest <strong>if the refusal quotes it</strong>, and quoting
+it hands out a private number the spec forbids twice over.</p>
+<p>The host keeps the same power without the leak. Every counter-back reaches them,
+and they decline it themselves.</p>
+<h2>13. Rounds, and how long things live</h2>
+<p><strong>There is no limit on rounds.</strong> The three-offer cap was removed on the client&#39;s
+instruction: it ended arguments hosts were still willing to have. A thread runs
+until it reaches a terminal status — <code>accepted</code>, <code>declined</code> or <code>expired</code> — at
+which point <code>splitSessions</code> ends the session.</p>
+<table>
+<thead>
+<tr>
+<th>Clock</th>
+<th>Length</th>
+<th>Set by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>An offer waiting on a host</td>
+<td><strong>30 minutes</strong> default</td>
+<td><code>NEGOTIATION_EXPIRY_MINUTES</code>, or the host&#39;s <code>pn_expiry_hours</code> if longer</td>
+</tr>
+<tr>
+<td>An accepted deal</td>
+<td><strong>Until midnight IST</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>The price a decline leaves behind</td>
+<td><strong>60 minutes</strong></td>
+<td><code>PARTING_OFFER_MINUTES</code></td>
+</tr>
+<tr>
+<td>Before the guest is told the host is away</td>
+<td><strong>90 seconds</strong></td>
+<td>—</td>
+</tr>
+</tbody></table>
+<p>A host&#39;s configured window only ever <strong>lengthens</strong> the allowance. Before this was
+read, a host who asked for a day to think got thirty minutes.</p>
+<h2>14. How a deal reaches checkout</h2>
+<p>Every struck deal becomes a <strong>personal, date-locked percentage coupon</strong>, because
+that is the only instrument the booking flow has.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Code</td>
+<td><code>DEAL{property}{guest}{ref}</code>, <strong>sliced to 20 characters</strong></td>
+</tr>
+<tr>
+<td>Usage limit</td>
+<td>1</td>
+</tr>
+<tr>
+<td>Locked to</td>
+<td>The exact nights, and the party size</td>
+</tr>
+<tr>
+<td>Valid until</td>
+<td>Midnight IST (accepted) or 60 minutes (parting)</td>
+</tr>
+<tr>
+<td>Percentage</td>
+<td>Worked out against the <strong>dated</strong> rate</td>
+</tr>
+</tbody></table>
+<p>The 20-character slice is the column width, and it has bitten before: a code
+built from <code>auto_${Date.now()}</code> truncated to the same 20 characters for six
+different offers, so one coupon was silently refreshed by all six and was dead
+for every one of them.</p>
+<p>Because the coupon stores a <strong>percentage</strong>, turning it back into a per-night
+figure requires the same dated base it was minted against. Getting that wrong is
+how the parting-price sentence came to read ₹1,840 on a rail that was charging
+₹2,300.</p>
+<h2>15. The decline</h2>
+<p>When a host declines, three things happen.</p>
+<ol>
+<li><strong>The thread ends.</strong></li>
+<li><strong>Their last counter stays on the table for one hour</strong>, minted as a coupon
+titled <code>&quot;Host&#39;s last price&quot;</code>, locked to those nights, single use, and dying
+with the hour whether or not it is used. It is the host&#39;s own number, never a
+figure the platform invented.</li>
+<li><strong>That guest cannot open another negotiation on that listing until midnight
+IST.</strong></li>
+</ol>
+<p>Point 3 is not decoration. Without it, removing the round cap left a door wide
+open: a decline is a terminal status, so it <em>ends the session</em> — and the very
+next offer would start a fresh one with a clean round count. A guest could be
+declined and re-open the same argument a second later, for ever. The cap used to
+hide that; it does not any more.</p>
+<p>The day is an <strong>IST day, not a rolling twenty-four hours</strong>. Declined at 9am and
+you are free again at midnight; declined at 11pm and you are free in an hour.
+That is a rule a person can hold in their head, and it is the same unit the
+negotiated-price deadline uses.</p>
+<p>It is read from the ledger rather than the offers table, because that table
+cannot say when a row was declined, and it <strong>fails open</strong>: a database hiccup must
+not silently bar a guest and tell them they were declined today when they were
+not.</p>
+<h2>16. The lock, on both clients</h2>
+<p><code>declineLockFor()</code> returns <code>{ locked, reason, until, price, code, from, to }</code>.
+The reason is one of three, and each needs different words.</p>
+<table>
+<thead>
+<tr>
+<th>Reason</th>
+<th>The button says</th>
+<th>Scope</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>accepted</code></td>
+<td>&quot;Already agreed for these dates&quot;</td>
+<td>Those nights only</td>
+</tr>
+<tr>
+<td><code>parting</code></td>
+<td>&quot;This negotiation has ended&quot;</td>
+<td>Those nights only</td>
+</tr>
+<tr>
+<td><code>declined</code></td>
+<td>&quot;Available again tomorrow&quot;</td>
+<td>The whole listing, until midnight IST</td>
+</tr>
+</tbody></table>
+<p>The first two are <strong>date-scoped</strong>: a guest who agreed a price for this weekend
+may still negotiate next weekend on the same property. <code>lockFrom</code> / <code>lockTo</code>
+travel on the payload so both clients answer &quot;does this bar the dates on screen?&quot;
+from one call and cannot drift over what &quot;these dates&quot; means.</p>
+<p><strong>The button is greyed with the reason, never hidden.</strong> A control that vanishes
+reads as a broken feature, and two of these three come back on their own. Before
+this, the button stayed live and the server refused the filled-in form
+afterwards — the dead end the client asked us to remove.</p>
+<h2>17. What a message is called</h2>
+<p><strong>A status describes what happened TO a message, not what its sender did.</strong>
+Whoever acts on an offer is always the other side from whoever sent it.</p>
+<p>Read the other way round, a renter whose offer the host had declined was shown
+<strong>&quot;You declined ₹650&quot;</strong> on their own screen — at the end of the one thread that
+needed to explain itself.</p>
+<table>
+<thead>
+<tr>
+<th>Viewer</th>
+<th>Their own message</th>
+<th>The other side&#39;s</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Guest</td>
+<td>You offered · Your offer was accepted / declined / expired</td>
+<td>Host countered · Accepted · Declined · Expired</td>
+</tr>
+<tr>
+<td>Host</td>
+<td>You countered · Your counter was accepted / declined</td>
+<td>Guest offered · Accepted · Declined</td>
+</tr>
+<tr>
+<td>Host, written by the platform</td>
+<td><strong>Answered for you, at your price</strong> · <strong>Accepted for you</strong></td>
+<td>—</td>
+</tr>
+</tbody></table>
+<p>That last row is the point of the whole table. The platform answers round one in
+the host&#39;s name, and <strong>a host must be able to tell which words in their own
+conversation are theirs.</strong></p>
+<p>One shared rule serves four screens — the website&#39;s guest and host negotiation
+pages, the app&#39;s guest list and the app&#39;s host list. They had four copies of one
+paragraph and drifted for a fortnight over whose move it was.</p>
+<h2>18. Live events</h2>
+<p><code>negotiation:new_offer</code> · <code>negotiation:auto_countered</code> · <code>negotiation:auto_booked</code>
+· <code>negotiation:host_reply</code> · <code>negotiation:guest_reply</code></p>
+<p>All are emitted to <strong>both</strong> sides, so a panel can repaint itself rather than
+reloading the dashboard — the client&#39;s request that negotiations feel &quot;live like
+WhatsApp: it should not reload the whole dashboard, only the window where they
+are visible should be updated.&quot;</p>
+<h2>19. The rules around the edges</h2>
+<ul>
+<li><strong>Negotiation is for stays starting today.</strong> Tomorrow or later is an advance
+booking: the listed price applies, reservable with 10% now and the balance
+before check-in. The rule lives on the dates in <code>submitOffer</code>, the one door the
+website, the app and the bot all come through. It used to live on the clients,
+as a marker on the pre-booking journey&#39;s links — so the same future stay opened
+from search negotiated freely, and 17 of the 23 deals ever struck were for
+future dates.</li>
+<li><strong><code>pn_enabled</code> rides on the property payload</strong>, so a guest discovers that a
+host takes fixed prices only <em>before</em> filling in a form that will be refused.</li>
+<li><strong>An offer above what the stay costs is a correction, not a negotiation.</strong> It
+is refused with that figure named, and the guest is pointed at Book Now.</li>
+<li><strong>Nothing that differs with the price a guest names may be exposed.</strong>
+<code>belowMinimum</code> is host-payload only; the guest&#39;s payload carries the listed
+price and nothing else from the tier object. The host&#39;s own card shows
+<em>whether</em> an offer fell below their minimum and never the figure — that only
+adds something to leak in a screenshot.</li>
+</ul>
+<hr>
+<h1>Appendix A — One fault, eight places</h1>
+<p>On 12 September, while photographing the user-journey document and driving the
+cross-device suite, the same mistake was found in eight separate places: a price
+that depends on the dates, read from a column that does not.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Where</th>
+<th>What it did</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>submitOffer</code>&#39;s ceiling</td>
+<td>Refused an offer that was under what the weekend actually cost</td>
+</tr>
+<tr>
+<td>2</td>
+<td>The web rail&#39;s struck-through headline</td>
+<td>Printed ₹2,000 beside a negotiated ₹2,400 — a discount reading as a price rise</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>declineLockFor</code>&#39;s parting price</td>
+<td>Quoted 8% off ₹2,000 as ₹1,840, on a rail charging ₹2,300</td>
+</tr>
+<tr>
+<td>4</td>
+<td>The host&#39;s negotiation card</td>
+<td>&quot;Guest offered ₹2,400 / Your price ₹2,000&quot; — an offer ₹100 <strong>under</strong> the ask, shown as ₹400 over</td>
+</tr>
+<tr>
+<td>5</td>
+<td>The guest&#39;s negotiation card</td>
+<td>&quot;Listed at ₹2,000/night&quot;, directly above the stay dates</td>
+</tr>
+<tr>
+<td>6</td>
+<td>&quot;for your dates · listed at ₹2,000/night&quot;</td>
+<td>Named the one price that was <strong>not</strong> the list price for those dates</td>
+</tr>
+<tr>
+<td>7</td>
+<td>The app&#39;s offer sheet</td>
+<td>&quot;Listed at ₹900 / night&quot; and a client-side refusal, on nights costing ₹1,200</td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>The counter-back verdict</strong></td>
+<td><strong>Accepted ₹850 on a stay whose accept line was ₹1,050 — the host sold a night ₹200 under what they would have agreed to, and was never asked</strong></td>
+</tr>
+</tbody></table>
+<p>Only the last one cost money. It was found by driving the Android suite: the
+guest opened at ₹900, was correctly answered ₹1,050 from the dated tiers, and
+then countered back at ₹850 — which clears the <strong>flat</strong> ideal of ₹850 and was
+taken on the spot. Every other number in that thread was already dated, so the
+two halves of one negotiation were working from two different sets of numbers.</p>
+<p>The underlying cause was that the derivation lived inline inside <code>submitOffer</code>,
+where only <code>submitOffer</code> could reach it. It is now <code>tiersForDates()</code>, and
+everything asks it.</p>
+<h1>Appendix B — What changed on 12 September</h1>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Before</th>
+<th>Now</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Rounds</td>
+<td>Three offers per guest per stay, then the thread closed</td>
+<td>No limit. A thread runs until it is settled</td>
+</tr>
+<tr>
+<td>An automatic acceptance</td>
+<td>Wrote the guest&#39;s message and no answer, so accepted offers read as a column of unanswered messages</td>
+<td>Writes both sides, labelled so the host knows which words are theirs</td>
+</tr>
+<tr>
+<td>Message labels</td>
+<td>By direction alone — &quot;You declined ₹650&quot; on the screen of the person who had been declined</td>
+<td>By what happened to the message. One rule, four screens</td>
+</tr>
+<tr>
+<td>A decline</td>
+<td>Thread closed, guest left with nothing</td>
+<td>The host&#39;s last price for one hour, locked to those nights, and the day closed to further offers</td>
+</tr>
+<tr>
+<td>A held deal</td>
+<td>The offer button stayed live and the server refused the form afterwards</td>
+<td>Greyed, with the reason and what to do instead</td>
+</tr>
+<tr>
+<td>Prices</td>
+<td>The flat nightly column, while the offer was judged against the dates</td>
+<td>Everything is the figure for the nights being argued over</td>
+</tr>
+<tr>
+<td>Notifications</td>
+<td>Sat silently in the bell, which only moved on a 60-second poll</td>
+<td>A popup on any screen, an email, and a push — the instant it happens</td>
+</tr>
+<tr>
+<td>Emails about offers</td>
+<td>Selected a column that does not exist; threw on every offer, in silence</td>
+<td>Sent, and read at the address the account actually uses</td>
+</tr>
+<tr>
+<td>The acceptance wording</td>
+<td>&quot;That is at or above what the host will take&quot;</td>
+<td>Says the host agreed and the booking can go ahead — nothing about where the line sits</td>
+</tr>
+<tr>
+<td>Notification preferences</td>
+<td>One switch wrote <code>push</code> only; email went out regardless</td>
+<td>One switch, both interrupting channels</td>
+</tr>
+</tbody></table>
+<hr>
+<h1>Appendix C — Where the code is</h1>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>File</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Guest notification choke point</td>
+<td><code>utils/methods.js</code> → <code>sendNotification</code>, <code>pushToUser</code></td>
+</tr>
+<tr>
+<td>Host/admin choke point</td>
+<td><code>models/tbl_notifications.js</code> → <code>notify</code></td>
+</tr>
+<tr>
+<td>Category rules</td>
+<td><code>utils/notificationCategory.js</code></td>
+</tr>
+<tr>
+<td>Preferences</td>
+<td><code>utils/notificationPrefs.js</code></td>
+</tr>
+<tr>
+<td>Notification email</td>
+<td><code>utils/notificationEmail.js</code></td>
+</tr>
+<tr>
+<td>Email destination</td>
+<td><code>utils/notificationRoute.js</code></td>
+</tr>
+<tr>
+<td>Recipient address</td>
+<td><code>utils/userContact.js</code></td>
+</tr>
+<tr>
+<td>Socket transport</td>
+<td><code>utils/liveChannel.js</code>, <code>sockets/index.js</code></td>
+</tr>
+<tr>
+<td>Web socket singleton</td>
+<td><code>src/redesign/lib/liveNotifications.ts</code></td>
+</tr>
+<tr>
+<td>Web popup</td>
+<td><code>src/redesign/components/LiveNotifications.tsx</code></td>
+</tr>
+<tr>
+<td>The decision engine</td>
+<td><code>services/negotiationEngine.js</code></td>
+</tr>
+<tr>
+<td>Tiers, offers, locks</td>
+<td><code>services/negotiationService.js</code></td>
+</tr>
+<tr>
+<td>Offer expiry sweep</td>
+<td><code>services/negotiationExpiry.js</code></td>
+</tr>
+<tr>
+<td>Coupon minting</td>
+<td><code>utils/negotiationCoupon.js</code></td>
+</tr>
+<tr>
+<td>Host responses</td>
+<td><code>controllers/host.controller.js</code></td>
+</tr>
+<tr>
+<td>Guest responses</td>
+<td><code>controllers/user.controller.js</code></td>
+</tr>
+<tr>
+<td>Message labels (web)</td>
+<td><code>src/redesign/lib/negotiationLabels.ts</code></td>
+</tr>
+<tr>
+<td>Message labels (app)</td>
+<td><code>lib/utils/transcript_label.dart</code></td>
+</tr>
+<tr>
+<td>Offer ceiling (web / app)</td>
+<td><code>src/redesign/lib/offerCeiling.ts</code> · <code>lib/utils/offer_ceiling.dart</code></td>
+</tr>
+<tr>
+<td>The lock (app)</td>
+<td><code>lib/models/single_property_response.dart</code> → <code>NegotiationLock</code></td>
+</tr>
+</tbody></table>
+<hr>
+<p><em>Prepared 12 September 2026 by the Zyphex Tech development team. Every rule
+stated here is the behaviour of the code deployed to <a href="http://www.aajoohomes.com">www.aajoohomes.com</a> and
+build 81 of the Android app on that date, verified by driving the live site and
+a real device rather than by reading the source alone.</em></p>
+
+</body></html>
