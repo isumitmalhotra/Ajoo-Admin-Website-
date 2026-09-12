@@ -22,7 +22,18 @@ class HostOnGoingBookingResponse {
     factory HostOnGoingBookingResponse.fromJson(Map<String, dynamic> json) => HostOnGoingBookingResponse(
         success: json["success"],
         message: json["message"],
-        data: Data.fromJson(json["data"]),
+        // `data` is an empty ARRAY when there is nothing to send.
+        //
+        // Every response on this API comes from one helper whose signature
+        // ends `data = []`, so a handler that returns early without a payload
+        // sends `data: []` while its populated answer sends an object. Both
+        // are 200 with success:true. Calling Data.fromJson on the array threw
+        // `List<dynamic> is not a subtype of Map<String, dynamic>`, so having
+        // none looked exactly like a failed request -- which is the one
+        // distinction the backend added that branch to make.
+        data: Data.fromJson(json["data"] is Map<String, dynamic>
+            ? json["data"] as Map<String, dynamic>
+            : const <String, dynamic>{}),
     );
 
     Map<String, dynamic> toJson() => {
@@ -44,9 +55,13 @@ class Data {
     });
 
     factory Data.fromJson(Map<String, dynamic> json) => Data(
-        totalcount: json["totalcount"],
-        records: json["records"],
-        bookings: List<Booking>.from(json["bookings"].map((x) => Booking.fromJson(x))),
+        totalcount: (json["totalcount"] as num?)?.toInt() ?? 0,
+        records: (json["records"] as num?)?.toInt() ?? 0,
+        // No bookings is a number, not a missing answer.
+        bookings: json["bookings"] is List
+            ? List<Booking>.from(
+                (json["bookings"] as List).map((x) => Booking.fromJson(x)))
+            : <Booking>[],
     );
 
     Map<String, dynamic> toJson() => {
