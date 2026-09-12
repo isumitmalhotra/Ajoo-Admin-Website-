@@ -2,12 +2,13 @@
 
 > **Reconciled 2026-09-04** against the live site, the live database and the three
 > repos; **updated 2026-09-05** after tester builds 14–16, the proactive defect
-> sweep, and a fresh set of DB counts; **updated 2026-09-13** with §8a19–8a23 — the negotiation
+> sweep, and a fresh set of DB counts; **updated 2026-09-13** with §8a19–8a24 — the negotiation
 > rebuild, the home page's card sections, cash at the door, the booking-confirmed
 > redesign, the app's inability to read its own API, a draft that reached public search,
 > and the Cloudinary sweep that took 111 personal records off public delivery.
-> §2.8 now carries **AWS Days 1–5** — the whole platform as Terraform, a deploy
-> pipeline that holds no AWS key at all, and the cutover runbook.
+> §8a24 and §2.8 carry **AWS Days 1–5** — the whole platform as Terraform, a
+> deploy pipeline that holds no AWS key at all, and the cutover runbook. None of
+> it is applied: the account is still unverified, and the block is compute.
 > Supersedes the 2026-07-11 edition, which had drifted badly — nine of its open
 > items were already done and two of its "done" claims were wrong.
 >
@@ -241,6 +242,119 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a24. Written 2026-09-13 — the whole platform as Terraform, and not one line of it applied
+
+**This entry is in section 8 for one reason: do not redo it.** Nothing here
+is live. §2.8 stays OPEN and stays blocked, on AWS rather than on us.
+
+The client chose `ap-south-1` and **Terraform over clicking in a console**,
+and all five days of `AWS_MIGRATION_PLAN_2026-09-11.md` were written in one
+sitting at `infra/terraform/` — VPC, three chained security groups, two
+shared ECR repositories, RDS MySQL 8, ACM, an ALB with host-based routing,
+an ECS cluster, two services, CloudFront with its own us-east-1
+certificate, a staging workspace, the deploy pipelines and the cutover.
+
+*Three shape decisions worth not re-litigating.* **Exactly one API task** —
+the rate limiter, the SEO cache, the scheduler and Socket.io all hold state
+in the process, so a second task is not more capacity, it is two platforms
+disagreeing. **An ALB rather than API Gateway**, because Socket.io needs
+real WebSockets. **No NAT gateway** — tasks sit in public subnets with a
+security group that admits the ALB and nothing else, which is the same
+isolation for ~$35/month less.
+
+*And one refusal.* Terraform creates the database password into SSM and
+then **deliberately does not create the other secrets with placeholders**.
+`/health/env` reports which required names are SET, and a placeholder is
+set: the deploy would go green on a `JWT_SECRET` of "REPLACE_ME" and the
+first guest to log in would find out. An operator supplies them from a file
+only they hold (`infra/scripts/put-parameters.sh`), and `terraform plan`
+fails BY NAME if one of the four it cannot invent is missing.
+
+**Day 4 — a deploy path with no standing credential.** GitHub is registered
+as an OIDC provider, so there is no AWS access key in either repository to
+leak or to rotate. The trust policy matches the `sub` claim exactly —
+repository AND `refs/heads/main`, `StringEquals` on a two-item list rather
+than `repo:owner/*`, because the wildcard would trust every repository that
+owner ever creates. `iam:PassRole` is pinned to the two task roles;
+unscoped, that one statement is the usual way a CI pipeline quietly becomes
+an account administrator. Seven alarms, of which one matters: **zero running
+tasks**, with missing data treated as breaching, because at one task there
+is no partial failure and a service with no tasks publishes no metric —
+silence *is* the outage. `cpu_architecture` became a variable (X86_64) where
+two task definitions had ARM64 written in, because that mismatch does not
+fail at build time: it fails at task start with "exec format error", which
+reads like a corrupt image rather than a mismatched one.
+
+The website pipeline passes **all ten** `VITE_*` build args the Dockerfile
+declares. An image built with the other nine empty is not "missing
+configuration" — it is a finished site with no map, no payment gateway and
+no push notifications, and nothing says so until somebody opens it.
+
+**Day 5 — and the correction it exists to make.** The plan says "rollback is
+DNS". That is true about the stack and false about the data: the moment AWS
+takes one write the two databases have diverged, and rolling back means
+returning to the old one as it was at the freeze. So there are two windows —
+a free one that ends at the **first write**, and the seven-day watch, which
+is not free at all — and the go/no-go gate therefore sits INSIDE the freeze,
+before users are let in, not after a day of watching.
+`CUTOVER_RUNBOOK_2026-09-13.md` is built around that, with reversibility
+marked per step.
+
+The copy runs as a one-off Fargate task, default off. Not a preference: RDS
+is private and admits 3306 from the tasks security group alone, so a task in
+the VPC is the only thing in the world that can write to it. It gives the
+right answer anyway — the alternative leaves a file containing every guest's
+KYC, every host's bank account and every booking in somebody's downloads
+folder. Two failure modes in the copy script both **report success** if you
+let them: missing `set -o pipefail` (a dump that dies half way still feeds
+valid SQL to the target, which applies it and exits 0), and un-stripped
+`DEFINER` clauses (the restore fails near the END, after the data has
+loaded, which reads like "only the last bit failed" and is how a platform
+ends up with no triggers). Verification counts rows with `COUNT(*)`, never
+`information_schema.table_rows` — an estimate that passes on a half-copied
+database — and checks the schema character set, because arriving as `latin1`
+does not fail: it stores every Devanagari name as mojibake and nobody
+notices until a host cannot find their own listing.
+
+*Three facts checked rather than assumed, each of which changed the plan:*
+**DNS is hosted at Vercel** (`ns1/ns2.vercel-dns.com`), so "decommission
+Vercel" would take the website, the API and the MX records with it — moving
+the zone is a prerequisite nobody had written down. **Every installed APK
+has `aajaodev.onrender.com` compiled in** by `--dart-define`, with no
+fallback in a release build, so switching Render off breaks every tester's
+app outright; the exit criterion is "no requests on that hostname for 48
+hours" off Render's own logs, not a date. And **`api.aajoohomes.com` already
+points at Vercel and answers 404** — a record to CHANGE, and an APK built
+against it today passes the app's own `isConfigured` check and then fails
+every call. Three things are genuinely unaffected, which is worth knowing
+because they look otherwise: mail (Brevo HTTP on 443, not SMTP from our IP),
+the Google Maps referrer restrictions, and `ALLOWED_ORIGINS` — all keyed on
+`www.aajoohomes.com`, which does not change.
+
+*One defect found on the way and fixed.* `src/configs/apiConfigs.ts` falls
+back to the Render API when `VITE_API_BASE_URL` is empty — correct today,
+and a trap once a second place can build the site: an unset repository
+variable would ship a CloudFront site writing to the OLD database, with both
+halves looking healthy. Not an outage, two live copies of the business
+diverging quietly. The pipeline now refuses to build, pinned by
+`tests/theApiHostIsNeverGuessed.test.mjs`, which also asserts every `ARG
+VITE_*` is actually passed. Both deploy jobs are additionally guarded on
+`AWS_DEPLOY_ROLE` being set, so until AWS exists they run the tests and skip
+deploying rather than failing red on every commit — a pipeline that is
+always red is a pipeline nobody reads.
+
+**Blocked, and precisely on what.** Signed in, **CloudShell refuses: "Your
+account verification is in progress"**. A probe narrowed it — one free ECR
+repository created and deleted immediately, and it worked — so **the block
+is COMPUTE, not the account**: RDS, Fargate and the ALB are what is gated,
+which is the detail that belongs in the support case. The account is 48h+
+old against AWS's own "up to 24 hours", so it is stuck rather than slow. Two
+things only ROOT can do: flip "IAM user and role access to billing
+information" (still off — which is why nobody can read the verification
+state from `sumit`), and raise a free **Account and billing › Account ›
+Activation** case. Written up for forwarding as
+`AWS_ACCESS_AND_ACTIVATION_2026-09-13.md` / `Aajoo-AWS-Access-and-Activation.pdf`.
 
 ### 8a23. Closed 2026-09-13 — a draft on the public site, and a media account nobody owned
 
@@ -1073,3 +1187,9 @@ Detailed context: `Delivery_Delay_Analysis_2026-09-05.docx` (why the date slippe
 · `AAJOO_SECTION0_TASKLIST.md` · `CONTRACT_COMPLIANCE_CHECK.md` ·
 `CLIENT_INPUTS_REQUIRED.md` · `RENDER_ENV_CHECKLIST.md` · `PAYOUTS_SETUP.md` ·
 latest `SESSION_HANDOFF_*.md`.
+
+AWS, in reading order: `AWS_MIGRATION_PLAN_2026-09-11.md` (what and why, for the
+client) · `infra/terraform/README.md` (what each day built, and the traps in it)
+· `CUTOVER_RUNBOOK_2026-09-13.md` (the day itself) ·
+`AWS_ACCESS_AND_ACTIVATION_2026-09-13.md` (what is blocked and who can unblock
+it — written to be forwarded).
