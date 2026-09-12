@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>AWS — what is blocking the migration, and what only you can unblock</title>
+<style>
+  @page { size: A4; margin: 20mm 17mm 22mm; }
+
+  :root {
+    --navy: #1B2447;
+    --teal: #0F766E;
+    --ink:  #1F2937;
+    --muted:#5B6472;
+    --line: #D9DEE7;
+    --soft: #F4F6F9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: #fff;
+    /* Cambria before Georgia deliberately: Georgia ships OLD-STYLE figures, so
+       "six P0s" reads as "six Pos" and every number sits at a different
+       height. This document is full of IDs and money. Cambria has lining
+       figures and prints just as well. */
+    font-family: Cambria, "Palatino Linotype", Georgia, "Times New Roman", serif;
+    font-variant-numeric: lining-nums;
+    font-size: 10.4pt;
+    line-height: 1.58;
+    color: var(--ink);
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---- cover ------------------------------------------------------- */
+  .cover { page-break-after: always; padding-top: 58mm; }
+  .cover .rule { width: 54px; height: 4px; background: var(--teal); margin-bottom: 22px; }
+  .cover h1 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    font-size: 27pt; line-height: 1.2; color: var(--navy);
+    margin: 0 0 16px; font-weight: 600; letter-spacing: -0.4px;
+  }
+  .cover .sub { font-size: 11.5pt; color: var(--muted); margin: 0 0 40px; max-width: 118mm; }
+  .cover .meta {
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 9pt;
+    color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px;
+  }
+  .cover .meta strong { color: var(--navy); font-weight: 600; }
+
+  /* ---- headings ---------------------------------------------------- */
+  h2, h3, h4 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    color: var(--navy); font-weight: 600; page-break-after: avoid;
+  }
+  h2 {
+    font-size: 15pt; margin: 26px 0 12px; padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--line); letter-spacing: -0.2px;
+  }
+  h3 {
+    font-size: 11.4pt; margin: 18px 0 7px; color: var(--teal);
+    letter-spacing: .1px;
+  }
+  h4 { font-size: 10.6pt; margin: 14px 0 6px; }
+
+  p { margin: 0 0 10px; orphans: 3; widows: 3; }
+
+  /* ---- lists ------------------------------------------------------- */
+  ul, ol { margin: 0 0 11px; padding-left: 20px; }
+  li { margin-bottom: 5px; }
+  li > ul, li > ol { margin-top: 5px; }
+
+  /* ---- emphasis & code --------------------------------------------- */
+  strong { color: var(--navy); font-weight: 700; }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 8.7pt; background: var(--soft);
+    border: 1px solid var(--line); border-radius: 3px;
+    padding: 0.5px 4px; color: #33405A;
+    /* long identifiers must not push the page sideways */
+    word-break: break-word;
+  }
+  pre { background: var(--soft); border: 1px solid var(--line); border-radius: 5px;
+        padding: 10px 12px; overflow-x: auto; page-break-inside: avoid; }
+  pre code { border: 0; background: none; padding: 0; font-size: 8.6pt; }
+
+  /* ---- tables ------------------------------------------------------ */
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 16px;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.7pt;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }   /* repeat header across pages */
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  th {
+    background: var(--navy); color: #fff; text-align: left; font-weight: 600;
+    padding: 7px 9px; border: 1px solid var(--navy); line-height: 1.35;
+  }
+  td {
+    padding: 6px 9px; border: 1px solid var(--line); vertical-align: top;
+    line-height: 1.45;
+  }
+  tbody tr:nth-child(even) td { background: #FAFBFD; }
+  td code { font-size: 8.1pt; }
+
+  /* ---- callouts ---------------------------------------------------- */
+  blockquote {
+    margin: 14px 0; padding: 10px 14px;
+    background: #F2F8F7; border-left: 3px solid var(--teal);
+    page-break-inside: avoid;
+  }
+  blockquote p { margin: 0 0 6px; }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  /* ---- screenshots -------------------------------------------------- */
+  /* A screenshot is evidence, so it is framed like one: a hairline border
+     so the page edge is visible against white, and never split across a
+     page break, because half a screen proves nothing. */
+  img {
+    display: block; max-width: 100%; height: auto; margin: 10px auto 4px;
+    border: 1px solid var(--line); border-radius: 5px;
+    page-break-inside: avoid;
+  }
+  /* Markdown puts a lone image in its own paragraph; the alt text follows
+     as the caption. */
+  p > img + em, p > em:only-child {
+    display: block; text-align: center;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.2pt;
+    color: var(--muted); font-style: normal; margin-top: 2px;
+  }
+  p:has(> img) { page-break-inside: avoid; margin: 14px 0 18px; }
+
+  /* The cover meta and the first paragraph of the body were touching. */
+  .cover { margin-bottom: 26px; }
+
+  hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+
+  /* Keep a section heading with the text that follows it. */
+  h2 + p, h3 + p, h2 + table, h3 + table, h2 + ul, h3 + ul { page-break-before: avoid; }
+</style></head>
+<body>
+  <section class="cover">
+    <div class="rule"></div>
+    <h1>AWS — what is blocking the migration, and what only you can unblock</h1>
+    <p class="sub">Two owner-only blockers are holding the AWS move. The infrastructure for the first three days is written and waiting on them.</p>
+    <div class="meta">
+      <strong>Aajoo Homes &mdash; AWS migration</strong><br>
+      Prepared 13 September 2026 by the Zyphex Tech development team<br>
+      Findings checked in the live AWS console on 13 September, including a free resource created and deleted to establish exactly what the account can and cannot do
+    </div>
+  </section>
+  <p><strong>13 September 2026</strong> · Account <strong>aajoo homes</strong> · Region <strong>ap-south-1 (Mumbai)</strong></p>
+<p>This is a short list of things that can only be done by the account owner. The
+migration work itself is written and waiting; none of it can run until the two
+items in §1 and §2 are cleared.</p>
+<h2>In one paragraph</h2>
+<p>The AWS account cannot yet launch the services the platform needs, and the
+signed-in user cannot see why, because the two pages that would explain it are
+closed to everyone except the account&#39;s root login. Both are owner-only fixes
+and neither is technical work. Everything on our side — the full infrastructure
+for the first three days of the migration — is already written and reviewed,
+and sits waiting on them.</p>
+<hr>
+<h2>1. The account is still being verified by AWS — and it is overdue</h2>
+<p>Signing in and trying to use the account shows:</p>
+<blockquote>
+<p><em>&quot;Unable to create the environment. Your account verification is in progress.
+This may take up to two days for new accounts.&quot;</em></p>
+</blockquote>
+<p><strong>What we tested, so this is not a guess.</strong> On 13 September we created one free
+resource (a container registry) and deleted it immediately afterwards. It
+worked. That tells us something useful:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Container registry — created and deleted successfully</td>
+<td><strong>Works</strong></td>
+</tr>
+<tr>
+<td>CloudShell, which starts a small compute instance</td>
+<td><strong>Blocked</strong></td>
+</tr>
+</tbody></table>
+<p>So the account is <strong>not</strong> frozen across the board. The block is on the
+<strong>compute</strong> family of services — and that is precisely the family the platform
+needs: the database (RDS), the application containers (ECS Fargate) and the
+load balancer.</p>
+<p><strong>Why this is now overdue.</strong> AWS&#39;s own guidance is that activation usually
+takes a few minutes and up to 24 hours. This account was created on 9
+September, so it is well past that. Waiting longer is unlikely to change
+anything.</p>
+<h3>What to do</h3>
+<p><strong>a) Check the usual causes first</strong> (signed in as the <strong>root</strong> user):</p>
+<ol>
+<li><strong>Payment method.</strong> <em>Billing → Payment preferences.</em> AWS places a small
+verification charge on the card. In India this is the most common reason
+activation stalls — many cards need <strong>international transactions</strong> enabled,
+or an <strong>e-mandate</strong> approved in the bank&#39;s app, before that charge succeeds.</li>
+<li><strong>The root account&#39;s mailbox.</strong> AWS frequently emails asking to confirm
+identity, address or a phone number, and then simply waits. If that email is
+unanswered, nothing will move.</li>
+<li><strong>Phone verification</strong> completed at signup.</li>
+</ol>
+<p>Any of those, fixed, often clears the account within the hour.</p>
+<p><strong>b) If they are all in order, raise a case.</strong> It is free, even on the Basic
+support plan, and must be done from the <strong>root</strong> login:</p>
+<blockquote>
+<p><strong>Support → Create case → Account and billing → Service: Account →
+Category: Activation</strong></p>
+</blockquote>
+<p>Include: the account ID, that the account was created on 9 September, that
+CloudShell reports <em>&quot;account verification is in progress&quot;</em>, and that container
+registry creation succeeds while compute does not. That last detail helps them
+find it quickly.</p>
+<hr>
+<h2>2. Billing and account pages are closed to every user except root</h2>
+<p>The second blocker looks like a permissions bug and is not one. Opening
+<strong>Account</strong> or <strong>Payment preferences</strong> shows:</p>
+<blockquote>
+<p><em>&quot;You don&#39;t have the <code>account:GetAccountInformation</code> and
+<code>billing:GetSellerOfRecord</code> permission required to view your account
+settings. Ask your administrator to add these permissions.&quot;</em></p>
+</blockquote>
+<p><strong>Adding permissions will not fix this.</strong> We checked: the user already holds
+<code>AdministratorAccess</code>, which includes those actions. AWS puts the billing and
+account consoles behind a separate switch that <strong>only the root user can turn
+on</strong>, and it is currently off.</p>
+<p>Until it is on, nobody except root can see the account status, the payment
+method, the bill, or set up a spending alert — which is also why nobody on this
+side can tell you how the verification is progressing.</p>
+<h3>What to do</h3>
+<p>Signed in as <strong>root</strong>:</p>
+<blockquote>
+<p><strong>Account menu (top right) → Account → &quot;IAM user and role access to billing
+information&quot; → Edit → tick Activate IAM Access → Update</strong></p>
+</blockquote>
+<p>One switch, once. Nothing else changes.</p>
+<hr>
+<h2>3. Two more things worth doing in the same sitting</h2>
+<p>Neither blocks the migration; both are cheap now and awkward later.</p>
+<p><strong>A spending alert.</strong> The account carries promotional credits, and a budget
+with an email alert is how an accident in a new account does not become a
+surprise bill. It needs the switch in §2 first, which is why they are best done
+together. <em>Billing → Budgets → Create budget</em>, monthly, with a figure you are
+comfortable with.</p>
+<p><strong>Multi-factor authentication on the day-to-day user.</strong> MFA has now been added
+to the root login — good, and the most important one. The working user
+(<code>sumit</code>) still has console access without it, and that user holds full
+administrative rights.</p>
+<hr>
+<h2>What is already done and waiting</h2>
+<p>So that the position is clear: the delay is not on the build side.</p>
+<ul>
+<li><strong>Day 1</strong> — network, security groups, container registries, MySQL database</li>
+<li><strong>Day 2</strong> — certificate, load balancer, container cluster, the API service,
+and the environment-variable handling</li>
+<li><strong>Day 3</strong> — the website service, the CDN, and a separate staging environment</li>
+</ul>
+<p>All of it is written as code (Terraform), reviewed, and committed. It is
+deliberately written rather than clicked together in the console, so that it
+can be re-run, inspected, and handed over to whoever operates the platform
+later. The moment AWS releases the account it can be applied in a single
+session.</p>
+<p>Three decisions are still open and will be needed around the same time:</p>
+<ol>
+<li><strong>DNS</strong> — whether <code>aajoohomes.com</code> moves to AWS Route 53 or stays with the
+current registrar. Either works; the first makes the switchover cleaner.</li>
+<li><strong>Who owns the AWS console</strong> after handover.</li>
+<li><strong>Expected traffic in six months</strong> — this sizes the database. At today&#39;s
+volumes the smallest instance is ample.</li>
+</ol>
+<hr>
+<h2>Summary of actions</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Action</th>
+<th>Who</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Confirm the payment card has authorised</td>
+<td>Account owner</td>
+<td>Root → Billing → Payment preferences</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Check the root mailbox for an AWS verification request</td>
+<td>Account owner</td>
+<td>Email</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Raise a free <em>Account and billing → Activation</em> support case</td>
+<td>Account owner</td>
+<td>Root → Support</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Turn on <strong>IAM access to billing information</strong></td>
+<td>Account owner</td>
+<td>Root → Account</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Create a monthly budget with an email alert</td>
+<td>Account owner</td>
+<td>Billing → Budgets (after 4)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Add MFA to the working user</td>
+<td>Either</td>
+<td>IAM → Users</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Answer the three open decisions above</td>
+<td>Client</td>
+<td>—</td>
+</tr>
+</tbody></table>
+<p>Items 1 to 3 are the ones that unblock everything else.</p>
+
+</body></html>
