@@ -11,13 +11,14 @@
 > **Repos:** FE `D:/Projects/aajao-frontend-vercel` (React/Vite → Vercel) ·
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
-> Current app build: **81 (1.0.0+81)**, built and driven on the emulator 2026-09-12,
-> sha256 `4b25f541…c8424`, at `aajoo_app_2026/build/app/outputs/flutter-apk/app-release.apk`.
-> **It has NOT been named and copied to the repo root, so no tester is holding it** — the newest
-> named artifact there is `aajoo-homes-1.0.0-build60-release.apk`, and the last build actually
-> circulated was **49** (2026-09-08, sha256 `83c6d4d5…7ab9b5`). Publishing 81 is §3.15.
-> All of them point at `aajaodev.onrender.com` with the sandbox Razorpay key — the platform is
-> still in test mode, so a QA build is the only honest one.
+> Tester build in circulation: **81 (1.0.0+81)**, `aajoo-homes-1.0.0-build81-release.apk` at repo root
+> (2026-09-12, sha256 `4b25f541…c8424`, versionCode 81, 96 MB). Replaces **49**, which the tester
+> had been holding since 09-08 — every negotiation change from 09-12 is in 81 and none of it was in 49.
+> Read back with `python aajoo_app_2026/tool/verify_release_apk.py <apk> https://aajaodev.onrender.com
+> --allow-test-payments --expect-version=1.0.0+81`: the endpoint it was given is in it, no other
+> `*.onrender.com` host is, no developer path, no plain-http endpoint, and it carries its own
+> version string. Points at `aajaodev.onrender.com` with the sandbox Razorpay key — the platform
+> is still in test mode, so a QA build is the only honest one.
 > **The build number is internal and is not shown in the app** — Settings reads `Version 1.0.0`.
 > Identify a build from the artifact: its filename, its sha256, or
 > `adb shell dumpsys package com.aajoo.aajoohomes | grep versionCode`. Keep one number to one
@@ -46,7 +47,7 @@ work; sorting by owner is what makes that visible.
 |---|---|---|
 | [1. Client decisions](#1-blocked-on-client-decisions) | Client | 8 |
 | [2. Ops / Render access](#2-blocked-on-ops--render-access) | Whoever holds Render + GCP | 7 |
-| [3. Engineering](#3-engineering--genuinely-open) | Us | 15 |
+| [3. Engineering](#3-engineering--genuinely-open) | Us | 14 |
 | [4. Contract deliverables](#4-contract-deliverables-) | Us | 8 |
 | [5. Section-0 redo](#5-section-0-site-redo--separate-sow) | Blocked on a signed change order | 20 |
 | [6. Unproven, not broken](#6-unproven-not-broken) | Us + tester | 10 |
@@ -114,7 +115,7 @@ money and is not. The second gates every honest SEO number on the site.
 | **3.12** | **Leftovers from the sweep** | (a) Two screen-level empty catches remain in the app (`host_profile.dart:67`, `csc_picker.dart:750`); every *service* is clean. (b) `tbl_book_statuses` ids 12/13/14 double as payout-request states (`statusPayoutPending/Successfull/Failed` in `commonConfig`); 13 now counts as revenue by decision, but a booking table sharing ids with a payout table is a cleanup waiting to bite. | verified 09-05 — `flutter analyze`, `config/commonConfig.js` |
 | **3.13** | **The app hangs opening listing 29303 from the deal banner** | Tapping the parting-offer banner on build 81 sits on a modal spinner and never resolves. The same build opens other listings normally and the endpoint answers that listing in 2.5s from the same machine, so it is not the API. Leading suspicion is the `flutter_secure_storage` token read that precedes the HTTP call — the 30s `receiveTimeout` added on 09-12 covers the request and nothing covers the read before it. **This is what blocks the guest-side app verification of the dated 'Listed at' line and the greyed offer button** (§6). Diagnosing it needs a debug build, which means uninstalling the release APK and the user logging in again. | reproduced 09-12 on the emulator, twice |
 | **3.14** | **Listing 29303 is carrying test weekend rates I added** | Put there on 09-12 to prove the dated-price work, because only 14 of the catalogue's listings have weekend rates at all. Harmless — it is a test listing — but it makes 29303 a bad control for anything else, and the next person to look at its pricing will not know why a weekend costs more. Either revert it or write it down on the listing. | code 09-12 — `nightlyRates` rows |
-| **3.15** | **Build 81 has never left this machine** | Everything shipped on 09-12 on the app side — the greyed offer button, the host thread, the dated ceiling — is in a release APK that exists only at `aajoo_app_2026/build/app/outputs/flutter-apk/app-release.apk`. The tester is still holding **49**, from 09-08. Name it, copy it to the repo root, run `tool/verify_release_apk.py` against it, and hand it over — or nothing from today is being tested on a phone. | verified 09-12 — `sha256sum`, repo root listing |
+| ~~3.15~~ | ~~**Build 81 has never left this machine**~~ **CLOSED 2026-09-12** | Named, copied to the repo root as `aajoo-homes-1.0.0-build81-release.apk` and read back with `verify_release_apk.py` (endpoint present, no other `*.onrender.com`, no developer path, no plain-http, carries `1.0.0+81`); `aapt2 dump badging` says versionCode **81**, versionName **1.0.0**, `com.aajoo.aajoohomes`. sha256 `4b25f5410285f206c366181dcdf29714a89c14a89b73d8b8be188871bb1c8424`. **The tester had been on 49 since 09-08**, so none of the 09-12 negotiation work had ever been on a phone. Still unproven on a device: the two guest surfaces behind the deal banner (§3.13, §6). | verified 09-12 — `verify_release_apk.py` exit 0, `aapt2 dump badging`, `sha256sum` |
 
 ---
 
