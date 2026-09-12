@@ -4,6 +4,7 @@ import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/models/properties_response_model.dart';
 import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';
 import 'package:rent_home/ui/screens_renter/home/map/map_controller.dart';
+import 'package:rent_home/utils/modal_spinner.dart';
 
 /// Open a stay knowing only its id.
 ///
@@ -46,7 +47,10 @@ Future<void> openPropertyById(
     final userController = Get.find<UserController>();
     await userController.getProperty(propertyId);
     final resp = userController.property.value;
-    if (Get.isDialogOpen ?? false) Get.back();
+    // Not Get.back() -- see closeModalSpinner. getProperty toasts when it
+    // fails, and a bare Get.back() closes the TOAST and returns, leaving this
+    // barrierDismissible:false spinner up for good.
+    closeModalSpinner();
     final pd = resp?.data;
     if (pd == null) {
       Get.snackbar(errorTitle, 'Could not open this property. Please try again.',
@@ -103,7 +107,7 @@ Future<void> openPropertyById(
           dealPercent: dealPercent,
         ));
   } catch (_) {
-    if (Get.isDialogOpen ?? false) Get.back();
+    closeModalSpinner();
     Get.snackbar(errorTitle, 'Could not open this property. Please try again.',
         snackPosition: SnackPosition.TOP);
   } finally {

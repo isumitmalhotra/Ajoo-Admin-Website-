@@ -228,8 +228,21 @@ class SinglePropertyData {
       propertyHostId: _parseIntSafely(json['property_host_id']),
       propertyName: json['property_name'],
       propertyAddress: json['property_address'],
-      propertyLongitude: json['property_longitude'],
-      propertyLatitude: json['property_latitude'],
+      // A number as often as a string.
+      //
+      // property_latitude/longitude are floating-point columns, and whether
+      // the driver hands one back as `28.47938` or `"28.47938"` depends on how
+      // the row was written -- both shapes are live in tbl_properties right
+      // now. Assigned raw into a String? field, the numeric form threw
+      //   type 'double' is not a subtype of type 'String?'
+      // and listing 29303 could not be opened at all (2026-09-12).
+      //
+      // Stringified rather than retyped to double: every reader already runs
+      // double.tryParse over this, and toString() on the number the API sent is
+      // exactly the text the other rows carry, so the map pin does not move.
+      // Pinned by test/coordinates_are_not_always_strings_test.dart.
+      propertyLongitude: json['property_longitude']?.toString(),
+      propertyLatitude: json['property_latitude']?.toString(),
       propertyDesc: json['property_desc'],
       propertyPrice: json['property_price'],
       propertyMiniPrice: json['property_mini_price'],

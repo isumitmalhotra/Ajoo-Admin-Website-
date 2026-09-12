@@ -261,7 +261,15 @@ class PropertyService {
           success: false,
           message: "Failed to get property",
           data: SinglePropertyData());
-    } on Exception catch (e) {
+    } catch (e) {
+      // `catch`, not `on Exception catch`.
+      //
+      // The failure this method is most likely to hit is a payload it cannot
+      // parse, and that arrives as a TypeError -- an Error, not an Exception.
+      // `on Exception` walked straight past it, so a malformed listing came out
+      // of the service as a thrown Error instead of a failed response, and
+      // every caller had to guess what had happened. A listing this client
+      // cannot read is a failed load like any other.
       appLog(e);
       return SinglePropertyResponse(
           success: false,

@@ -2,6 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:rent_home/utils/modal_spinner.dart';
 // The controller registered in InitBinding — not lib/controller/auth_controller
 // .dart, which shares the class name. Get.find keys on the name, so importing
 // the wrong one type-casts the live instance to a class it is not.
@@ -216,9 +217,11 @@ class NotificationRoutingService extends GetxService {
       final userController = Get.find<UserController>();
       await userController.getProperty(int.parse(propertyId));
 
-      if (Get.isDialogOpen ?? false) {
-        Get.back(); // Close loading dialog
-      }
+      // The same spinner as the negotiated-deal banner's, and the same trap:
+      // getProperty toasts on failure, and a bare Get.back() closes the TOAST
+      // and returns -- leaving this barrierDismissible:false spinner up for
+      // good. See closeModalSpinner.
+      closeModalSpinner();
 
       final propertyResponse = userController.property.value;
       if (propertyResponse == null || propertyResponse.data == null) {
@@ -278,9 +281,7 @@ class NotificationRoutingService extends GetxService {
         'hostId': hostId,
       });
     } catch (e) {
-      if (Get.isDialogOpen ?? false) {
-        Get.back(); // Close loading dialog
-      }
+      closeModalSpinner();
 
       Get.snackbar(
         'Error',

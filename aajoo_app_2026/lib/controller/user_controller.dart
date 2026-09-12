@@ -197,6 +197,15 @@ class UserController extends GetxController {
     } catch (e) {
       appLog(e);
       isError.value = true;
+      // Empty the slot.
+      //
+      // `property` is ONE shared slot that five screens fetch into and then
+      // read back. Leaving the previous listing in it on a failure meant a
+      // caller could not tell a failed load from a successful one -- and the
+      // reads are `property.value?.data`, so the failure did not look like a
+      // failure: it looked like the stay the guest opened five minutes ago.
+      // Opening the wrong listing is worse than saying nothing loaded.
+      property.value = null;
       showSnackbar("Error", e.toString(), true);
     } finally {
       isLoading.value = false;
