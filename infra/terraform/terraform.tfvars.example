@@ -1,0 +1,6 @@
+# Copy to terraform.tfvars and edit. tfvars is gitignored.
+region = "ap-south-1"
+env    = "prod"
+
+# Decision 5 in the plan revisits this once expected traffic is known.
+# db_instance_class = "db.t4g.small"

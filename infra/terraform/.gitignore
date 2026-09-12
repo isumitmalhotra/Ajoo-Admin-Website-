@@ -1,0 +1,8 @@
+# State carries the RDS endpoint and, for some resources, secret values.
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
