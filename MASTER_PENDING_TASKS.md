@@ -48,7 +48,7 @@ work; sorting by owner is what makes that visible.
 | Section | Owner | Open |
 |---|---|---|
 | [1. Client decisions](#1-blocked-on-client-decisions) | Client | 7 |
-| [2. Ops / Render access](#2-blocked-on-ops--render-access) | Whoever holds Render + GCP | 6 |
+| [2. Ops / Render access](#2-blocked-on-ops--render-access) | Whoever holds Render + GCP | 7 |
 | [3. Engineering](#3-engineering--genuinely-open) | Us | 12 |
 | [4. Contract deliverables](#4-contract-deliverables-) | Us | 8 |
 | [5. Section-0 redo](#5-section-0-site-redo--separate-sow) | Blocked on a signed change order | 20 |
@@ -91,6 +91,7 @@ money and is not. The second gates every honest SEO number on the site.
 | **2.5** | **Credential rotation** | Deferred by instruction. Everything historic is in git history: DB password, Razorpay secret, Cloudinary secret, Gmail app password. | carried |
 | **2.6** | **Google Cloud budget alert** | Maps + Places keys are live and unmetered. | carried |
 | **2.7** | **Render Starter ($7/mo) + confirm Clever Cloud backups** | The API is on Render's free tier: 30–50 s cold starts hidden by a keep-alive ping, and a disk that is wiped on deploy (invoices are written there). Starter removes the sleep; Clever Cloud's backup schedule and retention should be confirmed in its dashboard before UAT — it is the only copy of the database. | verified — `KEEP_ALIVE_SETUP.md`; DB 43 MB on Clever Cloud |
+| **2.8** | **AWS — Day 1 is written and cannot be applied yet** | Client chose `ap-south-1` and **Terraform over console clicking** (2026-09-13). Day 1 of `AWS_MIGRATION_PLAN_2026-09-11.md` is committed at `infra/terraform/`: VPC, three chained security groups, two ECR repositories and RDS MySQL 8, with the master password generated into SSM so nobody ever types it. **Nothing is applied, and nothing can be:** signed into the account, **CloudShell refuses to start — "Your account verification is in progress. This may take up to two days for new accounts"**, and a new account under verification cannot reliably launch resources. The survey it did allow: **1 VPC (the default), 0 databases, 0 ECS clusters** — an empty account waiting on AWS, not on us. When it clears: `terraform init && terraform plan` and read the plan before applying, because the first apply creates a billable, durable database. Still open from §4 of the migration doc: the API hostname (it still answers **404**), DNS, who owns the console after handover, and expected traffic (sizes RDS). Credentials never come to us — GitHub OIDC preferred. | verified 09-13 — console survey as an IAM user; `infra/terraform/README.md` |
 
 > **On 2.2 —** the "not configured" message is raised inside the *approve*
 > handler, not on page load, so its absence from the Payout Queue proves nothing.
