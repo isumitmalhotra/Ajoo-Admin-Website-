@@ -5,7 +5,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/ui/screens_common/location_picker/location_permission_denied.dart';
 import 'package:rent_home/service/map_service.dart';
-
+
+
 import 'package:rent_home/utils/app_log.dart';
 class MapController extends GetxController {
   final RxBool isLoading = false.obs;
@@ -54,31 +55,97 @@ class MapController extends GetxController {
       // Leave it empty — the UI shows "Nearby".
     }
   }
+  /// Where the guest is, quickly, or the best answer available.
+  ///
+  /// Client, 2026-09-12: "propertys are not laoding and maps are not coming up
+  /// taking very long time". Two faults, and between them they describe that
+  /// exactly.
+  ///
+  /// ONE — the answer to "may we use your location?" was thrown away.
+  /// `permission` was read once, `requestPermission()` was called inside an
+  /// un-awaited `.then`, and the check below still tested the STALE value. So
+  /// on the first run after an install, a guest who tapped Allow got `null`
+  /// anyway: the screen said "Location permission denied" and the search ran
+  /// from this controller's hardcoded fallback in Delhi NCR, where there are no
+  /// listings. Empty home screen, on the one run that makes a first impression.
+  /// Reopening the app fixed it, which is why it reads as flaky rather than
+  /// broken.
+  ///
+  /// TWO — `getCurrentPosition()` was called with no time limit and the default
+  /// BEST accuracy, which asks the GPS chip for a fresh satellite fix. Indoors
+  /// that takes tens of seconds and sometimes never lands, and the whole home
+  /// screen is a grey shimmer until it does, because the map is not built until
+  /// this returns. A last known position is instant and is easily good enough
+  /// to put the map somewhere real and ask what is nearby; the fresh fix then
+  /// refines it. Eight seconds and medium accuracy for the case where there is
+  /// no last known position: a stay is found by the town it is in, not by the
+  /// metre.
   Future<Position?> getCurrentLocation() async {
-    final LocationPermission permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
-      await Geolocator.requestPermission().then((val) => {
-            if (val == LocationPermission.denied ||
-                val == LocationPermission.deniedForever)
-              {
-                Get.to(() => const LocationPermissionDeniedPage()),
-              }
-            else
-              {
-                // get current location
-                Geolocator.getCurrentPosition().then((value) => {
-                      currentPosition.value =
-                          LatLng(value.latitude, value.longitude)
-                    })
-              }
-          });
+      // Awaited, and the ANSWER is what the rest of this reads.
+      permission = await Geolocator.requestPermission();
     }
-    if (permission == LocationPermission.deniedForever ||
-        permission == LocationPermission.denied) {
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      Get.to(() => const LocationPermissionDeniedPage());
       return null;
     }
-    return await Geolocator.getCurrentPosition();
+
+    // Instant, and usually minutes old at worst.
+    final Position? last = await Geolocator.getLastKnownPosition().catchError(
+      (_) => null,
+    );
+    if (last != null) {
+      // Refine in the background. The map is already somewhere sensible, so a
+      // slow fix costs the guest nothing; if it lands and it is somewhere else,
+      // the screen catches up.
+      _refineLocation();
+      return last;
+    }
+
+    try {
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 8),
+        ),
+      );
+    } catch (_) {
+      // A fix we could not get in time is not an error worth a red screen —
+      // the caller falls back to the default centre and the guest can search.
+      return null;
+    }
   }
+
+  /// A better fix, if one arrives, after the screen has already drawn.
+  void _refineLocation() {
+    Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.medium,
+        timeLimit: Duration(seconds: 20),
+      ),
+    ).then((p) {
+      final moved = _metresBetween(currentPosition.value, p) > 2000;
+      currentPosition.value = LatLng(p.latitude, p.longitude);
+      resolveCurrentPlace();
+      // Re-search when the guest is somewhere materially different -- or when
+      // the first search found nothing at all.
+      //
+      // The second half matters more than it looks. A last known position can
+      // be hours old and a city away: the phone was last fixed at home, the
+      // guest is now somewhere else, and the answer to "what is near me" is an
+      // empty screen for a place they are not in. Searching twice for nothing
+      // is a wasted request; showing an empty home when there are stays around
+      // the corner is the complaint we are answering.
+      if (moved || properties.isEmpty) getProperties(p.latitude, p.longitude);
+    }).catchError((_) {
+      // No better answer than the one already on screen. Nothing to say.
+    });
+  }
+
+  static double _metresBetween(LatLng a, Position b) =>
+      Geolocator.distanceBetween(a.latitude, a.longitude, b.latitude, b.longitude);
 
   /// The stay the guest is searching for, held so it can travel.
   ///
