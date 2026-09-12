@@ -11,14 +11,13 @@
 > **Repos:** FE `D:/Projects/aajao-frontend-vercel` (React/Vite → Vercel) ·
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
-> Tester build in circulation: **84 (1.0.0+84)**, `aajoo-homes-1.0.0-build84-release.apk` at repo root
-> (2026-09-12, sha256 `9a477236…d919c2`, versionCode 84, 95.5 MB). **81, 82 and 83 were withdrawn
-> the same afternoon and their artifacts deleted** — 81 could not open some listings, 82 could not
-> put them in a search result, 83 turned an empty list into a failure (§3.13, §3.16, §3.18). All
-> four superseded **49**, which the tester had had since 09-08 and which contains none of the 09-12
-> negotiation work.
+> Tester build in circulation: **85 (1.0.0+85)**, `aajoo-homes-1.0.0-build85-release.apk` at repo root
+> (2026-09-12, sha256 `b75d451a…b3449e`, versionCode 85, 95.5 MB). **81…84 were withdrawn the same
+> day and their artifacts deleted** — 81 could not open some listings, 82 could not put them in a
+> search result, 83 turned an empty list into a failure, 84 predates the client's step-3 feedback
+> (§3.13, §3.16, §3.18, §3.19). All of them superseded **49**, which the tester had had since 09-08.
 > Read back with `python aajoo_app_2026/tool/verify_release_apk.py <apk> https://aajaodev.onrender.com
-> --allow-test-payments --expect-version=1.0.0+84`: the endpoint it was given is in it, no other
+> --allow-test-payments --expect-version=1.0.0+85`: the endpoint it was given is in it, no other
 > `*.onrender.com` host is, no developer path, no plain-http endpoint, and it carries its own
 > version string. Points at `aajaodev.onrender.com` with the sandbox Razorpay key — the platform
 > is still in test mode, so a QA build is the only honest one.
