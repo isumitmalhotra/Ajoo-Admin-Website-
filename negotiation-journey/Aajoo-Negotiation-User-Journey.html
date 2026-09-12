@@ -139,19 +139,21 @@
   <section class="cover">
     <div class="rule"></div>
     <h1>Negotiation Engine — Every Journey, Both Sides</h1>
-    <p class="sub">Every scenario in the negotiation engine, photographed on the live site — what the guest sees and what the host sees, side by side.</p>
+    <p class="sub">Every scenario in the negotiation engine, photographed on the live site after the 12 September rebuild &mdash; what the guest sees and what the host sees, side by side.</p>
     <div class="meta">
       <strong>Aajoo Homes &mdash; Negotiation engine</strong><br>
-      Prepared 9 September 2026 by the Zyphex Tech development team<br>
-      Every screen photographed on www.aajoohomes.com, driving the live flow
+      Prepared 12 September 2026 by the Zyphex Tech development team<br>
+      Every screen photographed on www.aajoohomes.com, driving the live flow with a real guest and a real host account
     </div>
   </section>
-  <p>This document walks the complete negotiation engine as it now runs on
-<strong><a href="http://www.aajoohomes.com">www.aajoohomes.com</a></strong>. Every screen in it is a photograph of the live site,
-taken while driving the real flow against a real listing with a real guest
-account and a real host account — nothing here is a mock-up or a design comp.</p>
-<p>Each scenario shows <strong>what the guest sees</strong> and, where the host is involved,
-<strong>what the host sees</strong> for the same moment.</p>
+  <p>This document walks the negotiation engine as it runs today on
+<strong><a href="http://www.aajoohomes.com">www.aajoohomes.com</a></strong>, after the rebuild of <strong>12 September 2026</strong>. Every screen
+in it is a photograph of the live site, taken while driving the real flow with a
+real guest account and a real host account. Nothing here is a mock-up.</p>
+<p>It replaces the 9 September edition. Section 15 lists what changed and why, so
+the two can be read against each other.</p>
+<p>Each scenario shows <strong>what the guest sees</strong> and, where a host is involved,
+<strong>what the host sees at the same moment</strong>.</p>
 <h2>1. The three prices</h2>
 <p>Every listing carries three prices. The host sets them once, in Step 4 of the
 listing wizard.</p>
@@ -164,7 +166,7 @@ listing wizard.</p>
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Maximum</strong> (list price)</td>
+<td><strong>List price</strong></td>
 <td><strong>The guest</strong> — it is the price on the page</td>
 <td>What the stay costs without negotiating</td>
 </tr>
@@ -182,31 +184,44 @@ listing wizard.</p>
 <blockquote>
 <p><strong>The rule everything else protects:</strong> a guest must never be able to work out
 the minimum. If they could, every guest would offer exactly that and the
-margin above it would be gone. Section 5 shows how the engine makes that
+margin above it would be gone. Section 6 shows how the engine makes that
 impossible rather than merely unlikely.</p>
 </blockquote>
+<h3>The prices are the ones for the nights being argued over</h3>
+<p>This is new since the last edition and it changes every number in the document.
+A listing&#39;s nightly column is what it costs on an ordinary night; weekend and
+seasonal rates make a particular night cost something else. <strong>Every figure in
+the engine is now the figure for the dates in the offer</strong> — the price the guest
+is shown, the ceiling an offer is measured against, the accept line, the
+counter, the discount the coupon carries, and both sides&#39; negotiation cards.</p>
 <p><strong>The listing used throughout</strong> — a real listing on the live site, so the
 numbers below are the numbers in the screenshots:</p>
 <table>
 <thead>
 <tr>
-<th>The listing</th>
-<th>Per night</th>
+<th>Aajoo Homes (Kharar)</th>
+<th>Nightly column</th>
+<th><strong>12–13 September</strong> (a weekend night)</th>
 </tr>
 </thead>
 <tbody><tr>
 <td>List price</td>
-<td><strong>₹2,000</strong></td>
+<td>₹2,000</td>
+<td><strong>₹2,500</strong></td>
 </tr>
 <tr>
 <td>Ideal</td>
-<td><strong>₹1,700</strong></td>
+<td>₹1,700</td>
+<td><strong>₹2,300</strong></td>
 </tr>
 <tr>
 <td>Minimum</td>
-<td><strong>₹1,500</strong></td>
+<td>₹1,500</td>
+<td><strong>₹2,000</strong></td>
 </tr>
 </tbody></table>
+<p><img src="shots/n1-rail.png" alt="The listing as a guest finds it"></p>
+<p><em>The booking rail before anything has been offered. The headline is ₹2,500 because these dates are a weekend — and it says so, rather than leaving a guest to wonder why the page disagrees with the search results. &quot;Send an Offer — negotiate and save more&quot; sits under &quot;Book Now&quot;: negotiating is offered, never forced.</em></p>
 <hr>
 <h2>2. The decision, in one table</h2>
 <table>
@@ -218,39 +233,49 @@ numbers below are the numbers in the screenshots:</p>
 </tr>
 </thead>
 <tbody><tr>
-<td>Above ₹2,000 (the list price)</td>
-<td>Refused — there is nothing to negotiate upward</td>
+<td>Above ₹2,500 (what these nights cost)</td>
+<td>Refused before it is sent, with that figure named</td>
 <td>No</td>
 </tr>
 <tr>
-<td><strong>₹1,700 or more</strong> (at or above the ideal)</td>
+<td><strong>₹2,300 or more</strong> (at or above the ideal)</td>
 <td><strong>Accepted instantly, at the price they offered</strong></td>
 <td>Told, not asked</td>
 </tr>
 <tr>
-<td>Below ₹1,700</td>
-<td><strong>Countered instantly</strong>, between the ideal and the list price</td>
+<td>Below ₹2,300</td>
+<td><strong>Answered instantly</strong>, between the ideal and the list price</td>
 <td>No</td>
 </tr>
 <tr>
-<td>Below ₹1,500 (under the minimum)</td>
-<td>Countered the same way — no difference the guest can detect</td>
+<td>Below ₹2,000 (under the minimum)</td>
+<td>Answered the same way — no difference the guest can detect</td>
 <td>No</td>
 </tr>
 <tr>
-<td><em>…guest accepts the counter</em></td>
-<td>Deal struck, discount code issued, valid until midnight</td>
+<td><em>…guest accepts that answer</em></td>
+<td>Deal struck, discount code issued, locked to those nights</td>
 <td>Told</td>
 </tr>
 <tr>
-<td><em>…guest counters back, below the ideal</em></td>
-<td><strong>Goes to the host</strong> — email, and a notification on web and app</td>
-<td><strong>Asked</strong>, with 90 seconds before the guest is told they are away</td>
+<td><em>…guest names another price, still below the ideal</em></td>
+<td><strong>Goes to the host</strong> — a popup, an email, and a push notification</td>
+<td><strong>Asked</strong></td>
 </tr>
 <tr>
-<td><em>…guest counters back, at or above the ideal</em></td>
+<td><em>…guest names another price, at or above the ideal</em></td>
 <td>Accepted on the spot</td>
 <td>Told</td>
+</tr>
+<tr>
+<td><em>…and again, and again</em></td>
+<td><strong>No limit.</strong> A thread runs until somebody settles it</td>
+<td>Only for the rounds that reach them</td>
+</tr>
+<tr>
+<td><em>…host declines</em></td>
+<td>Thread ends. <strong>Their last price stays on the table for one hour</strong>, locked to those nights, and that guest cannot open another negotiation on that listing until midnight</td>
+<td>Their own decision</td>
 </tr>
 <tr>
 <td>Stay starts <strong>tomorrow or later</strong></td>
@@ -258,112 +283,233 @@ numbers below are the numbers in the screenshots:</p>
 <td>No</td>
 </tr>
 </tbody></table>
-<p>Two design decisions worth stating plainly, because they are the ones that
+<p>Three design decisions worth stating plainly, because they are the ones that
 earn money:</p>
 <ol>
-<li><strong>The counter runs downward from the list price, not up from the ideal.</strong>
-The worse the offer, the firmer the answer — a guest offering ₹100 is quoted
-₹1,900, one offering ₹1,600 is quoted ₹1,700. <strong>Every counter is worth at
-least as much to the host as an instant acceptance would have been.</strong></li>
+<li><strong>The answer to round one runs down from the list price, not up from the
+ideal.</strong> The worse the offer, the firmer the answer. <strong>No automatic answer
+is ever worth less to the host than an instant acceptance would have been.</strong></li>
 <li><strong>The host is not woken for round one.</strong> The platform answers using the
-host&#39;s own published rate. Their judgement is asked for only once a guest
-has argued back — the point at which it actually adds something.</li>
+host&#39;s own published rate for those nights. Their judgement is asked for
+only once a guest has argued back — the point at which it adds something.</li>
+<li><strong>A decline is not a door slammed.</strong> It ends the argument and leaves the
+host&#39;s last number on the table for an hour. The host stops being
+interrupted; the guest still has a price they can take.</li>
 </ol>
 <hr>
-<h2>3. Scenario 1 — The guest offers at or above the ideal</h2>
-<p><strong>Accepted on the spot, at the price the guest offered.</strong> The host is informed;
+<h2>3. Scenario 1 — Below the accept line</h2>
+<p><strong>Answered in about a second, by the platform, in the host&#39;s name.</strong> The host is
+not contacted at all.</p>
+<p><img src="shots/n2-counter-typed.png" alt="Offering ₹1,800"></p>
+<p><em>₹1,800 against a stay that costs ₹2,500 these nights. The dialog names that figure while the guest is typing, so nobody argues against the wrong number.</em></p>
+<p><img src="shots/n2-counter.png" alt="Answered at ₹2,300"></p>
+<p><em>The answer, immediately. It thanks the guest, says plainly that the offer is under what these dates go for, names a price they can actually take, and names the next step. It never sounds automated, and it never claims the host has been asked.</em></p>
+<p>Note the third line: <strong>&quot;Not sure yet? It will be waiting in My Negotiations.&quot;</strong>
+Before this, a guest who dismissed this panel had no route back to their own
+offer.</p>
+<hr>
+<h2>4. Scenario 2 — At or above the accept line</h2>
+<p><strong>Taken on the spot, at the price the guest named.</strong> The host is informed;
 nothing is asked of them.</p>
-<p><img src="shots/s0-listing-rail.png" alt="The booking rail"></p>
-<p><em>The listing as a guest finds it. &quot;Send an Offer — negotiate and save more&quot; sits under &quot;Book Now&quot;: negotiating is offered, never forced.</em></p>
-<p><img src="shots/s1a-offer-1750.png" alt="Offering ₹1,750 for tonight"></p>
-<p><em>The guest names their price and the nights they want. The deal will be locked to exactly these dates.</em></p>
-<p><img src="shots/s1b-accepted.png" alt="Accepted at ₹1,750"></p>
-<p><em>Accepted immediately at ₹1,750 — the price the guest offered, not the ideal and not the list price. The code carries that rate into checkout.</em></p>
-<p><img src="shots/s1c-rail-deal.png" alt="The booking rail carries the deal"></p>
-<p><em>The rail updates itself: the agreed rate against the struck-through list price, the discount as a line item, tax on the discounted amount, and the total actually payable.</em></p>
+<p><img src="shots/n3-accepted-typed.png" alt="Offering ₹2,400"></p>
+<p><em>₹2,400 — under what the nights cost, over the host&#39;s target.</em></p>
+<p><img src="shots/n3-accepted.png" alt="Accepted at ₹2,400"></p>
+<p><em>Accepted at ₹2,400 — the price the guest offered, not the ideal and not the list price. The code carries that rate into checkout.</em></p>
+<blockquote>
+<p><strong>The wording here was changed on the client&#39;s instruction.</strong> It used to read
+&quot;That is at or above what the host will take.&quot; That is both the wrong tone and
+a leak: it tells a guest where the accept line sits relative to their own
+offer, which is a fact about the host&#39;s target. It now says only that the host
+agreed and the booking can go ahead.</p>
+</blockquote>
+<p><img src="shots/n3-rail-deal.png" alt="The rail carries the deal"></p>
+<p><em>The rail updates itself: the agreed rate against the struck-through <strong>₹2,500</strong> these nights actually cost, the discount as a line item, tax on the discounted amount, and the total payable. It says which nights the deal covers and when it expires.</em></p>
+<h3>What the host is told</h3>
+<p><img src="shots/h4-host-auto-accepted.png" alt="Accepted for you"></p>
+<p><em>The host&#39;s own screen. &quot;Guest offered ₹2,400 — Your price ₹2,500&quot;, so the offer reads as what it is: ₹100 under the asking price for those nights. The platform&#39;s acceptance is written into the thread and labelled <strong>&quot;Accepted for you&quot;</strong>, so a host can always tell which words in their own conversation are theirs.</em></p>
 <hr>
-<h2>4. Scenario 2 — The guest offers below the ideal</h2>
-<p><strong>Answered in about a second, by the platform, at a price between the ideal and
-the list price.</strong> The host is not contacted at all.</p>
-<p><img src="shots/s2a-offer-1100.png" alt="Offering ₹1,100"></p>
-<p><em>₹1,100 against a ₹2,000 listing.</em></p>
-<p><img src="shots/s2b-counter.png" alt="Countered at ₹1,750"></p>
-<p><em>The answer, immediately. Note the wording: it thanks the guest, says plainly that the offer is under what the dates go for, names a price they can actually take, and names the next step. It never sounds automated, and it never claims the host has been asked.</em></p>
-<p>Before this was built, an offer like this went to the host&#39;s inbox and the
-guest waited up to ninety seconds. Now the common case is settled while they
-are still looking at the listing.</p>
-<h3>A lowball buys a firmer answer, not a cheaper one</h3>
-<p><img src="shots/s3-below-floor-counter.png" alt="₹100 is answered with ₹1,900"></p>
-<p><em>An offer of ₹100 is countered at ₹1,900 — nearly the full list price. The further below the mark the offer sits, the closer to the screen price the answer comes back.</em></p>
+<h2>5. Every offer has an answer under it</h2>
+<p>This is the change the client asked for most directly, and it is worth its own
+section.</p>
+<p>Until 12 September an automatically accepted offer wrote the guest&#39;s message
+and nothing else. A renter who had negotiated six times saw six of their own
+offers in a column with nothing between them — a monologue, not a negotiation —
+even though every one of them had been accepted.</p>
+<p><img src="shots/n4-thread-accepted.png" alt="The thread, with an answer under the offer"></p>
+<p><em>Every message now carries an answer and a label saying what became of it. &quot;You offered ₹2,400&quot;, then &quot;Accepted ₹2,400&quot; in the host&#39;s name, then the button that takes the agreed price to checkout.</em></p>
+<p>The labels themselves were wrong in a second way. A status describes what
+happened <strong>to</strong> a message, not what its sender did — the person who acts on an
+offer is always the other side from the person who sent it. At the end of a real
+thread a renter who had been declined by the host was reading <strong>&quot;You declined
+₹650&quot;</strong> on their own screen. One shared rule now labels the guest&#39;s web screen,
+the host&#39;s web screen and the app.</p>
 <hr>
-<h2>5. Scenario 3 — Why the minimum cannot be found</h2>
+<h2>6. Why the minimum cannot be found</h2>
 <p>This is the scenario that protects the host&#39;s floor.</p>
 <p>A guest hunting for the minimum would look for the point where the platform&#39;s
-behaviour changes. <strong>There is no such point.</strong> Here are three offers — one
-below the ₹1,500 minimum, one exactly on it, one above it:</p>
-<p><img src="shots/s3-offer-1490.png" alt="₹1,490 — below the minimum"></p>
-<p><em>Offered ₹1,490, which is <strong>under</strong> the host&#39;s floor.</em></p>
-<p><img src="shots/s3-offer-1500.png" alt="₹1,500 — exactly the minimum"></p>
-<p><em>Offered ₹1,500, which is <strong>exactly</strong> the host&#39;s floor.</em></p>
-<p><img src="shots/s3-offer-1510.png" alt="₹1,510 — above the minimum"></p>
-<p><em>Offered ₹1,510, which is <strong>above</strong> it.</em></p>
+behaviour changes. <strong>There is no such point.</strong> Here are three offers on the same
+listing and the same nights — one below the ₹2,000 floor, one exactly on it, one
+above it. Each was sent as the opening offer of its own negotiation.</p>
+<table>
+<thead>
+<tr>
+<th>The offer, as it was typed</th>
+<th>Which side of the floor</th>
+<th>The answer that came back</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><img src="shots/p1-below-floor-typed.png" alt="₹1,990"></td>
+<td><strong>₹1,990</strong> — under the floor</td>
+<td><img src="shots/p1-below-floor.png" alt="₹2,300"></td>
+</tr>
+<tr>
+<td><img src="shots/p2-on-floor-typed.png" alt="₹2,000"></td>
+<td><strong>₹2,000</strong> — exactly the floor</td>
+<td><img src="shots/p2-on-floor.png" alt="₹2,300"></td>
+</tr>
+<tr>
+<td><img src="shots/p3-above-floor-typed.png" alt="₹2,010"></td>
+<td><strong>₹2,010</strong> — above the floor</td>
+<td><img src="shots/p3-above-floor.png" alt="₹2,300"></td>
+</tr>
+</tbody></table>
 <blockquote>
-<p><strong>All three come back identical: ₹1,700, in the same words.</strong></p>
-<p>The counter is calculated from the ideal and the list price. The minimum is
-not part of the arithmetic at all, so no offer&#39;s answer changes when the
-minimum changes — and a guest lowballing twice learns nothing the first
-attempt did not already tell them.</p>
-<p>The floor is not merely hidden. There is no question a guest can ask that
-finds it.</p>
+<p><strong>The three answers are the same photograph.</strong> Not similar — identical. The
+three PNG files in the right-hand column are byte-for-byte the same file
+(MD5 <code>21dc27ad…</code>), because the same pixels came back all three times.</p>
+<p>The answer is calculated from the ideal and the list price. The minimum is not
+in the arithmetic at all, so no offer&#39;s answer moves when the minimum moves —
+and a guest lowballing twice learns nothing the first attempt did not already
+tell them.</p>
+<p>The floor is not merely hidden. <strong>There is no question a guest can ask that
+finds it.</strong></p>
 </blockquote>
+<p>Two supporting rules hold this in place:</p>
+<ul>
+<li><strong>The host&#39;s &quot;reject below&quot; and &quot;auto-accept above&quot; settings were removed
+from the wizard</strong>, because a reject line is only useful to a guest if the
+refusal quotes it — and quoting it hands out a private number. The host keeps
+the same power without the leak: every counter-back reaches them and they
+decline it themselves.</li>
+<li><strong>The offer ceiling is the only number the engine will ever quote back</strong>, and
+it is the price already printed on the page.</li>
+</ul>
 <hr>
-<h2>6. Scenario 4 — The guest takes the counter</h2>
-<p><img src="shots/s4a-deal-struck.png" alt="The deal is struck"></p>
-<p><em>Accepted, with the code that carries the rate into checkout.</em></p>
-<p><img src="shots/s4b-rail-deal.png" alt="Priced through to the total"></p>
-<p><em>The deal is fixed to these dates, and expires at midnight.</em></p>
+<h2>7. Scenario 3 — A price already agreed bars another negotiation</h2>
+<p>Once a price has been agreed for particular nights there is nothing left to
+negotiate for those nights. The guest books, or they do not.</p>
+<p><img src="shots/n5-already-agreed.png" alt="The offer button, greyed, with the reason"></p>
+<p><em>&quot;Send an Offer&quot; is greyed and says why — <strong>&quot;Already agreed for these dates&quot;</strong> — with the sentence underneath pointing at the two things a guest can actually do: book at the agreed price, or open the conversation.</em></p>
+<p><strong>Scoped to the nights, not to the listing.</strong> A guest who agreed a price for
+this weekend may still negotiate next weekend on the same property. The rail&#39;s
+own line says so: <em>&quot;Your deal is agreed for these dates, so they cannot be
+changed. Book different dates without the deal.&quot;</em></p>
 <hr>
-<h2>7. Scenario 5 — The guest argues back, below the ideal</h2>
-<p><strong>This is the only point at which the host is interrupted.</strong></p>
-<h3>The guest&#39;s side</h3>
-<p><img src="shots/s5a-counter-back-1600.png" alt="Countering back at ₹1,600"></p>
-<p><em>The guest names a different price. It must be below the counter — a guest trying to &quot;counter&quot; at or above it is told to simply accept instead.</em></p>
-<p><img src="shots/s5b-with-the-host.png" alt="With the host"></p>
-<p><em>The guest is told plainly where their price has gone, and that the host has been emailed as well as notified.</em></p>
+<h2>8. Scenario 4 — The guest argues back</h2>
+<p><strong>This is the only point at which a host is interrupted.</strong></p>
+<p><img src="shots/n6-counter-typed.png" alt="Naming ₹1,600"></p>
+<p><em>The guest names a different price. It must be below the answer they were given — a guest trying to &quot;counter&quot; at or above it is told to simply accept instead.</em></p>
+<p><img src="shots/n6-escalated.png" alt="With the host"></p>
+<p><em>The guest is told plainly where their price has gone, that the host has been emailed as well as notified, and that Negotiations will show how long this host says they take to reply.</em></p>
+<p><strong>There is no longer a limit on the rounds.</strong> The old engine allowed three
+offers per guest per stay and then closed the thread, which ended arguments the
+host was still willing to have. A thread now runs until somebody settles it:
+accepted, declined, or expired.</p>
 <h3>The host&#39;s side</h3>
-<p><img src="shots/h1-host-negotiations.png" alt="The host&#39;s negotiations screen"></p>
-<p><em>The whole exchange, in order: the guest&#39;s ₹1,100, the counter sent at ₹1,750 on the host&#39;s behalf — labelled so the host knows it was not their typing — and the guest&#39;s ₹1,600 now awaiting a decision. Accept, Counter and Decline, with the number of counters left.</em></p>
-<p><img src="shots/h2-host-notifications.png" alt="The host is notified"></p>
-<p><em>The same moment in the host&#39;s notification feed. They are reached three ways at once — this notification on the web, a push notification on the app, and an email — because an offer nobody sees is an offer that expires. Automatic acceptances are reported the same way, so the host is told of every outcome and asked about only this one.</em></p>
-<p><strong>The 90-second rule.</strong> If the host has not answered within ninety seconds,
-the guest is told the host is away <em>and how long that host says they take to
-reply</em> — the figure the host themselves entered in the listing wizard. It is
-visible in section 11: <strong>&quot;Sam Tao is away at the moment. They usually reply
-within 1 hour.&quot;</strong> Nothing is decided on the host&#39;s behalf; the guest is told
-the truth rather than left watching a spinner.</p>
+<p><img src="shots/h1-host-offer.png" alt="The offer waiting on the host"></p>
+<p><em>The whole exchange in order: the guest&#39;s ₹1,800, the ₹2,300 sent on the host&#39;s behalf — labelled <strong>&quot;Answered for you, at your price&quot;</strong> so the host knows it was not their typing — and the guest&#39;s ₹1,600 now awaiting a decision. Accept, Counter and Decline, with the consequence of the third spelled out beside it: <strong>&quot;Declining ends this negotiation. Your last counter stays open to this guest for 1 hour.&quot;</strong></em></p>
 <hr>
-<h2>8. Scenario 6 — The guest argues back, at or above the ideal</h2>
-<p><img src="shots/s6-counter-back-accepted.png" alt="Taken on the spot"></p>
-<p><em>A counter-back that clears the ideal is accepted immediately and the code is issued. Sending this to the host would have meant waiting for a yes the engine already gives.</em></p>
+<h2>9. Scenario 5 — The host declines</h2>
+<p>A decline used to be a dead end: the thread closed and the guest was left with
+nothing, while the host&#39;s last number — one they had been willing to take
+moments earlier — went in the bin.</p>
+<h3>What the guest sees, without touching anything</h3>
+<p><img src="shots/x1-live-popup.png" alt="The popup, on the page the guest was reading"></p>
+<p><em>The guest was reading the listing. The host clicked Decline in another browser, and this arrived — no reload, no refresh, no navigating to a dashboard.</em></p>
+<p><img src="shots/x1-live-popup-close.png" alt="The popup itself"></p>
+<p><em>Clicking it opens the negotiation it is about.</em></p>
+<h3>The price the host left behind</h3>
+<p><img src="shots/n9-parting.png" alt="The parting price on the rail"></p>
+<p><em>The rail now prices the stay at the host&#39;s last counter, <strong>₹2,300</strong> — against the ₹2,500 these nights cost — with the discount as a line item and the total payable. The banner says what it is, which nights it covers, and how long is left. &quot;Send an Offer&quot; is greyed with <strong>&quot;This negotiation has ended&quot;</strong>, and the sentence beneath it says the rest: the host&#39;s last price, the minutes remaining, and a link into the conversation.</em></p>
+<p>The parting price is a personal, date-locked discount code. It is:</p>
+<ul>
+<li><strong>the host&#39;s own last number</strong>, never a figure the platform invented;</li>
+<li><strong>locked to those exact nights</strong>, so it cannot be carried to a cheaper stay;</li>
+<li><strong>valid for one hour</strong>, counted down on the page and in the notification;</li>
+<li><strong>single use</strong>, and it dies with the hour whether or not it is used.</li>
+</ul>
+<h3>The negotiation is over for the day</h3>
+<p>That guest cannot open another negotiation on that listing until midnight IST.
+Without this, removing the round limit left a door wide open: a decline ends a
+negotiation, so the very next offer would have started a fresh one with a clean
+count, and a guest could have re-opened the same argument a second later, for
+ever.</p>
+<p>Measured in <strong>IST days, not rolling hours</strong> — declined at 9am and you are free
+again at midnight; declined at 11pm and you are free in an hour. It is a rule a
+person can hold in their head.</p>
+<h3>Both records</h3>
+<p><img src="shots/n10-thread-declined.png" alt="The guest&#39;s own record"></p>
+<p><em>The guest&#39;s thread: their ₹1,800, the ₹2,300 answer, and their ₹1,600 marked <strong>&quot;Your offer was declined&quot;</strong> — not &quot;You declined&quot;.</em></p>
+<p><img src="shots/h3-host-thread.png" alt="The host&#39;s own record"></p>
+<p><em>The same conversation from the host&#39;s side, with the platform&#39;s words marked as such and the outcome on the card.</em></p>
 <hr>
-<h2>9. Scenario 7 — An offer above the list price</h2>
-<p><img src="shots/s7-above-list.png" alt="Refused"></p>
-<p><em>There is nothing to negotiate above the price already on the page. Caught before it reaches the host, and the guest is pointed at the Book button instead.</em></p>
+<h2>10. Every notification says so</h2>
+<p>The client&#39;s report was that a notification <em>&quot;just goes and sits silently in the
+notification icon&quot;</em>. Three things now happen for every notification, on the web
+and on the app.</p>
+<h3>A popup, on whatever screen you are on</h3>
+<p>Shown in section 9. It appears without a reload, on any page including public
+ones, and clicking it lands on the thing it is about — resolved by the same
+function the bell and the notifications list use, so a popup can never open
+Bookings for something whose bell entry opens Negotiations.</p>
+<h3>A record</h3>
+<p><img src="shots/n12-bell.png" alt="The guest&#39;s notifications"></p>
+<p><em>The same event in the guest&#39;s list, carrying the figure, the nights, the code and the deadline.</em></p>
+<p><img src="shots/h5-host-bell.png" alt="The host&#39;s notifications"></p>
+<p><em>The host&#39;s feed for the same run: the offer answered on their behalf, the guest&#39;s counter-back, and — for the accepted case — &quot;Offer accepted automatically&quot;. <strong>The host is told of every outcome and asked about only the one that needs them.</strong></em></p>
+<h3>An email</h3>
+<p><img src="shots/n13-email.png" alt="The email as delivered"></p>
+<p><em>The same notification, delivered to the guest&#39;s mailbox, with a button that opens the negotiation.</em></p>
+<p><img src="shots/n13-inbox.png" alt="Three of them, in the inbox"></p>
+<p><em>The test renter&#39;s mailbox during this run. Before 12 September the host-offer email selected a database column that does not exist and threw on every single offer, in silence — a host was never emailed about an offer, ever.</em></p>
+<p><strong>What is not emailed:</strong> ordinary chat messages, and payment receipts. A chat
+that emails every line is a chat nobody reads, and a receipt already arrives as
+an invoice. Everything else does.</p>
+<h3>And a guest can change it</h3>
+<p><img src="shots/n14-prefs.png" alt="Notification preferences"></p>
+<p><em>One switch per category, governing both interrupting channels — the phone and the mailbox. Receipts, invoices, confirmations and security changes are sent whatever these say, and the screen states that rather than showing a dead toggle.</em></p>
 <hr>
-<h2>10. Scenario 8 — A stay starting tomorrow</h2>
+<h2>11. Scenario 6 — An offer above what the nights cost</h2>
+<p><img src="shots/n7-above-list.png" alt="Refused, with the figure"></p>
+<p><em>There is nothing to negotiate above the price already on the page. The refusal names the figure for <strong>these dates</strong> — ₹2,500 — not the listing&#39;s ordinary nightly rate, and the guest is pointed at Book Now instead.</em></p>
+<p>This was a real defect until 12 September. The check used the flat nightly
+column while the offer was judged against the dates chosen, so on a listing with
+weekend pricing an offer that should have been accepted on the spot came back
+&quot;this stay lists at ₹2,000/night&quot;. Both clients and the server made the same
+mistake independently, and neither could see the other&#39;s copy of it.</p>
+<hr>
+<h2>12. Scenario 7 — A stay starting tomorrow</h2>
 <p>Negotiation applies to stays <strong>starting today</strong>. A stay starting tomorrow or
 later is an <strong>advance booking</strong>: it goes at the listed price, reservable with
 10% now and the balance before check-in.</p>
-<p><img src="shots/s8a-advance-refused.png" alt="Offers are for stays starting today"></p>
-<p><em>The refusal names the alternative rather than just saying no.</em></p>
-<p><img src="shots/s8b-advance-rail.png" alt="The rail says the same thing"></p>
-<p><em>The booking rail explains the 10% route, so the guest is never left guessing why the price will not move.</em></p>
+<p><img src="shots/n8-advance.png" alt="The rail explains the alternative"></p>
+<p><em>Two sentences, not one refusal: what applies instead, and why the price will not move. The offer button is not simply dead.</em></p>
 <hr>
-<h2>11. The guest&#39;s own record</h2>
-<p><img src="shots/s9-guest-negotiations.png" alt="My negotiations"></p>
-<p><em>The same conversation from the guest&#39;s side: their ₹1,100, the counter at ₹1,750, their ₹1,600 — and, because the host has now had their ninety seconds, the line telling them how long this host says they take. The response time is the host&#39;s own figure from the listing wizard; a host who never gave one is never quoted a number.</em></p>
+<h2>13. A greyed-out day says why it is grey</h2>
+<p>Reported from the live site during this rebuild: <em>&quot;until I selected 12 every
+date was available; when I clicked 12 it greyed out 13 too.&quot;</em></p>
+<p>The calendar was right — that listing asks for a minimum of two nights, so a
+check-in on the 12th cannot check out on the 13th. Nothing said so, and a date
+that disappears the moment you act reads as a bug rather than a rule.</p>
+<p><img src="shots/n11-calendar.png" alt="The rule, in the calendar header"></p>
+<p><em>The minimum stay and the earliest checkout, pinned to the top of the panel where they stay on screen whatever the height. The barred day also explains itself on hover, which every other kind of barred day already did.</em></p>
+<p>Two layout faults were fixed with it: the two months wrapped and stacked at the
+panel&#39;s width, doubling its height and pushing <strong>Done</strong> off the bottom of the
+screen, and the panel was sized against the window rather than against the room
+below it.</p>
 <hr>
-<h2>12. What protects the host</h2>
+<h2>14. What protects the host</h2>
 <table>
 <thead>
 <tr>
@@ -373,15 +519,15 @@ later is an <strong>advance booking</strong>: it goes at the listed price, reser
 </thead>
 <tbody><tr>
 <td>The minimum never leaks</td>
-<td>The counter is calculated from the ideal and the list price. The minimum is not in the arithmetic, so no offer&#39;s answer moves when it moves</td>
+<td>The answer is calculated from the ideal and the list price. The minimum is not in the arithmetic, so no offer&#39;s answer moves when it moves — demonstrated in section 6</td>
 </tr>
 <tr>
-<td>No counter is worth less than an acceptance</td>
-<td>Every counter sits at or above the ideal</td>
+<td>No automatic answer is worth less than an acceptance</td>
+<td>Every one sits at or above the ideal, for those nights</td>
 </tr>
 <tr>
 <td>A lowball is never rewarded</td>
-<td>The lower the offer, the higher the counter</td>
+<td>The lower the offer, the closer to the screen price the answer comes back</td>
 </tr>
 <tr>
 <td>The host is never interrupted needlessly</td>
@@ -389,15 +535,19 @@ later is an <strong>advance booking</strong>: it goes at the listed price, reser
 </tr>
 <tr>
 <td>The host always knows what was done for them</td>
-<td>Every automatic acceptance and every counter sent on their behalf is reported, and marked as automatic on their own screen</td>
+<td>Every automatic acceptance and every answer sent on their behalf is reported, and marked as automatic on their own screen</td>
 </tr>
 <tr>
-<td>Offers cannot run forever</td>
-<td>Each guest gets a limited number of offers per stay (the host sets this; the default is 3), and an offer waiting on a host expires after 30 minutes</td>
+<td>A decline actually ends it</td>
+<td>The thread closes, and that guest cannot re-open one on that listing until midnight</td>
+</tr>
+<tr>
+<td>…but a decline still sells the room</td>
+<td>The host&#39;s last number stays on the table for an hour, locked to those nights</td>
 </tr>
 <tr>
 <td>A deal cannot drift</td>
-<td>An accepted price is locked to the exact nights and party it was agreed for, and expires at midnight</td>
+<td>An agreed price is locked to the exact nights it was agreed for, and expires</td>
 </tr>
 <tr>
 <td>Nothing is sold below the target without the host</td>
@@ -405,23 +555,80 @@ later is an <strong>advance booking</strong>: it goes at the listed price, reser
 </tr>
 </tbody></table>
 <hr>
-<h2>13. What we would like you to confirm</h2>
+<h2>15. What changed since 9 September</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Then</th>
+<th>Now</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Rounds</td>
+<td>Three offers per guest per stay, then the thread closed</td>
+<td>No limit. A thread runs until it is settled</td>
+</tr>
+<tr>
+<td>An automatic acceptance</td>
+<td>Wrote the guest&#39;s message and no answer, so accepted offers read as a column of unanswered messages</td>
+<td>Writes both sides, labelled &quot;Accepted for you&quot; on the host&#39;s screen</td>
+</tr>
+<tr>
+<td>Message labels</td>
+<td>By direction alone — &quot;You declined ₹650&quot; on the screen of the person who had been declined</td>
+<td>By what happened to the message. One rule, three screens</td>
+</tr>
+<tr>
+<td>A decline</td>
+<td>Thread closed, guest left with nothing</td>
+<td>The host&#39;s last price for one hour, locked to those nights, and the day closed to further offers</td>
+</tr>
+<tr>
+<td>A held deal</td>
+<td>The offer button stayed live and the server refused the form afterwards</td>
+<td>Greyed, with the reason and what to do instead</td>
+</tr>
+<tr>
+<td>Prices</td>
+<td>The flat nightly column, while the offer was judged against the dates</td>
+<td>Everything is the figure for the nights being argued over</td>
+</tr>
+<tr>
+<td>Notifications</td>
+<td>Sat silently in the bell, which only moved on a 60-second poll</td>
+<td>A popup on any screen, an email, and a push — the instant it happens</td>
+</tr>
+<tr>
+<td>Emails about offers</td>
+<td>Selected a column that does not exist; threw on every offer, in silence</td>
+<td>Sent, and read at the address the account actually uses</td>
+</tr>
+<tr>
+<td>The acceptance wording</td>
+<td>&quot;That is at or above what the host will take&quot;</td>
+<td>Says the host agreed and the booking can go ahead — nothing about where the line sits</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>16. What we would like you to confirm</h2>
 <ol>
-<li><strong>The ladder</strong> — accept at or above the ideal; counter between the ideal and
-the list price; the host only for round two.</li>
-<li><strong>Where the counter sits.</strong> It currently runs down from the list price, so
-it earns more than an instant acceptance. The alternative is to place it
-between the guest&#39;s offer and the ideal, which conceals the ideal more
-thoroughly but earns less. <strong>We recommend the current setting.</strong></li>
-<li><strong>The wording of the counter</strong>, shown in section 4.</li>
-<li><strong>The 90-second window</strong> before a guest is told the host is away.</li>
-<li><strong>The three-offer limit</strong> per guest per stay, and the 30-minute expiry on an
-offer waiting with a host.</li>
+<li><strong>The ladder</strong> — accepted at or above the ideal; answered automatically
+between the ideal and the list price; a person only from round two.</li>
+<li><strong>The one-hour parting price</strong> after a decline, and that it is the host&#39;s own
+last counter rather than a figure we choose.</li>
+<li><strong>The same-day lockout</strong> — one decline closes that listing to that guest
+until midnight IST.</li>
+<li><strong>Unlimited rounds.</strong> The alternative is a cap, which ends arguments the host
+may still want to have. <strong>We recommend leaving it uncapped.</strong></li>
+<li><strong>Which notifications are emailed</strong> — everything except ordinary chat
+messages and payment receipts.</li>
 </ol>
 <p>Once these are confirmed we will close the module.</p>
 <hr>
-<p><em>Every screenshot in this document was taken on the live site on 9 September
-2026, driving the real flow against a live listing with a real guest and host
-account. The test records created for these photographs have been removed.</em></p>
+<p><em>Every screenshot in this document was taken on <a href="http://www.aajoohomes.com">www.aajoohomes.com</a> on
+12 September 2026, driving the live flow against a live listing with a real
+guest account and a real host account. The test records created for these
+photographs have been removed.</em></p>
 
 </body></html>

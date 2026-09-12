@@ -588,7 +588,9 @@ const bothScenarios = {
     await dismissBanners(guest);
     await shotFull(guest, "n4-thread-accepted");
     await openListing(guest);
-    await shotRail(guest, "n5-already-agreed");
+    // The barred control and the sentence under it, not the whole rail --
+    // a full-rail crop here is the same photograph as n3-rail-deal.
+    await shotOfferBlock(guest, "n5-already-agreed");
 
     // The host is TOLD, not asked -- and their own screen marks the words the
     // platform wrote in their name.
