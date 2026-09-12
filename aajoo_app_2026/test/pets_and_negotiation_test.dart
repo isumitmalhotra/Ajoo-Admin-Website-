@@ -64,9 +64,26 @@ void main() {
     });
 
     test('the button is gated on it', () {
-      expect(property.contains('visible: !isPrebooking && ownerNegotiates'), isTrue,
+      // Matched as a RULE, not as a line. It was written
+      // `visible: !isPrebooking && ownerNegotiates` and the same visibility
+      // later gained the held-deal lock, so a literal match reported a correct
+      // change as a regression.
+      final vis = RegExp(
+          r'visible:\s*[\s\S]{0,120}?!isPrebooking\s*&&\s*ownerNegotiates');
+      expect(vis.hasMatch(property), isTrue,
           reason: 'the negotiate button ignores the host setting, so the only '
               'way to learn it is to send an offer and be refused');
+    });
+
+    test('...and on whether this guest may open one at all', () {
+      // Accepted, parting or declined: the website has greyed its button and
+      // said which since 12 September, and the app showed a live button and
+      // let the server refuse the filled-in form afterwards.
+      expect(property.contains('_negotiationLock == null'), isTrue,
+          reason: 'the offer button is live on a stay whose price is already '
+              'agreed, which is the dead end we were asked to remove');
+      expect(model.contains('class NegotiationLock'), isTrue,
+          reason: 'the model drops the lock, so the page cannot act on it');
     });
 
     test('and the absence is explained, not just left blank', () {

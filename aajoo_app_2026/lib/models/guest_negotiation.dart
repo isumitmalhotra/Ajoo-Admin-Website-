@@ -1,3 +1,5 @@
+import 'package:rent_home/utils/transcript_label.dart';
+
 /// One negotiation thread on the GUEST's side.
 ///
 /// The guest had no reader at all: they could POST an offer and then never
@@ -54,19 +56,16 @@ class GuestNegotiationMessage {
   /// of yours marked `declined` was declined by the HOST — the first version
   /// read it as your own action and told a renter "You declined ₹650" about an
   /// offer they had made and the host had refused.
-  String get label {
-    final s = status.toLowerCase();
-    if (mine) {
-      if (s == 'accepted') return 'Your offer was accepted';
-      if (s == 'declined') return 'Your offer was declined';
-      if (s == 'expired') return 'Your offer expired';
-      return 'You offered';
-    }
-    if (s == 'accepted') return 'Accepted';
-    if (s == 'declined') return 'Declined';
-    if (s == 'expired') return 'Expired';
-    return 'Host countered';
-  }
+  /// Asked of the shared rule rather than written again here.
+  ///
+  /// This screen, the host list, and both website screens had four copies of
+  /// one paragraph, and they drifted for a fortnight over whose move it was.
+  /// See utils/transcript_label.dart.
+  String get label => transcriptLabel(
+        mine: mine,
+        status: status,
+        viewer: TranscriptViewer.guest,
+      );
 
   factory GuestNegotiationMessage.fromJson(Map<String, dynamic> j) =>
       GuestNegotiationMessage(

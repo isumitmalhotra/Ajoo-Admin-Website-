@@ -10,6 +10,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:rent_home/utils/offer_ceiling.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
@@ -248,6 +249,80 @@ class _PropertyPageState extends State<PropertyPage>
   /// it — a wasted round trip presented as a feature. Defaults to true: "not
   /// stated" is not a refusal, and the server is still the real gate.
   bool get ownerNegotiates => _single?.negotiationEnabled ?? true;
+
+  /// Whether this guest may open a negotiation on the dates currently chosen.
+  ///
+  /// Three things bar it, and the server decides which: a price already agreed
+  /// for those nights, a host who walked away and left their last one, or a
+  /// host who has already answered an offer here today. The website has greyed
+  /// its button and said which since 12 September; the app went on showing a
+  /// live button and letting the server refuse the filled-in form, which is
+  /// exactly the dead end we were asked to remove.
+  /// What a night of the stay on screen lists at.
+  ///
+  /// `currentPrice` is property_price — the flat nightly column — and the
+  /// offer sheet was measuring against it in two places: the "Listed at" line
+  /// and the refusal that fires before an offer is sent. On a weekend stay
+  /// that refused offers UNDER what the nights actually cost.
+  ///
+  /// Before any discount: `originalSubtotal`, never `subtotal`, or a listing
+  /// with a running offer would lower its own negotiation ceiling.
+  double get _listedPerNight => listedPerNight(
+        roomSubtotal: _serverQuote?.originalSubtotal,
+        nights: totalDays,
+        basePrice: currentPrice,
+      );
+
+  NegotiationLock? get _negotiationLock {
+    final lock = _single?.negotiationLock;
+    if (lock == null || !lock.locked) return null;
+    final from = DateFormat('dd-MM-yyyy').format(selectedDate);
+    final to = selectedDateTo == null
+        ? null
+        : DateFormat('dd-MM-yyyy').format(selectedDateTo!);
+    return lock.barsDates(from, to) ? lock : null;
+  }
+
+  /// The sentence under the greyed button. Word for word the website's, so a
+  /// guest who reads it on the phone and then on the laptop reads one rule.
+  String _negotiationLockLine(NegotiationLock lock) {
+    switch (lock.reason) {
+      case 'accepted':
+        return 'Your offer was accepted \u2014 the agreed price applies at '
+            'checkout. Go ahead and book your stay.';
+      case 'parting':
+        final price = lock.price > 0
+            ? ' of \u20b9${_inr(lock.price)} a night'
+            : '';
+        final left = lock.minutesLeft > 0
+            ? ' \u2014 about ${lock.minutesLeft} '
+                'minute${lock.minutesLeft == 1 ? '' : 's'} left'
+            : '';
+        return 'The host ended the negotiation, but left their last price'
+            '$price on the table for you$left. Book now to take it; after '
+            'that the stay goes back to its normal price.';
+      default:
+        return 'The host has already answered an offer from you on this stay '
+            'today. You can make a new offer tomorrow, or book at the listed '
+            'price.';
+    }
+  }
+
+  /// Whole rupees with Indian grouping. The deal price is a per-night figure
+  /// the guest already holds, so it is printed exactly as the rail prints it.
+  static String _inr(double v) {
+    final n = v.round().toString();
+    if (n.length <= 3) return n;
+    final last3 = n.substring(n.length - 3);
+    var rest = n.substring(0, n.length - 3);
+    final parts = <String>[];
+    while (rest.length > 2) {
+      parts.insert(0, rest.substring(rest.length - 2));
+      rest = rest.substring(0, rest.length - 2);
+    }
+    if (rest.isNotEmpty) parts.insert(0, rest);
+    return '${parts.join(',')},$last3';
+  }
 
   static const int _istOffsetMinutes = 330;
 
@@ -2615,8 +2690,65 @@ onPressed: () async {
                     ],
                   ),
                 ),
+              // Barred, and it says which of the three reasons applies.
+              // Shown as a disabled control with the sentence under it rather
+              // than hidden: a button that vanishes reads as a broken feature,
+              // and two of these three come back on their own.
+              if (!isPrebooking && ownerNegotiates && _negotiationLock != null)
+                Builder(builder: (_) {
+                  final lock = _negotiationLock!;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Opacity(
+                        opacity: 0.5,
+                        child: ElevatedButton(
+                          onPressed: null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            disabledBackgroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 50),
+                            shape: RoundedRectangleBorder(
+                              side: const BorderSide(color: kIndigo),
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('Send an Offer',
+                                  style: inter(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: kIndigo)),
+                              Text(lock.shortLabel,
+                                  style: inter(fontSize: 10, color: kMuted)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.info_outline_rounded,
+                              size: 15, color: kMuted),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              _negotiationLockLine(lock),
+                              style: inter(
+                                  fontSize: 12, color: kMuted, height: 1.35),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                }),
               Visibility(
-                visible: !isPrebooking && ownerNegotiates,
+                visible:
+                    !isPrebooking && ownerNegotiates && _negotiationLock == null,
                 child: ElevatedButton(
                   onPressed: () async {
                     final AuthController authController =
@@ -2668,7 +2800,7 @@ onPressed: () async {
                       context,
                       propertyId: widget.id,
                       propertyName: _single?.propertyName ?? widget.name,
-                      nightlyPrice: currentPrice,
+                      nightlyPrice: _listedPerNight,
                       initialFrom: selectedDate,
                       guests: _guests,
                       initialTo: selectedDateTo,

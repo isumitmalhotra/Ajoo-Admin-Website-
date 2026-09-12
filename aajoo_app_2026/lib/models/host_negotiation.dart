@@ -1,3 +1,5 @@
+import 'package:rent_home/utils/transcript_label.dart';
+
 /// One negotiation thread on the host's side (A-70).
 ///
 /// `/host/negotiations/list` has existed since the negotiation feature
@@ -48,6 +50,7 @@ class HostNegotiation {
     this.bookTo,
     this.belowMinimum = false,
     this.rounds = 0,
+    this.messages = const [],
   });
 
   /// How many offers have crossed in this thread, and the ceiling both sides
@@ -64,6 +67,16 @@ class HostNegotiation {
 
   /// "Round 2" — omitted when nothing has been exchanged yet.
   String? get roundLabel => rounds <= 0 ? null : 'Round $rounds';
+
+  /// The whole exchange, oldest first.
+  ///
+  /// The endpoint has always returned it and this model counted the array and
+  /// threw it away, so the host's phone showed the latest price and nothing
+  /// about how it got there — no sign of what the platform had already
+  /// answered in their name. The website has shown the transcript since the
+  /// list screen was built, and a host reading one thread on two devices was
+  /// reading two different things.
+  final List<HostNegotiationMessage> messages;
 
   bool get isPending => status.toLowerCase() == 'pending';
 
@@ -118,6 +131,76 @@ class HostNegotiation {
       belowMinimum: json['belowMinimum'] == true,
       // Every offer that has crossed, from either side.
       rounds: json['messages'] is List ? (json['messages'] as List).length : 0,
+      messages: json['messages'] is List
+          ? (json['messages'] as List)
+              .whereType<Map>()
+              .map((m) => HostNegotiationMessage.fromJson(
+                  Map<String, dynamic>.from(m)))
+              .toList()
+          : const [],
+    );
+  }
+}
+
+
+/// One message in a host's negotiation thread.
+///
+/// `automatic` is the whole reason this is worth rendering: the platform
+/// answers round one in the host's name, and a host must be able to tell which
+/// words in their own conversation are theirs.
+class HostNegotiationMessage {
+  final int offerId;
+
+  /// "you" for the host, anything else for the guest.
+  final String from;
+  final double price;
+  final String message;
+
+  /// pending | countered | accepted | declined | expired
+  final String status;
+
+  /// Written by the platform on the host's behalf.
+  final bool automatic;
+  final DateTime? createdAt;
+
+  const HostNegotiationMessage({
+    required this.offerId,
+    required this.from,
+    required this.price,
+    required this.message,
+    required this.status,
+    this.automatic = false,
+    this.createdAt,
+  });
+
+  bool get mine => from == 'you';
+
+  /// What happened TO this message. Shared with the guest list and with both
+  /// website screens — see utils/transcript_label.dart.
+  String get label => transcriptLabel(
+        mine: mine,
+        status: status,
+        viewer: TranscriptViewer.host,
+        automatic: automatic,
+      );
+
+  factory HostNegotiationMessage.fromJson(Map<String, dynamic> j) {
+    double d(dynamic v) => double.tryParse((v ?? 0).toString()) ?? 0;
+    int i(dynamic v) => int.tryParse((v ?? 0).toString()) ?? 0;
+    return HostNegotiationMessage(
+      offerId: i(j['offerId']),
+      from: j['from']?.toString() ?? 'them',
+      price: d(j['price']),
+      message: j['message']?.toString() ?? '',
+      status: j['status']?.toString() ?? 'pending',
+      // The server sends a real boolean; older payloads send nothing, and
+      // "nothing" must read as "the host wrote this" rather than the reverse —
+      // labelling a host's own counter "Answered for you" would be worse than
+      // leaving an automatic one unmarked.
+      automatic: j['automatic'] == true,
+      createdAt: j['createdAt'] == null
+          ? null
+          : DateTime.tryParse(j['createdAt'].toString()),
     );
   }
 }

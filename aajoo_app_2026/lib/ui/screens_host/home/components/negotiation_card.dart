@@ -44,6 +44,9 @@ class NegotiationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final (badgeBg, badgeFg, badgeText) = _status;
     final off = n.discountPercent;
+    // One bubble that repeats the number three lines above it is noise; two or
+    // more are the conversation.
+    final showThread = n.messages.length > 1;
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: onTap,
@@ -182,7 +185,71 @@ class NegotiationCard extends StatelessWidget {
                 ],
               ),
             ],
-            if (n.message.trim().isNotEmpty) ...[
+            // The exchange, oldest first.
+            //
+            // The card showed the latest price and nothing about how it got
+            // there — in particular, no sign that the PLATFORM had already
+            // answered round one in the host's name. The website has shown the
+            // transcript since its list screen was built, so a host reading
+            // one thread on two devices was reading two different things.
+            //
+            // Only when there is more than the opening offer: a single bubble
+            // repeating the number three lines above it is noise.
+            if (showThread) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                decoration: const BoxDecoration(
+                  border: Border(top: BorderSide(color: kLine)),
+                ),
+              ),
+              for (final m in n.messages) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment:
+                      m.mine ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 260),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 11, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: m.mine ? const Color(0xFFEAF3F2) : kSand,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // What happened TO this message, and whose words it
+                        // is. "Answered for you, at your price" is the one a
+                        // host most needs: those words are not theirs.
+                        Text(m.label,
+                            style: inter(fontSize: 10.5, color: kMuted)),
+                        const SizedBox(height: 2),
+                        Text('₹${_money(m.price)}',
+                            style: inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: kInk)),
+                        if (m.message.trim().isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          // Italic, because the platform's words are quoted
+                          // on the website the same way. inter() takes no
+                          // fontStyle, so it is applied on the TextStyle.
+                          Text(m.message.trim(),
+                              style: inter(
+                                      fontSize: 11.5, color: kInk2, height: 1.4)
+                                  .copyWith(fontStyle: FontStyle.italic)),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+            // The opening message, when there is no transcript to carry it.
+            if (!showThread && n.message.trim().isNotEmpty) ...[
               const SizedBox(height: 10),
               Container(
                 width: double.infinity,

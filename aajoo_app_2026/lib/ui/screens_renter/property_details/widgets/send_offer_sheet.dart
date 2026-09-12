@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rent_home/utils/offer_ceiling.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
@@ -50,7 +51,11 @@ class SendOfferSheet extends StatefulWidget {
   final int propertyId;
   final String propertyName;
 
-  /// The listed nightly rate, shown as the thing being negotiated against.
+  /// What a night of THESE nights lists at — not the flat nightly column.
+  ///
+  /// See utils/offer_ceiling.dart: the two are different numbers on any
+  /// listing with weekend or seasonal rates, and the negotiation is argued
+  /// over the nights in the offer.
   final double nightlyPrice;
   /// The party on the listing page when the offer was made. Travels with the
   /// offer so the agreed deal can reopen the listing for the same guests.
@@ -206,13 +211,18 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
       setState(() => _error = 'Enter the price you would like to pay per night.');
       return;
     }
-    // A guest offering MORE than the listing is almost always a typo, and the
-    // host has no reason to refuse it — so it is worth a word rather than a
-    // silent send.
-    if (amount >= widget.nightlyPrice) {
+    // At or above what the stay costs there is nothing to negotiate, and the
+    // guest can simply book. Worth a word rather than a silent send.
+    //
+    // Measured on the price of THESE NIGHTS, which is what nightlyPrice now
+    // carries. It used to be the flat nightly column, so on a weekend stay a
+    // guest was told their ₹2,400 was "at or above the listed ₹2,000" — an
+    // offer ₹100 UNDER what the stay cost and above the host's accept line,
+    // refused by the client before the server ever saw it.
+    if (offerIsPointless(amount, widget.nightlyPrice)) {
       setState(() => _error =
-          'That is at or above the listed ${rupees(widget.nightlyPrice)}. '
-          'Offer less than the asking price to negotiate.');
+          'These dates are ${rupees(widget.nightlyPrice)} a night — '
+          'offer less than that, or just book it.');
       return;
     }
 

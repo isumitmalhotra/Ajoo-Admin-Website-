@@ -97,6 +97,17 @@ class SinglePropertyData {
   /// failing open costs a wasted tap at worst and never hides a live feature.
   final bool negotiationEnabled;
 
+  /// Whether THIS guest may open a negotiation here right now, and why not.
+  ///
+  /// The website greys its offer button and says which of three things is
+  /// true; the app had no idea any of them existed, so it showed a live
+  /// button and let the server refuse the filled-in form afterwards — the
+  /// dead end the client asked us to remove, still present on the phone.
+  ///
+  /// Null when nothing bars them (including for a signed-out visitor, whom
+  /// the server never asks about).
+  final NegotiationLock? negotiationLock;
+
   /// What the host ticked in the 5-step wizard, grouped the way the FORM
   /// grouped it, with labels already resolved server-side from the same
   /// schema the wizard renders from. A group the host left empty never
@@ -163,6 +174,7 @@ class SinglePropertyData {
     this.nearbyPopular,
     this.houseRules,
     this.negotiationEnabled = true,
+    this.negotiationLock,
     this.amenityGroups = const [],
     this.experiences = const [],
     this.views = const [],
@@ -251,6 +263,10 @@ class SinglePropertyData {
               as bool? ??
               true)
           : true,
+      negotiationLock: json['negotiation'] is Map
+          ? NegotiationLock.fromJson(
+              Map<String, dynamic>.from(json['negotiation'] as Map))
+          : null,
       houseRules: json['houseRules'] is Map
           ? PropertyHouseRules.fromJson(
               Map<String, dynamic>.from(json['houseRules'] as Map))
@@ -706,4 +722,98 @@ class PropertyCapacity {
       bedrooms == null &&
       beds == null &&
       bathrooms == null;
+}
+
+
+/// Why this guest cannot open a negotiation on this listing right now.
+///
+/// Three reasons, and they need three different sentences:
+///
+///   accepted  a price is already agreed for those nights -- book it
+///   parting   the host walked away and left their last price for an hour
+///   declined  the host answered an offer today; tomorrow is a new day
+///
+/// The first two are scoped to [from]..[to], so a guest who agreed a price for
+/// this weekend may still negotiate next weekend on the same property. The
+/// third is scoped to the IST day and carries no dates at all.
+class NegotiationLock {
+  final bool locked;
+
+  /// "accepted" | "parting" | "declined", or null when nothing is barred.
+  final String? reason;
+
+  /// When it lifts -- midnight IST for a decline, the coupon's expiry for the
+  /// other two.
+  final DateTime? until;
+
+  /// What the held deal comes to per night. Zero when there is none to name:
+  /// a host who declines an OPENING offer never named a price, and inventing
+  /// one would be a promise nobody made.
+  final double price;
+
+  /// The nights the deal covers, DD-MM-YYYY, or null for a day-scoped lock.
+  final String? from;
+  final String? to;
+
+  const NegotiationLock({
+    required this.locked,
+    this.reason,
+    this.until,
+    this.price = 0,
+    this.from,
+    this.to,
+  });
+
+  factory NegotiationLock.fromJson(Map<String, dynamic> json) {
+    String? str(dynamic v) {
+      final s = v?.toString().trim() ?? '';
+      return s.isEmpty ? null : s;
+    }
+
+    final until = str(json['lockedUntil']);
+    return NegotiationLock(
+      // The server sends lockedUntil only when something is actually barred,
+      // so its presence IS the lock -- there is no separate boolean to drift
+      // out of step with it.
+      locked: until != null,
+      reason: str(json['lockReason']),
+      until: until == null ? null : DateTime.tryParse(until),
+      price: double.tryParse((json['lockPrice'] ?? 0).toString()) ?? 0,
+      from: str(json['lockFrom']),
+      to: str(json['lockTo']),
+    );
+  }
+
+  /// Does this lock bar the dates on screen?
+  ///
+  /// A decline shuts the whole listing for the day, so it bars any dates. A
+  /// held deal bars only its own nights -- and when the guest has not picked
+  /// any yet, the deal is still worth saying out loud.
+  bool barsDates(String? stayFrom, String? stayTo) {
+    if (!locked) return false;
+    if (reason == 'declined') return true;
+    if (from == null || to == null) return true;
+    if (stayFrom == null || stayTo == null) return true;
+    return from == stayFrom && to == stayTo;
+  }
+
+  /// The line under the greyed button. Same words as the website's.
+  String get shortLabel {
+    switch (reason) {
+      case 'accepted':
+        return 'Already agreed for these dates';
+      case 'parting':
+        return 'This negotiation has ended';
+      default:
+        return 'Available again tomorrow';
+    }
+  }
+
+  /// Whole minutes left, floored at zero. Used only by the parting sentence,
+  /// which is the one with an hour on it.
+  int get minutesLeft {
+    if (until == null) return 0;
+    final ms = until!.difference(DateTime.now()).inMinutes;
+    return ms > 0 ? ms : 0;
+  }
 }

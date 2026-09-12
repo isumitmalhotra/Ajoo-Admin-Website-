@@ -31,11 +31,17 @@
 // clicked, and the dialog inherits it.
 import { open, shot, pause, dismissBanners, SITE } from "./rig.mjs";
 
-/** Sam's listing — the same one the first document used, so the two compare. */
-const PROPERTY = 29291;
+/**
+ * Sam's listing — the same one the first document used, so the two compare.
+ *
+ * Overridable, because the cross-device run drives a different listing: the
+ * emulator is signed in as the OTHER test host, and a host cannot decline an
+ * offer on a property they do not own.
+ */
+const PROPERTY = Number(process.env.JOURNEY_PROPERTY) || 29291;
 /** Tonight. Negotiation is a same-day mechanism, so check-in is always today. */
-const FROM = "12-09-2026";
-const TO = "13-09-2026";
+const FROM = process.env.JOURNEY_FROM || "12-09-2026";
+const TO = process.env.JOURNEY_TO || "13-09-2026";
 const STAY = `${SITE}/property?id=${PROPERTY}&from=${FROM}&to=${TO}&guests=2`;
 
 /* ── page helpers ─────────────────────────────────────────────────────────── */
