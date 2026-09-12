@@ -47,9 +47,9 @@ work; sorting by owner is what makes that visible.
 
 | Section | Owner | Open |
 |---|---|---|
-| [1. Client decisions](#1-blocked-on-client-decisions) | Client | 8 |
-| [2. Ops / Render access](#2-blocked-on-ops--render-access) | Whoever holds Render + GCP | 7 |
-| [3. Engineering](#3-engineering--genuinely-open) | Us | 13 |
+| [1. Client decisions](#1-blocked-on-client-decisions) | Client | 7 |
+| [2. Ops / Render access](#2-blocked-on-ops--render-access) | Whoever holds Render + GCP | 6 |
+| [3. Engineering](#3-engineering--genuinely-open) | Us | 11 |
 | [4. Contract deliverables](#4-contract-deliverables-) | Us | 8 |
 | [5. Section-0 redo](#5-section-0-site-redo--separate-sow) | Blocked on a signed change order | 20 |
 | [6. Unproven, not broken](#6-unproven-not-broken) | Us + tester | 10 |
@@ -136,7 +136,7 @@ Functional scope is delivered; these are the contractual artifacts. All still op
 | **4.3** | **FMS — Functional Specification** | |
 | **4.4** | **HMS — Functional Specification** | |
 | **4.5** | **Security & Compliance doc + RBAC matrix** | The RBAC itself exists (`config/adminRoles.js`, incl. `SEO_MANAGER`); the document does not. |
-| **4.6** | **Test suite to contract standard** | **135 backend tests pass** on `npm test`, **360 app tests** on `flutter test` and **47 web tests** on `npm run test:rules` (43 / 138 / — on 09-05), but the contract asks for >80% measured coverage, 200+ integration tests, plus load and OWASP reports. No coverage tooling is wired. |
+| **4.6** | **Test suite to contract standard** | **135 backend tests pass** on `npm test`, **387 app tests** on `flutter test` and **37 web rule files** on `for f in tests/*.test.mjs; do node $f; done` (43 / 138 / — on 09-05; there is no `test:rules` script — the earlier wording here named one that does not exist), but the contract asks for >80% measured coverage, 200+ integration tests, plus load and OWASP reports. No coverage tooling is wired. |
 | **4.7** | **Deployment guide + operational runbook + KT docs** | `DEPLOY_RUNBOOK.md` and the handoffs exist; `Deployment_Options_2026-09-05.docx` (05-09) covers requirements, sizing, tools, providers, cost and a migration plan. Still to formalise: the runbook for whichever host is chosen (§1.8) and the KT pack. |
 | **4.8** | **UAT test cases + sign-off package** | **Manuals delivered 2026-09-05** — web (81 cases, 8 modules) and Android (55 cases, 6 modules), each with environment, accounts, procedure, defect template and sign-off table. Execution and sign-off are the client's; **an internal dry run of both manuals is recommended first** — see §6 for the cases that have only code/test-level verification so far. |
 
