@@ -2,16 +2,22 @@
 
 > **Reconciled 2026-09-04** against the live site, the live database and the three
 > repos; **updated 2026-09-05** after tester builds 14–16, the proactive defect
-> sweep, and a fresh set of DB counts. Supersedes the 2026-07-11 edition, which
+> sweep, and a fresh set of DB counts; **updated 2026-09-12** with §8a19–8a21 — the negotiation
+> rebuild, the home page's card sections, cash at the door, and the booking-confirmed
+> redesign. Supersedes the 2026-07-11 edition, which
 > had drifted badly — nine of its open items were already done and two of its
 > "done" claims were wrong.
 >
 > **Repos:** FE `D:/Projects/aajao-frontend-vercel` (React/Vite → Vercel) ·
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
-> Tester build in circulation: **49 (1.0.0+49)**, `aajoo-homes-1.0.0-build49-release.apk` at repo root
-> (2026-09-08, sha256 `83c6d4d5…7ab9b5`, against `aajaodev.onrender.com` with the sandbox
-> Razorpay key — the platform is still in test mode, so a QA build is the only honest one).
+> Current app build: **81 (1.0.0+81)**, built and driven on the emulator 2026-09-12,
+> sha256 `4b25f541…c8424`, at `aajoo_app_2026/build/app/outputs/flutter-apk/app-release.apk`.
+> **It has NOT been named and copied to the repo root, so no tester is holding it** — the newest
+> named artifact there is `aajoo-homes-1.0.0-build60-release.apk`, and the last build actually
+> circulated was **49** (2026-09-08, sha256 `83c6d4d5…7ab9b5`). Publishing 81 is §3.15.
+> All of them point at `aajaodev.onrender.com` with the sandbox Razorpay key — the platform is
+> still in test mode, so a QA build is the only honest one.
 > **The build number is internal and is not shown in the app** — Settings reads `Version 1.0.0`.
 > Identify a build from the artifact: its filename, its sha256, or
 > `adb shell dumpsys package com.aajoo.aajoohomes | grep versionCode`. Keep one number to one
@@ -20,6 +26,9 @@
 > rows 20–26 came back re-reported. It is now injected from pubspec and asserted in the APK.)
 > Documents delivered 2026-09-05 (repo root): `UAT_WebApp_2026-09-05.docx` (81 cases) · `UAT_AndroidApp_2026-09-05.docx` (55 cases) ·
 > `Delivery_Delay_Analysis_2026-09-05.docx` · `Deployment_Options_2026-09-05.docx`.
+> Documents delivered 2026-09-12: `negotiation-journey/Aajoo-Negotiation-User-Journey.pdf` (32 pages,
+> 31 photographs of the live site) · `AAJOO_NOTIFICATIONS_AND_NEGOTIATIONS_2026-09-12.pdf` (14 pages,
+> the technical reference behind it). Both rebuilt against the new engine, not edited from the old ones.
 >
 > **How to read the evidence column.** `verified` = checked against production or
 > the live DB and the check is named (dated 09-04 unless it says 09-05). `code` =
@@ -37,10 +46,10 @@ work; sorting by owner is what makes that visible.
 |---|---|---|
 | [1. Client decisions](#1-blocked-on-client-decisions) | Client | 8 |
 | [2. Ops / Render access](#2-blocked-on-ops--render-access) | Whoever holds Render + GCP | 7 |
-| [3. Engineering](#3-engineering--genuinely-open) | Us | 12 |
+| [3. Engineering](#3-engineering--genuinely-open) | Us | 15 |
 | [4. Contract deliverables](#4-contract-deliverables-) | Us | 8 |
 | [5. Section-0 redo](#5-section-0-site-redo--separate-sow) | Blocked on a signed change order | 20 |
-| [6. Unproven, not broken](#6-unproven-not-broken) | Us + tester | 9 |
+| [6. Unproven, not broken](#6-unproven-not-broken) | Us + tester | 10 |
 
 **If only two things get done:** §2.1 (live payment keys) and §1.1 (delete the
 seed listings). The first means the product currently looks like it is taking
@@ -54,14 +63,14 @@ money and is not. The second gates every honest SEO number on the site.
 |---|---|---|---|
 | ~~1.1~~ | ~~**Delete the 29,227 seed listings**~~ **DONE (not by me)** | **Re-counted 2026-09-08: `tbl_properties` holds 4 rows, 1 of them host 100.** The 29k seed set has been removed since the 09-05 edition — not by me, and I did not see it happen. Public surface is now **24 URLs** (2 property, 5 blog, 17 pages). SEO figures now measure real data. | verified 09-08 — `SELECT COUNT(*)`, live child sitemaps |
 | **1.2** | **Switch analytics on — after two sign-offs** | The consent banner is **built and live** (the earlier wording here was stale): three categories, "Only essential" at equal weight, Consent Mode v2 defaults denied, Hotjar barred from host/booking/account/admin routes, chat widget off the public pages. Nothing loads until the admin switch is on **and** the visitor grants the category. What is still the client's: (1) counsel reads the Privacy Policy's cookie section (`/Privacy-Policy#cookies`, drafted 09-05, names every provider); (2) if Hotjar is used, set its URL targeting to public pages only; then flip **Admin → Global SEO → Load tracking scripts**. | verified 09-05 — live banner, storage and script list on an anonymous visit |
-| **1.3** | **Cash / UPI collection — 4 decisions** | The rail is **built** (`tbl_host_dues`, 24 rows, offset against payouts). What is still missing is policy: who confirms collection, when, how the 15% + GST is recovered, and what happens if the host never confirms. Detail in §7. | verified — 24 rows in `tbl_host_dues` |
+| **1.3** | **Cash / UPI collection — 1 decision left (was 4)** | Three of the four were answered in code on 2026-09-12 (§8a21), following the recommendation already given: the **host** confirms, **at check-in or with an explicit button**, and the commission is **netted off the next payout**. What remains is the one the code cannot decide: **what happens when the host never confirms** — auto-mark collected at checkout, or flag to admin? Until that is answered a host who simply never presses the button leaves the booking unpaid for ever, and the platform never recovers its 15%. Detail in §7. | code 09-12 — `cashCollection.service.js`, `cashIsRecordedWhenCollected` |
 | ~~1.4~~ | ~~**Cancellation policy — the admin controls the document asks for**~~ **CLOSED 2026-09-08** | All four Admin Panel controls built and live: enable/disable a policy, create new policy types with their own refund ladder, restrict a policy to approved hosts, and an exceptional-refund override (`1b9a4f9`, `195fa93`, `34e80ba`, `ae51f23`). Two migrations applied to the live DB. The guest-initiated **booking modification** from §4 of the document is also built — request, host approval, and the price difference charged or refunded (`7ace67d`, `99f73aa`). **The line that governs the whole module:** the registry decides what is OFFERED, never what a published policy PAYS. A booking snapshots the policy KEY, not the ladder, so editing "Firm" would rewrite what is owed to guests who already booked on it; built-in ladders stay in code and the API refuses to edit them, pinned by three separate assertions. **Not driven end to end:** the two modification screens. The renter test account's only bookings are in the past, so nothing on it is modifiable; the one future modifiable booking belongs to rentertest003@yopmail.com / hosttest002@yopmail.com. | verified 09-08 — live API, live DB, both admin screens driven |
 | **1.5** | **Weather provider + key** (was E-2, RENT-7) | Renter-dashboard weather widget cannot start without a provider choice. | carried |
 | **1.6** | **Brand assets** — logo set, favicon/PWA icons, animated illustrations, WhatsApp number, social links, reference designs (was E-5, S0-ASSET-1…5) | Gates most of Section-0. | carried |
 | ~~1.7~~ | ~~**The five test listings that are now the public catalogue**~~ **MOOT** | Of the 6 live real-host listings, **5 are tester approvals**: four on 2026-09-04 so the site was not empty after approval started gating visibility — Garg Resorts (29263), Tharamani Farm Retreat (29265), Vrindavan Garden Farm Stay (29277), Delhi Green Farm Stay (29279 — the last two renamed from "Aish mobile host property…") — and Aish camping in the hills (29289) on 09-05, approved to prove the audit-trail fix. They are tester accounts' listings with tester phone numbers. Decide whether they stay through launch or come down with the seed data. | **2026-09-08: all five are gone** with the rest of the wipe. The catalogue is now property ids 29291-29294, of which 2 are publicly listed: "Heritage stay aish for testing" and "Ben Tree House". Both are still test names on a public site — that part of the decision survives. | verified 09-08 — sitemap-properties.xml |
 | ~~1.12~~ | ~~**Email delivery is unproven**~~ **Working (client, 2026-09-11)** | The client reports the host2 signup OTP arrived and was verified within 23 s; the mailinator public inbox simply does not show mail for every alias. Signup OTP proven; password-reset and cancellation-OTP mails assumed to be on the same path. | client, 2026-09-11 |
 | ~~1.9~~ | ~~**Ledger rows written by the broken verification code — run the repair**~~ **DONE 2026-09-11** | Client ran `scripts/repairLedger_2026-09-11.js --apply`: 4 `book_amount_paid`, 4 `pay_amount`, 3 `he_amount` corrected, hd 29 voided, **B283633 refunded ₹6,825 (`rfnd_TadH9kNXzOMANG`, payout held)** and **B761983 refunded ₹630 (`rfnd_TadH27lRt7HINJ`)**, both COMPLETED in Razorpay test mode. Verified in the DB afterwards. | client-run script output + DB, 2026-09-11 |
-| **1.11** | **Category 1 is titled "Villas -1"** | Every villa on the public site reads "Villas -1 · Listed category" (29302 and the card rail). A test rename left in `tbl_categories`; the slug `villas-1` is fine to keep. One click in Admin › Catalogue › Categories › pencil on "Villas -1" → "Villas" → Save name. My sandbox refused the edit. | admin Categories screen, 2026-09-11 |
+| **1.11** | **The category catalogue needs an hour of an admin's time** | Three things, all data rather than code, and all now MORE visible because Browse by category reads the catalogue live (§8a20) instead of nine hardcoded tiles. (a) **Category 1 is titled "Villas -1"** — every villa on the public site reads "Villas -1", a test rename left in `tbl_categories`; the slug `villas-1` is fine to keep. (b) **Nine of the eleven categories have no image** — the rail falls back to a rotation of stock photographs, so two categories look photographed and nine look generic; upload one icon each at Admin › Catalogue › Categories › pencil › Replace image. `Resort` carries a line-drawing icon that looks wrong beside a photograph. (c) **The CMS heading still reads "browser by caterogy"** — Admin › CMS › Homepage Content › Categories heading. All four are one click each; my sandbox refused the category edit. | admin Categories + CMS screens, 2026-09-12 |
 | ~~1.10~~ | ~~**Admin approval → public listing, end to end**~~ **DONE 2026-09-11** | 29302 "QA Sunrise Villa" filed from the app (all five steps, map pin at Christ Church Kasauli, 10 tagged photos with ALT text, ownership PDF, Moderate policy, approval required, weekend/weekly/monthly rates, pets, 15:00 check-in) → Submitted tab → Mark all checked → Approve & publish → live at `/property/qa-sunrise-villa-solan-himachal-pradesh` with map pin, gallery, rules, nearby, policy ladder, negotiation, `psb_reviewed_by` recorded. Quote engine: Fri ₹3,600 + Sat ₹3,800, 10% advance discount, ₹500 cleaning, 5% GST; extra guests ₹400 × 2 × 2 nights once the app could say who is included. Found and fixed on the way: the document-upload Submit deadlock (web + app), the self check-in method erased on re-save (app), the extra-guest section missing (app), "1800 sq_ft" / "Pet Area 1" on the public page (backend). **The listing is live test content on production — delete it when the client is done with it.** | driven 2026-09-11, builds 66–68 |
 | **1.13** | **Two one-off data repairs — run them** (my sandbox refuses production writes) | Both dry-run by default and print what they will touch. In PowerShell: `cd D:\Projects\aajaoBackend-render; node scripts/cleanupImageSeo_2026-09-11.js --apply` — deletes **18** `image_seo` rows whose photograph no longer exists and resets **5** rows that pre-date their photograph (media 72–75 on 29303 carried a Dharamsala cottage's ALT text; media 67 on 29302 "Wood-panelled ceiling…"). Then `node scripts/maskPropertyBankNumbers_2026-09-11.js --apply` — masks the **2** plaintext account numbers `property_bank_details` was holding (29294, 29303). Why they exist: §8a15. | dry runs printed 2026-09-11 |
 | **1.8** | **Where the platform runs after UAT** | `Deployment_Options_2026-09-05.docx` compares staying on Render + Vercel with AWS, Azure, GCP, DigitalOcean and a VPS, with indicative costs. Recommendation: stay through UAT (Render Starter, $7/mo), then **DigitalOcean Bangalore** (~$45–75/mo) as the first managed home in India; hyperscaler only with an owner or credits; VPS only with a named operator. Needs the client's answers to §8 of that document: expected traffic, budget, who operates, existing cloud agreements. | doc |
@@ -103,6 +112,9 @@ money and is not. The second gates every honest SEO number on the site.
 | **3.10** | **Web lint baseline is red** | `npm run lint` reports **~600 problems, 540 of them `no-explicit-any`**, so lint cannot gate the Vercel build (which runs `tsc -b` only). The empty-catch rule added on 09-05 therefore only bites when someone runs lint by hand. Either downgrade `no-explicit-any` to a warning and clean the rest, or fix the anys — then add `lint` to the build. | verified 09-05 — `eslint .` |
 | **3.11** | **Report of listings whose stored contact fails the 6–9 mobile rule** | Two of yesterday's renames were blocked because the admin form re-validated a stored `1425369807`. The form now validates only what changed, but the junk is still stored and will surface the next time a host edits those listings in the wizard. A one-off query + host nudge. | verified 09-05 — the two numbers |
 | **3.12** | **Leftovers from the sweep** | (a) Two screen-level empty catches remain in the app (`host_profile.dart:67`, `csc_picker.dart:750`); every *service* is clean. (b) `tbl_book_statuses` ids 12/13/14 double as payout-request states (`statusPayoutPending/Successfull/Failed` in `commonConfig`); 13 now counts as revenue by decision, but a booking table sharing ids with a payout table is a cleanup waiting to bite. | verified 09-05 — `flutter analyze`, `config/commonConfig.js` |
+| **3.13** | **The app hangs opening listing 29303 from the deal banner** | Tapping the parting-offer banner on build 81 sits on a modal spinner and never resolves. The same build opens other listings normally and the endpoint answers that listing in 2.5s from the same machine, so it is not the API. Leading suspicion is the `flutter_secure_storage` token read that precedes the HTTP call — the 30s `receiveTimeout` added on 09-12 covers the request and nothing covers the read before it. **This is what blocks the guest-side app verification of the dated 'Listed at' line and the greyed offer button** (§6). Diagnosing it needs a debug build, which means uninstalling the release APK and the user logging in again. | reproduced 09-12 on the emulator, twice |
+| **3.14** | **Listing 29303 is carrying test weekend rates I added** | Put there on 09-12 to prove the dated-price work, because only 14 of the catalogue's listings have weekend rates at all. Harmless — it is a test listing — but it makes 29303 a bad control for anything else, and the next person to look at its pricing will not know why a weekend costs more. Either revert it or write it down on the listing. | code 09-12 — `nightlyRates` rows |
+| **3.15** | **Build 81 has never left this machine** | Everything shipped on 09-12 on the app side — the greyed offer button, the host thread, the dated ceiling — is in a release APK that exists only at `aajoo_app_2026/build/app/outputs/flutter-apk/app-release.apk`. The tester is still holding **49**, from 09-08. Name it, copy it to the repo root, run `tool/verify_release_apk.py` against it, and hand it over — or nothing from today is being tested on a phone. | verified 09-12 — `sha256sum`, repo root listing |
 
 ---
 
@@ -117,7 +129,7 @@ Functional scope is delivered; these are the contractual artifacts. All still op
 | **4.3** | **FMS — Functional Specification** | |
 | **4.4** | **HMS — Functional Specification** | |
 | **4.5** | **Security & Compliance doc + RBAC matrix** | The RBAC itself exists (`config/adminRoles.js`, incl. `SEO_MANAGER`); the document does not. |
-| **4.6** | **Test suite to contract standard** | **43 backend test files pass** on `npm test` and **138 app tests** on `flutter test`, but the contract asks for >80% measured coverage, 200+ integration tests, plus load and OWASP reports. No coverage tooling is wired. |
+| **4.6** | **Test suite to contract standard** | **135 backend tests pass** on `npm test`, **360 app tests** on `flutter test` and **47 web tests** on `npm run test:rules` (43 / 138 / — on 09-05), but the contract asks for >80% measured coverage, 200+ integration tests, plus load and OWASP reports. No coverage tooling is wired. |
 | **4.7** | **Deployment guide + operational runbook + KT docs** | `DEPLOY_RUNBOOK.md` and the handoffs exist; `Deployment_Options_2026-09-05.docx` (05-09) covers requirements, sizing, tools, providers, cost and a migration plan. Still to formalise: the runbook for whichever host is chosen (§1.8) and the KT pack. |
 | **4.8** | **UAT test cases + sign-off package** | **Manuals delivered 2026-09-05** — web (81 cases, 8 modules) and Android (55 cases, 6 modules), each with environment, accounts, procedure, defect template and sign-off table. Execution and sign-off are the client's; **an internal dry run of both manuals is recommended first** — see §6 for the cases that have only code/test-level verification so far. |
 
@@ -160,6 +172,7 @@ Nothing here is known to be defective. Each is a path nobody has exercised.
 - Google Search Console will not accept the sitemap without warnings until someone with GSC access submits it.
 - Whether `dbCutoverSafe` currently reads true — see §2.4.
 - **For the tester, on build 16** (each deploys cleanly and is covered by tests, but needs a signed-in host/guest on a device): #19's merged notification feed matches the website for the same host; the guest count survives "Move to Book at Agreed Price" on a *new* negotiation; airplane mode on host Notifications, guest My Negotiations and host Profile → properties shows "Couldn't load · Try again" rather than an empty state; #13's dropdown focus jump (fixed from the code, never reproduced on the emulator).
+- **The app's GUEST side of the negotiation rebuild, on a device (build 81).** The host side was driven on the emulator on 09-12 and the shared labelling is under test, but the two guest surfaces that changed — the offer button greying with its reason, and the dated “Listed at” line — were never reached, because the deal banner that leads to them hangs (§3.13). Both are covered by `negotiation_lock_test` and `offer_ceiling_test` and both are verified on the website; what is unproven is the app rendering them.
 - **`REQUIRE_IMAGE_ALT`** — whether it has been set on Render is not visible from outside (see §2.3).
 - **UAT cases with code/test-level verification only (2026-09-05).** Most manual cases were walked live during the 1 Sep sweep and this week's fixes, but these have not been driven end-to-end on production or a device: web **W-BOOK-04** (cancellation card + acknowledgement on Booking review — deployed, not exercised in a real checkout), **W-ACC-03** (cancel quote from the policy snapshot), **W-BOOK-11** (double-booking race), **W-NEG-02** (guest count through an accepted counter); Android **build 17 has not been run on a device** — A-BOOK-02 (reserve-sheet card), A-EXP-04 (policy tab from the server), A-X-01 (airplane-mode states), A-ACC-07 (push), A-ONB-04 (Google sign-in), A-ACC-12 (chat after the handoff-token change). Everything else in the manuals is either verified live or a known limitation named in the manuals.
 
@@ -171,16 +184,43 @@ Nothing here is known to be defective. Each is a path nobody has exercised.
 against payouts, and screens on web host, web admin and the app. Captured test
 payments were driven on both web and the app.
 
-**What is still a client decision** (§1.3):
+**Three of the four decisions were answered in code on 2026-09-12** (§8a21), taking
+the recommendation that had been sitting here unanswered since 09-04. They were
+answered because leaving them open had a cost that was not visible from this
+list: a pay-at-property booking stayed `book_is_paid = 0` for life, its four
+ledger rows PENDING, no invoice and no queued payout — and **every finance screen
+filters on COMPLETED, so the admin could not see a rupee of it and the host was
+never paid.** The client asked for the button on the same day, which settled it.
 
-1. **Who confirms collection** — host marks "cash received", or admin reconciles?
-2. **When** — at check-in, or at checkout?
-3. **How the platform recovers 15% + GST** — net it off the host's next online payout, or invoice separately?
-4. **If the host never confirms** — auto-mark collected at checkout, or flag to admin?
+1. ~~**Who confirms collection**~~ — **the host.** Admin reconciliation was the
+   alternative and it scales badly: the person who took the money is the person
+   who knows it arrived.
+2. ~~**When**~~ — **at check-in, and also whenever they say so.** Check-in records
+   it inside the check-in's own transaction, so a cash guest cannot be walked in
+   while the booking still says nothing was paid. `POST
+   /host/booking/collect-payment` records it on its own, because a host may
+   collect before or after arrival, and a product that only records payment as a
+   side effect of something else cannot answer “has this been paid?”
+3. ~~**How the platform recovers 15% + GST**~~ — **netted off the next online
+   payout**, which is what `tbl_host_dues` was built for and what it has been
+   doing for the 24 rows already in it. The collection service deliberately does
+   not touch that table: the debt was raised when the booking was made, and
+   settling it is a separate act.
+4. **If the host never confirms** — **STILL OPEN, and it is the one that needs
+   you.** Auto-mark collected at checkout, or flag to admin? Recommendation
+   unchanged: auto-flag to admin 24h after checkout rather than auto-marking,
+   because auto-marking invents revenue. Until this is answered, a host who
+   simply never presses the button leaves the booking unpaid for ever and the
+   platform never recovers its commission — which is exactly the hole the other
+   three just closed for every host who does press it.
 
-Recommendation already given: host marks collected at check-in; commission netted
-off the next online payout; unconfirmed stays auto-flag to admin 24h after
-checkout.
+**Guard rails already in the code**, so that answering 4 does not reopen 1–3: a CARD
+booking can never be marked collected by hand (its money arrives through
+Razorpay verification), collecting twice is refused rather than paid twice, a
+cancelled booking cannot be collected against, and recording a payment does not
+move the booking's status — whether a guest has arrived and whether they have
+paid are two different facts. All four are pinned by
+`tests/cashIsRecordedWhenCollected.test.js`.
 
 The commission model itself is unchanged and already implemented in
 `utils/financeRecorder.js` — 15% of room subtotal charged to the host, 18% GST on
@@ -189,6 +229,130 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a21. Closed 2026-09-12 (evening) — the booking-confirmed page, the host's photograph, and cash at the door
+
+Three from one client message, with a photograph of the confirmation page.
+
+**The page came apart because a three-track grid held FOUR children.**
+`1fr 1.1fr 340px` with four blocks in it wraps the fourth under the first:
+the confirmation stranded in a tall empty column, the map cut off
+mid-tile, the summary doing the most work while sitting furthest right,
+"What's Next?" orphaned below. Three columns were never right for this
+page — it answers four questions in a fixed order (did it work, what did
+I book, where is it, what now) and side by side asks the reader to choose
+where to look at the one moment they want to be told. One column now,
+capped at 760 and centred. Three alignment faults went with it: the facts
+row was `space-between` and wrapped whenever a value ran long (it is a
+four-up grid now, two on a phone); the reference and payment mode were
+buried in a corner when they are the two facts a guest copies down; and a
+"Details" button led to the same screen as "Booking details" four inches
+below it. Measured at 1440 and 390 rather than eyeballed. (`fix(web): the
+booking-confirmed page is one column`.)
+
+**A host could not set a profile picture anywhere in the product.** The
+host Profile screen showed a bundled stock avatar — or the first letter
+of their name — and offered no way to change either, so the picture on
+screen was never theirs even when they had uploaded one on the guest
+side. Same endpoint as guest settings: one profile per person, because a
+second upload path gives a host two pictures and no way to know which one
+guests see.
+
+**A pay-at-property booking that had been paid could not say so**, which
+is §7 question 1 and 2 answered in code. A cash booking was confirmed
+with nothing paid and stayed that way for life: `book_is_paid = 0`, its
+four ledger rows PENDING, no invoice, no queued payout — and every
+finance screen filters on COMPLETED, so **the admin could not see a rupee
+of it and the host was never paid**. The machinery already existed and
+was never called: `recordBookingFinance({ collected })` was written to
+record PENDING with no payout and promote on a second call. Both of the
+client's suggestions are implemented, because they are different
+questions: **check-in records it** (inside the check-in's own
+transaction, so a guest cannot be walked in without it) and
+**`/host/booking/collect-payment`** records it on its own, because a host
+may collect before or after and a product that only records payment as a
+side effect cannot answer "has this been paid?". Deliberately does not
+touch `tbl_host_dues`, cannot mark a CARD booking paid, cannot collect
+twice, and does not move the booking's status — arrival and payment are
+two different facts. New test `cashIsRecordedWhenCollected`; 135/135.
+
+### 8a20. Closed 2026-09-12 (afternoon) — the home page's card sections were compiled in, and eight filters were inert
+
+Client asked whether Trending Stays, Featured Destinations and Featured
+Collections could be managed, and whether the collections were calling
+the right API with working filters.
+
+**Eight cards filtered nothing.** Collections sent "Luxury", "Family",
+"Pet-Friendly" and "Workcation"; the platform's categories are "Luxury
+Stays" and "Pet-Friendly Stays", and Family and Workcation do not exist.
+Travel Inspiration sent "Weekend Getaways", "Family Vacations",
+"Workcations", "Extended Stays" — kinds of TRIP, not categories.
+`/search` resolves a category TITLE to a `cat_id`, so all eight opened an
+unfiltered search and looked as though they had worked. Each card now
+carries a real category, and a test checks the shipped defaults against
+the live catalogue, because a default that names nothing ships the same
+bug. Verified by clicking: Pet-Friendly Stays lands on `/search` with the
+filter ticked, and Workcations — which filtered nothing at all — now
+lands on Apartments.
+
+**And none of the three sections could be edited.** A new `rows` CMS
+field type holds a small table rather than one value, stored the way
+`images` already is: one record per line in the same TEXT column, cells
+separated by " | ". The backend whitelists PAGES and not keys, so this
+needed **no migration, no endpoint and no schema change**. Destinations,
+Collections and Travel Inspiration are now lists an admin edits, each row
+with its own picture upload, reorder arrows and a delete; every one falls
+back to exactly what the page did before when its field is empty.
+
+**Trending is worked out, not chosen** — stays near the visitor, boosted
+first, then rating, then review count — and nothing said so anywhere an
+admin would look. The field's help now says it and points at the Featured
+rail on Homepage Content, which IS a list they pick. A test pins that
+description to the ordering the page applies so the two cannot drift.
+
+Also this afternoon: **Browse by category was a hardcoded nine** with
+nine bundled photographs while the catalogue held eleven — so the names
+were wrong ("Villas" for a category the platform calls "Villas -1"),
+Resort and Pool House were unreachable, and every tile was inert for the
+same reason as the collections. It reads `/common/categories` now, with
+the admin's uploaded icon, and is a **rail** rather than a grid that grows
+downwards. The admin side was not missing but invisible: the endpoint has
+accepted a `cat_icon` upload since the screen was written and the table
+never displayed it. New tests `categoriesComeFromTheCatalogue`,
+`homeSectionsAreManaged`; web 47/47.
+
+### 8a19. Closed 2026-09-12 (morning) — the negotiation rebuild, and one fault in eight places
+
+The five changes the client asked for, shipped and photographed: unlimited
+counters, an answer written under every offer, a one-hour parting price
+after a decline, a same-day lockout, and a live notification layer (a
+popup on any screen, an email, and a push). Full write-up in
+`AAJOO_NOTIFICATIONS_AND_NEGOTIATIONS_2026-09-12.pdf`; the user-journey
+document was rebuilt from scratch against the new engine
+(`Aajoo-Negotiation-User-Journey.pdf`, 32 pages, 31 photographs taken on
+the live site that day).
+
+**The thing worth remembering from it:** one fault appeared in EIGHT
+separate places in a single day — a price that depends on the dates, read
+from a column that does not. Weekend and seasonal rates make a listing's
+nightly column and what a particular night costs different numbers. The
+offer ceiling, the struck-through headline, the parting price, both
+negotiation cards, the "for your dates" line, the app's offer sheet, and
+— the only one that cost money — **the counter-back verdict**, which
+accepted ₹850 on a stay whose accept line was ₹1,050 because ₹850 clears
+the FLAT ideal. The host sold a night ₹200 under what they would have
+agreed to and was never asked. The derivation now lives in one exported
+function, `negotiationService.tiersForDates()`, and everything asks it.
+
+**The privacy property was demonstrated, not asserted:** three opening
+offers a rupee apart straddling the host's floor, each its own
+negotiation, produced three **byte-for-byte identical** answer
+screenshots. Section 6 of the journey document carries them.
+
+App parity closed the same day (build 81): the offer button greys with
+its reason, the host's thread renders with "Answered for you" marked, one
+shared labelling rule across four screens, and a dated offer ceiling.
+Backend 135/135, app 360/360, web 47/47.
 
 ### 8a18. Closed 2026-09-12 — "Only images or PDF documents are allowed" on ten real photographs
 
