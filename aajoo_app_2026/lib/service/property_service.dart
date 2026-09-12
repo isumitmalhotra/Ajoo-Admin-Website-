@@ -222,7 +222,23 @@ class PropertyService {
     appLog(token);
     dio.options.headers["Authorization"] = "Bearer $token";
     try {
-      final response = await dio.get("properties/$id");
+      // Thirty seconds, not the client's three minutes.
+      //
+      // The three-minute ceiling on this Dio is right for the listing wizard,
+      // which posts several megabytes of photographs in one request. Opening a
+      // listing is a plain GET, and it shares the client -- so on a lossy
+      // connection a guest tapping their own negotiated deal sat under a
+      // barrierDismissible:false spinner for three minutes with nothing said.
+      // Watched on the emulator on 2026-09-12, on a network dropping half its
+      // packets to the API.
+      //
+      // Finite and short enough that the failure path -- "Could not open this
+      // property. Please try again." -- actually runs while the guest is still
+      // looking at it.
+      final response = await dio.get(
+        "properties/$id",
+        options: Options(receiveTimeout: const Duration(seconds: 30)),
+      );
 
       // Remove this line that's causing the error
       // appLog("history ->>>" + response.data); // response.data is a Map, not a String

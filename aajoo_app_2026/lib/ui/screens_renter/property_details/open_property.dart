@@ -29,6 +29,17 @@ Future<void> openPropertyById(
   String errorTitle = 'Property',
 }) async {
   if (propertyId <= 0) return;
+
+  // One at a time.
+  //
+  // Each call opens a barrierDismissible:false dialog and closes ONE when it
+  // finishes, so two taps in quick succession leave a spinner nothing can
+  // dismiss -- over the home screen, on the guest's own negotiated deal, with
+  // only the back button out of it. Seen on the emulator on 2026-09-12 while
+  // opening the deal banner; the listing behind it had loaded fine.
+  if (_opening) return;
+  _opening = true;
+
   Get.dialog(const Center(child: CircularProgressIndicator()),
       barrierDismissible: false);
   try {
@@ -95,5 +106,15 @@ Future<void> openPropertyById(
     if (Get.isDialogOpen ?? false) Get.back();
     Get.snackbar(errorTitle, 'Could not open this property. Please try again.',
         snackPosition: SnackPosition.TOP);
+  } finally {
+    // In a finally, not after the navigation: Get.to returns a future that
+    // completes when the PAGE IS POPPED, and releasing the guard there would
+    // hold it for as long as the guest reads the listing.
+    _opening = false;
   }
 }
+
+/// Guards the dialog above. File-scope rather than a field because every
+/// caller is a different widget and the thing being guarded is global: one
+/// modal over the whole app.
+bool _opening = false;
