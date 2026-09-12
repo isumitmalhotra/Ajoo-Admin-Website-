@@ -40,7 +40,14 @@ SCRIPT="${HERE}/migration/${MODE}.sh"
 # something, and one mis-escaped backtick in a program that runs `mysql` on a
 # production database is not a class of bug worth risking to save a pipe.
 # Encoded, the program crosses all three layers as one opaque token.
-B64="$(base64 < "$SCRIPT" | tr -d '\n')"
+#
+# `tr -d '\r'` first, and it is not paranoia. .gitattributes checks these out
+# with LF, but anything that opens one in a Windows editor and saves can put
+# the carriage returns back, and the result is a shebang line reading
+# "#!/usr/bin/env bash\r" — "bad interpreter", inside the freeze window, on the
+# step that moves the database. Stripping here means the file on disk cannot
+# ruin the run whatever a text editor did to it.
+B64="$(tr -d '\r' < "$SCRIPT" | base64 | tr -d '\n')"
 
 echo "cluster: ${CLUSTER}"
 echo "task   : ${FAMILY}"

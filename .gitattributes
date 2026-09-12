@@ -1,0 +1,15 @@
+# Shell scripts must check out with LF, on every platform.
+#
+# core.autocrlf is on for the people working on this repository, which is right
+# for the Windows tooling and wrong for anything that runs in Linux. The
+# scripts under infra/scripts are shipped INTO a container: migrate-data.sh
+# base64-encodes infra/scripts/migration/*.sh and hands the result to `bash`
+# inside a Fargate task. A file that checked out with CRLF arrives there with a
+# carriage return on the shebang line and fails as "bad interpreter", during
+# the cutover window, on the step that moves the database.
+*.sh text eol=lf
+
+# Same reasoning: these are consumed by Linux runners and by Terraform.
+*.yml text eol=lf
+*.yaml text eol=lf
+*.tf text eol=lf
