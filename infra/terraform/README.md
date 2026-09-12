@@ -108,9 +108,82 @@ resilience decision. The API runs at exactly one task (in-process rate limiter,
 SEO cache, scheduler, Socket.io), so multi-AZ would double the instance cost to
 buy a failover nothing can yet use.
 
+---
+
+## Day 2 — the API
+
+Also here now: ACM certificate, ALB, ECS cluster, task definition, service, log
+group, and the two IAM roles. Same caveat — none of it is applied.
+
+| Resource | Notes |
+|---|---|
+| ACM certificate for `api.aajoohomes.com` | DNS validation. The records are an **output**, not a resource — see below |
+| ALB + HTTPS listener + `:80` → 301 | idle timeout 300s, stickiness on |
+| Target group on `:8080` | health check `/health`, the endpoint that answers without touching the database |
+| ECS cluster, one Fargate service, one task | ARM64, 0.5 vCPU / 1 GB |
+| CloudWatch log group | 30-day retention |
+| Execution role and task role | separate, and the task role is empty |
+
+### The environment, and why Terraform does not create it
+
+Terraform owns what it **knows**: `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PORT`
+and the password it generated. It deliberately does **not** create the rest with
+placeholder values, because `/health/env` reports which names are SET — and a
+placeholder is set. The deploy would go green on a `JWT_SECRET` of
+`REPLACE_ME`, and the first guest to log in would find out.
+
+So the rest come from your machine:
+
+```bash
+cd ../scripts
+cp .env.aws.example .env.aws     # fill it in; it is gitignored
+./put-parameters.sh .env.aws prod
+```
+
+Then `terraform plan` reads the four it cannot invent — `JWT_SECRET` and the
+three `CLOUDINARY_*` — and **fails by name** if one is missing. That is the
+check the platform did not have the last time secrets moved.
+
+A fresh `JWT_SECRET` is not a safe default, which is why it is not generated:
+it would sign every existing session out at cutover.
+
+### DNS is not taken over
+
+Decision 3 — Route 53 or the current registrar — is still open, so the
+certificate's validation records come out as an **output** for somebody to add
+wherever the zone actually lives. Until that record exists the certificate sits
+at `PENDING_VALIDATION` and the HTTPS listener cannot come up; `apply` will
+wait. That is the right order. An ALB serving the wrong certificate is worse
+than one not serving yet.
+
+When the zone does move, set `manage_dns = true` and `route53_zone_id`, and
+validation becomes automatic.
+
+### Deliberate choices worth not undoing, part 2
+
+**One task, and the deploy shape that follows.** The rate limiter, SEO cache,
+scheduler and Socket.io all hold state in the process, so `desired_count = 1`.
+That makes `minimum_healthy_percent = 100` / `maximum = 200` necessary rather
+than tidy: the alternative is a deploy with a hole in it while the new task
+pulls its image.
+
+**No Fargate Spot.** 70% cheaper and reclaimable on two minutes' notice — at
+one task that is not a saving, it is a scheduled outage.
+
+**Stickiness on now, not "when we scale".** The day somebody raises
+`desired_count` is not the day they will remember this file.
+
+**Two IAM roles, and the task role is empty.** The execution role is what ECS
+uses to pull the image and read parameters; the task role is what the running
+container gets. Conflating them hands the container the power to read every
+secret in the account. The API talks to Cloudinary, Razorpay and MySQL over the
+network and needs nothing from the AWS API.
+
+**ECS Exec off by default.** A shell into a running container is the fastest way
+to diagnose a task that will not start, and a shell on a box holding live
+secrets. `enable_ecs_exec = true` for an incident, back to false after.
+
 ## Not here yet
 
-Day 2 onward: ALB, ACM certificate, ECS cluster, task definitions, services,
-CloudFront, Route 53, and the GitHub Actions OIDC role. They are deliberately
-separate — the database is the piece that has to exist before anything else can
-be tested against it.
+Day 3 onward: the web service and CloudFront, staging, the GitHub Actions OIDC
+role, migrations as a deploy step, and CloudWatch alarms.

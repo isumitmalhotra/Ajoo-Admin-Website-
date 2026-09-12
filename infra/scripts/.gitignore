@@ -1,0 +1,4 @@
+# The filled-in environment file. Never.
+.env.aws
+.env.*
+!.env.aws.example
