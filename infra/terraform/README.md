@@ -408,7 +408,79 @@ enabled on the cluster, which is what publishes `RunningTaskCount`.
 5. Re-point anything else that calls in by URL: BotPenguin's handoff endpoint
    and the Cloudinary notification URL, if either is configured.
 
-## Not here yet
+## Day 5 — the cutover
 
-Day 5: the cutover itself — data copy, DNS, the rollback window, and switching
-Terraform's state to the S3 backend.
+The steps live in **`CUTOVER_RUNBOOK_2026-09-13.md`** at the repository root,
+because a runbook is read at 3am by whoever is holding the laptop and should
+not be inside a Terraform directory. What is here is the machinery it uses.
+
+### `bootstrap/` — the state bucket
+
+A separate Terraform root, applied once, because the bucket that holds the
+platform's state cannot be described in the state it holds:
+
+```bash
+cd infra/terraform/bootstrap && terraform init && terraform apply
+```
+
+Then uncomment the `backend "s3"` block in `versions.tf` and run
+`terraform init -migrate-state` in this directory. Versioned, encrypted, public
+access blocked, `prevent_destroy`, and old versions expire after ninety days —
+long enough to recover from any mistake anybody notices, short enough that a
+rotated password does not live in a bucket for ever.
+
+Until this is done the platform's state is one file on one laptop, which means
+the platform can be rebuilt by one person and only while that laptop is alive.
+
+### `data_migration.tf` — moving the database
+
+RDS is in private subnets and admits 3306 from the tasks security group and
+nothing else. There is no bastion and no NAT gateway, so there is exactly one
+place that can write to it: a task on that security group. The copy therefore
+runs as a one-off Fargate task, which has a public IP (so it reaches the
+current managed MySQL) and sits inside the VPC (so it reaches RDS).
+
+That constraint gives the right answer anyway. The alternative — dump to a
+laptop, restore from the laptop — leaves a file containing every guest's KYC,
+every host's bank account and every booking in somebody's downloads folder.
+This way the data goes source → container → RDS and never lands.
+
+```bash
+cd infra/scripts && ./migrate-data.sh copy
+```
+
+```bash
+cd infra/scripts && ./migrate-data.sh verify
+```
+
+`enable_data_migration` defaults to **false** and should be true only for the
+window. The task definition can read the whole of one production database and
+write over another; it should exist for a few hours and then stop existing.
+
+The source credentials go into SSM under `/aajoo/<env>/migration/SOURCE_*`, on
+their own path so they can be deleted in one command afterwards.
+
+### The two things that actually break a data copy
+
+Both are handled in `infra/scripts/migration/copy.sh`, and both are the kind of
+failure that reports success:
+
+**`set -o pipefail`.** Without it, `mysqldump | sed | mysql` exits with the
+status of `mysql`. A dump that dies half way through still feeds valid SQL into
+the target, which applies it happily and exits 0. Green task, ticked box, and a
+platform cut over onto a database missing every table after the break.
+
+**`DEFINER` stripping.** Every view, trigger, routine and event in a dump
+carries `DEFINER=` a user that exists on the source and not on RDS. The restore
+fails on the first one — near the *end* of the dump, after the data has loaded,
+which reads like "the data is fine, only the last bit failed" and is how a
+platform ends up silently running with no triggers.
+
+`verify.sh` counts rows with `COUNT(*)` rather than
+`information_schema.table_rows`, which is an estimate for InnoDB and routinely
+wrong by tens of percent — a verification built on it passes on a half-copied
+database, which is worse than no verification. It also compares views, routines,
+triggers, events, `AUTO_INCREMENT` values and the schema character set, because
+a database that quietly arrives as `latin1` does not fail: it stores every
+Devanagari name as mojibake and nobody notices until a host cannot find their
+own listing.
