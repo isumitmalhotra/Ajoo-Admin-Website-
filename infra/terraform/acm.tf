@@ -36,9 +36,31 @@ variable "route53_zone_id" {
   default     = ""
 }
 
+variable "origin_hostname" {
+  description = <<-EOT
+    The name CloudFront calls the load balancer by.
+
+    CloudFront verifies its origin's certificate, and an ALB's own
+    *.elb.amazonaws.com name will never match a certificate for aajoohomes.com
+    — so an origin pointed at the raw ALB name has to fall back to plain HTTP.
+    That works and is common; it also means the only encrypted leg is the one
+    the public can see. One extra DNS record buys HTTPS the whole way, so this
+    is a SAN on the same certificate and a CNAME to the ALB.
+  EOT
+  type        = string
+  default     = "origin.aajoohomes.com"
+}
+
+variable "web_hostname" {
+  description = "What guests type. CloudFront answers for this one."
+  type        = string
+  default     = "www.aajoohomes.com"
+}
+
 resource "aws_acm_certificate" "api" {
-  domain_name       = var.api_hostname
-  validation_method = "DNS"
+  domain_name               = var.api_hostname
+  subject_alternative_names = [var.origin_hostname]
+  validation_method         = "DNS"
 
   lifecycle {
     # Replace before destroying: a listener cannot be left without a
@@ -70,7 +92,7 @@ resource "aws_acm_certificate_validation" "api" {
 }
 
 output "acm_validation_records" {
-  description = "Add these to whichever zone serves aajoohomes.com, then the certificate issues itself."
+  description = "One per name on the certificate. Add them to whichever zone serves aajoohomes.com."
   value = [
     for o in aws_acm_certificate.api.domain_validation_options : {
       name  = o.resource_record_name

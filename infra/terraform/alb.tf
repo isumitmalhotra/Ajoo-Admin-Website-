@@ -102,7 +102,36 @@ resource "aws_lb_listener" "https" {
   # zone lives elsewhere and somebody added the record by hand.
   certificate_arn = var.manage_dns ? aws_acm_certificate_validation.api[0].certificate_arn : aws_acm_certificate.api.arn
 
+  /**
+   * The default is a refusal, and the routing lives in rules.
+   *
+   * One load balancer now serves two hostnames — the API directly, and the
+   * website through CloudFront — so the listener routes by Host rather than
+   * forwarding everything to whichever target group happened to be written
+   * first. An unmatched Host gets 404 from the balancer: a request for a
+   * hostname nobody configured should not quietly land on the API.
+   */
   default_action {
+    type = "fixed-response"
+    fixed_response {
+      content_type = "text/plain"
+      message_body = "No service for that hostname."
+      status_code  = "404"
+    }
+  }
+}
+
+resource "aws_lb_listener_rule" "api" {
+  listener_arn = aws_lb_listener.https.arn
+  priority     = 10
+
+  condition {
+    host_header {
+      values = [var.api_hostname]
+    }
+  }
+
+  action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.api.arn
   }

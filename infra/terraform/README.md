@@ -183,7 +183,77 @@ network and needs nothing from the AWS API.
 to diagnose a task that will not start, and a shell on a box holding live
 secrets. `enable_ecs_exec = true` for an incident, back to false after.
 
+---
+
+## Day 3 — the website, the CDN, and staging
+
+| Resource | Notes |
+|---|---|
+| Web target group + ECS service | the SPA **and** the SEO renderer, one container, **two** tasks |
+| ALB listener rules | host-based for the API; a shared secret header for the web |
+| CloudFront distribution | short TTL for HTML, a year for `/assets/*` |
+| ACM certificate in **us-east-1** | CloudFront reads its certificate from there and nowhere else |
+| `staging.tfvars.example` | the second, half-size environment |
+
+### The build-time trap
+
+Day 3's first line in the plan, and it is the one that bites: **`VITE_*` values
+are inlined by Vite at build time.** Pointing the website at the new API is a
+*rebuild*, not an environment change. An image built against the old URL will
+keep calling Render however the task definition is written — which is why the
+web task definition injects no secrets at all: adding them would imply they
+could change something, and they cannot.
+
+### Only CloudFront may reach the website
+
+The ALB rule for the web target group matches a **shared secret header**, not a
+Host. Without it the site would also be servable straight off the load
+balancer — bypassing the cache, and giving crawlers a second origin serving the
+same pages under a different name. Terraform generates the secret and hands it
+to CloudFront as a custom origin header.
+
+That is also why the certificate carries `origin.aajoohomes.com` as a SAN: an
+ALB's own `*.elb.amazonaws.com` name can never match a certificate for this
+domain, so a CloudFront origin pointed at the raw ALB name has to fall back to
+plain HTTP. One extra DNS record buys HTTPS on both legs.
+
+### HTML is not a static asset here
+
+The container renders per-URL head tags, so two URLs serving the same bundle
+serve different HTML. Caching on the path is right; caching for a week is not,
+because an admin editing page SEO expects to see it — hence **5 minutes for
+documents, a year for the hashed asset filenames** Vite emits.
+
+And there is deliberately **no `custom_error_response` mapping 404 to
+`index.html`**. That is the standard SPA trick and it would be wrong here: the
+renderer returns real status codes, and a listing that does not exist must
+answer 404 rather than 200-with-the-shell, or every dead URL becomes
+indexable. This platform has already had the mirror image of that bug — pages
+that rendered fine and answered 404.
+
+### Staging
+
+```bash
+terraform workspace new staging
+terraform apply -var-file=staging.tfvars
+```
+
+Half-size, its own hostnames, and `create_shared_resources = false` — the ECR
+repositories are shared on purpose, because staging must run **the artifact
+that will run in production**, promoted rather than rebuilt. A sign-off on a
+different binary proves nothing.
+
+Staging is where every future UAT round and hosting change happens. It is the
+thing the platform has never had, which is why every UAT so far has been run
+against production.
+
+### Still to verify, once it can run
+
+`node scripts/seoAcceptance.mjs` against the new stack, with a real crawler
+user agent. The renderer is the piece most likely to behave differently behind
+a CDN, and the acceptance script is the thing that would notice.
+
 ## Not here yet
 
-Day 3 onward: the web service and CloudFront, staging, the GitHub Actions OIDC
-role, migrations as a deploy step, and CloudWatch alarms.
+Day 4: the GitHub Actions OIDC role, build → ECR → ECS, migrations as a deploy
+step, webhook re-pointing, and CloudWatch alarms. Day 5 is the cutover.

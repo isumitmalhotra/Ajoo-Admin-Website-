@@ -9,8 +9,24 @@ locals {
   images = toset(["api", "web"])
 }
 
+/**
+ * The repositories are SHARED between environments, and only one Terraform
+ * state may own them.
+ *
+ * Sharing is the point: staging should run the exact artifact that will run in
+ * production, promoted rather than rebuilt — a staging sign-off on a different
+ * binary proves nothing. But two states both declaring `aajoo/api` means the
+ * second apply fails with "already exists". So the production workspace
+ * creates them and every other workspace looks them up.
+ */
+variable "create_shared_resources" {
+  description = "True in exactly ONE workspace. Staging sets it false."
+  type        = bool
+  default     = true
+}
+
 resource "aws_ecr_repository" "app" {
-  for_each = local.images
+  for_each = var.create_shared_resources ? local.images : toset([])
 
   name                 = "aajoo/${each.key}"
   image_tag_mutability = "IMMUTABLE"
@@ -32,11 +48,27 @@ resource "aws_ecr_repository" "app" {
   tags = { Name = "aajoo-${each.key}" }
 }
 
+data "aws_ecr_repository" "app" {
+  for_each = var.create_shared_resources ? toset([]) : local.images
+  name     = "aajoo/${each.key}"
+}
+
+locals {
+  # One place that answers "where do I push, and what do I pull" whichever
+  # workspace is running.
+  ecr_urls = var.create_shared_resources ? {
+    for k, r in aws_ecr_repository.app : k => r.repository_url
+    } : {
+    for k, r in data.aws_ecr_repository.app : k => r.repository_url
+  }
+}
+
 /**
  * Keep the last 20 images, expire the rest.
  *
  * Storage is $0.10/GB/month and these images are not small. Twenty is enough
- * to roll back past a bad week without keeping every build since launch.
+ * to roll back past a bad week without keeping every build since launch. Only
+ * the workspace that owns the repositories writes this.
  */
 resource "aws_ecr_lifecycle_policy" "app" {
   for_each   = aws_ecr_repository.app

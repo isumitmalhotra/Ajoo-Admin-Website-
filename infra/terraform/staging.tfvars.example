@@ -1,0 +1,31 @@
+# Staging — the second, half-size environment Day 3 calls for.
+#
+#   terraform workspace new staging
+#   terraform apply -var-file=staging.tfvars
+#
+# Staging is where every future UAT round and hosting change happens. It is the
+# thing the platform has never had, which is why every UAT so far has been run
+# against production.
+
+env = "staging"
+
+# FALSE here, and true in exactly one workspace. The ECR repositories are
+# shared on purpose — staging must run the artifact that will run in
+# production, promoted rather than rebuilt — so production creates them and
+# staging looks them up. See ecr.tf.
+create_shared_resources = false
+
+# Distinct hostnames, or CloudFront refuses the alias and the ALB rules collide.
+api_hostname    = "api.staging.aajoohomes.com"
+web_hostname    = "staging.aajoohomes.com"
+origin_hostname = "origin.staging.aajoohomes.com"
+
+# Half-size. A 43 MB database does not need more, and staging that costs as
+# much as production is staging somebody switches off.
+db_instance_class    = "db.t4g.micro"
+db_allocated_storage = 20
+api_cpu              = 256
+api_memory           = 512
+
+# Staging is allowed to be destroyed. Production is not.
+db_deletion_protection = false

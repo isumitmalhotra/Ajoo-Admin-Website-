@@ -29,8 +29,8 @@ output "tasks_security_group_id" {
 }
 
 output "ecr_repository_urls" {
-  description = "docker push targets, one per image."
-  value       = { for k, r in aws_ecr_repository.app : k => r.repository_url }
+  description = "docker push targets, one per image. Shared across environments."
+  value       = local.ecr_urls
 }
 
 output "db_endpoint" {
