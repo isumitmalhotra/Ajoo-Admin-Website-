@@ -807,6 +807,7 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
               if (isGroupVisible(g, c.details))
                 OptionGroupPicker(
                   label: g.label,
+                  groupKey: g.key,
                   options: g.options,
                   selected: c.amenities[g.key] ?? const [],
                   onToggle: (v) => c.toggleAmenity(g.key, v),
@@ -825,6 +826,7 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             for (final g in s.safetyGroups)
               OptionGroupPicker(
                 label: g.label,
+                groupKey: g.key,
                 options: g.options,
                 selected: c.amenities[g.key] ?? const [],
                 onToggle: (v) => c.toggleAmenity(g.key, v),
@@ -839,6 +841,7 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
           children: [
             OptionGroupPicker(
               label: '',
+              groupKey: s.outdoorAmenities.key,
               options: s.outdoorFor(category),
               selected: c.amenities[s.outdoorAmenities.key] ?? const [],
               onToggle: (v) => c.toggleAmenity(s.outdoorAmenities.key, v),
@@ -851,6 +854,7 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
           children: [
             OptionGroupPicker(
               label: '',
+              groupKey: s.premiumAmenities.key,
               options: s.premiumAmenities.options,
               selected: c.amenities[s.premiumAmenities.key] ?? const [],
               onToggle: (v) => c.toggleAmenity(s.premiumAmenities.key, v),
@@ -865,6 +869,7 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
           children: [
             OptionGroupPicker(
               label: '',
+              groupKey: s.accessibility.key,
               options: s.accessibility.options,
               selected: c.amenities[s.accessibility.key] ?? const [],
               onToggle: (v) => c.toggleAmenity(s.accessibility.key, v),
@@ -879,6 +884,7 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
               _field(field, c.details, c.setDetail),
             OptionGroupPicker(
               label: s.familyAmenities.label,
+              groupKey: s.familyAmenities.key,
               options: s.familyAmenities.options,
               selected: c.amenities[s.familyAmenities.key] ?? const [],
               onToggle: (v) => c.toggleAmenity(s.familyAmenities.key, v),
@@ -921,6 +927,7 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
           children: [
             OptionGroupPicker(
               label: '',
+              groupKey: s.scenicViews.key,
               options: s.scenicViews.options,
               // `.toList()`, not `c.views` — do NOT "simplify" this back.
               //

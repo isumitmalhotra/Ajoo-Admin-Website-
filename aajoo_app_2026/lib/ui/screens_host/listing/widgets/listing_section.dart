@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/models/listing_schema.dart';
+import 'package:rent_home/ui/screens_host/listing/listing_icons.dart';
 import 'package:rent_home/ui/screens_host/listing/widgets/schema_field_input.dart';
 import 'package:rent_home/utils/fonts.dart';
 
@@ -52,12 +53,22 @@ class OptionGroupPicker extends StatelessWidget {
     required this.options,
     required this.selected,
     required this.onToggle,
+    this.groupKey,
   });
 
   final String label;
   final List<Option> options;
   final List<String> selected;
   final ValueChanged<String> onToggle;
+
+  /// The schema group key, used only when an option's own label says nothing.
+  ///
+  /// "Attached" and "Shared" mean nothing by themselves and everything under
+  /// the heading Bathroom, so the group is what stops those two chips falling
+  /// back to a generic tag. It also keeps this honest as the schema grows: a
+  /// new bathroom fitting inherits the bath icon without anybody adding a
+  /// keyword for it.
+  final String? groupKey;
 
   @override
   Widget build(BuildContext context) {
@@ -83,6 +94,7 @@ class OptionGroupPicker extends StatelessWidget {
                 ListingPill(
                   label: o.label,
                   selected: selected.contains(o.value),
+                  icon: iconForAmenity(o.label, groupKey),
                   onTap: () => onToggle(o.value),
                 ),
             ],

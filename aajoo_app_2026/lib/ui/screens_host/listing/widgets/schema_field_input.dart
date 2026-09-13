@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/models/listing_schema.dart';
+import 'package:rent_home/ui/screens_host/listing/listing_icons.dart';
 import 'package:rent_home/utils/fonts.dart';
 
 class SchemaFieldInput extends StatelessWidget {
@@ -157,6 +158,7 @@ class SchemaFieldInput extends StatelessWidget {
             _Pill(
               label: o.label,
               selected: selected == o.value,
+              icon: iconForSchemaOption(field.key, o.value),
               onTap: () => _set(selected == o.value ? null : o.value),
             ),
         ],
@@ -291,6 +293,7 @@ class SchemaFieldInput extends StatelessWidget {
           _Pill(
             label: o.label,
             selected: selected.contains(o.value),
+            icon: iconForSchemaOption(field.key, o.value),
             onTap: () {
               final next = [...selected];
               next.contains(o.value)
@@ -475,17 +478,20 @@ class _Pill extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.icon,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) => ListingPill(
         label: label,
         selected: selected,
         onTap: onTap,
+        icon: icon,
       );
 }
 
@@ -497,14 +503,22 @@ class ListingPill extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.icon,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
 
+  /// Null draws a plain pill, and that is a real answer rather than an
+  /// oversight — see `listing_icons.dart`. A scale (High / Medium / Low) gets
+  /// no picture, and because the decision is made per FIELD, a question draws
+  /// icons on every one of its chips or on none of them.
+  final IconData? icon;
+
   @override
   Widget build(BuildContext context) {
+    final colour = selected ? kIndigo : kInk;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
@@ -518,13 +532,27 @@ class ListingPill extends StatelessWidget {
             width: selected ? 1.6 : 1,
           ),
         ),
-        child: Text(
-          label,
-          style: inter(
-            fontSize: 13.5,
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            color: selected ? kIndigo : kInk,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 15, color: colour),
+              const SizedBox(width: 6),
+            ],
+            // A long label in a Wrap must be able to give way, or a chip wider
+            // than the screen overflows instead of wrapping. Flexible rather
+            // than Expanded: a short chip still shrinks to its text.
+            Flexible(
+              child: Text(
+                label,
+                style: inter(
+                  fontSize: 13.5,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: colour,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
