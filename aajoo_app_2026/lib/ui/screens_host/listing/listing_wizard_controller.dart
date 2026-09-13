@@ -832,6 +832,57 @@ class ListingWizardController extends GetxController {
     nearbyState.value = nearbySuggestions.isEmpty ? 'off' : 'ready';
   }
 
+  /// Fill in the three emergency distances, once, when the host reaches step 3.
+  ///
+  /// Client, 2026-09-13: "these as well find by google location distance and
+  /// all like showing in things to know". Asking a host how far the fire
+  /// station is gets a guess, a blank, or a number copied off another listing
+  /// — and a guest reading "2 km to hospital" in an emergency is reading a
+  /// guess. We have the pin, so the platform can simply know.
+  ///
+  /// SUGGESTED, NEVER IMPOSED. Only EMPTY boxes are filled. A host who knows
+  /// about a police outpost Google has never heard of is more right than we
+  /// are, and a form that overwrote what somebody typed would be the worst
+  /// kind of helpful.
+  ///
+  /// Silent on failure, like the suggestions beside it: the boxes stay
+  /// typeable, exactly as this form behaved before any of this existed.
+  final RxBool safetyAsked = false.obs;
+
+  Future<void> loadSafetyDistances() async {
+    final id = propertyId.value;
+    if (id == null || id == 0) return;
+    if (safetyAsked.value) return;
+    safetyAsked.value = true;
+
+    final found = await _service.safetyDistances(id);
+    if (found.isEmpty) return;
+
+    var filled = 0;
+    found.forEach((key, value) {
+      final current = details[key];
+      final empty = current == null || current.toString().trim().isEmpty;
+      if (!empty) return;
+      details[key] = value;
+      if (key.endsWith('_distance')) filled += 1;
+    });
+    if (filled > 0) {
+      details.refresh();
+      // A line under the fields rather than a snackbar, for two reasons. It
+      // sits WHERE the numbers appeared, so a host reading "4.1" knows at a
+      // glance where 4.1 came from — a toast that has already faded explains
+      // nothing. And this wizard's own history is the other: Get.back() closes
+      // an open snackbar and returns, which is what left a spinner on screen
+      // for ever (see utils/modal_spinner.dart).
+      safetyNotice.value = filled == 1
+          ? 'Filled in one distance from the map. Change it if you know better.'
+          : 'Filled in $filled distances from the map. Change any of them if you know better.';
+    }
+  }
+
+  /// Shown under the three safety fields once they have been filled in.
+  final RxString safetyNotice = ''.obs;
+
   void toggleMonth(String m) => toggleIn(seasonalMonths, m);
 
   void toggleHouseRule(String key, bool on) {

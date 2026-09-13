@@ -108,6 +108,14 @@ class SinglePropertyData {
   /// the server never asks about).
   final NegotiationLock? negotiationLock;
 
+  /// How far the police, the hospital and the fire station are.
+  ///
+  /// Client, 2026-09-13. Measured from the property's own pin rather than
+  /// guessed by a host, and PHRASED by the server — the website prints the
+  /// same sentence, so the two cannot come to word an emergency distance
+  /// differently.
+  final List<SafetyDistance> safetyDistances;
+
   /// Per-room detail — "Where you'll sleep".
   ///
   /// Every line arrives already WRITTEN by the server
@@ -186,6 +194,7 @@ class SinglePropertyData {
     this.negotiationLock,
     this.amenityGroups = const [],
     this.rooms = const PropertyRooms(),
+    this.safetyDistances = const [],
     this.experiences = const [],
     this.views = const [],
     this.specifications = const [],
@@ -295,6 +304,7 @@ class SinglePropertyData {
               Map<String, dynamic>.from(json['houseRules'] as Map))
           : null,
       rooms: PropertyRooms.fromJson(json['rooms']),
+      safetyDistances: SafetyDistance.listFrom(json['safetyDistances']),
       amenityGroups: (json['amenityGroups'] is List)
           ? (json['amenityGroups'] as List)
               .whereType<Map>()
@@ -907,4 +917,43 @@ class PropertyRooms {
       bathrooms: DescribedRoom.listFrom(j['bathrooms']),
     );
   }
+}
+
+
+/// One emergency service and how far away it is.
+class SafetyDistance {
+  const SafetyDistance({
+    required this.label,
+    required this.km,
+    required this.line,
+    this.name,
+  });
+
+  /// "Police station" / "Hospital" / "Fire station".
+  final String label;
+  final double km;
+
+  /// The place Google named, when it named one.
+  final String? name;
+
+  /// The whole sentence, written by the server. Printed, never assembled —
+  /// "Nearest hospital — 3.2 km away", and never "X minutes away", because
+  /// the measurement is straight-line and 4 km as the crow flies is a
+  /// twenty-minute drive in the hills.
+  final String line;
+
+  factory SafetyDistance.fromJson(Map<String, dynamic> j) => SafetyDistance(
+        label: (j['label'] ?? '').toString(),
+        km: (j['km'] is num) ? (j['km'] as num).toDouble() : 0,
+        name: (j['name'] as Object?)?.toString(),
+        line: (j['line'] ?? '').toString(),
+      );
+
+  static List<SafetyDistance> listFrom(dynamic raw) => raw is List
+      ? raw
+          .whereType<Map>()
+          .map((e) => SafetyDistance.fromJson(Map<String, dynamic>.from(e)))
+          .where((d) => d.line.isNotEmpty)
+          .toList()
+      : const <SafetyDistance>[];
 }

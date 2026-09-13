@@ -1277,6 +1277,10 @@ class _PropertyDetailPanelsState extends State<PropertyDetailPanels> {
           ),
         if (security != null && security.isNotEmpty && security != '0')
           RuleLine(ok: true, text: 'Security deposit ₹$security'),
+        // Measured from the pin, not guessed by the host — and printed as
+        // the server wrote it, because the website prints the same sentence.
+        for (final d in (_s?.safetyDistances ?? const <SafetyDistance>[]))
+          RuleLine(ok: true, text: d.line),
         const RuleLine(ok: true, text: 'Secure payment via trusted gateways.'),
         const RuleLine(
             ok: true, text: 'Price negotiable — send the host an offer.'),

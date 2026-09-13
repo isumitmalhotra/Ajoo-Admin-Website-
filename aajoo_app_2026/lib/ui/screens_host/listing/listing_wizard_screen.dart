@@ -877,6 +877,23 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
               ),
             for (final field in s.safetyFields)
               _field(field, c.details, c.setDetail),
+            // Where the three distances came from, said where they appeared.
+            // A toast that has already faded explains nothing.
+            if (c.safetyNotice.value.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 2, bottom: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.place_outlined, size: 14, color: kMuted),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(c.safetyNotice.value,
+                          style: inter(fontSize: 11.5, color: kMuted)),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
 
@@ -3253,8 +3270,14 @@ class _NearbyPickerState extends State<_NearbyPicker> {
     super.initState();
     // After the first frame: this runs during a build of the step, and
     // touching an Rx synchronously here would rebuild the tree mid-build.
-    WidgetsBinding.instance.addPostFrameCallback(
-        (_) => widget.controller.loadNearbySuggestions());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.controller.loadNearbySuggestions();
+      // The three emergency distances, on the same trip into step 3 and for
+      // the same reason: both need the pin, both are cached by the server for
+      // an hour on rounded coordinates, and neither is worth a Google request
+      // from a host who only came back to edit their price.
+      widget.controller.loadSafetyDistances();
+    });
   }
 
   @override

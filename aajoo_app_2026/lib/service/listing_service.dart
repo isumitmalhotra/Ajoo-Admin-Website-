@@ -182,6 +182,30 @@ class ListingService {
     }
   }
 
+  /// How far the police, the hospital and the fire station are.
+  ///
+  /// Client, 2026-09-13. Measured from the property's own pin rather than
+  /// guessed by a host who has no way to know. Returns an empty map on every
+  /// failure — no Places key, no pin, Google slow — because a listing that
+  /// cannot be saved because a third party was slow is a worse outcome than
+  /// three typeable boxes, which is what this form had before.
+  Future<Map<String, dynamic>> safetyDistances(int propertyId) async {
+    try {
+      final res = await _dio.get(
+        'listing/nearby/safety?propertyId=$propertyId',
+        options: await _auth(),
+      );
+      final data = _unwrap(res);
+      if (data is Map && data['distances'] is Map) {
+        return Map<String, dynamic>.from(data['distances'] as Map);
+      }
+      return const {};
+    } catch (e) {
+      logServiceError('listing_service:safetyDistances', e);
+      return const {};
+    }
+  }
+
   Future<Map<String, dynamic>> getDraft(int propertyId) async {
     try {
       final res =
