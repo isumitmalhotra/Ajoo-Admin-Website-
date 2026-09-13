@@ -108,6 +108,15 @@ class SinglePropertyData {
   /// the server never asks about).
   final NegotiationLock? negotiationLock;
 
+  /// Per-room detail — "Where you'll sleep".
+  ///
+  /// Every line arrives already WRITTEN by the server
+  /// (utils/propertyRooms.js): the heading, the bed line, the bathroom line.
+  /// Nothing is assembled here, because the website prints the same strings
+  /// and a guest comparing the two should not find them disagreeing about how
+  /// many beds are in a room.
+  final PropertyRooms rooms;
+
   /// What the host ticked in the 5-step wizard, grouped the way the FORM
   /// grouped it, with labels already resolved server-side from the same
   /// schema the wizard renders from. A group the host left empty never
@@ -176,6 +185,7 @@ class SinglePropertyData {
     this.negotiationEnabled = true,
     this.negotiationLock,
     this.amenityGroups = const [],
+    this.rooms = const PropertyRooms(),
     this.experiences = const [],
     this.views = const [],
     this.specifications = const [],
@@ -284,6 +294,7 @@ class SinglePropertyData {
           ? PropertyHouseRules.fromJson(
               Map<String, dynamic>.from(json['houseRules'] as Map))
           : null,
+      rooms: PropertyRooms.fromJson(json['rooms']),
       amenityGroups: (json['amenityGroups'] is List)
           ? (json['amenityGroups'] as List)
               .whereType<Map>()
@@ -828,5 +839,72 @@ class NegotiationLock {
     if (until == null) return 0;
     final ms = until!.difference(DateTime.now()).inMinutes;
     return ms > 0 ? ms : 0;
+  }
+}
+
+
+/// One described bedroom, as the server wrote it.
+class DescribedRoom {
+  const DescribedRoom({
+    required this.index,
+    required this.heading,
+    this.beds = '',
+    this.bathroom,
+  });
+
+  final int index;
+
+  /// "Master Bedroom", "Garden Room", or "Bedroom 2" — resolved server-side.
+  final String heading;
+
+  /// "1 Queen bed · 1 Single bed". EMPTY when the host said nothing, and the
+  /// line is then left out rather than rendered as an em dash or "0 beds".
+  final String beds;
+
+  /// "Attached bathroom" / "Shared bathroom", or null.
+  final String? bathroom;
+
+  factory DescribedRoom.fromJson(Map<String, dynamic> j) => DescribedRoom(
+        index: (j['index'] is num) ? (j['index'] as num).toInt() : 0,
+        heading: (j['heading'] ?? '').toString(),
+        beds: (j['beds'] ?? '').toString(),
+        bathroom: (j['bathroom'] as Object?)?.toString(),
+      );
+
+  static List<DescribedRoom> listFrom(dynamic raw) => raw is List
+      ? raw
+          .whereType<Map>()
+          .map((e) => DescribedRoom.fromJson(Map<String, dynamic>.from(e)))
+          .where((r) => r.heading.isNotEmpty)
+          .toList()
+      : const <DescribedRoom>[];
+}
+
+/// Both lists, always. A listing with no rooms answers with two empty ones —
+/// "no record" replying with a different SHAPE from "here is the record" is
+/// what stopped two screens in this app opening at all.
+class PropertyRooms {
+  const PropertyRooms({
+    this.bedrooms = const [],
+    this.bathrooms = const [],
+  });
+
+  final List<DescribedRoom> bedrooms;
+  final List<DescribedRoom> bathrooms;
+
+  /// True once a host has described something. A page that renders a heading
+  /// over three bare "Bedroom 1/2/3" lines has told the guest nothing and
+  /// reads as a section that failed to load.
+  bool get hasDetail =>
+      bedrooms.any((r) => r.beds.isNotEmpty || (r.bathroom ?? '').isNotEmpty) ||
+      bathrooms.isNotEmpty;
+
+  factory PropertyRooms.fromJson(dynamic raw) {
+    if (raw is! Map) return const PropertyRooms();
+    final j = Map<String, dynamic>.from(raw);
+    return PropertyRooms(
+      bedrooms: DescribedRoom.listFrom(j['bedrooms']),
+      bathrooms: DescribedRoom.listFrom(j['bathrooms']),
+    );
   }
 }

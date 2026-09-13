@@ -895,6 +895,70 @@ class _PropertyDetailPanelsState extends State<PropertyDetailPanels> {
             .toList(),
       );
 
+  /// "Where you'll sleep" — one card per described room.
+  ///
+  /// Client, 2026-09-13. Every line is PRINTED, never assembled: the heading,
+  /// the bed line and the bathroom line are written by the server
+  /// (utils/propertyRooms.js) and the website prints the same strings, so a
+  /// guest comparing the two cannot find them disagreeing about how many beds
+  /// are in a room.
+  ///
+  /// Renders nothing until a host has actually described something — a
+  /// heading over three bare "Bedroom 1/2/3" lines tells a guest nothing and
+  /// reads as a section that failed to load.
+  Widget _sleeping() {
+    final rooms = _s?.rooms;
+    if (rooms == null || !rooms.hasDetail) return const SizedBox.shrink();
+
+    Widget card(DescribedRoom r, IconData icon) => Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            border: Border.all(color: kLine),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 16, color: kInk),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(r.heading,
+                        style: inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: kInk)),
+                  ),
+                ],
+              ),
+              if (r.beds.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(r.beds, style: inter(fontSize: 13.5, color: kInk)),
+              ],
+              if ((r.bathroom ?? '').isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(r.bathroom!, style: inter(fontSize: 12.5, color: kMuted)),
+              ],
+            ],
+          ),
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const PanelTitle("Where you'll sleep"),
+        for (final r in rooms.bedrooms)
+          if (r.beds.isNotEmpty || (r.bathroom ?? '').isNotEmpty)
+            card(r, Icons.bed_outlined),
+        for (final r in rooms.bathrooms) card(r, Icons.bathtub_outlined),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
   Widget _amenities() {
     // Real amenities only — never the global tag list, which puts somebody
     // else's tags under this stay's heading.
@@ -916,6 +980,9 @@ class _PropertyDetailPanelsState extends State<PropertyDetailPanels> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Above the amenities: which room a guest gets is the question they
+          // ask before they ask whether there is a kettle.
+          _sleeping(),
           const PanelTitle('What this place offers'),
           for (final g in shown) ...[
             Padding(

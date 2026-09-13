@@ -448,6 +448,164 @@ class PropertyNameRules {
 }
 
 /// Everything the wizard needs to draw itself.
+/// One bed in a room: a type from `roomDetail.bedTypes`, and how many.
+class BedEntry {
+  const BedEntry({required this.type, required this.count});
+
+  final String type;
+  final int count;
+
+  factory BedEntry.fromJson(Map<String, dynamic> j) => BedEntry(
+        type: (j['type'] ?? '').toString(),
+        count: (j['count'] is num) ? (j['count'] as num).toInt() : 1,
+      );
+
+  Map<String, dynamic> toJson() => {'type': type, 'count': count};
+
+  BedEntry copyWith({int? count}) =>
+      BedEntry(type: type, count: count ?? this.count);
+
+  static List<BedEntry> listFrom(dynamic raw) => raw is List
+      ? raw
+          .whereType<Map>()
+          .map((e) => BedEntry.fromJson(Map<String, dynamic>.from(e)))
+          .where((b) => b.type.isNotEmpty)
+          .toList()
+      : const <BedEntry>[];
+}
+
+/// One bedroom or bathroom.
+class RoomEntry {
+  const RoomEntry({
+    required this.index,
+    this.type,
+    this.name,
+    this.bathroom,
+    this.beds = const [],
+  });
+
+  /// 1-based. This IS the room's name to a guest — "Bedroom 2".
+  final int index;
+  final String? type;
+
+  /// The host's own name for it — "Garden Room".
+  final String? name;
+
+  /// Bedrooms only: attached / shared / none.
+  final String? bathroom;
+
+  /// Bedrooms only. Always a list, never null.
+  final List<BedEntry> beds;
+
+  factory RoomEntry.fromJson(Map<String, dynamic> j) => RoomEntry(
+        index: (j['index'] is num) ? (j['index'] as num).toInt() : 1,
+        type: (j['type'] as Object?)?.toString(),
+        name: (j['name'] as Object?)?.toString(),
+        bathroom: (j['bathroom'] as Object?)?.toString(),
+        beds: BedEntry.listFrom(j['beds']),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'index': index,
+        'type': type,
+        'name': name,
+        'bathroom': bathroom,
+        'beds': beds.map((b) => b.toJson()).toList(),
+      };
+
+  RoomEntry copyWith({
+    int? index,
+    Object? type = _keep,
+    Object? name = _keep,
+    Object? bathroom = _keep,
+    List<BedEntry>? beds,
+  }) =>
+      RoomEntry(
+        index: index ?? this.index,
+        // `_keep` rather than null-coalescing: every one of these is nullable
+        // and clearing one is a real edit — re-tapping the chosen pill unsets
+        // it. `type ?? this.type` would make that impossible.
+        type: identical(type, _keep) ? this.type : type as String?,
+        name: identical(name, _keep) ? this.name : name as String?,
+        bathroom: identical(bathroom, _keep) ? this.bathroom : bathroom as String?,
+        beds: beds ?? this.beds,
+      );
+
+  static List<RoomEntry> listFrom(dynamic raw) => raw is List
+      ? raw
+          .whereType<Map>()
+          .map((e) => RoomEntry.fromJson(Map<String, dynamic>.from(e)))
+          .toList()
+      : const <RoomEntry>[];
+}
+
+const Object _keep = Object();
+
+/// Limits the server applies, sent so the form stops before the column does.
+class RoomLimits {
+  const RoomLimits({
+    this.maxRooms = 30,
+    this.maxBedsPerRoom = 8,
+    this.maxBedCount = 20,
+    this.maxNameLength = 60,
+  });
+
+  final int maxRooms;
+  final int maxBedsPerRoom;
+  final int maxBedCount;
+  final int maxNameLength;
+
+  factory RoomLimits.fromJson(Map<String, dynamic> j) {
+    int at(String k, int fallback) =>
+        (j[k] is num) ? (j[k] as num).toInt() : fallback;
+    return RoomLimits(
+      maxRooms: at('maxRooms', 30),
+      maxBedsPerRoom: at('maxBedsPerRoom', 8),
+      maxBedCount: at('maxBedCount', 20),
+      maxNameLength: at('maxNameLength', 60),
+    );
+  }
+}
+
+/// The vocabulary behind "Basic configuration", served by the backend.
+///
+/// Never hardcoded here. The app and the website have disagreed about a list
+/// before and the fix was always to make the server say it once — and a
+/// client held against an older backend renders NO repeater rather than
+/// guessing what a "Double" is after hosts have already answered.
+class RoomDetailVocab {
+  const RoomDetailVocab({
+    required this.bedroomTypes,
+    required this.bedTypes,
+    required this.bathroomTypes,
+    required this.bedroomBathroom,
+    required this.limits,
+  });
+
+  final List<Option> bedroomTypes;
+  final List<Option> bedTypes;
+  final List<Option> bathroomTypes;
+  final List<Option> bedroomBathroom;
+  final RoomLimits limits;
+
+  /// Null when the backend sent nothing usable, which the wizard reads as
+  /// "do not draw this section".
+  static RoomDetailVocab? fromJson(dynamic raw) {
+    if (raw is! Map) return null;
+    final j = Map<String, dynamic>.from(raw);
+    final bedTypes = Option.listFrom(j['bedTypes']);
+    if (bedTypes.isEmpty) return null;
+    return RoomDetailVocab(
+      bedroomTypes: Option.listFrom(j['bedroomTypes']),
+      bedTypes: bedTypes,
+      bathroomTypes: Option.listFrom(j['bathroomTypes']),
+      bedroomBathroom: Option.listFrom(j['bedroomBathroom']),
+      limits: RoomLimits.fromJson(
+          Map<String, dynamic>.from(j['limits'] ?? const {})),
+    );
+  }
+}
+
 class ListingSchema {
   const ListingSchema({
     required this.hostTypes,
@@ -456,6 +614,7 @@ class ListingSchema {
     required this.accommodationRules,
     required this.statuses,
     required this.specificationFields,
+    this.roomDetail,
     required this.categoryFlows,
     required this.propertyNameRules,
     required this.essentialAmenities,
@@ -490,6 +649,9 @@ class ListingSchema {
   final Map<String, List<String>> accommodationRules;
   final List<StatusOption> statuses;
   final List<SchemaField> specificationFields;
+
+  /// Null against an older backend — the wizard then draws no repeater.
+  final RoomDetailVocab? roomDetail;
   final Map<String, CategoryFlow> categoryFlows;
   final PropertyNameRules propertyNameRules;
 
@@ -551,6 +713,7 @@ class ListingSchema {
                 .toList()
             : const [],
         specificationFields: SchemaField.listFrom(j['specificationFields']),
+        roomDetail: RoomDetailVocab.fromJson(j['roomDetail']),
         categoryFlows: (j['categoryFlows'] is Map)
             ? (j['categoryFlows'] as Map).map((k, v) => MapEntry(
                 k.toString(),

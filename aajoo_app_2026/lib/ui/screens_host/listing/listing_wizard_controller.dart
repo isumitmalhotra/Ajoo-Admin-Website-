@@ -95,6 +95,49 @@ class ListingWizardController extends GetxController {
   // ── Step 3 — amenities, experiences, views, nearby, photos ────────────────
   final RxMap<String, List<String>> amenities =
       <String, List<String>>{}.obs;
+  /// Per-room detail, held apart from `f` because these are lists of objects
+  /// and everything in `f` is a scalar the numeric filters run over.
+  ///
+  /// The COUNT drives the list — there is nowhere in the form to add or remove
+  /// a room, so the number the host typed and the detail they wrote cannot
+  /// drift apart. The server applies the same rule.
+  final RxList<RoomEntry> bedroomDetail = <RoomEntry>[].obs;
+  final RxList<RoomEntry> bathroomDetail = <RoomEntry>[].obs;
+
+  /// Replace one room in a list, growing the list to reach it.
+  ///
+  /// The form draws `sizedRooms(...)`, which can be LONGER than the stored
+  /// list — a host who types 3 into Bedrooms sees three cards before any of
+  /// them has been stored. Editing card 3 first must therefore work, so the
+  /// list grows to fit rather than dropping the edit on the floor.
+  void setRoom(RxList<RoomEntry> list, int i, RoomEntry next) {
+    if (i < 0 || i >= limits.maxRooms) return;
+    while (list.length <= i) {
+      list.add(RoomEntry(index: list.length + 1));
+    }
+    list[i] = next.copyWith(index: i + 1);
+  }
+
+  /// The limits the backend sent, or the documented defaults against an older
+  /// one. Never a guess at the VOCABULARY — that absence disables the section.
+  RoomLimits get limits => schema.value?.roomDetail?.limits ?? const RoomLimits();
+
+  /// Grow or trim a list to `count` rooms, renumbering as it goes.
+  ///
+  /// Called from the form as the host edits the number above, rather than from
+  /// a listener: a listener runs a frame late, so the screen would show the old
+  /// number of cards for a frame and a save fired in that frame would send the
+  /// old list.
+  List<RoomEntry> sizedRooms(RxList<RoomEntry> list, int count, int maxRooms) {
+    final wanted = count.clamp(0, maxRooms);
+    return List<RoomEntry>.generate(
+      wanted,
+      (i) => i < list.length
+          ? list[i].copyWith(index: i + 1)
+          : RoomEntry(index: i + 1),
+    );
+  }
+
   final RxList<String> experiences = <String>[].obs;
   final RxList<String> views = <String>[].obs;
   final RxMap<String, Map<String, dynamic>> nearby =
@@ -337,6 +380,17 @@ class ListingWizardController extends GetxController {
     }
     merge(f, d['location'], 'pl_');
     merge(f, d['capacity'], 'pc_');
+    // Per-room detail. The backend guarantees both keys and both arrays; the
+    // fallbacks are for an older API that does not send `rooms` at all.
+    final roomsJson = d['rooms'];
+    if (roomsJson is Map) {
+      bedroomDetail
+        ..clear()
+        ..addAll(RoomEntry.listFrom(roomsJson['bedrooms']));
+      bathroomDetail
+        ..clear()
+        ..addAll(RoomEntry.listFrom(roomsJson['bathrooms']));
+    }
     merge(spec, d['specification'], 'ps_');
     merge(attrs, d['attributes']);
     merge(details, d['details']);
@@ -1230,6 +1284,20 @@ class ListingWizardController extends GetxController {
     return n('max_adults') + n('max_children');
   }
 
+  /// Beds, summed from the rooms — the same rule as [derivedTotalGuests], for
+  /// the same reason.
+  ///
+  /// A host cannot both type "3 beds" and describe a queen in each of three
+  /// rooms without one of the two being wrong, so once any room names a bed
+  /// the total comes from the rooms. Until then the host's own number stands,
+  /// which is what every listing saved before today has and what a host who
+  /// skips the cards keeps. utils/propertyRooms.js applies exactly this rule
+  /// on the server, so the two cannot disagree.
+  int get bedsFromRooms => bedroomDetail.fold(
+      0, (sum, r) => sum + r.beds.fold(0, (n, b) => n + b.count));
+
+  bool get bedsAreDerived => bedsFromRooms > 0;
+
   /// Save the current step and advance. Returns false if it did not save.
   Future<bool> saveAndContinue() async {
     error.value = '';
@@ -1245,6 +1313,23 @@ class ListingWizardController extends GetxController {
             // loaded — or nothing on a new listing — and leave the capacity
             // guests search on stale.
             'total_guests': derivedTotalGuests,
+            // The server trims each list to the count beside it and sums the
+            // beds; see utils/propertyRooms.js. Sent whatever the host filled
+            // in, blank cards included — a blank room is one they have not
+            // described yet, not one that does not exist.
+            // Sized here, with the same function the form drew from, so what
+            // is sent is what the host saw. The server trims to the counts
+            // again anyway — this just means it never has to.
+            'bedroom_detail': sizedRooms(bedroomDetail,
+                    int.tryParse('${f['bedrooms'] ?? ''}'.trim()) ?? 0,
+                    limits.maxRooms)
+                .map((r) => r.toJson())
+                .toList(),
+            'bathroom_detail': sizedRooms(bathroomDetail,
+                    int.tryParse('${f['bathrooms'] ?? ''}'.trim()) ?? 0,
+                    limits.maxRooms)
+                .map((r) => r.toJson())
+                .toList(),
             // DERIVED, not asked. "Do you own this property?" used to sit
             // further down this step asking the same thing as "Who is listing
             // this property?" at the top, and nothing reconciled them — a host

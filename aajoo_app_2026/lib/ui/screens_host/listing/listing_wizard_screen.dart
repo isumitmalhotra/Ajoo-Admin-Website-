@@ -25,6 +25,7 @@ import 'package:rent_home/models/listing_schema.dart';
 import 'package:rent_home/ui/responsive.dart';
 import 'package:rent_home/ui/screens_host/listing/listing_wizard_controller.dart';
 import 'package:rent_home/ui/screens_host/listing/widgets/listing_section.dart';
+import 'package:rent_home/ui/screens_host/listing/widgets/room_detail.dart';
 import 'package:rent_home/ui/screens_host/listing/widgets/schema_field_input.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
@@ -692,20 +693,63 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
         ListingSection(
           title: 'Basic configuration',
           children: [
+            // Beds stops being a box the moment a room names one.
+            //
+            // Two controls for one fact is how a listing comes to say "3 beds"
+            // above a description of four, so the field reads back the sum
+            // instead — exactly as Total guests does in the section above.
+            // Until a room says anything it is still the host's own number to
+            // type, which is what every listing saved before today has.
             if (isCamping)
               _numRow([
                 _numField('tents', 'Number of tents'),
-                _numField('beds', 'Beds'),
+                c.bedsAreDerived
+                    ? _derivedField('Beds', c.bedsFromRooms)
+                    : _numField('beds', 'Beds'),
               ])
             else
               _numRow([
                 _numField('bedrooms', 'Bedrooms'),
-                _numField('beds', 'Beds'),
+                c.bedsAreDerived
+                    ? _derivedField('Beds', c.bedsFromRooms)
+                    : _numField('beds', 'Beds'),
               ]),
             _numRow([
               _numField('bathrooms', 'Bathrooms'),
               const SizedBox.shrink(),
             ]),
+
+            // Client, 2026-09-13: "add bedrooms class / bed classs / bathroom
+            // class". Camping has tents rather than bedrooms, so only the
+            // bathrooms are asked about there.
+            //
+            // Sized here rather than in a listener: a listener runs a frame
+            // late, so the screen would show the old number of cards for a
+            // frame and a save fired in that frame would send the old list.
+            Builder(builder: (_) {
+              final vocab = c.schema.value?.roomDetail;
+              if (vocab == null) return const SizedBox.shrink();
+              int n(String k) => int.tryParse('${c.f[k] ?? ''}'.trim()) ?? 0;
+              final beds = c.sizedRooms(c.bedroomDetail,
+                  isCamping ? 0 : n('bedrooms'), vocab.limits.maxRooms);
+              final baths = c.sizedRooms(
+                  c.bathroomDetail, n('bathrooms'), vocab.limits.maxRooms);
+              // NOTHING is written back here. Assigning to an Rx during
+              // build is markNeedsBuild-during-build, and the length guard
+              // that would "only fire on a change" still fires inside the
+              // frame where the host edits the number. The sized lists are for
+              // DRAWING; the controller sizes again at save time, from the
+              // same function, so what is sent matches what was shown.
+              return RoomDetailSection(
+                vocab: vocab,
+                bedroomCount: beds.length,
+                bathroomCount: baths.length,
+                bedrooms: beds,
+                bathrooms: baths,
+                onBedroom: (i, r) => c.setRoom(c.bedroomDetail, i, r),
+                onBathroom: (i, r) => c.setRoom(c.bathroomDetail, i, r),
+              );
+            }),
             if (isPg) ...[
               const SizedBox(height: 4),
               Text('Who is this for?',
