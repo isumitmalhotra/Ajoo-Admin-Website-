@@ -20,7 +20,33 @@ class MapController extends GetxController {
   final RxList<Property> properties = <Property>[].obs;
   final RxList<Property> allProperties = <Property>[].obs;
 
-  final MapService mapService = MapService();
+  /// Which search is allowed to write its answer.
+  ///
+  /// TWO SEARCHES RUN AT ONCE ON EVERY COLD START and nothing sequenced them.
+  /// getCurrentLocation() returns the LAST KNOWN position immediately and fires
+  /// _refineLocation() in the background; fetchProperties then searches at the
+  /// last-known point. So there are two getProperties() calls in flight, and
+  /// both ended by assigning straight into `properties` — whichever finished
+  /// LAST won, regardless of which was newer or which the guest wanted.
+  ///
+  /// That is §3.20. The foreground search answers in ~2s with the right stays
+  /// (the same answer curl gives). The background refine can then land at a
+  /// different fix, find nothing there, walk out to the planetary ring — ~92
+  /// seconds, measured — and overwrite the correct screen with its own result.
+  /// From the outside: a home screen that had stays, then did not, with no
+  /// error and nothing in a release log, at coordinates that demonstrably
+  /// return one from curl.
+  ///
+  /// A monotonic token fixes the class, not the instance: every search takes
+  /// the number it was started with, and only the newest may write.
+  int _searchGeneration = 0;
+
+  /// Not `final`, so a test can stand a stub in its place.
+  ///
+  /// The §3.20 fault is an ORDERING one between two network calls, which is
+  /// exactly the kind that cannot be reproduced by pointing at a real server
+  /// and hoping the slow one is slow today.
+  MapService mapService = MapService();
   final Rx<LatLng> currentPosition = const LatLng(28.495000, 77.40905397).obs;
   final Rx<bool> isLuxury = false.obs;
 
@@ -138,7 +164,11 @@ class MapController extends GetxController {
       // empty screen for a place they are not in. Searching twice for nothing
       // is a wasted request; showing an empty home when there are stays around
       // the corner is the complaint we are answering.
-      if (moved || properties.isEmpty) getProperties(p.latitude, p.longitude);
+      // Background: capped rings, and it is allowed to be superseded by
+      // anything the guest does in the meantime.
+      if (moved || properties.isEmpty) {
+        getProperties(p.latitude, p.longitude, rings: backgroundRings);
+      }
     }).catchError((_) {
       // No better answer than the one already on screen. Nothing to say.
     });
@@ -198,12 +228,35 @@ class MapController extends GetxController {
   /// there is genuinely nothing on this side of the world.
   static const List<String> _searchRings = ['50', '500', '20000'];
 
+  /// What a BACKGROUND refine may widen to, and why it stops short.
+  ///
+  /// The planetary ring is deliberate for a search the guest is waiting on: a
+  /// tester on an emulator reporting Mountain View has nothing within any sane
+  /// distance, and one slow answer beats an empty app. It is exactly wrong for
+  /// a refine, which nobody asked for and nobody is watching. Ninety seconds
+  /// after the screen settled, it would replace the stays around the guest with
+  /// whatever the first page of the planet holds — the §3.20 report, from the
+  /// outside: a home screen that had stays and then did not.
+  static const List<String> backgroundRings = ['50', '500'];
+
   Future<void> getProperties(
     double lat,
     double long, {
     int category = 0,
     String radius = "", // default to empty string
+    /// How far this search may widen when it finds nothing here.
+    ///
+    /// The full walk is for a search the guest is WAITING on. A background
+    /// refine is not: it is a better fix of roughly the same place, and if
+    /// there is nothing within 500km of it the honest answer is to leave the
+    /// screen as it is rather than spend ninety seconds and then offer a stay
+    /// on another continent. See [backgroundRings].
+    List<String>? rings,
   }) async {
+    final int generation = ++_searchGeneration;
+    // Did something newer start while this was waiting on the network?
+    bool superseded() => generation != _searchGeneration;
+
     PropertiesResponse? response = await mapService.getProperties(
       lat,
       long,
@@ -239,10 +292,15 @@ class MapController extends GetxController {
     bool failed(PropertiesResponse? r) =>
         r == null || r.message == MapService.networkFailure;
 
+    if (superseded()) return;
+
     if (!failed(response) &&
         response!.data.property.isEmpty &&
         radius.isEmpty) {
-      for (final ring in _searchRings) {
+      for (final ring in (rings ?? _searchRings)) {
+        // Checked every ring: the walk is the slow part, and a guest who has
+        // moved the map twice while it runs should not wait on the first try.
+        if (superseded()) return;
         final PropertiesResponse? wider = await mapService.getProperties(
           lat,
           long,
@@ -276,6 +334,9 @@ class MapController extends GetxController {
 
     final bool unreachable = failed(response);
 
+    // The last word belongs to the newest search, not the slowest one.
+    if (superseded()) return;
+
     isLoading.value = false;
     lastSearchFailed.value = unreachable;
     if (unreachable || response == null) {
@@ -283,6 +344,7 @@ class MapController extends GetxController {
           "We couldn't reach the server. Check your connection and try again.";
       return;
     }
+    error.value = '';
     allProperties.assignAll(response.data.property);
     properties.assignAll(response.data.property);
   }
