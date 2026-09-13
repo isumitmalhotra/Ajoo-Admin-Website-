@@ -2,10 +2,12 @@
 
 > **Reconciled 2026-09-04** against the live site, the live database and the three
 > repos; **updated 2026-09-05** after tester builds 14–16, the proactive defect
-> sweep, and a fresh set of DB counts; **updated 2026-09-13** with §8a19–8a24 — the negotiation
+> sweep, and a fresh set of DB counts; **updated 2026-09-13** with §8a19–8a25 — the negotiation
 > rebuild, the home page's card sections, cash at the door, the booking-confirmed
 > redesign, the app's inability to read its own API, a draft that reached public search,
-> and the Cloudinary sweep that took 111 personal records off public delivery.
+> the Cloudinary sweep that took 111 personal records off public delivery, and
+> the evening's client batch — per-room detail, icons on the category questions,
+> and emergency distances the platform measures instead of asking a host to guess.
 > §8a24 and §2.8 carry **AWS Days 1–5** — the whole platform as Terraform, a
 > deploy pipeline that holds no AWS key at all, and the cutover runbook. None of
 > it is applied: the account is still unverified, and the block is compute.
@@ -55,7 +57,7 @@ work; sorting by owner is what makes that visible.
 | [3. Engineering](#3-engineering--genuinely-open) | Us | 12 |
 | [4. Contract deliverables](#4-contract-deliverables-) | Us | 8 |
 | [5. Section-0 redo](#5-section-0-site-redo--separate-sow) | Blocked on a signed change order | 20 |
-| [6. Unproven, not broken](#6-unproven-not-broken) | Us + tester | 10 |
+| [6. Unproven, not broken](#6-unproven-not-broken) | Us + tester | 12 |
 
 **If only two things get done:** §2.1 (live payment keys) and §1.1 (delete the
 seed listings). The first means the product currently looks like it is taking
@@ -184,6 +186,8 @@ Nothing here is known to be defective. Each is a path nobody has exercised.
 - Live end-to-end notification test (old BE-VERIFY-1) — code shipped, run deferred by the client.
 - Google Search Console will not accept the sitemap without warnings until someone with GSC access submits it.
 - Whether `dbCutoverSafe` currently reads true — see §2.4.
+- **The emergency-distance lookup against real Google (§8a25, 2026-09-13).** `GOOGLE_PLACES_KEY` is not in the local env, so only the "not configured" branch has run here — the distance sort is unit-tested against a stub, and the HTTP path is the one the nearby picker already uses in production. What is genuinely unproven is `fire_station` as a Google type: it is documented, it was never in the `essentials` list before today, and nobody has yet seen it return a result for an Indian hill town. Open any listing's step 3 on the live site with a pin set; the three boxes should fill and say where the numbers came from. **An empty answer is not a failure** — it is what a place with no fire station within 25km looks like, and the box stays typeable.
+- **Per-room detail and the icons on the category questions, in a browser (§8a25).** Both are behind a host login, and a stored password is not ours to type. Thirty seconds on step 1 of any draft: three bedroom cards for "3", Beds going read-only once a room names one, and a picture on every Homestay Type / Local Experience chip.
 - **For the tester, on build 16** (each deploys cleanly and is covered by tests, but needs a signed-in host/guest on a device): #19's merged notification feed matches the website for the same host; the guest count survives "Move to Book at Agreed Price" on a *new* negotiation; airplane mode on host Notifications, guest My Negotiations and host Profile → properties shows "Couldn't load · Try again" rather than an empty state; #13's dropdown focus jump (fixed from the code, never reproduced on the emulator).
 - **The app's GUEST side of the negotiation rebuild, on a device.** The host side was driven on the emulator on 09-12 and the shared labelling is under test, but the two guest surfaces that changed — the offer button greying with its reason, and the dated “Listed at” line — have not been seen on a phone. The defect that blocked them is fixed (§3.13, build 82: the 29303 notification now opens the listing), but the deal BANNER still could not be tapped, because the test guest has no live deal and cannot make one on 29303 until midnight — the same-day decline lockout, working as designed. Both surfaces are covered by `negotiation_lock_test` and `offer_ceiling_test` and both are verified on the website; what is unproven is the app rendering them.
 - **`REQUIRE_IMAGE_ALT`** — whether it has been set on Render is not visible from outside (see §2.3).
@@ -242,6 +246,102 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a25. Closed 2026-09-13 (evening) — three client notes about the listing form, and the bot sitting on the button
+
+Four screenshots, three asks, and one thing nobody had reported.
+
+**"give some icon for looks attached and see all identifi for categories
+releated to."** On one screen the Outdoor amenities carried icons and
+Homestay Type, Local Experience and Shared Spaces carried none. Not a
+styling difference — **two different renderers**. Amenity chips go
+through `Chips` in `ListProperty.tsx`, which looks an icon up; the
+category questions come from `CATEGORY_FLOWS` through `SchemaField.tsx`,
+which never did. A **third** lookup rather than widening the amenity one,
+because that table matches by KEYWORD and these labels are short generic
+words that mean something only under their own question — "Private",
+"Shared", "Open", "Single", "Family", "None". A keyword scan over those
+fires on the wrong thing constantly, and widening the table would have
+changed what amenity chips render as well. Two questions stay bare on
+purpose: `host_interaction_level` is High/Medium/Low and `height` is
+three measurements, and because the fallback is per FIELD rather than per
+option, a question draws icons on all of its chips or on none — a row
+never has one chip shorter than its neighbours. **The app was the worse
+half: it had NO icon on any wizard chip, amenities included.** Fixed
+there too, so the parity rule holds.
+
+**"add bedrooms class / bed classs / bathroom class / like master bedroom
+/ queen sized bed / shared bathroom / attached etc"** — and, on the
+desktop wizard, "also here too it should be updated". Three integers
+cannot answer what a guest asks before booking: is the room I get a queen
+or a bunk, and is the bathroom mine or the corridor's. Asked which shape
+this should take, the client chose **per-room detail** over flat chips.
+
+*The design decision worth not undoing:* **THE COUNT DRIVES THE LIST.**
+No Add and no Remove — type 3 in Bedrooms and you get three cards. Give a
+host a list they can grow independently and the number says 3 while the
+list has 4, with nothing deciding which is true: search filters on the
+number, the guest page prints the list, and one listing advertises two
+different properties. It is the same fault as the Apartment Type naming a
+bedroom count while step 1 asks separately, which is why a `bhkMismatch`
+warning exists on the website today. Enforced on the SERVER
+(`utils/propertyRooms.js` writes exactly `pc_bedrooms` rows, padding and
+truncating), because a rule enforced in one client is a rule the other
+breaks. **Beds became derived** for the same reason, like Total Guests
+already was — with one carve-out that matters: when NO room names a bed
+the host's own number stands, because otherwise every listing saved
+before today and anything from an un-updated app would have had a stated
+fact overwritten with 0. New table `property_rooms`, migration **applied
+to the live database and round-tripped through it** (duplicate queens
+merged, a `waterbed` dropped, JSON survived the driver, orphan test rows
+removed). Guests get "Where you'll sleep" on both platforms, printing
+lines the SERVER writes so the two cannot phrase the same room
+differently.
+
+**"these as well find by google location distance and all like showing in
+things to know."** Asking a host how far the fire station is gets a
+guess, a blank, or a number copied off another listing — and a guest
+reading "2 km to hospital" in an emergency is reading a guess. Measured
+from the pin now. *The trap:* `nearbyPlaces` sorts by how many people
+have RATED a place, which is right for "what is worth seeing" and exactly
+wrong here — ask it for one police station within 25km and it returns the
+district headquarters, not the outpost at the end of the road, and the
+usual `minRatings` would drop the rural station nobody has reviewed,
+which is very often the only one there is. So it asks wide and re-sorts
+by distance. Also: **`fire_station` was missing from the nearby
+`essentials` types entirely**, so that box had nothing behind it even in
+principle. Suggested, never imposed — only EMPTY boxes are filled.
+Straight-line, so the guest line says "nearest" and never "X minutes":
+4 km as the crow flies is a twenty-minute drive in the hills.
+
+**And the thing nobody reported:** in two of the screenshots the
+BotPenguin "May I help you?" bubble was drawn on top of the Continue
+button, so a host on a phone could not submit the step without dismissing
+the bot. **Lifted, not hidden** — this is the longest form on the
+platform and the place a host most wants help, and taking the chat away
+to fix an overlap trades the feature for 96 pixels. (Registration and
+verification DO hide it; a form you complete once is not where help is
+worth an obstruction.)
+
+*Two defects the tests caught before they shipped, both worth keeping:*
+`Number(null)` is **0 and finite**, so an unset pin sailed past the
+coordinate guard and measured from the **Gulf of Guinea** — every such
+listing would have been given ~8,800 km to the hospital, saved, and shown
+to guests. `coordsFor()` already guarded that value; this did not. And
+the property page's nav maps `TABS` unconditionally, so adding "Where
+you'll sleep" gave EVERY listing a button, including listings with no
+room detail where it scrolled to nothing.
+
+*Not verified, and worth someone's thirty seconds:* the wizard and
+property page in a browser — that is behind a host login, and a stored
+password is not ours to type. The live Google lookup is also unproven
+from here: `GOOGLE_PLACES_KEY` is not in the local env, so only the
+"not configured" branch ran. The call path is the one the nearby picker
+already uses in production and the distance sort is unit-tested against a
+stub, but the first real `fire_station` query happens on Render.
+
+Backend 138/138 files · app 414 tests · web 39 rule tests, `tsc -b` and a
+real `npm run build` clean.
 
 ### 8a24. Written 2026-09-13 — the whole platform as Terraform, and not one line of it applied
 
