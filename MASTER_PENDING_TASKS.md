@@ -2,13 +2,15 @@
 
 > **Reconciled 2026-09-04** against the live site, the live database and the three
 > repos; **updated 2026-09-05** after tester builds 14–16, the proactive defect
-> sweep, and a fresh set of DB counts; **updated 2026-09-13** with §8a19–8a26 — the negotiation
+> sweep, and a fresh set of DB counts; **updated 2026-09-13** with §8a19–8a27 — the negotiation
 > rebuild, the home page's card sections, cash at the door, the booking-confirmed
 > redesign, the app's inability to read its own API, a draft that reached public search,
 > the Cloudinary sweep that took 111 personal records off public delivery, and
 > the evening's client batch — per-room detail, icons on the category questions,
 > and emergency distances the platform measures instead of asking a host to guess;
-> §8a26 closes a required question that nothing on the other side ever read.
+> §8a26 closes a required question that nothing on the other side ever read, and
+> §8a27 closes eight client reports in one night — including a money figure that
+> disagreed with itself between two screens, and one regression of my own.
 > §8a24 and §2.8 carry **AWS Days 1–5** — the whole platform as Terraform, a
 > deploy pipeline that holds no AWS key at all, and the cutover runbook. None of
 > it is applied — blocked on an unverified card on the AWS account, not on us.
@@ -58,7 +60,7 @@ work; sorting by owner is what makes that visible.
 | [3. Engineering](#3-engineering--genuinely-open) | Us | 11 |
 | [4. Contract deliverables](#4-contract-deliverables-) | Us | 8 |
 | [5. Section-0 redo](#5-section-0-site-redo--separate-sow) | Blocked on a signed change order | 20 |
-| [6. Unproven, not broken](#6-unproven-not-broken) | Us + tester | 12 |
+| [6. Unproven, not broken](#6-unproven-not-broken) | Us + tester | 13 |
 
 **If only two things get done:** §2.1 (live payment keys) and §1.1 (delete the
 seed listings). The first means the product currently looks like it is taking
@@ -188,7 +190,8 @@ Nothing here is known to be defective. Each is a path nobody has exercised.
 - Google Search Console will not accept the sitemap without warnings until someone with GSC access submits it.
 - Whether `dbCutoverSafe` currently reads true — see §2.4.
 - **The emergency-distance lookup against real Google (§8a25, 2026-09-13).** `GOOGLE_PLACES_KEY` is not in the local env, so only the "not configured" branch has run here — the distance sort is unit-tested against a stub, and the HTTP path is the one the nearby picker already uses in production. What is genuinely unproven is `fire_station` as a Google type: it is documented, it was never in the `essentials` list before today, and nobody has yet seen it return a result for an Indian hill town. Open any listing's step 3 on the live site with a pin set; the three boxes should fill and say where the numbers came from. **An empty answer is not a failure** — it is what a place with no fire station within 25km looks like, and the box stays typeable.
-- **Per-room detail and the icons on the category questions, in a browser (§8a25).** Both are behind a host login, and a stored password is not ours to type. Thirty seconds on step 1 of any draft: three bedroom cards for "3", Beds going read-only once a room names one, and a picture on every Homestay Type / Local Experience chip.
+- **The whole host wizard and checkout, in a browser (§8a25–§8a27).** Behind a host login, and a stored password is not ours to type — which is how the step-1 regression in §8a27 reached the client. Worth sixty seconds on a phone: step 1 shows three bedroom cards for "3" and submits; Beds goes read-only once a room names one; the location map moves on ONE finger and has +/− buttons; the Homestay Type and Local Experience chips carry icons; and the GST on the property page matches the GST on /booking/review for the same stay.
+- **Whether the live notification popup actually appears (§8a27).** Reported as "message aa rhe h but popups nahi aa rhe" and NOT reproduced: the server emits, the rooms match, and the transport answers. The silent-failure paths are closed and the popup moved off the mobile tab bar, which may be the whole story — but only the client's own phone can say. `liveState()` now reports up-or-why-not, so the next report can come with a reason.
 - **For the tester, on build 16** (each deploys cleanly and is covered by tests, but needs a signed-in host/guest on a device): #19's merged notification feed matches the website for the same host; the guest count survives "Move to Book at Agreed Price" on a *new* negotiation; airplane mode on host Notifications, guest My Negotiations and host Profile → properties shows "Couldn't load · Try again" rather than an empty state; #13's dropdown focus jump (fixed from the code, never reproduced on the emulator).
 - **The app's GUEST side of the negotiation rebuild, on a device.** The host side was driven on the emulator on 09-12 and the shared labelling is under test, but the two guest surfaces that changed — the offer button greying with its reason, and the dated “Listed at” line — have not been seen on a phone. The defect that blocked them is fixed (§3.13, build 82: the 29303 notification now opens the listing), but the deal BANNER still could not be tapped, because the test guest has no live deal and cannot make one on 29303 until midnight — the same-day decline lockout, working as designed. Both surfaces are covered by `negotiation_lock_test` and `offer_ceiling_test` and both are verified on the website; what is unproven is the app rendering them.
 - **`REQUIRE_IMAGE_ALT`** — whether it has been set on Render is not visible from outside (see §2.3).
@@ -247,6 +250,129 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a27. Closed 2026-09-13 (night) — eight client reports, and one of them was mine
+
+Two rounds of screenshots from the client, eight faults between them, all
+closed. Taken together they are worth reading as one entry because the
+client's covering note was **"maximum of them are working fine earlier and
+now breaking out of nowhere… you fixed something and make worse something
+else"** — and that is true of exactly one of the eight. The rest were
+long-standing and were simply met for the first time. Saying which is
+which is the point of writing it down.
+
+#### The one that was mine
+
+**Step 1 could not be submitted: "Fix the highlighted fields to continue"
+with nothing highlighted anywhere.** A host could not register a property
+at all. Introduced the same day by §8a25's own work: Beds became a derived
+read-out once a room names one, and `f.beds` stopped being written — so a
+host who had typed 3 and then described five bedrooms failed the "5
+bedrooms need at least 5 beds" rule against a **stale 3**, and the error
+was attached to a field that is no longer an input and therefore could not
+turn red. Validation now reads the number the screen shows, the read-out
+can turn red like anything else, and the payload carries what was
+displayed.
+
+**And a guard for the class, because this must not be able to happen
+silently again.** `fe.set` scrolls to `[data-field=…]`; an error raised
+against a field that is not RENDERED scrolls nowhere and marks nothing. The
+toast now says the MESSAGE when the first error has nowhere to land. *A
+form that refuses and will not say why is worse than no validation.*
+
+#### Money, and it was real
+
+**The Amount on a stay card was not the amount charged.** The upcoming-stay
+headline rendered `book_price` — the ROOM SUBTOTAL, pre-tax and
+pre-discount. Booking **B115781**, read from the live row: `book_price`
+2099.75, `book_total_amt` 2204.74, `book_amount_paid` 2204.74. The card
+understated that stay by **₹104.99**, and every other by whatever its tax
+and discount came to. The right number was already on the same object as
+`total`; the line read the one beside it. `useOngoing` had no total at all
+and now carries one. **The app was never wrong here** — both its screens
+already did `bookTotalAmt > 0 ? bookTotalAmt : bookPrice`.
+
+**GST differed between the property page and checkout: 9.68% / ₹25,226
+against 18% / ₹27,140. Same stay, one screen apart, ₹1,914 between them.**
+Neither was arithmetic gone wrong. `/pricing/quote` bands EACH NIGHT on its
+own share — ₹8,280 at 18%, two nights of ₹7,360 at 5% — and the property
+page asks it. The review page never did: `summarize()` had one number to
+band, so it banded the AVERAGE night (₹7,666, just over the line) at 18% on
+everything. Its own comment called itself a fallback; the review page was
+simply never moved onto the quote. The comment in `customerApi.ts` had
+already named the disease — *three implementations of one set of rules,
+agreeing only while somebody remembers all three.* Fixed by carrying the
+server's per-night WEIGHTS in the draft the property page already builds,
+and splitting the taxable amount across them at checkout. Verified against
+`utils/methods.taxForNights` directly: both sides now give 2,226.4 and
+9.68%, and the old path gives exactly the ₹4,140 in the screenshot.
+
+**"Balance received" on a stay that was paid once.** A guest who booked
+pay-at-property, then pressed "Pay online instead" and paid in full, was
+sent a receipt for a second instalment they had never made. The condition
+was `!firstPayment`, and firstPayment is a STATUS check — a booking sits at
+`statusPaymentPending` only until its first verified payment, and a
+pay-at-property booking never sits there at all. What separates the two is
+whether MONEY had arrived before, which `book_amount_paid` records. Fixed
+in all three places the word appears: the guest's notification, the host's,
+and the booking history.
+
+#### Three that had never worked
+
+**Typing "nainital" found nothing.** The picker's list is a transliterated
+gazetteer — its own asset holds `"Naini Tāl"` and `"Dehra Dūn"` — and every
+filter was a plain `toLowerCase().contains()`. A macron is not an "a" and a
+space is not nothing. `searchFold()` folds for COMPARISON only; the label
+still reads "Naini Tāl". The table was **generated from that asset**, not
+guessed: 276 distinct non-ASCII characters in it, 170 folding to a single
+ASCII letter. It deliberately does not strip what it cannot fold —
+Devanagari passes through, because deleting it leaves an empty needle that
+matches EVERYTHING (the `\p{L}`-without-`\p{M}` trap, which once deleted
+matras from real names here).
+
+**The map took two fingers.** Called a blocker on host and admin: "not able
+to zoom in or drop pin at a particular street or area". The picker set no
+`gestureHandling` at all, so it ran Google's default `'auto'`, which on a
+TOUCH device resolves to `'cooperative'` — one finger pans the PAGE and the
+map answers "use two fingers to move the map". That is the right default
+for a map inside an article and exactly wrong for a component whose whole
+job is "move the map under the pin", which fills a modal with nothing
+behind it to scroll to. It is also why the marker could not be DRAGGED.
+`greedy` here, plus `zoomControl`. **Left alone on AreaMap and ResultsMap**,
+which are display surfaces inside scrolling pages and want the default.
+
+**Live notification popups.** Reported as "message aa rhe h but popups nahi
+aa rhe". **Not reproduced, and not claimed as fixed.** The server does emit
+for guest notifications, the room names match on both sides, and a probe
+against the live API answers `Authentication required`, so the transport
+reaches Render. What was wrong is that when it fails it fails INVISIBLY:
+a missing token was permanent (the effect depends on `userId` alone, and a
+fresh sign-in writes the two separately), and a refused handshake was
+silent because nothing listened for `connect_error`. Both now retry and
+report. The popup also asked for bottom-right with a 76px margin, which on
+a phone is where `.mobile-tabbar` and the chat bubble live — top-centre
+under 820px now. A popup behind the navigation reads exactly like one that
+never came, so this may be the whole story; it is not proven.
+
+#### One that was never broken
+
+**"Another guest" could not be "selected and used".** It could. The click
+sets state, the id reaches the payload as `guestProfileId`, it IS
+whitelisted in `booking.schema.js` so `stripUnknown` keeps it, and the
+controller checks it belongs to the account before writing — the whole path
+was traced before anything was touched, and the card is green in the
+client's own screenshot. What it never did was LOOK like it had done
+anything: having picked a saved traveller you are asked for a Full name, a
+Phone and an Email immediately underneath, with nothing saying those are
+the BOOKER's. The code knew — there is a comment in `BookingReview.tsx`
+saying exactly that, written for whoever reads the source and never for the
+guest. The picker now reports who was chosen and the block says whose
+details it wants.
+
+Backend 138/138 files · app 440 tests · web 40 rule tests, `tsc -b` and a
+real `npm run build` clean. **Still not driven in a browser** — the host
+wizard and checkout are behind a host login (see §6), which is how the
+step-1 regression reached the client in the first place.
 
 ### 8a26. Closed 2026-09-13 (late) — a required question with nothing on the other end of it
 
