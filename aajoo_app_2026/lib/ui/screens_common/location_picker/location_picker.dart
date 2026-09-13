@@ -59,7 +59,15 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
                   target: _cameraTarget ?? const LatLng(28.495000, 77.40905397),
                   zoom: 14.5,
                 ),
-                zoomControlsEnabled: false,
+                // Buttons as well as pinch.
+                //
+                // Reported 2026-09-13: "not able to zoom in or drop pin at a
+                // particular street or area". The confirmed fault was on the
+                // WEBSITE, where Google's touch default made one finger scroll the
+                // page instead of the map. Pinch has always worked here — but this
+                // is a picker, a host is looking for their own roof, and a control
+                // you can tap is easier to find than a gesture you have to guess.
+                zoomControlsEnabled: true,
                 myLocationEnabled: true,
                 myLocationButtonEnabled: true,
                 onMapCreated: (c) {
