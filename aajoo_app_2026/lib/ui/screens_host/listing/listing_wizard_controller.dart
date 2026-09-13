@@ -1173,7 +1173,10 @@ class ListingWizardController extends GetxController {
      * booking, and one hour against a host who answers tomorrow is a promise
      * the platform made for them.
      */
-    if (!set('response_time_hours')) {
+    // Only when somebody waits — see [responseTimeMatters]. Checked against the
+    // same two switches the server uses, so the form and the API cannot
+    // disagree about whether a listing can be saved.
+    if (responseTimeMatters && !set('response_time_hours')) {
       errs['response_time_hours'] = 'Tell guests how quickly you usually reply';
     }
 
@@ -1324,6 +1327,25 @@ class ListingWizardController extends GetxController {
   }
 
   // ── Saving ────────────────────────────────────────────────────────────────
+
+  /// Does anybody ever wait on this host?
+  ///
+  /// Two switches on step 4 decide it: a guest waits on a price OFFER when
+  /// negotiation is allowed, and on an APPROVAL when the host reviews each
+  /// request. Neither, and nothing on the platform will ever show a response
+  /// time for this listing — every consumer of it is gated on one or the
+  /// other, including the sweeper that auto-confirms an ignored request, which
+  /// skips non-approval listings outright.
+  ///
+  /// Asked 2026-09-13, looking at a listing set to fixed price and instant
+  /// book: a required question about a situation that listing cannot produce,
+  /// blocking the step. `controllers/listingEngine.controller.js` applies the
+  /// same two conditions, and the website uses the same flag by the same name.
+  ///
+  /// `!= false` rather than `== true`: the default is ON, and a draft saved
+  /// before the key existed reads null.
+  bool get responseTimeMatters =>
+      p4['negotiation_enabled'] != false || p4['booking_type'] == 'approval';
 
   /// Sleeping capacity, worked out rather than asked for.
   ///

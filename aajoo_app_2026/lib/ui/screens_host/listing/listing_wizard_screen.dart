@@ -1263,12 +1263,25 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             // pbr_response_time_hours → response_time_hours) could never fill
             // the control back in. Every host who listed from the app answered
             // this question into a void.
-            if (b.responseTimes.isNotEmpty)
+            // Asked when somebody is actually waiting, and only then. A host
+            // who allows no offers AND books instantly is never waited on, and
+            // every consumer of this value is gated on negotiation or on
+            // approval. See ListingWizardController.responseTimeMatters.
+            //
+            // Answered before and no longer applicable? The value stays in p4
+            // and the server keeps the stored one, so turning negotiation back
+            // on does not cost the host their answer.
+            if (b.responseTimes.isNotEmpty && c.responseTimeMatters)
               _p4Choice('response_time_hours',
                   'How quickly do you usually reply?', b.responseTimes,
                   required: true,
-                  help: 'Shown to guests waiting on a price offer, and the '
-                      'time you have to approve a booking request.'),
+                  help: c.p4['negotiation_enabled'] != false &&
+                          c.p4['booking_type'] == 'approval'
+                      ? 'Shown to guests waiting on a price offer, and the '
+                          'time you have to approve a booking request.'
+                      : c.p4['booking_type'] == 'approval'
+                          ? 'The time you have to approve a booking request.'
+                          : 'Shown to guests waiting on a price offer.'),
             if (b.availability.isNotEmpty)
               _p4Choice('availability', 'Availability', b.availability),
             // Which months — the follow-up question "Seasonal" never had.
