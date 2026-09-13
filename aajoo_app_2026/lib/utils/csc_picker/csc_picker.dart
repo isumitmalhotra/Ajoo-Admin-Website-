@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'model/select_status_model.dart';
 
 import 'package:rent_home/utils/app_log.dart';
+import 'package:rent_home/utils/search_fold.dart';
 enum Layout { vertical, horizontal }
 
 enum CountryFlag { SHOW_IN_DROP_DOWN_ONLY, ENABLE, DISABLE }
@@ -851,8 +852,7 @@ class CSCPickerState extends State<CSCPicker> {
   ///filter Country Data according to user input
   Future<List<String?>> getCountryData(filter) async {
     var filteredList = _country
-        .where(
-            (country) => country!.toLowerCase().contains(filter.toLowerCase()))
+        .where((country) => searchMatches(country, filter))
         .toList();
     if (filteredList.isEmpty) {
       return _country;
@@ -864,7 +864,7 @@ class CSCPickerState extends State<CSCPicker> {
   ///filter Sate Data according to user input
   Future<List<String?>> getStateData(filter) async {
     var filteredList = _states
-        .where((state) => state!.toLowerCase().contains(filter.toLowerCase()))
+        .where((state) => searchMatches(state, filter))
         .toList();
     if (filteredList.isEmpty) {
       return _states;
@@ -876,7 +876,7 @@ class CSCPickerState extends State<CSCPicker> {
   ///filter City Data according to user input
   Future<List<String?>> getCityData(filter) async {
     var filteredList = _cities
-        .where((city) => city!.toLowerCase().contains(filter.toLowerCase()))
+        .where((city) => searchMatches(city, filter))
         .toList();
     if (filteredList.isEmpty) {
       return _cities;

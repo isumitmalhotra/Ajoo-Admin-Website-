@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:rent_home/utils/app_log.dart';
+import 'package:rent_home/utils/search_fold.dart';
 class DropdownWithSearch<T> extends StatelessWidget {
   final String title;
   final String placeHolder;
@@ -128,11 +129,11 @@ class _SearchDialogState<T> extends State<SearchDialog> {
         if (textController.text.isEmpty) {
           filteredList = widget.items;
         } else {
+          // Accent- and space-insensitive: this list holds "Naini Tāl" and
+          // "Dehra Dūn", and nobody types a macron. See utils/search_fold.dart.
           filteredList = widget.items
-              .where((element) => element
-                  .toString()
-                  .toLowerCase()
-                  .contains(textController.text.toLowerCase()))
+              .where((element) =>
+                  searchMatches(element.toString(), textController.text))
               .toList();
         }
       });
