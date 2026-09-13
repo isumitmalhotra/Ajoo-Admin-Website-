@@ -1121,8 +1121,17 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             _p4Text('monthly_price', 'Monthly price (₹)',
                 required: true,
                 numeric: true,
-                help: 'Total for a 28-night stay. A longer stay is charged as '
-                    'whole months, then weeks, then the nights left over.'),
+                // A CALENDAR month, not 28 nights. Asked by the client
+                // 2026-09-13: a month ends on the 30th or 31st, and February
+                // is 28 or 29 — does the platform know? It does, and has since
+                // 2026-09-05: quoteRange divides the monthly price by
+                // daysInMonth of the month the stay STARTS in. Only the
+                // sentence was wrong.
+                help: 'Total for one calendar month — the month the stay '
+                    'starts in, so 31 nights in January, 30 in September, 28 '
+                    'in February and 29 in a leap year. A longer stay is '
+                    'charged as whole months, then weeks, then the nights '
+                    'left over.'),
           ],
         ),
         ListingSection(
@@ -1221,7 +1230,7 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             _p4Text('monthly_minimum_price', 'Minimum for a month (₹)',
                 required: true,
                 numeric: true,
-                help: 'The least you would take for 28 nights.'),
+                help: 'The least you would take for a full month.'),
             _p4Text('monthly_ideal_price', 'Ideal for a month (₹)',
                 required: true,
                 numeric: true,
