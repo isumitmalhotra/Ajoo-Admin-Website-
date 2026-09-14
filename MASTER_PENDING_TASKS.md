@@ -195,7 +195,7 @@ Nothing here is known to be defective. Each is a path nobody has exercised.
 - **The emergency-distance lookup against real Google (§8a25, 2026-09-13).** `GOOGLE_PLACES_KEY` is not in the local env, so only the "not configured" branch has run here — the distance sort is unit-tested against a stub, and the HTTP path is the one the nearby picker already uses in production. What is genuinely unproven is `fire_station` as a Google type: it is documented, it was never in the `essentials` list before today, and nobody has yet seen it return a result for an Indian hill town. Open any listing's step 3 on the live site with a pin set; the three boxes should fill and say where the numbers came from. **An empty answer is not a failure** — it is what a place with no fire station within 25km looks like, and the box stays typeable.
 - **The whole host wizard and checkout, in a browser (§8a25–§8a27).** Behind a host login, and a stored password is not ours to type — which is how the step-1 regression in §8a27 reached the client. Worth sixty seconds on a phone: step 1 shows three bedroom cards for "3" and submits; Beds goes read-only once a room names one; the location map moves on ONE finger and has +/− buttons; the Homestay Type and Local Experience chips carry icons; and the GST on the property page matches the GST on /booking/review for the same stay.
 - **Whether the live notification popup actually appears (§8a27).** Reported as "message aa rhe h but popups nahi aa rhe" and NOT reproduced: the server emits, the rooms match, and the transport answers. The silent-failure paths are closed and the popup moved off the mobile tab bar, which may be the whole story — but only the client's own phone can say. `liveState()` now reports up-or-why-not, so the next report can come with a reason.
-- **The deal price on the client's own screens (§8a28, 2026-09-15).** Verified by arithmetic and by test on all three repos, and on production only as far as an anonymous visit reaches — the LUXE dialog is a dark card, the property card's lines add up to its total. What needs a signed-in guest with a live deal: /booking/review on 29310 for 14–16 Sept reading **₹1,800 off, ₹27,376**, the same on /booking/payment, and the Razorpay sheet opening for the same rupees and paise. The deal coupon `DEAL29310179161` is spent (B476130), so the client will need to strike a new one — which is also the only way to see the app's chat page hand over to the listing instead of booking tonight on its own.
+- **The deal price on the client's own screens (§8a28, 2026-09-15).** Verified by arithmetic and by test on all three repos, and on production only as far as an anonymous visit reaches — the LUXE dialog surface is a dark card (computed style), the property card's lines add up to its total. What needs a signed-in guest with a live deal: /booking/review on 29310 for 14–16 Sept reading **₹1,800 off, ₹27,376**, the same on /booking/payment, and the Razorpay sheet opening for the same rupees and paise. The deal coupon `DEAL29310179161` is spent (B476130), so the client will need to strike a new one — which is also the only way to see the app's chat page hand over to the listing instead of booking tonight on its own.
 - **For the tester, on build 16** (each deploys cleanly and is covered by tests, but needs a signed-in host/guest on a device): #19's merged notification feed matches the website for the same host; the guest count survives "Move to Book at Agreed Price" on a *new* negotiation; airplane mode on host Notifications, guest My Negotiations and host Profile → properties shows "Couldn't load · Try again" rather than an empty state; #13's dropdown focus jump (fixed from the code, never reproduced on the emulator).
 - **The app's GUEST side of the negotiation rebuild, on a device.** The host side was driven on the emulator on 09-12 and the shared labelling is under test, but the two guest surfaces that changed — the offer button greying with its reason, and the dated “Listed at” line — have not been seen on a phone. The defect that blocked them is fixed (§3.13, build 82: the 29303 notification now opens the listing), but the deal BANNER still could not be tapped, because the test guest has no live deal and cannot make one on 29303 until midnight — the same-day decline lockout, working as designed. Both surfaces are covered by `negotiation_lock_test` and `offer_ceiling_test` and both are verified on the website; what is unproven is the app rendering them.
 - **`REQUIRE_IMAGE_ALT`** — whether it has been set on Render is not visible from outside (see §2.3).
@@ -325,6 +325,19 @@ The bottom sheet and success dialog that only served that path are gone.
 `background:#fff` with `--ink` (near-white) text on it — the Send an Offer
 dialog at 1.14:1. Same fault and same fix as the chat bubble:
 `--surface-pop`. Classic resolves to white, so nothing moves there.
+
+**Found on the way: "Nearest police station — 0 km away", three times.**
+Under Things to know on the same listing. `Number(null)` is 0 — the trap
+§8a25 closed on the LOOKUP side ("absent, not zero") was open on the
+READ side, so every listing whose host left the step-3 boxes blank
+printed three distances of nothing. A blank is now absent, and 0 is not a
+distance (BE `8733040`, pinned in `theNearestIsNotTheMostFamous`).
+
+**Verified on production, 2026-09-15 00:55:** the LUXE `.modal` resolves
+to `#141416` with `#F2F0EA` text and a gold hairline (computed style,
+anonymous visit); the 29310 card reads ₹24,000 + ₹1,000 + ₹4,500 =
+₹29,500 with every line in its total. The deal path itself needs a
+signed-in guest — §6.
 
 #### What was NOT changed, and why
 
