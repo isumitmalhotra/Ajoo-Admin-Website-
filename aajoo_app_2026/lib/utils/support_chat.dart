@@ -32,12 +32,47 @@ import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 const String botPenguinChatUrl =
     'https://window-2.botpenguin.com/69803a093817049868bf064f/696f4cdf88f4a8046c67188e';
 
-/// Swap the login session for a short-lived, single-purpose handoff token.
+/// What /bp/handoff hands back: the token, and who it is for.
+class ChatHandoff {
+  const ChatHandoff({
+    required this.token,
+    this.name = '',
+    this.phone = '',
+    this.email = '',
+  });
+
+  final String token;
+  final String name;
+  final String phone;
+  final String email;
+}
+
+/// Swap the login session for a short-lived, single-purpose handoff token —
+/// and take the NAME, PHONE and EMAIL that come back with it.
+///
+/// ── Why the profile comes from here and not from the app's own state ───────
+///
+/// BotPenguin, 2026-09-13, looking at their Inbox: chats opened from this app
+/// show "NA" under Visitor Profile — "the bot can recognise the account, but
+/// the app is not passing the name, email and phone into the profile fields".
+///
+/// It was passing them — from `AuthController.userData`, the app's own copy of
+/// the profile. That copy is EMPTY until the app has re-fetched it after a
+/// launch, so a guest who opens Chat before then arrives as a token with no
+/// name on it: recognised, and anonymous. The first bug report of this kind
+/// (an identity that is right on the second try) reads as flaky rather than
+/// broken, which is why it survived.
+///
+/// The website never had this problem. It reads the name and phone off THIS
+/// response and has since 2026-09-05; this is the same fix on the second
+/// surface, with the email added server-side so neither client has to go
+/// looking for it. The app's own state is kept only as a fallback for a field
+/// the server left blank.
 ///
 /// Returns null on any failure — a missing endpoint, a timeout, an expired
 /// session. The caller then opens the plain chat and the bot asks who it is
 /// talking to, which is a worse greeting and a correct one.
-Future<String?> _handoffToken(String sessionToken) async {
+Future<ChatHandoff?> _handoff(String sessionToken) async {
   try {
     final dio = Dio(BaseOptions(
       baseUrl: Apiconstants.baseUrl,
@@ -47,8 +82,16 @@ Future<String?> _handoffToken(String sessionToken) async {
     ));
     final res = await dio.post('/bp/handoff');
     final data = res.data is Map ? res.data['data'] : null;
-    final t = data is Map ? data['token']?.toString() : null;
-    return (t != null && t.trim().isNotEmpty) ? t.trim() : null;
+    if (data is! Map) return null;
+    final t = data['token']?.toString().trim() ?? '';
+    if (t.isEmpty) return null;
+    String field(String k) => (data[k] ?? '').toString().trim();
+    return ChatHandoff(
+      token: t,
+      name: field('name'),
+      phone: field('phone'),
+      email: field('email'),
+    );
   } catch (_) {
     return null;
   }
@@ -63,7 +106,7 @@ Future<String> supportChatUrl({String base = botPenguinChatUrl}) async {
         await const FlutterSecureStorage().read(key: 'user_token') ?? '';
     if (token.trim().isEmpty) return base;
 
-    final handoff = await _handoffToken(token.trim());
+    final handoff = await _handoff(token.trim());
     // No handoff, no identity. Falling back to the login session would put the
     // very credential this exists to protect into a vendor's URL; the bot
     // asking for a phone number is the correct outcome instead.
@@ -71,28 +114,35 @@ Future<String> supportChatUrl({String base = botPenguinChatUrl}) async {
 
     // What /bp/session/start verifies. Everything else below is convenience so
     // the bot can greet properly and skip its capture nodes.
-    params['ctx-token'] = handoff;
+    params['ctx-token'] = handoff.token;
     // A plain marker for the bot's If/Else gate — the web sets the same fixed
     // value so the condition can read `isauth equals yes`.
     params['ctx-isauth'] = 'yes';
 
+    // The server's answer first; the app's own copy of the profile only for a
+    // field the server left blank. See _handoff for why this order matters.
     final user = Get.isRegistered<AuthController>()
         ? Get.find<AuthController>().userData.value
         : null;
-    if (user != null) {
-      final phone = user.phoneNumber.trim();
-      if (phone.isNotEmpty) {
-        // Both names, as the web does: the system contact attribute and the
-        // bot's own variable, so the "Request Phone Number" node is pre-filled
-        // and skipped.
-        params['ctx-phone'] = phone;
-        params['ctx-phone_num'] = phone;
-      }
-      final name = user.fullName.trim();
-      if (name.isNotEmpty) params['ctx-name'] = name;
-      final email = user.email.trim();
-      if (email.isNotEmpty) params['ctx-email'] = email;
+    final phone = handoff.phone.isNotEmpty
+        ? handoff.phone
+        : (user?.phoneNumber ?? '').trim();
+    final name = handoff.name.isNotEmpty
+        ? handoff.name
+        : (user?.fullName ?? '').trim();
+    final email = handoff.email.isNotEmpty
+        ? handoff.email
+        : (user?.email ?? '').trim();
+
+    if (phone.isNotEmpty) {
+      // Both names, as the web does: the system contact attribute and the
+      // bot's own variable, so the "Request Phone Number" node is pre-filled
+      // and skipped.
+      params['ctx-phone'] = phone;
+      params['ctx-phone_num'] = phone;
     }
+    if (name.isNotEmpty) params['ctx-name'] = name;
+    if (email.isNotEmpty) params['ctx-email'] = email;
   } catch (_) {
     // Identity is an optimisation. If anything about reading it fails the chat
     // must still open — asking for a phone number is a worse experience than

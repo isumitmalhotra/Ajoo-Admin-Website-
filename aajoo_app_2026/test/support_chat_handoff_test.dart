@@ -57,6 +57,49 @@ void main() {
     expect(RegExp(r'handoff\s*\?\?').hasMatch(src), isFalse);
   });
 
+  // ── who the chat is opened AS ─────────────────────────────────────────────
+  //
+  // BotPenguin, 2026-09-13, looking at their Inbox: chats from this app showed
+  // "NA" under Visitor Profile — recognised, and anonymous. The app was passing
+  // name, email and phone from ITS OWN copy of the profile, which is empty until
+  // the app has re-fetched it after a launch. The website reads them off the
+  // handoff response instead and never had the problem.
+
+  test('the profile comes back with the token, and that is what is sent', () {
+    expect(src, contains("field('name')"), reason: 'the name is no longer read off the handoff');
+    expect(src, contains("field('phone')"), reason: 'the phone is no longer read off the handoff');
+    expect(src, contains("field('email')"), reason: 'the email is no longer read off the handoff');
+    expect(
+      RegExp(r"handoff\.phone\.isNotEmpty\s*\?\s*handoff\.phone").hasMatch(src),
+      isTrue,
+      reason: "the server's phone is not preferred — a fresh launch opens the "
+          'chat before the app has re-fetched its own copy, and the Inbox '
+          'shows NA',
+    );
+    expect(RegExp(r"handoff\.name\.isNotEmpty\s*\?\s*handoff\.name").hasMatch(src), isTrue);
+    expect(RegExp(r"handoff\.email\.isNotEmpty\s*\?\s*handoff\.email").hasMatch(src), isTrue);
+  });
+
+  test("the app's own state is only a fallback, never the first answer", () {
+    // The old shape: read AuthController first, and nothing else. A launch
+    // that opens Chat before userData is hydrated sends a token with no name.
+    expect(
+      RegExp(r"final phone = user\.phoneNumber\.trim\(\);").hasMatch(src),
+      isFalse,
+      reason: 'the phone is being read from AuthController first again',
+    );
+    expect(src, contains("(user?.phoneNumber ?? '').trim()"),
+        reason: "the fallback to the app's own copy is gone - a server that "
+            'returns a blank field would then send nothing at all');
+  });
+
+  test('both phone names still go, so the capture node is skipped', () {
+    expect(src, contains("params['ctx-phone'] = phone;"));
+    expect(src, contains("params['ctx-phone_num'] = phone;"));
+    expect(src, contains("params['ctx-name'] = name;"));
+    expect(src, contains("params['ctx-email'] = email;"));
+  });
+
   test('the mint cannot hang the chat button open', () {
     // A vendor page that never opens because our own API is slow is a worse
     // outcome than an anonymous one.
