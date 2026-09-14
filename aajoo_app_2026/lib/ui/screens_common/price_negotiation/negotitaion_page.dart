@@ -1,21 +1,14 @@
-import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:async';
 import 'package:rent_home/constants.dart';
-import 'package:rent_home/service/pending_booking.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
-import 'package:razorpay_flutter/razorpay_flutter.dart';
-import 'package:rent_home/constants/payment_config.dart';
 import 'package:rent_home/models/negotiation_model.dart';
-import 'package:rent_home/ui/screens_renter/booking_controller.dart';
-import 'package:rent_home/ui/screens_common/price_negotiation/components/accept_offer_bottom_sheet.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/components/chat_status_card.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/components/negotiation_app_bar.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/components/negotiation_screen_load_error_view.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/components/negotiation_screen_load_view.dart';
-import 'package:rent_home/ui/screens_common/price_negotiation/components/payment_success_dialog.dart';
 import 'package:rent_home/ui/screens_common/price_negotiation/negotiation_controller.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/service/booking_service.dart';
@@ -27,7 +20,8 @@ import 'package:rent_home/utils/safe_bottom.dart';
 import '../auth/auth_controller.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/utils/money.dart';
-import 'package:rent_home/utils/gst.dart';
+import 'package:rent_home/controller/deals_controller.dart';
+import 'package:rent_home/ui/screens_renter/property_details/open_property.dart';
 
 class PriceNegotiationPage extends StatefulWidget {
   final String userId;
@@ -259,181 +253,57 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
     });
   }
 
-  void _showLoadingDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-  }
-
-  void _hideLoadingDialog() {
-    if (Navigator.canPop(context)) {
-      Navigator.pop(context);
-    }
-  }
-
-  Future<void> _bookProperty(double price, {required bool isCod, int? travellerId}) async {
-    _showLoadingDialog();
-    final bookingController = Get.put(BookingController());
-    final authController = Get.find<AuthController>();
-    final property = widget.property;
-
-    final now = DateTime.now();
-    final bookFrom = DateFormat('dd-MM-yyyy').format(now);
-    final bookTo =
-        DateFormat('dd-MM-yyyy').format(now.add(const Duration(days: 1)));
-
-    final bookingData = {
-      "propertyId": property.propertyId,
-      // Who is actually staying. Omitted when it is the account holder; the
-      // server re-checks the traveller belongs to this account.
-      if (travellerId != null) "guestProfileId": travellerId,
-      // The negotiated offer, pre-GST. The backend adds the tax — do not add
-      // it here as well. (The "add gst" note that used to sit above this was
-      // the start of exactly that mistake; the property page did make it, and
-      // it overbilled a real guest.)
-      "price": price,
-      "bookFrom": bookFrom,
-      "bookTo": bookTo,
-      "isCod": isCod,
-      "category": 1,
-      "bookingType": "Per night",
-    };
-
-    try {
-      // KYC gate — an unverified guest must complete DIDIT before booking
-      // (renters verify at registration; this catches anyone who skipped).
-      if (authController.userData.value?.isKycVerified != true) {
-        // Same reason as the property page: DIDIT runs in the system browser
-        // and Android may kill the app while the guest is there, so the
-        // accepted-offer booking is written down before we hand over.
-        await PendingBookingStore.save(PendingBooking(
-          propertyId: int.tryParse(widget.propertyId) ?? 0,
-          propertyName: widget.property.propertyName,
-          bookFrom: bookFrom,
-          bookTo: bookTo,
-          isCod: isCod,
-          savedAt: DateTime.now(),
-        ));
-        final verified = await Get.toNamed('/kyc', arguments: {
-          'context': 'renter_kyc',
-          'isHost': false,
-          'returnResult': true,
-        });
-        if (verified != true &&
-            authController.userData.value?.isKycVerified != true) {
-          // Same three-way distinction as the property page: telling a guest
-          // who has just finished KYC that "verification is required" reads as
-          // though the app ignored what they did.
-          final st =
-              (authController.userData.value?.verificationStatus ?? '').toLowerCase();
-          // "pending" is an unfinished check, not one under review — Didit
-          // decides a guest's on the spot. Saying "we're checking your ID"
-          // leaves them waiting on a decision nobody is making.
-          final String title;
-          final String body;
-          if (st == 'in_review') {
-            title = 'Still reviewing your ID';
-            body = "We're checking your ID now. Your offer is saved — come "
-                "back to finish once it's approved.";
-          } else if (st == 'pending' || st == 'partial') {
-            title = 'Verification not finished';
-            body = "You started the check but didn't finish it. Your offer is "
-                'saved — tap Book again to pick up where you left off.';
-          } else {
-            title = 'Verification required';
-            body = 'Please verify your identity to continue booking.';
-          }
-          bookingController.showSnackbar(title, body, true);
-          return;
-        }
+  /// Book from this chat — through the LISTING, with the deal's coupon when
+  /// there is one, the way the Negotiations screen and the home banner do.
+  ///
+  /// This page used to book directly: the per-night price times GST, for
+  /// tonight, with no coupon, posted to /booking/create. Three things wrong
+  /// in one request. The server treats `price` as pre-tax, so the tax was
+  /// added twice; the cleaning fee, the party charge and the pets were not
+  /// in it; and it was not the agreed price for the agreed dates, so the
+  /// booking clamp refused it as "the price for these dates has changed" —
+  /// a guest who had just been told "offer accepted" could not book it from
+  /// here. The property page already prices a deal correctly (room less the
+  /// deal, fees on top, GST on the sum) and sends the coupon; every path
+  /// here hands over to it. Client, 2026-09-14: "please check pricing engine
+  /// all across platform".
+  ///
+  /// [expectDeal] is true under an accepted offer, where a missing coupon is
+  /// worth a sentence; the "book at the current price" path expects none.
+  Future<void> _openListingToBook({required bool expectDeal}) async {
+    final propertyId = int.tryParse(widget.propertyId) ?? 0;
+    if (propertyId <= 0) return;
+    final deals = Get.isRegistered<DealsController>()
+        ? Get.find<DealsController>()
+        : Get.put(DealsController());
+    // The coupon lives on DealsController, minted server-side on accept.
+    // Reached from a chat notification the list is usually empty — load it,
+    // or the stay opens at the full asking price with nothing to say so.
+    if (deals.deals.isEmpty) {
+      try {
+        await deals.load();
+      } catch (_) {
+        // Fall through: the property page will say the deal is missing.
       }
-      final bookingResponse =
-          await bookingController.createBooking(bookingData);
-      await PendingBookingStore.clear();
-
-      if (!isCod) {
-        final orderId = bookingResponse.data.booking.order?.id.toString() ?? '';
-        // Razorpay prefill accepts empty strings — defensive fallback for
-        // dev-skip / session-expired flows.
-        final contact = authController.userData.value?.phoneNumber ?? '';
-        final email = authController.userData.value?.email ?? '';
-        final options = {
-          "key": PaymentConfig.razorpayKey,
-          // The order the backend just created is the authority: `price` here
-          // is the pre-GST negotiated offer, so the order is ~5–18% larger and
-          // that is what Razorpay actually collects once order_id is set.
-          // Passing the bare offer meant the sheet and the charge disagreed.
-          "amount": bookingResponse.data.booking.order?.amount ??
-              (price * 100).toInt(),
-          "name": "Aajoo",
-          'description': 'Payment for Order ID: ${property.propertyId}',
-          'order_id': orderId,
-          'prefill': {'email': email, 'contact': contact},
-          'theme': {'color': '#3399cc'}
-        };
-        _hideLoadingDialog();
-        try {
-          Razorpay razorpay = Razorpay();
-          // A release build carrying a TEST key takes no money while looking
-          // exactly as if it did (W8 · P0-02). Refuse rather than confirm a
-          // booking nobody paid for. Debug builds, and any build made with
-          // --dart-define=ALLOW_TEST_PAYMENTS=true, are unaffected.
-          if (!PaymentConfig.usableForPayments) {
-            Fluttertoast.showToast(msg: PaymentConfig.unavailableMessage);
-            return;
-          }
-          razorpay.open(options);
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Payment error: $e')),
-          );
-        }
-      } else {
-        _hideLoadingDialog();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Booking successful! Pay on arrival.')),
-        );
-        successDialog("Booking Successful",
-            bookingResponse.data.booking.bookId.toString());
-
-        // Navigator.pop(context);
-      }
-    } catch (e) {
-      _hideLoadingDialog();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Booking error: $e')),
-      );
     }
-  }
-
-  void successDialog(String paymentId, String bookingId) {
-    showDialog(
-      context: context,
-      builder: (_) => PaymentSuccessDialog(
-        paymentId: paymentId,
-        bookingId: bookingId,
-        lat: double.parse(widget.lat),
-        long: double.parse(widget.long),
-      ),
-    );
-  }
-
-  void _showAcceptOfferDialog(double price) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => AcceptOfferBottomSheet(
-        price: price,
-        onPay: (totalAmount, isCod, travellerId) async {
-          await _bookProperty(totalAmount, isCod: isCod, travellerId: travellerId);
-        },
-      ),
+    final deal = deals.forProperty(propertyId);
+    if (!mounted) return;
+    if (deal == null && expectDeal) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text(
+            "We couldn't find the coupon for this stay — it may have expired. "
+            'Opening the listing so you can check the dates.'),
+        backgroundColor: kInk,
+      ));
+    }
+    await openPropertyById(
+      propertyId,
+      dealCode: deal?.code,
+      dealFrom: deal?.bookFrom,
+      dealTo: deal?.bookTo,
+      guests: deal?.guests,
+      dealPercent: deal?.percent,
+      errorTitle: 'Deal',
     );
   }
 
@@ -482,11 +352,8 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                     remainingTime: _remainingTime.value,
                     userId: widget.userId,
                     hostId: widget.hostId,
-                    onAcceptOffer: () {
-                      _showAcceptOfferDialog(
-                        negotiationController.currentPrice.value,
-                      );
-                    },
+                    onAcceptOffer: () =>
+                        _openListingToBook(expectDeal: false),
                   ),
 
                   // Negotiation Messages
@@ -721,12 +588,9 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                                 ),
                                                 const SizedBox(height: 12),
                                                 ElevatedButton.icon(
-                                                  onPressed: () {
-                                                    _showAcceptOfferDialog(
-                                                        negotiationController
-                                                            .currentPrice
-                                                            .value);
-                                                  },
+                                                  onPressed: () =>
+                                                      _openListingToBook(
+                                                          expectDeal: false),
                                                   icon: const Icon(
                                                       Icons.book_online),
                                                   label: Text(
@@ -1082,10 +946,6 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                       negotiationController.currentPrice.value);
                               final isRenter =
                                   authController.userData.value?.isUser == true;
-                              // Per night, and 7,500 exactly is the HIGH
-                              // band — see utils/gst.dart.
-                              final gstRate = gstRateForNight(price);
-                              final totalWithGst = price * (1 + gstRate);
 
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1195,9 +1055,9 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                                   const EdgeInsets.symmetric(
                                                       vertical: 14),
                                             ),
-                                            onPressed: () => _bookProperty(
-                                                totalWithGst,
-                                                isCod: true),
+                                            onPressed: () =>
+                                                _openListingToBook(
+                                                    expectDeal: true),
                                           ),
                                         ),
                                         const SizedBox(width: 12),
@@ -1213,16 +1073,21 @@ class _PriceNegotiationPageState extends State<PriceNegotiationPage> {
                                                   const EdgeInsets.symmetric(
                                                       vertical: 14),
                                             ),
-                                            onPressed: () => _bookProperty(
-                                                totalWithGst,
-                                                isCod: false),
+                                            onPressed: () =>
+                                                _openListingToBook(
+                                                    expectDeal: true),
                                           ),
                                         ),
                                       ],
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      'Total with ${(gstRate * 100).toStringAsFixed(0)}% GST: ${rupees(totalWithGst)}',
+                                      // Per night. The stay's total — the
+                                      // agreed nights, any cleaning fee or
+                                      // extra-guest charge, and GST on the
+                                      // sum — is worked out on the listing,
+                                      // where every other booking is priced.
+                                      '${rupees(price)} a night, agreed. The full total with fees and GST is shown before you pay.',
                                       style: theme.textTheme.bodySmall
                                           ?.copyWith(color: kMuted),
                                     ),

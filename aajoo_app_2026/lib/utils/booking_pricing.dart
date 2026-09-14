@@ -65,7 +65,8 @@ class StayPrice {
   /// Room + party charge + pets + cleaning — the figure to send as `price`.
   final double chargeable;
 
-  /// The coupon or negotiated-deal reduction applied to [chargeable].
+  /// The coupon or negotiated-deal reduction — a percentage of [roomSubtotal]
+  /// and of nothing else. The fees ride through it untouched.
   final double discount;
 
   /// What the same nights would have cost at the ordinary nightly rate.
@@ -86,7 +87,7 @@ class StayPrice {
   /// "Weekly rate" / "Monthly rate", or null when neither applied.
   final String? longStayLabel;
 
-  /// [roomSubtotal] less [discount] — the base GST is actually charged on.
+  /// [chargeable] less [discount] — the base GST is actually charged on.
   final double discountedRoom;
 
   /// 5 or 18, chosen by the per-night tariff.
@@ -122,8 +123,8 @@ class StayPrice {
 /// [roomSubtotal] is the room charge for the whole stay (per-night × nights,
 /// or the negotiated figure). [perNightTariff] is the listed nightly rate and
 /// decides the GST band only — it is never itself charged. [discount] is any
-/// validated coupon or negotiated-deal reduction; the backend applies it to
-/// the room total BEFORE GST, so this does too.
+/// validated coupon or negotiated-deal reduction, worked out on the ROOM; the
+/// backend applies it BEFORE GST and never to the fees, so this does too.
 ///
 /// Indian accommodation GST:
 ///   per-night ≤ ₹7,500 → 5%
@@ -153,12 +154,20 @@ StayPrice priceStay({
       extraGuestFee.isFinite && extraGuestFee > 0 ? extraGuestFee : 0.0;
   final petCharge = petFee.isFinite && petFee > 0 ? petFee : 0.0;
   final cleaning = cleaningFee.isFinite && cleaningFee > 0 ? cleaningFee : 0.0;
-  // The party charge, the pets and the cleaning fee ride with the room
-  // through discount and tax, because that is what the backend does with
-  // them (a coupon is applied to the whole sent price; GST is levied on
-  // the final price the guest pays).
+  // The party charge, the pets and the cleaning fee ride with the room into
+  // the tax, because GST is levied on the final price the guest pays. They
+  // do NOT ride into the discount: a coupon — and a negotiated deal, which
+  // reaches checkout as one — is a percentage of the ROOM. The server mints
+  // the deal against the room subtotal so that percentage reproduces the
+  // agreed per-night price; taken off a bigger number it under-pays the
+  // host. Client, 2026-09-14, listing 29310 (₹12,000 × 2, ₹1,000 cleaning,
+  // 7.5% deal): "it should be 27376 not 26196" — 7.5% of the room is 1,800,
+  // cleaning on top, GST on the sum. The web's summarize() and
+  // /booking/create do the same since the same day.
   final chargeable = subtotal + party + petCharge + cleaning;
-  final off = discount.isFinite && discount > 0 ? discount : 0.0;
+  final off = (discount.isFinite && discount > 0 ? discount : 0.0)
+      .clamp(0.0, subtotal)
+      .toDouble();
   final discountedRoom = (chargeable - off).clamp(0.0, chargeable).toDouble();
   final taxPct = perNightTariff > 7500 ? 18 : 5;
   // Rounded to paise, the same way the backend rounds, so the total shown here

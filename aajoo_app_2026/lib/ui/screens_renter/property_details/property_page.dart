@@ -752,7 +752,15 @@ class _PropertyPageState extends State<PropertyPage>
     // therefore won every time, freezing a percentage coupon's saving at
     // whatever the stay cost when it was applied. A percentage has to follow
     // the stay; only a flat-amount coupon has no percentage to follow it with.
-    final base = (double.tryParse(currentPriceString) ?? 0) + _partyFee;
+    //
+    // Of the ROOM. This added the party charge, so the same deal read one
+    // saving here and another on the web — "discount showing different on
+    // different pages" (client, 2026-09-14). The server discounts the room
+    // subtotal only, as it always has for an offer; see booking_pricing.dart.
+    // `_roomCharge`, not `currentPriceString`: the server's subtotal (long-
+    // stay rate, advance discount) is the figure the percentage was minted
+    // against and the one the booking applies it to.
+    final base = _roomCharge;
     if (_couponPercent > 0) {
       return (base * _couponPercent / 100).clamp(0, base).toDouble();
     }
@@ -802,11 +810,11 @@ class _PropertyPageState extends State<PropertyPage>
       });
       return;
     }
-    // Validate against room + party charge — the figure the server discounts
-    // (booking.controller applies the coupon to the whole chargeable amount).
-    // Testing against the room alone could refuse a coupon whose minimum-spend
-    // the real booking actually clears, or show a discount capped short.
-    final base = (double.tryParse(currentPriceString) ?? 0) + _partyFee;
+    // Validate against the ROOM — the figure the server discounts. The server
+    // works this out for itself from the stay and reads the one sent here
+    // only for a listing with no rate card; the two have to be the same
+    // number or that fallback quietly disagrees with every other screen.
+    final base = _roomCharge;
     setState(() => _couponBusy = true);
     final res = await _dealsSvc.validateCoupon(
         code: code, propertyId: widget.id, amount: base);
