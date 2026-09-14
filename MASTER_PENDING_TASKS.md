@@ -10,7 +10,9 @@
 > and emergency distances the platform measures instead of asking a host to guess;
 > §8a26 closes a required question that nothing on the other side ever read, and
 > §8a27 closes eight client reports in one night — including a money figure that
-> disagreed with itself between two screens, and one regression of my own.
+> disagreed with itself between two screens, and one regression of my own;
+> **updated 2026-09-15** with §8a28 — the same stay priced three ways on three
+> screens, because a coupon was a percentage of three different things.
 > §8a24 and §2.8 carry **AWS Days 1–5** — the whole platform as Terraform, a
 > deploy pipeline that holds no AWS key at all, and the cutover runbook. None of
 > it is applied — blocked on an unverified card on the AWS account, not on us.
@@ -55,12 +57,12 @@ work; sorting by owner is what makes that visible.
 
 | Section | Owner | Open |
 |---|---|---|
-| [1. Client decisions](#1-blocked-on-client-decisions) | Client | 7 |
+| [1. Client decisions](#1-blocked-on-client-decisions) | Client | 8 |
 | [2. Ops / Render access](#2-blocked-on-ops--render-access) | Whoever holds Render + GCP | 7 |
 | [3. Engineering](#3-engineering--genuinely-open) | Us | 11 |
 | [4. Contract deliverables](#4-contract-deliverables-) | Us | 8 |
 | [5. Section-0 redo](#5-section-0-site-redo--separate-sow) | Blocked on a signed change order | 20 |
-| [6. Unproven, not broken](#6-unproven-not-broken) | Us + tester | 13 |
+| [6. Unproven, not broken](#6-unproven-not-broken) | Us + tester | 14 |
 
 **If only two things get done:** §2.1 (live payment keys) and §1.1 (delete the
 seed listings). The first means the product currently looks like it is taking
@@ -84,6 +86,7 @@ money and is not. The second gates every honest SEO number on the site.
 | **1.11** | **The category catalogue needs an hour of an admin's time** | Three things, all data rather than code, and all now MORE visible because Browse by category reads the catalogue live (§8a20) instead of nine hardcoded tiles. (a) **Category 1 is titled "Villas -1"** — every villa on the public site reads "Villas -1", a test rename left in `tbl_categories`; the slug `villas-1` is fine to keep. (b) **Nine of the eleven categories have no image** — the rail falls back to a rotation of stock photographs, so two categories look photographed and nine look generic; upload one icon each at Admin › Catalogue › Categories › pencil › Replace image. `Resort` carries a line-drawing icon that looks wrong beside a photograph. (c) **The CMS heading still reads "browser by caterogy"** — Admin › CMS › Homepage Content › Categories heading. All four are one click each; my sandbox refused the category edit. | admin Categories + CMS screens, 2026-09-12 |
 | ~~1.10~~ | ~~**Admin approval → public listing, end to end**~~ **DONE 2026-09-11** | 29302 "QA Sunrise Villa" filed from the app (all five steps, map pin at Christ Church Kasauli, 10 tagged photos with ALT text, ownership PDF, Moderate policy, approval required, weekend/weekly/monthly rates, pets, 15:00 check-in) → Submitted tab → Mark all checked → Approve & publish → live at `/property/qa-sunrise-villa-solan-himachal-pradesh` with map pin, gallery, rules, nearby, policy ladder, negotiation, `psb_reviewed_by` recorded. Quote engine: Fri ₹3,600 + Sat ₹3,800, 10% advance discount, ₹500 cleaning, 5% GST; extra guests ₹400 × 2 × 2 nights once the app could say who is included. Found and fixed on the way: the document-upload Submit deadlock (web + app), the self check-in method erased on re-save (app), the extra-guest section missing (app), "1800 sq_ft" / "Pet Area 1" on the public page (backend). **The listing is live test content on production — delete it when the client is done with it.** | driven 2026-09-11, builds 66–68 |
 | **1.13** | **Two one-off data repairs — run them** (my sandbox refuses production writes) | Both dry-run by default and print what they will touch. In PowerShell: `cd D:\Projects\aajaoBackend-render; node scripts/cleanupImageSeo_2026-09-11.js --apply` — deletes **18** `image_seo` rows whose photograph no longer exists and resets **5** rows that pre-date their photograph (media 72–75 on 29303 carried a Dharamsala cottage's ALT text; media 67 on 29302 "Wood-panelled ceiling…"). Then `node scripts/maskPropertyBankNumbers_2026-09-11.js --apply` — masks the **2** plaintext account numbers `property_bank_details` was holding (29294, 29303). Why they exist: §8a15. | dry runs printed 2026-09-11 |
+| **1.14** | **Is the cleaning fee CHARGED, or only STATED?** (asked 2026-09-14) | The client's note with the pricing screenshots: *"cleaning and all is on demand right so we don't have to charge that fee, we just can show in the details section that host charge this if you needed it."* That reverses **C18** of the property-form spec (`PROPERTY_FORM_SPEC_V2_TASKLIST.md`, done 10 Sep), which asked for the fee **with a frequency** — per stay / per night — and it has been quoted, charged, taxed and paid to the host on every booking since. The same note also says the stay *"should be 27376"*, and ₹27,376 is the figure **with** the ₹1,000 cleaning fee in it (₹23,200 × 1.18); without the fee it is ₹26,196. So the message asks for two different things, and the code does what the spec says until told otherwise. **If display-only is the decision:** it is one switch — the quote, the clamp and both clients stop adding `cleaningFee`, and the property page states it the way the security deposit already is ("collected directly by the host, not included in this total"). Also decide what happens to the frequency field, which then means nothing. | client note 2026-09-14; `PROPERTY_FORM_SPEC_V2_TASKLIST.md` C18 |
 | **1.8** | **Where the platform runs after UAT** | `Deployment_Options_2026-09-05.docx` compares staying on Render + Vercel with AWS, Azure, GCP, DigitalOcean and a VPS, with indicative costs. Recommendation: stay through UAT (Render Starter, $7/mo), then **DigitalOcean Bangalore** (~$45–75/mo) as the first managed home in India; hyperscaler only with an owner or credits; VPS only with a named operator. Needs the client's answers to §8 of that document: expected traffic, budget, who operates, existing cloud agreements. | doc |
 
 ---
@@ -192,6 +195,7 @@ Nothing here is known to be defective. Each is a path nobody has exercised.
 - **The emergency-distance lookup against real Google (§8a25, 2026-09-13).** `GOOGLE_PLACES_KEY` is not in the local env, so only the "not configured" branch has run here — the distance sort is unit-tested against a stub, and the HTTP path is the one the nearby picker already uses in production. What is genuinely unproven is `fire_station` as a Google type: it is documented, it was never in the `essentials` list before today, and nobody has yet seen it return a result for an Indian hill town. Open any listing's step 3 on the live site with a pin set; the three boxes should fill and say where the numbers came from. **An empty answer is not a failure** — it is what a place with no fire station within 25km looks like, and the box stays typeable.
 - **The whole host wizard and checkout, in a browser (§8a25–§8a27).** Behind a host login, and a stored password is not ours to type — which is how the step-1 regression in §8a27 reached the client. Worth sixty seconds on a phone: step 1 shows three bedroom cards for "3" and submits; Beds goes read-only once a room names one; the location map moves on ONE finger and has +/− buttons; the Homestay Type and Local Experience chips carry icons; and the GST on the property page matches the GST on /booking/review for the same stay.
 - **Whether the live notification popup actually appears (§8a27).** Reported as "message aa rhe h but popups nahi aa rhe" and NOT reproduced: the server emits, the rooms match, and the transport answers. The silent-failure paths are closed and the popup moved off the mobile tab bar, which may be the whole story — but only the client's own phone can say. `liveState()` now reports up-or-why-not, so the next report can come with a reason.
+- **The deal price on the client's own screens (§8a28, 2026-09-15).** Verified by arithmetic and by test on all three repos, and on production only as far as an anonymous visit reaches — the LUXE dialog is a dark card, the property card's lines add up to its total. What needs a signed-in guest with a live deal: /booking/review on 29310 for 14–16 Sept reading **₹1,800 off, ₹27,376**, the same on /booking/payment, and the Razorpay sheet opening for the same rupees and paise. The deal coupon `DEAL29310179161` is spent (B476130), so the client will need to strike a new one — which is also the only way to see the app's chat page hand over to the listing instead of booking tonight on its own.
 - **For the tester, on build 16** (each deploys cleanly and is covered by tests, but needs a signed-in host/guest on a device): #19's merged notification feed matches the website for the same host; the guest count survives "Move to Book at Agreed Price" on a *new* negotiation; airplane mode on host Notifications, guest My Negotiations and host Profile → properties shows "Couldn't load · Try again" rather than an empty state; #13's dropdown focus jump (fixed from the code, never reproduced on the emulator).
 - **The app's GUEST side of the negotiation rebuild, on a device.** The host side was driven on the emulator on 09-12 and the shared labelling is under test, but the two guest surfaces that changed — the offer button greying with its reason, and the dated “Listed at” line — have not been seen on a phone. The defect that blocked them is fixed (§3.13, build 82: the 29303 notification now opens the listing), but the deal BANNER still could not be tapped, because the test guest has no live deal and cannot make one on 29303 until midnight — the same-day decline lockout, working as designed. Both surfaces are covered by `negotiation_lock_test` and `offer_ceiling_test` and both are verified on the website; what is unproven is the app rendering them.
 - **`REQUIRE_IMAGE_ALT`** — whether it has been set on Render is not visible from outside (see §2.3).
@@ -250,6 +254,96 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a28. Closed 2026-09-15 — the same stay, priced three ways
+
+Client, 2026-09-14, two screenshots of listing 29310 ("Glamping at the
+ladakh test": ₹12,000 a night, ₹1,000 cleaning, 14–16 September, a
+negotiated deal at ₹11,100 a night): *"it should be 27376 not 26196 …
+Cleaning fee is excluded here but showing charged … during payment the
+price is again different, pls check, price is most important part of app …
+discount and gst showing different on different pages."* All of it true,
+and all of it one fault wearing three faces.
+
+#### The fault
+
+**A coupon was a percentage of three different things.** The server mints
+a negotiated deal as a percentage of the stay's ROOM subtotal
+(`negotiationCoupon.js`) — chosen so the percentage reproduces the agreed
+per-night price exactly. That only works if the percentage is then applied
+to the same figure, and nobody applied it to the same figure:
+
+| screen | 7.5% of… | total |
+|---|---|---|
+| property card (web) | the room — but it had dropped the cleaning fee, the pets and the tax weights while still PRINTING the cleaning line | **₹26,196** |
+| review page (web) and `/booking/create` | room + party + pets + cleaning | **₹27,288** (B476130 stored discount 1,875, total 27,287.50) |
+| property page (app) | room + party | — |
+| what the host agreed to | the room, then the fees on top, GST on the sum | **₹27,376** |
+
+An offer already discounted the room only ("a discount is on the room and
+not on the cost of cleaning it" — `stayPricing.js`), and so did the
+advance-booking discount. A coupon now does too, in every place that
+takes one: `booking.controller` (`couponBase = quote.subtotal`, the
+discount taken off the whole price), `/user/coupons/validate` (the base is
+worked out **from the stay** — `couponApply.roomSubtotalFor` — and only
+the client's figure when the listing has no rate card; the response says
+what it used), web `summarize()`, and the app's `priceStay()` /
+`_discountOnRoom` / `_applyCoupon`. The host is paid ₹23,200 for a room
+they let for ₹23,200.
+
+#### The faces
+
+**"Cleaning fee is excluded here but showing charged"** — the web property
+card under a deal. The local quote it fell back to had no cleaning fee, no
+pet fee and no per-night tax weights, while the card read the cleaning
+line straight off the server's quote — a ₹1,000 line over a total that did
+not contain it. The card now builds a negotiated stay from the server's
+own components less the deal, names the tax bands it actually charged
+with, and is flagged as an estimate when there is no quote at all, deal or
+no deal.
+
+**"discount … showing different on different pages"** — 7.5% printed as
+"−8%" on the review badge and "−7.5%" on the card. One formatter now
+(`pct()`, the same digits the app's `_pct` prints): a deal stored to two
+decimals so the guest is charged what the host agreed is not improved by
+rounding it where they can see it.
+
+**"during payment the price is again different"** — ₹27,287.50 was
+"₹27,288" on the page and "₹27,287.50" on the Razorpay sheet. The totals on
+the card, the review and the payment page — and the pay button — are now
+printed to the paise, because that is the figure the gateway opens with.
+
+**The app's chat negotiation page booked on its own.** Per-night price ×
+GST, for TONIGHT, no coupon, posted as `price` — taxed twice (the server
+treats `price` as pre-tax), no cleaning or party charge, not the agreed
+dates, and refused by the booking clamp anyway. Its three booking buttons
+now open the listing with the deal's coupon, the way the Negotiations
+screen and the home banner already did, so a deal is priced in one place.
+The bottom sheet and success dialog that only served that path are gone.
+
+**LUXE: "pls correct this luxe UI, it is not readable."** `.modal` was
+`background:#fff` with `--ink` (near-white) text on it — the Send an Offer
+dialog at 1.14:1. Same fault and same fix as the chat bubble:
+`--surface-pop`. Classic resolves to white, so nothing moves there.
+
+#### What was NOT changed, and why
+
+The client's note also says cleaning is *"on demand"* and should be shown,
+not charged. That reverses **C18** (spec, 10 Sep) and contradicts the
+₹27,376 in the same message, which has the fee in it. Recorded as a
+decision, **§1.14**, not made silently.
+
+#### Pinned
+
+BE `aCouponIsOnTheRoom.test.js` (1,800 not 1,875; 27,376; the clamp and
+the validate endpoint read the room) — **140/140**. Web
+`aCouponIsOnTheRoom.test.mjs` (summarize, the card's deal path, the
+badge, the paise) + `luxContrast` pins the modal — **42 files pass**;
+`aDealPricesOnlyItsOwnNights` updated for the estimate rule. App
+`a_coupon_is_on_the_room_test.dart` (priceStay, the two property-page
+bases, the chat page hands over) — **451 pass**. Commits BE `e8c5791`, web
+`c47cef6`, app `86797e4`. No APK yet — build 89 is with the tester; the app
+side ships with the next build.
 
 ### 8a27. Closed 2026-09-13 (night) — eight client reports, and one of them was mine
 
