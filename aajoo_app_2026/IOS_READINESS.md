@@ -119,7 +119,7 @@ Base64 on a Mac: `base64 -i file | pbcopy`. On Windows: `[Convert]::ToBase64Stri
 
 ## 6. The path to the first iPhone build
 
-1. Push (done) → the **compile** job runs on GitHub and proves the iOS project builds. Watch it at Actions → iOS build.
+1. Push (done) → the **compile** job runs on GitHub and proves the iOS project builds. **Proven 15 September, run 34996287126:** 20 pods resolved, Xcode build in 240 s, the 472 tests green on the Mac, the verifier satisfied on Info.plist, the Runner binary and the Dart snapshot (bundle id, name, permission strings, the development endpoint and no other, version 1.0.0+94), and `Runner-1.0.0+94-unsigned.app.zip` (40.7 MB) kept as the run's artifact. (The first run, 34994667340, built the same app and then failed in the verifier itself, which had scanned forty SDK Info.plists and read three `http://` identifiers inside the Google, Firebase and Razorpay SDKs as endpoints — fixed the same hour.) Watch future runs at Actions → iOS build.
 2. Client completes §3 (1–8) and adds the secrets.
 3. Actions → iOS build → Run workflow → tick **testflight**. The job signs, verifies, uploads.
 4. TestFlight processes the build (10–30 minutes); the tester installs the TestFlight app on their iPhone and accepts the invitation.

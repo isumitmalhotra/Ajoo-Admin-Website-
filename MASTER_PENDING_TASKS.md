@@ -312,7 +312,13 @@ and verifier. **`.github/workflows/ios-build.yml`** compiles the app
 unsigned on a `macos-15` runner on every push that touches it (free —
 the repo is public; no Apple account needed) and has a hand-run job that
 signs and uploads to TestFlight once the secrets in `IOS_READINESS.md`
-§3 exist, refusing with the names of any that are missing.
+§3 exist, refusing with the names of any that are missing. **Run
+34996287126 is green:** 20 pods, Xcode build 240 s, 472 tests on the Mac,
+verifier OK, `Runner-1.0.0+94-unsigned.app.zip` (40.7 MB) as the artifact.
+(Run 34994667340 before it built the same app and failed in the verifier,
+which had read three `http://` identifiers inside the Google/Firebase/
+Razorpay SDKs as endpoints — the verifier now scans the four files that
+define a build and reports SDK constants as notes, `97f0dbc`.)
 
 **Not done, and why:** nothing can be *run* on an iPhone from here — no
 Mac, no Apple account. §1.16 is the client's list; §3.15 (Sign in with
