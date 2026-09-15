@@ -67,7 +67,7 @@ work; sorting by owner is what makes that visible.
 | [3. Engineering](#3-engineering--genuinely-open) | Us | 11 |
 | [4. Contract deliverables](#4-contract-deliverables-) | Us | 8 |
 | [5. Section-0 redo](#5-section-0-site-redo--separate-sow) | Blocked on a signed change order | 20 |
-| [6. Unproven, not broken](#6-unproven-not-broken) | Us + tester | 14 |
+| [6. Unproven, not broken](#6-unproven-not-broken) | Us + tester | 13 |
 
 **If only two things get done:** §2.1 (live payment keys) and §1.1 (delete the
 seed listings). The first means the product currently looks like it is taking
@@ -155,7 +155,7 @@ Functional scope is delivered; these are the contractual artifacts. All still op
 | **4.3** | **FMS — Functional Specification** | |
 | **4.4** | **HMS — Functional Specification** | |
 | **4.5** | **Security & Compliance doc + RBAC matrix** | The RBAC itself exists (`config/adminRoles.js`, incl. `SEO_MANAGER`); the document does not. |
-| **4.6** | **Test suite to contract standard** | **138 backend test files pass** on `npm test`, **424 app tests** on `flutter test` and **40 web rule files** on `for f in tests/*.test.mjs; do node $f; done` (43 / 138 / — on 09-05; there is no `test:rules` script — the earlier wording here named one that does not exist), but the contract asks for >80% measured coverage, 200+ integration tests, plus load and OWASP reports. No coverage tooling is wired. |
+| **4.6** | **Test suite to contract standard** | **141 backend test files (1,014 assertions) pass** on `npm test`, **463 app tests** on `flutter test` and **43 web rule files (258 assertions)** on `for f in tests/*.test.mjs; do node $f; done` (counts from 2026-09-15; there is no `test:rules` script — the earlier wording here named one that does not exist). A 37-case edge sweep of the pricing and negotiation helpers is in `report-2026-09-15/` (§8a28–29) but is not a permanent suite. The contract asks for >80% measured coverage, 200+ integration tests, plus load and OWASP reports. No coverage tooling is wired. |
 | **4.7** | **Deployment guide + operational runbook + KT docs** | `DEPLOY_RUNBOOK.md` and the handoffs exist; `Deployment_Options_2026-09-05.docx` (05-09) covers requirements, sizing, tools, providers, cost and a migration plan. Still to formalise: the runbook for whichever host is chosen (§1.8) and the KT pack. |
 | **4.8** | **UAT test cases + sign-off package** | **Manuals delivered 2026-09-05** — web (81 cases, 8 modules) and Android (55 cases, 6 modules), each with environment, accounts, procedure, defect template and sign-off table. Execution and sign-off are the client's; **an internal dry run of both manuals is recommended first** — see §6 for the cases that have only code/test-level verification so far. |
 
@@ -198,7 +198,7 @@ Nothing here is known to be defective. Each is a path nobody has exercised.
 - Google Search Console will not accept the sitemap without warnings until someone with GSC access submits it.
 - Whether `dbCutoverSafe` currently reads true — see §2.4.
 - **The emergency-distance lookup against real Google (§8a25, 2026-09-13).** `GOOGLE_PLACES_KEY` is not in the local env, so only the "not configured" branch has run here — the distance sort is unit-tested against a stub, and the HTTP path is the one the nearby picker already uses in production. What is genuinely unproven is `fire_station` as a Google type: it is documented, it was never in the `essentials` list before today, and nobody has yet seen it return a result for an Indian hill town. Open any listing's step 3 on the live site with a pin set; the three boxes should fill and say where the numbers came from. **An empty answer is not a failure** — it is what a place with no fire station within 25km looks like, and the box stays typeable.
-- **The whole host wizard and checkout, in a browser (§8a25–§8a27).** Behind a host login, and a stored password is not ours to type — which is how the step-1 regression in §8a27 reached the client. Worth sixty seconds on a phone: step 1 shows three bedroom cards for "3" and submits; Beds goes read-only once a room names one; the location map moves on ONE finger and has +/− buttons; the Homestay Type and Local Experience chips carry icons; and the GST on the property page matches the GST on /booking/review for the same stay.
+- **The host wizard in a browser (§8a25–§8a27).** Behind a host login, and a stored password is not ours to type — which is how the step-1 regression in §8a27 reached the client. Worth sixty seconds on a phone: step 1 shows three bedroom cards for "3" and submits; Beds goes read-only once a room names one; the location map moves on ONE finger and has +/− buttons; the Homestay Type and Local Experience chips carry icons. *The checkout half of this row is done:* on 2026-09-15 the review and payment pages were walked in a real Chrome session with a live deal (§8a29) and the GST on the card matched the GST at checkout.
 - **Whether the live notification popup actually appears (§8a27).** Reported as "message aa rhe h but popups nahi aa rhe" and NOT reproduced: the server emits, the rooms match, and the transport answers. The silent-failure paths are closed and the popup moved off the mobile tab bar, which may be the whole story — but only the client's own phone can say. `liveState()` now reports up-or-why-not, so the next report can come with a reason.
 - **The deal price on the client's own 29310 stay (§8a28).** The deal path itself IS now proven live — a real weekly deal on 29302 walked from the dialog to the payment page on 2026-09-15 with card, review and payment agreeing to the paise (§8a29). What remains unphotographed is the client's exact 29310 case: its coupon `DEAL29310179161` is spent (B476130) and the listing's next free night is later. The same arithmetic gives ₹1,800 off / ₹27,376 there; the Razorpay sheet itself was not opened. The app's chat page handing over to the listing is tested, not driven.
 - **For the tester, on build 16** (each deploys cleanly and is covered by tests, but needs a signed-in host/guest on a device): #19's merged notification feed matches the website for the same host; the guest count survives "Move to Book at Agreed Price" on a *new* negotiation; airplane mode on host Notifications, guest My Negotiations and host Profile → properties shows "Couldn't load · Try again" rather than an empty state; #13's dropdown focus jump (fixed from the code, never reproduced on the emulator).
@@ -1679,7 +1679,12 @@ open long after they shipped. Three habits prevent it:
    save, a 401 swallowed into "this property has no reviews", a host with
    seventeen notifications shown "No notifications yet". Where a number should
    exist and does not, treat that as unverified rather than clean.
-3. **A count from a grep is a lower bound.** The web catch sweep was "18 sites"
+3. **A green suite is not a driven build.** Build 90 on 2026-09-15 passed
+   459 tests and, on the emulator, banded GST on the wrong night, counted a
+   week as six nights and booked an accepted deal at full price. Drive a
+   build before it is named the tester build; withdraw the number if the
+   drive finds anything.
+4. **A count from a grep is a lower bound.** The web catch sweep was "18 sites"
    until an AST rule found 37; the "14 listings approved" note was 4 in the DB.
    When a number goes into this file, measure it with the tool that cannot be
    fooled by formatting — a lint selector, a guard test, a `COUNT(*)` — and say
