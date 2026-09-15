@@ -633,8 +633,7 @@ class _PropertyPageState extends State<PropertyPage>
   /// it only skips days that are themselves booked, and the dates this rule
   /// rejects are ones that merely RUN THROUGH a booking.
   DateTime _safeCheckoutDate(DateTime? candidate, DateTime from) {
-    bool ok(DateTime d) =>
-        !_checkoutBlocked(from, d) && (_checkInWindow?.sellsDay(d) ?? true);
+    bool ok(DateTime d) => _checkoutAllowed(from, d);
     final start = DateTime(from.year, from.month, from.day);
     final nextDay = start.add(const Duration(days: 1));
     var d = (candidate != null && candidate.isAfter(start))
@@ -650,6 +649,20 @@ class _PropertyPageState extends State<PropertyPage>
       guard++;
     }
     return d;
+  }
+
+  /// A check-out the picker will offer for [from]: not through a booked
+  /// night, sold by the host on that day, and inside the host's minimum and
+  /// maximum stay. One predicate for the picker and for the initial date,
+  /// because showDatePicker asserts the two agree.
+  bool _checkoutAllowed(DateTime from, DateTime d) {
+    if (_checkoutBlocked(from, d)) return false;
+    if (!(_checkInWindow?.sellsDay(d) ?? true)) return false;
+    final first = _checkInWindow?.firstCheckout(from);
+    if (first != null && d.isBefore(first)) return false;
+    final last = _checkInWindow?.lastCheckout(from);
+    if (last != null && d.isAfter(last)) return false;
+    return true;
   }
 
   /// The host's arrival window — how much notice they need, how far ahead they
@@ -1330,9 +1343,15 @@ class _PropertyPageState extends State<PropertyPage>
                     // offering such a checkout would build a range the server
                     // refuses. Found on the web with a September-only season,
                     // where the calendar happily offered all of October.
+                    // Booked nights, the season, AND the host's minimum and
+                    // maximum stay — the website's calendar greys the same
+                    // days and says why; the line under these rows says it
+                    // here, because a greyed day teaches a guest nothing.
                     selectableDayPredicate: (d) =>
-                        !_checkoutBlocked(selectedDate, d) &&
-                        (_checkInWindow?.sellsDay(d) ?? true),
+                        _checkoutAllowed(selectedDate, d),
+                    helpText: (_checkInWindow?.minNights ?? 0) > 1
+                        ? 'MINIMUM STAY ${_checkInWindow!.minNights} NIGHTS'
+                        : null,
                     builder: (context, child) {
                       return Theme(
                         data: Theme.of(context).copyWith(
@@ -1382,6 +1401,7 @@ class _PropertyPageState extends State<PropertyPage>
               // so the two platforms cannot describe one rule two ways.
               if (!_dealFixesDates &&
                   (_checkInWindow?.reason != null ||
+                      (_checkInWindow?.stayRule.isNotEmpty ?? false) ||
                       (_checkInWindow?.maxAdvanceDays ?? 0) > 0))
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
@@ -1399,6 +1419,11 @@ class _PropertyPageState extends State<PropertyPage>
                           [
                             if (_checkInWindow?.reason != null)
                               _checkInWindow!.reason!,
+                            // Stated up front, as the website does: a rule
+                            // a guest can only discover by breaking it is
+                            // not a rule they were told.
+                            if (_checkInWindow?.stayRule.isNotEmpty ?? false)
+                              _checkInWindow!.stayRule,
                             if ((_checkInWindow?.maxAdvanceDays ?? 0) > 0)
                               'This host takes bookings up to '
                                   '${_checkInWindow!.maxAdvanceDays} days ahead.',

@@ -39,11 +39,21 @@ void main() {
       isTrue,
       reason: 'the check-in picker no longer refuses booked nights',
     );
+    // Since 2026-09-15 the checkout predicate is _checkoutAllowed, which
+    // wraps _checkoutBlocked and adds the host's stay limits; the half-open
+    // rule itself is unchanged.
     expect(
-      source.contains('!_checkoutBlocked(selectedDate, d) &&'),
+      source.contains('_checkoutAllowed(selectedDate, d)'),
       isTrue,
       reason: 'the checkout picker is back to greying out any booked day, so a '
           'stay ending on the first night of the next booking cannot be chosen',
+    );
+    final allowedAt = source.indexOf('bool _checkoutAllowed(');
+    expect(allowedAt, greaterThan(0), reason: '_checkoutAllowed is gone');
+    expect(
+      source.substring(allowedAt, allowedAt + 400).contains('if (_checkoutBlocked(from, d)) return false;'),
+      isTrue,
+      reason: 'the checkout predicate no longer refuses a stay that runs through a booking',
     );
   });
 
@@ -79,7 +89,7 @@ void main() {
     final at = source.indexOf('DateTime _safeCheckoutDate(');
     expect(at, greaterThan(0), reason: '_safeCheckoutDate is gone');
     expect(
-      source.substring(at, at + 700).contains('_checkoutBlocked(from, d)'),
+      source.substring(at, at + 700).contains('_checkoutAllowed(from, d)'),
       isTrue,
       reason: 'the safe date is chosen with the wrong rule',
     );

@@ -33,6 +33,8 @@ class CheckInWindow {
     this.maxAdvanceDays = 0,
     this.closedMonths = const <int>[],
     this.weekendsOnly = false,
+    this.minNights = 0,
+    this.maxNights = 0,
   });
 
   /// Earliest arrival the host accepts — notice period and same-day rule
@@ -52,6 +54,35 @@ class CheckInWindow {
 
   /// Only Friday and Saturday nights are sold.
   final bool weekendsOnly;
+
+  /// The host's stay limits (step 5 of the wizard), 0 when unset. The server
+  /// refuses a stay outside them at booking; the website's calendar greys
+  /// the days out and says why. Until 2026-09-15 this app read neither, so
+  /// a guest could pick one night on a two-night-minimum listing and meet
+  /// the refusal at the end — which is what "17 is blocked" looked like on
+  /// the web: not a block, the host's own minimum making the 17th an
+  /// impossible check-out after a 16th check-in.
+  final int minNights;
+  final int maxNights;
+
+  /// The earliest check-out the minimum stay allows after [checkIn].
+  DateTime? firstCheckout(DateTime checkIn) => minNights > 1
+      ? DateTime(checkIn.year, checkIn.month, checkIn.day + minNights)
+      : null;
+
+  /// The latest check-out the maximum stay allows after [checkIn].
+  DateTime? lastCheckout(DateTime checkIn) => maxNights > 0
+      ? DateTime(checkIn.year, checkIn.month, checkIn.day + maxNights)
+      : null;
+
+  /// The stay limits in words, for the line under the pickers. Empty when
+  /// the host set none.
+  String get stayRule {
+    final parts = <String>[];
+    if (minNights > 1) parts.add('Minimum stay $minNights nights.');
+    if (maxNights > 0) parts.add('Up to $maxNights nights.');
+    return parts.join(' ');
+  }
 
   /// Would the host take an arrival on this day?
   ///
@@ -208,6 +239,8 @@ class BookingService {
                   .toList()
               : const <int>[],
           weekendsOnly: w['weekendsOnly'] == true,
+          minNights: int.tryParse('${w['minNights'] ?? 0}') ?? 0,
+          maxNights: int.tryParse('${w['maxNights'] ?? 0}') ?? 0,
         );
       }
       return PropertyAvailability(ranges: out, window: window);
