@@ -3,6 +3,7 @@ import 'package:rent_home/constants.dart';
 import 'package:rent_home/models/host_negotiation.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/utils/money.dart';
+import 'package:rent_home/utils/negotiation_unit.dart';
 
 /// One negotiation, as the host sees it (A-70).
 ///
@@ -25,6 +26,14 @@ class NegotiationCard extends StatelessWidget {
   /// Digits only — the callers below supply the symbol. Grouping itself
   /// lives in utils/money.dart.
   static String _money(double v) => rupeeDigits(v);
+
+  /// Per night under a week, the stay total from a week up — the unit the
+  /// guest typed their offer in (negotiation_unit.dart). Every price on this
+  /// card is recorded per night and shown in the stay's unit.
+  int? get _nights => nightsBetweenDmy(n.bookFrom, n.bookTo);
+  String _priced(double v) => isLongStay(_nights)
+      ? '₹${_money(stayTotal(v, _nights!).toDouble())}'
+      : '₹${_money(v)}';
 
   (Color, Color, String) get _status {
     switch (n.status.toLowerCase()) {
@@ -95,11 +104,16 @@ class NegotiationCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
               children: [
-                Text('₹${_money(n.offerPrice)}',
+                Text(_priced(n.offerPrice),
                     style: fraunces(
                         fontSize: 21,
                         fontWeight: FontWeight.w700,
                         color: kInk)),
+                if (isLongStay(_nights)) ...[
+                  const SizedBox(width: 6),
+                  Text('for $_nights nights',
+                      style: inter(fontSize: 11.5, color: kMuted)),
+                ],
                 const SizedBox(width: 8),
                 if (n.roundLabel != null) ...[
                   const SizedBox(width: 8),
@@ -116,7 +130,7 @@ class NegotiationCard extends StatelessWidget {
                   const SizedBox(width: 6),
                 ],
                 if (n.originalPrice > 0)
-                  Text('was ₹${_money(n.originalPrice)}',
+                  Text('was ${_priced(n.originalPrice)}',
                       style: inter(fontSize: 12.5, color: kMuted).copyWith(
                           decoration: TextDecoration.lineThrough)),
                 const Spacer(),
@@ -227,7 +241,7 @@ class NegotiationCard extends StatelessWidget {
                         Text(m.label,
                             style: inter(fontSize: 10.5, color: kMuted)),
                         const SizedBox(height: 2),
-                        Text('₹${_money(m.price)}',
+                        Text(_priced(m.price),
                             style: inter(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,

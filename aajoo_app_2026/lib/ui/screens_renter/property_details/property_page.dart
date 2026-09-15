@@ -2809,6 +2809,9 @@ onPressed: () async {
                       propertyId: widget.id,
                       propertyName: _single?.propertyName ?? widget.name,
                       nightlyPrice: _listedPerNight,
+                      // Before any discount, like _listedPerNight: a long stay
+                      // is negotiated as a total, against this figure.
+                      listedTotal: _serverQuote?.originalSubtotal,
                       initialFrom: selectedDate,
                       guests: _guests,
                       initialTo: selectedDateTo,

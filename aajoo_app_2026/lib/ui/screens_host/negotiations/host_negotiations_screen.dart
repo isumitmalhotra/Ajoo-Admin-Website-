@@ -8,6 +8,7 @@ import 'package:rent_home/ui/screens_host/host_controller.dart';
 import 'package:rent_home/controller/alert_dialog.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
+import 'package:rent_home/utils/negotiation_unit.dart';
 
 /// Every negotiation on the host's properties (A-70).
 ///
@@ -101,7 +102,7 @@ class _HostNegotiationsScreenState extends State<HostNegotiationsScreen> {
                 fontSize: 17, fontWeight: FontWeight.w700, color: kInk)),
         content: Text(
           accepting
-              ? 'You will host ${n.renterName} at ₹${n.offerPrice.round()}/night'
+              ? 'You will host ${n.renterName} at ${priceLine(n.offerPrice, nightsBetweenDmy(n.bookFrom, n.bookTo))}'
                   '${n.bookFrom != null ? ' for ${n.bookFrom} → ${n.bookTo}' : ''}. '
                   'They get a one-time deal valid for 24 hours.'
               // Declining ENDS the negotiation and leaves this guest the last
@@ -148,18 +149,24 @@ class _HostNegotiationsScreenState extends State<HostNegotiationsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Per night under a week, the stay total from a week up —
+              // the unit the guest typed their offer in
+              // (negotiation_unit.dart). Sent per night either way.
               Text(
-                '${n.renterName} offered ₹${n.offerPrice.round()}/night'
-                '${n.originalPrice > 0 ? ' against your ₹${n.originalPrice.round()}' : ''}.',
+                '${n.renterName} offered ${priceLine(n.offerPrice, nightsBetweenDmy(n.bookFrom, n.bookTo))}'
+                '${n.originalPrice > 0 ? ' against your ${priceLine(n.originalPrice, nightsBetweenDmy(n.bookFrom, n.bookTo))}' : ''}.',
                 style: inter(fontSize: 13, color: kMuted),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: priceController,
                 keyboardType: TextInputType.number,
-                inputFormatters: AppInputFormatters.digits(7),
+                inputFormatters: AppInputFormatters.digits(
+                    isLongStay(nightsBetweenDmy(n.bookFrom, n.bookTo)) ? 8 : 7),
                 decoration: InputDecoration(
-                  labelText: 'Your price per night (₹)',
+                  labelText: isLongStay(nightsBetweenDmy(n.bookFrom, n.bookTo))
+                      ? 'Your price for the ${nightsBetweenDmy(n.bookFrom, n.bookTo)} nights (₹)'
+                      : 'Your price per night (₹)',
                   errorText: error,
                 ),
               ),
@@ -183,17 +190,19 @@ class _HostNegotiationsScreenState extends State<HostNegotiationsScreen> {
               style: ElevatedButton.styleFrom(
                   backgroundColor: kIndigo, foregroundColor: Colors.white),
               onPressed: () {
-                final value = double.tryParse(priceController.text.trim());
-                if (value == null || value <= 0) {
+                final typed = double.tryParse(priceController.text.trim());
+                if (typed == null || typed <= 0) {
                   setDialogState(() => error = 'Enter a price');
                   return;
                 }
+                final stayNights = nightsBetweenDmy(n.bookFrom, n.bookTo);
+                final value = offerFromInput(typed, stayNights).perNight;
                 // A counter BELOW the guest's own offer would be arguing
                 // against yourself — the server takes it, but it can only
                 // ever be a slip.
                 if (value < n.offerPrice) {
                   setDialogState(() => error =
-                      'That is below their ₹${n.offerPrice.round()} offer');
+                      'That is below their ${priceLine(n.offerPrice, stayNights)} offer');
                   return;
                 }
                 Navigator.of(ctx).pop((value, messageController.text));

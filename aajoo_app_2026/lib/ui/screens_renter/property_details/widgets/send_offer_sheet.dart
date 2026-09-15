@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rent_home/utils/offer_ceiling.dart';
+import 'package:rent_home/utils/negotiation_unit.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
@@ -42,6 +43,7 @@ class SendOfferSheet extends StatefulWidget {
     required this.propertyId,
     required this.propertyName,
     required this.nightlyPrice,
+    this.listedTotal,
     this.initialFrom,
     this.initialTo,
     this.onAccepted,
@@ -57,6 +59,13 @@ class SendOfferSheet extends StatefulWidget {
   /// listing with weekend or seasonal rates, and the negotiation is argued
   /// over the nights in the offer.
   final double nightlyPrice;
+
+  /// What the whole stay lists at, before any discount — the server's
+  /// `originalSubtotal`, which is the host's weekly or monthly rate when one
+  /// applies. A long stay is negotiated as a total (negotiation_unit.dart),
+  /// and the total the guest argues against has to be that figure, not the
+  /// rounded per-night times seven. Null when there is no quote yet.
+  final double? listedTotal;
   /// The party on the listing page when the offer was made. Travels with the
   /// offer so the agreed deal can reopen the listing for the same guests.
   final int? guests;
@@ -126,15 +135,17 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
   Future<void> _sendCounterBack() async {
     final id = _outcome?.offerId;
     if (id == null) return;
-    final amount = double.tryParse(_counter.text.trim()) ?? 0;
+    // Same unit as the offer box; sent per night either way.
+    final typed = double.tryParse(_counter.text.trim()) ?? 0;
+    final amount = offerFromInput(typed, _nights).perNight;
     final quoted = _outcome?.counterPrice ?? 0;
-    if (amount <= 0) {
+    if (typed <= 0) {
       setState(() => _counterError = 'Enter the price you would like to counter with.');
       return;
     }
     if (quoted > 0 && amount >= quoted) {
       setState(() => _counterError =
-          'A counter has to be below ${rupees(quoted)} — otherwise just accept it.');
+          'A counter has to be below ${priceLine(quoted, _nights)} — otherwise just accept it.');
       return;
     }
     setState(() {
@@ -182,6 +193,17 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
   int get _nights =>
       (_from == null || _to == null) ? 0 : _to!.difference(_from!).inDays;
 
+  /// Per night under a week; the stay total from a week up. Client,
+  /// 2026-09-15: a guest booking a week or a month thinks in the total, and a
+  /// weekly rate is one number, not seven equal ones.
+  bool get _asTotal => isLongStay(_nights);
+
+  /// What these nights list at, as a total.
+  double get _listedTotal =>
+      (widget.listedTotal != null && widget.listedTotal! > 0)
+          ? widget.listedTotal!
+          : widget.nightlyPrice * (_nights > 0 ? _nights : 1);
+
   Future<void> _pickDates() async {
     final now = DateTime.now();
     final range = await showDateRangePicker(
@@ -206,11 +228,18 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
   }
 
   Future<void> _submit() async {
-    final amount = double.tryParse(_price.text.trim());
-    if (amount == null || amount <= 0) {
-      setState(() => _error = 'Enter the price you would like to pay per night.');
+    final typed = double.tryParse(_price.text.trim());
+    if (typed == null || typed <= 0) {
+      setState(() => _error = _asTotal
+          ? 'Enter the total you would like to pay for these $_nights nights.'
+          : 'Enter the price you would like to pay per night.');
       return;
     }
+    // What the guest typed MEANS depends on the stay: per night under a week,
+    // the stay total from a week up. What is SENT is per night either way —
+    // the engine, the ledger and the coupon are untouched.
+    final offer = offerFromInput(typed, _nights);
+    final amount = offer.perNight;
     // At or above what the stay costs there is nothing to negotiate, and the
     // guest can simply book. Worth a word rather than a silent send.
     //
@@ -219,10 +248,15 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
     // guest was told their ₹2,400 was "at or above the listed ₹2,000" — an
     // offer ₹100 UNDER what the stay cost and above the host's accept line,
     // refused by the client before the server ever saw it.
-    if (offerIsPointless(amount, widget.nightlyPrice)) {
-      setState(() => _error =
-          'These dates are ${rupees(widget.nightlyPrice)} a night — '
-          'offer less than that, or just book it.');
+    final pointless = _asTotal
+        ? offerIsPointless(offer.total.toDouble(), _listedTotal)
+        : offerIsPointless(amount, widget.nightlyPrice);
+    if (pointless) {
+      setState(() => _error = _asTotal
+          ? 'These $_nights nights are ${rupees(_listedTotal)} in total — '
+              'offer less than that, or just book it.'
+          : 'These dates are ${rupees(widget.nightlyPrice)} a night — '
+              'offer less than that, or just book it.');
       return;
     }
 
@@ -322,20 +356,28 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
   Widget _form(AajooSkin skin) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _label(skin, 'Your offer per night (₹)'),
+          _label(skin, offerInputLabel(_nights)),
           TextField(
             controller: _price,
             keyboardType: TextInputType.number,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(7),
+              LengthLimitingTextInputFormatter(_asTotal ? 8 : 7),
             ],
             style: inter(
                 fontSize: 16, fontWeight: FontWeight.w700, color: skin.ink),
-            decoration: _input(skin, widget.nightlyPrice.toStringAsFixed(0)),
+            decoration: _input(
+                skin,
+                _asTotal
+                    ? _listedTotal.toStringAsFixed(0)
+                    : widget.nightlyPrice.toStringAsFixed(0)),
           ),
           const SizedBox(height: 4),
-          Text('Listed at ${rupees(widget.nightlyPrice)} / night',
+          Text(
+              _asTotal
+                  ? 'Listed at ${rupees(_listedTotal)} for $_nights nights '
+                      '(≈ ${rupees(_listedTotal / _nights)} / night)'
+                  : 'Listed at ${rupees(widget.nightlyPrice)} / night',
               style: inter(fontSize: 11.5, color: skin.muted)),
           const SizedBox(height: 16),
 
@@ -445,7 +487,7 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
           const SizedBox(height: 12),
           Text(
             accepted
-                ? 'Accepted${o.price != null ? ' at ${rupees(o.price!)}/night' : ''}'
+                ? 'Accepted${o.price != null ? ' at ${priceLine(o.price!, _nights)}' : ''}'
                 : 'Offer sent to the host',
             textAlign: TextAlign.center,
             style: fraunces(
@@ -539,7 +581,7 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
           ),
           const SizedBox(height: 12),
           Text(
-            'We can do ${rupees(quoted)}/night',
+            'We can do ${priceLine(quoted, _nights)}',
             textAlign: TextAlign.center,
             style: fraunces(
                 fontSize: 17, fontWeight: FontWeight.w700, color: skin.ink),
@@ -567,7 +609,9 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
               ],
               style: inter(fontSize: 15, color: skin.ink),
               decoration: InputDecoration(
-                labelText: 'Your counter, per night',
+                labelText: _asTotal
+                    ? 'Your counter for the $_nights nights'
+                    : 'Your counter, per night',
                 labelStyle: inter(fontSize: 13, color: skin.muted),
                 border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12)),
@@ -602,7 +646,7 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
                     ? 'Just a moment…'
                     : (_counterMode
                         ? 'Send to the host'
-                        : 'Accept ${rupees(quoted)}/night'),
+                        : 'Accept ${priceLine(quoted, _nights)}'),
                 style: inter(fontSize: 15, fontWeight: FontWeight.w700),
               ),
             ),
@@ -699,6 +743,7 @@ Future<bool> showSendOfferSheet(
   required int propertyId,
   required String propertyName,
   required double nightlyPrice,
+  double? listedTotal,
   int? guests,
   DateTime? initialFrom,
   DateTime? initialTo,
@@ -712,6 +757,7 @@ Future<bool> showSendOfferSheet(
       propertyId: propertyId,
       propertyName: propertyName,
       nightlyPrice: nightlyPrice,
+      listedTotal: listedTotal,
       initialFrom: initialFrom,
       initialTo: initialTo,
       onAccepted: onAccepted,

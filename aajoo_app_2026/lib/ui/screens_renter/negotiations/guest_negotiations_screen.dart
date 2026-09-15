@@ -6,7 +6,7 @@ import 'package:rent_home/models/guest_negotiation.dart';
 import 'package:rent_home/models/negotiated_deal.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/ui/screens_renter/property_details/open_property.dart';
-import 'package:rent_home/utils/money.dart';
+import 'package:rent_home/utils/negotiation_unit.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/ui/widgets/load_failed.dart';
 import 'package:rent_home/utils/service_log.dart';
@@ -115,9 +115,6 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
     });
   }
 
-  /// Indian grouping lives in utils/money.dart — one rule for the product.
-  static String _inr(num n) => rupees(n);
-
   static const _months = [
     '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
@@ -156,6 +153,7 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
     final priceCtl = TextEditingController();
     final msgCtl = TextEditingController();
     final err = RxnString();
+    final nights = nightsBetweenDmy(n.bookFrom, n.bookTo);
 
     await showModalBottomSheet<void>(
       context: context,
@@ -182,13 +180,15 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
                 '${n.roundsYou > 1 ? " · Round ${n.roundsYou + 1}" : ""}',
                 style: inter(fontSize: 12.5, color: kMuted)),
             const SizedBox(height: 14),
+            // Per night under a week, the stay total from a week up — the
+            // unit the guest typed their offer in (negotiation_unit.dart).
             Row(children: [
-              Expanded(child: _tile('Host offered', n.latestPrice, kClay)),
+              Expanded(child: _tile('Host offered', n.latestPrice, kClay, nights)),
               const SizedBox(width: 10),
-              Expanded(child: _tile('Listed at', n.listedPrice, kInk)),
+              Expanded(child: _tile('Listed at', n.listedPrice, kInk, nights)),
             ]),
             const SizedBox(height: 14),
-            Text('Your counter price per night (₹) *',
+            Text(offerInputLabel(nights, counter: true),
                 style: inter(
                     fontSize: 13, fontWeight: FontWeight.w600, color: kInk)),
             const SizedBox(height: 6),
@@ -250,17 +250,20 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
               Expanded(
                 child: ElevatedButton(
                   onPressed: () {
-                    final v = double.tryParse(priceCtl.text.trim());
-                    if (v == null || v <= 0) {
-                      err.value =
-                          'Enter the price per night you want to counter with.';
+                    final typed = double.tryParse(priceCtl.text.trim());
+                    if (typed == null || typed <= 0) {
+                      err.value = isLongStay(nights)
+                          ? 'Enter the total you want to counter with for this stay.'
+                          : 'Enter the price per night you want to counter with.';
                       return;
                     }
+                    // Read in the stay's unit; sent per night either way.
+                    final v = offerFromInput(typed, nights).perNight;
                     // A guest counters DOWN. Going up is arguing against
                     // yourself, and it is irreversible once sent.
                     if (v >= n.latestPrice) {
                       err.value =
-                          'That is at or above the ${_inr(n.latestPrice)} the host offered — accept it instead.';
+                          'That is at or above the ${priceLine(n.latestPrice, nights)} the host offered — accept it instead.';
                       return;
                     }
                     Navigator.pop(ctx);
@@ -287,7 +290,7 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
     msgCtl.dispose();
   }
 
-  static Widget _tile(String label, double value, Color fg) => Container(
+  static Widget _tile(String label, double value, Color fg, int? nights) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
             color: kSand, borderRadius: BorderRadius.circular(10)),
@@ -296,7 +299,7 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
           children: [
             Text(label.toUpperCase(),
                 style: inter(fontSize: 10.5, color: kMuted)),
-            Text('${_inr(value)} /night',
+            Text('${priceParts(value, nights).amount}${priceParts(value, nights).unit}',
                 style: inter(
                     fontSize: 15.5, fontWeight: FontWeight.w700, color: fg)),
           ],
@@ -489,6 +492,9 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
 
   /// The whole conversation, grouped by negotiation and then by day.
   List<Widget> _transcript(GuestNegotiation n) {
+    // Every price here is recorded per night; from a week up it is SHOWN as
+    // the stay total, the number both sides were actually arguing about.
+    final nights = nightsBetweenDmy(n.bookFrom, n.bookTo);
     // The server groups these; one group is the honest fallback for a payload
     // that predates it — better a transcript with no dividers than none.
     final groups = n.sessions.isNotEmpty
@@ -535,7 +541,7 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
                 Text(m.label,
                     style: inter(fontSize: 11, color: kMuted)),
                 const SizedBox(height: 2),
-                Text('${_inr(m.price)} /night',
+                Text('${priceParts(m.price, nights).amount}${priceParts(m.price, nights).unit}',
                     style: inter(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -645,7 +651,7 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
           Text(
             [
               if (n.propertyCity != null) n.propertyCity!,
-              'Listed at ${_inr(n.listedPrice)}/night',
+              'Listed at ${priceLine(n.listedPrice, nightsBetweenDmy(n.bookFrom, n.bookTo))}',
             ].join(' · '),
             style: inter(fontSize: 12.5, color: kMuted),
           ),
@@ -687,7 +693,7 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
                               height: 17,
                               child: CircularProgressIndicator(
                                   strokeWidth: 2, color: Colors.white))
-                          : Text('Accept ${_inr(n.latestPrice)}/night',
+                          : Text('Accept ${priceLine(n.latestPrice, nightsBetweenDmy(n.bookFrom, n.bookTo))}',
                               style: inter(
                                   fontSize: 13.5,
                                   fontWeight: FontWeight.w700)),
