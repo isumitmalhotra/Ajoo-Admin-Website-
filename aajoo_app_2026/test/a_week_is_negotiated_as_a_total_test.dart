@@ -88,6 +88,11 @@ void main() {
       expect(src, contains("'Accept \${priceLine(quoted, _nights)}'"));
       expect(src, isNot(contains("/night'")),
           reason: 'a hardcoded /night survives in the sheet');
+      // The night count is by calendar day. The check-in arrives with the
+      // wall-clock time on it; a raw .inDays made 15 → 22 September "6
+      // nights" at 07:43, and six is not a week (emulator, 2026-09-15).
+      expect(src, contains('_dayOnly(_to!).difference(_dayOnly(_from!)).inDays'));
+      expect(src, isNot(contains('_to!.difference(_from!).inDays')));
     });
 
     test('the property page hands the sheet the stay\'s list total', () {

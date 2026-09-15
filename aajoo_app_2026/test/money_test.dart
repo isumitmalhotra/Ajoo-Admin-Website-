@@ -31,4 +31,15 @@ void main() {
     // Not a number at all — return it rather than rendering a blank price.
     expect(rupeesFrom('On request'), 'On request');
   });
+  group('rupeesExact', () {
+    test('paise only when there are paise', () {
+      expect(rupeesExact(18898.95), '₹18,898.95');
+      expect(rupeesExact(27376), '₹27,376');
+      expect(rupeesExact(899.95), '₹899.95');
+      expect(rupeesExact(27287.5), '₹27,287.50');
+      expect(rupeesExact(0.004), '₹0');
+      expect(rupeesExact(-1501), '₹-1,501');
+    });
+  });
+
 }

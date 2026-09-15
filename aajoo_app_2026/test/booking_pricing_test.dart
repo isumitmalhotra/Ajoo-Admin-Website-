@@ -29,9 +29,42 @@ void main() {
     expect(p.total, 8400);
   });
 
-  test('the ₹7,500 threshold itself is the lower band', () {
-    expect(priceStay(roomSubtotal: 7500, perNightTariff: 7500).taxPct, 5);
-    expect(priceStay(roomSubtotal: 7501, perNightTariff: 7501).taxPct, 18);
+  test('the ₹7,500 threshold itself is the HIGH band', () {
+    // Client rule, 2026-09-10: "even equal to 7500 should be charged at
+    // 18%". utils/gst.dart and the server have said so since; this pricer
+    // still said 5% until 2026-09-15, when the emulator showed it
+    // disagreeing with the server on a weekly stay.
+    expect(priceStay(roomSubtotal: 7500, perNightTariff: 7500).taxPct, 18);
+    expect(priceStay(roomSubtotal: 7499, perNightTariff: 7499).taxPct, 5);
+  });
+
+  test('THE EMULATOR CASE: 29309 for a week is banded per night, not on the average', () {
+    // ₹45,000 weekly + ₹500 cleaning; nights list at 7,000 ×4, 8,000 ×2,
+    // 9,000 ×1. The Sunday's share of ₹45,500 is ₹7,726 — over the line —
+    // so the server charges 5% on six nights and 18% on one: ₹3,279.43.
+    // Banding on the base tariff (7,000 → 5% on everything) showed ₹47,775
+    // for a stay the server charges ₹48,779.43 for.
+    final p = priceStay(
+      roomSubtotal: 45000,
+      perNightTariff: 7000,
+      cleaningFee: 500,
+      taxNights: const [7000, 7000, 7000, 8000, 8000, 9000, 7000],
+    );
+    expect(p.taxes, 3279.43);
+    expect(p.total, 48779.43);
+    expect(p.taxBands, [5, 5, 5, 5, 5, 18, 5]);
+    expect(p.taxPct, 7.21, reason: 'blended, and never printed as a rate');
+    expect(p.taxLabel, 'GST · 6 nights at 5% · 1 night at 18%');
+  });
+
+  test('one band prints as a rate; no weights falls back to the average night', () {
+    final one = priceStay(roomSubtotal: 24000, perNightTariff: 12000, cleaningFee: 1000,
+        taxNights: const [12000, 12000]);
+    expect(one.taxLabel, 'GST (18%)');
+    expect(one.taxes, 4500);
+    final none = priceStay(roomSubtotal: 45000, perNightTariff: 7000, cleaningFee: 500);
+    expect(none.taxBands, isEmpty);
+    expect(none.taxLabel, 'GST (5%)');
   });
 
   test('6,500 at 5% — matches the rate verified end to end', () {

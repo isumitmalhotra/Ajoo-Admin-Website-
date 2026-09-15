@@ -90,8 +90,14 @@ class StayPrice {
   /// [chargeable] less [discount] — the base GST is actually charged on.
   final double discountedRoom;
 
-  /// 5 or 18, chosen by the per-night tariff.
-  final int taxPct;
+  /// 5 or 18 when every night is in one band; the blended figure (to two
+  /// decimals) when the nights straddle ₹7,500. A blend is a division, not
+  /// a rate — print [taxBands] where a rate belongs.
+  final double taxPct;
+
+  /// The band each night landed in, in stay order. Empty when the stay was
+  /// banded on the average night (no server weights).
+  final List<int> taxBands;
 
   /// GST on [discountedRoom].
   final double taxes;
@@ -113,9 +119,31 @@ class StayPrice {
     this.longStayLabel,
     required this.discountedRoom,
     required this.taxPct,
+    this.taxBands = const [],
     required this.taxes,
     required this.total,
   });
+
+  /// "GST (5%)" when one band; "GST · 6 nights at 5% · 1 night at 18%" when
+  /// the nights straddle the line. Never the blended average as a rate —
+  /// the client asked why a stay was "taxed at 7.21%", and it was not: it
+  /// was six nights at 5% and one at 18%.
+  String get taxLabel {
+    final bands = taxBands.where((b) => b > 0).toList();
+    if (bands.isEmpty) return 'GST (${_pctText(taxPct)}%)';
+    final counts = <int, int>{};
+    for (final b in bands) {
+      counts[b] = (counts[b] ?? 0) + 1;
+    }
+    if (counts.length == 1) return 'GST (${counts.keys.first}%)';
+    final keys = counts.keys.toList()..sort();
+    return 'GST · ${keys.map((k) => '${counts[k]} night${counts[k] == 1 ? '' : 's'} at $k%').join(' · ')}';
+  }
+
+  static String _pctText(double v) {
+    final r = (v * 100).round() / 100;
+    return r == r.roundToDouble() ? r.toStringAsFixed(0) : r.toString();
+  }
 }
 
 /// Prices a stay.
@@ -139,6 +167,7 @@ StayPrice priceStay({
   int pets = 0,
   double nightlyTotal = 0,
   String? longStayLabel,
+  List<double> taxNights = const [],
 }) {
   // [roomSubtotal] is ALREADY the host's long-stay rate when one applies —
   // the caller resolves it, the same way the server does in quoteRange. What
@@ -169,10 +198,41 @@ StayPrice priceStay({
       .clamp(0.0, subtotal)
       .toDouble();
   final discountedRoom = (chargeable - off).clamp(0.0, chargeable).toDouble();
-  final taxPct = perNightTariff > 7500 ? 18 : 5;
-  // Rounded to paise, the same way the backend rounds, so the total shown here
-  // equals the Razorpay order amount exactly rather than being a rupee out.
-  final taxes = (discountedRoom * taxPct).roundToDouble() / 100;
+  // Per night when the server told us how the nights are weighted, and on
+  // the average night only when it did not.
+  //
+  // Seen on the emulator, 2026-09-15, listing 29309 for 15–22 Sep: the
+  // server bands each night on its own share (six under ₹7,500 at 5%, the
+  // Sunday over it at 18% — ₹3,279.43) while this pricer took one band from
+  // the base tariff and charged 5% on everything (₹2,275). The app showed
+  // ₹47,775 and the Razorpay order — the server's figure — was ₹48,779.43.
+  // The website had the same fault and was fixed the same way on 13 Sep.
+  final weights = taxNights.where((w) => w.isFinite && w > 0).toList();
+  final weightSum = weights.fold<double>(0, (a, b) => a + b);
+  double taxPct;
+  double taxes;
+  var taxBands = const <int>[];
+  if (weights.isNotEmpty && weightSum > 0 && discountedRoom > 0) {
+    final bands = <int>[];
+    var exact = 0.0;
+    for (final w in weights) {
+      final share = discountedRoom * (w / weightSum);
+      final pct = share >= 7500 ? 18 : 5;
+      bands.add(pct);
+      exact += share * pct / 100;
+    }
+    // Rounded ONCE on the sum, like the server: rounding each night and
+    // adding drifts a paise a night.
+    taxes = (exact * 100).roundToDouble() / 100;
+    taxPct = (taxes / discountedRoom * 10000).roundToDouble() / 100;
+    taxBands = bands;
+  } else {
+    // 7,500 exactly is the HIGH band — client rule, 2026-09-10.
+    taxPct = perNightTariff >= 7500 ? 18 : 5;
+    // Rounded to paise, the same way the backend rounds, so the total shown
+    // here equals the Razorpay order amount exactly rather than a rupee out.
+    taxes = (discountedRoom * taxPct).roundToDouble() / 100;
+  }
   return StayPrice(
     // The room at the host's long-stay rate when one applies: this is `price`
     // on the booking, and the server computes the identical figure.
@@ -189,6 +249,7 @@ StayPrice priceStay({
     discount: chargeable - discountedRoom,
     discountedRoom: discountedRoom,
     taxPct: taxPct,
+    taxBands: taxBands,
     taxes: taxes,
     total: discountedRoom + taxes,
   );

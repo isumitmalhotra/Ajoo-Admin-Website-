@@ -190,8 +190,18 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
 
   static String _pretty(DateTime d) => DateFormat('d MMM').format(d);
 
-  int get _nights =>
-      (_from == null || _to == null) ? 0 : _to!.difference(_from!).inDays;
+  /// Midnight of the same calendar day. The check-in arrives from the
+  /// property page as DateTime.now() — with the wall-clock time on it — and
+  /// the check-out from a picker at midnight, so a raw difference of
+  /// 15 → 22 September taken at 07:43 is 6 days 16 hours and `.inDays`
+  /// truncates it to 6. Seen on the emulator, 2026-09-15: a seven-night
+  /// stay said "locked to these 6 nights" and asked per night, because six
+  /// is not a week. Same fix the property page already carries.
+  static DateTime _dayOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  int get _nights => (_from == null || _to == null)
+      ? 0
+      : _dayOnly(_to!).difference(_dayOnly(_from!)).inDays;
 
   /// Per night under a week; the stay total from a week up. Client,
   /// 2026-09-15: a guest booking a week or a month thinks in the total, and a

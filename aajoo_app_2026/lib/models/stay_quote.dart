@@ -36,6 +36,16 @@ class StayQuote {
   final double taxes;
   final double taxPct;
   final double grandTotal;
+
+  /// How the server weighted the nights for tax — each night's LIST rate,
+  /// in stay order. GST is banded per night on that night's share of the
+  /// payable amount, so a stay mixing a ₹7,000 weeknight with a ₹9,000
+  /// Sunday is 5% on six nights and 18% on one. The app used to band the
+  /// AVERAGE night: on 29309 (15–22 Sep) it showed ₹47,775 where the server
+  /// charges ₹48,779.43. Carrying the weights lets the local pricer split the
+  /// same way — and re-band once a coupon shrinks the base, which the
+  /// server's own figures cannot know about.
+  final List<double> taxNights;
   final int nightCount;
 
   /// "Weekly rate" / "Monthly rate", or null when this stay earns neither.
@@ -58,6 +68,7 @@ class StayQuote {
     required this.taxes,
     required this.taxPct,
     required this.grandTotal,
+    this.taxNights = const [],
     required this.nightCount,
     required this.longStayLabel,
     required this.longStaySaving,
@@ -95,6 +106,12 @@ class StayQuote {
       taxes: _num(j['taxes']),
       taxPct: _num(j['taxPct']),
       grandTotal: _num(j['grandTotal']),
+      taxNights: (j['taxNights'] is List)
+          ? (j['taxNights'] as List)
+              .map((n) => n is Map ? _num(n['listRate']) : 0.0)
+              .where((r) => r > 0)
+              .toList()
+          : const [],
       nightCount: (_num(j['nightCount'])).round(),
       longStayLabel: (j['longStayLabel'] as String?)?.trim().isEmpty ?? true
           ? null

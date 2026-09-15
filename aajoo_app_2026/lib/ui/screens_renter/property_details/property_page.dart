@@ -1099,7 +1099,7 @@ class _PropertyPageState extends State<PropertyPage>
                         // at ₹4,200. `_confirmedPrice` is the same computation
                         // the booking itself is made with.
                         TextSpan(
-                          text: '${rupees(_confirmedPrice.total)} total',
+                          text: '${rupeesExact(_confirmedPrice.total)} total',
                           style: inter(
                             fontSize: 12,
                             color: kMuted,
@@ -1560,11 +1560,12 @@ class _PropertyPageState extends State<PropertyPage>
                                   cleaningFee: _cleaningFee,
                                   pets: _pets,
                                   nightlyTotal: _nightlyTotal,
+                      taxNights: _serverQuote?.taxNights ?? const [],
                                   longStayLabel: _longStay?.label,
                                 );
 
                                 return Text(
-                                  rupees(p.total),
+                                  rupeesExact(p.total),
                                   style: fraunces(
                                     fontSize: 22,
                                     fontWeight: FontWeight.w700,
@@ -1791,6 +1792,7 @@ class _PropertyPageState extends State<PropertyPage>
                               cleaningFee: _cleaningFee,
                               pets: _pets,
                               nightlyTotal: _nightlyTotal,
+                      taxNights: _serverQuote?.taxNights ?? const [],
                               longStayLabel: _longStay?.label,
                             );
 
@@ -1998,7 +2000,7 @@ class _PropertyPageState extends State<PropertyPage>
                                         ),
                                       ),
                                       Text(
-                                        '− ${rupees(p.discount)}',
+                                        '− ${rupeesExact(p.discount)}',
                                         style: inter(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
@@ -2014,14 +2016,17 @@ class _PropertyPageState extends State<PropertyPage>
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      'GST (${p.taxPct}%)',
+                                      // Names the bands when the nights
+                                      // straddle ₹7,500 — never the blended
+                                      // average as if it were a rate.
+                                      p.taxLabel,
                                       style: inter(
                                         fontSize: 14,
                                         color: kMuted,
                                       ),
                                     ),
                                     Text(
-                                      rupees(p.taxes),
+                                      rupeesExact(p.taxes),
                                       style: inter(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -2055,7 +2060,7 @@ class _PropertyPageState extends State<PropertyPage>
                                       ),
                                     ),
                                     Text(
-                                      rupees(p.total),
+                                      rupeesExact(p.total),
                                       style: inter(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w700,
@@ -2421,6 +2426,7 @@ onPressed: () async {
                       cleaningFee: _cleaningFee,
                       pets: _pets,
                       nightlyTotal: _nightlyTotal,
+                      taxNights: _serverQuote?.taxNights ?? const [],
                       longStayLabel: _longStay?.label,
                     );
                     final double finalAmount =
@@ -3901,6 +3907,7 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
         cleaningFee: _cleaningFee,
         pets: _pets,
         nightlyTotal: _nightlyTotal,
+                      taxNights: _serverQuote?.taxNights ?? const [],
         longStayLabel: _longStay?.label,
       );
 
@@ -3927,7 +3934,7 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
           // owes the taxed amount on arrival, and that is what the server
           // stored. Saying "Rs 6000 due" after quoting Rs 6300 is a different
           // number for the same booking.
-          amount: rupees(_confirmedPrice.total),
+          amount: rupeesExact(_confirmedPrice.total),
           // ...and the parts that make it up, so the confirmation shows a
           // breakdown rather than one figure the guest has to trust.
           roomCharge: _confirmedPrice.roomSubtotal,
