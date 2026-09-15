@@ -506,8 +506,10 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
           const SizedBox(height: 6),
           Text(
             accepted
+                // Midnight tonight, IST — the deal window became a calendar
+                // day on 2026-09-05; "24 hours" was still here on build 91.
                 ? 'Your price is locked in. It applies automatically at '
-                    'checkout — book within 24 hours to keep it.'
+                    'checkout — book before midnight tonight to keep it.'
                 : "They can accept, decline or counter — you'll be notified "
                     'either way.',
             textAlign: TextAlign.center,

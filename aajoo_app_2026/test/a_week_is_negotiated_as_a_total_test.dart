@@ -102,6 +102,22 @@ void main() {
       expect(src, contains('listedTotal: _serverQuote?.originalSubtotal'));
     });
 
+    test('an offer accepted on the page reopens the listing through the deal', () {
+      // Build 91 on the emulator: "Accepted at ₹43,050 for 7 nights", then
+      // "Book at this price" landed on a sheet still at ₹48,779.43 with no
+      // coupon — hasDeal reads the widget, and the widget had none. The
+      // deal must be re-entered the way the banner enters it.
+      final src = codeOnly(File(
+              'lib/ui/screens_renter/property_details/property_page.dart')
+          .readAsStringSync());
+      final block = src.substring(src.indexOf('if (accepted) {'));
+      final body = block.substring(0, block.indexOf('_toggleExpanded();'));
+      expect(body, contains('deals.forProperty(widget.id)'));
+      expect(body, contains('await openPropertyById('));
+      expect(body, contains('dealCode: deal.code'));
+      expect(body, contains('dealPercent: deal.percent'));
+    });
+
     test('the guest and host screens, and the host card', () {
       final guest = codeOnly(File(
               'lib/ui/screens_renter/negotiations/guest_negotiations_screen.dart')

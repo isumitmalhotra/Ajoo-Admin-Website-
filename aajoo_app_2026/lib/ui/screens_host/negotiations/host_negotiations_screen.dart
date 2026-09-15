@@ -104,7 +104,7 @@ class _HostNegotiationsScreenState extends State<HostNegotiationsScreen> {
           accepting
               ? 'You will host ${n.renterName} at ${priceLine(n.offerPrice, nightsBetweenDmy(n.bookFrom, n.bookTo))}'
                   '${n.bookFrom != null ? ' for ${n.bookFrom} → ${n.bookTo}' : ''}. '
-                  'They get a one-time deal valid for 24 hours.'
+                  'They get a one-time deal, good until midnight tonight.'
               // Declining ENDS the negotiation and leaves this guest the last
               // price the host named, for one hour, on those dates. A host who
               // thinks Decline simply closes the thread would be surprised by

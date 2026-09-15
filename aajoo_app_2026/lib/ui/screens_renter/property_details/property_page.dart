@@ -19,6 +19,8 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/utils/stay_length.dart';
 import 'package:rent_home/ui/screens_renter/property_details/widgets/send_offer_sheet.dart';
+import 'package:rent_home/ui/screens_renter/property_details/open_property.dart';
+import 'package:rent_home/controller/deals_controller.dart';
 import 'package:rent_home/utils/nightly_rates.dart';
 import 'package:rent_home/constants/payment_config.dart';
 import 'package:rent_home/utils/booking_pricing.dart';
@@ -2824,9 +2826,37 @@ onPressed: () async {
                     );
                     if (!mounted) return;
                     if (accepted) {
-                      // Accepted outright: the server has already minted the
-                      // 24-hour coupon, so reload the page's own price and
-                      // open the booking panel at it.
+                      // The deal is minted server-side, and this page has no
+                      // coupon in its state — hasDeal reads the widget it
+                      // was opened with. Reloading the listing re-drew the
+                      // lock line ("the agreed price applies at checkout")
+                      // over a sheet still at full price, and a booking from
+                      // it went out with no code: seen on build 91 on the
+                      // emulator, 2026-09-15. So reopen the listing THROUGH
+                      // the deal, the way the home banner and My
+                      // Negotiations do — dates pinned, coupon applied.
+                      final deals = Get.isRegistered<DealsController>()
+                          ? Get.find<DealsController>()
+                          : Get.put(DealsController());
+                      try {
+                        await deals.load();
+                      } catch (_) {
+                        // Fall through to the reload below.
+                      }
+                      if (!mounted) return;
+                      final deal = deals.forProperty(widget.id);
+                      if (deal != null) {
+                        await openPropertyById(
+                          widget.id,
+                          dealCode: deal.code,
+                          dealFrom: deal.bookFrom,
+                          dealTo: deal.bookTo,
+                          guests: deal.guests ?? _guests,
+                          dealPercent: deal.percent,
+                          errorTitle: 'Deal',
+                        );
+                        return;
+                      }
                       await _fetchSingleProperty();
                       if (!mounted) return;
                       _toggleExpanded();
