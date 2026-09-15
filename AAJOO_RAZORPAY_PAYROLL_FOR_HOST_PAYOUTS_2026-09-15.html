@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Razorpay Payroll for Host Payouts — Will It Work?</title>
+<style>
+  @page { size: A4; margin: 20mm 17mm 22mm; }
+
+  :root {
+    --navy: #1B2447;
+    --teal: #0F766E;
+    --ink:  #1F2937;
+    --muted:#5B6472;
+    --line: #D9DEE7;
+    --soft: #F4F6F9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: #fff;
+    /* Cambria before Georgia deliberately: Georgia ships OLD-STYLE figures, so
+       "six P0s" reads as "six Pos" and every number sits at a different
+       height. This document is full of IDs and money. Cambria has lining
+       figures and prints just as well. */
+    font-family: Cambria, "Palatino Linotype", Georgia, "Times New Roman", serif;
+    font-variant-numeric: lining-nums;
+    font-size: 10.4pt;
+    line-height: 1.58;
+    color: var(--ink);
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---- cover ------------------------------------------------------- */
+  .cover { page-break-after: always; padding-top: 58mm; }
+  .cover .rule { width: 54px; height: 4px; background: var(--teal); margin-bottom: 22px; }
+  .cover h1 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    font-size: 27pt; line-height: 1.2; color: var(--navy);
+    margin: 0 0 16px; font-weight: 600; letter-spacing: -0.4px;
+  }
+  .cover .sub { font-size: 11.5pt; color: var(--muted); margin: 0 0 40px; max-width: 118mm; }
+  .cover .meta {
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 9pt;
+    color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px;
+  }
+  .cover .meta strong { color: var(--navy); font-weight: 600; }
+
+  /* ---- headings ---------------------------------------------------- */
+  h2, h3, h4 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    color: var(--navy); font-weight: 600; page-break-after: avoid;
+  }
+  h2 {
+    font-size: 15pt; margin: 26px 0 12px; padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--line); letter-spacing: -0.2px;
+  }
+  h3 {
+    font-size: 11.4pt; margin: 18px 0 7px; color: var(--teal);
+    letter-spacing: .1px;
+  }
+  h4 { font-size: 10.6pt; margin: 14px 0 6px; }
+
+  p { margin: 0 0 10px; orphans: 3; widows: 3; }
+
+  /* ---- lists ------------------------------------------------------- */
+  ul, ol { margin: 0 0 11px; padding-left: 20px; }
+  li { margin-bottom: 5px; }
+  li > ul, li > ol { margin-top: 5px; }
+
+  /* ---- emphasis & code --------------------------------------------- */
+  strong { color: var(--navy); font-weight: 700; }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 8.7pt; background: var(--soft);
+    border: 1px solid var(--line); border-radius: 3px;
+    padding: 0.5px 4px; color: #33405A;
+    /* long identifiers must not push the page sideways */
+    word-break: break-word;
+  }
+  pre { background: var(--soft); border: 1px solid var(--line); border-radius: 5px;
+        padding: 10px 12px; overflow-x: auto; page-break-inside: avoid; }
+  pre code { border: 0; background: none; padding: 0; font-size: 8.6pt; }
+
+  /* ---- tables ------------------------------------------------------ */
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 16px;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.7pt;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }   /* repeat header across pages */
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  th {
+    background: var(--navy); color: #fff; text-align: left; font-weight: 600;
+    padding: 7px 9px; border: 1px solid var(--navy); line-height: 1.35;
+  }
+  td {
+    padding: 6px 9px; border: 1px solid var(--line); vertical-align: top;
+    line-height: 1.45;
+  }
+  tbody tr:nth-child(even) td { background: #FAFBFD; }
+  td code { font-size: 8.1pt; }
+
+  /* ---- callouts ---------------------------------------------------- */
+  blockquote {
+    margin: 14px 0; padding: 10px 14px;
+    background: #F2F8F7; border-left: 3px solid var(--teal);
+    page-break-inside: avoid;
+  }
+  blockquote p { margin: 0 0 6px; }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  /* ---- screenshots -------------------------------------------------- */
+  /* A screenshot is evidence, so it is framed like one: a hairline border
+     so the page edge is visible against white, and never split across a
+     page break, because half a screen proves nothing. */
+  img {
+    display: block; max-width: 100%; height: auto; margin: 10px auto 4px;
+    border: 1px solid var(--line); border-radius: 5px;
+    page-break-inside: avoid;
+  }
+  /* Markdown puts a lone image in its own paragraph; the alt text follows
+     as the caption. */
+  p > img + em, p > em:only-child {
+    display: block; text-align: center;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.2pt;
+    color: var(--muted); font-style: normal; margin-top: 2px;
+  }
+  p:has(> img) { page-break-inside: avoid; margin: 14px 0 18px; }
+
+  /* The cover meta and the first paragraph of the body were touching. */
+  .cover { margin-bottom: 26px; }
+
+  hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+
+  /* Keep a section heading with the text that follows it. */
+  h2 + p, h3 + p, h2 + table, h3 + table, h2 + ul, h3 + ul { page-break-before: avoid; }
+</style></head>
+<body>
+  <section class="cover">
+    <div class="rule"></div>
+    <h1>Razorpay Payroll for Host Payouts — Will It Work?</h1>
+    <p class="sub">Whether Razorpay Payroll can carry the platform's host payouts — the short answer, every challenge it brings, what Razorpay itself recommends instead, and what is needed from the client to move.</p>
+    <div class="meta">
+      <strong>Aajoo Homes &mdash; host payouts: the rail decision</strong><br>
+      Prepared 15 September 2026 by the Zyphex Tech development team<br>
+      Checked against Razorpay's published product notices and documentation, and the platform's own payout code
+    </div>
+  </section>
+  <h2>1. The short answer</h2>
+<p><strong>It can move rupees; it cannot be our payout rail.</strong></p>
+<p>Razorpay Payroll will transfer money from a pre-funded wallet to an individual&#39;s bank account, so a one-off test would &quot;work&quot;. Everything after that test does not:</p>
+<ul>
+<li><strong>Razorpay itself closed this door on 31 July 2025.</strong> Its Payroll help centre says vendor payments through the Payroll wallet are discontinued from that date; the wallet now pays only <em>&quot;freelancers, consultants, interns, or any part-time individual using a personal PAN&quot;</em> under TDS section 194J or with no TDS, and may not <em>&quot;pay vendors or entities with a business PAN&quot;</em> or make <em>&quot;payments that fall under non-194J TDS categories.&quot;</em> A host who lets a homestay is a vendor to the platform; a host who runs it through a firm has a business PAN. Both are outside what Razorpay says the product may pay.</li>
+<li><strong>It deducts the wrong tax, automatically.</strong> A marketplace paying its sellers deducts under <strong>section 194-O</strong> (0.1% since 1 October 2024; 5% if the host gives no PAN; nothing for an individual under ₹5 lakh a year who has given a PAN). Payroll deducts under <strong>194J</strong> — professional fees, 10% — or nothing, and files the challan under that section without asking. Either a host loses 10% they do not owe, or the platform fails to deduct the 0.1% it does.</li>
+<li><strong>It cannot do the job&#39;s shape.</strong> Payroll runs are monthly; our hosts chose weekly, 15-day or custom cycles. There is no &quot;hold until check-in, then release&quot; per booking, no status callback per transfer, no reversal on cancellation, no offset for cash a host collected at the door, no bank-account verification, and no API that creates a payout — the API it has is for HRMS partners to push salary additions into a pay run.</li>
+</ul>
+<p><strong>What Razorpay recommends instead, in the same notice:</strong> <em>&quot;link a RazorpayX-powered Current Account to your Payroll setup&quot;</em> — i.e. RazorpayX, the product the platform&#39;s payout code was written for. The other Razorpay product built for exactly this — splitting a guest&#39;s payment and settling a share to each host — is <strong>Razorpay Route</strong>, which runs on the ordinary Payments keys the platform already has.</p>
+<p>The rest of this document is the detail: what our payouts actually need, where Payroll falls short on each point, what the alternatives are, and what is needed from the client to move.</p>
+<h2>2. What Razorpay Payroll is — and what &quot;same keys&quot; means</h2>
+<p>Razorpay Payroll (formerly Opfin / XPayroll) is <strong>HR payroll software</strong>: employees, salary structures, monthly pay runs, PF, ESI, professional tax, TDS under section 192, Form 16, payslips, leave, reimbursements. It has a wallet that is loaded from the company&#39;s bank account and drained by the monthly run.</p>
+<p>It had a &quot;Contractor Payments&quot; module for paying non-employees from that wallet. On <strong>31 July 2025</strong> Razorpay renamed it <strong>&quot;Part-Time Employee Payments&quot;</strong> and narrowed it to the two cases above (194J with a personal PAN, or no TDS). The stated reason is <em>&quot;to comply with evolving regulatory norms and banking guidelines.&quot;</em></p>
+<p>&quot;Payroll has been configured and KYC verified, you can use same keys&quot; (client, 12 September) most likely refers to the <strong>Razorpay Payments</strong> keys — the <code>rzp_…</code> pair the platform already uses to collect from guests. Those keys do not authenticate to Payroll (which has its own partner API at <code>payroll.razorpay.com</code>), and they do not authenticate to RazorpayX (which has its own keys and a funded account). They <strong>do</strong> authenticate to <strong>Route</strong>, which is a feature of Payments. If &quot;same keys&quot; is what was meant, Route is the product being pointed at.</p>
+<hr>
+<h2>3. What a host payout on Aajoo actually is</h2>
+<p>Before comparing products, this is the shape the platform already implements — the shape any rail has to fit.</p>
+<table>
+<thead>
+<tr>
+<th>The platform&#39;s fact</th>
+<th>Where it lives</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A payout is <strong>per booking</strong>, for the host&#39;s share of what the guest paid (room after any deal, plus fees, minus commission and GST handled by the platform)</td>
+<td><code>tbl_payouts</code> (<code>po_amount</code>, <code>po_status</code> QUEUED → PROCESSING → COMPLETED / FAILED, <code>po_provider</code>, <code>po_provider_payout_id</code>), the financial ledger</td>
+</tr>
+<tr>
+<td>It is released <strong>after check-in</strong>, on the cycle the host chose in step 5 of the listing wizard: <strong>weekly</strong>, <strong>15-day (default)</strong> or <strong>custom (admin approval)</strong></td>
+<td><code>config/listingSchema.js</code> <code>payoutCycles</code>; <code>property_settlement.pst_payout_cycle</code> (a custom cycle waits in <code>pst_payout_cycle_requested</code> until an admin grants it)</td>
+</tr>
+<tr>
+<td>A cancellation before check-in <strong>voids</strong> the payout; a partial refund <strong>reduces</strong> it</td>
+<td><code>hostDues.service.voidFor</code> and the cancellation policy snapshot on the booking</td>
+</tr>
+<tr>
+<td>Money a host collected <strong>at the door</strong> (pay-at-property) is a <strong>due</strong> the host owes the platform, offset against their next payout</td>
+<td><code>tbl_host_dues</code>, recorded at check-in since 12 September</td>
+</tr>
+<tr>
+<td>Bank details are collected once, <strong>encrypted</strong> (AES-256-GCM), and <strong>verified by a penny drop</strong> — ₹1 must land and the bank&#39;s registered name must match</td>
+<td><code>payoutAccount.service.js</code>, <code>utils/fieldCrypto.js</code>, one writer since 11 September</td>
+</tr>
+<tr>
+<td>Every transfer is <strong>idempotent</strong> (the key is stored before the provider is called), the provider&#39;s status arrives by <strong>webhook</strong>, and the ledger DEBIT is written on settlement only</td>
+<td><code>razorpayx.service.js</code>, <code>razorpayxWebhook.controller.js</code>, <code>adminFinance.controller.js</code></td>
+</tr>
+<tr>
+<td>Nothing moves until four environment values exist; until then Approve refuses with &quot;Payouts are not configured&quot;</td>
+<td><code>PAYOUTS_SETUP.md</code> (11 August)</td>
+</tr>
+</tbody></table>
+<p>And two obligations that belong to the platform <strong>whichever rail is used</strong>, because it is the e-commerce operator:</p>
+<ul>
+<li><strong>Income tax, section 194-O:</strong> deduct 0.1% of the gross amount paid to a resident host (5% without PAN; exempt for an individual/HUF under ₹5 lakh a year who has given a PAN), deposit it, and file it. <strong>This is not in the code today</strong> — no rail does it for us, and it has to be built above whichever rail is chosen.</li>
+<li><strong>GST as an e-commerce operator:</strong> section 9(5) makes the operator liable for GST on accommodation supplied through it by hosts who are not registered, and section 52 TCS applies where registered suppliers are paid through the platform. This is already the platform&#39;s affair on the collection side; it is mentioned here because Payroll&#39;s tax machinery is built for salaries and knows nothing of it.</li>
+</ul>
+<hr>
+<h2>4. Would Payroll do each of those? The checklist</h2>
+<table>
+<thead>
+<tr>
+<th>The need</th>
+<th>Razorpay Payroll</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Pay a host who is a <strong>company / LLP / firm</strong> (business PAN)</td>
+<td>Explicitly not allowed on the wallet since 31 July 2025</td>
+<td><strong>Blocked</strong></td>
+</tr>
+<tr>
+<td>Pay an <strong>individual</strong> host</td>
+<td>Allowed only as a &quot;part-time employee&quot; under 194J or no-TDS</td>
+<td><strong>Wrong basis</strong> — hosts are 194-O participants, not 194J professionals</td>
+</tr>
+<tr>
+<td>Deduct TDS under <strong>194-O</strong> at 0.1% / 5% / nil-under-threshold</td>
+<td>Deducts 194J (10%) or nothing; files challans under 194J</td>
+<td><strong>Wrong tax, filed wrong</strong></td>
+</tr>
+<tr>
+<td>Pay <strong>per booking</strong>, after check-in, on a weekly / 15-day / custom cycle</td>
+<td>Monthly pay runs; ad-hoc payments are manual dashboard actions</td>
+<td><strong>Does not fit</strong></td>
+</tr>
+<tr>
+<td><strong>Hold</strong> a payout until check-in, <strong>void</strong> on cancellation, <strong>reduce</strong> on partial refund</td>
+<td>No notion of a booking, a hold or a reversal</td>
+<td><strong>Absent</strong></td>
+</tr>
+<tr>
+<td><strong>Offset</strong> cash the host collected at the door</td>
+<td>Salary deductions exist but are month-scoped HR deductions, not ledger offsets</td>
+<td><strong>Absent</strong></td>
+</tr>
+<tr>
+<td><strong>Verify</strong> the bank account (penny drop, name match)</td>
+<td>None; bank details are typed into an employee record and trusted</td>
+<td><strong>Absent</strong></td>
+</tr>
+<tr>
+<td><strong>Create a payout by API</strong>, receive a <strong>status webhook</strong>, record the provider&#39;s id</td>
+<td>Partner HRMS API: employees, additions/deductions before a run. No payout-creation endpoint, no per-transfer webhook</td>
+<td><strong>Absent</strong></td>
+</tr>
+<tr>
+<td>Keep <strong>one</strong> store of bank details</td>
+<td>Payroll keeps its own employee bank record — a second store beside the encrypted one, the trap closed on 11 September</td>
+<td><strong>Regression</strong></td>
+</tr>
+<tr>
+<td><strong>Fund</strong> the transfers</td>
+<td>Wallet loaded manually from the company account (guest money settles to the bank first, then someone loads the wallet)</td>
+<td><strong>Manual, two hops</strong></td>
+</tr>
+<tr>
+<td>Pricing</td>
+<td>Per employee per month (every host becomes a billable &quot;employee&quot;), not per transfer</td>
+<td><strong>Scales the wrong way</strong></td>
+</tr>
+<tr>
+<td>What the host receives</td>
+<td>A payslip and, at year end, TDS paperwork as a part-time employee of Aajoo</td>
+<td><strong>Mischaracterises the relationship</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>5. The challenges, in full</h2>
+<h3>5.1 Razorpay&#39;s own rule (31 July 2025)</h3>
+<p>The Payroll help centre article <em>&quot;Update on Contractor Payments being renamed to Part-Time Employee Feature&quot;</em> is unambiguous: vendor payments via the module are discontinued; the wallet may pay individuals with a personal PAN under 194J or with no TDS; it may not pay entities with a business PAN or under non-194J TDS sections. Hosts are vendors of accommodation; the TDS section that applies to them is 194-O, a non-194J section. Using the wallet for them contradicts the product&#39;s terms as Razorpay has written them, and Razorpay has already tightened this product once — a rail that can be withdrawn by a policy notice is not a rail to put a marketplace on.</p>
+<h3>5.2 The wrong tax section, applied automatically</h3>
+<ul>
+<li><strong>194-O</strong> (what applies): the e-commerce operator deducts <strong>0.1%</strong> of the gross sale value at credit or payment, whichever is earlier; <strong>5%</strong> if the participant has not furnished a PAN; <strong>no deduction</strong> for an individual or HUF whose gross sales through the operator are under <strong>₹5 lakh</strong> in the year and who has furnished PAN/Aadhaar.</li>
+<li><strong>194J</strong> (what Payroll applies): fees for professional or technical services, generally <strong>10%</strong>, deposited by the 7th of the following month; Payroll generates and files the challan itself.</li>
+</ul>
+<p>Run hosts through Payroll and every host over the threshold has 10% taken where 0.1% was due; every host under the threshold has 10% taken where nothing was due; and the deductions land in the government&#39;s records under the wrong section, so the host&#39;s Form 26AS shows professional-fee TDS from an employer they never worked for. Unwinding that is a filing exercise per host per quarter.</p>
+<h3>5.3 The relationship is mischaracterised</h3>
+<p>Every host becomes a &quot;part-time employee&quot; in Aajoo&#39;s HR system: an employee id, a joining date, a payslip, a PAN on file as staff, year-end TDS certificates issued as to staff. Professional-tax and PF/ESI questions arise for people who are not staff. In the company&#39;s books, money that is a <strong>pass-through</strong> (the guest&#39;s payment, less commission) is recorded as <strong>staff cost</strong> — which overstates expenses and revenue alike, and is the wrong story to tell an auditor or an acquirer.</p>
+<h3>5.4 The cadence is monthly; the promise is not</h3>
+<p>Hosts were offered weekly, 15-day and custom payout cycles, and the platform&#39;s settlement logic releases a booking&#39;s payout after check-in. A payroll run happens once a month. A booking checked in on the 2nd is paid on the 30th, or somebody performs a manual ad-hoc payment from the dashboard for each one. There is no API to do that per booking, and no callback that tells the platform it happened.</p>
+<h3>5.5 No booking-level API, no webhook, no idempotency</h3>
+<p>The Payroll API that exists is for <strong>HRMS and benefits partners</strong>: read employees, push salary additions or deductions before a pay run, read tax regime and leave data. It is not a &quot;create a payout of ₹X to beneficiary Y with idempotency key Z and call me back when it settles&quot; API. Everything the platform already does around a payout — claim the row, store the key, call the provider, receive the webhook, write the ledger — would have no counterpart. Payouts would become a person in a dashboard and a spreadsheet of UTRs.</p>
+<h3>5.6 Onboarding and bank details</h3>
+<p>Each host would be created in Payroll as an employee with PAN, date of birth, joining date and bank account. Two consequences: the host&#39;s bank details, which the platform encrypts and verifies once, would be typed into a second system that does neither (Payroll has no penny drop); and every change (a host switches banks) has to be made twice. The platform spent 11 September removing exactly this — two stores of bank details that disagreed.</p>
+<h3>5.7 Money mechanics</h3>
+<p>The Payroll wallet is loaded from the company bank account. Guest payments settle from Razorpay Payments to that bank account on T+2 or so; someone then loads the wallet; then the run drains it. Two hops, both manual, both places where the balance can be short on payout day. A failed transfer (wrong IFSC, closed account) surfaces as an HR exception, not as a <code>FAILED</code> payout the admin queue can retry. A cancellation after the run has gone out is a clawback nobody has a button for.</p>
+<h3>5.8 Cost shape</h3>
+<p>Payroll is priced per employee per month. A marketplace&#39;s cost should track transfers, not headcount — a host with one booking a year is still an &quot;employee&quot; for twelve months. (The exact plan price is the client&#39;s to read from their agreement; the shape is the point.)</p>
+<h3>5.9 What we would inherit</h3>
+<p>TDS returns under 194J each quarter for every host, Form 16A generation, year-end reconciliation with hosts whose 26AS shows the wrong thing, and the conversation with each host about why Aajoo&#39;s payroll department is deducting 10% of their rent.</p>
+<hr>
+<h2>6. What would work</h2>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>What it is</th>
+<th>Fit</th>
+<th>What it needs</th>
+<th>What changes in the code</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Razorpay Route</strong> (recommended to evaluate first)</td>
+<td>A feature of Razorpay <strong>Payments</strong>: each host becomes a <strong>Linked Account</strong> (with its own KYC); a guest&#39;s captured payment is <strong>split</strong> by a Transfer API call; the host&#39;s share is <strong>settled</strong> to their bank on Razorpay&#39;s schedule; a transfer can be <strong>put on hold</strong> (until check-in) and released; refunds can be reversed against the linked account</td>
+<td>The marketplace product. Same keys the platform already has. Hold-and-release matches &quot;pay after check-in&quot;; reversal matches cancellation</td>
+<td>Route activation on the account (Razorpay approves the marketplace use case); each host completes linked-account KYC (PAN, bank, business type)</td>
+<td>Contained: <code>razorpayx.service.js</code> → a <code>route.service.js</code> (create linked account, create transfer with <code>on_hold</code>, release, reverse); two call sites (<code>adminFinance.controller</code>, the webhook). Penny drop becomes Razorpay&#39;s KYC. The cash-at-door <strong>offset</strong> stays ours: a due reduces the amount transferred</td>
+</tr>
+<tr>
+<td><strong>RazorpayX Payouts</strong> (what is built)</td>
+<td>A funded business account with a payout API: contact → fund account → penny-drop validation → payout, status by webhook</td>
+<td>Exactly what the code does today; also what Razorpay&#39;s Payroll notice points to (&quot;a RazorpayX-powered Current Account&quot;)</td>
+<td>Eligibility. The client was told &quot;not eligible&quot; — ask Razorpay <strong>which</strong>: RazorpayX Lite (a Razorpay-held balance) or a partner-bank current account (Axis, RBL, Yes, IDFC). Then the four environment values in <code>PAYOUTS_SETUP.md</code></td>
+<td>None</td>
+</tr>
+<tr>
+<td><strong>Another payout provider</strong> (Cashfree Payouts, Decentro, a bank&#39;s corporate API)</td>
+<td>Same shape as RazorpayX: beneficiary, verification, transfer, webhook</td>
+<td>Fits; a second vendor relationship</td>
+<td>KYC and a funded account with that provider</td>
+<td>The rail file and two call sites, as above; the penny-drop, idempotency and ledger layer is provider-agnostic by design</td>
+</tr>
+<tr>
+<td><strong>Manual NEFT from the company account</strong> (interim)</td>
+<td>The admin payout queue exports the day&#39;s approved payouts as a bank bulk-transfer file; finance uploads it in net banking; UTRs are keyed back</td>
+<td>Works today, at the cost of a person&#39;s time; keeps the ledger honest if UTRs are recorded</td>
+<td>Nothing from Razorpay</td>
+<td>A CSV export and a &quot;mark settled with UTR&quot; action on the queue (small)</td>
+</tr>
+<tr>
+<td><strong>Razorpay Payroll</strong></td>
+<td>Above</td>
+<td>Does not fit; contradicts Razorpay&#39;s own terms for the product</td>
+<td>—</td>
+<td>—</td>
+</tr>
+</tbody></table>
+<p><strong>On tax, whichever rail:</strong> 194-O deduction has to be built by us — a per-host running total for the year, the 0.1% / 5% / nil decision at each payout, the deduction shown on the host&#39;s payout statement, and a quarterly figure for the accountant to file. Neither Route nor RazorpayX nor Payroll does this for a marketplace. It is a bounded piece of work and it is listed in the master task list as its own item.</p>
+<hr>
+<h2>7. What we need from the client</h2>
+<ol>
+<li><strong>Ask Razorpay, in writing, one question:</strong> <em>&quot;We are an e-commerce operator paying accommodation hosts (TDS section 194-O). Which of your products should we use to pay them — Route, or a RazorpayX-linked current account — and what exactly made us ineligible for RazorpayX?&quot;</em> The answer decides the rail; the reason for ineligibility (entity type, turnover, bank partner) tells us whether it is fixable.</li>
+<li><strong>If Route:</strong> activate it on the account and tell us; we will build the linked-account onboarding into the host&#39;s Payout settings so hosts complete their KYC in the app and on the website, and switch the rail. Hosts with a business PAN are fine under Route.</li>
+<li><strong>If RazorpayX becomes available:</strong> set the four environment values in <code>PAYOUTS_SETUP.md</code>; nothing else changes.</li>
+<li><strong>Meanwhile:</strong> say whether finance can run manual NEFT from the admin queue for the UAT period; the export is a day&#39;s work and keeps every payout honest in the ledger until the rail is live.</li>
+<li><strong>Confirm the tax position with the accountant:</strong> that Aajoo is an e-commerce operator under 194-O (and 9(5) for unregistered hosts&#39; accommodation), so the deduction logic is built once, correctly.</li>
+</ol>
+<hr>
+<h2>8. Sources</h2>
+<ul>
+<li>Razorpay / XPayroll Help Center — <em>Update on Contractor Payments being renamed to Part-Time Employee Feature</em> (the 31 July 2025 notice; the quoted passages are from it).</li>
+<li>Razorpay Docs — <em>RazorpayX Payroll: Integrations</em> and the partner API at <code>payroll.razorpay.com</code> (employee data, pay-run additions and deductions).</li>
+<li>Razorpay Docs — <em>Route</em>: Linked Accounts, Create Transfers from Payments, Modify Settlement Hold, Schedule Settlements.</li>
+<li>Income-tax Act, section 194-O — 0.1% from 1 October 2024 (Finance (No. 2) Act 2024), 5% without PAN, ₹5 lakh threshold for individuals/HUF with PAN.</li>
+<li>The platform&#39;s own code and documents: <code>PAYOUTS_SETUP.md</code> (11 August), <code>services/payouts/*</code>, <code>MASTER_PENDING_TASKS.md</code> §2.2.</li>
+</ul>
+
+</body></html>
