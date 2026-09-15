@@ -4,7 +4,7 @@
 
 Between the evening of 13 September and the morning of 15 September the client sent, by screenshot and message, **twenty-six items** — defects, questions and product asks — across the website, the Android app and the backend. This document takes each one in turn and says, in plain terms: what was seen, what was actually wrong, what was changed, how it works on the backend now, and how it was verified.
 
-Every fix here is **live on the website and the backend** as of 15 September, 06:45 IST. The Android app changes are committed and ship with the **next tester build**; build 89, which is currently in circulation, does not carry them (§9).
+Every fix here is **live on the website and the backend** as of 15 September, 06:45 IST. The Android app changes ship in **build 92** (`aajoo-homes-1.0.0-build92-release.apk`, cut 08:05 IST), which was driven on the emulator against the live backend before it was handed over — §9.4 records what that drive found and fixed on the way. Builds 89–91 are withdrawn.
 
 > **How to read the verification column.** *tested* = a permanent automated test now pins the rule; *live* = walked on www.aajoohomes.com against the production backend on 15 September, with a photograph in this document; *not verified* = the fix is deployed and tested but the exact screen the client saw needs a signed-in session or a device we do not have.
 
@@ -37,7 +37,7 @@ Every fix here is **live on the website and the backend** as of 15 September, 06
 | 23 | "Auto counter at ₹7,000 — correct?" | — | Explained: weekday/weekend blend, step toward the accept line | Answered |
 | 24 | BotPenguin shows "NA" for app users | Backend · App · Web | App discarded the identity the server returned; email was never sent | Fixed · tested |
 | 25 | Razorpay Payroll for host payouts? | — | Evaluated: not suitable; recommendation given | Answered |
-| 26 | Found on the way: "0 km away", "1 Bunk Bed bed", a white "Pay at property" card, ₹900 over a .95 total | Backend · Web | Small, real, fixed the same day | Fixed · tested · live |
+| 26 | Found on the way: "0 km away", "1 Bunk Bed bed", a white "Pay at property" card, ₹900 over a .95 total; and on the app, GST banded on the average night, a week counted as six nights, an accepted deal not applied on the page it was struck on | Backend · Web · App | Small, real, fixed the same day (§8, §9.3) | Fixed · tested · live / build 92 |
 
 ## 2. How a price is worked out now — one place to read it
 
@@ -241,7 +241,7 @@ Small, real, fixed the same day, each with a test:
 |---|---|---|
 | Backend (`aajaoBackend-render`) | 141 test files, 1,014 assertions; syntax check over 763 files | **141/141 pass** |
 | Website (`aajao-frontend-vercel`) | 43 rule-test files, 258 assertions; `tsc -b`; a real `npm run build` | **43/43 pass**, types clean, build clean |
-| Android app (`aajoo_app_2026`) | 459 tests; `flutter analyze` | **459/459 pass**, 0 analyzer errors (427 pre-existing style infos) |
+| Android app (`aajoo_app_2026`) | 463 tests; `flutter analyze` | **463/463 pass**, 0 analyzer errors (pre-existing style infos only) |
 
 ### 9.2 Edge cases exercised beyond the suites
 
@@ -255,7 +255,42 @@ A separate sweep ran the pricing and negotiation helpers of the backend and the 
 | Rooms follow the count | 5 described rooms truncated to 3, 1 padded to 3; zero and negative counts; beds derived only when a room names one; duplicate bed types merge; an unknown bed type is dropped and an unknown room type is described generically, never as a slug |
 | Website | 27,376 by percentage and by the server's absolute; 29,500 with no coupon and every line in the total; per-night cleaning outside the discount; a coupon that moves a night across ₹7,500 is banded on the discounted share; a stay with no weights bands on the average; `pct()` and `inrExact()` formatting; the typed figure read in the stay's unit for 7, 6 and 0 nights; web and server agree on every phrasing; malformed and reversed dates |
 
-### 9.3 Live checks on production, 15 September
+### 9.3 The Android app on the emulator — builds 90, 91, 92
+
+Build 90 was cut with the app changes above and driven on the emulator, signed in as the test guest, against the live backend. It found **three more defects**, none of which any test had caught; build 91 fixed them and found two more; build 92 is the one handed over.
+
+| Found on | What the emulator showed | Fix |
+|---|---|---|
+| Build 90 | The booking sheet banded GST on the base tariff: on the Gurugram cottage for a week (weekly ₹45,000, nights of 7,000/8,000/9,000, ₹500 cleaning) it said **GST (5%) ₹2,275, total ₹47,775** — while the server bands each night on its own share and charges **₹3,279.43, total ₹48,779.43**, which is what the Razorpay order would have been. The very fault the website had on 13 September, in the app. | The app's quote now carries the server's night weights; the pricer splits the payable amount across them, rounds once and names the bands: **"GST · 6 nights at 5% · 1 night at 18% ₹3,279.43 · Total ₹48,779.43"**. The ₹7,500 boundary in this pricer was still "over 7,500"; it is "7,500 and above" like everywhere else. |
+| Build 90 | The sheet rounded totals to the rupee (₹18,899 for a ₹18,898.95 stay) — the same "different at payment" the client saw on the web. | Total, tax and discount lines print to the paise. |
+| Build 90 | Send an Offer on 15 → 22 September said **"locked to these 6 nights"** and asked **per night** — the check-in carried the wall-clock time, the check-out was midnight, and 6 days 16 hours truncated to 6. Six is not a week. | Nights are counted by calendar day, like the property page. Build 91: "Your offer for the 7 nights (₹) · Listed at ₹45,000 for 7 nights (≈ ₹6,429 / night)". |
+| Build 91 | A real offer of ₹40,000 for the week was countered "We can do ₹43,050 for 7 nights" and accepted — then **"Book at this price" landed on the same sheet at ₹48,779.43 with no coupon.** The page it was struck on has no coupon in its state; the reload only re-drew "the agreed price applies at checkout" over a full-price sheet, and a booking from there would have gone out without the code. | The page now reopens the listing **through the deal**, the way the home banner and My Negotiations already do. Build 92: Discount (4.34% — DEAL29309101C177) −₹1,953 · GST (5%) ₹2,177.35 · **Total ₹45,724.35** — the coupon moved the Sunday's share under ₹7,500, so every night is 5%, and the server's own function gives the same ₹45,724.35. |
+| Build 91 | "book within 24 hours to keep it" on the accepted sheet; "a one-time deal valid for 24 hours" in the host's accept dialog. The window has been the IST day since 5 September. | "before midnight tonight" on both. |
+
+![Build 90: the QA Sunrise Villa deal on the app — the same bill as the website, rounded to the rupee](app/03-deal-breakdown.png)
+*Build 90: the QA Sunrise Villa deal on the app — Discount (7.9%) −₹1,501 · GST ₹900 · ₹18,899, the website's ₹18,898.95 rounded to the rupee; build 92 prints the paise*
+
+![Build 90: a seven-night stay asked per night, and called itself six nights](app/04-offer-sheet-7-nights.png)
+*Build 90: a seven-night stay asked per night, and called itself six nights*
+
+![Build 91: the same stay asks for a total against the weekly rate](app/07-b91-offer-week.png)
+*Build 91: the same stay asks for a total against the weekly rate*
+
+![Build 91: the platform counters in the stay's unit](app/08-b91-offer-outcome.png)
+*Build 91: the platform counters in the stay's unit*
+
+![Build 91: GST named per night, ₹48,779.43 — the server's figure](app/06-b91-week-breakdown.png)
+*Build 91: GST named per night, ₹48,779.43 — the server's figure*
+
+![Build 92: the accepted deal applied — ₹45,724.35, to the paise what the server charges](app/10-b92-deal-breakdown.png)
+*Build 92: the accepted deal applied — ₹45,724.35, to the paise what the server charges*
+
+![The app's My Negotiations: the weekly threads in totals](app/05-negotiations.png)
+*The app's My Negotiations: the weekly threads in totals, the one-night thread per night*
+
+**Not driven on the app:** the host side of a weekly negotiation (the emulator is signed in as the guest); the chat page handing over to the listing (tested, not driven).
+
+### 9.4 Live checks on production, 15 September
 
 | Check | Result |
 |---|---|
@@ -275,7 +310,7 @@ A separate sweep ran the pricing and negotiation helpers of the backend and the 
 | **Is the cleaning fee charged, or only stated?** (§3.6, master list 1.14) | Client | One switch once decided; the frequency field goes with it |
 | The deal price on the client's own 29310 stay | Client | The 14–16 September deal coupon is spent (B476130). Strike a new deal and the review page will read ₹1,800 off / ₹27,376 — the same arithmetic walked live on the QA listing in §4.1 |
 | The notification popup on the client's phone | Client | Not reproduced; the silent-failure paths are closed and the state is reportable |
-| The Android app changes in this document | Us | Committed; ship with the **next** tester build. Build 89 (in circulation) still asks per night and still discounts room + party. Not yet driven on a device |
+| The Android app changes in this document | Delivered | **Build 92** (`aajoo-homes-1.0.0-build92-release.apk`, sha256 `BACEE393…594F`), driven on the emulator against the live backend (§9.3). Builds 89–91 are withdrawn — each carried a defect found the same hour |
 | The host side of a weekly negotiation on a phone | Us + tester | Covered by tests; not photographed |
 | AWS activation | Client | Unchanged: an unverified card on the account |
 
@@ -285,7 +320,7 @@ A separate sweep ran the pricing and negotiation helpers of the backend and the 
 
 **Website** — `aad83f3` the Amount is the amount charged · `54fba77` live popup stops failing silently · `bfa75ec` category icons · `de141a5` chat launcher off the button · `a41f250`/`ec89f82` per-room detail, distances · `c0ce5aa` reply time · `c34a970` step-1 blocker and the GST between screens · `cea137b` map takes one finger, saved guest says it was picked · `b7f4d7e` calendar month copy · `f14d73e` GST bands named · `7b4f783` server's email · `c47cef6` one discount base, one total · `b8a8621` a week negotiated as a total · `b8a241c` lines add up, payment cards themed.
 
-**App** — `4fb876b` wizard chip icons · `c952b7c` per-room detail · `d29a84d` distances · `7dbad78` reply time · `234fbcf` "nainital" finds "Naini Tāl" · `d6bb135` zoom buttons · `408c528` monthly copy · `74f6fa3` chat as the person the server says · `86797e4` coupon on the room, chat books through the listing · `af25544` a week negotiated as a total.
+**App** — `4fb876b` wizard chip icons · `c952b7c` per-room detail · `d29a84d` distances · `7dbad78` reply time · `234fbcf` "nainital" finds "Naini Tāl" · `d6bb135` zoom buttons · `408c528` monthly copy · `74f6fa3` chat as the person the server says · `86797e4` coupon on the room, chat books through the listing · `af25544` a week negotiated as a total · `e1a6363` GST per night from the server's weights, prices to the paise, a week is seven nights · `522a828` an accepted offer is booked at the agreed price.
 
 ## Appendix B — Where the rules live
 

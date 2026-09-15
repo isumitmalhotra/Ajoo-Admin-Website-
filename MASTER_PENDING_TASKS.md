@@ -23,12 +23,13 @@
 > **Repos:** FE `D:/Projects/aajao-frontend-vercel` (React/Vite → Vercel) ·
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
-> Tester build in circulation: **87 (1.0.0+87)**, `aajoo-homes-1.0.0-build87-release.apk` at repo root
-> (2026-09-12, sha256 `81ac7a45…4f725a`, versionCode 87, 95.5 MB). Everything before it is withdrawn
-> and deleted — 81…84 each carried a defect found the same day, 85 and 86 were superseded before
-> they circulated. All of them supersede **49**, which the tester has had since 09-08.
+> Tester build in circulation: **92 (1.0.0+92)**, `aajoo-homes-1.0.0-build92-release.apk` at repo root
+> (2026-09-15 08:05, sha256 `BACEE393…594F`, versionCode 92, 95.8 MB), **driven on the emulator against
+> the live backend before hand-over** (§8a29). Builds 88–91 are withdrawn: 88/89 lacked the pricing
+> fixes, 90 and 91 each carried a defect the emulator found the same hour. Everything before 87 was
+> withdrawn earlier.
 > Read back with `python aajoo_app_2026/tool/verify_release_apk.py <apk> https://aajaodev.onrender.com
-> --allow-test-payments --expect-version=1.0.0+87`: the endpoint it was given is in it, no other
+> --allow-test-payments --expect-version=1.0.0+92`: the endpoint it was given is in it, no other
 > `*.onrender.com` host is, no developer path, no plain-http endpoint, and it carries its own
 > version string. Points at `aajaodev.onrender.com` with the sandbox Razorpay key — the platform
 > is still in test mode, so a QA build is the only honest one.
@@ -201,7 +202,7 @@ Nothing here is known to be defective. Each is a path nobody has exercised.
 - **Whether the live notification popup actually appears (§8a27).** Reported as "message aa rhe h but popups nahi aa rhe" and NOT reproduced: the server emits, the rooms match, and the transport answers. The silent-failure paths are closed and the popup moved off the mobile tab bar, which may be the whole story — but only the client's own phone can say. `liveState()` now reports up-or-why-not, so the next report can come with a reason.
 - **The deal price on the client's own 29310 stay (§8a28).** The deal path itself IS now proven live — a real weekly deal on 29302 walked from the dialog to the payment page on 2026-09-15 with card, review and payment agreeing to the paise (§8a29). What remains unphotographed is the client's exact 29310 case: its coupon `DEAL29310179161` is spent (B476130) and the listing's next free night is later. The same arithmetic gives ₹1,800 off / ₹27,376 there; the Razorpay sheet itself was not opened. The app's chat page handing over to the listing is tested, not driven.
 - **For the tester, on build 16** (each deploys cleanly and is covered by tests, but needs a signed-in host/guest on a device): #19's merged notification feed matches the website for the same host; the guest count survives "Move to Book at Agreed Price" on a *new* negotiation; airplane mode on host Notifications, guest My Negotiations and host Profile → properties shows "Couldn't load · Try again" rather than an empty state; #13's dropdown focus jump (fixed from the code, never reproduced on the emulator).
-- **The app's GUEST side of the negotiation rebuild, on a device.** The host side was driven on the emulator on 09-12 and the shared labelling is under test, but the two guest surfaces that changed — the offer button greying with its reason, and the dated “Listed at” line — have not been seen on a phone. The defect that blocked them is fixed (§3.13, build 82: the 29303 notification now opens the listing), but the deal BANNER still could not be tapped, because the test guest has no live deal and cannot make one on 29303 until midnight — the same-day decline lockout, working as designed. Both surfaces are covered by `negotiation_lock_test` and `offer_ceiling_test` and both are verified on the website; what is unproven is the app rendering them.
+- ~~**The app's GUEST side of the negotiation rebuild, on a device.**~~ **Driven 2026-09-15 on build 92:** the deal banner opened the listing with the deal, the offer sheet, the counter, the accept and My Negotiations were all walked (§8a29). What is still unphotographed on a device is the HOST side of a weekly negotiation and the chat page's hand-over to the listing.
 - **`REQUIRE_IMAGE_ALT`** — whether it has been set on Render is not visible from outside (see §2.3).
 - **UAT cases with code/test-level verification only (2026-09-05).** Most manual cases were walked live during the 1 Sep sweep and this week's fixes, but these have not been driven end-to-end on production or a device: web **W-BOOK-04** (cancellation card + acknowledgement on Booking review — deployed, not exercised in a real checkout), **W-ACC-03** (cancel quote from the policy snapshot), **W-BOOK-11** (double-booking race), **W-NEG-02** (guest count through an accepted counter); Android **build 17 has not been run on a device** — A-BOOK-02 (reserve-sheet card), A-EXP-04 (policy tab from the server), A-X-01 (airplane-mode states), A-ACC-07 (push), A-ONB-04 (Google sign-in), A-ACC-12 (chat after the handoff-token change). Everything else in the manuals is either verified live or a known limitation named in the manuals.
 
@@ -317,15 +318,54 @@ on the walk and fixed (web `b8a241c`): the tax line printed "₹900" over a
 .95 total, and the unselected "Pay at property" card was white in LUXE.
 Photographs in `report-2026-09-15/img/`.
 
+#### The emulator, builds 90 → 92 (08:00)
+
+Build 90 carried the app side of §8a28–§8a29 and was driven on the
+emulator, signed in as the test guest, against the live backend. It
+found **three defects no test had**, build 91 fixed them and found two
+more, and build 92 is what the tester gets:
+
+- **GST banded on the base tariff.** The booking sheet on the Gurugram
+  cottage (29309) for a week said "GST (5%) ₹2,275 · ₹47,775"; the server
+  bands each night on its own share and charges ₹3,279.43 · ₹48,779.43 —
+  which is the Razorpay order. §8a27's website fault, in the app. The
+  quote now carries the server's night weights, `priceStay` splits across
+  them, rounds once and names the bands; the pricer's ₹7,500 boundary was
+  still `>` and is `>=`. Build 91: "GST · 6 nights at 5% · 1 night at
+  18% ₹3,279.43 · ₹48,779.43".
+- **Totals to the rupee** (₹18,899 for ₹18,898.95) — `rupeesExact`, the
+  app's twin of the web fix in §8a28.
+- **A week counted as six nights.** The offer sheet took a raw `.inDays`
+  between a check-in carrying the wall-clock time and a midnight
+  check-out; 15 → 22 September at 07:43 was "6 nights", so it asked per
+  night. Calendar days now.
+- **An offer accepted on the listing was not applied to it.** "Accepted
+  at ₹43,050 for 7 nights" → "Book at this price" → the same sheet at
+  ₹48,779.43 with no coupon; `hasDeal` reads the widget, and the reload
+  only re-drew the lock line. A booking from there went out at full
+  price. The page now reopens the listing THROUGH the deal
+  (`openPropertyById`), as the banner does. Build 92: Discount (4.34% —
+  `DEAL29309101C177`) −₹1,953 · GST (5%) ₹2,177.35 · **₹45,724.35**, and
+  `taxForNights` on the server gives the same to the paise — the coupon
+  moved the Sunday's share under ₹7,500.
+- **"book within 24 hours"** on the accepted sheet and the host's accept
+  dialog, ten days after the window became the IST day. "Before midnight
+  tonight."
+
+Two real weekly deals were struck on test listings on the way
+(`DEAL29302101C175` on the web, `DEAL29309101C177` on the app); neither
+was booked. Photographs in `report-2026-09-15/app/`.
+
 #### Pinned
 
 BE `aWeekIsNegotiatedAsATotal.test.js` (threshold = `WEEKLY_NIGHTS`, the
 round trip, the coupon never lands above the typed total, every sentence
 uses the helper) — **141/141**; three older pins updated for the new
 signatures. Web `aWeekIsNegotiatedAsATotal.test.mjs` — **43 files pass**.
-App `a_week_is_negotiated_as_a_total_test.dart` — **459 pass**. Commits
-BE `ced1558`, web `b8a8621`, app `af25544`. The app side ships with the
-next build.
+App `a_week_is_negotiated_as_a_total_test.dart`, `booking_pricing_test`
+(the emulator case, the boundary), `money_test` (`rupeesExact`) — **463
+pass**. Commits BE `ced1558`, web `b8a8621`, app `af25544`, `e1a6363`,
+`522a828`. **Build 92** carries all of it.
 
 ### 8a28. Closed 2026-09-15 — the same stay, priced three ways
 
