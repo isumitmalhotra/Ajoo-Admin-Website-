@@ -1,0 +1,181 @@
+name: iOS build
+
+# The Flutter app has to compile on a Mac, and there is none on the team's
+# desks. This repo is public, so GitHub's macOS runners cost nothing, and
+# every push that touches the app proves the iOS half still builds — pods
+# resolve, Swift compiles, the Dart AOT links — with NO Apple account at all
+# (an unsigned Runner.app). The second job, run by hand, signs the same code
+# and pushes it to TestFlight once the client's Apple credentials are in the
+# repository secrets; it does nothing until they are.
+#
+# One build number = one artifact holds across platforms: the iOS build of
+# 1.0.0+94 is the Android build of 1.0.0+94 from the same commit.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "aajoo_app_2026/**"
+      - ".github/workflows/ios-build.yml"
+  workflow_dispatch:
+    inputs:
+      testflight:
+        description: "Sign and upload to TestFlight (needs the Apple secrets)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: "3.44.0"
+  API_BASE_URL: https://aajaodev.onrender.com
+
+defaults:
+  run:
+    working-directory: aajoo_app_2026
+
+jobs:
+  compile:
+    name: Unsigned compile (no Apple account needed)
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Flutter doctor
+        run: flutter doctor -v
+
+      - name: Tests
+        run: flutter test
+
+      - name: Build (release, unsigned)
+        # The sandbox Razorpay key is the one already in the source; the
+        # build script refuses it without the flag, exactly as on Android.
+        run: |
+          KEY=$(grep -oE "'rzp_test_[A-Za-z0-9]+'" lib/constants/payment_config.dart | head -1 | tr -d "'")
+          chmod +x tool/build_ios.sh
+          tool/build_ios.sh --api "$API_BASE_URL" --razorpay "$KEY" \
+            --allow-test-payments --allow-dev-endpoint --no-codesign
+
+      - name: Package the unsigned app
+        run: |
+          VERSION=$(grep -E '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//')
+          (cd build/ios/iphoneos && zip -qr "../../../Runner-$VERSION-unsigned.app.zip" Runner.app)
+          ls -la "Runner-$VERSION-unsigned.app.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-unsigned-runner-app
+          path: aajoo_app_2026/Runner-*-unsigned.app.zip
+          retention-days: 14
+
+  testflight:
+    name: Signed build → TestFlight
+    if: github.event_name == 'workflow_dispatch' && inputs.testflight
+    needs: compile
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Are the Apple secrets in place?
+        id: secrets
+        env:
+          P12: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
+          PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          ASC_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          MAPS: ${{ secrets.IOS_MAPS_KEY }}
+          GID: ${{ secrets.IOS_GOOGLE_CLIENT_ID }}
+        run: |
+          missing=""
+          [ -n "$P12" ]     || missing="$missing IOS_CERTIFICATE_P12_BASE64"
+          [ -n "$PROFILE" ] || missing="$missing IOS_PROVISIONING_PROFILE_BASE64"
+          [ -n "$ASC_KEY" ] || missing="$missing APP_STORE_CONNECT_API_KEY_P8"
+          [ -n "$MAPS" ]    || missing="$missing IOS_MAPS_KEY"
+          [ -n "$GID" ]     || missing="$missing IOS_GOOGLE_CLIENT_ID"
+          if [ -n "$missing" ]; then
+            echo "::error::Cannot sign: missing repository secrets:$missing (see aajoo_app_2026/IOS_READINESS.md §5)"
+            exit 1
+          fi
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install the signing certificate
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
+          p12-password: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+
+      - name: Install the provisioning profile
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}" | base64 --decode \
+            > ~/Library/MobileDevice/Provisioning\ Profiles/aajoo.mobileprovision
+
+      - name: Fill the client's values into Info.plist
+        # The two placeholders tool/verify_release_ipa.py refuses: the iOS
+        # Maps key and the Google Sign-In client (its reversed form is the
+        # callback URL scheme). Never committed; they live in the secrets.
+        run: |
+          GID="${{ secrets.IOS_GOOGLE_CLIENT_ID }}"
+          GID_ID="${GID%%.apps.googleusercontent.com}"
+          REVERSED="com.googleusercontent.apps.${GID_ID}"
+          /usr/libexec/PlistBuddy -c "Set :GMSApiKey ${{ secrets.IOS_MAPS_KEY }}" ios/Runner/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :GIDClientID $GID" ios/Runner/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:0:CFBundleURLSchemes:0 $REVERSED" ios/Runner/Info.plist
+          if [ -n "${{ secrets.IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" ]; then
+            echo "${{ secrets.IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" | base64 --decode > ios/Runner/GoogleService-Info.plist
+          fi
+
+      - name: Export options
+        run: |
+          cat > ios/ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>${{ secrets.APPLE_TEAM_ID }}</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>provisioningProfiles</key><dict>
+              <key>com.aajoo.aajoohomes</key><string>${{ secrets.IOS_PROVISIONING_PROFILE_NAME }}</string>
+            </dict>
+            <key>uploadSymbols</key><true/>
+          </dict></plist>
+          EOF
+
+      - name: Build the signed .ipa
+        run: |
+          KEY=$(grep -oE "'rzp_test_[A-Za-z0-9]+'" lib/constants/payment_config.dart | head -1 | tr -d "'")
+          chmod +x tool/build_ios.sh
+          tool/build_ios.sh --api "$API_BASE_URL" --razorpay "$KEY" \
+            --allow-test-payments --allow-dev-endpoint --export ios/ExportOptions.plist
+
+      - name: Locate the .ipa
+        id: ipa
+        run: echo "path=$(ls "$PWD"/build/ios/ipa/*.ipa | head -1)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-signed-ipa
+          path: aajoo_app_2026/build/ios/ipa/*.ipa
+          retention-days: 30
+
+      - name: Upload to TestFlight
+        uses: apple-actions/upload-testflight-build@v1
+        with:
+          app-path: ${{ steps.ipa.outputs.path }}
+          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}

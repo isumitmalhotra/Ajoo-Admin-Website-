@@ -280,7 +280,14 @@ class NotificationService {
       logger.w("✅ Notification permission granted.");
       if (await _storage.read(key: "fcm_token") == null) {
         String? token = await _getFCMToken();
-        await _storage.write(key: "fcm_token", value: token!);
+        // Null when Firebase is unavailable or, on iOS, when APNs never
+        // answered (the Simulator). The `!` here used to throw inside the
+        // permission flow, which took the whole sign-in down with it.
+        if (token == null) {
+          logger.w("No push token this run — the app carries on without push.");
+          return;
+        }
+        await _storage.write(key: "fcm_token", value: token);
         await saveTokenToDatabase(token);
         logger.w("FCM Token: $token");
       } else {
@@ -304,6 +311,24 @@ class NotificationService {
     if (messaging == null) {
       logger.w("Firebase unavailable — no FCM token, push is off this run.");
       return null;
+    }
+    // iOS: the permission prompt is Apple's, and FCM cannot mint a token
+    // until APNs has handed the app its own. permission_handler's request
+    // above shows the prompt; this asks Firebase to register with APNs and
+    // waits for that token, because getToken() on iOS throws
+    // "apns-token-not-set" when called first — and on the Simulator, which
+    // has no APNs at all, it would throw forever. Push is simply off there.
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      await messaging.requestPermission(alert: true, badge: true, sound: true);
+      String? apns;
+      for (var i = 0; i < 10 && apns == null; i += 1) {
+        apns = await messaging.getAPNSToken();
+        if (apns == null) await Future.delayed(const Duration(milliseconds: 300));
+      }
+      if (apns == null) {
+        logger.w("No APNs token (Simulator, or APNs unreachable) — push is off this run.");
+        return null;
+      }
     }
     return await messaging.getToken();
   }
@@ -375,9 +400,14 @@ class NotificationService {
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails("channel_id", "channel_name",
             importance: Importance.high, priority: Priority.high);
+    // iOS shows nothing for a foreground push unless told to present it;
+    // without these the same message that banners on Android is silent
+    // on an iPhone that is open on the app.
+    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+        presentAlert: true, presentBadge: true, presentSound: true);
 
     const NotificationDetails details =
-        NotificationDetails(android: androidDetails);
+        NotificationDetails(android: androidDetails, iOS: iosDetails);
 
     await _localNotifications.show(
       0,

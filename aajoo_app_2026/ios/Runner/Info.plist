@@ -2,10 +2,21 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!--
+	  The iOS half of what android/app/src/main/AndroidManifest.xml declares.
+	  Every capability the Android build has needs its iOS counterpart here:
+	  a usage string for each permission (the OS refuses the request — or the
+	  App Store refuses the upload — without one), the URL schemes the app
+	  asks "can I open this?" about (the LSApplicationQueriesSchemes list is
+	  the exact analogue of the Android <queries> block), the Maps key, and
+	  the Google Sign-In callback scheme. Two values are placeholders that only
+	  the client's accounts can fill; tool/verify_release_ipa.py refuses a
+	  build that still carries them.
+	-->
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Rent Home</string>
+	<string>Aajoo Homes</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -28,6 +39,7 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<!-- The Android build does not lock orientation, so neither does this one. -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
@@ -45,5 +57,84 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<!-- ── Permissions: the usage strings iOS shows in its prompts ──────── -->
+	<!-- geolocator: the map's "near me", the listing wizard's pin, the
+	     location picker. Only while-in-use is ever requested. -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Aajoo Homes uses your location to show stays near you and to place your listing on the map.</string>
+	<!-- image_picker / file_picker: profile photos, listing photos, the
+	     documents a listing needs. The gallery is the only source the app
+	     uses; the camera and microphone strings are here because the
+	     picker links those APIs and App Store validation flags an app that
+	     links them without a purpose string. -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Aajoo Homes needs your photo library to add a profile photo and photos of your listing.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Aajoo Homes can use the camera to take a photo for your profile or your listing.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Aajoo Homes does not record audio; this permission is only requested if you choose to capture a video.</string>
+
+	<!-- ── Push (firebase_messaging): let a notification wake the app ──── -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+
+	<!-- ── Links the app asks "can I open this?" about (url_launcher) ─────
+	     The exact analogue of AndroidManifest's <queries>: without an
+	     entry here canOpenURL answers false and the tap does nothing —
+	     tap-to-dial, WhatsApp support, Get Directions. https/http need no
+	     entry on iOS. The UPI schemes are for Razorpay's UPI intent flow,
+	     which lists the UPI apps installed on the phone. -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+		<string>mailto</string>
+		<string>whatsapp</string>
+		<string>comgooglemaps</string>
+		<string>maps</string>
+		<string>phonepe</string>
+		<string>paytmmp</string>
+		<string>tez</string>
+		<string>gpay</string>
+		<string>bhim</string>
+		<string>upi</string>
+		<string>credpay</string>
+	</array>
+
+	<!-- ── Google Maps (google_maps_flutter) ────────────────────────────
+	     Read by AppDelegate.swift and handed to GMSServices. The Android
+	     key in AndroidManifest.xml is restricted to the Android app and its
+	     signing certificate, so iOS needs its OWN key, restricted to the
+	     bundle id com.aajoo.aajoohomes, from the same Google Cloud project.
+	     PLACEHOLDER — the client creates the key (IOS_READINESS.md §4). -->
+	<key>GMSApiKey</key>
+	<string>REPLACE_WITH_IOS_MAPS_KEY</string>
+
+	<!-- ── Google Sign-In (google_sign_in) ──────────────────────────────
+	     The OAuth client for THIS bundle id, and its reversed form as the
+	     URL scheme Google redirects back to. Both come from the
+	     GoogleService-Info.plist the Firebase console issues for the iOS app
+	     (CLIENT_ID / REVERSED_CLIENT_ID). PLACEHOLDERS until then. -->
+	<key>GIDClientID</key>
+	<string>REPLACE_WITH_IOS_CLIENT_ID.apps.googleusercontent.com</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.REPLACE_WITH_IOS_CLIENT_ID</string>
+			</array>
+		</dict>
+	</array>
+
+	<!-- The app uses only HTTPS (standard encryption), so it is exempt from
+	     export-compliance paperwork; saying so here skips the question on
+	     every TestFlight upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

@@ -1,5 +1,9 @@
-# Uncomment this line to define a global platform for your project
-# platform :ios, '12.0'
+# The floor every plugin in pubspec.yaml can meet: google_maps_flutter_ios
+# 2.x needs 14, the Firebase iOS SDK behind firebase_core 3.x needs 13. The
+# same value is in Runner.xcodeproj (IPHONEOS_DEPLOYMENT_TARGET) and
+# Flutter/AppFrameworkInfo.plist (MinimumOSVersion); the post_install below
+# lifts every pod to it so no pod is left declaring an older floor.
+platform :ios, '14.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -40,5 +44,23 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
+
+      # permission_handler compiles OUT every permission that is not switched
+      # on here, and a request for a compiled-out permission answers
+      # "denied" without ever asking. These are the ones the Dart code asks
+      # for: notifications (NotificationService), location while in use
+      # (geolocator's own prompt, but permission_handler reads the state),
+      # and the photo library (image_picker / file_picker).
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
+        '$(inherited)',
+        'PERMISSION_NOTIFICATIONS=1',
+        'PERMISSION_LOCATION=1',
+        'PERMISSION_LOCATION_WHENINUSE=1',
+        'PERMISSION_PHOTOS=1',
+        'PERMISSION_CAMERA=1',
+      ]
+    end
   end
 end
