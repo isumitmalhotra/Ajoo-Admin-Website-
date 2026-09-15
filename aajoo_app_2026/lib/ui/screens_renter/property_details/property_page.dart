@@ -651,6 +651,50 @@ class _PropertyPageState extends State<PropertyPage>
     return d;
   }
 
+  /// Does this guest still have to verify their identity?
+  ///
+  /// The server has required a current verification at /booking/create since
+  /// 2026-09-01 and, since 2026-09-16, at /user/negotiations/offer and
+  /// /respond as well — so an unverified guest who opens a negotiation puts
+  /// a host through a round of offers and is refused at the end. Client,
+  /// 2026-09-16: "I logged in with a new account and did not do KYC —
+  /// without KYC neither negotiation nor booking should happen."
+  ///
+  /// Signed OUT is not this case: that path already ends at the login toast,
+  /// which is the right next step.
+  bool get _needsVerification {
+    final auth = Get.isRegistered<AuthController>()
+        ? Get.find<AuthController>()
+        : null;
+    final user = auth?.userData.value;
+    if (user == null) return false;
+    return !user.isKycVerified;
+  }
+
+  /// What to say under the disabled offer button, from the same status the
+  /// booking gate reads — "pending" is an unfinished check, not a review.
+  String get _verifyLine {
+    final auth = Get.isRegistered<AuthController>()
+        ? Get.find<AuthController>()
+        : null;
+    final st =
+        (auth?.userData.value?.verificationStatus ?? '').toLowerCase();
+    if (st == 'in_review') {
+      return "Your identity check is being reviewed. You'll be able to make "
+          "an offer — and to book — as soon as it's approved.";
+    }
+    if (st == 'declined') {
+      return "Your identity check wasn't approved, so offers and bookings "
+          'are closed. Please contact support.';
+    }
+    if (st == 'pending' || st == 'partial') {
+      return 'You started your identity check but did not finish it. '
+          'Tap to pick up where you left off — offers and bookings need it.';
+    }
+    return 'Offers and bookings need a verified identity. '
+        'Tap to verify — it takes a minute.';
+  }
+
   /// A check-out the picker will offer for [from]: not through a booked
   /// night, sold by the host on that day, and inside the host's minimum and
   /// maximum stay. One predicate for the picker and for the initial date,
@@ -2800,9 +2844,73 @@ onPressed: () async {
                     ],
                   );
                 }),
+              // Not verified: the same treatment the lock above gets — a
+              // disabled control that says why and offers the way out,
+              // rather than a live button the server will refuse.
+              if (!isPrebooking &&
+                  ownerNegotiates &&
+                  _negotiationLock == null &&
+                  _needsVerification)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Opacity(
+                      opacity: 0.5,
+                      child: ElevatedButton(
+                        onPressed: null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          disabledBackgroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 50),
+                          shape: RoundedRectangleBorder(
+                            side: const BorderSide(color: kIndigo),
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('Send an Offer',
+                                style: inter(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: kIndigo)),
+                            Text('Verify your identity first',
+                                style: inter(fontSize: 10, color: kMuted)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    InkWell(
+                      onTap: () => Get.toNamed('/kyc', arguments: {
+                        'context': 'renter_kyc',
+                        'isHost': false,
+                        'returnResult': true,
+                      }),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.verified_user_outlined,
+                              size: 15, color: kMuted),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              _verifyLine,
+                              style: inter(
+                                  fontSize: 12, color: kMuted, height: 1.35),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               Visibility(
-                visible:
-                    !isPrebooking && ownerNegotiates && _negotiationLock == null,
+                visible: !isPrebooking &&
+                    ownerNegotiates &&
+                    _negotiationLock == null &&
+                    !_needsVerification,
                 child: ElevatedButton(
                   onPressed: () async {
                     final AuthController authController =

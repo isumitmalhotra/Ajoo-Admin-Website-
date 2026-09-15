@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/design/aajoo_skin.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
+import 'package:rent_home/models/property_offer.dart';
+import 'package:rent_home/controller/deals_controller.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/service/bookmark_service.dart';
 import 'package:rent_home/utils/money.dart';
@@ -24,6 +27,44 @@ class CuratedCard extends StatelessWidget {
     this.onFavoriteTap,
     this.rating = '4.5',
   });
+
+  /// What this card prices with: the guest's own negotiated deal when they
+  /// have one for this stay, otherwise the host's running offer.
+  ///
+  /// Client, 2026-09-16: "I negotiated on a property but did not book. Back
+  /// on the home page I should see the changed price — the one I last
+  /// accepted, with the discount and all, should show outside too." Every
+  /// card priced at the list rate, because a deal is per-guest and the card
+  /// never asked for one. The deal is DATE-LOCKED and expires at midnight,
+  /// so the card wears it the way it wears a running discount — struck
+  /// price, deal price, a "% off" pill — rather than silently printing a
+  /// smaller number, and openPropertyById carries the agreed nights.
+  ///
+  /// Percentage deals only: a negotiated deal is always a percentage of the
+  /// room, and an amount coupon cannot be turned into a per-night figure
+  /// without knowing the stay.
+  PropertyOffer? get _shownOffer {
+    if (property.offer != null) return property.offer;
+    if (!Get.isRegistered<DealsController>()) return null;
+    final deal = Get.find<DealsController>().forProperty(property.propertyId);
+    if (deal == null || deal.type != 'percent' || deal.percent <= 0) {
+      return null;
+    }
+    final was = double.tryParse(
+            property.propertyPrice.replaceAll(RegExp(r'[^0-9.]'), '')) ??
+        0;
+    if (was <= 0) return null;
+    // Rounded UP, so the card never advertises a nightly price below the one
+    // the server will quote. The quote is still the authority.
+    final now = (was * (1 - deal.percent / 100)).ceilToDouble();
+    return PropertyOffer(
+      id: -1,
+      title: 'Your negotiated deal',
+      was: was,
+      now: now,
+      percent: deal.percent.round(),
+    );
+  }
 
   /// Indian digit grouping lives in one place — utils/money.dart.
   ///
@@ -127,7 +168,7 @@ class CuratedCard extends StatelessWidget {
                   // Sponsored at the top and the heart at top-right: a claim
                   // about money must not be mistakable for a trust badge or
                   // for paid placement. Same reasoning as the web card.
-                  if (property.offer != null)
+                  if (_shownOffer != null)
                     Positioned(
                       bottom: 10,
                       left: 10,
@@ -137,7 +178,7 @@ class CuratedCard extends StatelessWidget {
                         decoration: BoxDecoration(
                             color: const Color(0xF0DC2626),
                             borderRadius: BorderRadius.circular(999)),
-                        child: Text('${property.offer!.percent}% off',
+                        child: Text('${_shownOffer!.percent}% off',
                             style: inter(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w700,
@@ -249,16 +290,16 @@ class CuratedCard extends StatelessWidget {
                           text: TextSpan(children: [
                             // The old price first, so the eye lands on the
                             // saving before the number being charged.
-                            if (property.offer != null)
+                            if (_shownOffer != null)
                               TextSpan(
-                                  text: '${rupees(property.offer!.was)} ',
+                                  text: '${rupees(_shownOffer!.was)} ',
                                   style: inter(fontSize: 12, color: skin.muted)
                                       .copyWith(
                                           decoration:
                                               TextDecoration.lineThrough)),
                             TextSpan(
-                                text: property.offer != null
-                                    ? rupees(property.offer!.now)
+                                text: _shownOffer != null
+                                    ? rupees(_shownOffer!.now)
                                     : _formattedPrice,
                                 style: fraunces(
                                     fontSize: 15,
