@@ -1355,6 +1355,40 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
               value: c.p4['same_day_booking'] != false,
               onChanged: (v) => c.setP4('same_day_booking', v),
             ),
+            // The other way these two cancel each other: price offers are
+            // only taken on a stay that STARTS TODAY (the pricing
+            // architecture's real-time rule), so a host who turns same-day
+            // bookings off has, without being told, turned negotiation off
+            // as well. Found on the client's own listing, 2026-09-15.
+            if (c.p4['same_day_booking'] == false &&
+                c.p4['negotiation_enabled'] != false)
+              Container(
+                margin: const EdgeInsets.only(top: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF6E5),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        size: 15, color: kClay),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: Text(
+                        'Price offers are only taken on a stay that starts '
+                        'today. With same-day bookings off, guests cannot send '
+                        'you an offer at all — only book at the listed price. '
+                        'Turn this on if you want to negotiate.',
+                        style: inter(
+                            fontSize: 12.5, color: const Color(0xFF92400E)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             // C7 — these two settings can cancel each other out.
             //
             // Saying yes to same-day and then asking for 24 hours' notice

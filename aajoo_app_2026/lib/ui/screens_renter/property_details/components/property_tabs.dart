@@ -1019,19 +1019,31 @@ class _PropertyDetailPanelsState extends State<PropertyDetailPanels> {
             for (final sp in specs)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 7),
+                // Both sides bounded. The value was an unconstrained Text,
+                // so a long one ("Home Cooked Food, Local Culture,
+                // Traditional Food…") took the whole row and the Expanded
+                // label was left a few pixels wide — "Local Experience"
+                // rendered one letter per line down the left edge of a
+                // Moto (client's photograph, 2026-09-15). A word cut in
+                // half means the box is too narrow, not the word too long.
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
+                        flex: 2,
                         child: Text(sp.label,
                             style: inter(fontSize: 13, color: kMuted))),
                     const SizedBox(width: 12),
-                    Text(sp.value,
-                        textAlign: TextAlign.right,
-                        style: inter(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: kInk)),
+                    Expanded(
+                      flex: 3,
+                      child: Text(sp.value,
+                          textAlign: TextAlign.right,
+                          softWrap: true,
+                          style: inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: kInk)),
+                    ),
                   ],
                 ),
               ),
