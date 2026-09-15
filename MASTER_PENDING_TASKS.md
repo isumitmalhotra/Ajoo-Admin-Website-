@@ -12,7 +12,8 @@
 > §8a27 closes eight client reports in one night — including a money figure that
 > disagreed with itself between two screens, and one regression of my own;
 > **updated 2026-09-15** with §8a28 — the same stay priced three ways on three
-> screens, because a coupon was a percentage of three different things.
+> screens, because a coupon was a percentage of three different things — and
+> §8a29, a week negotiated as a total instead of seven per-night sevenths.
 > §8a24 and §2.8 carry **AWS Days 1–5** — the whole platform as Terraform, a
 > deploy pipeline that holds no AWS key at all, and the cutover runbook. None of
 > it is applied — blocked on an unverified card on the AWS account, not on us.
@@ -254,6 +255,68 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a29. Closed 2026-09-15 — a week is negotiated as a total
+
+Client, with a screenshot of Send an Offer on a seven-night stay reading
+"Your offer per night (₹) · Listed at ₹12,000 / night": *"while
+negotiating for weekly or monthly booking, renter should be asked total
+price instead of per night?? renter will not be able to calculate easily
+per night … for less than 7 days, per night negotiations is fine. But for
+weekly and monthly it should be on the total."*
+
+**They are right, and the engine half-agreed already.** A dated offer has
+been judged against the composite stay totals divided back to a per-night
+figure since W2 (`tiersForDates`), so on a week the "per night" was a
+derived number all along — nobody sets a weekly rate as ₹10,714.29 a
+night, which is what that dialog was in fact asking a guest to argue with.
+
+#### The rule
+
+| stay | the conversation | example |
+|---|---|---|
+| under 7 nights | per night, as before | "₹3,000/night" |
+| 7 nights or more | the stay total | "₹75,000 for 7 nights — the host's weekly rate (≈ ₹10,714 / night)" |
+
+**The unit of record did not change.** `offer_price`, `nl_offer_price`,
+the engine's min/ideal/max, the coupon percentage and every socket event
+still carry a per-night figure. A guest who types ₹70,000 for a week
+sends 10,000/night; a host who counters ₹1,00,000 sends 14,285.71 (the
+column is DECIMAL(10,2)); every screen multiplies back and rounds, which
+recovers the typed total for any stay under a hundred nights. The
+alternative — changing the stored unit — would have touched the ledger,
+the engine and the coupon arithmetic for a sentence's worth of
+difference.
+
+#### Where it lives
+
+One helper per platform, the same threshold as the weekly rate
+(`WEEKLY_NIGHTS = 7`): BE `utils/negotiationUnit.js` (`priceLine`,
+`perNightOf`, `stayTotal`, `nightsOf`), web `lib/negotiationUnit.ts`, app
+`utils/negotiation_unit.dart`. Every sentence the server writes — accept,
+counter, the refusal above list, expiry, the parting coupon, the host's
+email — goes through it, and every negotiation event now carries
+`nights` so the clients' live toasts can pick the unit. Web: the offer
+dialog (label, placeholder, "Listed at", the ceiling compared total to
+total), the counter-back, the outcome lines, `CounterOfferDialog`, both
+Negotiations pages and the transcript. App: `send_offer_sheet` (now
+handed the stay's list total, `originalSubtotal`), the guest and host
+negotiation screens, the host home card.
+
+**Verified live 2026-09-15 06:07** on 29310, 20–27 Sept: "Your offer for
+the 7 nights (₹)", placeholder 75000, "Listed at ₹75,000 for 7 nights —
+the host's weekly rate (≈ ₹10,714 / night)". A two-night stay reads as it
+did.
+
+#### Pinned
+
+BE `aWeekIsNegotiatedAsATotal.test.js` (threshold = `WEEKLY_NIGHTS`, the
+round trip, the coupon never lands above the typed total, every sentence
+uses the helper) — **141/141**; three older pins updated for the new
+signatures. Web `aWeekIsNegotiatedAsATotal.test.mjs` — **43 files pass**.
+App `a_week_is_negotiated_as_a_total_test.dart` — **459 pass**. Commits
+BE `ced1558`, web `b8a8621`, app `af25544`. The app side ships with the
+next build.
 
 ### 8a28. Closed 2026-09-15 — the same stay, priced three ways
 
