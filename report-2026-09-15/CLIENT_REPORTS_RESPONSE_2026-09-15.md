@@ -6,6 +6,8 @@ Between the evening of 13 September and the morning of 15 September the client s
 
 Every fix here is **live on the website and the backend** as of 15 September, 06:45 IST. The Android app changes ship in **build 92** (`aajoo-homes-1.0.0-build92-release.apk`, cut 08:05 IST), which was driven on the emulator against the live backend before it was handed over — §9.4 records what that drive found and fixed on the way. Builds 89–91 are withdrawn.
 
+> **Postscript, 15 September evening.** The one decision this document left open — §3.6, whether the cleaning fee is charged or only stated — was answered by the client the same day: **stated, not charged.** §3.7 records the decision, what changed on the server, the website and the app, and the live figures after it. The current app build is **94** (`aajoo-homes-1.0.0-build94-release.apk`); build 92 and 93 still add the fee to the price they send, and the server recognises that and charges without it, so nobody on an old build pays more than the new rule says. The totals quoted elsewhere in this document that include a cleaning fee — ₹27,376, ₹29,500, ₹18,898.95, ₹48,779.43, ₹80,830 — were correct when written and are superseded by §3.7.
+
 > **How to read the verification column.** *tested* = a permanent automated test now pins the rule; *live* = walked on www.aajoohomes.com against the production backend on 15 September, with a photograph in this document; *not verified* = the fix is deployed and tested but the exact screen the client saw needs a signed-in session or a device we do not have.
 
 ### 1.1 Summary table
@@ -45,7 +47,7 @@ The client's note said *"price is most important part of app"*. This is the whol
 
 1. **Room subtotal.** Each night's list rate for the dates chosen (weekday, weekend, seasonal), replaced by the host's **weekly** rate at 7 nights or the **monthly** rate at a calendar month. For an advance booking the host's advance-booking discount comes off here.
 2. **Discount — on the room only.** A negotiated deal (a `DEAL…` coupon), an admin coupon, or a running host offer is a percentage of step 1. **Never of the fees.**
-3. **Fees, on top, undiscounted.** Extra-guest charge, pet fee, cleaning fee (per stay or per night as the host set it).
+3. **Fees, on top, undiscounted.** Extra-guest charge and pet fee. *(The cleaning fee was in this line until the evening of 15 September; it is now **stated, not charged** — §3.7.)*
 4. **GST, per night, on what is actually charged.** The payable amount (2 + 3) is split back across the nights in proportion to their list rates; each night's share under ₹7,500 is taxed at 5%, ₹7,500 and above at 18%; the tax is rounded **once**, on the sum. A stay whose nights straddle the line has two rates in it and is labelled that way ("6 nights at 5% · 1 night at 18%") rather than as a made-up average.
 5. **Total** = 2 + 3 + 4. Printed to the paise wherever the gateway will show paise.
 
@@ -123,7 +125,41 @@ The LUXE contrast test now also refuses a literal white `.modal`, and — after 
 
 The same message asks for two different things. It says cleaning should be **shown, not charged**; it also says the stay "should be 27376", and ₹27,376 is the figure **with** the ₹1,000 cleaning fee in it (without it the stay is ₹26,196). Charging the fee is what the 10 September property-form specification asked for (item C18: a cleaning fee with a per-stay/per-night frequency), and it has been quoted, charged, taxed and paid to the host on every booking since.
 
-So the arithmetic was made honest and the fee was left charged, pending a decision. **If "display only" is the answer**, it is one switch: the quote, the booking clamp and both clients stop adding `cleaningFee`, the property page states it the way the security deposit already is ("collected directly by the host, not included in this total"), and the frequency field in the wizard should be retired since it would then mean nothing. This is recorded as item 1.14 in the master task list.
+So the arithmetic was made honest and the fee was left charged, pending a decision. **If "display only" is the answer**, it is one switch: the quote, the booking clamp and both clients stop adding `cleaningFee`, the property page states it the way the security deposit already is ("collected directly by the host, not included in this total"), and the frequency field in the wizard should be retired since it would then mean nothing. This is recorded as item 1.14 in the master task list. **Answered the same day — §3.7.**
+
+### 3.7 Postscript — the decision: stated, not charged (15 September, evening)
+
+**The client's answer:** *"it will only be stated in Things to know and all; if the renter requested it, it can be availed at that price and payments will be taken directly by the host."* The frequency field goes with it — kept as an optional courtesy to the guest ("₹500 per night"), no longer a billing rule.
+
+**What changed, the same afternoon — one switch, four places.**
+
+| Where | Before (10–15 Sep) | Now |
+|---|---|---|
+| Server — `/pricing/quote`, the shared pricer | Added the fee to the total after any discount, taxed it, paid it to the host | The fee travels with the quote (`cleaningFee`, `cleaningFeeType`, `cleaningFeeCharged: false`) so every screen can say it; it is in no total, no tax and no payout |
+| Server — booking create | Expected room + party + pets **+ cleaning** | Expects room + party + pets. A client built while the fee was charged (app builds 88–93, the website before this deploy) sends the old figure; the server recognises exactly that and **charges the price without the fee** — a guest on an old build pays less than its screen said, never more |
+| Server — listing wizard | Refused a fee without a frequency | A bare figure is accepted and reads as per stay |
+| Website — property card, review, payment | A "Cleaning fee" line inside the total | No line. Under the total, beside the deposit note: *"The host charges ₹1,000 for cleaning if you ask for it — arranged and paid directly with them, not included in this total."* One sentence, built once, so three pages cannot drift |
+| Website — Things to know | Nothing | Under House rules, from the listing, before any dates: *"Cleaning available at ₹1,000 per stay, paid to the host"* |
+| Website — host wizard | "Charged: Select…" required | "Applies: Per stay (default)"; the hint quotes what the guest will read |
+| App — booking sheet, Things to know, wizard | As the website was | As the website is, word for word (**build 94**) |
+
+**Live, after the deploy.** `POST /pricing/quote` 29310, two nights: `subtotal 24000 · cleaningFee 1000 · cleaningFeeCharged false · total 24000 · taxes 4320 · grandTotal 28320` — not 29,500. 29302 (₹500 per stay), two nights: 6,660 + 333 = **6,993** — not 7,518. The 14 September stay this document opened with — ₹12,000 × 2 with the 7.5% deal — is now **₹26,196** (₹22,200 × 1.18) with the ₹1,000 said under the total; the ₹27,376 of §3.1 is superseded.
+
+![Live, 15 Sep evening: 29310 for 17–19 Sep — ₹24,000, advance discount −₹2,400, GST ₹3,888, total ₹25,488; the deposit and the cleaning fee stated under it, neither in it](img/s31-29310-card.png)
+*Live, 15 Sep evening: 29310 for 17–19 Sep — ₹24,000, advance discount −₹2,400, GST ₹3,888, total ₹25,488; the deposit and the cleaning fee stated under it, neither in it*
+
+![Live: the same stay at Book Now → review — the same ₹25,488 and the same sentence under it](img/s31-29310-review.png)
+*Live: the same stay at Book Now → review — the same ₹25,488 and the same sentence under it*
+
+![Live: Things to know on 29310 — "Cleaning available at ₹1,000 per stay, paid to the host" under House rules, before any dates are picked](img/s31-29310-things-to-know.png)
+*Live: Things to know on 29310 — "Cleaning available at ₹1,000 per stay, paid to the host" under House rules, before any dates are picked*
+
+![Build 94 on the emulator: 29309 opened from the accepted-deal banner — Base ₹45,000, deal −₹1,953, GST 5% ₹2,152.35, total ₹45,199.35; no cleaning line; the fee stated under the total](app/build94-29309-cleaning-stated.png)
+*Build 94 on the emulator: 29309 opened from the accepted-deal banner — Base ₹45,000, deal −₹1,953, GST 5% ₹2,152.35, total ₹45,199.35 (build 93 said ₹45,724.35: the ₹500 and its 5%); no cleaning line; the fee stated under the total*
+
+**Pinned.** Backend `theCleaningFeeIsStatedNotCharged.test.js` — the 28,320, the payload, the clamp's shape, the old-client escape, and that no payout code touches cleaning; six of its eight checks fail on the previous commit. Website `theCleaningFeeIsStatedNotCharged.test.mjs` — 6,993, the sentence, every page states and none charges. App `the_cleaning_fee_is_stated_not_charged_test.dart`. The suites: **143/143** backend files, **43/43** web, **472** app tests.
+
+**One thing to know.** Bookings taken between 10 and 15 September carry the fee in their price; all are test records. If one of them is modified now it will be re-priced without the fee and the difference refunded — the right outcome, noted so it does not read as a fault.
 
 ## 4. Weekly and monthly negotiation on the total (15 September)
 
@@ -307,10 +343,10 @@ Build 90 was cut with the app changes above and driven on the emulator, signed i
 
 | Item | Holder | Note |
 |---|---|---|
-| **Is the cleaning fee charged, or only stated?** (§3.6, master list 1.14) | Client | One switch once decided; the frequency field goes with it |
-| The deal price on the client's own 29310 stay | Client | The 14–16 September deal coupon is spent (B476130). Strike a new deal and the review page will read ₹1,800 off / ₹27,376 — the same arithmetic walked live on the QA listing in §4.1 |
+| ~~Is the cleaning fee charged, or only stated?~~ (§3.6) | ~~Client~~ **Answered — stated. Done, §3.7** | Live on the server and the website; app build 94 |
+| The deal price on the client's own 29310 stay | Client | The 14–16 September deal coupon is spent (B476130). Strike a new deal and the review page will read ₹1,800 off / **₹26,196** (§3.7) — the same arithmetic walked live on the QA listing in §4.1 |
 | The notification popup on the client's phone | Client | Not reproduced; the silent-failure paths are closed and the state is reportable |
-| The Android app changes in this document | Delivered | **Build 92** (`aajoo-homes-1.0.0-build92-release.apk`, sha256 `BACEE393…594F`), driven on the emulator against the live backend (§9.3). Builds 89–91 are withdrawn — each carried a defect found the same hour |
+| The Android app changes in this document | Delivered | **Build 94** (`aajoo-homes-1.0.0-build94-release.apk`, sha256 `54C30FC9…CD933`) carries everything here including §3.7; driven on the emulator against the live backend. Builds 89–93 are withdrawn — 92 and 93 still add the cleaning fee to the price they send (the server charges without it) |
 | The host side of a weekly negotiation on a phone | Us + tester | Covered by tests; not photographed |
 | AWS activation | Client | Unchanged: an unverified card on the account |
 

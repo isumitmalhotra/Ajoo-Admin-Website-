@@ -1,5 +1,7 @@
 # Negotiating a Week or a Month — How It Works Now
 
+> **Postscript, 15 September evening.** After this document was written the client decided that the **cleaning fee is stated, not charged**: the listing says what the host charges for cleaning (under Things to know and under every total), and a guest who wants it arranges and pays it with the host directly. The negotiation rule below is unchanged — the deal is still a percentage of the room and the fees still ride through undiscounted — but the cleaning fee is no longer one of those fees. Where a figure in this document includes cleaning (₹18,898.95, ₹74,025, ₹1,58,025, the ₹500 lines), read it without: the QA Sunrise Villa week under the ₹17,500 deal is now ₹17,499 + 5% = **₹18,373.95**, the month ₹73,500, the Gurgaon month ₹1,57,500. The photographs show the screens as they were that morning; the same screens now carry the sentence *"The host charges ₹500 for cleaning if you ask for it — arranged and paid directly with them, not included in this total"* under the total instead of a cleaning line.
+
 ## 1. What changed, and why
 
 On 15 September the client looked at the Send an Offer dialog on a seven-night stay and asked why it wanted a price **per night**:
@@ -63,7 +65,7 @@ An accepted deal is a **personal, date-locked coupon**, good until midnight toni
 From there the price is shown once, the same way, on every screen — the listing's price card, the review page and the payment page — and the Razorpay sheet opens for the same rupees and paise.
 
 ![Web, live: the property card under a weekly deal](img/s15-deal-04-card-with-deal.png)
-*Web, live: the property card under a weekly deal — ₹19,000 − ₹1,501 + ₹500 cleaning, GST ₹899.95, total ₹18,898.95*
+*Web, live, 15 Sep morning: the property card under a weekly deal — ₹19,000 − ₹1,501 + ₹500 cleaning, GST ₹899.95, total ₹18,898.95. Since the evening the ₹500 is stated under the total, not in it: ₹17,499 + GST ₹874.95 = ₹18,373.95.*
 
 ![Web, live: the review page's price summary](img/s15-deal-05-review-summary.png)
 *Web, live: the review page — the same lines, the same total*
@@ -106,12 +108,12 @@ A month works exactly like a week, with the **calendar month** as the stay: 31 n
 
 Two real listings, quoted on 15 September for 15 September → 15 October (30 nights):
 
-| Listing | Nightly, one at a time | Monthly rate | Cleaning | GST | Total |
+| Listing | Nightly, one at a time | Monthly rate | Cleaning (stated, not charged) | GST | Total |
 |---|---|---|---|---|---|
-| QA Sunrise Villa | ₹97,200 | **₹70,000** | ₹500 | ₹3,525 (5%) | ₹74,025 |
-| Cottage at Gurgaon | ₹2,26,000 | **₹1,50,000** | ₹500 | ₹7,525 (5%) | ₹1,58,025 |
+| QA Sunrise Villa | ₹97,200 | **₹70,000** | ₹500 | ₹3,500 (5%) | ₹73,500 |
+| Cottage at Gurgaon | ₹2,26,000 | **₹1,50,000** | ₹500 | ₹7,500 (5%) | ₹1,57,500 |
 
-On either, the dialog reads *Your offer for the 30 nights (₹)* and *Listed at ₹70,000 for 30 nights — the host's monthly rate (≈ ₹2,333 / night)*. An offer of ₹65,000 is a 7.15% deal; the guest pays 65,000 + 500 cleaning + GST on the sum, and every night's share stays under ₹7,500, so 5%.
+On either, the dialog reads *Your offer for the 30 nights (₹)* and *Listed at ₹70,000 for 30 nights — the host's monthly rate (≈ ₹2,333 / night)*. An offer of ₹65,000 is a 7.15% deal; the guest pays 65,000 + GST, and every night's share stays under ₹7,500, so 5% — ₹68,250, with the ₹500 cleaning stated under it for the guest to arrange with the host if wanted.
 
 ## 5. Underneath — what is stored, and how the price is decided
 
@@ -143,7 +145,7 @@ When a deal is struck, the server mints a **percentage coupon** against the stay
 
 > QA Sunrise Villa, 7 nights, weekly rate ₹19,000, agreed ₹17,500 → 1 − 17,500 ÷ 19,000 = 7.894…% → stored **7.9%** (rounded *up* to two decimals, so the guest is never billed above the agreed price).
 
-At checkout the coupon is applied to the **room only** — never to the cleaning fee, the extra-guest charge or the pet fee. Then GST is worked out **per night on what is actually charged**: the payable amount is split across the nights in proportion to their list rates, each night's share under ₹7,500 is taxed at 5%, ₹7,500 and above at 18%, and the tax is rounded once. A deal can move a night across the ₹7,500 line — on the Gurugram cottage the Sunday's share was ₹7,726 at list (18%) and ₹7,394 after the 4.34% deal (5%) — and the label says which bands were used rather than printing a blended average as if it were a rate.
+At checkout the coupon is applied to the **room only** — never to the extra-guest charge or the pet fee (and the cleaning fee, since the evening of 15 September, is stated rather than charged, so it is in no sum at all). Then GST is worked out **per night on what is actually charged**: the payable amount is split across the nights in proportion to their list rates, each night's share under ₹7,500 is taxed at 5%, ₹7,500 and above at 18%, and the tax is rounded once. A deal can move a night across the ₹7,500 line — on the Gurugram cottage the Sunday's share is ₹7,642 at list (18%) and ₹7,310 after the 4.34% deal (5%) — and the label says which bands were used rather than printing a blended average as if it were a rate.
 
 The booking record then carries the price the client can reconcile: `book_price` (room after the deal, plus fees), `book_discount_amt` (the deal), `book_tax` (GST), `book_total_amt` (what Razorpay collects).
 

@@ -15,7 +15,9 @@
 > screens, because a coupon was a percentage of three different things — §8a29, a
 > week negotiated as a total instead of seven per-night sevenths, and §8a30, the
 > web wizard that had been switching same-day bookings (and with them negotiation)
-> off for every host who never answered the question.
+> off for every host who never answered the question; and §8a31, the client's
+> answer to §1.14 — the cleaning fee is **stated, not charged** — applied as one
+> switch across the quote, the booking clamp and both clients the same afternoon.
 > §8a24 and §2.8 carry **AWS Days 1–5** — the whole platform as Terraform, a
 > deploy pipeline that holds no AWS key at all, and the cutover runbook. None of
 > it is applied — blocked on an unverified card on the AWS account, not on us.
@@ -25,13 +27,14 @@
 > **Repos:** FE `D:/Projects/aajao-frontend-vercel` (React/Vite → Vercel) ·
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
-> Tester build in circulation: **93 (1.0.0+93)**, `aajoo-homes-1.0.0-build93-release.apk` at repo root
-> (2026-09-15 16:05, sha256 `1302A3C9…CF783`, versionCode 93, 95.8 MB), driven on the emulator against
-> the live backend, including at a 720-px Moto-class width (§8a30). Builds 88–92 are withdrawn: 88/89
-> lacked the pricing fixes, 90 and 91 each carried a defect the emulator found the same hour, 92 lacked
-> the afternoon's three fixes. Everything before 87 was withdrawn earlier.
+> Tester build in circulation: **94 (1.0.0+94)**, `aajoo-homes-1.0.0-build94-release.apk` at repo root
+> (2026-09-15 16:53, sha256 `54C30FC9…CD933`, versionCode 94, 95.8 MB), driven on the emulator against
+> the live backend (§8a31). Builds 88–93 are withdrawn: 88/89 lacked the pricing fixes, 90 and 91 each
+> carried a defect the emulator found the same hour, 92 lacked the afternoon's three fixes, and **93
+> still charges the cleaning fee** — the server recognises what it sends and charges without the fee,
+> so a guest on 93 pays less than its screen says, never more. Everything before 87 was withdrawn earlier.
 > Read back with `python aajoo_app_2026/tool/verify_release_apk.py <apk> https://aajaodev.onrender.com
-> --allow-test-payments --expect-version=1.0.0+93`: the endpoint it was given is in it, no other
+> --allow-test-payments --expect-version=1.0.0+94`: the endpoint it was given is in it, no other
 > `*.onrender.com` host is, no developer path, no plain-http endpoint, and it carries its own
 > version string. Points at `aajaodev.onrender.com` with the sandbox Razorpay key — the platform
 > is still in test mode, so a QA build is the only honest one.
@@ -96,7 +99,7 @@ money and is not. The second gates every honest SEO number on the site.
 | ~~1.10~~ | ~~**Admin approval → public listing, end to end**~~ **DONE 2026-09-11** | 29302 "QA Sunrise Villa" filed from the app (all five steps, map pin at Christ Church Kasauli, 10 tagged photos with ALT text, ownership PDF, Moderate policy, approval required, weekend/weekly/monthly rates, pets, 15:00 check-in) → Submitted tab → Mark all checked → Approve & publish → live at `/property/qa-sunrise-villa-solan-himachal-pradesh` with map pin, gallery, rules, nearby, policy ladder, negotiation, `psb_reviewed_by` recorded. Quote engine: Fri ₹3,600 + Sat ₹3,800, 10% advance discount, ₹500 cleaning, 5% GST; extra guests ₹400 × 2 × 2 nights once the app could say who is included. Found and fixed on the way: the document-upload Submit deadlock (web + app), the self check-in method erased on re-save (app), the extra-guest section missing (app), "1800 sq_ft" / "Pet Area 1" on the public page (backend). **The listing is live test content on production — delete it when the client is done with it.** | driven 2026-09-11, builds 66–68 |
 | **1.13** | **Two one-off data repairs — run them** (my sandbox refuses production writes) | Both dry-run by default and print what they will touch. In PowerShell: `cd D:\Projects\aajaoBackend-render; node scripts/cleanupImageSeo_2026-09-11.js --apply` — deletes **18** `image_seo` rows whose photograph no longer exists and resets **5** rows that pre-date their photograph (media 72–75 on 29303 carried a Dharamsala cottage's ALT text; media 67 on 29302 "Wood-panelled ceiling…"). Then `node scripts/maskPropertyBankNumbers_2026-09-11.js --apply` — masks the **2** plaintext account numbers `property_bank_details` was holding (29294, 29303). Why they exist: §8a15. | dry runs printed 2026-09-11 |
 | **1.15** | **Run the same-day repair** (my sandbox refuses production writes) | `cd D:\Projects\aajaoBackend-render; node scripts/repairSameDay_2026-09-15.js` prints the five test listings the web wizard silently switched same-day OFF on (29292, 29294, 29295, 29306, 29310 — negotiation on, no host chose it); `--apply` puts them back to blank = allowed. Until it runs, none of the five can be negotiated on — offers are only for stays starting today — which is the "renter cannot select today… cannot negotiate at all" the client called major. Alternatively the host flips "Accept same-day bookings" to Yes on each; the wizard now warns what No costs. | dry run printed 2026-09-15; §8a30 |
-| **1.14** | **Is the cleaning fee CHARGED, or only STATED?** (asked 2026-09-14) | The client's note with the pricing screenshots: *"cleaning and all is on demand right so we don't have to charge that fee, we just can show in the details section that host charge this if you needed it."* That reverses **C18** of the property-form spec (`PROPERTY_FORM_SPEC_V2_TASKLIST.md`, done 10 Sep), which asked for the fee **with a frequency** — per stay / per night — and it has been quoted, charged, taxed and paid to the host on every booking since. The same note also says the stay *"should be 27376"*, and ₹27,376 is the figure **with** the ₹1,000 cleaning fee in it (₹23,200 × 1.18); without the fee it is ₹26,196. So the message asks for two different things, and the code does what the spec says until told otherwise. **If display-only is the decision:** it is one switch — the quote, the clamp and both clients stop adding `cleaningFee`, and the property page states it the way the security deposit already is ("collected directly by the host, not included in this total"). Also decide what happens to the frequency field, which then means nothing. | client note 2026-09-14; `PROPERTY_FORM_SPEC_V2_TASKLIST.md` C18 |
+| ~~1.14~~ | ~~**Is the cleaning fee CHARGED, or only STATED?**~~ **ANSWERED 2026-09-15 — stated.** | Client: *"it will only be stated in Things to know and all; if the renter requested it, it can be availed at that price and payments will be taken directly by the host."* Applied the same afternoon as the one switch this row described — quote, pricer, booking clamp, both clients — with the frequency field kept as an optional courtesy ("₹500 per night") rather than a billing rule. **§8a31.** The ₹27,376 in the 14 Sep note is superseded: that stay is now ₹26,196 with the ₹1,000 said under the total. | §8a31 |
 | **1.8** | **Where the platform runs after UAT** | `Deployment_Options_2026-09-05.docx` compares staying on Render + Vercel with AWS, Azure, GCP, DigitalOcean and a VPS, with indicative costs. Recommendation: stay through UAT (Render Starter, $7/mo), then **DigitalOcean Bangalore** (~$45–75/mo) as the first managed home in India; hyperscaler only with an owner or credits; VPS only with a named operator. Needs the client's answers to §8 of that document: expected traffic, budget, who operates, existing cloud agreements. | doc |
 
 ---
@@ -160,7 +163,7 @@ Functional scope is delivered; these are the contractual artifacts. All still op
 | **4.3** | **FMS — Functional Specification** | |
 | **4.4** | **HMS — Functional Specification** | |
 | **4.5** | **Security & Compliance doc + RBAC matrix** | The RBAC itself exists (`config/adminRoles.js`, incl. `SEO_MANAGER`); the document does not. |
-| **4.6** | **Test suite to contract standard** | **141 backend test files (1,014 assertions) pass** on `npm test`, **463 app tests** on `flutter test` and **43 web rule files (258 assertions)** on `for f in tests/*.test.mjs; do node $f; done` (counts from 2026-09-15; there is no `test:rules` script — the earlier wording here named one that does not exist). A 37-case edge sweep of the pricing and negotiation helpers is in `report-2026-09-15/` (§8a28–29) but is not a permanent suite. The contract asks for >80% measured coverage, 200+ integration tests, plus load and OWASP reports. No coverage tooling is wired. |
+| **4.6** | **Test suite to contract standard** | **143 backend test files pass** on `npm test`, **472 app tests** on `flutter test` and **43 web rule files** on `for f in tests/*.test.mjs; do node $f; done` (counts from 2026-09-15 evening; there is no `test:rules` script — the earlier wording here named one that does not exist). A 37-case edge sweep of the pricing and negotiation helpers is in `report-2026-09-15/` (§8a28–29) but is not a permanent suite. The contract asks for >80% measured coverage, 200+ integration tests, plus load and OWASP reports. No coverage tooling is wired. |
 | **4.7** | **Deployment guide + operational runbook + KT docs** | `DEPLOY_RUNBOOK.md` and the handoffs exist; `Deployment_Options_2026-09-05.docx` (05-09) covers requirements, sizing, tools, providers, cost and a migration plan. Still to formalise: the runbook for whichever host is chosen (§1.8) and the KT pack. |
 | **4.8** | **UAT test cases + sign-off package** | **Manuals delivered 2026-09-05** — web (81 cases, 8 modules) and Android (55 cases, 6 modules), each with environment, accounts, procedure, defect template and sign-off table. Execution and sign-off are the client's; **an internal dry run of both manuals is recommended first** — see §6 for the cases that have only code/test-level verification so far. |
 
@@ -208,6 +211,7 @@ Nothing here is known to be defective. Each is a path nobody has exercised.
 - **The deal price on the client's own 29310 stay (§8a28).** The deal path itself IS now proven live — a real weekly deal on 29302 walked from the dialog to the payment page on 2026-09-15 with card, review and payment agreeing to the paise (§8a29). What remains unphotographed is the client's exact 29310 case: its coupon `DEAL29310179161` is spent (B476130) and the listing's next free night is later. The same arithmetic gives ₹1,800 off / ₹27,376 there; the Razorpay sheet itself was not opened. The app's chat page handing over to the listing is tested, not driven.
 - **For the tester, on build 16** (each deploys cleanly and is covered by tests, but needs a signed-in host/guest on a device): #19's merged notification feed matches the website for the same host; the guest count survives "Move to Book at Agreed Price" on a *new* negotiation; airplane mode on host Notifications, guest My Negotiations and host Profile → properties shows "Couldn't load · Try again" rather than an empty state; #13's dropdown focus jump (fixed from the code, never reproduced on the emulator).
 - ~~**The app's GUEST side of the negotiation rebuild, on a device.**~~ **Driven 2026-09-15 on build 92:** the deal banner opened the listing with the deal, the offer sheet, the counter, the accept and My Negotiations were all walked (§8a29). What is still unphotographed on a device is the HOST side of a weekly negotiation and the chat page's hand-over to the listing.
+- **The app's header total under the loading overlay (seen 2026-09-15, build 94).** Opening 29309 from the deal banner, the "₹… total · incl. taxes" line under the nightly price read **₹49,217.07** for about a second — under the dimmed loading overlay — before settling on the server's ₹45,199.35. The interim is the page's local estimate (7 × ₹7,000 flat, minus the 4.34% deal, plus 5%): no weekly rate, no weekend nights, no per-night banding. Nothing can be booked at it and it is gone before the overlay lifts, but it is a wrong number on screen. The website hides the figure behind "Indicative total" until the quote lands; the app should not print one at all until then.
 - **`REQUIRE_IMAGE_ALT`** — whether it has been set on Render is not visible from outside (see §2.3).
 - **UAT cases with code/test-level verification only (2026-09-05).** Most manual cases were walked live during the 1 Sep sweep and this week's fixes, but these have not been driven end-to-end on production or a device: web **W-BOOK-04** (cancellation card + acknowledgement on Booking review — deployed, not exercised in a real checkout), **W-ACC-03** (cancel quote from the policy snapshot), **W-BOOK-11** (double-booking race), **W-NEG-02** (guest count through an accepted counter); Android **build 17 has not been run on a device** — A-BOOK-02 (reserve-sheet card), A-EXP-04 (policy tab from the server), A-X-01 (airplane-mode states), A-ACC-07 (push), A-ONB-04 (Google sign-in), A-ACC-12 (chat after the handoff-token change). Everything else in the manuals is either verified live or a known limitation named in the manuals.
 
@@ -264,6 +268,79 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a31. Closed 2026-09-15 (evening) — the cleaning fee is stated, not charged
+
+**The decision (§1.14).** Asked on the 14th whether the cleaning fee is
+charged or only stated, the client answered on the 15th: *"it will only be
+stated in Things to know and all; if the renter requested it, it can be
+availed at that price and payments will be taken directly by the host."*
+That reverses **C18** of the 10 September spec, under which the fee had
+been quoted, clamped, taxed and paid to the host for five days
+(2026-09-10 to 09-15). The frequency field "goes with it": kept, optional,
+as a courtesy to the guest ("₹500 per night") rather than a billing rule.
+
+**What changed — one switch, four places.**
+
+- **Server** (BE `2034ca9`). `/pricing/quote` and the shared pricer still
+  carry `cleaningFee` and `cleaningFeeType` so every screen can say what
+  the host charges, and now say `cleaningFeeCharged: false`; the figure
+  has left `total`, `taxes` and `grandTotal`. Booking create expects
+  room + party + pets. A client built while the fee WAS charged — app
+  builds 88–93, the website before this deploy — sends exactly that plus
+  the cleaning fee; that figure is recognised and **charged at the price
+  without it**, so a guest on an old build pays less than its screen
+  showed, never more (`sentWithCleaning` replaces `sentWithoutCleaning`,
+  which would now have accepted a price ₹500 *under* the truth). The
+  wizard no longer refuses a fee without a frequency.
+- **Website** (web `d96b312`). `summarize()` keeps the fee out of
+  `chargeable`; the property card, the review and the payment page drop
+  the "Cleaning fee" line and say, under the total and beside the deposit
+  note, **"The host charges ₹1,000 for cleaning if you ask for it —
+  arranged and paid directly with them, not included in this total."**
+  One sentence, built once (`lib/cleaningFee.ts`), so three pages cannot
+  drift into three phrasings. Things to know → House rules carries
+  **"Cleaning available at ₹1,000 per stay, paid to the host"** from the
+  listing, before any dates are picked — the client's words for where it
+  lives. The wizard's frequency select reads "Applies · Per stay
+  (default)" and its hint quotes what the guest will read.
+- **App** (build **94**, app `94bd68c`). `priceStay()` keeps the fee out
+  of the price it sends; the booking sheet drops the line and states the
+  fee under the total in the website's sentence, word for word
+  (`utils/cleaning_fee.dart`); Things to know carries the same line as the
+  web; the wizard's help says the fee is stated, not added to a booking.
+
+**Verified live.** `/pricing/quote` for 29310 (₹12,000 a night, ₹1,000
+cleaning), two nights: `subtotal 24000 · cleaningFee 1000 ·
+cleaningFeeCharged false · total 24000 · taxes 4320 · grandTotal 28320` —
+not the 29,500 of the day before. 29302 (₹500 per stay): 6,660 + 333 =
+**6,993**, not 7,518. Website, 29310 for 17–19 Sep as the signed-in
+renter: card ₹24,000 − ₹2,400 advance discount, GST ₹3,888, **Total
+₹25,488**, the deposit note, then the cleaning sentence; Things to know
+carries the line; Book Now → review says the same ₹25,488 with the same
+sentence under it (`report-2026-09-15/img/s31-*.png`). App, build 94 on
+the emulator, 29309 opened from the accepted-deal banner: Base ₹45,000,
+deal −₹1,953, GST 5% ₹2,152.35, **Total ₹45,199.35** — build 93's
+₹45,724.35 less the ₹500 and its 5% — no cleaning line, the sentence under
+the total (`report-2026-09-15/app/build94-29309-cleaning-stated.png`).
+
+**Pinned.** BE `theCleaningFeeIsStatedNotCharged.test.js` (the 28,320,
+the payload, the clamp's shape, the old-client escape, no payout code
+touches cleaning; six of its eight fail on the previous commit),
+`seasonalRatesAndFees` C18 pins inverted, `aCouponIsOnTheRoom` postscript
+— **143/143 files**. Web `theCleaningFeeIsStatedNotCharged.test.mjs`
+(was `cleaningFeeReachesCheckout`, inverted: 6,993; the sentence; every
+page states and none charges), `aCouponIsOnTheRoom` (26,196),
+`answeredFieldsAreNotRefused` — **43/43**, `tsc -b` and the build clean.
+App `the_cleaning_fee_is_stated_not_charged_test.dart`,
+`booking_pricing_test` (29302 → 6,993; the emulator case re-derived
+without the fee: 48,243.40 with the Sunday still at 18%),
+`a_coupon_is_on_the_room_test` (26,196) — **472 pass**, analyzer clean.
+
+**Not touched.** Bookings taken between 10 and 15 September carry the fee
+in `book_price`; all are test records. A modification of one of them
+would now be priced without the fee and the difference refunded — the
+correct outcome, noted so it does not read as a bug when it happens.
 
 ### 8a30. Closed 2026-09-15 (afternoon) — four more from the client, one of them the reason negotiation died
 
@@ -505,7 +582,8 @@ signed-in guest — §6.
 The client's note also says cleaning is *"on demand"* and should be shown,
 not charged. That reverses **C18** (spec, 10 Sep) and contradicts the
 ₹27,376 in the same message, which has the fee in it. Recorded as a
-decision, **§1.14**, not made silently.
+decision, **§1.14**, not made silently — **and answered the next
+afternoon: stated, not charged. §8a31.** The same stay is ₹26,196 now.
 
 #### Pinned
 
