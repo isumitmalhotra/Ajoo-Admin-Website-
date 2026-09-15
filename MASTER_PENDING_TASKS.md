@@ -19,7 +19,9 @@
 > answer to §1.14 — the cleaning fee is **stated, not charged** — applied as one
 > switch across the quote, the booking clamp and both clients the same afternoon.
 > The evening also answered "will Razorpay Payroll work for payouts?" in a document
-> of its own (§2.2) and surfaced §2.2a — 194-O TDS, which no rail does for us.
+> of its own (§2.2) and surfaced §2.2a — 194-O TDS, which no rail does for us; and
+> §8a32 brought the iOS project to parity with Android, compiling on GitHub's Mac
+> on every push, with the client's eight Apple-side actions in §1.16.
 > §8a24 and §2.8 carry **AWS Days 1–5** — the whole platform as Terraform, a
 > deploy pipeline that holds no AWS key at all, and the cutover runbook. None of
 > it is applied — blocked on an unverified card on the AWS account, not on us.
@@ -102,6 +104,7 @@ money and is not. The second gates every honest SEO number on the site.
 | **1.13** | **Two one-off data repairs — run them** (my sandbox refuses production writes) | Both dry-run by default and print what they will touch. In PowerShell: `cd D:\Projects\aajaoBackend-render; node scripts/cleanupImageSeo_2026-09-11.js --apply` — deletes **18** `image_seo` rows whose photograph no longer exists and resets **5** rows that pre-date their photograph (media 72–75 on 29303 carried a Dharamsala cottage's ALT text; media 67 on 29302 "Wood-panelled ceiling…"). Then `node scripts/maskPropertyBankNumbers_2026-09-11.js --apply` — masks the **2** plaintext account numbers `property_bank_details` was holding (29294, 29303). Why they exist: §8a15. | dry runs printed 2026-09-11 |
 | **1.15** | **Run the same-day repair** (my sandbox refuses production writes) | `cd D:\Projects\aajaoBackend-render; node scripts/repairSameDay_2026-09-15.js` prints the five test listings the web wizard silently switched same-day OFF on (29292, 29294, 29295, 29306, 29310 — negotiation on, no host chose it); `--apply` puts them back to blank = allowed. Until it runs, none of the five can be negotiated on — offers are only for stays starting today — which is the "renter cannot select today… cannot negotiate at all" the client called major. Alternatively the host flips "Accept same-day bookings" to Yes on each; the wizard now warns what No costs. | dry run printed 2026-09-15; §8a30 |
 | ~~1.14~~ | ~~**Is the cleaning fee CHARGED, or only STATED?**~~ **ANSWERED 2026-09-15 — stated.** | Client: *"it will only be stated in Things to know and all; if the renter requested it, it can be availed at that price and payments will be taken directly by the host."* Applied the same afternoon as the one switch this row described — quote, pricer, booking clamp, both clients — with the frequency field kept as an optional courtesy ("₹500 per night") rather than a billing rule. **§8a31.** The ₹27,376 in the 14 Sep note is superseded: that stay is now ₹26,196 with the ₹1,000 said under the total. | §8a31 |
+| **1.16** | **iOS — the eight things only the client's accounts can do** (asked 2026-09-15) | The iOS half of the app is at parity with Android in the repository and compiles on GitHub's Mac on every push (§8a32); nothing runs on an iPhone until the client's Apple side exists. In order: (1) enrol in the **Apple Developer Program** as the company (Organisation, needs a D-U-N-S number); (2) App ID `com.aajoo.aajoohomes` with **Push** on; (3) an **APNs key (.p8)** uploaded to Firebase → Cloud Messaging for the iOS app; (4) **`GoogleService-Info.plist`** for the iOS app from Firebase (carries the Google Sign-In client); (5) an **iOS-restricted Google Maps key** in the same Cloud project; (6) the **App Store Connect** app record + an internal **TestFlight** group with the tester's Apple ID; (7) an **App Store Connect API key** (App Manager); (8) a **distribution certificate + App Store provisioning profile**. Then the values go into the repository secrets named in `aajoo_app_2026/IOS_READINESS.md` §3 and the TestFlight job is run by hand. **Without (1) there is no iPhone build at all.** | `aajoo_app_2026/IOS_READINESS.md` |
 | **1.8** | **Where the platform runs after UAT** | `Deployment_Options_2026-09-05.docx` compares staying on Render + Vercel with AWS, Azure, GCP, DigitalOcean and a VPS, with indicative costs. Recommendation: stay through UAT (Render Starter, $7/mo), then **DigitalOcean Bangalore** (~$45–75/mo) as the first managed home in India; hyperscaler only with an owner or credits; VPS only with a named operator. Needs the client's answers to §8 of that document: expected traffic, budget, who operates, existing cloud agreements. | doc |
 
 ---
@@ -150,6 +153,8 @@ money and is not. The second gates every honest SEO number on the site.
 | ~~3.19~~ | ~~**Client feedback batch, 2026-09-12 evening**~~ **CLOSED** (build 85) | Three screenshot items and the OTP channel. (a) **Internet speed above everything** — "highlighted section should open under the internet section not on top": both renderers drew every scalar field in one block and every chip group in another, and disagreed about which came first, so a host was asked how fast their internet is four rows above the row where they say whether there is any. The SCHEMA names the group each question belongs beside now (`under` / `above`) and both platforms follow it; `above` exists because kitchen_type decides whether the kitchen group shows at all. Exposed two older app faults: `has_wifi` was never set there, so an app host could not state a speed **at all**, and the app never honoured a GROUP's `showIf`, so kitchen appliances showed to a host who had said "No Kitchen". (b) **"not able to select from the listing"** on the place autocomplete — Chrome reads a place-name box inside an address-heavy form as an address field and draws its SAVED ADDRESSES in a native dropdown exactly where ours is; the host was clicking Chrome's list. `autoComplete="off"` + a non-address `name` on all three place inputs that lacked it. (c) **OTP by email only** — reset codes never go by SMS now, and typing a mobile says where the code will go and that **sign-in with a mobile and password is unchanged**, which the client confirmed explicitly. The SMS transport is held, not removed: v2 is a provider and a DLT template. | web build + 37/37, app 387/387, backend 135/135. **Not driven on a device or in a browser:** the wizard needs a host login |
 | ~~3.21~~ | ~~**A host could put a DRAFT listing live**~~ **CLOSED 2026-09-12** | Reported with two screenshots: a listing badged Draft offered "Put live" in the host portal, and pressing it published it into public search with no photograph and **₹0/night**, never submitted, never seen by anyone at Aajoo. W5 closed this on the ADMIN side and left the host's own switch beside it checking ownership and nothing else. Same state machine now, with a refusal that says what to do next. The subtlety: `stateOf` reads being on the site as the strongest signal of approval, so a LEGACY listing (29,216 of them, tier never written) taken offline reads as DRAFT — a naive guard would lock its owner out, so the handler asks "with is_active forced on, would this read as approved?". **The app already had it right** (`if (adminCleared && !rejected)`); the website was the platform with the hole. **29308 has been taken off the site** (`scripts/takeListingOffline.js 29308 --apply`, dry-run first; `is_active` 1→0 and nothing else, so the host can still finish and submit it). | verified 09-12 — search near Bir now answers "no record found" and `/properties/29308` returns an empty payload; the deployed web bundle carries the new guard copy; test `aDraftCannotBePutLive` (9), source half checked against the pre-fix handler; 136/136. **The server guard itself is not exercised end to end** — that needs a host login |
 | ~~3.20~~ | ~~**"Nearby" comes back empty on a cold launch**~~ **CLOSED 2026-09-13** | **It was never the request — it was the ORDER.** `getCurrentLocation()` returns the LAST KNOWN position at once and fires `_refineLocation()` in the background; `fetchProperties` then searches at that last-known point. Two `getProperties()` calls are in flight on every cold start, and both ended by assigning straight into `properties` — so **whichever finished LAST won**, however old it was. The foreground search answers in ~2s with the right stays (the same answer curl gives); the background refine lands at a different fix, finds nothing, walks out to the planetary ring (**~92 seconds, measured**) and overwrites a correct screen with its own answer. From outside: a home that had stays and then did not, with no error and nothing in a release log because `appLog` is compiled out. Fixed with a **monotonic search token** — every search takes the number it started with and only the newest may write, checked before the ring walk, on each ring, and again before the assignment. That closes the CLASS: the same race existed between any two fetches, and paging the map produced it too. Plus **capped rings for a background refine** — the planetary ring is right for a search somebody is waiting on and wrong for one nobody asked for. **It did not need the debug build.** `mapService` stopped being `final` so a stub could make the slow call slow on purpose; the five new tests were run against the pre-fix controller first and **four of the five fail**, which is the fault reproduced deterministically. 429 app tests pass. | verified 09-13 — `test/the_slowest_search_does_not_win_test.dart`, run against the unfixed controller first |
+| **3.15** | **Sign in with Apple** — required for App Review, not for TestFlight | App Store Review Guideline 4.8: an app offering Google sign-in must offer a login that limits data collection and lets the user hide their email — Sign in with Apple. App: `sign_in_with_apple`, the button beside Google's, the Apple provider in Firebase Auth. Backend: verify Apple's identity token and create/link the account the way the Google path does (the Google-account lockout in the memory notes applies equally — role flags, unusable password). Client: enable the capability on the App ID. About a day once §1.16 (1)–(2) exist. | `IOS_READINESS.md` §4.1 |
+| **3.16** | **The iOS on-device drive** — every flow driven on the Android emulator this week, on an iPhone from TestFlight | The Android drives found five defects no test had (§8a29); iOS will have its own. The list is `IOS_READINESS.md` §4.2: sign-up (OTP, Google), DOB picker, search + map + the "near me" prompt, listing page + Things to know, the booking sheet with the deposit and cleaning statements, the deal banner, Send an Offer (night / week), the host side and the popup, Razorpay (card + the UPI intent list), pay-at-property, My Bookings, notifications (foreground / background / cold start), the wizard (library photos, document picker, map pin), profile photo, share/print, tap-to-dial, WhatsApp, sign-out and the keychain. Needs §1.16 first; then a tester with an iPhone, or a Mac for the Simulator (no push there). | — |
 | **3.14** | **Listing 29303 is carrying test weekend rates I added** | Put there on 09-12 to prove the dated-price work, because only 14 of the catalogue's listings have weekend rates at all. Harmless — it is a test listing — but it makes 29303 a bad control for anything else, and the next person to look at its pricing will not know why a weekend costs more. Either revert it or write it down on the listing. | code 09-12 — `nightlyRates` rows |
 | ~~3.15~~ | ~~**Build 81 has never left this machine**~~ **CLOSED 2026-09-12** | Named, copied to the repo root as `aajoo-homes-1.0.0-build81-release.apk` and read back with `verify_release_apk.py` (endpoint present, no other `*.onrender.com`, no developer path, no plain-http, carries `1.0.0+81`); `aapt2 dump badging` says versionCode **81**, versionName **1.0.0**, `com.aajoo.aajoohomes`. sha256 `4b25f5410285f206c366181dcdf29714a89c14a89b73d8b8be188871bb1c8424`. **The tester had been on 49 since 09-08**, so none of the 09-12 negotiation work had ever been on a phone. Still unproven on a device: the two guest surfaces behind the deal banner (§3.13, §6). | verified 09-12 — `verify_release_apk.py` exit 0, `aapt2 dump badging`, `sha256sum` |
 
@@ -271,6 +276,49 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a32. Closed 2026-09-15 (evening) — the iOS project, brought to parity with Android
+
+**The ask:** "start with the codebase and get it ready for iOS; it should
+work exactly like Android." **The finding:** `ios/` was the day-one
+Flutter template — the phone would have shown **"Rent Home"** with
+**Flutter's blue logo** and a blank launch screen; the deployment floor
+(iOS 12) was below what four plugins need; there was no usage string for
+location or photos (iOS refuses to prompt without one), no Maps key
+(blank tiles), no Google Sign-In callback (the Google sheet would never
+return), no push entitlement or background mode, no `LSApplicationQueries-
+Schemes` (tap-to-dial, WhatsApp, directions and Razorpay's UPI list all
+dead, the iOS twin of the Android `<queries>` trap), every
+`permission_handler` permission compiled out (requests answer "denied"
+without asking), no privacy manifest, and no build script, verifier or
+CI. None of the Dart needed changing except push. Full picture in
+`aajoo_app_2026/IOS_READINESS.md`.
+
+**Done (app `ae89661`, BE `1e54441`).** Info.plist (name, strings,
+schemes, background mode, export-compliance flag, and two **placeholders**
+only the client's accounts can fill — the iOS Maps key and the Google
+client — which `tool/verify_release_ipa.py` refuses); AppDelegate (Maps
+key → `GMSServices`, notification delegate); Podfile (`platform 14.0`,
+the permission flags); Xcode project (target 14.0, `aps-environment`
+entitlement, `PrivacyInfo.xcprivacy`); the 19 icons and 3 launch images
+generated from the Android sources; `NotificationService` registers with
+APNs and waits for its token before asking FCM (the Simulator has no APNs
+— push is simply off there, and the `token!` that used to throw inside the
+permission flow no longer does), and presents foreground pushes; the
+server's every push carries an `apns` payload (sound, content-available,
+priority 10 — pinned by `aPushReachesAnIphone`). `tool/build_ios.sh` and
+`tool/verify_release_ipa.py` are the macOS twins of the Android script
+and verifier. **`.github/workflows/ios-build.yml`** compiles the app
+unsigned on a `macos-15` runner on every push that touches it (free —
+the repo is public; no Apple account needed) and has a hand-run job that
+signs and uploads to TestFlight once the secrets in `IOS_READINESS.md`
+§3 exist, refusing with the names of any that are missing.
+
+**Not done, and why:** nothing can be *run* on an iPhone from here — no
+Mac, no Apple account. §1.16 is the client's list; §3.15 (Sign in with
+Apple, needed for App Review) and §3.16 (the on-device drive) follow it.
+One build number stays one artifact across platforms: iOS `1.0.0+N` is
+Android `1.0.0+N` from the same commit.
 
 ### 8a31. Closed 2026-09-15 (evening) — the cleaning fee is stated, not charged
 

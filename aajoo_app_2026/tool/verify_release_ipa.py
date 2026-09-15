@@ -42,23 +42,34 @@ HTTP_ALLOWED = (
 )
 
 
+def wanted(rel):
+    """The four files that say what a build IS: the app's own Info.plist, the
+    native Runner binary, the Dart AOT snapshot (App.framework/App — where
+    every --dart-define lands) and the provisioning profile. Not the forty
+    Info.plists of the bundled SDKs."""
+    if rel.endswith("App.framework/App"):
+        return True
+    # Inside an .ipa the app sits under Payload/<name>.app/; a Runner.app
+    # directory has no prefix. Either way the app root is where Runner lives.
+    parts = rel.split("/")
+    depth_ok = len(parts) <= 3 and not any(p.endswith((".framework", ".bundle", ".storyboardc")) for p in parts)
+    return depth_ok and parts[-1] in ("Runner", "Info.plist", "embedded.mobileprovision")
+
+
 def load(path):
     """{name: bytes} for the files worth scanning, however the build is packed."""
     blobs = {}
-    wanted = re.compile(r"(?:^|/)(?:Runner|App|Info\.plist|embedded\.mobileprovision)$")
     if os.path.isdir(path):
         for root, _dirs, files in os.walk(path):
             for f in files:
                 full = os.path.join(root, f)
                 rel = os.path.relpath(full, path).replace(os.sep, "/")
-                if wanted.search(rel) and "/Frameworks/" not in rel or rel.endswith("App.framework/App"):
+                if wanted(rel):
                     blobs[rel] = open(full, "rb").read()
         return blobs
     zf = zipfile.ZipFile(path)
     for name in zf.namelist():
-        if name.endswith("/"):
-            continue
-        if wanted.search(name) and ("/Frameworks/" not in name or name.endswith("App.framework/App")):
+        if not name.endswith("/") and wanted(name):
             blobs[name] = zf.read(name)
     return blobs
 
@@ -121,12 +132,25 @@ def main() -> int:
             for hit in {m.group(0) for m in re.finditer(pattern, data)}:
                 failures.append(f"{label} in {name}: {hit.decode('utf-8', 'replace')}")
 
+    # Plain http. Strict in the Dart snapshot and Info.plist, which is where
+    # OUR configuration lives. The native Runner binary statically links the
+    # Google, Firebase and Razorpay SDKs, whose own constants include a few
+    # http:// identifiers (www.google.com, example.invalid, "goto"); those are
+    # not endpoints this build talks to, so they are reported, not failed —
+    # unless one of them is an Aajoo host.
+    notes = []
     for name, data in blobs.items():
-        for m in re.finditer(rb"http://[a-z0-9.\-]{4,60}", data):
-            url = m.group(0)
-            if any(url.startswith(ok) for ok in HTTP_ALLOWED):
+        for m in {m.group(0) for m in re.finditer(rb"http://[a-z0-9.\-]{4,60}", data)}:
+            if any(m.startswith(ok) for ok in HTTP_ALLOWED):
                 continue
-            failures.append(f"plain http endpoint in {name}: {url.decode('utf-8', 'replace')}")
+            ours = b"aajoo" in m or b"onrender" in m
+            if name.endswith("/Runner") or name == "Runner":
+                if ours:
+                    failures.append(f"plain http Aajoo endpoint in native code: {m.decode('utf-8', 'replace')}")
+                else:
+                    notes.append(f"native SDK constant, not an endpoint: {m.decode('utf-8', 'replace')}")
+            else:
+                failures.append(f"plain http endpoint in {name}: {m.decode('utf-8', 'replace')}")
 
     if expected_api:
         host = expected_api.split(b"//", 1)[-1].rstrip(b"/")
@@ -147,7 +171,6 @@ def main() -> int:
         for f in sorted(set(failures)):
             print("  FAIL ", f)
         return 1
-    notes = []
     if allow_test_payments:
         notes.append("a sandbox payment key was permitted for this build")
     if allow_placeholders:
