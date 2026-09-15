@@ -12,8 +12,10 @@
 > §8a27 closes eight client reports in one night — including a money figure that
 > disagreed with itself between two screens, and one regression of my own;
 > **updated 2026-09-15** with §8a28 — the same stay priced three ways on three
-> screens, because a coupon was a percentage of three different things — and
-> §8a29, a week negotiated as a total instead of seven per-night sevenths.
+> screens, because a coupon was a percentage of three different things — §8a29, a
+> week negotiated as a total instead of seven per-night sevenths, and §8a30, the
+> web wizard that had been switching same-day bookings (and with them negotiation)
+> off for every host who never answered the question.
 > §8a24 and §2.8 carry **AWS Days 1–5** — the whole platform as Terraform, a
 > deploy pipeline that holds no AWS key at all, and the cutover runbook. None of
 > it is applied — blocked on an unverified card on the AWS account, not on us.
@@ -23,13 +25,13 @@
 > **Repos:** FE `D:/Projects/aajao-frontend-vercel` (React/Vite → Vercel) ·
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
-> Tester build in circulation: **92 (1.0.0+92)**, `aajoo-homes-1.0.0-build92-release.apk` at repo root
-> (2026-09-15 08:05, sha256 `BACEE393…594F`, versionCode 92, 95.8 MB), **driven on the emulator against
-> the live backend before hand-over** (§8a29). Builds 88–91 are withdrawn: 88/89 lacked the pricing
-> fixes, 90 and 91 each carried a defect the emulator found the same hour. Everything before 87 was
-> withdrawn earlier.
+> Tester build in circulation: **93 (1.0.0+93)**, `aajoo-homes-1.0.0-build93-release.apk` at repo root
+> (2026-09-15 16:05, sha256 `1302A3C9…CF783`, versionCode 93, 95.8 MB), driven on the emulator against
+> the live backend, including at a 720-px Moto-class width (§8a30). Builds 88–92 are withdrawn: 88/89
+> lacked the pricing fixes, 90 and 91 each carried a defect the emulator found the same hour, 92 lacked
+> the afternoon's three fixes. Everything before 87 was withdrawn earlier.
 > Read back with `python aajoo_app_2026/tool/verify_release_apk.py <apk> https://aajaodev.onrender.com
-> --allow-test-payments --expect-version=1.0.0+92`: the endpoint it was given is in it, no other
+> --allow-test-payments --expect-version=1.0.0+93`: the endpoint it was given is in it, no other
 > `*.onrender.com` host is, no developer path, no plain-http endpoint, and it carries its own
 > version string. Points at `aajaodev.onrender.com` with the sandbox Razorpay key — the platform
 > is still in test mode, so a QA build is the only honest one.
@@ -41,7 +43,9 @@
 > rows 20–26 came back re-reported. It is now injected from pubspec and asserted in the APK.)
 > Documents delivered 2026-09-05 (repo root): `UAT_WebApp_2026-09-05.docx` (81 cases) · `UAT_AndroidApp_2026-09-05.docx` (55 cases) ·
 > `Delivery_Delay_Analysis_2026-09-05.docx` · `Deployment_Options_2026-09-05.docx`.
-> Document delivered 2026-09-15: `AAJOO_CLIENT_REPORTS_RESPONSE_2026-09-15.pdf` (19 pages) — every
+> Documents delivered 2026-09-15: `AAJOO_NEGOTIATION_WEEKLY_MONTHLY_2026-09-15.pdf` (17 pages) — how a
+> week or a month is negotiated after §8a29, guest and host flow with live numbers, and what is stored
+> and charged underneath; and `AAJOO_CLIENT_REPORTS_RESPONSE_2026-09-15.pdf` (28 pages) — every
 > client item from 13–15 September (§8a25–§8a29), the pricing rule in one place, a real weekly deal walked
 > to the payment page on the live site, and the full test + edge-case run. Source in `report-2026-09-15/`.
 > Documents delivered 2026-09-12: `negotiation-journey/Aajoo-Negotiation-User-Journey.pdf` (32 pages,
@@ -62,7 +66,7 @@ work; sorting by owner is what makes that visible.
 
 | Section | Owner | Open |
 |---|---|---|
-| [1. Client decisions](#1-blocked-on-client-decisions) | Client | 8 |
+| [1. Client decisions](#1-blocked-on-client-decisions) | Client | 9 |
 | [2. Ops / Render access](#2-blocked-on-ops--render-access) | Whoever holds Render + GCP | 7 |
 | [3. Engineering](#3-engineering--genuinely-open) | Us | 11 |
 | [4. Contract deliverables](#4-contract-deliverables-) | Us | 8 |
@@ -91,6 +95,7 @@ money and is not. The second gates every honest SEO number on the site.
 | **1.11** | **The category catalogue needs an hour of an admin's time** | Three things, all data rather than code, and all now MORE visible because Browse by category reads the catalogue live (§8a20) instead of nine hardcoded tiles. (a) **Category 1 is titled "Villas -1"** — every villa on the public site reads "Villas -1", a test rename left in `tbl_categories`; the slug `villas-1` is fine to keep. (b) **Nine of the eleven categories have no image** — the rail falls back to a rotation of stock photographs, so two categories look photographed and nine look generic; upload one icon each at Admin › Catalogue › Categories › pencil › Replace image. `Resort` carries a line-drawing icon that looks wrong beside a photograph. (c) **The CMS heading still reads "browser by caterogy"** — Admin › CMS › Homepage Content › Categories heading. All four are one click each; my sandbox refused the category edit. | admin Categories + CMS screens, 2026-09-12 |
 | ~~1.10~~ | ~~**Admin approval → public listing, end to end**~~ **DONE 2026-09-11** | 29302 "QA Sunrise Villa" filed from the app (all five steps, map pin at Christ Church Kasauli, 10 tagged photos with ALT text, ownership PDF, Moderate policy, approval required, weekend/weekly/monthly rates, pets, 15:00 check-in) → Submitted tab → Mark all checked → Approve & publish → live at `/property/qa-sunrise-villa-solan-himachal-pradesh` with map pin, gallery, rules, nearby, policy ladder, negotiation, `psb_reviewed_by` recorded. Quote engine: Fri ₹3,600 + Sat ₹3,800, 10% advance discount, ₹500 cleaning, 5% GST; extra guests ₹400 × 2 × 2 nights once the app could say who is included. Found and fixed on the way: the document-upload Submit deadlock (web + app), the self check-in method erased on re-save (app), the extra-guest section missing (app), "1800 sq_ft" / "Pet Area 1" on the public page (backend). **The listing is live test content on production — delete it when the client is done with it.** | driven 2026-09-11, builds 66–68 |
 | **1.13** | **Two one-off data repairs — run them** (my sandbox refuses production writes) | Both dry-run by default and print what they will touch. In PowerShell: `cd D:\Projects\aajaoBackend-render; node scripts/cleanupImageSeo_2026-09-11.js --apply` — deletes **18** `image_seo` rows whose photograph no longer exists and resets **5** rows that pre-date their photograph (media 72–75 on 29303 carried a Dharamsala cottage's ALT text; media 67 on 29302 "Wood-panelled ceiling…"). Then `node scripts/maskPropertyBankNumbers_2026-09-11.js --apply` — masks the **2** plaintext account numbers `property_bank_details` was holding (29294, 29303). Why they exist: §8a15. | dry runs printed 2026-09-11 |
+| **1.15** | **Run the same-day repair** (my sandbox refuses production writes) | `cd D:\ProjectsajaoBackend-render; node scripts/repairSameDay_2026-09-15.js` prints the five test listings the web wizard silently switched same-day OFF on (29292, 29294, 29295, 29306, 29310 — negotiation on, no host chose it); `--apply` puts them back to blank = allowed. Until it runs, none of the five can be negotiated on — offers are only for stays starting today — which is the "renter cannot select today… cannot negotiate at all" the client called major. Alternatively the host flips "Accept same-day bookings" to Yes on each; the wizard now warns what No costs. | dry run printed 2026-09-15; §8a30 |
 | **1.14** | **Is the cleaning fee CHARGED, or only STATED?** (asked 2026-09-14) | The client's note with the pricing screenshots: *"cleaning and all is on demand right so we don't have to charge that fee, we just can show in the details section that host charge this if you needed it."* That reverses **C18** of the property-form spec (`PROPERTY_FORM_SPEC_V2_TASKLIST.md`, done 10 Sep), which asked for the fee **with a frequency** — per stay / per night — and it has been quoted, charged, taxed and paid to the host on every booking since. The same note also says the stay *"should be 27376"*, and ₹27,376 is the figure **with** the ₹1,000 cleaning fee in it (₹23,200 × 1.18); without the fee it is ₹26,196. So the message asks for two different things, and the code does what the spec says until told otherwise. **If display-only is the decision:** it is one switch — the quote, the clamp and both clients stop adding `cleaningFee`, and the property page states it the way the security deposit already is ("collected directly by the host, not included in this total"). Also decide what happens to the frequency field, which then means nothing. | client note 2026-09-14; `PROPERTY_FORM_SPEC_V2_TASKLIST.md` C18 |
 | **1.8** | **Where the platform runs after UAT** | `Deployment_Options_2026-09-05.docx` compares staying on Render + Vercel with AWS, Azure, GCP, DigitalOcean and a VPS, with indicative costs. Recommendation: stay through UAT (Render Starter, $7/mo), then **DigitalOcean Bangalore** (~$45–75/mo) as the first managed home in India; hyperscaler only with an owner or credits; VPS only with a named operator. Needs the client's answers to §8 of that document: expected traffic, budget, who operates, existing cloud agreements. | doc |
 
@@ -259,6 +264,50 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a30. Closed 2026-09-15 (afternoon) — four more from the client, one of them the reason negotiation died
+
+**"On app, renter cannot select today… so cannot negotiate at all. It is
+major."** True, and the cause was on the website. Price offers are only
+taken on a stay that STARTS TODAY (the pricing architecture's real-time
+rule), so a listing with same-day bookings off cannot be negotiated on.
+The web wizard loaded `pbr_same_day_booking` with `=== 1`, so a listing
+whose host had never been asked (NULL — which the server reads as
+allowed) loaded as **"No"**, and the next Save on ANY step wrote that No
+to the row. The client edited 29310 on the web on 14 September for the
+rooms work; from the 15th the app said "This host does not take same-day
+bookings" and the picker said "Out of range" for today. **Five** test
+listings carry a 0 with negotiation on; none of their hosts chose it.
+Fixed at the source (web loads `!== 0`, a new listing defaults to Yes,
+both wizards warn a host who turns same-day off with negotiation on), and
+`scripts/repairSameDay_2026-09-15.js` puts the five back — **for the
+client to run, §1.15** (production writes are refused from here). Pinned
+in `crossFieldWarnings`.
+
+**"Tester chose the DOB from 2001 and it failed: you need to be 18."** The
+app sends DD/MM/YYYY, the server's age check did `new Date(value)`, and
+JavaScript reads "25/06/2001" as month 25 — Invalid Date — so every app
+signup with a birthday after the 12th of the month was refused, and one
+before the 12th had its day and month swapped. The website never hit it
+(it sends YYYY-MM-DD). `parseDob()` reads the three spellings the clients
+use explicitly and refuses 31 February instead of rolling it into March.
+Pinned in `aBirthdayIsReadTheWayItWasWritten` (BE `10d755c`).
+
+**"Not responsive in Moto"** — a photograph of Property details with
+"Local Experience" running one letter per line. The value Text was
+unconstrained, so a long one took the row and the Expanded label was
+left a few pixels wide — the narrow-screen word-break trap, again. Both
+sides bounded (2:3), value wraps; verified on the emulator at a 720-px
+width (photograph in `report-2026-09-15/app/`). A scan for the same shape
+elsewhere found five rows, all with short values.
+
+**"Explain the weekly/monthly negotiation flow in a doc."**
+`AAJOO_NEGOTIATION_WEEKLY_MONTHLY_2026-09-15.pdf`, 17 pages: the rule, the
+guest's and the host's flow with the two live deals, a month worked on two
+real listings, and what is stored and charged underneath.
+
+Build **93** carries the app side (BE `10d755c` `7f82979`, web `849ccb9`,
+app `07df7d6`). 463 app tests; 142 backend files.
 
 ### 8a29. Closed 2026-09-15 — a week is negotiated as a total
 
