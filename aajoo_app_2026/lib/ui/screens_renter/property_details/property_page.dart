@@ -43,6 +43,7 @@ import 'package:rent_home/ui/screens_renter/bookmark_properties/bookmark_propert
 import 'package:rent_home/ui/screens_common/price_negotiation/negotitaion_page.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/utils/money.dart';
+import 'package:rent_home/utils/cleaning_fee.dart';
 import 'package:rent_home/utils/rzp_error.dart';
 import 'package:rent_home/widgets/amenity_row.dart';
 import 'package:rent_home/widgets/host_card.dart';
@@ -169,8 +170,8 @@ class _PropertyPageState extends State<PropertyPage>
 
   /// The host's cleaning fee for this stay — server only, like the pet fee:
   /// the wizard's "per stay / per night" choice is the server's to apply.
-  /// Without it the page's lines did not add up to its own total, and the
-  /// price sent was accepted as an "old build" and the host went unpaid.
+  /// STATED, not charged (client, 2026-09-15, §1.14): priceStay() keeps it
+  /// out of every sum and the sheet says it under the total instead.
   double get _cleaningFee => _serverQuote?.cleaningFee ?? 0;
   int totalDays = 1;
 
@@ -1910,36 +1911,9 @@ class _PropertyPageState extends State<PropertyPage>
                                     ],
                                   ),
                                 ],
-                                // The cleaning fee, named. A total that is
-                                // more than the lines above it is a mistake
-                                // until something says why.
-                                if (p.cleaningFee > 0) ...[
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        _serverQuote?.cleaningFeeType ==
-                                                'per_night'
-                                            ? 'Cleaning fee (per night)'
-                                            : 'Cleaning fee',
-                                        style: inter(
-                                          fontSize: 14,
-                                          color: kMuted,
-                                        ),
-                                      ),
-                                      Text(
-                                        rupees(p.cleaningFee),
-                                        style: inter(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          color: kMuted,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                // No cleaning line: the fee is stated below
+                                // the total, outside it, since 2026-09-15
+                                // (client, §1.14). Builds 88–93 charged it.
                                 // What the host's weekly/monthly price saves
                                 // this guest, as a percentage and an amount.
                                 //
@@ -2099,6 +2073,45 @@ class _PropertyPageState extends State<PropertyPage>
                                           'security deposit, collected directly by them '
                                           'and not included in this total. '
                                           '${_single!.pricing!.depositRefundable ? 'It is refundable at the end of your stay.' : 'Ask the host what it covers before you arrive.'}',
+                                          style: inter(
+                                              fontSize: 12,
+                                              color: kMuted,
+                                              height: 1.4),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                                // The host's cleaning fee, in the same place
+                                // and for the same reason as the deposit: NOT
+                                // part of the total and not taken through
+                                // the platform (client, 2026-09-15). The
+                                // quote's figure is already multiplied for a
+                                // per-night fee, so it is handed back per
+                                // unit. Same sentence as the website.
+                                if (p.cleaningFee > 0) ...[
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Padding(
+                                        padding: EdgeInsets.only(top: 2),
+                                        child: Icon(Icons.auto_awesome_outlined,
+                                            size: 14, color: kMuted),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          cleaningFeeStatement(
+                                            _serverQuote?.cleaningFeeType ==
+                                                        'per_night' &&
+                                                    totalDays > 0
+                                                ? p.cleaningFee / totalDays
+                                                : p.cleaningFee,
+                                            _serverQuote?.cleaningFeeType,
+                                            nights: totalDays,
+                                          ),
                                           style: inter(
                                               fontSize: 12,
                                               color: kMuted,

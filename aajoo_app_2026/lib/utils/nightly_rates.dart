@@ -48,6 +48,8 @@ class PricingRule {
     this.monthlyPrice,
     this.securityDeposit = 0,
     this.depositRefundable = false,
+    this.cleaningFee = 0,
+    this.cleaningFeeType,
   });
 
   final double base;
@@ -82,6 +84,20 @@ class PricingRule {
   /// before booking.
   final double securityDeposit;
   final bool depositRefundable;
+
+  /// The host's cleaning fee, STATED and not charged — client decision,
+  /// 2026-09-15 (master list §1.14): the listing says it under Things to
+  /// know and under every total; a guest who wants the place cleaned
+  /// arranges and pays it with the host directly. Never added to a total.
+  /// [cleaningFeeType] is `per_night` or, for anything else, per stay.
+  final double cleaningFee;
+  final String? cleaningFeeType;
+
+  /// "per night" or "per stay" — the two ways a host can mean it.
+  String get cleaningFeeUnit =>
+      (cleaningFeeType ?? '').toLowerCase() == 'per_night'
+          ? 'per night'
+          : 'per stay';
 
   /// Positive, finite money only — rejects null, "", 0 and rubbish, so a blank
   /// override falls back to base rather than producing a free night.
@@ -130,6 +146,8 @@ class PricingRule {
       // comes back when the host never said so is the worst way to be wrong
       // about somebody's money.
       depositRefundable: j['depositRefundable'] == true,
+      cleaningFee: _money(j['cleaningFee']) ?? 0,
+      cleaningFeeType: j['cleaningFeeType']?.toString(),
     );
   }
 

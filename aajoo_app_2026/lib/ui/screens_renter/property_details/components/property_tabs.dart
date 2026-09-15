@@ -6,6 +6,7 @@ import 'package:rent_home/models/host_profile.dart';
 import 'package:rent_home/models/single_property_response.dart';
 import 'package:rent_home/service/device_service.dart';
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/utils/cleaning_fee.dart';
 import 'package:rent_home/models/cancellation_policy.dart';
 import 'package:rent_home/ui/screens_common/cancellation_policy/cancellation_policy_page.dart';
 
@@ -1289,6 +1290,14 @@ class _PropertyDetailPanelsState extends State<PropertyDetailPanels> {
           ),
         if (security != null && security.isNotEmpty && security != '0')
           RuleLine(ok: true, text: 'Security deposit ₹$security'),
+        // "Stated in Things to know" — the client's words (2026-09-15) for
+        // where the cleaning fee lives. Read from the listing, so it shows
+        // before any dates are picked. Same sentence as the website.
+        if ((_s?.pricing?.cleaningFee ?? 0) > 0)
+          RuleLine(
+              ok: true,
+              text: cleaningFeeRule(
+                  _s!.pricing!.cleaningFee, _s!.pricing!.cleaningFeeType)),
         // Measured from the pin, not guessed by the host — and printed as
         // the server wrote it, because the website prints the same sentence.
         for (final d in (_s?.safetyDistances ?? const <SafetyDistance>[]))

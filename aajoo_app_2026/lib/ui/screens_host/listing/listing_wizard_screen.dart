@@ -1137,13 +1137,22 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
         ListingSection(
           title: 'Fees & deposit',
           children: [
+            // STATED, not charged (client, 2026-09-15, §1.14). Aajoo does
+            // not add this to a booking or pay it out: the listing says it
+            // under Things to know and under every total, and a guest who
+            // wants the place cleaned settles it with the host directly.
+            // The help says exactly what the guest will read, so a host is
+            // not surprised by either the words or the absence of the money.
             _p4Text('cleaning_fee', 'Cleaning fee (₹)',
                 numeric: true,
-                help: 'Typically ₹300–₹1,500 depending on size. '
-                    'Leave blank for none.'),
+                help: 'Stated on your listing, not added to a booking — '
+                    'guests who want cleaning arrange and pay it with you '
+                    'directly. Typically ₹300–₹1,500. Leave blank for none.'),
             if (r.cleaningFeeTypes.isNotEmpty)
               _p4Choice('cleaning_fee_type', 'Cleaning fee applies',
-                  r.cleaningFeeTypes),
+                  r.cleaningFeeTypes,
+                  help: 'Optional — blank reads as per stay. Guests see '
+                      '"Cleaning available at ₹X per stay, paid to the host".'),
             _p4Text('security_deposit', 'Security deposit (₹)',
                 numeric: true,
                 help: 'Held against damage, commonly about one night\'s rate. '

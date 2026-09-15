@@ -39,29 +39,36 @@ void main() {
   });
 
   test('THE EMULATOR CASE: 29309 for a week is banded per night, not on the average', () {
-    // ₹45,000 weekly + ₹500 cleaning; nights list at 7,000 ×4, 8,000 ×2,
-    // 9,000 ×1. The Sunday's share of ₹45,500 is ₹7,726 — over the line —
-    // so the server charges 5% on six nights and 18% on one: ₹3,279.43.
-    // Banding on the base tariff (7,000 → 5% on everything) showed ₹47,775
-    // for a stay the server charges ₹48,779.43 for.
+    // ₹45,000 weekly; nights list at 7,000 ×4, 8,000 ×2, 9,000 ×1 (₹53,000
+    // at the nightly rates). The Sunday's share of ₹45,000 is ₹7,642 — over
+    // the line — so the server charges 5% on six nights and 18% on one:
+    // ₹3,243.40. Banding on the base tariff (7,000 → 5% on everything)
+    // showed ₹47,250 for a stay the server charges ₹48,243.40 for.
+    //
+    // Build 92 (2026-09-15, morning) charged the ₹500 cleaning fee too and
+    // the figure was ₹48,779.43; the fee is STATED, not charged, since the
+    // same afternoon (client, §1.14), so the ₹500 is said under the total
+    // and is not in it.
     final p = priceStay(
       roomSubtotal: 45000,
       perNightTariff: 7000,
       cleaningFee: 500,
       taxNights: const [7000, 7000, 7000, 8000, 8000, 9000, 7000],
     );
-    expect(p.taxes, 3279.43);
-    expect(p.total, 48779.43);
+    expect(p.chargeable, 45000, reason: 'the cleaning fee is stated, not sent');
+    expect(p.taxes, 3243.40);
+    expect(p.total, 48243.40);
     expect(p.taxBands, [5, 5, 5, 5, 5, 18, 5]);
     expect(p.taxPct, 7.21, reason: 'blended, and never printed as a rate');
     expect(p.taxLabel, 'GST · 6 nights at 5% · 1 night at 18%');
+    expect(p.cleaningFee, 500, reason: 'the statement still carries the figure');
   });
 
   test('one band prints as a rate; no weights falls back to the average night', () {
     final one = priceStay(roomSubtotal: 24000, perNightTariff: 12000, cleaningFee: 1000,
         taxNights: const [12000, 12000]);
     expect(one.taxLabel, 'GST (18%)');
-    expect(one.taxes, 4500);
+    expect(one.taxes, 4320, reason: '18% of the room; the cleaning fee is not taxed');
     final none = priceStay(roomSubtotal: 45000, perNightTariff: 7000, cleaningFee: 500);
     expect(none.taxBands, isEmpty);
     expect(none.taxLabel, 'GST (5%)');
@@ -118,22 +125,23 @@ void main() {
     expect(p.discountedRoom, 4000);
   });
 
-  test('the cleaning fee is charged, taxed and sent — 29302, 18–20 Sep 2026', () {
-    // The server quoted ₹6,660 for the room (after the 10% advance discount)
-    // and a ₹500 cleaning fee, 5% GST → ₹7,518. The page printed ₹7,518 as
-    // the total and lines that added to ₹7,018, and sent ₹6,660 + fees as
-    // `price` — which the server accepted as "a build that has not learned
-    // about cleaning yet" and simply did not pay the host the ₹500.
+  test('the cleaning fee is stated, not charged — 29302, 18–20 Sep 2026', () {
+    // Client decision, 2026-09-15 (§1.14): "it will only be stated in
+    // Things to know… payments will be taken directly by the host." The
+    // server quotes ₹6,660 for the room (after the 10% advance discount)
+    // and says the host charges ₹500 for cleaning; 5% GST on the room →
+    // ₹6,993. Builds 88–93 sent ₹7,160 and showed ₹7,518; the server now
+    // recognises that figure and charges ₹6,993.
     final p = priceStay(
       roomSubtotal: 6660,
       perNightTariff: 3000,
       cleaningFee: 500,
     );
-    expect(p.cleaningFee, 500);
-    expect(p.chargeable, 7160,
-        reason: 'the price sent must carry the cleaning fee, or the host is not paid it');
-    expect(p.taxes, 358, reason: 'GST is levied on the final price, cleaning included');
-    expect(p.total, 7518);
+    expect(p.cleaningFee, 500, reason: 'the statement carries the figure');
+    expect(p.chargeable, 6660,
+        reason: 'the price sent includes the cleaning fee — the guest is charged for something the host collects directly');
+    expect(p.taxes, 333, reason: 'GST is levied on the cleaning fee');
+    expect(p.total, 6993);
   });
 
   test('no cleaning fee is no line and no charge', () {

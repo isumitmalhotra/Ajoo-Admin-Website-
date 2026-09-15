@@ -14,6 +14,11 @@
 //
 // The server mints a deal as a percentage of the room subtotal, so it only
 // reproduces the agreed per-night price when applied to that same figure.
+//
+// Postscript, 2026-09-15: the client then decided the cleaning fee is
+// STATED, not charged (§1.14), so the same stay is now 22,200 × 1.18 =
+// 26,196 with the ₹1,000 said under the total rather than added to it. The
+// coupon base — the point of this file — is unchanged: 7.5% of the ROOM.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -28,7 +33,7 @@ String codeOnly(String src) => src
 
 void main() {
   group('the reported stay', () {
-    test('7.5% off the room, cleaning on top, 27,376', () {
+    test('7.5% off the room; cleaning stated, not added — 26,196', () {
       // The percentage is worked out on the room by the caller, the way the
       // property page does it, and handed in as an amount.
       final p = priceStay(
@@ -38,9 +43,11 @@ void main() {
         cleaningFee: 1000,
       );
       expect(p.discount, 1800, reason: 'the cleaning fee is not discounted');
-      expect(p.discountedRoom, 23200);
-      expect(p.taxes, 4176, reason: '18% of 23,200');
-      expect(p.total, 27376, reason: 'the client expected 27,376');
+      expect(p.discountedRoom, 22200);
+      expect(p.taxes, 3996, reason: '18% of 22,200');
+      expect(p.total, 26196,
+          reason: 'with the fee stated (2026-09-15) the stay is 26,196');
+      expect(p.cleaningFee, 1000, reason: 'the statement still carries the figure');
     });
 
     test('the discount reproduces the price the host agreed to', () {
@@ -66,8 +73,9 @@ void main() {
         cleaningFee: 1000,
       );
       expect(p.discount, 2400);
-      expect(p.discountedRoom, 24000 - 2400 + 800 + 600 + 1000);
-      expect(p.chargeable, 26400, reason: 'the price sent carries every fee');
+      expect(p.discountedRoom, 24000 - 2400 + 800 + 600,
+          reason: 'party and pets ride through; cleaning is stated, not charged');
+      expect(p.chargeable, 25400, reason: 'the price sent carries the party and the pets, not cleaning');
     });
 
     test('a discount is capped at the room — the fees are still owed', () {
@@ -78,7 +86,8 @@ void main() {
         cleaningFee: 500,
       );
       expect(p.discount, 5000);
-      expect(p.discountedRoom, 500, reason: 'the cleaning fee survives a 100% coupon');
+      expect(p.discountedRoom, 0,
+          reason: 'nothing else is owed through the platform — cleaning is paid to the host');
     });
   });
 

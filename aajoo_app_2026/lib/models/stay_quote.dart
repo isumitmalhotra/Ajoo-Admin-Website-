@@ -27,9 +27,10 @@ class StayQuote {
   final double petFee;
 
   /// The host's cleaning fee for this stay (once per stay, or per night —
-  /// the server has already multiplied). Charged since 2026-09-10; a client
-  /// that leaves it out of `price` is treated as "not updated yet" and the
-  /// host is simply not paid it. See [cleaningFeeType].
+  /// the server has already multiplied). STATED, not charged, since
+  /// 2026-09-15 (client, §1.14): said under the total, never in it, and
+  /// never in `price`. A guest who wants cleaning pays the host directly.
+  /// See [cleaningFeeType].
   final double cleaningFee;
   final String? cleaningFeeType;
   final double total;

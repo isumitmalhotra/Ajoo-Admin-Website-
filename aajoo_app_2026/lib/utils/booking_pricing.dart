@@ -54,15 +54,14 @@ class StayPrice {
   /// How many pets were declared, so the line can name them.
   final int pets;
 
-  /// The host's cleaning fee for the stay, quoted by the server. Its own
-  /// line, and part of what is charged: the server adds it after any offer,
-  /// discounts and taxes the sum, and validates `price` against it. A price
-  /// sent without it was accepted (so an old build could still book) and
-  /// simply not paid to the host — which is what every build did until
-  /// 2026-09-11.
+  /// The host's cleaning fee for the stay, quoted by the server — STATED,
+  /// not charged (client decision, 2026-09-15, §1.14). Carried so the sheet
+  /// can say it under the total, in the same words as the website; outside
+  /// [chargeable], the discount and the tax. (Builds 88–93 charged it; the
+  /// server recognises a price they send and charges without it.)
   final double cleaningFee;
 
-  /// Room + party charge + pets + cleaning — the figure to send as `price`.
+  /// Room + party charge + pets — the figure to send as `price`. Not cleaning.
   final double chargeable;
 
   /// The coupon or negotiated-deal reduction — a percentage of [roomSubtotal]
@@ -183,17 +182,16 @@ StayPrice priceStay({
       extraGuestFee.isFinite && extraGuestFee > 0 ? extraGuestFee : 0.0;
   final petCharge = petFee.isFinite && petFee > 0 ? petFee : 0.0;
   final cleaning = cleaningFee.isFinite && cleaningFee > 0 ? cleaningFee : 0.0;
-  // The party charge, the pets and the cleaning fee ride with the room into
-  // the tax, because GST is levied on the final price the guest pays. They
-  // do NOT ride into the discount: a coupon — and a negotiated deal, which
-  // reaches checkout as one — is a percentage of the ROOM. The server mints
-  // the deal against the room subtotal so that percentage reproduces the
-  // agreed per-night price; taken off a bigger number it under-pays the
-  // host. Client, 2026-09-14, listing 29310 (₹12,000 × 2, ₹1,000 cleaning,
-  // 7.5% deal): "it should be 27376 not 26196" — 7.5% of the room is 1,800,
-  // cleaning on top, GST on the sum. The web's summarize() and
-  // /booking/create do the same since the same day.
-  final chargeable = subtotal + party + petCharge + cleaning;
+  // The party charge and the pets ride with the room into the tax, because
+  // GST is levied on the final price the guest pays. They do NOT ride into
+  // the discount: a coupon — and a negotiated deal, which reaches checkout
+  // as one — is a percentage of the ROOM. The server mints the deal against
+  // the room subtotal so that percentage reproduces the agreed per-night
+  // price; taken off a bigger number it under-pays the host (client,
+  // 2026-09-14, listing 29310). The cleaning fee rides into NOTHING: stated,
+  // not charged, since 2026-09-15 (client, §1.14) — it is returned for the
+  // sentence under the total and is paid to the host directly.
+  final chargeable = subtotal + party + petCharge;
   final off = (discount.isFinite && discount > 0 ? discount : 0.0)
       .clamp(0.0, subtotal)
       .toDouble();
