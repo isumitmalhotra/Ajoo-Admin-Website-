@@ -21,7 +21,10 @@
 > The evening also answered "will Razorpay Payroll work for payouts?" in a document
 > of its own (§2.2) and surfaced §2.2a — 194-O TDS, which no rail does for us; and
 > §8a32 brought the iOS project to parity with Android, compiling on GitHub's Mac
-> on every push, with the client's eight Apple-side actions in §1.16.
+> on every push, with the client's eight Apple-side actions in §1.16. **Updated
+> 2026-09-16** with §8a33 — three reports with screenshots (unequal home-page cards, a
+> "deal with no booking", "the 17th is blocked") and the tester sheet brought up to
+> date as v3, including the app tab that had never been answered in a sheet.
 > §8a24 and §2.8 carry **AWS Days 1–5** — the whole platform as Terraform, a
 > deploy pipeline that holds no AWS key at all, and the cutover runbook. None of
 > it is applied — blocked on an unverified card on the AWS account, not on us.
@@ -31,14 +34,15 @@
 > **Repos:** FE `D:/Projects/aajao-frontend-vercel` (React/Vite → Vercel) ·
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
-> Tester build in circulation: **94 (1.0.0+94)**, `aajoo-homes-1.0.0-build94-release.apk` at repo root
-> (2026-09-15 16:53, sha256 `54C30FC9…CD933`, versionCode 94, 95.8 MB), driven on the emulator against
-> the live backend (§8a31). Builds 88–93 are withdrawn: 88/89 lacked the pricing fixes, 90 and 91 each
-> carried a defect the emulator found the same hour, 92 lacked the afternoon's three fixes, and **93
-> still charges the cleaning fee** — the server recognises what it sends and charges without the fee,
-> so a guest on 93 pays less than its screen says, never more. Everything before 87 was withdrawn earlier.
+> Tester build in circulation: **95 (1.0.0+95)**, `aajoo-homes-1.0.0-build95-release.apk` at repo root
+> (2026-09-16 12:25, sha256 `590E1A66…7125`, versionCode 95, 95.8 MB), driven on the emulator against
+> the live backend (§8a33). Builds 88–94 are withdrawn: 88/89 lacked the pricing fixes, 90 and 91 each
+> carried a defect the emulator found the same hour, 92 lacked the afternoon's three fixes, **93 still
+> charges the cleaning fee** (the server recognises what it sends and charges without it), and 94 let a
+> guest pick a stay shorter than the host's minimum and meet the refusal at booking. Everything before
+> 87 was withdrawn earlier.
 > Read back with `python aajoo_app_2026/tool/verify_release_apk.py <apk> https://aajaodev.onrender.com
-> --allow-test-payments --expect-version=1.0.0+94`: the endpoint it was given is in it, no other
+> --allow-test-payments --expect-version=1.0.0+95`: the endpoint it was given is in it, no other
 > `*.onrender.com` host is, no developer path, no plain-http endpoint, and it carries its own
 > version string. Points at `aajaodev.onrender.com` with the sandbox Razorpay key — the platform
 > is still in test mode, so a QA build is the only honest one.
@@ -171,7 +175,7 @@ Functional scope is delivered; these are the contractual artifacts. All still op
 | **4.3** | **FMS — Functional Specification** | |
 | **4.4** | **HMS — Functional Specification** | |
 | **4.5** | **Security & Compliance doc + RBAC matrix** | The RBAC itself exists (`config/adminRoles.js`, incl. `SEO_MANAGER`); the document does not. |
-| **4.6** | **Test suite to contract standard** | **143 backend test files pass** on `npm test`, **472 app tests** on `flutter test` and **43 web rule files** on `for f in tests/*.test.mjs; do node $f; done` (counts from 2026-09-15 evening; there is no `test:rules` script — the earlier wording here named one that does not exist). A 37-case edge sweep of the pricing and negotiation helpers is in `report-2026-09-15/` (§8a28–29) but is not a permanent suite. The contract asks for >80% measured coverage, 200+ integration tests, plus load and OWASP reports. No coverage tooling is wired. |
+| **4.6** | **Test suite to contract standard** | **144 backend test files pass** on `npm test`, **476 app tests** on `flutter test` and **44 web rule files** on `for f in tests/*.test.mjs; do node $f; done` (counts from 2026-09-16; there is no `test:rules` script — the earlier wording here named one that does not exist). A 37-case edge sweep of the pricing and negotiation helpers is in `report-2026-09-15/` (§8a28–29) but is not a permanent suite. The contract asks for >80% measured coverage, 200+ integration tests, plus load and OWASP reports. No coverage tooling is wired. |
 | **4.7** | **Deployment guide + operational runbook + KT docs** | `DEPLOY_RUNBOOK.md` and the handoffs exist; `Deployment_Options_2026-09-05.docx` (05-09) covers requirements, sizing, tools, providers, cost and a migration plan. Still to formalise: the runbook for whichever host is chosen (§1.8) and the KT pack. |
 | **4.8** | **UAT test cases + sign-off package** | **Manuals delivered 2026-09-05** — web (81 cases, 8 modules) and Android (55 cases, 6 modules), each with environment, accounts, procedure, defect template and sign-off table. Execution and sign-off are the client's; **an internal dry run of both manuals is recommended first** — see §6 for the cases that have only code/test-level verification so far. |
 
@@ -276,6 +280,71 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a33. Closed 2026-09-16 — three screenshots, and the tester sheet as v3
+
+**"Equal sizes of cards, and a little smaller, 6–7 show, across platform."**
+The Trending rail showed four cards of four heights: one address wrapped
+to two lines, one card had no cancellation badge, and the items were
+268px with a 20px gap. Now 196px with 14px (six in the 1320 container,
+the seventh peeking — the density Airbnb's desktop rail runs at), the
+address and the title clamp to one line with the whole text as a hover
+tooltip, the badge keeps a 20px slot on every card, and the track
+stretches its items; on a phone the web rail shows two cards, like the
+app, whose home rail was already 200dp cards of one fixed height. Web
+`2880a35`, pinned by `railCardsAreEqual.test.mjs`; measured live on
+/explore: every card 196 × 261 (`report-2026-09-15/img/s33-trending-rail.png`
+— two cards only, because that profile is in LUXE and the catalogue has
+two LUXE listings; there is no place with seven test listings to
+photograph six across).
+
+**"No booking currently on, but it shows accepted and offers a deal."**
+The deal was real and ours: `DEAL29302101C175`, 7.9% on QA Sunrise Villa
+for 15→22 Sep, struck at 06:38 on the 15th by the morning's live test of
+the weekly-negotiation change — on the client's own test guest account
+**"Aajoo Renter" (101)**, which is also the account the puppeteer rig and
+the emulator were signed in as. It expired at midnight. What WAS wrong:
+with no dates picked, the card said "pick the agreed nights to use it"
+and, under two empty date boxes it had locked, "your deal is agreed for
+these dates, so they cannot be changed" — the lock was keyed on the deal
+EXISTING, not on it APPLYING. A dated deal now fills empty date boxes
+with its own dates, the lock holds only while the deal applies to the
+dates on screen, and the mismatch banner offers "Use the agreed nights"
+with one click (web `2880a35`, pinned in `aDealPricesOnlyItsOwnNights`).
+**Rule from here: live tests use "Renter test web" (179), never the
+client's test guest (101)** — see §9.
+
+**"Check-in 16, the 17th is blocked, check-out 18 — the host side shows
+no booking or block on the 17th."** There is none: no booking and no
+block on 29302 in the database, and `/booking/property-availability`
+answers `bookedRanges: []`. The 17th greyed as a CHECK-OUT because the
+listing's own step-5 rule is a **minimum stay of 2 nights** — after a
+16th check-in the earliest check-out is the 18th — which the website's
+calendar says in its header ("Minimum 2 nights — check out 18 Sept or
+after") and its footnote. The host's calendar shows no block because it
+is not one. **Parity gap found on the way:** the Android app read neither
+`minNights` nor `maxNights`, so it let a guest pick 16→17 and be refused
+at booking. **Build 95** (app `6cd9a82`) applies both in the check-out
+picker (title "MINIMUM STAY 2 NIGHTS", the 17th greyed, opens on the
+18th) and says the rule under the date rows in the website's words;
+driven on the emulator on 29302 (`report-2026-09-15/app/build95-*.png`);
+pinned by `the_minimum_stay_is_a_rule_not_a_block_test.dart`.
+
+**"Please provide an update on the sheet points Ashish shared."** The
+newest sheet on this machine is "Aajoo Homes (2).xlsx" of 2 September
+(19 web rows, 7 app rows); v2 answered the web tab that day and the app
+tab had never been answered in a sheet. **`Aajoo - Tester Bug Sheet -
+status 2026-09-15 (v3).xlsx`** at the repo root carries every row with a
+15/16 Sep status: the 19 web rows still hold (with what has changed
+around each since); the 7 app rows were all fixed between 2 and 7
+September (builds 13+: the keypad reserved three times over, the DOB
+wheel submitting age 0 — and a second DOB failure closed on the 15th —
+two controls under the navigation bar, the OTP sheet, the profile save
+that never ran, the ten house-rule toggles sharing one empty id), with
+row 4 photographed on build 94 and rows 1/3/5/6 left to the tester's own
+account to walk end to end; and a third tab for the three items above.
+If Ashish has sent a newer sheet than 2 September, it is not on this
+machine — ask for it.
 
 ### 8a32. Closed 2026-09-15 (evening) — the iOS project, brought to parity with Android
 
@@ -1851,6 +1920,14 @@ The 2026-07-11 edition listed all of these as open. Each was checked on
 ---
 
 ## 9. Keeping this file honest
+
+- **Live tests run as "Renter test web" (179), never as the client's test
+  guest "Aajoo Renter" (101) or their host "Sam Tao" (100).** A deal, a
+  booking or a negotiation left on 101 shows up on the client's own
+  screen the next morning as something they did not do (§8a33). The
+  puppeteer rig's `.chrome/renter` profile and the emulator were both
+  signed in as 101 on 15 September; re-sign them as 179 before the next
+  drive.
 
 The previous edition drifted because items were marked done in commit messages
 and session handoffs but never reconciled back here, while other items stayed
