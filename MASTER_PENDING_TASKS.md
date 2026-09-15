@@ -24,7 +24,9 @@
 > on every push, with the client's eight Apple-side actions in §1.16. **Updated
 > 2026-09-16** with §8a33 — three reports with screenshots (unequal home-page cards, a
 > "deal with no booking", "the 17th is blocked") and the tester sheet brought up to
-> date as v3, including the app tab that had never been answered in a sheet.
+> date as v3, including the app tab that had never been answered in a sheet; and §8a34 — the
+> afternoon's five: the same-day repair RUN, KYC required to negotiate, a deal priced on the cards
+> outside the listing, and the signup email's Help Centre pointed at the live page.
 > §8a24 and §2.8 carry **AWS Days 1–5** — the whole platform as Terraform, a
 > deploy pipeline that holds no AWS key at all, and the cutover runbook. None of
 > it is applied — blocked on an unverified card on the AWS account, not on us.
@@ -34,15 +36,15 @@
 > **Repos:** FE `D:/Projects/aajao-frontend-vercel` (React/Vite → Vercel) ·
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
-> Tester build in circulation: **95 (1.0.0+95)**, `aajoo-homes-1.0.0-build95-release.apk` at repo root
-> (2026-09-16 12:25, sha256 `590E1A66…7125`, versionCode 95, 95.8 MB), driven on the emulator against
-> the live backend (§8a33). Builds 88–94 are withdrawn: 88/89 lacked the pricing fixes, 90 and 91 each
+> Tester build in circulation: **96 (1.0.0+96)**, `aajoo-homes-1.0.0-build96-release.apk` at repo root
+> (2026-09-16 16:45, sha256 `4E7995B0…4F12`, versionCode 96, 95.8 MB), driven on the emulator against
+> the live backend (§8a34). Builds 88–95 are withdrawn: 88/89 lacked the pricing fixes, 90 and 91 each
 > carried a defect the emulator found the same hour, 92 lacked the afternoon's three fixes, **93 still
 > charges the cleaning fee** (the server recognises what it sends and charges without it), and 94 let a
-> guest pick a stay shorter than the host's minimum and meet the refusal at booking. Everything before
-> 87 was withdrawn earlier.
+> guest pick a stay shorter than the host's minimum and meet the refusal at booking, and 95 let an
+> unverified guest open a negotiation the server would refuse. Everything before 87 was withdrawn earlier.
 > Read back with `python aajoo_app_2026/tool/verify_release_apk.py <apk> https://aajaodev.onrender.com
-> --allow-test-payments --expect-version=1.0.0+95`: the endpoint it was given is in it, no other
+> --allow-test-payments --expect-version=1.0.0+96`: the endpoint it was given is in it, no other
 > `*.onrender.com` host is, no developer path, no plain-http endpoint, and it carries its own
 > version string. Points at `aajaodev.onrender.com` with the sandbox Razorpay key — the platform
 > is still in test mode, so a QA build is the only honest one.
@@ -106,7 +108,7 @@ money and is not. The second gates every honest SEO number on the site.
 | **1.11** | **The category catalogue needs an hour of an admin's time** | Three things, all data rather than code, and all now MORE visible because Browse by category reads the catalogue live (§8a20) instead of nine hardcoded tiles. (a) **Category 1 is titled "Villas -1"** — every villa on the public site reads "Villas -1", a test rename left in `tbl_categories`; the slug `villas-1` is fine to keep. (b) **Nine of the eleven categories have no image** — the rail falls back to a rotation of stock photographs, so two categories look photographed and nine look generic; upload one icon each at Admin › Catalogue › Categories › pencil › Replace image. `Resort` carries a line-drawing icon that looks wrong beside a photograph. (c) **The CMS heading still reads "browser by caterogy"** — Admin › CMS › Homepage Content › Categories heading. All four are one click each; my sandbox refused the category edit. | admin Categories + CMS screens, 2026-09-12 |
 | ~~1.10~~ | ~~**Admin approval → public listing, end to end**~~ **DONE 2026-09-11** | 29302 "QA Sunrise Villa" filed from the app (all five steps, map pin at Christ Church Kasauli, 10 tagged photos with ALT text, ownership PDF, Moderate policy, approval required, weekend/weekly/monthly rates, pets, 15:00 check-in) → Submitted tab → Mark all checked → Approve & publish → live at `/property/qa-sunrise-villa-solan-himachal-pradesh` with map pin, gallery, rules, nearby, policy ladder, negotiation, `psb_reviewed_by` recorded. Quote engine: Fri ₹3,600 + Sat ₹3,800, 10% advance discount, ₹500 cleaning, 5% GST; extra guests ₹400 × 2 × 2 nights once the app could say who is included. Found and fixed on the way: the document-upload Submit deadlock (web + app), the self check-in method erased on re-save (app), the extra-guest section missing (app), "1800 sq_ft" / "Pet Area 1" on the public page (backend). **The listing is live test content on production — delete it when the client is done with it.** | driven 2026-09-11, builds 66–68 |
 | **1.13** | **Two one-off data repairs — run them** (my sandbox refuses production writes) | Both dry-run by default and print what they will touch. In PowerShell: `cd D:\Projects\aajaoBackend-render; node scripts/cleanupImageSeo_2026-09-11.js --apply` — deletes **18** `image_seo` rows whose photograph no longer exists and resets **5** rows that pre-date their photograph (media 72–75 on 29303 carried a Dharamsala cottage's ALT text; media 67 on 29302 "Wood-panelled ceiling…"). Then `node scripts/maskPropertyBankNumbers_2026-09-11.js --apply` — masks the **2** plaintext account numbers `property_bank_details` was holding (29294, 29303). Why they exist: §8a15. | dry runs printed 2026-09-11 |
-| **1.15** | **Run the same-day repair** (my sandbox refuses production writes) | `cd D:\Projects\aajaoBackend-render; node scripts/repairSameDay_2026-09-15.js` prints the five test listings the web wizard silently switched same-day OFF on (29292, 29294, 29295, 29306, 29310 — negotiation on, no host chose it); `--apply` puts them back to blank = allowed. Until it runs, none of the five can be negotiated on — offers are only for stays starting today — which is the "renter cannot select today… cannot negotiate at all" the client called major. Alternatively the host flips "Accept same-day bookings" to Yes on each; the wizard now warns what No costs. | dry run printed 2026-09-15; §8a30 |
+| ~~1.15~~ | ~~**Run the same-day repair**~~ **RUN 2026-09-16** | `scripts/repairSameDay_2026-09-15.js --apply` put all five back (29292, 29294, 29295, 29306, 29310). `/booking/property-availability` now answers `earliest: 16-09-2026, sameDayAllowed: true` on every one of them, and the app's check-in picker offers today (`report-2026-09-15/app/build96-today-is-selectable.png`). That was the client's "still I cannot select today's date on app" — a data repair, not a code fix; the wizard has been unable to write that 0 since 2026-09-15. | §8a34 |
 | ~~1.14~~ | ~~**Is the cleaning fee CHARGED, or only STATED?**~~ **ANSWERED 2026-09-15 — stated.** | Client: *"it will only be stated in Things to know and all; if the renter requested it, it can be availed at that price and payments will be taken directly by the host."* Applied the same afternoon as the one switch this row described — quote, pricer, booking clamp, both clients — with the frequency field kept as an optional courtesy ("₹500 per night") rather than a billing rule. **§8a31.** The ₹27,376 in the 14 Sep note is superseded: that stay is now ₹26,196 with the ₹1,000 said under the total. | §8a31 |
 | **1.16** | **iOS — the eight things only the client's accounts can do** (asked 2026-09-15) | The iOS half of the app is at parity with Android in the repository and compiles on GitHub's Mac on every push (§8a32); nothing runs on an iPhone until the client's Apple side exists. In order: (1) enrol in the **Apple Developer Program** as the company (Organisation, needs a D-U-N-S number); (2) App ID `com.aajoo.aajoohomes` with **Push** on; (3) an **APNs key (.p8)** uploaded to Firebase → Cloud Messaging for the iOS app; (4) **`GoogleService-Info.plist`** for the iOS app from Firebase (carries the Google Sign-In client); (5) an **iOS-restricted Google Maps key** in the same Cloud project; (6) the **App Store Connect** app record + an internal **TestFlight** group with the tester's Apple ID; (7) an **App Store Connect API key** (App Manager); (8) a **distribution certificate + App Store provisioning profile**. Then the values go into the repository secrets named in `aajoo_app_2026/IOS_READINESS.md` §3 and the TestFlight job is run by hand. **Without (1) there is no iPhone build at all.** | `aajoo_app_2026/IOS_READINESS.md` |
 | **1.8** | **Where the platform runs after UAT** | `Deployment_Options_2026-09-05.docx` compares staying on Render + Vercel with AWS, Azure, GCP, DigitalOcean and a VPS, with indicative costs. Recommendation: stay through UAT (Render Starter, $7/mo), then **DigitalOcean Bangalore** (~$45–75/mo) as the first managed home in India; hyperscaler only with an owner or credits; VPS only with a named operator. Needs the client's answers to §8 of that document: expected traffic, budget, who operates, existing cloud agreements. | doc |
@@ -175,7 +177,7 @@ Functional scope is delivered; these are the contractual artifacts. All still op
 | **4.3** | **FMS — Functional Specification** | |
 | **4.4** | **HMS — Functional Specification** | |
 | **4.5** | **Security & Compliance doc + RBAC matrix** | The RBAC itself exists (`config/adminRoles.js`, incl. `SEO_MANAGER`); the document does not. |
-| **4.6** | **Test suite to contract standard** | **144 backend test files pass** on `npm test`, **476 app tests** on `flutter test` and **44 web rule files** on `for f in tests/*.test.mjs; do node $f; done` (counts from 2026-09-16; there is no `test:rules` script — the earlier wording here named one that does not exist). A 37-case edge sweep of the pricing and negotiation helpers is in `report-2026-09-15/` (§8a28–29) but is not a permanent suite. The contract asks for >80% measured coverage, 200+ integration tests, plus load and OWASP reports. No coverage tooling is wired. |
+| **4.6** | **Test suite to contract standard** | **144 backend test files pass** on `npm test`, **484 app tests** on `flutter test` and **46 web rule files** on `for f in tests/*.test.mjs; do node $f; done` (counts from 2026-09-16 evening; there is no `test:rules` script — the earlier wording here named one that does not exist). A 37-case edge sweep of the pricing and negotiation helpers is in `report-2026-09-15/` (§8a28–29) but is not a permanent suite. The contract asks for >80% measured coverage, 200+ integration tests, plus load and OWASP reports. No coverage tooling is wired. |
 | **4.7** | **Deployment guide + operational runbook + KT docs** | `DEPLOY_RUNBOOK.md` and the handoffs exist; `Deployment_Options_2026-09-05.docx` (05-09) covers requirements, sizing, tools, providers, cost and a migration plan. Still to formalise: the runbook for whichever host is chosen (§1.8) and the KT pack. |
 | **4.8** | **UAT test cases + sign-off package** | **Manuals delivered 2026-09-05** — web (81 cases, 8 modules) and Android (55 cases, 6 modules), each with environment, accounts, procedure, defect template and sign-off table. Execution and sign-off are the client's; **an internal dry run of both manuals is recommended first** — see §6 for the cases that have only code/test-level verification so far. |
 
@@ -280,6 +282,72 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a34. Closed 2026-09-16 (afternoon) — five from the client, one of them a data repair
+
+**"Have you checked? I still cannot select today's date on the app."**
+Correct, and it was never a code fault: **§1.15 had not been run.** The
+five listings the web wizard had silently switched same-day OFF on still
+carried the 0, and an offer is only taken on a stay that starts today, so
+today was unbookable and unnegotiable on every one of them. The repair is
+**applied now** — `/booking/property-availability` answers `earliest:
+16-09-2026, sameDayAllowed: true` on 29292, 29294, 29295, 29306 and
+29310, and the app's check-in picker opens on today
+(`report-2026-09-15/app/build96-today-is-selectable.png`). The wizard has
+been unable to write that 0 since 2026-09-15, so it cannot come back.
+
+**"Clicking Help Centre opens the old website."** The signup email's
+footer was hard-coded to `/help-center`, which is the **pre-redesign**
+page — still routed, so it answers 200 and nobody notices. It points at
+**/faq** now, which is where the live footer's Help Center already goes,
+and `/help-center` redirects there so every link already sent lands on
+the right page (verified live: `/help-center` → `/faq`, "How can we
+help?"). The year was hard-coded too ("© 2025"); it is the current year
+now, and every email link comes off one `SITE_URL`.
+
+**"I logged in with a new account and did not do KYC — without KYC
+neither negotiation nor booking should happen."** Booking has required a
+current verification since 2026-09-01; **negotiating required nothing**,
+so an unverified guest could open a thread, put a host through a round of
+offers, agree a price, and be refused at the end. `/user/negotiations/offer`
+and `/respond` now use the same `assertVerified` verdict (BE `c13f86e`);
+**declining is still allowed** — walking away needs no identity, and
+refusing it would strand the thread. Both clients say so first rather
+than letting the guest find out: a disabled **Send an Offer** with the
+reason and a way to the check, the treatment the decline lock already
+gets, with its own sentence per state (pending is an unfinished check,
+not a review). Pinned by `kycGatesNegotiationToo.test.mjs` and
+`kyc_gates_negotiation_too_test.dart`. **Not photographed:** showing the
+disabled state needs an unverified account, and creating accounts is not
+something I do — the client's new account is exactly the case.
+
+**"I negotiated but did not book; back on the home page the price should
+show the deal, as it does inside."** Every card priced at the list rate:
+a deal is per-guest and the card never asked for one. The rails, the
+search grid (web `1ba83bb`) and the app's `CuratedCard` (build 96) now
+wear it the way they wear a host's running discount — struck price, deal
+price, "% off" pill — **percentage deals only**, rounded UP so a card
+never advertises below the server's quote, and a host's running offer
+still wins. Because a deal is **date-locked**, the card's link carries
+the agreed nights: a smaller number over undiscounted dates is the exact
+trap the listing page had. Pinned by `myDealShowsOutsideTheListing.test.mjs`
+and `a_deal_shows_outside_the_listing_test.dart`. **Not photographed
+live:** the only guest account this machine can drive is the client's own
+test guest (101), which §9 now forbids using, and its deal expired at
+midnight — the client has live deals on 29310 on accounts 164/204/205 and
+will see it on their own screen.
+
+**"The offer went on but the price did not change, and with negotiation
+over it should say Book Now."** The first half was the empty-dates dead
+end closed this morning (§8a33): with the deal's dates now filled in, the
+price on screen IS the deal price. The second half already worked once
+the dates match — `negotiationLockHere` turns Send an Offer into a
+disabled "Already agreed for these dates" with "the agreed price applies
+at checkout, go ahead and book". It read as live only because, with no
+dates, the lock did not apply. Left as a disabled control rather than
+removed: a button that vanishes reads as a broken feature.
+
+144 backend files, 484 app tests, 46 web files.
 
 ### 8a33. Closed 2026-09-16 — three screenshots, and the tester sheet as v3
 
