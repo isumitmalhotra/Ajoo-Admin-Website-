@@ -40,6 +40,9 @@
 > rows 20–26 came back re-reported. It is now injected from pubspec and asserted in the APK.)
 > Documents delivered 2026-09-05 (repo root): `UAT_WebApp_2026-09-05.docx` (81 cases) · `UAT_AndroidApp_2026-09-05.docx` (55 cases) ·
 > `Delivery_Delay_Analysis_2026-09-05.docx` · `Deployment_Options_2026-09-05.docx`.
+> Document delivered 2026-09-15: `AAJOO_CLIENT_REPORTS_RESPONSE_2026-09-15.pdf` (19 pages) — every
+> client item from 13–15 September (§8a25–§8a29), the pricing rule in one place, a real weekly deal walked
+> to the payment page on the live site, and the full test + edge-case run. Source in `report-2026-09-15/`.
 > Documents delivered 2026-09-12: `negotiation-journey/Aajoo-Negotiation-User-Journey.pdf` (32 pages,
 > 31 photographs of the live site) · `AAJOO_NOTIFICATIONS_AND_NEGOTIATIONS_2026-09-12.pdf` (14 pages,
 > the technical reference behind it). Both rebuilt against the new engine, not edited from the old ones.
@@ -196,7 +199,7 @@ Nothing here is known to be defective. Each is a path nobody has exercised.
 - **The emergency-distance lookup against real Google (§8a25, 2026-09-13).** `GOOGLE_PLACES_KEY` is not in the local env, so only the "not configured" branch has run here — the distance sort is unit-tested against a stub, and the HTTP path is the one the nearby picker already uses in production. What is genuinely unproven is `fire_station` as a Google type: it is documented, it was never in the `essentials` list before today, and nobody has yet seen it return a result for an Indian hill town. Open any listing's step 3 on the live site with a pin set; the three boxes should fill and say where the numbers came from. **An empty answer is not a failure** — it is what a place with no fire station within 25km looks like, and the box stays typeable.
 - **The whole host wizard and checkout, in a browser (§8a25–§8a27).** Behind a host login, and a stored password is not ours to type — which is how the step-1 regression in §8a27 reached the client. Worth sixty seconds on a phone: step 1 shows three bedroom cards for "3" and submits; Beds goes read-only once a room names one; the location map moves on ONE finger and has +/− buttons; the Homestay Type and Local Experience chips carry icons; and the GST on the property page matches the GST on /booking/review for the same stay.
 - **Whether the live notification popup actually appears (§8a27).** Reported as "message aa rhe h but popups nahi aa rhe" and NOT reproduced: the server emits, the rooms match, and the transport answers. The silent-failure paths are closed and the popup moved off the mobile tab bar, which may be the whole story — but only the client's own phone can say. `liveState()` now reports up-or-why-not, so the next report can come with a reason.
-- **The deal price on the client's own screens (§8a28, 2026-09-15).** Verified by arithmetic and by test on all three repos, and on production only as far as an anonymous visit reaches — the LUXE dialog surface is a dark card (computed style), the property card's lines add up to its total. What needs a signed-in guest with a live deal: /booking/review on 29310 for 14–16 Sept reading **₹1,800 off, ₹27,376**, the same on /booking/payment, and the Razorpay sheet opening for the same rupees and paise. The deal coupon `DEAL29310179161` is spent (B476130), so the client will need to strike a new one — which is also the only way to see the app's chat page hand over to the listing instead of booking tonight on its own.
+- **The deal price on the client's own 29310 stay (§8a28).** The deal path itself IS now proven live — a real weekly deal on 29302 walked from the dialog to the payment page on 2026-09-15 with card, review and payment agreeing to the paise (§8a29). What remains unphotographed is the client's exact 29310 case: its coupon `DEAL29310179161` is spent (B476130) and the listing's next free night is later. The same arithmetic gives ₹1,800 off / ₹27,376 there; the Razorpay sheet itself was not opened. The app's chat page handing over to the listing is tested, not driven.
 - **For the tester, on build 16** (each deploys cleanly and is covered by tests, but needs a signed-in host/guest on a device): #19's merged notification feed matches the website for the same host; the guest count survives "Move to Book at Agreed Price" on a *new* negotiation; airplane mode on host Notifications, guest My Negotiations and host Profile → properties shows "Couldn't load · Try again" rather than an empty state; #13's dropdown focus jump (fixed from the code, never reproduced on the emulator).
 - **The app's GUEST side of the negotiation rebuild, on a device.** The host side was driven on the emulator on 09-12 and the shared labelling is under test, but the two guest surfaces that changed — the offer button greying with its reason, and the dated “Listed at” line — have not been seen on a phone. The defect that blocked them is fixed (§3.13, build 82: the 29303 notification now opens the listing), but the deal BANNER still could not be tapped, because the test guest has no live deal and cannot make one on 29303 until midnight — the same-day decline lockout, working as designed. Both surfaces are covered by `negotiation_lock_test` and `offer_ceiling_test` and both are verified on the website; what is unproven is the app rendering them.
 - **`REQUIRE_IMAGE_ALT`** — whether it has been set on Render is not visible from outside (see §2.3).
@@ -306,7 +309,13 @@ negotiation screens, the host home card.
 **Verified live 2026-09-15 06:07** on 29310, 20–27 Sept: "Your offer for
 the 7 nights (₹)", placeholder 75000, "Listed at ₹75,000 for 7 nights —
 the host's weekly rate (≈ ₹10,714 / night)". A two-night stay reads as it
-did.
+did. **And walked end to end at 06:38** on 29302 from today: ₹17,100 for
+7 nights offered → countered ₹17,500 for 7 nights → accepted → coupon
+`DEAL29302101C175` at 7.9% → card, review and payment all ₹19,000 −
+₹1,501 + ₹500 + ₹899.95 = **₹18,898.95**. Nothing paid. Two things found
+on the walk and fixed (web `b8a241c`): the tax line printed "₹900" over a
+.95 total, and the unselected "Pay at property" card was white in LUXE.
+Photographs in `report-2026-09-15/img/`.
 
 #### Pinned
 
