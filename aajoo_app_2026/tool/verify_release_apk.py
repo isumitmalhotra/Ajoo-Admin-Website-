@@ -65,6 +65,31 @@ def main() -> int:
     apk_path = args[0]
     expected_api = args[1].encode() if len(args) > 1 else None
 
+    # No endpoint argument means this verified almost nothing — say so, loudly.
+    #
+    # Every endpoint assertion below is guarded by `if expected_api`, so running
+    # this with only an APK path skipped all of them and still printed
+    # "OK  no unexpected endpoint…". That sentence was true and worthless: an
+    # APK with NO endpoint at all passes it.
+    #
+    # Builds 98 and 99 shipped that way on 2026-09-16 — compiled with a plain
+    # `flutter build apk` instead of tool/build_release.ps1, so no
+    # --dart-define reached them and neither the API base nor the payment key
+    # was in the artifact. Both opened on "This build is not configured" on the
+    # tester's phone, after this script had called them OK.
+    #
+    # An unconfigured APK is broken by definition, so this refuses rather than
+    # warns. --no-endpoint-check is there for the rare artifact that genuinely
+    # has no endpoint, and it has to be typed.
+    if not expected_api and "--no-endpoint-check" not in sys.argv:
+        print("FAIL  no expected endpoint given, so nothing about the endpoint was checked.\n"
+              "      An APK compiled without --dart-define=API_BASE_URL passes every other\n"
+              "      check in this file and then opens on 'This build is not configured'.\n"
+              "\n"
+              "      usage: verify_release_apk.py <apk> https://your-api-host\n"
+              "      (or --no-endpoint-check if this artifact really has no endpoint)")
+        return 1
+
     zf = zipfile.ZipFile(apk_path)
     blobs = {name: zf.read(name) for name in scanned_entries(zf)}
     if not blobs:
@@ -128,7 +153,12 @@ def main() -> int:
         return 1
 
     note = "" if not allow_test_payments else "\n    (a sandbox payment key was permitted for this build)"
-    print("\nOK  no unexpected endpoint, no developer path, no plain-http endpoint." + note)
+    # Name the endpoint that was actually found. "No unexpected endpoint" reads
+    # the same whether the APK points at the right host or at nothing at all,
+    # which is how an unconfigured build was signed off twice.
+    where = (f"points at {expected_api.decode()}" if expected_api
+             else "endpoint check SKIPPED by --no-endpoint-check")
+    print(f"\nOK  {where}; no developer path, no plain-http endpoint." + note)
     return 0
 
 
