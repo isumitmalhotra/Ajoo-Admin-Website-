@@ -1,17 +1,14 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:rent_home/utils/modal_spinner.dart';
 // The controller registered in InitBinding — not lib/controller/auth_controller
 // .dart, which shares the class name. Get.find keys on the name, so importing
 // the wrong one type-casts the live instance to a class it is not.
 import '../ui/screens_common/auth/auth_controller.dart';
 import '../ui/screens_renter/messages/messages_screen.dart';
-import '../controller/user_controller.dart';
-import '../models/properties_response_model.dart';
+import '../ui/screens_renter/negotiations/guest_negotiations_screen.dart';
+import '../ui/screens_host/negotiations/host_negotiations_screen.dart';
 import '../utils/notification_link.dart';
-import 'package:rent_home/data/ApiConstants.dart';
 
 
 import 'package:rent_home/utils/app_log.dart';
@@ -116,16 +113,28 @@ class NotificationRoutingService extends GetxService {
       payloadType: type,
     );
 
-    // The negotiation thread needs a property, both party ids and a token, so
-    // it can only be opened when the push carried them. That path fetches the
-    // property and assembles the rest.
-    final canOpenThread = (kind == NotifKind.message || kind == NotifKind.offer) &&
-        propertyId.isNotEmpty &&
-        data['userId'] != null &&
-        data['receiverId'] != null &&
-        data['hostId'] != null;
-    if (canOpenThread) {
-      _navigateToNegotiation(data);
+    /**
+     * An offer notification opens MY NEGOTIATIONS — the list of threads —
+     * not the old socket chat.
+     *
+     * Client, 2026-09-16: "Which negotiation page it is taking me from
+     * notifications??" The push was routed to PriceNegotiationPage, the
+     * pre-rebuild screen with its own thirty-second countdown, quick-price
+     * chips (−200/−100/−50/+50) and a running offer counter — a second
+     * client for one engine, and the one the negotiation rebuild replaced on
+     * 2026-09-12. The listing's own sheet stopped using it that day; the
+     * notifications never did, so every offer notification led straight back
+     * into it.
+     *
+     * The thread lives on the negotiations screen now: what was offered and
+     * what came back, with Accept / Counter / Decline on the row that holds
+     * the next move. The host has their own.
+     */
+    if (kind == NotifKind.offer) {
+      final isHost = Get.find<AuthController>().authIsHost.value;
+      Get.to(() => isHost
+          ? const HostNegotiationsScreen()
+          : const GuestNegotiationsScreen());
       return;
     }
 
@@ -169,127 +178,6 @@ class NotificationRoutingService extends GetxService {
   String _homeRoute() =>
       Get.find<AuthController>().authIsHost.value ? '/host/home' : '/home';
 
-  void _navigateToNegotiation(Map<String, dynamic> data) {
-    final String? propertyId = data['propertyId'];
-    final String? userId = data['userId'];
-    final String? receiverId = data['receiverId'];
-    final String? hostId = data['hostId'];
-    final String? lat = data['lat'];
-    final String? long = data['long'];
-
-    if (propertyId == null ||
-        userId == null ||
-        receiverId == null ||
-        hostId == null) {
-      Get.snackbar(
-        'Error',
-        'Invalid negotiation data received',
-        snackPosition: SnackPosition.TOP,
-      );
-      return;
-    }
-
-    // Fetch property details first
-    _fetchPropertyAndNavigateToNegotiation(
-      propertyId: propertyId,
-      userId: userId,
-      receiverId: receiverId,
-      hostId: hostId,
-      lat: lat ?? '0.0',
-      long: long ?? '0.0',
-    );
-  }
-
-  Future<void> _fetchPropertyAndNavigateToNegotiation({
-    required String propertyId,
-    required String userId,
-    required String receiverId,
-    required String hostId,
-    required String lat,
-    required String long,
-  }) async {
-    try {
-      Get.dialog(
-        const Center(child: CircularProgressIndicator()),
-        barrierDismissible: false,
-      );
-
-      final userController = Get.find<UserController>();
-      await userController.getProperty(int.parse(propertyId));
-
-      // The same spinner as the negotiated-deal banner's, and the same trap:
-      // getProperty toasts on failure, and a bare Get.back() closes the TOAST
-      // and returns -- leaving this barrierDismissible:false spinner up for
-      // good. See closeModalSpinner.
-      closeModalSpinner();
-
-      final propertyResponse = userController.property.value;
-      if (propertyResponse == null || propertyResponse.data == null) {
-        Get.snackbar(
-          'Error',
-          'Property not found',
-          snackPosition: SnackPosition.TOP,
-        );
-        return;
-      }
-
-      // Convert SinglePropertyData to Property model for negotiation page
-      final propertyData = propertyResponse.data!;
-      final property = Property(
-        propertyId: propertyData.propertyId ?? int.parse(propertyId),
-        propertyName: propertyData.propertyName ?? 'Unknown Property',
-        propertyAddress: propertyData.propertyAddress ?? '',
-        propertyDesc: propertyData.propertyDesc ?? '',
-        propertyPrice: propertyData.propertyPrice ?? '0',
-        propertyCity: propertyData.propertyCity ?? '',
-        propertyLongitude: propertyData.propertyLongitude ?? long,
-        propertyLatitude: propertyData.propertyLatitude ?? lat,
-        propertyHostId:
-            propertyData.propertyHostId ?? int.tryParse(hostId) ?? 0,
-        propertyZip: propertyData.propertyZip,
-        propertyContact: propertyData.propertyContact,
-        propDetailsPropDetailIsPetFriendly:
-            propertyData.propDetails?.isPetFriendly,
-        propDetailsPropDetailIsSmoke: propertyData.propDetails?.isSmoke,
-        propDetailsPropDetailInTime: propertyData.propDetails?.inTime,
-        propDetailsPropDetailOutTime: propertyData.propDetails?.outTime,
-        propDetailsPropDetailExtra: propertyData.propDetails?.extra,
-        coverImage:
-            (propertyData.images != null && propertyData.images!.isNotEmpty)
-                ? propertyData.images!.first.toString()
-                : null,
-        images:
-            (propertyData.images ?? const []).map((e) => e.toString()).toList(),
-        categoryTitles: const [],
-        tags: propertyData.tags?.map((e) => e.toString()).toList(),
-        categories: propertyData.categories?.map((e) => e.toString()).toList(),
-        amenities: propertyData.amenities?.map((e) => e.toString()).toList(),
-      );
-
-      // Navigate to negotiation page with all required parameters
-      Get.toNamed('/negotiation', arguments: {
-        'userId': userId,
-        'receiverId': userId,
-        "senderId":
-            Get.find<AuthController>().userData.value?.userId.toString() ?? '',
-        'propertyId': propertyId,
-        'serverUrl': Apiconstants.baseUrl, // Your server URL
-        'token': Get.find<AuthController>().token.value,
-        'property': property,
-        'lat': lat,
-        'long': long,
-        'hostId': hostId,
-      });
-    } catch (e) {
-      closeModalSpinner();
-
-      Get.snackbar(
-        'Error',
-        'Failed to load property details: $e',
-        snackPosition: SnackPosition.TOP,
-      );
-    }
-  }
 
   // Booking and property notifications used to be sent to '/booking/details'
   // and '/property/details'. Neither is a route in this app, so both taps hit

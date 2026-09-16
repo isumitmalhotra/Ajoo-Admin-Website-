@@ -114,29 +114,41 @@ void main() {
     });
   });
 
-  group('the chat page no longer books on its own', () {
-    final src = codeOnly(File(
-            'lib/ui/screens_common/price_negotiation/negotitaion_page.dart')
-        .readAsStringSync());
-
-    test('every booking button opens the listing', () {
-      // It posted price × (1 + GST) for tonight with no coupon — taxed twice,
-      // no fees, not the agreed dates — and the server refused it anyway.
-      expect(src, isNot(contains('_bookProperty(')));
-      expect(src, isNot(contains('AcceptOfferBottomSheet')));
-      expect(src, isNot(contains('"price":')),
-          reason: 'the chat page is posting a price to /booking/create again');
-      // Whitespace-blind: the formatter breaks these calls across lines.
-      final flat = src.replaceAll(RegExp(r'\s+'), '');
-      expect(flat, contains('_openListingToBook(expectDeal:true)'));
-      expect(flat, contains('_openListingToBook(expectDeal:false)'));
-      expect(src, contains('openPropertyById('));
-      expect(src, contains('dealCode: deal?.code'));
+  group('the chat page is gone', () {
+    // It used to post price x (1 + GST) for tonight with no coupon, and
+    // carried its own thirty-second countdown and quick-price chips beside a
+    // second implementation of one engine. The listing stopped opening it on
+    // 2026-09-12; notifications kept leading back into it until 2026-09-16
+    // ("Which negotiation page it is taking me from notifications??"), when
+    // the page, its wrapper and its controller were deleted outright.
+    test('lib/ui/screens_common/price_negotiation is not in the tree', () {
+      expect(Directory('lib/ui/screens_common/price_negotiation').existsSync(),
+          isFalse,
+          reason: 'the pre-rebuild negotiation chat is back');
     });
 
-    test('and does not promise a total it cannot compute', () {
-      expect(src, isNot(contains("'Total with")));
-      expect(src, isNot(contains('totalWithGst')));
+    test('nothing imports it', () {
+      final offenders = <String>[];
+      for (final f in Directory('lib').listSync(recursive: true)) {
+        if (f is! File || !f.path.endsWith('.dart')) continue;
+        if (f.readAsStringSync().contains('price_negotiation/')) {
+          offenders.add(f.path);
+        }
+      }
+      expect(offenders, isEmpty);
+    });
+
+    test('a negotiation notification opens My Negotiations', () {
+      final routing = codeOnly(
+          File('lib/service/notification_routing_service.dart').readAsStringSync());
+      expect(routing, contains('kind == NotifKind.offer'));
+      expect(routing, contains('const HostNegotiationsScreen()'));
+      expect(routing, contains('const GuestNegotiationsScreen()'));
+      final list = codeOnly(
+          File('lib/ui/screens_common/notifications/notification_screen.dart')
+              .readAsStringSync());
+      expect(list, contains('const GuestNegotiationsScreen()'),
+          reason: 'the in-app list still assembles the old thread by hand');
     });
   });
 }

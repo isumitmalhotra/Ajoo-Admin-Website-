@@ -21,6 +21,7 @@ import 'package:rent_home/utils/stay_length.dart';
 import 'package:rent_home/ui/screens_renter/property_details/widgets/send_offer_sheet.dart';
 import 'package:rent_home/ui/screens_renter/property_details/open_property.dart';
 import 'package:rent_home/controller/deals_controller.dart';
+import 'package:rent_home/models/negotiated_deal.dart';
 import 'package:rent_home/utils/nightly_rates.dart';
 import 'package:rent_home/constants/payment_config.dart';
 import 'package:rent_home/utils/booking_pricing.dart';
@@ -40,7 +41,6 @@ import 'package:rent_home/service/property_service.dart';
 import 'package:rent_home/service/booking_service.dart';
 import 'package:rent_home/service/deals_service.dart';
 import 'package:rent_home/ui/screens_renter/bookmark_properties/bookmark_properties_page.dart';
-import 'package:rent_home/ui/screens_common/price_negotiation/negotitaion_page.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/utils/money.dart';
 import 'package:rent_home/utils/cleaning_fee.dart';
@@ -219,8 +219,6 @@ class _PropertyPageState extends State<PropertyPage>
   bool _isBookmarked = false;
   /// How the guest describes the stay. A label only — see _updatePriceString.
   /// "Weekly" is gone; the spec asks for per-night and monthly.
-  String bookingType = 'Per night';
-  static const List<String> _stayTypes = ['Per night', 'Monthly'];
 
   // Prebooking mode: if negotiation button is hidden, this page is opened from prebooking
   /**
@@ -291,8 +289,15 @@ class _PropertyPageState extends State<PropertyPage>
   String _negotiationLockLine(NegotiationLock lock) {
     switch (lock.reason) {
       case 'accepted':
+        // A deal is a PRICE, not a hold. Client, 2026-09-16: "if two renters
+        // negotiated for same property for same dates, and agree, it becomes
+        // unavailable for both." Checked against the live system: it does
+        // not — two guests can hold an agreed price on the same nights, each
+        // sees only their own, and the nights are blocked for nobody. What
+        // IS true is that the first to book takes them, and nothing said so.
         return 'Your offer was accepted \u2014 the agreed price applies at '
-            'checkout. Go ahead and book your stay.';
+            'checkout. The nights aren’t held until you book, so book '
+            'soon to be sure of them.';
       case 'parting':
         final price = lock.price > 0
             ? ' of \u20b9${_inr(lock.price)} a night'
@@ -467,11 +472,90 @@ class _PropertyPageState extends State<PropertyPage>
           : 'Negotiated deal applied';
     }
 
+    // ...and if they did NOT arrive through the deal, find it anyway.
+    _adoptLiveDeal();
+
     // Grey out already-booked nights in the date picker.
     _loadAvailability();
 
     // Fetch full property details
     _fetchSingleProperty().then((_) => _fetchHost());
+  }
+
+  /// The guest's own agreed price for this stay, found rather than handed in.
+  ///
+  /// Client, 2026-09-16: "if negotiations are already done for these dates but
+  /// if I go outside and try to book again for the same dates, it is allowing
+  /// me to book at new original rates — it must send to same negotiated rate
+  /// for same dates."
+  ///
+  /// They were right, and the cause is narrow: `hasDeal` reads
+  /// `widget.dealCode`, which is only ever set when the listing was opened
+  /// THROUGH the deal — the home banner, or My Negotiations. Open the same
+  /// listing from search, or come back to it later, and the page knew nothing
+  /// about a price the guest had already agreed. /booking/create would not
+  /// have charged the deal either, because no coupon code was sent.
+  ///
+  /// So the page asks. DealsController holds the guest's live coupons; if one
+  /// covers this property it is applied exactly as if it had been passed in,
+  /// and its dates are adopted when the guest has not already chosen
+  /// different ones. It cannot over-reach: a deal is date-locked, the server
+  /// refuses it on any other nights, and _dealFixesDates then locks the
+  /// pickers with "Book different dates without the deal" as the way out.
+  Future<void> _adoptLiveDeal() async {
+    if (hasDeal) return; // arrived through it already
+    try {
+      final deals = Get.isRegistered<DealsController>()
+          ? Get.find<DealsController>()
+          : Get.put(DealsController());
+      if (deals.deals.isEmpty) await deals.load();
+      final deal = deals.forProperty(widget.id);
+      if (deal == null || !mounted) return;
+      if (deal.type != 'percent' || deal.percent <= 0) return;
+
+      final from = _parseDmy(deal.bookFrom);
+      final to = _parseDmy(deal.bookTo);
+      // Dates the guest has not changed: adopt the agreed ones, which is what
+      // the "Book at the agreed price" route through My Negotiations does.
+      final untouched = from != null &&
+          to != null &&
+          (selectedDateTo == null || _sameDay(selectedDate, DateTime.now()));
+      setState(() {
+        _adoptedDeal = deal;
+        _appliedCoupon = deal.code;
+        _couponController.text = deal.code;
+        _couponPercent = deal.percent;
+        _couponOk = true;
+        _couponMsg = 'Negotiated deal — ${_pct(deal.percent)}% off';
+        if (untouched) {
+          selectedDate = from;
+          selectedDateTo = to;
+          totalDays = _nightsBetween(from, to);
+          if (totalDays < 1) totalDays = 1;
+          _policyOk = false;
+          isButtonEnabled = true;
+        }
+      });
+      _updatePriceString();
+    } catch (_) {
+      // A deal we could not read is a deal not applied — the stay is still
+      // bookable at its listed price, which is what the page then shows.
+    }
+  }
+
+  /// The deal this page found for itself (see [_adoptLiveDeal]).
+  NegotiatedDeal? _adoptedDeal;
+
+  static bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  static DateTime? _parseDmy(String? s) {
+    if (s == null || s.isEmpty) return null;
+    final p = s.split('-');
+    if (p.length != 3) return null;
+    final d = int.tryParse(p[0]), m = int.tryParse(p[1]), y = int.tryParse(p[2]);
+    if (d == null || m == null || y == null) return null;
+    return DateTime(y, m, d);
   }
 
   /// A host-set check-in or check-out time, or a sensible default.
@@ -547,7 +631,12 @@ class _PropertyPageState extends State<PropertyPage>
   bool _dealReleased = false;
 
   bool get hasDeal =>
-      !_dealReleased && (widget.dealCode?.isNotEmpty ?? false);
+      !_dealReleased &&
+      ((widget.dealCode?.isNotEmpty ?? false) || _adoptedDeal != null);
+
+  /// The agreed stay's dates, wherever the deal came from.
+  String? get _dealFrom => widget.dealFrom ?? _adoptedDeal?.bookFrom;
+  String? get _dealTo => widget.dealTo ?? _adoptedDeal?.bookTo;
 
   /// An accepted deal fixes its dates, so both pickers close.
   ///
@@ -565,9 +654,7 @@ class _PropertyPageState extends State<PropertyPage>
   /// Only when the deal actually names dates — a code with none behaves as
   /// before. Same rule as the website's property page.
   bool get _dealFixesDates =>
-      hasDeal &&
-      (widget.dealFrom?.isNotEmpty ?? false) &&
-      (widget.dealTo?.isNotEmpty ?? false);
+      hasDeal && (_dealFrom?.isNotEmpty ?? false) && (_dealTo?.isNotEmpty ?? false);
 
   /// Give up the deal to book other nights.
   ///
@@ -1188,9 +1275,25 @@ class _PropertyPageState extends State<PropertyPage>
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              // "Negotiate & Reserve" — the sheet it opens offers both, and
-              // negotiating is the thing that makes this platform different.
-              child: Text(isPrebooking ? 'Reserve' : 'Negotiate & Reserve'),
+              /// "Negotiate & Reserve" — the sheet it opens offers both, and
+              /// negotiating is the thing that makes this platform different.
+              ///
+              /// Except once a price IS agreed for these nights. Client,
+              /// 2026-09-16: "after negotiating, again showing button to
+              /// negotiate is wrong." The sheet had it right — Send an Offer
+              /// goes disabled with "Already agreed for these dates" — but
+              /// this strip, which is what the guest actually sees coming
+              /// back from My Negotiations, still invited them to negotiate a
+              /// price they had just settled. `_negotiationLock` is the same
+              /// fact the sheet reads, and it is date-scoped, so a deal for
+              /// this weekend does not change the button for next weekend.
+              child: Text(isPrebooking
+                  ? 'Reserve'
+                  : _negotiationLock?.reason == 'accepted'
+                      ? 'Book at the agreed price'
+                      : _negotiationLock != null
+                          ? 'Reserve'
+                          : 'Negotiate & Reserve'),
             ),
             // No explanation sits here. This strip is a Row — price on the
             // left, button on the right — so a paragraph added to it lays out
@@ -1209,7 +1312,17 @@ class _PropertyPageState extends State<PropertyPage>
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.8,
         ),
-        padding: const EdgeInsets.all(16),
+        // The bottom inset is the system navigation bar's, not a fixed 16.
+        //
+        // This sheet is pinned to the bottom of the screen and ended in a
+        // full-width button — Negotiate — which the gesture/3-button bar drew
+        // straight over: half the control was untappable (client, 2026-09-16,
+        // with a photograph). The same trap as the login card and the Update
+        // Profile button, and the same fix. viewPadding rather than padding:
+        // it keeps its value while the keyboard is open, where padding
+        // collapses to zero.
+        padding: EdgeInsets.fromLTRB(
+            16, 16, 16, 16 + MediaQuery.of(context).viewPadding.bottom),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -1258,27 +1371,16 @@ class _PropertyPageState extends State<PropertyPage>
                   ),
                 ),
               if (isPrebooking) const SizedBox(height: 16),
-              // Booking Type Dropdown
-              ListTile(
-                leading: const Icon(Icons.category),
-                title: DropdownButton<String>(
-                  value: bookingType,
-                  isExpanded: true,
-                  items: _stayTypes
-                      .map((type) => DropdownMenuItem(
-                            value: type,
-                            child: Text(type),
-                          ))
-                      .toList(),
-                  // No _updatePriceString here on purpose: picking "Monthly"
-                  // must not move the price. The dates and the host's rate do
-                  // that, and this used to multiply the total by thirty.
-                  onChanged: (String? newValue) {
-                    setState(() => bookingType = newValue!);
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
+              // The "Per night / Monthly" dropdown is gone (client,
+              // 2026-09-16: "no use of this drop down per night and
+              // monthly"). It was right: it decided nothing. It once
+              // multiplied the total by thirty — which charged people for
+              // nights they had not booked — and after that was removed it
+              // was a label the server never received, because `bookingType`
+              // is not in createBooking's schema and validation runs with
+              // stripUnknown. The dates and the host's rate set the price,
+              // and a long stay is already named where it matters: the
+              // breakdown says "You saved 15.1% with the weekly rate".
               ListTile(
                 leading: const Icon(Icons.calendar_today),
                 enabled: !_dealFixesDates,
@@ -1499,7 +1601,7 @@ class _PropertyPageState extends State<PropertyPage>
                           children: [
                             Text(
                               'Your deal is agreed for '
-                              '${widget.dealFrom} to ${widget.dealTo}, '
+                              '$_dealFrom to $_dealTo, '
                               'so these dates cannot be changed.',
                               style: inter(
                                   fontSize: 12, color: kMuted, height: 1.35),
@@ -2568,7 +2670,6 @@ onPressed: () async {
                       // says which of the two the guest chose.
                       if (isPrebooking && !isCod) "payMode": "deposit",
                       "category": 1,
-                      "bookingType": bookingType,
                       // Extra informational fields for server (safe to ignore if unsupported)
                       "isPrebooking": isPrebooking,
                       "totalAmount": finalAmount,

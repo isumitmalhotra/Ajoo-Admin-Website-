@@ -157,11 +157,12 @@ NotifDestination notificationDestination({
   switch (kind) {
     case NotifKind.message:
     case NotifKind.offer:
-      // The negotiation thread is the only conversation surface in this app.
-      return hasProperty
-          ? NotifDestination('/negotiation',
-              arguments: {'propertyId': propertyId})
-          : NotifDestination(home);
+      // "/negotiation" is My Negotiations — the list of threads — since
+      // 2026-09-16. It needs no property: the screen loads every thread this
+      // person is in, and the one the notification is about is at the top.
+      // It used to point at the pre-rebuild socket chat, which needed a
+      // property object, a token and four ids assembled by the caller.
+      return NotifDestination('/negotiation');
 
     case NotifKind.cancellation:
       // /history is the GUEST's My Bookings, and it was where a host's own

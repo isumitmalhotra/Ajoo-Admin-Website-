@@ -81,19 +81,21 @@ void main() {
       expect(d.arguments['hostTab'], kHostBookingsTab);
     });
 
-    test('a chat notification opens that conversation when we know the property', () {
+    test('a chat or offer notification opens My Negotiations', () {
+      // "/negotiation" is the list of threads since 2026-09-16, not the old
+      // socket chat — so it needs no property: the screen loads every thread
+      // this person is in, and the one the notification is about is on top.
       final d = notificationDestination(
         title: 'New message from Aarav',
         isHost: true,
         propertyId: '12',
       );
       expect(d.route, '/negotiation');
-      expect(d.arguments['propertyId'], '12');
     });
 
-    test('a chat notification without a property goes home, not to a dead route', () {
+    test('…and still does when the push carried no property', () {
       final d = notificationDestination(title: 'New message', isHost: false);
-      expect(d.route, '/home');
+      expect(d.route, '/negotiation');
     });
 
     test('a stored route from the web layout is ignored', () {

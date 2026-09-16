@@ -91,7 +91,9 @@ void main() {
     /// Every screen that puts a blocking spinner over a fetch that can toast.
     const sites = [
       'lib/ui/screens_renter/property_details/open_property.dart',
-      'lib/service/notification_routing_service.dart',
+      // notification_routing_service is off this list since 2026-09-16: the
+      // only blocking spinner it had wrapped a property fetch for the old
+      // negotiation chat, and that screen — and the fetch with it — is gone.
     ];
 
     for (final site in sites) {

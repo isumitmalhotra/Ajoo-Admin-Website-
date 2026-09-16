@@ -55,7 +55,6 @@ String codeOf(String path) {
 const _picker = 'lib/ui/screens_host/listing/components/location_picker_sheet.dart';
 const _wizard = 'lib/ui/screens_host/listing/listing_wizard_screen.dart';
 const _settings = 'lib/ui/screens_common/settings/settings_page.dart';
-const _negotiation = 'lib/ui/screens_common/price_negotiation/negotitaion_page.dart';
 const _hostBooking = 'lib/ui/screens_host/booking_history/host_booking_detail_page.dart';
 const _guestBooking =
     'lib/ui/screens_renter/history/history_description/history_description_page.dart';
@@ -123,7 +122,11 @@ void main() {
       // the guest booking screen's floating "Get Directions" bar, which was
       // pinned at a hardcoded `bottom: 10` and sat under the gesture pill.
       // Both were seen on the emulator while checking the other fixes.
-      for (final f in [_picker, _wizard, _settings, _negotiation, _guestBooking]) {
+      // _negotiation came off this list on 2026-09-16: the negotiation
+      // composer was the pre-rebuild chat page, and it is deleted. The
+      // listing's own booking sheet took its place and carries the same
+      // fix — see the group below.
+      for (final f in [_picker, _wizard, _settings, _guestBooking]) {
         expect(codeOf(f), contains('safeBottom'), reason: '$f lost the fix');
         expect(File(f).readAsStringSync(),
             contains("import 'package:rent_home/utils/safe_bottom.dart'"),
@@ -258,23 +261,33 @@ void main() {
       expect(svc, contains('_pendingSends.clear();'));
     });
 
-    test('the negotiation entry points are untouched', () {
-      // Offering on a property, the host inbox and a negotiation push
-      // notification are all still negotiations.
+    test('the negotiation entry points still lead to a negotiation', () {
+      // Still negotiations — but since 2026-09-16 they open MY NEGOTIATIONS,
+      // the list of threads, rather than PriceNegotiationPage. The client
+      // followed an offer notification into that pre-rebuild chat on the
+      // 16th ("Which negotiation page it is taking me from notifications??")
+      // and the page was deleted the same day.
       for (final f in [
         'lib/ui/screens_host/support/host_messages_screen.dart',
-        'lib/ui/screens_common/price_negotiation/negotiation_wrapper.dart',
         'lib/ui/screens_common/notifications/notification_screen.dart',
+        'lib/service/notification_routing_service.dart',
       ]) {
-        expect(codeOf(f), contains('PriceNegotiationPage'),
-            reason: '$f should still be a negotiation');
+        final code = codeOf(f);
+        expect(code, isNot(contains('PriceNegotiationPage')),
+            reason: '$f is back in the pre-rebuild chat');
+        expect(code, anyOf(contains('GuestNegotiationsScreen'), contains('HostNegotiationsScreen')),
+            reason: '$f no longer leads to a negotiation at all');
       }
     });
 
-    test('the negotiation composer clears the navigation bar', () {
-      // Not part of the report, but the same defect as #20/#22/#23 on a
-      // screen this pass touched.
-      expect(codeOf(_negotiation), contains('safeBottomInsets(context'));
+    test("the listing's booking sheet clears the navigation bar", () {
+      // The composer this used to check is gone; the sheet that replaced it
+      // ended in the Negotiate button, which the navigation bar drew over
+      // (client, 2026-09-16, with a photograph).
+      final page = File('lib/ui/screens_renter/property_details/property_page.dart')
+          .readAsStringSync();
+      expect(page, contains('16 + MediaQuery.of(context).viewPadding.bottom'),
+          reason: 'the sheet is back to a fixed bottom padding');
     });
   });
 

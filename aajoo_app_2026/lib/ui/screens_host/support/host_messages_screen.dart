@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
+import 'package:rent_home/ui/screens_host/negotiations/host_negotiations_screen.dart';
 import 'package:rent_home/constants.dart';
-import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/models/host_negotiation.dart';
-import 'package:rent_home/models/properties_response_model.dart';
 import 'package:rent_home/ui/motion/aajoo_motion.dart';
-import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
-import 'package:rent_home/ui/screens_common/price_negotiation/negotitaion_page.dart';
 import 'package:rent_home/ui/screens_host/host_controller.dart';
 import 'package:rent_home/ui/screens_host/support/host_support_screen.dart';
 import 'package:rent_home/utils/fonts.dart';
@@ -262,43 +257,17 @@ class _HostMessagesScreenState extends State<HostMessagesScreen> {
     );
   }
 
+  /// Open the thread on the host's own Negotiations screen.
+  ///
+  /// This pushed PriceNegotiationPage — the pre-rebuild socket chat the
+  /// negotiation rebuild replaced on 2026-09-12, and the screen the client
+  /// found their way back into from a notification on 2026-09-16 ("Which
+  /// negotiation page it is taking me from notifications??"). It needed a
+  /// hand-built Property with six empty fields and a token read from
+  /// storage; the negotiations screen needs neither and shows the state the
+  /// server actually has, with Accept / Counter / Decline where they belong.
   Future<void> _openThread(HostNegotiation n) async {
-    final token = await const FlutterSecureStorage().read(key: "user_token");
-    if (token == null) {
-      Fluttertoast.showToast(msg: 'Please login again to open this chat.');
-      return;
-    }
-    final hostId = Get.find<AuthController>().userData.value?.userId;
-    if (hostId == null) {
-      Fluttertoast.showToast(msg: 'Please login again to open this chat.');
-      return;
-    }
-    final property = Property(
-      propertyId: n.propertyId,
-      propertyName: n.propertyName,
-      propertyAddress: '',
-      propertyDesc: '',
-      propertyPrice: n.originalPrice.toStringAsFixed(0),
-      propertyCity: '',
-      propertyLongitude: '0',
-      propertyLatitude: '0',
-      propertyHostId: hostId,
-      propertyZip: null,
-      images: const [],
-      categoryTitles: const [],
-    );
     if (!mounted) return;
-    Get.to(() => PriceNegotiationPage(
-          userId: hostId.toString(),
-          senderId: hostId.toString(),
-          receiverId: n.renterId.toString(),
-          hostId: hostId.toString(),
-          propertyId: n.propertyId.toString(),
-          serverUrl: Apiconstants.serverUrl,
-          token: token,
-          property: property,
-          lat: '0',
-          long: '0',
-        ));
+    Get.to(() => const HostNegotiationsScreen());
   }
 }

@@ -1,17 +1,17 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
+import 'package:rent_home/ui/screens_renter/negotiations/guest_negotiations_screen.dart';
+import 'package:rent_home/ui/screens_host/negotiations/host_negotiations_screen.dart';
+import 'package:rent_home/ui/screens_renter/messages/messages_screen.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:logger/logger.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
-import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/data/models/notification_response_model.dart';
 import 'package:rent_home/ui/screens_common/notifications/components/notification_list_item.dart';
 import 'package:rent_home/ui/screens_common/notifications/notication_controller.dart';
 import 'package:rent_home/widgets/common_back_button.dart';
-import 'package:rent_home/ui/screens_common/price_negotiation/negotitaion_page.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/utils/notification_link.dart';
 // import 'package:rent_home/controller/notification_controller.dart';
@@ -146,82 +146,49 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         message: notification.unMessage,
         payloadType: payload?.type,
       );
-      // The thread below needs a full argument set — property object, token,
-      // both party ids — so it can only open when we know the property. Any
-      // conversation notification qualifies, not just ones with "negotiation"
-      // in the title, which is what the old check required.
-      final isNegotiationThread =
-          (kind == NotifKind.message || kind == NotifKind.offer) &&
-              payload?.propertyId != null;
+      /**
+       * An OFFER opens My Negotiations; a MESSAGE opens the inbox.
+       *
+       * Client, 2026-09-16: "Which negotiation page it is taking me from
+       * notifications??" Tapping an offer notification pushed
+       * PriceNegotiationPage — the pre-rebuild socket chat with its own
+       * thirty-second countdown, quick-price chips and offer counter, which
+       * the negotiation rebuild replaced on 2026-09-12. The listing stopped
+       * opening it that day; this list never did, so a notification was the
+       * way back into a screen nothing else used.
+       *
+       * Both destinations show the state the server actually has, and
+       * neither needs a property fetch, a token or four ids assembled by
+       * hand — which is what the branch this replaces spent thirty lines
+       * doing, and frequently got wrong ("current user could be either
+       * party").
+       */
+      if (kind == NotifKind.offer) {
+        Get.to(() => authController.authIsHost.value
+            ? const HostNegotiationsScreen()
+            : const GuestNegotiationsScreen());
+        return;
+      }
+      if (kind == NotifKind.message) {
+        Get.to(() => MessagesScreen(openWith: payload?.userId));
+        return;
+      }
 
       // Everything else used to stop here, marked read and going nowhere — you
       // never found out what it was about. Resolve a destination from the
       // wording, the same way the web does.
-      if (!isNegotiationThread) {
-        final destination = notificationDestination(
-          title: notification.unTitle,
-          message: notification.unMessage,
-          payloadType: payload?.type,
-          payloadRoute: payload?.route,
-          isHost: authController.authIsHost.value,
-          propertyId: payload?.propertyId,
-          // The stored row knows which booking it was about; the list can then
-          // point at that row rather than opening a tab and stopping.
-          bookingId: notification.unBookingId,
-        );
-        Get.toNamed(destination.route, arguments: destination.arguments);
-        return;
-      }
-
-      if (notification.payload != null) {
-        final currentUserId = authController.userData.value?.userId;
-        final payloadData = notification.payload!;
-        // Handle negotiation requests and offer acceptances. The guard above
-        // already established this is a conversation with a known property.
-        if (payloadData.propertyId != null) {
-          final property = await notificationController
-              .getSingleProperty(int.parse(payloadData.propertyId!));
-          final token =
-              await const FlutterSecureStorage().read(key: "user_token");
-
-          // Determine correct user roles based on notification type and current user
-          String userId, senderId, receiverId;
-
-          if (notification.unTitle.contains("negotiation")) {
-            // For negotiation requests: current user is the host (receiver)
-            userId = currentUserId.toString();
-            senderId = currentUserId.toString();
-            receiverId = payloadData.userId ?? payloadData.receiverId ?? "";
-          } else {
-            // For offer accepted: current user could be either party
-            userId = currentUserId.toString();
-            senderId = currentUserId.toString();
-            receiverId = (currentUserId.toString() == payloadData.userId)
-                ? (payloadData.receiverId ?? payloadData.hostId ?? "")
-                : (payloadData.userId ?? "");
-          }
-
-          Logger().f("Current User: $currentUserId");
-          Logger().f("Payload: ${payloadData.toJson()}");
-          Logger().f(
-              "Navigation - userId: $userId, senderId: $senderId, receiverId: $receiverId");
-
-          Navigator.push(
-              context,
-              CupertinoPageRoute(
-                  builder: (context) => PriceNegotiationPage(
-                      userId: userId,
-                      receiverId: receiverId,
-                      propertyId: payloadData.propertyId!,
-                      serverUrl: Apiconstants.serverUrl,
-                      token: token.toString(),
-                      property: property,
-                      lat: payloadData.lat ?? "0.0",
-                      long: payloadData.long ?? "0.0",
-                      hostId: payloadData.hostId ?? currentUserId.toString(),
-                      senderId: senderId)));
-        }
-      }
+      final destination = notificationDestination(
+        title: notification.unTitle,
+        message: notification.unMessage,
+        payloadType: payload?.type,
+        payloadRoute: payload?.route,
+        isHost: authController.authIsHost.value,
+        propertyId: payload?.propertyId,
+        // The stored row knows which booking it was about; the list can then
+        // point at that row rather than opening a tab and stopping.
+        bookingId: notification.unBookingId,
+      );
+      Get.toNamed(destination.route, arguments: destination.arguments);
     } catch (e) {
       Logger().e("Error navigating to negotiation: $e");
       ScaffoldMessenger.of(context).showSnackBar(

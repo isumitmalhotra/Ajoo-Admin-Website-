@@ -24,7 +24,9 @@ import 'package:rent_home/ui/screens_common/settings/settings_page.dart';
 import 'package:rent_home/ui/screens_common/splash/splash_screen.dart';
 import 'package:rent_home/ui/screens_common/support/support_screen.dart';
 import 'package:rent_home/service/theme_service.dart';
-import 'package:rent_home/ui/screens_common/price_negotiation/negotiation_wrapper.dart';
+import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
+import 'package:rent_home/ui/screens_renter/negotiations/guest_negotiations_screen.dart';
+import 'package:rent_home/ui/screens_host/negotiations/host_negotiations_screen.dart';
 import 'package:rent_home/middleware/auth_middleware.dart';
 import 'package:rent_home/middleware/notification_routing_middleware.dart';
 import 'package:rent_home/ui/screens_common/location_picker/location_picker.dart';
@@ -34,7 +36,8 @@ import 'package:rent_home/controller/alert_dialog.dart';
 import 'package:rent_home/data/ApiConstants.dart';
 
 import 'binding/init_binding.dart';
-
+
+
 import 'package:rent_home/utils/app_log.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -167,9 +170,18 @@ class MyApp extends StatelessWidget {
         GetPage(
             name: "/bookmarkProperties",
             page: () => const BookmarkedPropertiesPage()),
+        // "/negotiation" is the route a notification names, and it now
+        // lands on MY NEGOTIATIONS — the list of threads with Accept /
+        // Counter / Decline — for whichever side is signed in. It used to be
+        // NegotiationPageWrapper → PriceNegotiationPage, the pre-rebuild
+        // socket chat that the rebuild replaced on 2026-09-12 and that the
+        // client found their way back into from a notification on
+        // 2026-09-16. The wrapper, the page and its controller are gone.
         GetPage(
             name: "/negotiation",
-            page: () => const NegotiationPageWrapper(),
+            page: () => Get.find<AuthController>().authIsHost.value
+                ? const HostNegotiationsScreen()
+                : const GuestNegotiationsScreen(),
             middlewares: [NotificationRoutingMiddleware()]),
         GetPage(
             name: '/location-picker', page: () => const LocationPickerPage()),
