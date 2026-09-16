@@ -161,6 +161,7 @@ money and is not. The second gates every honest SEO number on the site.
 | ~~3.19~~ | ~~**Client feedback batch, 2026-09-12 evening**~~ **CLOSED** (build 85) | Three screenshot items and the OTP channel. (a) **Internet speed above everything** — "highlighted section should open under the internet section not on top": both renderers drew every scalar field in one block and every chip group in another, and disagreed about which came first, so a host was asked how fast their internet is four rows above the row where they say whether there is any. The SCHEMA names the group each question belongs beside now (`under` / `above`) and both platforms follow it; `above` exists because kitchen_type decides whether the kitchen group shows at all. Exposed two older app faults: `has_wifi` was never set there, so an app host could not state a speed **at all**, and the app never honoured a GROUP's `showIf`, so kitchen appliances showed to a host who had said "No Kitchen". (b) **"not able to select from the listing"** on the place autocomplete — Chrome reads a place-name box inside an address-heavy form as an address field and draws its SAVED ADDRESSES in a native dropdown exactly where ours is; the host was clicking Chrome's list. `autoComplete="off"` + a non-address `name` on all three place inputs that lacked it. (c) **OTP by email only** — reset codes never go by SMS now, and typing a mobile says where the code will go and that **sign-in with a mobile and password is unchanged**, which the client confirmed explicitly. The SMS transport is held, not removed: v2 is a provider and a DLT template. | web build + 37/37, app 387/387, backend 135/135. **Not driven on a device or in a browser:** the wizard needs a host login |
 | ~~3.21~~ | ~~**A host could put a DRAFT listing live**~~ **CLOSED 2026-09-12** | Reported with two screenshots: a listing badged Draft offered "Put live" in the host portal, and pressing it published it into public search with no photograph and **₹0/night**, never submitted, never seen by anyone at Aajoo. W5 closed this on the ADMIN side and left the host's own switch beside it checking ownership and nothing else. Same state machine now, with a refusal that says what to do next. The subtlety: `stateOf` reads being on the site as the strongest signal of approval, so a LEGACY listing (29,216 of them, tier never written) taken offline reads as DRAFT — a naive guard would lock its owner out, so the handler asks "with is_active forced on, would this read as approved?". **The app already had it right** (`if (adminCleared && !rejected)`); the website was the platform with the hole. **29308 has been taken off the site** (`scripts/takeListingOffline.js 29308 --apply`, dry-run first; `is_active` 1→0 and nothing else, so the host can still finish and submit it). | verified 09-12 — search near Bir now answers "no record found" and `/properties/29308` returns an empty payload; the deployed web bundle carries the new guard copy; test `aDraftCannotBePutLive` (9), source half checked against the pre-fix handler; 136/136. **The server guard itself is not exercised end to end** — that needs a host login |
 | ~~3.20~~ | ~~**"Nearby" comes back empty on a cold launch**~~ **CLOSED 2026-09-13** | **It was never the request — it was the ORDER.** `getCurrentLocation()` returns the LAST KNOWN position at once and fires `_refineLocation()` in the background; `fetchProperties` then searches at that last-known point. Two `getProperties()` calls are in flight on every cold start, and both ended by assigning straight into `properties` — so **whichever finished LAST won**, however old it was. The foreground search answers in ~2s with the right stays (the same answer curl gives); the background refine lands at a different fix, finds nothing, walks out to the planetary ring (**~92 seconds, measured**) and overwrites a correct screen with its own answer. From outside: a home that had stays and then did not, with no error and nothing in a release log because `appLog` is compiled out. Fixed with a **monotonic search token** — every search takes the number it started with and only the newest may write, checked before the ring walk, on each ring, and again before the assignment. That closes the CLASS: the same race existed between any two fetches, and paging the map produced it too. Plus **capped rings for a background refine** — the planetary ring is right for a search somebody is waiting on and wrong for one nobody asked for. **It did not need the debug build.** `mapService` stopped being `final` so a stub could make the slow call slow on purpose; the five new tests were run against the pre-fix controller first and **four of the five fail**, which is the fault reproduced deterministically. 429 app tests pass. | verified 09-13 — `test/the_slowest_search_does_not_win_test.dart`, run against the unfixed controller first |
+| **3.22** | **Three page BODIES are still pre-redesign, inside the new chrome** (raised 2026-09-16) | The 09-16 sweep deleted every retired page and rebuilt or redirected the rest, with three exceptions that are still reached and so could not simply go. `/state-regulation` (372 lines) is linked from the host portal sidebar, `/verify/complete` is where the KYC provider redirects a guest back to, and `/admin/status` (112 lines) is the last admin screen the portal redesign has not reached. All three now render inside `LegacyBodyInNewChrome` — the redesigned TopNav and Footer around a pre-redesign body — so the page frame matches the rest of the site and only the body is dated. They are the whole of what is left: the reachability sweep finds nothing else. Rebuilding them is a normal redesign task, not a cleanup one, and nothing is broken meanwhile. | `src/App.tsx` `LegacyBodyInNewChrome` |
 | **3.17** | **Should an agreed deal HOLD the nights?** (raised 2026-09-16) | Today it does not: a deal is a price, date-locked and good until midnight, and the nights are taken by whoever books first — so two guests can hold an agreed price on the same stay and one of them will lose it (§8a35, verified live). Both clients now say "the nights aren't held until you book". If the client wants a hold, it is a real feature and not a fix: a soft lock on the dates for the life of the deal (hours at most), released when it expires, visible to the host as "held, not booked", and a rule for what happens when two deals overlap — first accepted wins, or nobody holds. Needs the client's answer before code. | §8a35 |
 | **3.15** | **Sign in with Apple** — required for App Review, not for TestFlight | App Store Review Guideline 4.8: an app offering Google sign-in must offer a login that limits data collection and lets the user hide their email — Sign in with Apple. App: `sign_in_with_apple`, the button beside Google's, the Apple provider in Firebase Auth. Backend: verify Apple's identity token and create/link the account the way the Google path does (the Google-account lockout in the memory notes applies equally — role flags, unusable password). Client: enable the capability on the App ID. About a day once §1.16 (1)–(2) exist. | `IOS_READINESS.md` §4.1 |
 | **3.16** | **The iOS on-device drive** — every flow driven on the Android emulator this week, on an iPhone from TestFlight | The Android drives found five defects no test had (§8a29); iOS will have its own. The list is `IOS_READINESS.md` §4.2: sign-up (OTP, Google), DOB picker, search + map + the "near me" prompt, listing page + Things to know, the booking sheet with the deposit and cleaning statements, the deal banner, Send an Offer (night / week), the host side and the popup, Razorpay (card + the UPI intent list), pay-at-property, My Bookings, notifications (foreground / background / cold start), the wizard (library photos, document picker, map pin), profile photo, share/print, tap-to-dial, WhatsApp, sign-out and the keychain. Needs §1.16 first; then a tester with an iPhone, or a Mac for the Simulator (no push there). | — |
@@ -285,6 +286,92 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a36. Closed 2026-09-16 (night) — the two test negotiations cleared, and ~11,300 lines of retired UI deleted
+
+**"Clean up those two test negotiations on 29302."** Done. Both were mine,
+written by a probe on 15 September while proving the same-day and deal-pricing
+fixes: `2 coupon(s), 4 offer row(s), 2 log row(s)`, both coupons unspent
+(`cpn_used_count = 0`), so nothing downstream referred to them. Property 29302
+now reads `coupons: 0 / offers: 0 / logs: 0`. The two scratch scripts that did
+it are deleted rather than left in `scripts/`. A first pass found nothing
+because it filtered on `DATE(created_at) = CURDATE()` — the rows are stored in
+UTC and the IST date had already rolled over — so the delete was retargeted by
+explicit row id.
+
+**"Clean codebase for all the older UI; check if it is connected anywhere in
+the web or app, and if it is, remove it from there and connect the corrected
+new UI page."** The routes were retired last night, which stopped anyone
+*reaching* the old pages but left them in the tree looking like live code.
+Anyone searching for "checkout" or "Footer" found two of each and no way to
+tell which one ships. Both trees are now swept, and nothing was deleted on
+appearance — every file was proven unreferenced first.
+
+**Web — 51 files, 9,141 lines gone.** The pre-redesign guest pages (help
+centre, the dashboard and its four tabs, the old checkout, confirmation and
+cancel-result, the profile and review pages); the SECOND auth flow with its
+login, signup, OTP, forgot- and reset-password forms; the old shell
+(CommonLayout, Header, Footer, loginLayout) and the form primitives only that
+flow used; the host AddProperty form the 5-step wizard replaced; the
+pre-redesign admin Bookings screen and the PrivacyPolicyPage that LegalPage
+replaced; a dead redux slice and a stray second `adminSession`.
+
+Two **barrels** were what kept most of it looking alive. `src/pages/index.ts`
+and `src/components/index.ts` re-export by name, so reachability analysis
+counts every target as used whether or not anything consumes it — which is why
+an earlier sweep reported these files as live. Both are pruned and both now
+have zero unused exports. The sweep is down from **39 unreachable files to 3**,
+and all three of those are ambient `.d.ts` declarations, which are never
+imported by design.
+
+Two near-misses worth recording. `auth/PersonalInfo.tsx` and
+`auth/AddressInfo.tsx` looked live because the admin AddUserModal imports
+`PersonalInfo` and `AddressInfo` — from its OWN folder, same names, different
+files. And `components/layout/Footer.tsx` looked live because the redesign has
+a `Footer` too. Both were cleared by matching the full import path rather than
+the basename.
+
+**One thing came across rather than going with it.** The old footer's
+`socialLinks.ts` held Aajoo's real profile URLs — the same three the app links
+to, with handles corroborated against the live accounts. The **redesigned**
+footer was still pointing at the bare network home pages, so every social icon
+on every page of the live site opened a signed-out Instagram rather than Aajoo.
+Those URLs now sit in the redesign footer and in the Contact page's CMS
+defaults, so the two web surfaces and the app finally name the same three
+profiles. YouTube and LinkedIn are dropped rather than guessed at again:
+nothing anywhere corroborates either, and an icon that opens a dead page is the
+bug being fixed.
+
+**App — 1,401 lines gone.** Opening any listing as a guest ran
+`Get.put(NewPropertyController())`: 313 lines of the HOST's add-property form
+state, every field of the listing wizard and its submit calls, to read three
+members. All the page wanted was the reviews, and the renter side already had
+`PropertyReviewController` with exactly those three members and identical
+bodies. The host controller's file was even named `..._legacy.dart` — the
+wizard replaced the form it belonged to long ago, and it survived only because
+that one import kept it reachable, so no orphan sweep could see it was dead.
+Also deleted: `update_property_page.dart` (the 684-line pre-wizard edit form)
+and `ongoing_widget.dart`, which StayBanner replaced — the old widget only
+showed a stay while the guest was PHYSICALLY IN the property, so a booking for
+next week put nothing on the home screen. `state_city_dropdowns.dart` is live
+and stayed, but moved out of a `screens_host/add_property/` folder that no
+longer had an add-property screen in it.
+
+**Four imports that looked like a dark feature, and were not.** The home screen
+imports `ResumeBookingBanner`, `CounterOfferBanner`, `NegotiatedDealBanner` and
+`OngoingBookingWidget` and renders none of them. Each was checked before being
+touched, because three of them answer client reports — the KYC detour that
+loses a booking, and a host's counter nobody sees. All three are live through
+`HomeBannerRail`, which consolidated four stacked cards into one swipeable
+rail; only the imports were leftovers. No feature was dark. The fourth was the
+retired widget above.
+
+Verified: web `tsc -b` clean, **48/48** rule tests, build green; app
+`flutter analyze` **0 errors**, **493/493** tests — six new tests pin the
+deletions, the controller swap, the moved widget and the footer's links, so
+none of this can quietly come back.
+
+---
 
 ### 8a35. Closed 2026-09-16 (evening) — seven from the videos, and a dead function behind two of them
 
