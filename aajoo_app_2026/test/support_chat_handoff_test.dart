@@ -106,4 +106,49 @@ void main() {
     expect(src, contains('connectTimeout'));
     expect(src, contains('receiveTimeout'));
   });
+
+  // ── The support role (BotPenguin, 2026-09-16) ─────────────────────────────
+  //
+  // "The website passes the token, name, email and phone, but not whether that
+  // account is Guest only, Host only or both. Because BotPenguin does not
+  // receive this, it has to ask every logged-in user to choose a role."
+
+  test('the role the server decided is what goes in the URL', () {
+    expect(src, contains("params['ctx-support_role'] = handoff.supportRole;"),
+        reason: 'the bot has nothing to route on without this');
+    expect(src, contains("field('support_role')"),
+        reason: 'the role must be read off the handoff response');
+  });
+
+  test('the role is never invented on the client', () {
+    // The whole point is that the SERVER decides from the account record. A
+    // client that derived it from, say, the app's own isHost flag would route
+    // on whichever mode the user last switched into, not on what they are.
+    expect(
+      RegExp(r"""supportRole\s*=\s*['"](guest|host|both)['"]""").hasMatch(src),
+      isFalse,
+      reason: 'nothing may assign a role literal locally — the empty default '
+          'on the constructor is the only assignment allowed');
+    for (final guess in ["'host'", "'guest'", "'both'"]) {
+      expect(
+        RegExp('ctx-support_role.*$guess').hasMatch(src), isFalse,
+        reason: 'a literal $guess in the URL would be a client-side guess');
+    }
+  });
+
+  test('only the three agreed values are ever sent', () {
+    // A typo or a new value from the server must not reach the bot, which
+    // would route on a variable nobody has a branch for.
+    expect(src, contains("_supportRoles.contains(role) ? role : ''"));
+    expect(src, contains("{'guest', 'host', 'both'}"));
+  });
+
+  test('no role sent means the bot asks, which is the safe way to not know', () {
+    // Absent, not defaulted. The server omits it when the account lookup
+    // fails, and guessing there would start somebody in the wrong journey.
+    expect(src, contains('if (handoff.supportRole.isNotEmpty)'),
+        reason: 'an empty role must send no parameter at all');
+    expect(src, contains("this.supportRole = ''"),
+        reason: 'the field defaults to empty, not to a role');
+  });
 }

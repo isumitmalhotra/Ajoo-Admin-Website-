@@ -39,13 +39,24 @@ class ChatHandoff {
     this.name = '',
     this.phone = '',
     this.email = '',
+    this.supportRole = '',
   });
 
   final String token;
   final String name;
   final String phone;
   final String email;
+
+  /// Which support journey this account belongs in: `guest`, `host` or `both`.
+  ///
+  /// Empty means the server did not say, and the bot should go on asking.
+  /// Anything the server sends that is not one of the three is treated the
+  /// same way — a value nobody agreed on must not route anybody.
+  final String supportRole;
 }
+
+/// The only values the bot routes on. See [ChatHandoff.supportRole].
+const Set<String> _supportRoles = {'guest', 'host', 'both'};
 
 /// Swap the login session for a short-lived, single-purpose handoff token —
 /// and take the NAME, PHONE and EMAIL that come back with it.
@@ -86,11 +97,13 @@ Future<ChatHandoff?> _handoff(String sessionToken) async {
     final t = data['token']?.toString().trim() ?? '';
     if (t.isEmpty) return null;
     String field(String k) => (data[k] ?? '').toString().trim();
+    final role = field('support_role').toLowerCase();
     return ChatHandoff(
       token: t,
       name: field('name'),
       phone: field('phone'),
       email: field('email'),
+      supportRole: _supportRoles.contains(role) ? role : '',
     );
   } catch (_) {
     return null;
@@ -143,6 +156,22 @@ Future<String> supportChatUrl({String base = botPenguinChatUrl}) async {
     }
     if (name.isNotEmpty) params['ctx-name'] = name;
     if (email.isNotEmpty) params['ctx-email'] = email;
+
+    // Which journey to open in — guest, host or both.
+    //
+    // BotPenguin, 2026-09-16: the bot could see a visitor was signed in but
+    // not what their account IS, so it asked everybody to pick a role first.
+    // Sent only when the server actually answered with one of the three: an
+    // absent parameter means "ask", which is the behaviour being replaced and
+    // the right way to not know. The app reads this fresh every time the chat
+    // is opened, so a sign-out, a sign-in or a switch of account is already
+    // carried without anything to invalidate.
+    //
+    // Routing only — /switch-mode still refuses a guest asking for a host
+    // token, whatever this says.
+    if (handoff.supportRole.isNotEmpty) {
+      params['ctx-support_role'] = handoff.supportRole;
+    }
   } catch (_) {
     // Identity is an optimisation. If anything about reading it fails the chat
     // must still open — asking for a phone number is a worse experience than
