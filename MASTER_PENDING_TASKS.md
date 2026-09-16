@@ -26,7 +26,8 @@
 > "deal with no booking", "the 17th is blocked") and the tester sheet brought up to
 > date as v3, including the app tab that had never been answered in a sheet; and §8a34 — the
 > afternoon's five: the same-day repair RUN, KYC required to negotiate, a deal priced on the cards
-> outside the listing, and the signup email's Help Centre pointed at the live page.
+> outside the listing, and the signup email's Help Centre pointed at the live page; and §8a35 — the
+> evening's seven, one of which is the reason the instant counter had been silent since 12 September.
 > §8a24 and §2.8 carry **AWS Days 1–5** — the whole platform as Terraform, a
 > deploy pipeline that holds no AWS key at all, and the cutover runbook. None of
 > it is applied — blocked on an unverified card on the AWS account, not on us.
@@ -36,15 +37,16 @@
 > **Repos:** FE `D:/Projects/aajao-frontend-vercel` (React/Vite → Vercel) ·
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
-> Tester build in circulation: **96 (1.0.0+96)**, `aajoo-homes-1.0.0-build96-release.apk` at repo root
-> (2026-09-16 16:45, sha256 `4E7995B0…4F12`, versionCode 96, 95.8 MB), driven on the emulator against
-> the live backend (§8a34). Builds 88–95 are withdrawn: 88/89 lacked the pricing fixes, 90 and 91 each
+> Tester build in circulation: **97 (1.0.0+97)**, `aajoo-homes-1.0.0-build97-release.apk` at repo root
+> (2026-09-16 evening, versionCode 97, 95.8 MB), driven on the emulator against
+> the live backend (§8a35). Builds 88–96 are withdrawn: 88/89 lacked the pricing fixes, 90 and 91 each
 > carried a defect the emulator found the same hour, 92 lacked the afternoon's three fixes, **93 still
 > charges the cleaning fee** (the server recognises what it sends and charges without it), and 94 let a
 > guest pick a stay shorter than the host's minimum and meet the refusal at booking, and 95 let an
-> unverified guest open a negotiation the server would refuse. Everything before 87 was withdrawn earlier.
+> unverified guest open a negotiation the server would refuse, and 96 still carried the pre-rebuild
+> negotiation chat that every offer notification opened. Everything before 87 was withdrawn earlier.
 > Read back with `python aajoo_app_2026/tool/verify_release_apk.py <apk> https://aajaodev.onrender.com
-> --allow-test-payments --expect-version=1.0.0+96`: the endpoint it was given is in it, no other
+> --allow-test-payments --expect-version=1.0.0+97`: the endpoint it was given is in it, no other
 > `*.onrender.com` host is, no developer path, no plain-http endpoint, and it carries its own
 > version string. Points at `aajaodev.onrender.com` with the sandbox Razorpay key — the platform
 > is still in test mode, so a QA build is the only honest one.
@@ -159,6 +161,7 @@ money and is not. The second gates every honest SEO number on the site.
 | ~~3.19~~ | ~~**Client feedback batch, 2026-09-12 evening**~~ **CLOSED** (build 85) | Three screenshot items and the OTP channel. (a) **Internet speed above everything** — "highlighted section should open under the internet section not on top": both renderers drew every scalar field in one block and every chip group in another, and disagreed about which came first, so a host was asked how fast their internet is four rows above the row where they say whether there is any. The SCHEMA names the group each question belongs beside now (`under` / `above`) and both platforms follow it; `above` exists because kitchen_type decides whether the kitchen group shows at all. Exposed two older app faults: `has_wifi` was never set there, so an app host could not state a speed **at all**, and the app never honoured a GROUP's `showIf`, so kitchen appliances showed to a host who had said "No Kitchen". (b) **"not able to select from the listing"** on the place autocomplete — Chrome reads a place-name box inside an address-heavy form as an address field and draws its SAVED ADDRESSES in a native dropdown exactly where ours is; the host was clicking Chrome's list. `autoComplete="off"` + a non-address `name` on all three place inputs that lacked it. (c) **OTP by email only** — reset codes never go by SMS now, and typing a mobile says where the code will go and that **sign-in with a mobile and password is unchanged**, which the client confirmed explicitly. The SMS transport is held, not removed: v2 is a provider and a DLT template. | web build + 37/37, app 387/387, backend 135/135. **Not driven on a device or in a browser:** the wizard needs a host login |
 | ~~3.21~~ | ~~**A host could put a DRAFT listing live**~~ **CLOSED 2026-09-12** | Reported with two screenshots: a listing badged Draft offered "Put live" in the host portal, and pressing it published it into public search with no photograph and **₹0/night**, never submitted, never seen by anyone at Aajoo. W5 closed this on the ADMIN side and left the host's own switch beside it checking ownership and nothing else. Same state machine now, with a refusal that says what to do next. The subtlety: `stateOf` reads being on the site as the strongest signal of approval, so a LEGACY listing (29,216 of them, tier never written) taken offline reads as DRAFT — a naive guard would lock its owner out, so the handler asks "with is_active forced on, would this read as approved?". **The app already had it right** (`if (adminCleared && !rejected)`); the website was the platform with the hole. **29308 has been taken off the site** (`scripts/takeListingOffline.js 29308 --apply`, dry-run first; `is_active` 1→0 and nothing else, so the host can still finish and submit it). | verified 09-12 — search near Bir now answers "no record found" and `/properties/29308` returns an empty payload; the deployed web bundle carries the new guard copy; test `aDraftCannotBePutLive` (9), source half checked against the pre-fix handler; 136/136. **The server guard itself is not exercised end to end** — that needs a host login |
 | ~~3.20~~ | ~~**"Nearby" comes back empty on a cold launch**~~ **CLOSED 2026-09-13** | **It was never the request — it was the ORDER.** `getCurrentLocation()` returns the LAST KNOWN position at once and fires `_refineLocation()` in the background; `fetchProperties` then searches at that last-known point. Two `getProperties()` calls are in flight on every cold start, and both ended by assigning straight into `properties` — so **whichever finished LAST won**, however old it was. The foreground search answers in ~2s with the right stays (the same answer curl gives); the background refine lands at a different fix, finds nothing, walks out to the planetary ring (**~92 seconds, measured**) and overwrites a correct screen with its own answer. From outside: a home that had stays and then did not, with no error and nothing in a release log because `appLog` is compiled out. Fixed with a **monotonic search token** — every search takes the number it started with and only the newest may write, checked before the ring walk, on each ring, and again before the assignment. That closes the CLASS: the same race existed between any two fetches, and paging the map produced it too. Plus **capped rings for a background refine** — the planetary ring is right for a search somebody is waiting on and wrong for one nobody asked for. **It did not need the debug build.** `mapService` stopped being `final` so a stub could make the slow call slow on purpose; the five new tests were run against the pre-fix controller first and **four of the five fail**, which is the fault reproduced deterministically. 429 app tests pass. | verified 09-13 — `test/the_slowest_search_does_not_win_test.dart`, run against the unfixed controller first |
+| **3.17** | **Should an agreed deal HOLD the nights?** (raised 2026-09-16) | Today it does not: a deal is a price, date-locked and good until midnight, and the nights are taken by whoever books first — so two guests can hold an agreed price on the same stay and one of them will lose it (§8a35, verified live). Both clients now say "the nights aren't held until you book". If the client wants a hold, it is a real feature and not a fix: a soft lock on the dates for the life of the deal (hours at most), released when it expires, visible to the host as "held, not booked", and a rule for what happens when two deals overlap — first accepted wins, or nobody holds. Needs the client's answer before code. | §8a35 |
 | **3.15** | **Sign in with Apple** — required for App Review, not for TestFlight | App Store Review Guideline 4.8: an app offering Google sign-in must offer a login that limits data collection and lets the user hide their email — Sign in with Apple. App: `sign_in_with_apple`, the button beside Google's, the Apple provider in Firebase Auth. Backend: verify Apple's identity token and create/link the account the way the Google path does (the Google-account lockout in the memory notes applies equally — role flags, unusable password). Client: enable the capability on the App ID. About a day once §1.16 (1)–(2) exist. | `IOS_READINESS.md` §4.1 |
 | **3.16** | **The iOS on-device drive** — every flow driven on the Android emulator this week, on an iPhone from TestFlight | The Android drives found five defects no test had (§8a29); iOS will have its own. The list is `IOS_READINESS.md` §4.2: sign-up (OTP, Google), DOB picker, search + map + the "near me" prompt, listing page + Things to know, the booking sheet with the deposit and cleaning statements, the deal banner, Send an Offer (night / week), the host side and the popup, Razorpay (card + the UPI intent list), pay-at-property, My Bookings, notifications (foreground / background / cold start), the wizard (library photos, document picker, map pin), profile photo, share/print, tap-to-dial, WhatsApp, sign-out and the keychain. Needs §1.16 first; then a tester with an iPhone, or a Mac for the Simulator (no push there). | — |
 | **3.14** | **Listing 29303 is carrying test weekend rates I added** | Put there on 09-12 to prove the dated-price work, because only 14 of the catalogue's listings have weekend rates at all. Harmless — it is a test listing — but it makes 29303 a bad control for anything else, and the next person to look at its pricing will not know why a weekend costs more. Either revert it or write it down on the listing. | code 09-12 — `nightlyRates` rows |
@@ -177,7 +180,7 @@ Functional scope is delivered; these are the contractual artifacts. All still op
 | **4.3** | **FMS — Functional Specification** | |
 | **4.4** | **HMS — Functional Specification** | |
 | **4.5** | **Security & Compliance doc + RBAC matrix** | The RBAC itself exists (`config/adminRoles.js`, incl. `SEO_MANAGER`); the document does not. |
-| **4.6** | **Test suite to contract standard** | **144 backend test files pass** on `npm test`, **484 app tests** on `flutter test` and **46 web rule files** on `for f in tests/*.test.mjs; do node $f; done` (counts from 2026-09-16 evening; there is no `test:rules` script — the earlier wording here named one that does not exist). A 37-case edge sweep of the pricing and negotiation helpers is in `report-2026-09-15/` (§8a28–29) but is not a permanent suite. The contract asks for >80% measured coverage, 200+ integration tests, plus load and OWASP reports. No coverage tooling is wired. |
+| **4.6** | **Test suite to contract standard** | **145 backend test files pass** on `npm test`, **488 app tests** on `flutter test` and **46 web rule files** on `for f in tests/*.test.mjs; do node $f; done` (counts from 2026-09-16 night; there is no `test:rules` script — the earlier wording here named one that does not exist). A 37-case edge sweep of the pricing and negotiation helpers is in `report-2026-09-15/` (§8a28–29) but is not a permanent suite. The contract asks for >80% measured coverage, 200+ integration tests, plus load and OWASP reports. No coverage tooling is wired. |
 | **4.7** | **Deployment guide + operational runbook + KT docs** | `DEPLOY_RUNBOOK.md` and the handoffs exist; `Deployment_Options_2026-09-05.docx` (05-09) covers requirements, sizing, tools, providers, cost and a migration plan. Still to formalise: the runbook for whichever host is chosen (§1.8) and the KT pack. |
 | **4.8** | **UAT test cases + sign-off package** | **Manuals delivered 2026-09-05** — web (81 cases, 8 modules) and Android (55 cases, 6 modules), each with environment, accounts, procedure, defect template and sign-off table. Execution and sign-off are the client's; **an internal dry run of both manuals is recommended first** — see §6 for the cases that have only code/test-level verification so far. |
 
@@ -282,6 +285,75 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a35. Closed 2026-09-16 (evening) — seven from the videos, and a dead function behind two of them
+
+**"Auto counter offer stopped, it is not giving me auto counter offer."**
+True, and it had been since **12 September**. `claimNextRound`'s own
+return statement still named `used` and `cap` — the three-offer allowance
+removed that day — so **every call threw `ReferenceError: used is not
+defined`**, the catch fell back to the unguarded `nextRound()`, and two
+things went quiet together: the round came from the property's WHOLE
+history instead of the current negotiation, so a returning guest's first
+offer arrived as round 4 and the engine only auto-counters on **round
+1** — the instant counter worked once per guest per property, ever — and
+the "one live price at a time" guards never ran at all, so an offer could
+be stacked on a pending one. Found by putting a real offer through the
+service against the live tiers and reading the log line nobody greps.
+Fixed (BE `7d2d89a`); the fallback now logs at ERROR and says what is off
+while it is off. Pinned by `theRoundClaimActuallyRuns.test.js`, which
+calls the function against a stubbed database — two of its six checks
+fail on the previous commit.
+
+**"Which negotiation page it is taking me from notifications??"** The
+pre-rebuild chat, `PriceNegotiationPage` — thirty-second countdown,
+quick-price chips, its own offer counter, a second client for one engine.
+The rebuild replaced it on 2026-09-12 **for the listing only**: the push
+router, the in-app notification list and the host's inbox all still
+opened it, so a notification was the way back into a screen nothing else
+used. `lib/ui/screens_common/price_negotiation` is **deleted** — page,
+wrapper, controller, parts — and `/negotiation` now IS My Negotiations for
+whichever side is signed in (app `1c32ad0`).
+
+**"Check negotiate button hidden behind navigation bar."** The booking
+sheet's container padded a fixed 16 at the bottom, so its last control sat
+under the system bar. `viewPadding.bottom` now — the third time this trap
+has been fixed on this app, and the first on this screen.
+
+**"After negotiating, again showing button to negotiate is wrong."** The
+sheet was right (Send an Offer goes disabled: "Already agreed for these
+dates"); the sticky strip — what you see coming back from My
+Negotiations — still said **Negotiate & Reserve** over a settled price. It
+reads **"Book at the agreed price"** once a deal covers the dates on
+screen.
+
+**"No use of this drop down per night and monthly."** Correct: it decided
+nothing. It once multiplied the total by thirty (charging for nights
+nobody booked); after that was removed it was a label the server never
+received, because `bookingType` is not in `createBooking`'s schema and
+validation runs with `stripUnknown`. Removed, with its field and its dead
+payload key.
+
+**"If negotiations are already done for these dates but I go outside and
+try to book again, it books at the original rate."** `hasDeal` read
+`widget.dealCode`, which is only set when the listing is opened THROUGH
+the deal (the home banner, My Negotiations). From search, or on a second
+visit, the page knew nothing and sent no coupon. It now asks
+`DealsController` for its own deal, applies it, and adopts the agreed
+nights when the guest has not chosen others. Pinned by
+`a_deal_applies_wherever_the_listing_is_opened_test.dart`. The website had
+this closed the same morning (§8a33).
+
+**"If two renters negotiated for the same property for the same dates and
+agree, it becomes unavailable for both."** **It does not** — checked
+against the live system rather than reasoned about: two guests were given
+an agreed price on the same nights on 29302, and each sees only their own
+lock and their own code, a third guest sees neither, `bookedRanges` stays
+empty and no date is blocked. What IS true, and what nothing said, is that
+a deal is a **price, not a hold** — the first to book takes the nights.
+Both clients now say so on the accepted-deal line (web `022ebaf`).
+Holding the nights for the length of a deal is a product decision, not a
+bug: **§3.17**.
 
 ### 8a34. Closed 2026-09-16 (afternoon) — five from the client, one of them a data repair
 
