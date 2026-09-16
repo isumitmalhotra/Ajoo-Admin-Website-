@@ -25,7 +25,6 @@ import 'package:rent_home/ui/screens_renter/home/components/search_sheet.dart';
 import 'package:rent_home/ui/screens_renter/home/components/text_category_pills.dart';
 import 'package:rent_home/ui/screens_renter/home/components/home_faq_strip.dart';
 import 'package:rent_home/ui/screens_renter/blog/blog_screens.dart';
-import 'package:rent_home/ui/screens_renter/home/components/resume_booking_banner.dart';
 import 'package:rent_home/ui/screens_renter/home/components/home_blog_strip.dart';
 import 'package:rent_home/ui/screens_renter/home/components/home_cms_sections.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
@@ -33,13 +32,10 @@ import 'package:rent_home/ui/screens_renter/home/components/property_slider.dart
 import 'package:rent_home/ui/screens_renter/home/components/weekly_hero_card.dart';
 import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';
 import 'package:rent_home/ui/screens_renter/home/map/map_screen.dart';
-import 'package:rent_home/ui/screens_renter/home/ongoing_widget.dart';
 import 'package:rent_home/ui/screens_renter/nearby_bookings/pre_booking_screen.dart';
 import 'package:rent_home/ui/screens_renter/bookmark_properties/bookmark_properties_page.dart';
 import 'package:rent_home/ui/screens_common/notifications/notification_screen.dart';
 import 'package:rent_home/service/notification_service.dart';
-import 'package:rent_home/ui/screens_renter/home/components/negotiated_deal_banner.dart';
-import 'package:rent_home/ui/screens_renter/home/components/counter_offer_banner.dart';
 import 'package:rent_home/controller/deals_controller.dart';
 import 'package:rent_home/ui/screens_renter/home/components/featured_destinations.dart';
 // Removed unused imports

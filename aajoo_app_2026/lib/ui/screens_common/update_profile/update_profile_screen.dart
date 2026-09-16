@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
-import 'package:rent_home/ui/screens_host/add_property/widgets/state_city_dropdowns.dart';
+import 'package:rent_home/widgets/state_city_dropdowns.dart';
 import 'package:rent_home/ui/widgets/email_otp_sheet.dart';
 import '../../../constants.dart';
 import '../auth/auth_controller.dart';

@@ -1,7 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:rent_home/constants.dart';
 import 'package:rent_home/models/properties_response_model.dart';
 import 'package:rent_home/ui/design/aajoo_skin.dart';
 import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';

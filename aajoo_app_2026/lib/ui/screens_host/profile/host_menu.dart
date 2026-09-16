@@ -4,8 +4,6 @@ import 'package:iconsax/iconsax.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
-import 'package:rent_home/ui/screens_common/privacy_policy/privacy-policy_page.dart';
-import 'package:rent_home/ui/screens_common/terms_and_conditions/terms_condition_user_page.dart';
 import 'package:rent_home/ui/screens_host/listing/listing_wizard_screen.dart';
 import 'package:rent_home/ui/screens_host/booking_history/booking_history_screen.dart';
 import 'package:rent_home/ui/screens_host/calendar/host_calendar_screen.dart';
@@ -22,7 +20,6 @@ import 'package:rent_home/ui/screens_host/notifications/host_notifications_scree
 import 'package:rent_home/ui/screens_host/notifications/host_notification_count.dart';
 import 'package:rent_home/ui/screens_common/refer/refer_screen.dart';
 import 'package:rent_home/ui/screens_host/settlements/host_settlements_screen.dart';
-import 'package:rent_home/ui/screens_common/cancellation_policy/cancellation_policy_page.dart';
 import 'package:rent_home/ui/screens_common/legal/legal_document_page.dart';
 
 /// Every page a host can reach, declared once (A-78).

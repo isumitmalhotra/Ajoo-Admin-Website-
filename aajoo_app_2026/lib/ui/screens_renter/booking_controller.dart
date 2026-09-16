@@ -5,7 +5,6 @@ import 'package:rent_home/data/models/create_booking_response.dart';
 import 'package:rent_home/service/booking_service.dart';
 import 'package:rent_home/models/cancellation_quote.dart';
 
-import 'package:rent_home/utils/app_log.dart';
 class BookingController extends GetxController {
   RxBool isLoading = false.obs;
   RxString error = "".obs;

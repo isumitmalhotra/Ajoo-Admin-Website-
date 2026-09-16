@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/controller/deals_controller.dart';
 import 'package:rent_home/models/guest_negotiation.dart';
-import 'package:rent_home/models/negotiated_deal.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/ui/screens_renter/property_details/open_property.dart';
 import 'package:rent_home/utils/negotiation_unit.dart';

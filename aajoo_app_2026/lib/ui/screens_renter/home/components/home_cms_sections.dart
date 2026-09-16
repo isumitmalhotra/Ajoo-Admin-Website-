@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/design/aajoo_skin.dart';
 import 'package:rent_home/models/properties_response_model.dart';
 import 'package:rent_home/service/homepage_cms_service.dart';

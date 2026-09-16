@@ -20,7 +20,6 @@
 // how to handle (it shows the login screen) — never a crash and never a hang.
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'package:rent_home/utils/app_log.dart';

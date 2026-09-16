@@ -28,7 +28,7 @@ import '../../screens_common/auth/auth_controller.dart';
 import '../../../controller/common_controller.dart';
 import '../../../data/models/update_user_model.dart';
 import '../../../data/models/user_models.dart';
-import 'package:rent_home/ui/screens_host/add_property/widgets/state_city_dropdowns.dart';
+import 'package:rent_home/widgets/state_city_dropdowns.dart';
 import 'package:rent_home/ui/screens_common/refer/refer_screen.dart';
 
 

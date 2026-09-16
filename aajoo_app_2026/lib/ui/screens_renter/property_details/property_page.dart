@@ -28,8 +28,12 @@ import 'package:rent_home/utils/booking_pricing.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/ui/screens_renter/booking_controller.dart';
 import 'package:rent_home/controller/common_controller.dart';
-import 'package:rent_home/data/ApiConstants.dart';
-import 'package:rent_home/ui/screens_host/add_property/new_property_controller_legacy.dart';
+// Reviews on a listing are renter-side reading, so they come from the
+// renter's own controller. This page used to reach into the HOST's legacy
+// add-property controller for them — 313 lines of listing-form state built
+// on every guest who opened a property — because that controller happened
+// to carry the same three review members. It no longer exists.
+import 'package:rent_home/ui/screens_renter/history/history_description/property_review_controller.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/data/models/single_property_response.dart';
@@ -201,7 +205,7 @@ class _PropertyPageState extends State<PropertyPage>
   late TextEditingController _priceController;
   final bookingController = Get.put(BookingController());
   final propertyController =
-      Get.put<NewPropertyController>(NewPropertyController());
+      Get.put<PropertyReviewController>(PropertyReviewController());
   bool isCod = false;
   // Policy v1.0 §15: the guest must actively acknowledge the cancellation
   // policy before completing the booking. Reset when the dates change —
@@ -3909,7 +3913,7 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
   }
 
   Widget _buildReviews() {
-    final propertyController = Get.find<NewPropertyController>();
+    final propertyController = Get.find<PropertyReviewController>();
 
     return Obx(() {
       final reviewResponse = propertyController.propertyReviewResponse.value;

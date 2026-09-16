@@ -13,7 +13,6 @@ import 'package:rent_home/ui/screens_common/auth/login_signup/auth_page.dart';
 import 'package:rent_home/ui/screens_common/auth/forgot_password/forget_password_page.dart';
 import 'package:rent_home/ui/screens_common/auth/verify/verify_page.dart';
 import 'package:rent_home/ui/screens_common/auth/kyc/didit_kyc_screen.dart';
-import 'package:rent_home/ui/screens_renter/home/homescreen.dart';
 import 'package:rent_home/ui/screens_renter/guest_shell.dart';
 import 'package:rent_home/ui/screens_host/home/main_screen.dart';
 import 'package:rent_home/ui/screens_renter/history/history_page.dart';
