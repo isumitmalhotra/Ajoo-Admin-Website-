@@ -1,0 +1,32 @@
+# Dart source checks out with LF on every platform.
+#
+# Nineteen tests in test/ assert on the TEXT of a source file — they read it
+# with readAsStringSync() and match a snippet. That makes the checkout's line
+# endings part of the contract, and with core.autocrlf on (the default for the
+# Windows tooling here) a fresh clone hands those tests CRLF while git stores
+# LF. Two of them assert across a newline, so they passed on the macOS CI
+# runner and failed the moment the repository was cloned on Windows — found
+# exactly that way, cloning this app out on its own.
+#
+# The tests themselves now normalise before matching, which is the real fix;
+# this keeps every checkout identical so the next multi-line assertion cannot
+# reintroduce the same trap.
+*.dart text eol=lf
+
+# Gradle and shell tooling are read by Linux/macOS toolchains too.
+*.gradle text eol=lf
+*.kts    text eol=lf
+*.sh     text eol=lf
+gradlew  text eol=lf
+
+# Binary assets git must not touch.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.webp binary
+*.ttf  binary
+*.otf  binary
+*.jks  binary
+*.keystore binary
+*.apk  binary
+*.aab  binary

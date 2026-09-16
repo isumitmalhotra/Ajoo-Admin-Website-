@@ -37,15 +37,20 @@ void main() {
   });
 
   test('the page reads both limits and applies them to the check-out picker', () {
+    // Normalised — the assertion below spans a newline, so a CRLF checkout
+    // fails it on a source file that is perfectly correct. See .gitattributes.
     final page = File('lib/ui/screens_renter/property_details/property_page.dart')
-        .readAsStringSync();
+        .readAsStringSync()
+        .replaceAll('\r\n', '\n');
     expect(page, contains('selectableDayPredicate: (d) =>\n                        _checkoutAllowed(selectedDate, d)'),
         reason: 'the check-out picker no longer applies the stay limits');
     expect(page, contains('firstCheckout(from)'));
     expect(page, contains('lastCheckout(from)'));
     expect(page, contains('_checkInWindow!.stayRule'),
         reason: 'the rule is enforced but never said — a greyed day teaches nothing');
-    final svc = File('lib/service/booking_service.dart').readAsStringSync();
+    final svc = File('lib/service/booking_service.dart')
+        .readAsStringSync()
+        .replaceAll('\r\n', '\n');
     expect(svc, contains("minNights: int.tryParse('\${w['minNights'] ?? 0}')"));
     expect(svc, contains("maxNights: int.tryParse('\${w['maxNights'] ?? 0}')"));
   });

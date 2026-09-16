@@ -25,9 +25,14 @@ import 'package:flutter_test/flutter_test.dart';
 /// failure through, and inventing one to make this testable would be a larger
 /// change than the fix.
 void main() {
+  // Normalised: this test matches the TEXT of a source file, so the
+  // checkout's line endings are part of its contract. With core.autocrlf on,
+  // a fresh clone on Windows hands it CRLF while git stores LF — every
+  // assertion spanning a newline then fails on a correct source file, and
+  // CI on macOS stays green while the clone does not. See .gitattributes.
   final card = File(
     'lib/ui/screens_renter/property_details/widgets/stay_cancellation_card.dart',
-  ).readAsStringSync();
+  ).readAsStringSync().replaceAll('\r\n', '\n');
 
   group('a failed schedule load', () {
     test('is retried before the guest is told anything', () {
