@@ -287,6 +287,87 @@ that commission, four ledger rows per booking.
 
 ## 8. Closed since the last edition — do not redo
 
+### 8a37. Closed 2026-09-16 (night) — the chatbot is told which journey the visitor belongs in; build 99
+
+**BotPenguin, via the client:** *"The Aajoo website passes the user's login
+token, authentication status, name, email and phone to the chatbot, but it does
+not pass whether that account is Guest only, Host only or both. Because
+BotPenguin does not receive this, it currently has to ask every logged-in user
+to choose a role."*
+
+`/bp/handoff` now answers with **`support_role`** — `guest`, `host` or `both` —
+and both clients pass it on as **`ctx-support_role`**. It rides on the two rows
+`mintHandoff` already reads, so it costs no extra query.
+
+**The role lives in TWO tables and either may carry it.** Sign-in resolves an
+account by `tbl_user_creds.cred_user_isHost`; admin-side creation once wrote
+only `tbl_users.user_isHost`, which is why
+`scripts/backfillCredentialRoles.js` exists — an admin-created host whose
+credential still said guest. So the resolver ORs the pair, the same expression
+`switchMode.controller.js` and `utils/userContact.js` already use. Reading
+either one alone routes a real host into the guest flow.
+
+Two deliberate choices, both pinned by tests. The role is built **inside** the
+try that assembles the profile, so a failed lookup sends **no role** and the
+bot goes on asking — absent is the one safe way to not know, where a guess
+starts somebody in the wrong conversation. And a `0/0` row answers **guest**,
+not unknown: `isUser` was not always written, so that shape is real, and guest
+is the journey with nothing privileged behind it.
+
+**Routing only**, said in the code where someone would be tempted to reuse it.
+`/switch-mode` still refuses a guest asking for a host token whatever this says.
+
+**Checked against live data before choosing the mapping:** 18 guest-only, 14
+host-only, 1 both, with the two tables agreeing on every row — so all three
+shapes are real and **14 of 33 accounts stop being asked**. Also checked that
+**no host has ever booked a stay as a guest**, which is what makes routing a
+host-only account straight to Host safe in practice, even though switchMode
+lets any host drop back to guest mode ("every host is also a guest"). Worth
+BotPenguin keeping a way across in the Host journey regardless.
+
+**The third item was a real bug, and it predates the role.** The client asked
+that the chat "reload with the latest token and role when the user logs in,
+logs out or changes accounts". On the website the widget mounts **once** and
+lives for the rest of the SPA session, so it kept whoever was signed in when
+the first chat-visible page opened: sign out, sign in as someone else, and the
+bot still held the FIRST account's handoff. It was already greeting people by
+the previous name; a role would have made it route them wrongly too. The widget
+now records which token it was mounted for and `syncBotpenguinIdentity` purges
+and remounts when that no longer matches — wired into
+`setBotpenguinChatVisible`, which App.tsx already calls on every route change,
+so a sign-in, a sign-out and an account switch all reach it without their own
+hooks. Same account is a no-op, or the vendor script would reload constantly.
+
+**Sign-out is the case worth naming:** a widget left mounted with the previous
+token is the previous person's chat session, still open for whoever signs in
+next on a shared browser.
+
+BotPenguin refuses a second init ("The bot element already exist") and renders
+nothing, which is worse than a stale identity — so the remount is confirmed
+with `waitForWidget` and falls back to the same one-reload-per-session path the
+Reconnect control uses, surfacing Reconnect if even that fails. The reconnect
+warning the client asked for **already existed** and was left alone.
+
+**The app needed none of that:** it builds the chat URL fresh from secure
+storage every time the chat opens, so account changes are already carried. What
+it did need was a guard against deriving the role locally — using the app's own
+`isHost` would route on whichever MODE the user last switched into rather than
+on what the account is. A test forbids it.
+
+Verified: backend **146/146**, web **49/49** + `tsc` clean + build green, app
+**497/497** with analyze 0 errors. **Build 99**
+(`sha256 624a5780…61e254bc`, versionCode 99).
+
+**Still with the client/BotPenguin:** once the backend and website are
+deployed, BotPenguin update the English and Hindi routing and retest from a
+logged-in session — the standalone BotPenguin test page cannot exercise this,
+as it has no Aajoo login. One caution passed on: a Guest-only test account must
+be a genuine `0/1` row; an admin-created account may carry the
+credential/account mismatch the backfill script exists to repair.
+
+---
+
+
 ### 8a36. Closed 2026-09-16 (night) — the two test negotiations cleared, and ~11,300 lines of retired UI deleted
 
 **"Clean up those two test negotiations on 29302."** Done. Both were mine,
