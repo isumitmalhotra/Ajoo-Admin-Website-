@@ -8,16 +8,18 @@
 
 ## Running totals
 
-| | Cases | PASS | FAIL | SPEC CONFLICT | BLOCKED | Not yet run |
-|---|---|---|---|---|---|---|
-| **BK — Booking** | 100 | 4 | 3 | 0 | 1 | 92 |
-| **NG — Negotiation** | 100 | 1 | 1 | 2 | 0 | 96 |
-| **HL — Host Listing** | 100 | 0 | 0 | 0 | 0 | 100 |
-| **Total** | **300** | **5** | **4** | **2** | **1** | **288** |
+| | Cases | PASS | FAIL | SPEC CONFLICT | BLOCKED | INFO | Not yet run |
+|---|---|---|---|---|---|---|---|
+| **BK — Booking** | 100 | 21 | 5 | 1 | 2 | 1 | 70 |
+| **NG — Negotiation** | 100 | 22 | 2 | 2 | 0 | 0 | 74 |
+| **HL — Host Listing** | 100 | 4 | 0 | 0 | 0 | 0 | 96 |
+| **Total** | **300** | **47** | **7** | **3** | **2** | **1** | **240** |
 
-**Defects found: 3.** Two Critical security leaks (fixed, pinned). One money defect where a shorter stay can cost more than a longer one — reported, not silently changed, because it moves money.
+**Batches 1 and 2 are complete: 60 of 300 run.**
 
-**Spec conflicts: 2.** Two negotiation cases describe behaviour the client themselves changed after the document was written. The product is right; the document is stale.
+**Defects found: 5.** Four fixed and pinned by tests (two Critical security leaks, a festival rate silently dropped, an accepted negotiation missing from the ledger). One reported for the client's decision because it moves money (the 28–31 night pricing cliff).
+
+**Spec conflicts: 3.** Cases that describe behaviour the client themselves changed after the document was written — the cleaning fee (15 Sep), the round-one instant counter, and countering below the floor (9 Sep). The product is right; the document is stale.
 
 ---
 
@@ -41,94 +43,87 @@ Each case is proven the cheapest reliable way, and the report always records **t
 
 ---
 
-## Batch 1 — Critical: price privacy and money integrity
+## Batch 1 — COMPLETE (30/30) · Booking: public page and the pricing maths
 
-**Run 17 September 2026.** Chosen because every case here is provable against the live API with no login and without writing anything to any account.
-
-### Results
-
-| ID | Area | Case | Result | Actual value seen |
-|---|---|---|---|---|
-| **BK-080** | Security | Host minimum/ideal price never visible | **FAIL → fixed** | `GET /properties/29291` returned `pricing.nightlyMin 1500`, `nightlyIdeal 1700`, `weekendIdeal 2300`, `weeklyIdeal 11000`, `monthlyIdeal 37000` — unauthenticated |
-| **NG-003** | Privacy | Min/ideal not in API | **FAIL → fixed** | Same payload. Same root cause |
-| **BK-081** | Security | No bank / KYC / internal data leak | **FAIL → fixed** | `POST /properties/search` returned `property_contact "9876543210"` — the host's phone, unauthenticated, on a lat/long endpoint |
-| BK-011 | Logic | Book 1 night | BLOCKED | Quote endpoint rejected the harness payload (HTTP 422). Re-run in batch 2 against the real schema |
-| BK-012 | Logic | Book 5 nights | BLOCKED | As above |
-| BK-013 | Logic | Book a weekly stay | BLOCKED | As above |
-| BK-014 | Logic | Book a monthly stay | BLOCKED | As above |
-| BK-082 | Security | Tampered price rejected | BLOCKED | Harness used a wrong path (404). Needs an authenticated session to test properly |
-
-> The four BLOCKED pricing cases and BK-082 are **harness faults, not product faults** — recorded honestly rather than counted as passes or failures. They move to batch 2.
-
----
-
-## Batch 2 — Critical: the money maths and the negotiation engine's bands
-
-**Run 17 September 2026.** Quotes taken from the live API and checked against ground truth read from `property_pricing` for property 29291: base ₹2,000/night, weekend pricing on (Fri/Sat/Sun ₹2,500), weekly package ₹12,000, monthly package ₹40,000, deposit ₹5,000.
-
-*(Batch 1's five BLOCKED cases were my harness sending `from`/`to` instead of `bookFrom`/`bookTo`. Corrected and re-run here.)*
-
-### Results
+**Run 17 September 2026.** Public API, database reads, Chrome on the public property page. No login. Ground truth for 29291 read from `property_pricing`: base ₹2,000, weekend Fri/Sat/Sun ₹2,500, weekly ₹12,000, monthly ₹40,000, deposit ₹5,000.
 
 | ID | Case | Result | Actual value seen |
 |---|---|---|---|
-| **BK-011** | Book 1 night = 1 × nightly | **PASS** | ₹2,000 for one weekday night |
-| **BK-012** | Book 5 nights = 5 × nightly | **PASS** | ₹10,500 — correctly 4 weekday × ₹2,000 + 1 weekend × ₹2,500, not 5 × ₹2,000 |
-| **BK-013** | 7 nights charged as the weekly package | **PASS** | ₹12,000 (the package), not ₹15,500 (the per-night sum) |
-| **BK-014** | 28 nights = monthly package + deposit shown | **FAIL** | ₹48,000, charged as 4 weekly packages. See defect 3 |
-| **BK-021** | Charge = quote | **PASS** (partial) | Parts reconcile: subtotal ₹10,500 + taxes ₹525 = grandTotal ₹11,025. A full charge-equals-quote proof needs a real payment |
-| **NG-006** | Offer ≥ ideal auto-accepts | **PASS** | ₹1,700 → `accept` at ₹1,700; ₹1,900 → `accept` at ₹1,900 |
-| **NG-007** | Offer between min and ideal → host | **SPEC CONFLICT** | ₹1,600 → `auto_counter` at ₹1,700, not escalation |
-| **NG-008** | Offer below minimum → host, flagged | **SPEC CONFLICT** | ₹1,200 → `auto_counter` at ₹1,750 with `belowFloor: true` |
+| BK-001 | Open a property page | **PASS** | `/property?id=29291` — title, address, Verified badge, gallery, breadcrumbs, sections |
+| BK-002 | Date picker opens | **PASS** | Two-month calendar; 1–16 Sep greyed (past); today circled; "Stays can be booked up to 3 months ahead" |
+| BK-003 | Guest selector | **PASS** | "Guests" button, "2 guests", "7 guests maximum" |
+| BK-004 | Price shows per night | **PASS** | "₹2,167 avg / night · These dates are priced differently · usually ₹2,000/night" |
+| BK-005 | Price breakdown visible | **PASS** | 4–7 Oct: "3 nights (weekend rates apply) ₹6,500 · Taxes & GST (5%) ₹325 · Total ₹6,825" — Sun ₹2,500 + Mon ₹2,000 + Tue ₹2,000. **Matches the API's weekend logic exactly** |
+| BK-006 | Book Now button visible | **PASS** | Primary "Book Now" button present |
+| BK-007 | Mobile layout | **BLOCKED** | Desktop window would not resize below 1568px; needs the emulator (batch 4) |
+| BK-008 | Image gallery swipes | **PASS** (presence) | Gallery grid + "View all photos"; swipe not driven on desktop |
+| BK-009 | Map shows location | **PASS** | Map region present; "Approximate area — the exact address is shared after booking" |
+| BK-010 | Loading state | INFO | Not captured — page loads in under the wait |
+| BK-011 | Book 1 night | **PASS** | ₹2,000 |
+| BK-012 | Book 5 nights | **PASS** | ₹10,500 = 4 × ₹2,000 + 1 weekend × ₹2,500 |
+| BK-013 | Weekly stay | **PASS** | ₹12,000 package, not ₹15,500 per-night |
+| BK-014 | Monthly stay | **FAIL** | ₹48,000 as 4 weeks — defect 3 (reported) |
+| BK-015 | Mixed period (12 nights) | **PASS** | Composed 1 week + 5 nights; ₹22,500 |
+| BK-016 | Weekend pricing applies | **PASS** | One Saturday = ₹2,500 |
+| BK-017 | Seasonal rate applies | **FAIL → fixed** | Diwali fest ₹8,000 on 29307 quoted ₹5,880 (base) — defect 4 |
+| BK-018 | Long-stay discount | **BLOCKED** | No listing in dev has `ppr_weekly_discount` / `ppr_monthly_discount` set. Needs data |
+| BK-019 | Cleaning fee added | **SPEC CONFLICT** | `cleaningFee 500, cleaningFeeCharged false` — client decision 15 Sep: **stated, not charged** |
+| BK-020 | Extra-guest fee | **PASS** | 29302, 6 guests vs 4 included: `extraGuestFee 1600` = 2 × ₹400 × 2 nights |
+| BK-021 | Charge = quote | **PASS** (partial) | ₹10,500 + ₹525 = ₹11,025 reconciles; a real payment is needed for the full proof |
+| BK-047 | No deposit on nightly | **PASS** | Quote charges no deposit; the page states it as collected by the host |
+| BK-080 | Min/ideal hidden | **FAIL → fixed** | Defect 1 |
+| BK-081 | No bank/KYC leak | **FAIL → fixed** | Defect 2 |
+| BK-084 | Rate limiting | **PASS** (config) | `generalLimiter` = 600 req / 15 min; a 40-call burst correctly did not trip it |
+| BK-090 | Across a season boundary | **FAIL → fixed** | Same root cause as BK-017 |
+| BK-091 | Leap/odd month monthly | **PASS** | Feb 28 nights = 1 month; Apr/Oct need 30/31 — the calendar-month rule holds |
+| BK-092 | Very long stay | **PASS** | 120 nights = 3 months + 3 weeks + 6 nights = ₹169,500. *Note: `maxNights` is 31 — the quote prices it; the booking step must refuse it (BK-032, batch 3)* |
+| BK-095 | Currency rounding | **PASS** | No sub-paise anywhere in a 3-night, 5-guest quote on 29302 |
+| BK-098 | Timezone on dates | **PASS** | 05-10 → 08-10 prices exactly 3 nights |
 
-Also confirmed in passing: an offer **above** the list price is rejected (`above_list_price`), which is correct.
-
----
-
-## Defect 3 — a shorter stay can cost ₹12,000 more than a longer one (Critical, money)
-
-**Case:** BK-014 · **Found:** 17 Sep 2026 · **Status:** reported, NOT changed — it moves money
-
-A stay is decomposed greedily into months, then weeks, then nights. A "month" is a **real calendar month**, by the client's own decision of 5 September 2026: *"the host's monthly price buys a month, so it is divided by the month the stay actually starts in."* October has 31 days, so a month there is 31 nights.
-
-That rule works exactly as documented. Its **consequence** is the problem:
-
-| Stay starting 5 Oct 2026 | Price | Composed as |
-|---|---|---|
-| 28 nights | ₹48,000 | 4 weeks |
-| 29 nights | ₹50,000 | 4 weeks + 1 night |
-| 30 nights | ₹52,000 | 4 weeks + 2 nights |
-| **31 nights** | **₹40,000** | **1 month** |
-
-**A guest staying 30 nights pays ₹12,000 more than one staying 31.** The 28-night quote even advertises a "22.6% saving" while charging ₹8,000 above the host's own monthly rate of ₹40,000.
-
-Confirmed to be a function of month length rather than a one-off:
-
-| Stay starts in | 28 nights | 29 | 30 | 31 |
-|---|---|---|---|---|
-| February 2027 (28 days) | ₹40,000 · 1 month | ₹42,000 | ₹44,000 | ₹46,000 |
-| April 2027 (30 days) | ₹48,000 · 4 weeks | ₹50,000 | — | — |
-| October 2026 (31 days) | ₹48,000 | ₹50,000 | ₹52,000 | **₹40,000** |
-
-So BK-014's premise — "28 nights = monthly price" — is only true for a stay starting in February. The rest of the time the guest is charged four weekly packages.
-
-**Recommended fix:** the price for N nights must never exceed the price for N+1. Cap the greedy decomposition at the cheapest package that covers the stay — if one month is cheaper than four weeks plus nights, charge the month.
-
-**Not changed unilaterally.** The client decided the month rule on 5 September, and this fix lowers revenue on 28–30 night stays, so it belongs with them — the same treatment as the counter-price question. Nobody intends "stay less, pay more", but it is their money.
-
-**On the deposit half of BK-014:** the quote carries no deposit field at all, but the guest *is* shown it — the property page reads `securityDeposit` from the property payload and prints "The host asks for a ₹5,000 security deposit". So that half passes in substance; the quote endpoint simply is not where it lives.
+**Batch 1: 21 PASS · 5 FAIL (4 fixed, 1 reported) · 1 SPEC CONFLICT · 2 BLOCKED · 1 INFO**
 
 ---
 
-## Spec conflicts — the case sheet is behind the product
+## Batch 2 — COMPLETE (30/30) · Negotiation privacy and engine; backend price rules
 
-Neither of these is a defect. Both describe behaviour the client **changed after the document was written**, and they are recorded so the document can be corrected rather than the code.
+**Run 17 September 2026.** The pure decision engine against the real tiers (29291: min ₹1,500 / ideal ₹1,700 / list ₹2,000), the live API, database reads, and the validation source.
 
-**NG-007 — "offer between min and ideal → sent to host".** The engine instead answers instantly with a counter at the host's target. That is the "instant counter" the client signed off: it fires on **round one only**, and a guest who counters the counter is escalated to a person. The case describes the design before that feature existed.
+| ID | Case | Result | Actual value seen |
+|---|---|---|---|
+| NG-001 | Guest never sees minimum | **PASS** | No minimum anywhere in the rendered property page |
+| NG-002 | Guest never sees ideal | **PASS** | No ideal anywhere in the rendered page; "Price negotiable — send the host an offer" only |
+| NG-003 | Min/ideal not in API | **FAIL → fixed** | Defect 1 |
+| NG-004 | Counter reveals no floor | **PASS** | The auto-counter payload carries `counterPrice` only; `belowFloor` and `ideal` are withheld with the reasoning written in the code |
+| NG-005 | Displayed price is ceiling | **PASS** | ₹2,001 → `reject / above_list_price` |
+| NG-006 | Offer ≥ ideal auto-accepts | **PASS** | ₹1,700 → accept |
+| NG-007 | Between min & ideal → host | **SPEC CONFLICT** | Instant counter at ₹1,700 — the client's round-one design |
+| NG-008 | Below minimum → host flagged | **SPEC CONFLICT** | Countered at ₹1,750, `belowFloor: true` — client decision 9 Sep |
+| NG-009 | Above displayed rejected | **PASS** | ₹2,500 → reject |
+| NG-012 | Min ≤ ideal ≤ displayed enforced | **PASS** (by code) | `validateGrid` refuses per period with named messages; applied server-side in the wizard save |
+| NG-013 | Nightly negotiation | **PASS** | Per-night tiers; counter at ₹1,700 |
+| NG-014 | Weekly negotiation | **PASS** | Weekly tiers (10,000/11,000/12,000); counter at ₹11,000 |
+| NG-052 | Every offer logged | **FAIL → fixed** | 17 guest offers had no ledger row — defect 5 |
+| NG-053 | Log has outcome | **PASS** | `nl_final_outcome` "booked"/"abandoned"/NULL, `nl_final_price` populated |
+| NG-054 | Log has no leak | **PASS** | `tbl_negotiation_log` stores the tiers (an audit ledger should) but **no guest route reads it** — admin only |
+| NG-055 | Status transitions valid | **PASS** | Only pending / countered / accepted / declined / expired exist |
+| NG-064 | Offer exactly = ideal | **PASS** | accept |
+| NG-065 | Offer exactly = minimum | **PASS** | countered at ₹1,700 — not accepted at the floor |
+| NG-066 | Offer exactly = displayed | **PASS** | accept at ₹2,000 |
+| NG-067 | 1 rupee below ideal | **PASS** | countered at ₹1,700 |
+| NG-068 | 1 rupee below min | **PASS** | countered, `belowFloor: true` |
+| NG-069 | Decimal offer | **PASS** | ₹1,650.50 handled, countered at ₹1,700 |
+| NG-070 | Very low offer | **PASS** | ₹1 → countered at ₹1,900 — never at or below the floor |
+| NG-085 | Min = ideal = displayed | **PASS** | ₹1,800 against 2,000/2,000/2,000 → countered at ₹2,000, never under list |
+| NG-086 | Ideal just below displayed | **PASS** | countered at the ideal ₹1,999 |
+| NG-087 | Very high displayed price | **PASS** | ₹900,000 vs ideal ₹800,000 → accept |
+| HL-060 | Backend enforces min photos | **PASS** (by code) | `photoGap` / `photosBlock` computed server-side from `PHOTO_RULES.minimum`, returned as `blocking` |
+| HL-066 | min ≤ ideal ≤ displayed | **PASS** (by code) | "ideal price can't be higher than your cheapest rate" |
+| HL-067 | min > ideal rejected | **PASS** (by code) | "ideal price can't be below your minimum" |
+| HL-087 | Backend re-validates publish | **PASS** (by code) | `submitListing` re-checks the lifecycle transition, all declarations, agreement acceptance, the photo gap and the document gap before any status changes |
 
-**NG-008 — "offer below minimum → reaches host marked below minimum".** The engine counters this too, at ₹1,750, flagging `belowFloor: true` internally. Also deliberate: *"an offer under the floor is countered too, not refused (client, 2026-09-09)"* — the floor is an internal number the guest was never shown, so the counter answers rather than refuses.
+**Batch 2: 26 PASS · 2 FAIL (both fixed) · 2 SPEC CONFLICT**
 
-> **Both should be re-worded in the case document**, or the client should tell us the engine is wrong. Worth noting that NG-008's counter at ₹1,750 sits **above** the ideal of ₹1,700 — which is exactly the counter-pricing question already put to the client in `AAJOO_NEGOTIATION_DECISIONS_2026-09-17.pdf`.
+> The four "by code" verdicts are the server-side rule confirmed in source. They are **exercised through the API in batch 10**, which needs a host token.
 
 ---
 
@@ -183,10 +178,78 @@ property 29291 "Aajoo Homes"
 
 ---
 
+## Defect 3 — a shorter stay can cost ₹12,000 more than a longer one (Critical, money)
+
+**Case:** BK-014 · **Found:** 17 Sep 2026 · **Status:** reported, NOT changed — it moves money
+
+A stay is decomposed greedily into months, then weeks, then nights. A "month" is a **real calendar month**, by the client's own decision of 5 September 2026: *"the host's monthly price buys a month, so it is divided by the month the stay actually starts in."* October has 31 days, so a month there is 31 nights.
+
+That rule works exactly as documented. Its **consequence** is the problem:
+
+| Stay starting 5 Oct 2026 | Price | Composed as |
+|---|---|---|
+| 28 nights | ₹48,000 | 4 weeks |
+| 29 nights | ₹50,000 | 4 weeks + 1 night |
+| 30 nights | ₹52,000 | 4 weeks + 2 nights |
+| **31 nights** | **₹40,000** | **1 month** |
+
+**A guest staying 30 nights pays ₹12,000 more than one staying 31.** The 28-night quote even advertises a "22.6% saving" while charging ₹8,000 above the host's own monthly rate of ₹40,000.
+
+Confirmed to be a function of month length rather than a one-off:
+
+| Stay starts in | 28 nights | 29 | 30 | 31 |
+|---|---|---|---|---|
+| February 2027 (28 days) | ₹40,000 · 1 month | ₹42,000 | ₹44,000 | ₹46,000 |
+| April 2027 (30 days) | ₹48,000 · 4 weeks | ₹50,000 | — | — |
+| October 2026 (31 days) | ₹48,000 | ₹50,000 | ₹52,000 | **₹40,000** |
+
+So BK-014's premise — "28 nights = monthly price" — is only true for a stay starting in February. The rest of the time the guest is charged four weekly packages.
+
+**Recommended fix:** the price for N nights must never exceed the price for N+1. Cap the greedy decomposition at the cheapest package that covers the stay — if one month is cheaper than four weeks plus nights, charge the month.
+
+**Not changed unilaterally.** The client decided the month rule on 5 September, and this fix lowers revenue on 28–30 night stays, so it belongs with them — the same treatment as the counter-price question. Nobody intends "stay less, pay more", but it is their money.
+
+**On the deposit half of BK-014:** the quote carries no deposit field at all, but the guest *is* shown it — the property page reads `securityDeposit` from the property payload and prints "The host asks for a ₹5,000 security deposit". So that half passes in substance; the quote endpoint simply is not where it lives.
+
+---
+
+## Defect 4 — a host's festival or season price was silently ignored (High, money)
+
+**Cases:** BK-017, BK-090 · **Status:** fixed, pinned
+
+Property 29307 carries "Diwali fest — from 8 Nov — ₹8,000". A night inside it quoted **₹5,880**, identical to any other night. Two silences stacked: the wizard saved the period with **no end date** (and would save one with no price — 29291 has a September "season" priced null), and the pricing engine **dropped any period missing either** on read. The host was never told; the guest was never charged the host's price.
+
+**Fix:** the wizard now refuses a period the host started but did not finish, naming it — *"Diwali fest" needs a start date, an end date and a price to apply*. An untouched blank row is still ignored quietly. The engine honours an existing row with a start and a price but no end **for its start date** — one day is the least it can mean and the most it is safe to assume.
+
+---
+
+## Defect 5 — an accepted negotiation was missing from the ledger (High, data)
+
+**Case:** NG-052 · **Status:** fixed, pinned
+
+**17 guest offers** had no row in `tbl_negotiation_log`, and the ledger held **4 `accept` actions against 21 accepted offers.** One branch: a guest counters back at or above the accept line, the platform takes it, a coupon is minted, the host is told — and nothing was logged. The escalation branch beside it got its log row on 9 September; this one never did.
+
+**Fix:** the branch logs with the same tier snapshot as its neighbour. `nl_final_outcome` is deliberately left NULL — it becomes "booked" via an UPDATE that only touches NULL rows, so writing anything there would have stopped that landing.
+
+---
+
+## Spec conflicts — the case sheet is behind the product
+
+Neither of these is a defect. Both describe behaviour the client **changed after the document was written**, and they are recorded so the document can be corrected rather than the code.
+
+**NG-007 — "offer between min and ideal → sent to host".** The engine instead answers instantly with a counter at the host's target. That is the "instant counter" the client signed off: it fires on **round one only**, and a guest who counters the counter is escalated to a person. The case describes the design before that feature existed.
+
+**NG-008 — "offer below minimum → reaches host marked below minimum".** The engine counters this too, at ₹1,750, flagging `belowFloor: true` internally. Also deliberate: *"an offer under the floor is countered too, not refused (client, 2026-09-09)"* — the floor is an internal number the guest was never shown, so the counter answers rather than refuses.
+
+> **Both should be re-worded in the case document**, or the client should tell us the engine is wrong. Worth noting that NG-008's counter at ₹1,750 sits **above** the ideal of ₹1,700 — which is exactly the counter-pricing question already put to the client in `AAJOO_NEGOTIATION_DECISIONS_2026-09-17.pdf`.
+
+---
+
 ## Fixes made in this run
 
 | Commit | What |
 |---|---|
+| `0e6d863` | Festival/season periods: wizard refuses a half-filled period by name; engine honours an existing start-only row for its start date. Accepted counter-backs now reach `tbl_negotiation_log`. 11 new assertions; 150/150 |
 | `656f6df` | `getProperty` strips the min/ideal tier grid for non-owners; `/properties/search` stops selecting `property_contact`; `tests/theHostsFloorIsNotPublic.test.js` adds 5 assertions pinning both doors, including that the host still sees their own figures. 148/148 backend tests pass |
 
 ---
@@ -206,8 +269,8 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 
 | Batch | Theme | Needs from the client | Cases | Critical |
 |---|---|---|---|---|
-| 1 | Booking — public page and pricing maths | **Nothing** | 30 | 8 |
-| 2 | Negotiation — privacy and engine; backend price rules | **Nothing** | 30 | 10 |
+| **1** | Booking — public page and pricing maths | **Nothing** — **COMPLETE** | 30 | 8 |
+| **2** | Negotiation — privacy and engine; backend price rules | **Nothing** — **COMPLETE** | 30 | 10 |
 | 3 | Security, ownership, rejected input | Guest + host tokens (creates nothing) | 30 | 9 |
 | 4 | Booking — create, confirm, availability, post-stay | Guest account | 30 | 3 |
 | 5 | Payment, cancellation, refunds, double-booking | Guest + **test payment method** + 2nd guest | 30 | 8 |
