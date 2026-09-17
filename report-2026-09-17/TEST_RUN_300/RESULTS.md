@@ -200,13 +200,389 @@ property 29291 "Aajoo Homes"
 
 ---
 
-## Batch plan
+## The ten batches
 
-| Batch | Contents | Status |
-|---|---|---|
-| **1** | Critical price privacy + money integrity, no login | **Done** — 2 Critical defects found and fixed |
-| **2** | Pricing maths BK-011…014, BK-021; NG engine bands NG-006/007/008 | **Done** — 5 pass, 1 money defect, 2 spec conflicts |
-| 3 | Security and ownership: BK-079, HL-098, HL-099, NG-091, BK-082 | Needs a token |
-| 4 | Booking and payment flow, web + app | Needs test accounts |
-| 5 | Host listing wizard HL-001…100 | Needs a host account |
-| 6 | The remaining High / Med / Low across all three suites | After the above |
+Thirty cases each, grouped by **what unblocks them** and ordered so the earliest batches need the least. Every one of the 300 is in exactly one batch (validated by script).
+
+| Batch | Theme | Needs from the client | Cases | Critical |
+|---|---|---|---|---|
+| 1 | Booking — public page and pricing maths | **Nothing** | 30 | 8 |
+| 2 | Negotiation — privacy and engine; backend price rules | **Nothing** | 30 | 10 |
+| 3 | Security, ownership, rejected input | Guest + host tokens (creates nothing) | 30 | 9 |
+| 4 | Booking — create, confirm, availability, post-stay | Guest account | 30 | 3 |
+| 5 | Payment, cancellation, refunds, double-booking | Guest + **test payment method** + 2nd guest | 30 | 8 |
+| 6 | Negotiation — guest side | Guest account | 30 | 0 |
+| 7 | Negotiation — host side, timing, bot, cross-flow | Host + guest; BotPenguin | 30 | 2 |
+| 8 | Host listing — steps 1–2, location, capacity | Host account | 30 | 0 |
+| 9 | Host listing — type fields, amenities, photos | Host account + sample photos | 30 | 0 |
+| 10 | Host listing — pricing, publish, drafts | Host account + admin | 30 | 4 |
+
+### Batch 1 — Booking — public page and the pricing maths
+**Needs:** Nothing. Public API, database reads, Chrome on public pages.  
+**Cases:** 30 · Critical: 7 · Already run: 7
+
+| ID | Pri | Case | Status |
+|---|---|---|---|
+| BK-001 | High | Open a property page |  |
+| BK-002 | High | Date picker opens |  |
+| BK-003 | High | Guest selector |  |
+| BK-004 | High | Price shows per night |  |
+| BK-005 | High | Price breakdown visible |  |
+| BK-006 | High | Book Now button visible |  |
+| BK-007 | Med | Mobile layout |  |
+| BK-008 | Med | Image gallery swipes |  |
+| BK-009 | Med | Map shows location |  |
+| BK-010 | Med | Loading state |  |
+| BK-011 | Critical | Book 1 night | PASS |
+| BK-012 | Critical | Book multiple nights | PASS |
+| BK-013 | Critical | Book a weekly stay | PASS |
+| BK-014 | Critical | Book a monthly stay | FAIL |
+| BK-015 | High | Mixed period (12 nights) |  |
+| BK-016 | High | Weekend pricing applies |  |
+| BK-017 | High | Seasonal rate applies |  |
+| BK-018 | High | Long-stay discount |  |
+| BK-019 | Med | Cleaning fee added |  |
+| BK-020 | Med | Extra-guest fee |  |
+| BK-021 | Critical | Charge = quote | PASS |
+| BK-047 | Med | No deposit on nightly |  |
+| BK-080 | Critical | Min/ideal price hidden | FAIL→fixed |
+| BK-081 | Critical | No bank/KYC leak | FAIL→fixed |
+| BK-084 | Med | Rate limiting |  |
+| BK-090 | Med | Book across a season boundary |  |
+| BK-091 | Low | Leap/odd month monthly |  |
+| BK-092 | Med | Very long stay |  |
+| BK-095 | Med | Currency rounding |  |
+| BK-098 | Med | Timezone on dates |  |
+
+### Batch 2 — Negotiation — privacy and the engine, plus backend price rules
+**Needs:** Nothing. Public API, the pure engine, database reads.  
+**Cases:** 30 · Critical: 11 · Already run: 4
+
+| ID | Pri | Case | Status |
+|---|---|---|---|
+| NG-001 | Critical | Guest never sees minimum |  |
+| NG-002 | Critical | Guest never sees ideal |  |
+| NG-003 | Critical | Min/ideal not in API | FAIL→fixed |
+| NG-004 | Critical | Counter reveals no floor |  |
+| NG-005 | High | Displayed price is ceiling |  |
+| NG-006 | Critical | Offer ≥ ideal auto-accepts | PASS |
+| NG-007 | Critical | Offer between min & ideal → host | SPEC |
+| NG-008 | Critical | Offer below minimum → host flagged | SPEC |
+| NG-009 | High | Offer above displayed rejected |  |
+| NG-012 | Critical | Min ≤ ideal ≤ displayed enforced |  |
+| NG-013 | High | Nightly negotiation |  |
+| NG-014 | High | Weekly negotiation |  |
+| NG-052 | High | Every offer logged |  |
+| NG-053 | High | Log has outcome |  |
+| NG-054 | Med | Log has no leak |  |
+| NG-055 | High | Offer status transitions valid |  |
+| NG-064 | High | Offer exactly = ideal |  |
+| NG-065 | High | Offer exactly = minimum |  |
+| NG-066 | Med | Offer exactly = displayed |  |
+| NG-067 | Med | Offer 1 rupee below ideal |  |
+| NG-068 | Med | Offer 1 rupee below min |  |
+| NG-069 | Low | Decimal offer |  |
+| NG-070 | Med | Very low offer |  |
+| NG-085 | Med | Min=ideal=displayed |  |
+| NG-086 | Low | Ideal just below displayed |  |
+| NG-087 | Low | Very high displayed price |  |
+| HL-060 | High | Backend enforces min |  |
+| HL-066 | Critical | min ≤ ideal ≤ displayed |  |
+| HL-067 | Critical | min > ideal rejected |  |
+| HL-087 | Critical | Backend re-validates publish |  |
+
+### Batch 3 — Security, ownership and rejected input
+**Needs:** A guest account and a host account we own (tokens only — these tests get REFUSED, they create nothing).  
+**Cases:** 30 · Critical: 8 · Already run: 0
+
+| ID | Pri | Case | Status |
+|---|---|---|---|
+| BK-026 | High | No dates selected |  |
+| BK-027 | High | Check-out before check-in |  |
+| BK-028 | High | Past date |  |
+| BK-029 | Med | Zero guests |  |
+| BK-030 | High | Guests over capacity |  |
+| BK-031 | High | Below min stay |  |
+| BK-032 | Med | Above max stay |  |
+| BK-033 | High | Book without login |  |
+| BK-034 | Critical | Book without KYC |  |
+| BK-035 | Critical | Empty guest details |  |
+| BK-036 | Med | Invalid phone |  |
+| BK-037 | Med | Invalid email |  |
+| BK-079 | Critical | See only own bookings |  |
+| BK-082 | Critical | Tampered price rejected |  |
+| BK-083 | High | Auth required |  |
+| NG-039 | High | Zero offer |  |
+| NG-040 | High | Negative offer |  |
+| NG-041 | Med | Non-numeric offer |  |
+| NG-042 | High | Offer on fixed-price listing |  |
+| NG-043 | High | Offer without login |  |
+| NG-090 | Med | Screenshot/replay attack |  |
+| NG-091 | Critical | Tampered offer price |  |
+| NG-094 | Med | Offer with expired session |  |
+| NG-096 | Med | Guest offers on own listing |  |
+| HL-077 | High | Identity linked |  |
+| HL-079 | Critical | Bank details save |  |
+| HL-080 | High | Bank shown last-4 |  |
+| HL-098 | Critical | Host edits own only |  |
+| HL-099 | Critical | Host sees own listings only |  |
+| HL-100 | High | Docs access-controlled |  |
+
+### Batch 4 — Booking — create, confirm, availability, after the stay
+**Needs:** The guest account. Creates real test bookings on dev.  
+**Cases:** 30 · Critical: 3 · Already run: 0
+
+| ID | Pri | Case | Status |
+|---|---|---|---|
+| BK-022 | Critical | Confirmation created |  |
+| BK-023 | High | Confirmation email/app |  |
+| BK-024 | High | Host notified |  |
+| BK-025 | High | Booking ID generated |  |
+| BK-048 | Med | Currency correct |  |
+| BK-049 | Med | Tax shown |  |
+| BK-054 | High | Blocked dates unbookable |  |
+| BK-055 | High | Availability calendar accurate |  |
+| BK-056 | Med | Booking horizon |  |
+| BK-057 | Med | Minimum notice |  |
+| BK-058 | Med | Same-day conflict |  |
+| BK-071 | High | My Bookings list |  |
+| BK-072 | High | Booking detail accurate |  |
+| BK-073 | Med | Ongoing stay shown |  |
+| BK-074 | High | Invoice download |  |
+| BK-075 | Med | Modify booking |  |
+| BK-076 | High | Check-in details |  |
+| BK-077 | Med | Host contact revealed |  |
+| BK-078 | Med | Review after stay |  |
+| BK-085 | Critical | Negotiated price used |  |
+| BK-086 | Critical | Auto-accept → booking |  |
+| BK-087 | Med | Guest count feeds capacity |  |
+| BK-088 | High | Price change reflects |  |
+| BK-089 | High | Deposit single-source |  |
+| BK-093 | High | Instant vs approval |  |
+| BK-094 | Med | Approval timeout |  |
+| BK-096 | Med | Coupon applied |  |
+| BK-097 | Med | Invalid coupon |  |
+| BK-099 | Med | Back button mid-booking |  |
+| BK-100 | High | Refresh mid-payment |  |
+
+### Batch 5 — Payment, cancellation, refunds, double-booking
+**Needs:** The guest account + a TEST payment method + a second guest account for the concurrency cases.  
+**Cases:** 30 · Critical: 11 · Already run: 0
+
+| ID | Pri | Case | Status |
+|---|---|---|---|
+| BK-038 | Critical | Successful payment |  |
+| BK-039 | Critical | Failed payment |  |
+| BK-040 | High | Cancelled payment |  |
+| BK-041 | High | Payment timeout |  |
+| BK-042 | Critical | Double-click Pay |  |
+| BK-043 | Critical | Network drop during pay |  |
+| BK-044 | High | Webhook confirms booking |  |
+| BK-045 | High | Webhook arrives twice |  |
+| BK-046 | High | Deposit on monthly |  |
+| BK-050 | Critical | Double-booking prevented |  |
+| BK-051 | Critical | Availability re-check at confirm |  |
+| BK-052 | High | Overlapping dates |  |
+| BK-053 | High | Same-day double |  |
+| BK-059 | High | View cancellation policy |  |
+| BK-060 | Critical | Cancel booking |  |
+| BK-061 | Critical | Refund = policy |  |
+| BK-062 | High | Cancel with OTP |  |
+| BK-063 | High | Full refund window |  |
+| BK-064 | High | Partial refund window |  |
+| BK-065 | High | No refund window |  |
+| BK-066 | High | Refund status visible |  |
+| BK-067 | High | Deposit refunded |  |
+| BK-068 | High | Host cancels |  |
+| BK-069 | Critical | Policy version locked |  |
+| BK-070 | Med | Refund to original method |  |
+| NG-010 | Critical | Accept creates booking |  |
+| NG-011 | Critical | Accepted price is charged |  |
+| NG-047 | High | Payment timeout after accept |  |
+| NG-059 | High | Negotiated booking in My Bookings |  |
+| NG-098 | High | Refund on negotiated booking |  |
+
+### Batch 6 — Negotiation — the guest side
+**Needs:** The guest account. Creates real test offers on dev.  
+**Cases:** 30 · Critical: 0 · Already run: 0
+
+| ID | Pri | Case | Status |
+|---|---|---|---|
+| NG-016 | High | Make an Offer button |  |
+| NG-017 | High | Offer input validates |  |
+| NG-018 | High | Offer confirmation |  |
+| NG-019 | High | Offer status visible |  |
+| NG-020 | High | Counter shown to guest |  |
+| NG-022 | High | Real-time update |  |
+| NG-023 | Med | Offer thread readable |  |
+| NG-024 | Med | Mobile negotiation UI |  |
+| NG-025 | Med | Waiting state |  |
+| NG-034 | High | Guest counters back |  |
+| NG-035 | Med | Multiple rounds |  |
+| NG-036 | High | Guest accepts counter |  |
+| NG-037 | Med | Guest declines counter |  |
+| NG-038 | Low | Round limit |  |
+| NG-044 | Med | Offer on unavailable dates |  |
+| NG-045 | Low | Offer after booking |  |
+| NG-046 | High | Offer expiry |  |
+| NG-071 | Med | Rapid repeat offers |  |
+| NG-072 | Low | Offer then cancel |  |
+| NG-073 | Low | Guest edits offer before submit |  |
+| NG-075 | Med | Negotiate weekly then book nightly |  |
+| NG-076 | Low | Offer on LUXE listing |  |
+| NG-078 | Med | Offer notification failure |  |
+| NG-079 | Low | Currency in offer |  |
+| NG-080 | Med | Session lost mid-negotiation |  |
+| NG-081 | Med | Accept exactly at expiry |  |
+| NG-082 | Low | Guest offers after decline |  |
+| NG-088 | Low | Offer history after booking |  |
+| NG-089 | Med | Language in negotiation |  |
+| NG-092 | Med | Offer for 0 nights |  |
+
+### Batch 7 — Negotiation — the host side, timing, bot, cross-flow
+**Needs:** Host account + guest account together; BotPenguin for NG-056..058.  
+**Cases:** 30 · Critical: 3 · Already run: 0
+
+| ID | Pri | Case | Status |
+|---|---|---|---|
+| NG-015 | High | Monthly negotiation |  |
+| NG-021 | High | Accept/decline buttons (host) |  |
+| NG-026 | High | Host notified of offer |  |
+| NG-027 | High | Host notified of auto-accept |  |
+| NG-028 | Critical | Host accepts |  |
+| NG-029 | High | Host counters |  |
+| NG-030 | High | Host declines |  |
+| NG-031 | Med | Host ignores → expiry |  |
+| NG-032 | High | Host sees offer amount |  |
+| NG-033 | Med | Host response-time honoured |  |
+| NG-048 | Critical | Two offers same unit |  |
+| NG-049 | High | Host accepts after unit booked |  |
+| NG-050 | Med | Concurrent counters |  |
+| NG-051 | Med | Offer during price change |  |
+| NG-056 | High | Negotiate via chatbot |  |
+| NG-057 | Critical | Bot shows no floor |  |
+| NG-058 | High | Bot offer → host |  |
+| NG-060 | High | Host earnings reflect negotiated |  |
+| NG-061 | High | Commission on negotiated price |  |
+| NG-062 | High | Fixed-price toggle works |  |
+| NG-063 | High | Turn negotiation on |  |
+| NG-074 | Med | Host counters above displayed |  |
+| NG-077 | Med | Two-role user offers |  |
+| NG-083 | Med | Host bulk offers |  |
+| NG-084 | Low | Offer on paused listing |  |
+| NG-093 | High | Simultaneous accept + guest cancel |  |
+| NG-095 | Med | Host declines then guest re-offers higher |  |
+| NG-097 | High | Offer notification to right host |  |
+| NG-099 | Low | Negotiation analytics captured |  |
+| NG-100 | Low | Offer amount localization |  |
+
+### Batch 8 — Host listing — steps 1 and 2, location, capacity
+**Needs:** The host account.  
+**Cases:** 30 · Critical: 0 · Already run: 0
+
+| ID | Pri | Case | Status |
+|---|---|---|---|
+| HL-001 | High | Owner vs Manager |  |
+| HL-002 | High | Property type cards |  |
+| HL-003 | High | Booking unit |  |
+| HL-004 | Med | LUXE toggle |  |
+| HL-005 | High | Property name valid |  |
+| HL-006 | Med | Name too short |  |
+| HL-007 | Med | Name too long |  |
+| HL-008 | High | Name special chars |  |
+| HL-009 | High | Description min length |  |
+| HL-010 | Med | Description too short |  |
+| HL-011 | Low | Description counter |  |
+| HL-012 | Med | AI help write |  |
+| HL-013 | High | Address search |  |
+| HL-014 | High | Map pin drop |  |
+| HL-015 | Med | Address-pin mismatch |  |
+| HL-016 | Med | PIN validation |  |
+| HL-017 | Med | State-city relationship |  |
+| HL-018 | High | Show exact location toggle |  |
+| HL-019 | Med | Nearby places auto-suggest |  |
+| HL-020 | Med | Nearby by type not name |  |
+| HL-021 | Low | Manual place add |  |
+| HL-022 | Low | Duplicate place dedupe |  |
+| HL-023 | Low | Closed business excluded |  |
+| HL-024 | High | Adults stepper |  |
+| HL-025 | High | Total auto-calculated |  |
+| HL-026 | Med | Infants separate |  |
+| HL-027 | High | Bedrooms/beds/baths |  |
+| HL-028 | Med | Bed types |  |
+| HL-029 | Low | Zero bedrooms (studio) |  |
+| HL-030 | High | Apartment fields |  |
+
+### Batch 9 — Host listing — type fields, amenities, photos
+**Needs:** The host account + a few sample photos.  
+**Cases:** 30 · Critical: 0 · Already run: 0
+
+| ID | Pri | Case | Status |
+|---|---|---|---|
+| HL-031 | Med | Camping fields |  |
+| HL-032 | Med | PG fields |  |
+| HL-033 | Low | Farm stay fields |  |
+| HL-034 | High | Type change warns |  |
+| HL-035 | Med | Cross-validate BHK |  |
+| HL-036 | Med | Parking None hides spaces |  |
+| HL-037 | Low | Parking shows spaces |  |
+| HL-038 | Low | Construction year |  |
+| HL-039 | Low | Future year rejected |  |
+| HL-040 | Low | Area + unit |  |
+| HL-041 | Med | Negative area rejected |  |
+| HL-042 | Med | Amenity chips |  |
+| HL-043 | Med | Amenity search |  |
+| HL-044 | Med | Pool sub-questions |  |
+| HL-045 | Med | Pet policy sub |  |
+| HL-046 | Med | Wheelchair cross-check |  |
+| HL-047 | Med | Internet speed band |  |
+| HL-048 | Low | Highlights max 5 |  |
+| HL-049 | Low | Smart lock → self check-in |  |
+| HL-050 | High | Upload photos |  |
+| HL-051 | High | Minimum photos |  |
+| HL-052 | Med | Tiered minimum |  |
+| HL-053 | High | Required tags |  |
+| HL-054 | Med | First = cover |  |
+| HL-055 | Low | Reorder photos |  |
+| HL-056 | Low | Delete photo |  |
+| HL-057 | High | Invalid file type |  |
+| HL-058 | Med | Oversized file |  |
+| HL-059 | Med | Upload fails |  |
+| HL-061 | High | Set nightly price |  |
+
+### Batch 10 — Host listing — pricing, publish, drafts
+**Needs:** The host account + admin access for the publish/reject cases.  
+**Cases:** 30 · Critical: 1 · Already run: 0
+
+| ID | Pri | Case | Status |
+|---|---|---|---|
+| HL-062 | Med | Price out of range |  |
+| HL-063 | Med | Weekly price |  |
+| HL-064 | Med | Monthly price |  |
+| HL-065 | Critical | Set min & ideal |  |
+| HL-068 | High | Guests-never-see note |  |
+| HL-069 | High | Deposit single field |  |
+| HL-070 | Med | Cleaning fee frequency |  |
+| HL-071 | High | Negotiation toggle |  |
+| HL-072 | High | Cancellation policy |  |
+| HL-073 | Med | Check-in default sensible |  |
+| HL-074 | Med | Same-day vs notice conflict |  |
+| HL-075 | Med | Min ≤ max stay |  |
+| HL-076 | High | Readiness computed |  |
+| HL-078 | High | Ownership doc upload |  |
+| HL-081 | Med | Emergency contact |  |
+| HL-082 | Low | Caretaker conditional |  |
+| HL-083 | Med | Compliance questions |  |
+| HL-084 | High | Declarations required |  |
+| HL-085 | Med | Host Agreement scroll |  |
+| HL-086 | High | Agreement acceptance stored |  |
+| HL-088 | High | Publish state machine |  |
+| HL-089 | Med | Rejected → resubmit |  |
+| HL-090 | High | Autosave draft |  |
+| HL-091 | Med | Save only on backend confirm |  |
+| HL-092 | Med | Save fails message |  |
+| HL-093 | High | Resume draft |  |
+| HL-094 | High | Back navigation keeps data |  |
+| HL-095 | High | Edit published listing |  |
+| HL-096 | High | Edit preserves untouched |  |
+| HL-097 | High | Double-submit protection |  |
