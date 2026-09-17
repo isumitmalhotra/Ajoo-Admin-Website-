@@ -10,10 +10,12 @@
 
 | | Cases | PASS | FAIL | BLOCKED | Not yet run |
 |---|---|---|---|---|---|
-| **BK — Booking** | 100 | 3 | 2 | 1 | 94 |
+| **BK — Booking** | 100 | 0 | 2 | 5 | 93 |
 | **NG — Negotiation** | 100 | 0 | 1 | 0 | 99 |
 | **HL — Host Listing** | 100 | 0 | 0 | 0 | 100 |
-| **Total** | **300** | **3** | **3** | **1** | **293** |
+| **Total** | **300** | **0** | **3** | **5** | **292** |
+
+Three cases were run to a verdict and all three **failed** — which is the point of running the Critical set first. Five more were attempted and are BLOCKED on my own harness, not on the product. The two defects behind the three failures are fixed.
 
 **Defects found so far: 2 — both Critical, both security, both now fixed and pinned by tests.**
 
