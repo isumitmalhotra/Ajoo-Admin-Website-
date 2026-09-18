@@ -1,5 +1,6 @@
 
 import 'package:dio/dio.dart';
+import 'package:rent_home/data/models/host_running_deal.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
@@ -230,6 +231,28 @@ class HostService {
           .toList();
     } catch (e) {
       appLog("booking dates: $e");
+      return const [];
+    }
+  }
+
+  /// Agreed prices still waiting to be booked — GET /host/deals/running.
+  ///
+  /// Empty on any failure: the Upcoming tab is a bookings list first, and a
+  /// deals hiccup must not take the bookings with it.
+  Future<List<HostRunningDeal>> getRunningDeals() async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final response = await _dio.get("/host/deals/running");
+      final data = response.data is Map ? response.data['data'] : null;
+      final rows = data is Map ? data['deals'] : null;
+      if (rows is! List) return const [];
+      return rows
+          .whereType<Map>()
+          .map((r) => HostRunningDeal.fromJson(Map<String, dynamic>.from(r)))
+          .toList();
+    } catch (err) {
+      appLog(err);
       return const [];
     }
   }

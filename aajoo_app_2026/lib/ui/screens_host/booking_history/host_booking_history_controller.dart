@@ -1,4 +1,6 @@
 
+import 'dart:async';
+import 'package:rent_home/data/models/host_running_deal.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/controller/alert_dialog.dart';
@@ -23,6 +25,22 @@ class HostBookingHistoryController extends GetxController {
   Rx<HostBookingHistoryResponse?> hostBookingHistoryResponse =
       Rx<HostBookingHistoryResponse?>(null);
 
+  /// Agreed prices still waiting to be booked — shown in Upcoming while each
+  /// runs (client decision, 2026-09-18). Re-read with the bookings and every
+  /// minute after, and [now] ticks so a countdown moves and a deal that
+  /// lapses while the screen is open leaves the list on its own.
+  final RxList<HostRunningDeal> runningDeals = <HostRunningDeal>[].obs;
+  final Rx<DateTime> now = DateTime.now().obs;
+  Timer? _dealsTimer;
+
+  List<HostRunningDeal> get liveDeals =>
+      runningDeals.where((d) => d.expiresAt.isAfter(now.value)).toList();
+
+  Future<void> getRunningDeals() async {
+    runningDeals.assignAll(await hostService.getRunningDeals());
+    now.value = DateTime.now();
+  }
+
   Future<void> _initialize() async {
     final token = await storage.read(key: TOKEN_KEY);
     hostService.setToken(token ?? '');
@@ -32,6 +50,13 @@ class HostBookingHistoryController extends GetxController {
   void onInit() {
     super.onInit();
     _initialize();
+    _dealsTimer = Timer.periodic(const Duration(seconds: 60), (_) => getRunningDeals());
+  }
+
+  @override
+  void onClose() {
+    _dealsTimer?.cancel();
+    super.onClose();
   }
 
   Future<void> getHostBookingHistory() async {
@@ -40,6 +65,8 @@ class HostBookingHistoryController extends GetxController {
       hasError.value = false;
       final response = await hostService.getBookingHistory();
       hostBookingHistoryResponse.value = response;
+      // Alongside, never instead: a deals failure is an empty strip.
+      getRunningDeals();
     } catch (e) {
       // Treat as "no records" instead of a hard error — common API shape
       // (returns "No record found") looks like a failure to the client but is

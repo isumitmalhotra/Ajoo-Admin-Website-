@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:rent_home/ui/screens_host/host_tab_provider.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/utils/fonts.dart';
+import 'package:rent_home/data/models/host_running_deal.dart';
 import 'package:rent_home/data/models/host_booking_history_model.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:rent_home/ui/screens_host/booking_history/host_booking_detail_page.dart';
@@ -208,18 +209,24 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                                 hours: b.stayHours) ==
                             bucket)
                         .toList();
+                // Agreed prices ride at the top of Upcoming only — the tab
+                // the client named — while each deal runs. They are prices,
+                // not stays, and the card says so (2026-09-18).
+                final deals = bucket == 0 ? controller.liveDeals : const <HostRunningDeal>[];
                 return RefreshIndicator(
                   color: kIndigo,
                   onRefresh: controller.getHostBookingHistory,
-                  child: items.isEmpty
+                  child: items.isEmpty && deals.isEmpty
                       ? _empty(bucket)
                       : ListView.builder(
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          itemCount: items.length,
+                          itemCount: deals.length + items.length,
                           itemBuilder: (context, index) => Reveal(
                             delay: Reveal.staggerDelay(index),
-                            child: _buildCard(items[index], controller),
+                            child: index < deals.length
+                                ? _DealCard(deals[index], now: controller.now.value)
+                                : _buildCard(items[index - deals.length], controller),
                           ),
                         ),
                 );
@@ -619,3 +626,92 @@ void _buildReviewDialog(BuildContext context, HostBookingHistory booking,
     },
   );
 }
+
+/// An agreed price waiting to be booked, at the top of the Upcoming tab.
+///
+/// Amber, and said in words: a price, not a stay. The same client who asked
+/// for this had also asked whether two agreed prices on one weekend meant a
+/// double booking — they do not, whoever pays first gets the nights — so the
+/// card must never read like a reservation.
+class _DealCard extends StatelessWidget {
+  final HostRunningDeal deal;
+  final DateTime now;
+  const _DealCard(this.deal, {required this.now});
+
+  String _fmt(String? d) {
+    if (d == null || d.isEmpty) return '';
+    final p = d.split('-');
+    if (p.length != 3) return d;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final m = int.tryParse(p[1]) ?? 0;
+    return '${p[0]} ${m >= 1 && m <= 12 ? months[m - 1] : p[1]}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dates = deal.bookFrom != null
+        ? '${_fmt(deal.bookFrom)}${deal.bookTo != null ? ' – ${_fmt(deal.bookTo)}' : ''}'
+        : 'Any dates';
+    final price = deal.agreedPerNight != null
+        ? '${rupees(deal.agreedPerNight!)} / night'
+        : '${deal.discountPercent}% off';
+    final total = deal.agreedTotal != null && (deal.nights ?? 0) > 0
+        ? '${rupees(deal.agreedTotal!)} for ${deal.nights} night${deal.nights == 1 ? '' : 's'}'
+        : null;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: kWarningBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: kClay.withOpacity(.45)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.handshake_outlined, size: 18, color: kClay600),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(deal.guestName,
+                    style: fraunces(fontSize: 15, fontWeight: FontWeight.w600, color: kInk)),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: kClay.withOpacity(.5)),
+                ),
+                child: Text('Price agreed',
+                    style: inter(fontSize: 11, fontWeight: FontWeight.w600, color: kWarningText)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(deal.propertyName, style: inter(fontSize: 13, color: kInk2)),
+          const SizedBox(height: 4),
+          Text(dates, style: inter(fontSize: 12.5, color: kMuted)),
+          const SizedBox(height: 8),
+          Text(price, style: inter(fontSize: 15, fontWeight: FontWeight.w700, color: kInk)),
+          if (total != null) Text(total, style: inter(fontSize: 12, color: kMuted)),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(Icons.schedule, size: 14, color: kWarningText),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text('Not booked yet · ${deal.timeLeft(now)}',
+                    style: inter(fontSize: 12, fontWeight: FontWeight.w600, color: kWarningText)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(deal.note, style: inter(fontSize: 11.5, color: kMuted, height: 1.4)),
+        ],
+      ),
+    );
+  }
+}
+
