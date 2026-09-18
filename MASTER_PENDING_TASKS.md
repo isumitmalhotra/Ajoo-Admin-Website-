@@ -341,9 +341,21 @@ live listings and revoking un-publishes them.
 webhook completed from the decision endpoint, an unreadable name held,
 DIDIT's own decline unchanged, the per-booking path, the reason lookup),
 web **54/54** + `tsc` + build green, app **527/527**, analyze 0 errors.
+**Driven live (read-only, in the client's admin session):** the deployed
+backend answered `/admin/user/single` for 207 and 190 with `nameCheck:
+mismatch` beside DIDIT's own `verified`, and 151 with `exact`; the deployed
+admin panel for 207 showed *Latest DIDIT decision · Name check: DOES NOT
+match the account name* with the call-out (web `0501985` then corrected
+the wording for a pre-rule grant: "verified before the rule — un-verify it
+unless…"). **A slip while doing it:** a scripted click meant for the
+row's eye button hit the Active/Inactive toggle first and deactivated
+user 207 for about a minute before it was toggled back (`user_isActive`
+read 1 again); the toggle sends no notification and revokes no session,
+but `tbl_admin_audit` carries two `status_update` rows on 207 by the
+Super Admin at ~03:50 IST on 19 Sep that are mine, not the client's.
 **Not driven live:** a real DIDIT session with a mismatched name needs a
-real document; the rule is pinned by tests against the real controller with
-the tables stubbed. **No app build cut** — the app change is wording on a
+real document; the refusal itself is pinned by tests against the real
+controller with the tables stubbed. **No app build cut** — the app change is wording on a
 declined state; the refusal itself is the server's and reaches build 105
 as it is.
 
