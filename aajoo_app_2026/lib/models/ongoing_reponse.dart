@@ -126,6 +126,11 @@ class Booking {
   BookingProperty? bookingProperty;
   dynamic propertyImage;
 
+  /// The host shows this listing's exact location before confirmation —
+  /// `hostShowsExactLocation` on the row since 2026-09-18. Absent means
+  /// hidden, so an older server never draws a pin on an unanswered request.
+  bool hostShowsExactLocation = false;
+
   Booking({
     required this.bookPriId,
     required this.bookId,
@@ -210,7 +215,8 @@ class Booking {
           json["stayWindow"] is Map
               ? Map<String, dynamic>.from(json["stayWindow"] as Map)
               : null,
-        );
+        )
+        ..hostShowsExactLocation = json["hostShowsExactLocation"] == true;
 
   Map<String, dynamic> toJson() => {
         "book_pri_id": bookPriId,

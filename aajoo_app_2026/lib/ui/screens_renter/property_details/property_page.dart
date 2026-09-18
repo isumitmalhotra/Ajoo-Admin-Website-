@@ -791,6 +791,12 @@ class _PropertyPageState extends State<PropertyPage>
   /// maximum stay. One predicate for the picker and for the initial date,
   /// because showDatePicker asserts the two agree.
   bool _checkoutAllowed(DateTime from, DateTime d) {
+    // A stay is at least one night: the check-in day is never a check-out.
+    // The picker offered it and the tap was then silently moved to the next
+    // day; the website let the same pick through to payment, where the
+    // server refused it (client, 2026-09-18). Grey it here, like the web.
+    if (!DateTime(d.year, d.month, d.day)
+        .isAfter(DateTime(from.year, from.month, from.day))) return false;
     if (_checkoutBlocked(from, d)) return false;
     if (!(_checkInWindow?.sellsDay(d) ?? true)) return false;
     final first = _checkInWindow?.firstCheckout(from);
@@ -1481,7 +1487,8 @@ class _PropertyPageState extends State<PropertyPage>
                     context: context,
                     initialDate:
                         _safeCheckoutDate(selectedDateTo, selectedDate),
-                    firstDate: selectedDate,
+                    // The day AFTER check-in — see _checkoutAllowed.
+                    firstDate: selectedDate.add(const Duration(days: 1)),
                     // One month at a time (client rule, 2026-09-05): the real
                     // length of the month the stay STARTS in — 31 from
                     // January, 28 from February, 29 in a leap year. The server
@@ -4226,6 +4233,9 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
           isPayOnArrival: isCod,
           awaitingApproval: awaitingApproval,
           responseHours: responseHours,
+          // The host's own "show exact location" setting, as the listing
+          // page read it: the map on the confirmation follows it.
+          hostShowsExactLocation: _single?.showsExactLocation ?? false,
         ));
   }
 

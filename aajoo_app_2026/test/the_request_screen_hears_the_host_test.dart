@@ -56,7 +56,9 @@ void main() {
     final i = src.indexOf('StayMap(lat: lat, lng: lng, label: propertyName');
     expect(i, greaterThan(-1));
     final before = src.substring(i - 900 < 0 ? 0 : i - 900, i);
-    expect(before, contains('] else if (_awaiting) ...['));
+    // Since 2026-09-18 the lock has two keys — the host's answer, or the
+    // host's own "show exact location" setting. See the_clients_five_of_18_september.
+    expect(before, contains('] else if (_locationLocked) ...['));
     expect(before, contains('Directions unlock once the host confirms'));
   });
 

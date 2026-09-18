@@ -40,6 +40,17 @@ class SinglePropertyData {
   final String? propertyAddress;
   final String? propertyLongitude;
   final String? propertyLatitude;
+
+  /// The host shows this listing's exact location before booking.
+  ///
+  /// The server sends `location_is_approximate: false` only when the host
+  /// answered "show"; on a listing they chose to keep approximate it sends
+  /// `true` and an area in place of the point and the street. The app never
+  /// read it: every listing drew the radius circle captioned "Exact location
+  /// shared after booking", including the ones whose host had chosen to
+  /// show it — the same disagreement with the host's setting the client
+  /// reported on the website (2026-09-18). Absent means hidden.
+  final bool showsExactLocation;
   final String? propertyDesc;
   final String? propertyPrice;
   final String? propertyMiniPrice;
@@ -175,6 +186,7 @@ class SinglePropertyData {
     this.propertyAddress,
     this.propertyLongitude,
     this.propertyLatitude,
+    this.showsExactLocation = false,
     this.propertyDesc,
     this.propertyPrice,
     this.propertyMiniPrice,
@@ -262,6 +274,7 @@ class SinglePropertyData {
       // Pinned by test/coordinates_are_not_always_strings_test.dart.
       propertyLongitude: json['property_longitude']?.toString(),
       propertyLatitude: json['property_latitude']?.toString(),
+      showsExactLocation: json['location_is_approximate'] == false,
       propertyDesc: json['property_desc'],
       propertyPrice: json['property_price'],
       propertyMiniPrice: json['property_mini_price'],

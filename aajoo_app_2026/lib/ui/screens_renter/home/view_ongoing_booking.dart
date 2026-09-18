@@ -9,6 +9,7 @@ import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/design/amount_breakdown.dart';
 import 'package:rent_home/utils/money.dart';
 import 'package:rent_home/constants/payment_config.dart';
+import 'package:rent_home/utils/booking_status.dart';
 import 'package:rent_home/ui/screens_renter/booking_controller.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
@@ -16,7 +17,7 @@ import 'package:rent_home/data/models/ongoing_reponse.dart';
 import 'package:rent_home/ui/screens_renter/checkout/checkout_page.dart';
 import 'package:rent_home/service/device_service.dart';
 import 'package:rent_home/utils/support_chat.dart';
-
+
 import 'package:rent_home/utils/app_log.dart';
 // Assuming BookingHistoryData is defined as provided
 class OngoingBookingView extends StatefulWidget {
@@ -375,12 +376,40 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
                                 style: inter(fontSize: 12.5, color: kMuted)),
                           ],
                           const SizedBox(height: 10),
-                          StayMap(
-                            lat: widget.booking.bookingPropertyLatitude,
-                            lng: widget.booking.bookingPropertyLongitude,
-                            label: widget.booking.bookingPropertyPropertyName,
-                            height: 190,
-                          ),
+                          // A request the host has not answered gets the
+                          // pin only if the host shows the location to
+                          // everyone anyway; otherwise the area is enough
+                          // until they confirm. This drew the exact pin on
+                          // every row (client, 2026-09-18).
+                          if (lifecycleLabel(widget.booking.bookingStatusBsTitle) ==
+                                  'Awaiting approval' &&
+                              !widget.booking.hostShowsExactLocation)
+                            Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: kSand,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.lock_outline, size: 16, color: kMuted),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'The exact address and directions appear once the host accepts your request.',
+                                      style: inter(fontSize: 12.5, color: kMuted, height: 1.4),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else
+                            StayMap(
+                              lat: widget.booking.bookingPropertyLatitude,
+                              lng: widget.booking.bookingPropertyLongitude,
+                              label: widget.booking.bookingPropertyPropertyName,
+                              height: 190,
+                            ),
                         ],
                       ),
                     ),

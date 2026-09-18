@@ -51,7 +51,9 @@ void main() {
     final allowedAt = source.indexOf('bool _checkoutAllowed(');
     expect(allowedAt, greaterThan(0), reason: '_checkoutAllowed is gone');
     expect(
-      source.substring(allowedAt, allowedAt + 400).contains('if (_checkoutBlocked(from, d)) return false;'),
+      // 800, not 400: since 2026-09-18 the same-day refusal and its note sit
+      // above this line inside the predicate.
+      source.substring(allowedAt, allowedAt + 800).contains('if (_checkoutBlocked(from, d)) return false;'),
       isTrue,
       reason: 'the checkout predicate no longer refuses a stay that runs through a booking',
     );

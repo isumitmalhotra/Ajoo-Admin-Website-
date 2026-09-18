@@ -457,12 +457,19 @@ class NearbySection extends StatelessWidget {
   }
 }
 
-/// The approximate area, same promise the website makes: the precise address is
-/// only shared after booking.
+/// Where the listing is, the way the host chose to show it.
+///
+/// A radius circle and "Exact location shared after booking" on a listing
+/// whose host keeps the address back — the same promise the website makes.
+/// A pin, and no caption, when the host shows the exact location to anyone
+/// browsing: the server has already sent the real point and the street, and
+/// captioning it as withheld contradicted the host's own setting (client,
+/// 2026-09-18).
 class PropertyAreaMap extends StatelessWidget {
   final double? lat;
   final double? lng;
-  const PropertyAreaMap({super.key, this.lat, this.lng});
+  final bool exact;
+  const PropertyAreaMap({super.key, this.lat, this.lng, this.exact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -488,23 +495,30 @@ class PropertyAreaMap extends StatelessWidget {
         child: Stack(
           children: [
             GoogleMap(
-              initialCameraPosition: CameraPosition(target: at, zoom: 13),
+              initialCameraPosition: CameraPosition(target: at, zoom: exact ? 15 : 13),
               // A pin on the exact coordinates would give away the address the
               // caption promises to withhold; a circle shows the area instead.
-              circles: {
-                Circle(
-                  circleId: const CircleId('area'),
-                  center: at,
-                  radius: 700,
-                  fillColor: kIndigo600.withOpacity(.14),
-                  strokeColor: kIndigo600.withOpacity(.5),
-                  strokeWidth: 2,
-                ),
-              },
+              // Unless the host shows it — then the pin is what they chose.
+              markers: exact
+                  ? {Marker(markerId: const MarkerId('stay'), position: at)}
+                  : const {},
+              circles: exact
+                  ? const {}
+                  : {
+                      Circle(
+                        circleId: const CircleId('area'),
+                        center: at,
+                        radius: 700,
+                        fillColor: kIndigo600.withOpacity(.14),
+                        strokeColor: kIndigo600.withOpacity(.5),
+                        strokeWidth: 2,
+                      ),
+                    },
               zoomControlsEnabled: false,
               myLocationButtonEnabled: false,
               liteModeEnabled: true,
             ),
+            if (!exact)
             Positioned(
               left: 10,
               bottom: 10,
@@ -1145,7 +1159,7 @@ class _PropertyDetailPanelsState extends State<PropertyDetailPanels> {
             ],
           ),
         const SizedBox(height: 12),
-        PropertyAreaMap(lat: lat, lng: lng),
+        PropertyAreaMap(lat: lat, lng: lng, exact: _s?.showsExactLocation ?? false),
         NearbySection(
           groups: _s?.nearby ?? const [],
           popular: _s?.nearbyPopular,

@@ -53,6 +53,14 @@ class BookingConfirmedScreen extends StatefulWidget {
   /// Hours the host has to respond — their own configured window.
   final int responseHours;
 
+  /// The host shows the exact location before booking. When they do, the
+  /// map is drawn while the request is still with them: the listing page
+  /// already showed the pin to anyone browsing, so holding it back here
+  /// protected nothing and contradicted the host's setting (client,
+  /// 2026-09-18). A host who keeps the address back still keeps it until
+  /// they confirm.
+  final bool hostShowsExactLocation;
+
   const BookingConfirmedScreen({
     super.key,
     required this.bookingId,
@@ -72,6 +80,7 @@ class BookingConfirmedScreen extends StatefulWidget {
     this.isPayOnArrival = false,
     this.awaitingApproval = false,
     this.responseHours = 24,
+    this.hostShowsExactLocation = false,
   });
 
   @override
@@ -100,6 +109,8 @@ class _BookingConfirmedScreenState extends State<BookingConfirmedScreen> {
 
   bool get _awaiting => _decision == _Decision.waiting;
   bool get _declined => _decision == _Decision.declined;
+  /// No map yet: the host has not answered AND keeps the address back.
+  bool get _locationLocked => _awaiting && !widget.hostShowsExactLocation;
 
   @override
   void initState() {
@@ -347,7 +358,7 @@ class _BookingConfirmedScreenState extends State<BookingConfirmedScreen> {
                     'Nothing has been charged. Your bookings page has the details, '
                     'and the search is a tap away.',
                     style: inter(fontSize: 13, color: kMuted, height: 1.5)),
-              ] else if (_awaiting) ...[
+              ] else if (_locationLocked) ...[
                 Text('Getting there',
                     style: fraunces(
                         fontSize: 16, fontWeight: FontWeight.w600, color: kInk)),
