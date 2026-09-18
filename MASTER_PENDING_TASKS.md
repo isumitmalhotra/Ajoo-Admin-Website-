@@ -37,16 +37,18 @@
 > **Repos:** FE `D:/Projects/aajao-frontend-vercel` (React/Vite → Vercel) ·
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
-> Tester build in circulation: **97 (1.0.0+97)**, `aajoo-homes-1.0.0-build97-release.apk` at repo root
-> (2026-09-16 evening, versionCode 97, 95.8 MB), driven on the emulator against
-> the live backend (§8a35). Builds 88–96 are withdrawn: 88/89 lacked the pricing fixes, 90 and 91 each
+> Tester build in circulation: **102 (1.0.0+102)**, `aajoo-homes-1.0.0-build102-release.apk` at repo root
+> (2026-09-18 midday, versionCode 102, 95.4 MB, sha256 `6137a653d4f73405…`), built with
+> `tool/build_release.ps1` and read back by the verifier with the endpoint named (§8a39). 100 and 101
+> are superseded by it; **98 and 99 are withdrawn** (built with plain `flutter build apk`, no endpoint
+> compiled in — "This build is not configured"). 97 was the last of the previous line. Builds 88–96 are withdrawn: 88/89 lacked the pricing fixes, 90 and 91 each
 > carried a defect the emulator found the same hour, 92 lacked the afternoon's three fixes, **93 still
 > charges the cleaning fee** (the server recognises what it sends and charges without it), and 94 let a
 > guest pick a stay shorter than the host's minimum and meet the refusal at booking, and 95 let an
 > unverified guest open a negotiation the server would refuse, and 96 still carried the pre-rebuild
 > negotiation chat that every offer notification opened. Everything before 87 was withdrawn earlier.
 > Read back with `python aajoo_app_2026/tool/verify_release_apk.py <apk> https://aajaodev.onrender.com
-> --allow-test-payments --expect-version=1.0.0+97`: the endpoint it was given is in it, no other
+> --allow-test-payments --expect-version=1.0.0+102`: the endpoint it was given is in it, no other
 > `*.onrender.com` host is, no developer path, no plain-http endpoint, and it carries its own
 > version string. Points at `aajaodev.onrender.com` with the sandbox Razorpay key — the platform
 > is still in test mode, so a QA build is the only honest one.
@@ -286,6 +288,87 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a39. Closed 2026-09-18 — the client's five of the same afternoon; the India map settled; build 102
+
+**"Have we blocked same-day check-in and check-out intentionally? Even if
+yes, it should be blocked while selecting dates, not at payment."** The
+server has always refused a stay of zero nights ("Booking must be at least
+1 day."); the website let one through to the payment page first. The
+calendar closed the range on a tap of the check-in day, and both the
+property page and the draft floored the night count to 1, so the summary
+read "1 night" over a stay of none until the server said otherwise. The
+check-in day is now greyed on the check-out side with a tooltip ("Check-out
+has to be after check-in — a stay is at least one night"), the footer reads
+"Check out 21 Sept or after", and the floors are gone. The app's check-out
+picker offered the check-in day too and silently moved the tap to the next
+morning; it now greys the day like the web.
+
+**"I can proceed with guest count 0; after booking it takes 2 by default."**
+The adults stepper went to 0 and the review page turned 0 into 2 without a
+word. Adults stop at 1, both Book Now handlers open the guest picker on an
+empty party, and the review page sends a zero-guest draft back to the
+listing rather than inventing a number. The app already stopped at 1.
+
+**"My property settings say allow to see the exact location before booking,
+still after booking it shows like this" / "here where the setting says
+cannot see, the renter can go to maps and see it from the booking
+section."** Both true, for one reason: the booking pages had no way to know
+the host's answer and were deciding from the booking's status alone. Both
+guest booking endpoints now carry `hostShowsExactLocation`, read through
+`exactLocationAllowed`, which moved from the listing controller to
+`utils/approximateLocation` so every surface asks the same question of the
+same table — and which now **fails closed** (a failed lookup used to be
+swallowed and answered "show"). On the web, `StayLocation` has two keys —
+the host confirmed, or the host shows it to everyone anyway — applied to
+the pin, the address, Get directions and the in-app Directions link and
+page; the setting travels from the listing page through the draft to the
+confirmation. Next Booking, which never passed `confirmed` at all and so
+defaulted to the exact pin on every row, passes both. A declined request
+gets no map. The app: the listing page drew the radius circle captioned
+"Exact location shared after booking" on **every** listing, including the
+ones whose host had chosen to show it — it now reads
+`location_is_approximate` and draws a pin with no caption when the host
+shows it; the confirmed screen and the ongoing-booking screen follow the
+same two keys.
+
+**"In this page, the Indian map is still incorrect."** The screenshot was
+the search page with no results, drawn by **Leaflet on OpenStreetMap
+tiles** at country zoom — Jammu & Kashmir dashed the way OSM maps it and
+Indian law does not allow. That was the fallback while Google loaded or
+when the key failed (§8a-era decision, "Google with a Leaflet fallback"): a
+state nobody chose, produced by a slow script or a rejected key, with
+nothing visibly broken — the loose end the 2 September doc flagged. The
+keyless Google embed is no better: checked in the browser the same day, it
+takes no region and dashes the same lines. **Every live map is now Google
+with `region=IN` or an honest panel** — a placeholder while the script
+loads, "Map unavailable right now" if it never does, with a link out only
+for a guest allowed the exact spot. The host's location picker keeps search
+and "use my location" without the map. No live surface imports Leaflet;
+`lib/basemap.ts` stays only for the unrouted pre-redesign components under
+`src/components/frontend`, which nothing mounts. The app has always been
+Google-only (`google_maps_flutter`; the Android SDK draws India's borders
+by the device's region, which is not ours to set). Pinned: a test that
+fails if any of the three surfaces imports Leaflet or the basemap again.
+
+**"Please check the Book Now in mobile view."** Two of them, one above the
+other, once a visitor had scrolled to the rail: the card's and the phone's
+fixed bottom bar. The bar now steps aside while the rail's own button is
+readable — an IntersectionObserver whose root margin excludes the bar's
+own strip, so a button hiding behind the bar does not count — and returns
+the moment it scrolls away.
+
+Verified on the dev server at phone width (a dev-only Vite proxy, `/__api`,
+now lets a page served from localhost reach the deployed backend, which
+allows only the production origins): the 20th picked, the 20th greyed for
+check-out with the tooltip, "Check out 21 Sept or after"; adults stop at 1;
+the bottom bar gone while the rail's Book Now is on screen and back at the
+top; the search map a panel, not OSM, with no key configured. Backend
+**152/152**, web **51/51** + `tsc` clean + build green, app **511/511** with
+analyze 0 errors. **Build 102** built with `tool/build_release.ps1` and read
+back by the verifier with the endpoint named.
+
+---
 
 ### 8a38. Closed 2026-09-18 — six from the client's screenshots and a video; the 300-case run to batch 2; build 101
 
