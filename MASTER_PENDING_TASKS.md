@@ -37,9 +37,9 @@
 > **Repos:** FE `D:/Projects/aajao-frontend-vercel` (React/Vite → Vercel) ·
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
-> Tester build in circulation: **104 (1.0.0+104)**, `aajoo-homes-1.0.0-build104-release.apk` at repo root
-> (2026-09-18 evening, versionCode 104, 95.4 MB, sha256 `a5029e08449008c5…`), built with
-> `tool/build_release.ps1` and read back by the verifier with the endpoint named (§8a41). 100–103
+> Tester build in circulation: **105 (1.0.0+105)**, `aajoo-homes-1.0.0-build105-release.apk` at repo root
+> (2026-09-18 night, versionCode 105, 95.4 MB, sha256 `ccd571a87bc410e1…`), built with
+> `tool/build_release.ps1` and read back by the verifier with the endpoint named (§8a42). 100–104
 > are superseded by it; **98 and 99 are withdrawn** (built with plain `flutter build apk`, no endpoint
 > compiled in — "This build is not configured"). 97 was the last of the previous line. Builds 88–96 are withdrawn: 88/89 lacked the pricing fixes, 90 and 91 each
 > carried a defect the emulator found the same hour, 92 lacked the afternoon's three fixes, **93 still
@@ -48,7 +48,7 @@
 > unverified guest open a negotiation the server would refuse, and 96 still carried the pre-rebuild
 > negotiation chat that every offer notification opened. Everything before 87 was withdrawn earlier.
 > Read back with `python aajoo_app_2026/tool/verify_release_apk.py <apk> https://aajaodev.onrender.com
-> --allow-test-payments --expect-version=1.0.0+104`: the endpoint it was given is in it, no other
+> --allow-test-payments --expect-version=1.0.0+105`: the endpoint it was given is in it, no other
 > `*.onrender.com` host is, no developer path, no plain-http endpoint, and it carries its own
 > version string. Points at `aajaodev.onrender.com` with the sandbox Razorpay key — the platform
 > is still in test mode, so a QA build is the only honest one.
@@ -288,6 +288,69 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a42. Closed 2026-09-18 — manual payouts driven end to end on the live platform; verification that lasts; detailed payout emails; build 105
+
+**The live drive** (admin as Super Admin in the client's Chrome; every
+write on developer records — hosts #177 "Host Mobile" and #194, the
+client's Sam Tao (100) deliberately untouched and still six Queued rows):
+reveal without a reason refused → reveal with a reason → both accounts
+*Verified* with references → readiness matched the database to the rupee
+(#177: ₹66,441.60 − ₹9,079.45 dues = ₹57,362.15; #194: ₹1,646; Sam Tao,
+ashish host, Web five *not ready — no payout account*) → **PR-0001** opened
+(payouts claimed, gone from readiness) → bank CSV downloaded (two rows,
+NEFT/IMPS by size, narration `AAJOO PR-0001`; run → EXPORTED) → line #177
+**Paid** (5 payouts COMPLETED with the UTR, 5 ledger DEBITs, the due
+RECOVERED, bell + push + email) → line #194 **Bounced** (payout back to
+QUEUED, host told) → run closed → **PR-0002** with the same UTR **refused
+by the server** ("already recorded on run #1") → fresh UTR paid → closed.
+Six audit rows per host cycle. Queue now 12 queued / 6 completed / 4
+failed; two runs CLOSED.
+
+**Three follow-ups the client asked the same evening, all built and
+verified on the live server:**
+
+1. *"Once verified it should not ask again unless the host changes the
+   account."* It did ask again: `saveHostAccount` reset `had_isVerified`
+   on every save. Now the destination (account number + IFSC, or UPI) is
+   compared with what is on file — unchanged keeps the verification and
+   updates only the holder's and bank's names; changed resets it, starts
+   the ₹1 verification, and tells the host by bell, push and a dedicated
+   email (the one mail that must reach the holder if somebody else made
+   the change). Pinned: two assertions against stubbed tables.
+2. *"The verified status should be visible in the host dashboard."* It was
+   on the Profile page and the Payouts badge; it is now on the **host
+   Dashboard's earnings card** too (web: *Payout account · Not added /
+   Awaiting verification / Verified / Needs attention* with *Settled to
+   date*; app: one chip on the home earnings card). Read live on Sam's
+   dashboard: *Settled to date ₹0 · Payout account Not added →*.
+3. *"Payouts visible everywhere, and a proper email as well as
+   notifications."* Everywhere: host Payouts (UTR/method), Earnings
+   (settled total), Statements (ledger PAYOUT rows), Settlements
+   ("Deducted from a payout · payout #5"), admin queue (UTR), **admin
+   payout detail (Paid by / UTR / Payout run — new)**, **admin payout
+   history (UTR column — new)**, Financial Overview (completed sum),
+   Ledgers. Emails: the generic one-line notification mail DID go out
+   today (mail log rows 778–782 to the two hosts, status 1); it is now
+   replaced by **four detailed mails** in `services/payouts/payoutMail.js`
+   — paid (amount, method, UTR, date, run, every booking settled, the
+   withheld line and why), bounced (the bank's reason), account verified
+   (the ₹1 reference, "you will not be asked again unless you change it"),
+   account needs attention — each under the host's payment-email
+   preference, each notification written with the new `mailed: true` so
+   the generic mail steps aside. Verified live: withdraw + re-verify on
+   #194 produced `payout_account_attention` and `payout_account_verified`
+   rows, status 1, body read back.
+
+Verified: backend **154/154** (`theBankMovesTheMoneyThePlatformRecordsIt`
+now 15), web **53/53** (+2) + `tsc` clean + build green, app **522/522**
+with analyze 0 errors. **Build 105** built with `tool/build_release.ps1`
+and read back by the verifier. Not driven live: the re-save-keeps-verified
+path needs a host with a verified account signed in (the only host session
+was Sam's, who has none) — it is pinned by tests; the same for the "account
+changed" mail.
+
+---
 
 ### 8a41. Closed 2026-09-18 — manual host payouts: the bank moves the money, the platform records it; build 104
 
