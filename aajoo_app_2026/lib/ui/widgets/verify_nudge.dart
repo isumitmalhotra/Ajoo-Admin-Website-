@@ -38,8 +38,18 @@ class VerifyNudge extends StatelessWidget {
 
       final status = user.verificationStatus.toLowerCase();
       if (status == 'verified') return const SizedBox.shrink();
+      // A refusal for the name is not a photo problem (2026-09-19).
+      final nameMismatch =
+          status == 'declined' && user.verificationReason == 'name_mismatch';
 
       final ({String title, String body, String cta}) copy = switch (status) {
+        'declined' when nameMismatch => (
+            title: "The name on the document didn't match",
+            body: "The ID you verified with isn't in your account's name. "
+                'Verify with your own government ID — or correct your account '
+                'name in your profile first, then verify again.',
+            cta: 'Use your own ID',
+          ),
         'pending' => (
             title: "Your identity check wasn't finished",
             body: 'You started one but didn\'t complete it. '

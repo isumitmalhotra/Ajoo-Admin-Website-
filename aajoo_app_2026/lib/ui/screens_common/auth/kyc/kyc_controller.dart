@@ -118,8 +118,21 @@ class KycController extends GetxController {
         _finish(verified: true);
       } else if (st == 'declined') {
         status.value = 'declined';
-        showAlert('Verification failed',
-            "We couldn't verify your identity. Please try again.", true);
+        // The platform refuses a DIDIT approval whose document name is not the
+        // account's name (2026-09-19). "Please try again" is the wrong advice
+        // for that: the person needs their own ID, or their account name fixed.
+        if (_service.lastReason == 'name_mismatch') {
+          showAlert(
+              "The name on the document didn't match",
+              "The name on the ID isn't the name on your Aajoo account, so the "
+                  "check wasn't accepted. Verify with your own government ID — "
+                  "or correct your account name in your profile first, then "
+                  "verify again.",
+              true);
+        } else {
+          showAlert('Verification failed',
+              "We couldn't verify your identity. Please try again.", true);
+        }
       } else {
         // pending / in_review.
         //

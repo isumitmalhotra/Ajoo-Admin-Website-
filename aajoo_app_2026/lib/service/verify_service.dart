@@ -60,6 +60,12 @@ class VerifyService {
     };
   }
 
+  /// Why the last status read was a refusal, when the platform (not DIDIT)
+  /// refused it: 'name_mismatch' — the document's name is not the account's
+  /// (2026-09-19) — or 'name_unreadable'. Null for every other outcome. Set
+  /// by [checkSession] and [getStatus] alongside the status they return.
+  String? lastReason;
+
   /// Active pull — hits DIDIT directly, applies the decision, returns status.
   /// Use this first so we don't depend on the webhook having landed yet.
   Future<String> checkSession(String sessionId) async {
@@ -83,9 +89,14 @@ class VerifyService {
   }
 
   String _statusOf(dynamic body) {
+    lastReason = null;
     if (body is Map) {
       final data = body['data'];
-      if (data is Map && data['status'] != null) return data['status'].toString();
+      if (data is Map) {
+        final r = data['reason'];
+        lastReason = r == null || r.toString().isEmpty ? null : r.toString();
+        if (data['status'] != null) return data['status'].toString();
+      }
       if (body['status'] != null) return body['status'].toString();
     }
     return 'pending';

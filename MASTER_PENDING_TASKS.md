@@ -289,6 +289,71 @@ that commission, four ledger rows per booking.
 
 ## 8. Closed since the last edition — do not redo
 
+### 8a43. Closed 2026-09-19 — a DIDIT approval is granted only when the document's name is the account's name
+
+**What the client found (18 Sep, with a screenshot of the DIDIT flow):** an
+account registered under one name completed KYC with a *friend's* Aadhaar
+and came out Verified. DIDIT proves that the document is real and that the
+face in front of the camera is its holder's — it does not know whose
+account it is, and nothing on our side asked. "If registered name or KYC
+name didn't match, do not do KYC."
+
+**The rule now (backend `465a936`, one place — `applyDecision` in
+`verify.controller.js`):** when DIDIT approves, the name it read off the
+document is compared with `tbl_users.user_fullName` by
+`utils/kycNameMatch.js` — normalised tokens, order-free, honorifics
+dropped, initials and a one-letter slip on a long name tolerated, a name
+that is a subset of the other counts ("Sunil" vs "Sunil Kumar", "Sumit
+Malhotra" vs "Sumit Kumar Malhotra"). A different name is a **mismatch →
+declined**: the account is not verified, the reason is kept, an admin flag
+`KYC_NAME_MISMATCH` is raised, the person gets a bell/push/mail saying
+"verify with your own government ID — or correct your account name first",
+the admin gets a notification (ids only). No readable name → **in_review**,
+never a grant. `KYC_NAME_MATCH=strict` on Render would refuse the subset
+case too (not set; lenient is the default).
+
+**Evidence:** two new columns on `tbl_kyc_verifications` —
+`kv_account_name`, `kv_name_check` (exact / partial / mismatch / unknown) —
+**migration applied to the live database 2026-09-19** and read back.
+`/verify/status`, `/verify/check-session`, `/verify/my-session` and
+`/user/detail` carry `reason` / `verification_reason`; both admin detail
+endpoints send both names and the verdict. Web `007bc41`: the account
+screen, the dashboard nudge and the DIDIT return page say why; the admin
+host/user panel shows *Name on document · Name on account then · Name
+check* and calls a mismatch out before a manual verify. App: the same
+words in the post-check alert and the nudge; `verificationReason` on the
+user model.
+
+**Audit of every recorded decision (24 rows), and the backfill:** the
+eight DIDIT rows that carry a document name were compared and the verdict
+written into the new columns (no status touched). Three match exactly
+(users 151, 152, 180). **Five do not** — users **176** (host), **187**
+(host, driver's licence), **190** (guest), **207** (guest, decided 18 Sep —
+almost certainly the client's own friend's-Aadhaar test) verified by DIDIT
+on a document with a different name, and **165** (host) held in review on a
+mismatch and later verified by hand. All five are verified today. **Open:
+the client decides whether to revoke them** (admin → the user → un-verify;
+the panel now shows both names). Not revoked here — 176/187 are hosts with
+live listings and revoking un-publishes them.
+
+**Verified:** backend **155/155** (`theNameOnTheDocumentIsTheNameOnTheAccount`
+16 assertions: the client's case, Indian name variants, Devanagari, a thin
+webhook completed from the decision endpoint, an unreadable name held,
+DIDIT's own decline unchanged, the per-booking path, the reason lookup),
+web **54/54** + `tsc` + build green, app **527/527**, analyze 0 errors.
+**Not driven live:** a real DIDIT session with a mismatched name needs a
+real document; the rule is pinned by tests against the real controller with
+the tables stubbed. **No app build cut** — the app change is wording on a
+declined state; the refusal itself is the server's and reaches build 105
+as it is.
+
+**Considered and not done:** DIDIT's own `expected_details` cross-check is
+documented for their **v3** session API; the platform calls **v2**, and a
+version change untested against a sandbox is not worth the risk for a
+check we can do ourselves and fail closed on.
+
+---
+
 ### 8a42. Closed 2026-09-18 — manual payouts driven end to end on the live platform; verification that lasts; detailed payout emails; build 105
 
 **The live drive** (admin as Super Admin in the client's Chrome; every

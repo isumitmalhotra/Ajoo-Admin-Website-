@@ -132,6 +132,11 @@ class UserDetail {
   // DIDIT identity status: 'verified' | 'pending' | 'in_review' | 'declined' |
   // 'unverified'. Drives the profile "Verified" badge + the booking KYC gate.
   final String verificationStatus;
+  // Why a 'declined' account was refused, when the platform refused it:
+  // 'name_mismatch' (the document's name is not the account's, 2026-09-19)
+  // or 'name_unreadable'. Null otherwise — the server sends it only for a
+  // declined account.
+  final String? verificationReason;
 
   UserDetail({
     required this.credId,
@@ -152,6 +157,7 @@ class UserDetail {
     required this.zipcode,
     this.kycDocs,
     this.verificationStatus = 'unverified',
+    this.verificationReason,
   });
 
   factory UserDetail.fromJson(Map<String, dynamic> json) {
@@ -186,6 +192,7 @@ class UserDetail {
           json['kycDocs'] != null ? KycDocs.fromJson(json['kycDocs']) : null,
       verificationStatus:
           (json['verification_status'] ?? 'unverified').toString(),
+      verificationReason: json['verification_reason']?.toString(),
     );
   }
 
@@ -209,6 +216,7 @@ class UserDetail {
       'user_zipcode': zipcode,
       'kycDocs': kycDocs?.toJson(),
       'verification_status': verificationStatus,
+      'verification_reason': verificationReason,
     };
   }
 
