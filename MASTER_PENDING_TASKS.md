@@ -37,9 +37,9 @@
 > **Repos:** FE `D:/Projects/aajao-frontend-vercel` (React/Vite → Vercel) ·
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
-> Tester build in circulation: **102 (1.0.0+102)**, `aajoo-homes-1.0.0-build102-release.apk` at repo root
-> (2026-09-18 midday, versionCode 102, 95.4 MB, sha256 `6137a653d4f73405…`), built with
-> `tool/build_release.ps1` and read back by the verifier with the endpoint named (§8a39). 100 and 101
+> Tester build in circulation: **103 (1.0.0+103)**, `aajoo-homes-1.0.0-build103-release.apk` at repo root
+> (2026-09-18 afternoon, versionCode 103, 95.4 MB, sha256 `ee0b1f6a243def8f…`), built with
+> `tool/build_release.ps1` and read back by the verifier with the endpoint named (§8a40). 100–102
 > are superseded by it; **98 and 99 are withdrawn** (built with plain `flutter build apk`, no endpoint
 > compiled in — "This build is not configured"). 97 was the last of the previous line. Builds 88–96 are withdrawn: 88/89 lacked the pricing fixes, 90 and 91 each
 > carried a defect the emulator found the same hour, 92 lacked the afternoon's three fixes, **93 still
@@ -48,7 +48,7 @@
 > unverified guest open a negotiation the server would refuse, and 96 still carried the pre-rebuild
 > negotiation chat that every offer notification opened. Everything before 87 was withdrawn earlier.
 > Read back with `python aajoo_app_2026/tool/verify_release_apk.py <apk> https://aajaodev.onrender.com
-> --allow-test-payments --expect-version=1.0.0+102`: the endpoint it was given is in it, no other
+> --allow-test-payments --expect-version=1.0.0+103`: the endpoint it was given is in it, no other
 > `*.onrender.com` host is, no developer path, no plain-http endpoint, and it carries its own
 > version string. Points at `aajaodev.onrender.com` with the sandbox Razorpay key — the platform
 > is still in test mode, so a QA build is the only honest one.
@@ -288,6 +288,62 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a40. Closed 2026-09-18 — the two negotiation decisions answered and built; the app on the client's private repo; build 103
+
+**The client answered the 17 September decisions document** (`report-2026-09-17/NEGOTIATION_DECISIONS.md`)
+in two lines: *"counter price keep it like the current structure only"* and
+*"show in the upcoming till the deal is running."*
+
+**Decision 1 — Option A, keep the sliding counter.** No code change. Pinned
+by `tests/theHostSeesADealWhileItRuns.test.js`, which reproduces the worked
+example the client was shown (list 2,000 / ideal 1,800 / floor 1,500 → a
+₹100 offer is quoted 1,900, ₹1,000 → 1,850, ₹1,400 and ₹1,600 → 1,800, ₹1,800
+accepted), so nobody later "fixes" the counter to always quote the ideal.
+**Do not change `decideOffer` / `counterPrice` without a new client decision.**
+
+**Decision 2 — in the Upcoming tab, while the deal runs, gone when it
+expires** (Option A with the badge; the smaller question — show an expired
+unbooked price? — answered "no" by "till the deal is running"). New host
+endpoint `GET /host/deals/running`: every personal coupon minted by an
+accepted negotiation on the host's listings that is live, unexpired and
+unused. A used coupon is a booking and the bookings list has it; a **parting
+offer** (the host's own last price after they declined, §8a-era) is the same
+instrument and is deliberately left out — "price agreed" would be a lie
+about it. The rupee figure is read back from the accepted offer of *that*
+guest for *those* dates (the coupon carries only the percentage). **Web:**
+the host Bookings page's Upcoming tab lists the deals above the bookings,
+amber, badged *Price agreed*, with *Not booked yet · expires in 2h 10m*, the
+guest, listing, dates, ₹/night and the stay total; re-read every minute, the
+countdown ticks on the viewer's clock, and a deal that lapses while the page
+is open leaves the list on its own; the tab label counts them separately
+(*Upcoming (3 · 2 deals)*). **App:** the host Booking History's Upcoming tab
+does the same with an amber `_DealCard`. Every row carries the sentence
+*"Price agreed, not booked yet. The nights stay open to everyone until the
+guest pays."* — because the same client had asked whether two agreed prices
+on one weekend meant a double booking (they do not; whoever pays first gets
+the nights, §8a37).
+
+**The app is on the client's private repository.** `nameeshPatiyal100/aajoo_app_latest`
+confirmed private (unauthenticated GET → 404, `isPrivate: true`) before the
+push; `main` is the app-only history from `git subtree split` — **391
+commits, 22 MB, every `.apk`/`.aab` stripped from history**, tip = the
+build-102 commit. A fresh clone ran `flutter pub get` + `flutter test`
+(510 pass, 1 skipped) before anything was pushed. `android/app/google-services.json`
+is in it, as it must be for the app to build; the key inside (`…iCk-WI`)
+still needs the Android-app restriction in Google Cloud that §8a36 asked
+for — a private repo does not replace that.
+
+Verified: backend **153/153**, web **52/52** + `tsc` clean + build green, app
+**517/517** with analyze 0 errors. **Build 103** built with
+`tool/build_release.ps1` and read back by the verifier with the endpoint
+named; 102 is superseded by it. Not driven live: the deals row needs a host
+signed in, and neither the client's host (§9) nor a password we would type
+is available — the endpoint's filtering is exercised against stubbed
+tables instead, and the row renders from the same field names the test
+sends.
+
+---
 
 ### 8a39. Closed 2026-09-18 — the client's five of the same afternoon; the India map settled; build 102
 
