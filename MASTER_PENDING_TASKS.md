@@ -287,6 +287,88 @@ that commission, four ledger rows per booking.
 
 ## 8. Closed since the last edition — do not redo
 
+### 8a38. Closed 2026-09-18 — six from the client's screenshots and a video; the 300-case run to batch 2; build 101
+
+**"Host confirmed the booking but the renter side still shows Request
+sent — refresh this in real time."** True on both surfaces, for the same
+reason: the confirmation page took `requiresApproval` once, from the booking
+response, and never looked again. The website now listens for the host's
+answer on the live channel (`notification:new`, `type booking_confirmed`,
+matched on the booking id) **and** polls booking history every 30 seconds —
+the poll is not belt-and-braces, it is the primary path for the case that
+matters, because Chrome throttles a background tab hard enough that a socket
+event can arrive late or never, and this is exactly the tab a guest leaves
+open while they wait. The app does the same with a foreground push and the
+same poll. Both stop the moment the answer is known; a decline is said as a
+decline.
+
+**"Do not give the directions till the host confirms."** Get directions
+(web) and the "Getting there" map (app) now appear the moment the decision
+lands; until then both say why they are not there. A request the host may
+still turn down is not a stay to set off for.
+
+**"Booking id is missing."** On the Next Booking card, beside the dates. The
+app's confirmed screen already had it.
+
+**"If the property is already booked, do not show Book again."** A guest
+holding a live stay on a listing sees *You're booked here* with the dates and
+reference and a way through to the booking. Book Now returns only once they
+pick other dates — a second stay somewhere they liked is a real thing to want.
+The fetch is token-guarded exactly as the personal coupons are, because
+`useBookings` has no login guard and an unauthenticated
+`/user/booking-history` is a 401 the interceptor answers by ending the session.
+
+**The video behind that item showed two more things.** Tapping View Property
+opened *No photos yet · ₹0 / night* for a second before the real listing
+arrived: `prop` is null until the fetch resolves, every field read null as
+its empty value, and the shell rendered as a finished page about a place with
+no pictures and no price. A skeleton now holds the frame — the client's own
+case **BK-010**. And the card in the video showed **a living room that was
+not the listing**: both booking endpoints resolved a cover from
+`tbl_attachments` alone, the pre-wizard table, so a wizard-made listing came
+back with nothing and the website put a niche stock image in its place. Both
+endpoints now go through `methods.coverImagesFor` (wizard media first, the
+way the listing page does); the website's fallback is the honest `NO_PHOTO`
+mark the search cards use. A duplicate of that helper had been written on the
+way and is removed.
+
+**"It should check PIN validation — I can enter an invalid PIN and move to
+the next page."** The server checked nothing; the website checked the shape.
+`utils/pinZones.js` (mirrored in `lib/pinZones.ts`, with a test that the two
+tables agree) maps India Post's circle prefixes to states — two digits, three
+where a territory sits inside a larger circle — and refuses a PIN that is
+certainly in the wrong state, by name: *PIN 110001 is in Delhi, not Goa*.
+Ranges two states genuinely share (UP/Uttarakhand, Bihar/Jharkhand,
+AP/Telangana) allow both rather than guess; the Army Postal Service and
+unissued prefixes are refused. Applied in step 1 **before** the location row
+is written. The PIN the client typed, 403706 in Goa, is a real Goa PIN and
+still saves. Client case **HL-016**.
+
+**"This option is twice."** The cleaning fee *Applies* menu offered four
+entries for two behaviours: the website added "Per stay (default)" above the
+server's list, and the server's own "One Time" and "Per Stay" are the same
+arithmetic (the engine multiplies only `per_night`). The list is now
+*Per stay / Per night*; a listing that chose `one_time` re-saves as
+`per_stay` rather than being refused for a word no longer on the menu.
+
+**The 300-case run.** Batches 1 and 2 are complete — 60 of 300, in
+`report-2026-09-17/TEST_RUN_300/RESULTS.md` with the actual value seen for
+every case and the remaining 240 arranged into eight batches by what unblocks
+each. Five defects so far, four fixed and pinned: the two Critical leaks
+(§8a37), a festival rate silently dropped, an accepted counter-back missing
+from the ledger, and the 28–31 night pricing cliff, which is with the client
+because it moves money. Three cases are the document being behind the product
+(the cleaning fee, the round-one counter, countering below the floor).
+**Batches 3–10 need a guest and a host account we own**: both surfaces are
+signed in as the client's test guest (101), which §9 keeps live tests off.
+
+Verified: backend **151/151**, web **50/50** + `tsc` clean + build green, app
+**503/503** with analyze 0 errors. **Build 101** built with
+`tool/build_release.ps1` and read back by the verifier with the endpoint
+named.
+
+---
+
 ### 8a37. Closed 2026-09-16 (night) — the chatbot is told which journey the visitor belongs in; build 99
 
 **BotPenguin, via the client:** *"The Aajoo website passes the user's login
