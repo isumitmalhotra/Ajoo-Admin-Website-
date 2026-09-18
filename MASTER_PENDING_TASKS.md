@@ -37,9 +37,9 @@
 > **Repos:** FE `D:/Projects/aajao-frontend-vercel` (React/Vite → Vercel) ·
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
-> Tester build in circulation: **103 (1.0.0+103)**, `aajoo-homes-1.0.0-build103-release.apk` at repo root
-> (2026-09-18 afternoon, versionCode 103, 95.4 MB, sha256 `ee0b1f6a243def8f…`), built with
-> `tool/build_release.ps1` and read back by the verifier with the endpoint named (§8a40). 100–102
+> Tester build in circulation: **104 (1.0.0+104)**, `aajoo-homes-1.0.0-build104-release.apk` at repo root
+> (2026-09-18 evening, versionCode 104, 95.4 MB, sha256 `a5029e08449008c5…`), built with
+> `tool/build_release.ps1` and read back by the verifier with the endpoint named (§8a41). 100–103
 > are superseded by it; **98 and 99 are withdrawn** (built with plain `flutter build apk`, no endpoint
 > compiled in — "This build is not configured"). 97 was the last of the previous line. Builds 88–96 are withdrawn: 88/89 lacked the pricing fixes, 90 and 91 each
 > carried a defect the emulator found the same hour, 92 lacked the afternoon's three fixes, **93 still
@@ -48,7 +48,7 @@
 > unverified guest open a negotiation the server would refuse, and 96 still carried the pre-rebuild
 > negotiation chat that every offer notification opened. Everything before 87 was withdrawn earlier.
 > Read back with `python aajoo_app_2026/tool/verify_release_apk.py <apk> https://aajaodev.onrender.com
-> --allow-test-payments --expect-version=1.0.0+103`: the endpoint it was given is in it, no other
+> --allow-test-payments --expect-version=1.0.0+104`: the endpoint it was given is in it, no other
 > `*.onrender.com` host is, no developer path, no plain-http endpoint, and it carries its own
 > version string. Points at `aajaodev.onrender.com` with the sandbox Razorpay key — the platform
 > is still in test mode, so a QA build is the only honest one.
@@ -288,6 +288,73 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a41. Closed 2026-09-18 — manual host payouts: the bank moves the money, the platform records it; build 104
+
+**The client's line:** *"For payouts, check the system for manual payouts."*
+The company is not eligible for a payout provider (§8a34: RazorpayX and Route
+both refuse a pre-revenue merchant), so nothing could be paid — Approve
+refused without RazorpayX credentials, and a host's account could only be
+verified by the provider's penny drop. Live that morning: **18 payouts
+queued (₹1,66,549), 2 accounts on file, 0 verified.**
+
+**What was built.** `PAYOUT_MODE=manual` is the default whenever RazorpayX
+is not configured (the provider path is untouched; `razorpayx` switches it
+back on). In manual mode:
+
+- **Payout accounts** (Admin → Finance → Payouts → Payout accounts): every
+  host's account and its state. *Reveal* (masked until then; needs a reason;
+  logged as `payout_account_revealed`), finance sends **₹1** from the company
+  account, *Mark verified* with the bank's reference (`had_verify_ref`,
+  `had_provider = manual`), or *Mark as needing attention* with a reason the
+  host reads. A freshly saved account reads **"Awaiting verification — we
+  will send ₹1"** (`awaiting_manual`), not "unconfigured".
+- **Payout runs** (`GET /admin/finance/payout-runs/readiness`): every queued
+  payout, **one line per host**, ready / not ready with the reason
+  (unverified, on hold). Opening a run claims the payouts — `QUEUED →
+  PROCESSING` with `po_run_id` in the same UPDATE, so two runs cannot take
+  one payout. Pay-at-property dues are withheld oldest-first, and a host
+  whose dues swallow the whole batch is refused rather than exported as ₹0.
+- **The run page**: the bank's bulk-transfer CSV (beneficiary, account,
+  IFSC, amount, NEFT/IMPS/RTGS by size, narration `AAJOO PR-0001`) — a
+  download is an audited reveal; each line recorded **PAID** with UTR,
+  method and date (settles the payouts, writes one ledger DEBIT per payout
+  with the UTR, marks the dues RECOVERED, notifies the host with the amount
+  and UTR) or **BOUNCED** with the bank's reason (payouts back to QUEUED,
+  host told to check their account); *Close* once every line has an outcome.
+- **Guards that run:** `pri_utr` is UNIQUE across every line ever recorded;
+  dues that changed since the file was made **refuse** the line ("bounce it
+  and open a new run") rather than re-split; a UTR already recorded names
+  the run it is on.
+- **The queue** in manual mode offers *Pay via run* instead of Approve,
+  shows *In run #n* on a claimed payout and the UTR on a paid one; the
+  server refuses Approve in manual mode regardless, pointing at the run.
+- **Hosts** (web and app): *Paid · by NEFT · UTR …*, *Queued — released on
+  the next payout run*, *Being paid* while a run is open, the withheld line
+  with a link to Settlements.
+- **Weekly nudge** to the admin bell, Tuesday 10:00 IST
+  (`PAYOUT_RUN_DAY`/`PAYOUT_RUN_HOUR`): hosts ready, amount, hosts waiting.
+
+**Schema:** migration `20260918150000-manual-payout-runs` — `tbl_payout_runs`,
+`tbl_payout_run_items`, `tbl_payouts.po_run_id`; **applied to the live
+database 2026-09-18** and read back (both tables present, `po_run_id`
+present, `pri_utr` unique).
+
+**Not built, on purpose:** TDS under §194-O. The admin table already has
+the columns; they stay at zero until the accountant confirms the rate
+(`PLANETSCALE_AND_MANUAL_PAYOUTS_2026-09-18.md` §4.4). The bank's exact
+bulk-file column order is the company's bank's to name; the seven fields
+are the ones every Indian bank's template takes.
+
+Verified: backend **154/154** (`theBankMovesTheMoneyThePlatformRecordsIt`,
+12 assertions against stubbed tables — the UTR guard, the dues guard, the
+bounce, the reminder slot), web **53/53** + `tsc` clean + build green, app
+**522/522** with analyze 0 errors. **Build 104** built with
+`tool/build_release.ps1` and read back by the verifier. Not driven live:
+the finance screens need an admin signed in and a password we do not
+type; the row shapes are the ones the tests send.
+
+---
 
 ### 8a40. Closed 2026-09-18 — the two negotiation decisions answered and built; the app on the client's private repo; build 103
 
