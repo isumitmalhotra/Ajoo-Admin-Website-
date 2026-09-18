@@ -1,8 +1,13 @@
+import 'dart:async';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/design/amount_breakdown.dart';
 import 'package:rent_home/ui/screens_renter/property_details/components/stay_map.dart';
+import 'package:rent_home/service/user_service.dart';
+import 'package:rent_home/utils/booking_status.dart';
 import 'package:rent_home/utils/fonts.dart';
 
 /// Booking confirmed.
@@ -17,7 +22,7 @@ import 'package:rent_home/utils/fonts.dart';
 /// A route has neither problem. It is pushed with Get.to, so it survives the
 /// payment sheet closing, and it has room for the map, the stay dates and what
 /// happens next.
-class BookingConfirmedScreen extends StatelessWidget {
+class BookingConfirmedScreen extends StatefulWidget {
   final String bookingId;
   final String paymentId;
   final String propertyName;
@@ -69,7 +74,112 @@ class BookingConfirmedScreen extends StatelessWidget {
     this.responseHours = 24,
   });
 
+  @override
+  State<BookingConfirmedScreen> createState() => _BookingConfirmedScreenState();
+}
+
+/// The host's answer, live, rather than a value passed in once.
+///
+/// Client, 2026-09-17: "host confirmed the booking but the renter side still
+/// shows Request sent — refresh this in real time with the host response."
+/// `awaitingApproval` arrived with the booking response and never changed,
+/// however long the guest sat on this screen. The host's Confirm reaches the
+/// phone as a push with `type: booking_confirmed` and the booking id, so a
+/// foreground message for THIS booking flips the screen; and because a push
+/// can be missed (denied permission, a dropped connection, the app in the
+/// background at the wrong moment), a 30-second read of booking history is
+/// the fallback. Both stop the moment the answer is known.
+///
+/// Same rule on the same day for the website's confirmation page.
+enum _Decision { waiting, confirmed, declined }
+
+class _BookingConfirmedScreenState extends State<BookingConfirmedScreen> {
+  late _Decision _decision;
+  StreamSubscription<RemoteMessage>? _push;
+  Timer? _poll;
+
+  bool get _awaiting => _decision == _Decision.waiting;
+  bool get _declined => _decision == _Decision.declined;
+
+  @override
+  void initState() {
+    super.initState();
+    _decision =
+        widget.awaitingApproval ? _Decision.waiting : _Decision.confirmed;
+    if (_awaiting) _listen();
+  }
+
+  void _listen() {
+    try {
+      _push = FirebaseMessaging.onMessage.listen((m) {
+        final d = m.data;
+        if (d['bookingId']?.toString() != widget.bookingId) return;
+        final type = d['type']?.toString() ?? '';
+        if (type == 'booking_confirmed') _settle(_Decision.confirmed);
+        if (type == 'booking_declined' || type == 'booking_rejected') {
+          _settle(_Decision.declined);
+        }
+      });
+    } catch (_) {
+      // No Firebase on this run (the Simulator, a denied permission). The
+      // poll below still answers.
+    }
+    _poll = Timer.periodic(const Duration(seconds: 30), (_) => _check());
+  }
+
+  Future<void> _check() async {
+    try {
+      final history = await UserService().getBookingHistory();
+      final rows = history.data;
+      for (final r in rows) {
+        if ((r.bookId ?? '').trim() != widget.bookingId) continue;
+        final label = lifecycleLabel(r.bookingStatusBsTitle);
+        if (label == 'Declined' || label == 'Cancelled') {
+          _settle(_Decision.declined);
+        } else if (label != 'Awaiting approval') {
+          _settle(_Decision.confirmed);
+        }
+        return;
+      }
+    } catch (_) {
+      // The next tick tries again.
+    }
+  }
+
+  void _settle(_Decision d) {
+    if (!mounted || _decision == d) return;
+    _push?.cancel();
+    _poll?.cancel();
+    setState(() => _decision = d);
+  }
+
+  @override
+  void dispose() {
+    _push?.cancel();
+    _poll?.cancel();
+    super.dispose();
+  }
+
   void _goHome() => Get.offAllNamed('/home');
+
+  // Shorthands so the body below reads as it did.
+  String get bookingId => widget.bookingId;
+  String get paymentId => widget.paymentId;
+  String get propertyName => widget.propertyName;
+  String? get address => widget.address;
+  double? get lat => widget.lat;
+  double? get lng => widget.lng;
+  String? get checkIn => widget.checkIn;
+  String? get checkOut => widget.checkOut;
+  String? get amount => widget.amount;
+  double? get roomCharge => widget.roomCharge;
+  double? get extras => widget.extras;
+  double? get taxes => widget.taxes;
+  double? get discount => widget.discount;
+  double? get total => widget.total;
+  bool get isPayOnArrival => widget.isPayOnArrival;
+  bool get awaitingApproval => _awaiting;
+  int get responseHours => widget.responseHours;
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +218,7 @@ class BookingConfirmedScreen extends StatelessWidget {
               // A host who chose "Approval Required" reviews the request
               // first. Telling the guest their stay was "all set" while the
               // host had not yet seen it was simply untrue.
-              Text(awaitingApproval ? 'Request sent!' : 'Booking Confirmed!',
+              Text(_declined ? "The host couldn't take this one" : awaitingApproval ? 'Request sent!' : 'Booking Confirmed!',
                   textAlign: TextAlign.center,
                   style: fraunces(
                       fontSize: 23, fontWeight: FontWeight.w700, color: kInk)),
@@ -221,12 +331,38 @@ class BookingConfirmedScreen extends StatelessWidget {
                 const SizedBox(height: 16),
               ],
 
-              // Where you're going.
-              Text('Getting there',
-                  style: fraunces(
-                      fontSize: 16, fontWeight: FontWeight.w600, color: kInk)),
-              const SizedBox(height: 10),
-              StayMap(lat: lat, lng: lng, label: propertyName, height: 200),
+              // Where you're going — once there is somewhere to go.
+              //
+              // Client, 2026-09-17: "do not give the directions till the host
+              // confirms the booking; after confirmation show them Get
+              // directions." A request the host may still turn down is not a
+              // stay to set off for. The map appears the moment the decision
+              // above lands; until then the screen says why it is not there.
+              if (_declined) ...[
+                Text("The host couldn't take this one",
+                    style: fraunces(
+                        fontSize: 16, fontWeight: FontWeight.w600, color: kInk)),
+                const SizedBox(height: 6),
+                Text(
+                    'Nothing has been charged. Your bookings page has the details, '
+                    'and the search is a tap away.',
+                    style: inter(fontSize: 13, color: kMuted, height: 1.5)),
+              ] else if (_awaiting) ...[
+                Text('Getting there',
+                    style: fraunces(
+                        fontSize: 16, fontWeight: FontWeight.w600, color: kInk)),
+                const SizedBox(height: 6),
+                Text(
+                    'Directions unlock once the host confirms — this screen '
+                    'updates on its own.',
+                    style: inter(fontSize: 13, color: kMuted, height: 1.5)),
+              ] else ...[
+                Text('Getting there',
+                    style: fraunces(
+                        fontSize: 16, fontWeight: FontWeight.w600, color: kInk)),
+                const SizedBox(height: 10),
+                StayMap(lat: lat, lng: lng, label: propertyName, height: 200),
+              ],
 
               const SizedBox(height: 18),
               OutlinedButton(
