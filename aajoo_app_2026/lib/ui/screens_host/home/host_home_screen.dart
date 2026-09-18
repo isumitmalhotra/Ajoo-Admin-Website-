@@ -11,6 +11,8 @@ import 'package:rent_home/ui/screens_host/booking_history/booking_history_screen
 import 'package:rent_home/ui/screens_host/calendar/host_calendar_screen.dart';
 import 'package:rent_home/ui/screens_host/ongoing_booking/view_ongoing_booking_page.dart';
 import 'package:rent_home/ui/screens_host/payout/payout_page.dart';
+import 'package:rent_home/models/host_account_details_model.dart';
+import 'package:rent_home/service/host_payout_service.dart';
 import 'package:rent_home/ui/screens_host/support/host_support_screen.dart';
 import 'package:rent_home/ui/screens_host/home/components/bookings_trend_card.dart';
 import 'package:rent_home/ui/screens_host/home/components/host_home_shimmer.dart';
@@ -80,10 +82,27 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
     _wasVisible = isVisible;
   }
 
+  /// The payout account's state, on the home card itself: finance verifies
+  /// an account from the admin side (2026-09-18), and a host should not
+  /// have to open Payouts to learn whether their money can move.
+  /// `_accountLoaded` false = not asked yet; null account = none on file.
+  HostAccountDetails? _account;
+  bool _accountLoaded = false;
+
+  Future<void> _loadAccount() async {
+    try {
+      final acc = await HostPayoutService().getHostAccountDetails();
+      if (mounted) setState(() { _account = acc; _accountLoaded = true; });
+    } catch (_) {
+      if (mounted) setState(() { _account = null; _accountLoaded = true; });
+    }
+  }
+
   Future<void> _refresh() async {
     final auth =
         Get.isRegistered<AuthController>() ? Get.find<AuthController>() : null;
     final hostId = auth?.userData.value?.userId ?? 0;
+    _loadAccount();
     await Future.wait([
       hostController.getTransactionHistory(),
       hostController.getHostOngoing(hostId),
@@ -359,6 +378,10 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
                           size: 16, color: kIndigo600),
                     ],
                   ),
+                  if (_accountLoaded) ...[
+                    const SizedBox(height: 6),
+                    _payoutAccountChip(),
+                  ],
                 ],
               ),
               const Spacer(),
@@ -375,6 +398,44 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
         ),
       );
     });
+  }
+
+  /// Where the money goes, and whether it can — one chip, four states.
+  Widget _payoutAccountChip() {
+    final a = _account;
+    final String label;
+    final Color fg;
+    final Color bg;
+    if (a == null) {
+      label = 'Payout account not added';
+      fg = kWarningText; bg = kWarningBg;
+    } else if (a.isVerified) {
+      label = 'Payout account verified';
+      fg = kIndigo600; bg = Colors.white;
+    } else if (a.isAwaiting) {
+      label = 'Payout account awaiting verification';
+      fg = kWarningText; bg = kWarningBg;
+    } else {
+      label = 'Payout account needs attention';
+      fg = kDanger; bg = const Color(0xFFFDECEC);
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: fg.withOpacity(.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(a != null && a.isVerified ? Icons.verified_outlined : Icons.account_balance_outlined,
+              size: 13, color: fg),
+          const SizedBox(width: 5),
+          Text(label, style: inter(fontSize: 11, fontWeight: FontWeight.w600, color: fg)),
+        ],
+      ),
+    );
   }
 
   Widget _statGrid() {
