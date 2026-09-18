@@ -49,3 +49,6 @@ app.*.map.json
 socketController.js
 
 aajoo-bdb20-firebase-adminsdk-fbsvc-2c1d5c7ace.json
+# The iOS Firebase file is filled by the testflight job from a secret, and on
+# a developer Mac from a download (IOS_READINESS.md §3 step 4). Never committed.
+/ios/Runner/GoogleService-Info.plist

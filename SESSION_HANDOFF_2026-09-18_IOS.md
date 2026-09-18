@@ -8,6 +8,25 @@ repository (never an older edition of it).
 
 ---
 
+## 0. GitHub on the Mac — yes, sign in first
+
+Three of the four repositories are private (§1), so the Mac needs Sumit's
+GitHub identity before anything but the monorepo clone will work.
+
+```bash
+brew install gh
+gh auth login          # GitHub.com → HTTPS → "Login with a web browser": Sumit does this himself
+gh auth setup-git      # so plain git clone/push over HTTPS uses the same login
+gh auth status         # must say: Logged in to github.com account isumitmalhotra
+```
+
+The session never types the password, the one-time code or a token — Sumit
+completes the browser step; the session only runs `gh auth status`
+afterwards to confirm. If Sumit prefers SSH keys, `gh auth login` offers
+that too and the remotes in §1 become `git@github.com:…`. Repository
+secrets for the monorepo (§5a step 4) also go through `gh` under this login;
+Sumit is the repo's admin, so `gh secret set` works without anyone else.
+
 ## 1. The repositories — clone all four
 
 | What | Remote | Deploys to | Tip tonight |
@@ -16,6 +35,22 @@ repository (never an older edition of it).
 | **Backend** (Node 20 / Express / Sequelize / MySQL) | `https://github.com/nameeshPatiyal100/aajaoBackend.git` | Render → `https://aajaodev.onrender.com` on push to `main` | `d07ed6f` |
 | **Web** (React / TS / Vite; customer + host + admin) | `https://github.com/nameeshPatiyal100/Aajao-Admin-WebSIite.git` | Vercel → `https://www.aajoohomes.com` on push to `main` | `6b21875` |
 | **Client's app repo** (app-only history, APKs stripped) | `https://github.com/nameeshPatiyal100/aajoo_app_latest.git` (private) | — | `b534bc7` = monorepo `427ed58` |
+
+**Visibility, checked 18 Sep night:** the monorepo is **PUBLIC** (Sumit is
+its admin); the backend, the web and the client's app repo are **PRIVATE**
+(Sumit has write access as a collaborator, account `isumitmalhotra`). So:
+
+- Cloning the monorepo needs no login; **pushing to it, and cloning or
+  pushing the other three, needs GitHub sign-in on the Mac** — see §0.
+- The public monorepo holds the whole app source and every client document
+  (trackers, handoffs, PDFs, this file). Making it private is one click
+  (repo Settings → Danger Zone → Change visibility) and changes nothing in
+  the clone commands, but it **changes the CI bill**: on a public repo the
+  `macos-15` compile job is free; on a private repo under GitHub Free the
+  2,000 included minutes are charged at 10× for macOS, and the compile job
+  took 12 min today (run 35362902160) — about 16 runs a month before Actions
+  stops, unless a spending limit is set. Sumit's call; the doc assumes
+  public until he says otherwise.
 
 ```bash
 mkdir -p ~/Projects && cd ~/Projects
@@ -168,10 +203,12 @@ Razorpay's UPI intent list depends on installed apps. Drive the rest.
 ## 5. The iOS task list on the Mac, in order
 
 1. **Environment** (§4) until `flutter test` and the `--no-codesign` build pass locally.
-2. **Ask Sumit for #4 and #5** (Firebase plist for the iOS app; an iOS-restricted
-   Maps key in `aajoo-bdb20` restricted to the bundle id). Put them in
-   Info.plist locally for the Simulator drive (do **not** commit real keys —
-   the CI fills them from secrets; keep the placeholders in git).
+2. **The two Google-side items (§5a)** — the Firebase plist for the iOS app
+   and an iOS-restricted Maps key. Sumit does them in the consoles; the
+   session wires the results in with `tool/ios_local_secrets.sh` and puts
+   the same values into the repository secrets. **This is the first real
+   task on the Mac** — the session should check the state in §5a.0 and, if
+   either item is missing, ask Sumit for it before anything else.
 3. **Simulator drive** of `IOS_READINESS.md` §4.2's list, minus push. Log every
    defect as a §8a-style entry in the master list; fix web/app in the same
    pass when a defect is shared (parity rule, §7).
@@ -185,6 +222,143 @@ Razorpay's UPI intent list depends on installed apps. Drive the rest.
    the iOS build of `1.0.0+N` is the Android build of `1.0.0+N`, same commit.
 
 ---
+
+## 5a. The Google-side prerequisites — step by step
+
+Both live in the **one** Google project the platform already uses:
+Firebase project **`aajoo-bdb20`** = Google Cloud project `aajoo-bdb20`
+(Sumit administers it — he set the Android key restrictions there). No
+Apple account is involved in any of this. The iOS app is **already
+registered** in Firebase: app id `1:1006999733744:ios:d18b876d15ef8a2b050935`,
+bundle id `com.aajoo.aajoohomes` (in `lib/firebase_options.dart`), so
+nothing has to be created in Firebase — only downloaded.
+
+### 5a.0 How the Mac session tells what is still missing
+
+```bash
+cd "aajoo admin website/aajoo_app_2026"
+ls ios/Runner/GoogleService-Info.plist 2>/dev/null || echo "MISSING: Firebase plist (step 1)"
+grep -c REPLACE_WITH ios/Runner/Info.plist        # 3 = placeholders still in place (normal in git; fill locally with step 3)
+gh secret list -R isumitmalhotra/Ajoo-Admin-Website- | grep -E "IOS_MAPS_KEY|IOS_GOOGLE_CLIENT_ID|IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64" \
+  || echo "MISSING: the three Google secrets (step 4)"
+```
+
+As of 18 Sep night all three are missing: no plist on any machine, the
+placeholders in Info.plist, no `IOS_*` secrets on the repo (the Apple ones
+are missing too, but those wait for the client — §3).
+
+### 5a.1 Download the iOS `GoogleService-Info.plist` (Sumit, ~3 minutes)
+
+1. https://console.firebase.google.com → project **aajoo-bdb20** → gear
+   next to *Project Overview* → **Project settings** → *General* tab →
+   scroll to **Your apps**.
+2. Select the **iOS** app (`com.aajoo.aajoohomes`; it sits beside the
+   Android app). Click **GoogleService-Info.plist** (download button). It
+   lands in `~/Downloads`.
+3. Check it carries the Google Sign-In client — the session can do this,
+   it prints ids, not secrets:
+   ```bash
+   /usr/libexec/PlistBuddy -c "Print :CLIENT_ID" ~/Downloads/GoogleService-Info.plist
+   /usr/libexec/PlistBuddy -c "Print :REVERSED_CLIENT_ID" ~/Downloads/GoogleService-Info.plist
+   /usr/libexec/PlistBuddy -c "Print :BUNDLE_ID" ~/Downloads/GoogleService-Info.plist   # must be com.aajoo.aajoohomes
+   ```
+   `CLIENT_ID` must end in `.apps.googleusercontent.com`. **If the key is
+   absent**, Firebase has not minted an iOS OAuth client yet: Firebase →
+   *Build → Authentication → Sign-in method → Google* — it is already
+   enabled for Android; open it, press *Save* once (that re-provisions the
+   OAuth clients for every registered app), then download the plist again.
+   If it is still absent, create it by hand: https://console.cloud.google.com
+   → project aajoo-bdb20 → *APIs & Services → Credentials → Create
+   credentials → OAuth client ID → iOS* → bundle id `com.aajoo.aajoohomes`
+   (App Store id and Team id can stay empty) → copy the client id into
+   `~/.aajoo/ios.env` as `IOS_GOOGLE_CLIENT_ID=…` (step 3). Same project, so
+   Firebase Auth accepts it without any safelisting.
+4. Move it into place — it is gitignored (`/ios/Runner/GoogleService-Info.plist`),
+   so `git status` stays clean:
+   ```bash
+   mv ~/Downloads/GoogleService-Info.plist "aajoo admin website/aajoo_app_2026/ios/Runner/GoogleService-Info.plist"
+   ```
+   Nothing in the backend changes for this: the app sends Firebase's ID
+   token and `controllers/googleAuth.controller.js` verifies it with
+   `admin.auth().verifyIdToken`, which does not care which platform's OAuth
+   client produced it.
+
+### 5a.2 Create the iOS-restricted Maps key (Sumit, ~5 minutes)
+
+1. https://console.cloud.google.com → project selector → **aajoo-bdb20**.
+2. *APIs & Services → Library* → search **Maps SDK for iOS** → **Enable**
+   (the Android and JavaScript SDKs are already enabled; this one is not).
+   `geocoding` on iOS uses Apple's CLGeocoder, so no Geocoding API is needed
+   for the app.
+3. *APIs & Services → Credentials → + Create credentials → API key*. Rename
+   it **Aajoo iOS Maps** (pencil icon), then:
+   - *Application restrictions* → **iOS apps** → *Add* → bundle id
+     `com.aajoo.aajoohomes` → Done.
+   - *API restrictions* → **Restrict key** → tick only **Maps SDK for iOS**.
+   - **Save.** (Restrictions take a few minutes to apply.)
+4. Copy the key into a file the session can read but the chat never sees:
+   ```bash
+   mkdir -p ~/.aajoo && chmod 700 ~/.aajoo
+   printf 'IOS_MAPS_KEY=PASTE_THE_KEY_HERE\n' > ~/.aajoo/ios.env && chmod 600 ~/.aajoo/ios.env
+   open -e ~/.aajoo/ios.env      # Sumit pastes the key in TextEdit and saves
+   ```
+   **Do not paste the key into the chat, a commit, or the master list.**
+   Refer to it by its last six characters, as the other keys are.
+5. Add the new key to the same billing budget alert as the Android and
+   browser keys (master list §2.6) — *Billing → Budgets & alerts* on the
+   same project; the key inherits the project's budget, so this is only a
+   check that the alert exists.
+
+### 5a.3 Wire both into the local app for the Simulator drive (the session)
+
+```bash
+cd "aajoo admin website/aajoo_app_2026"
+chmod +x tool/ios_local_secrets.sh
+tool/ios_local_secrets.sh          # fills GMSApiKey, GIDClientID and the callback URL scheme in ios/Runner/Info.plist
+grep -c REPLACE_WITH ios/Runner/Info.plist   # must now print 0
+```
+
+The script (new tonight; mirrors the three PlistBuddy lines the `testflight`
+job runs, and has not been executed yet — there is no PlistBuddy on the
+Windows machine) reads `~/.aajoo/ios.env` and takes the client id from the
+plist's `CLIENT_ID` unless `IOS_GOOGLE_CLIENT_ID` is set. **`Info.plist` is a
+tracked file with the real key in it now**: before every commit run
+`tool/ios_local_secrets.sh --restore` and confirm `git status` does not list
+`ios/Runner/Info.plist`. Commit by naming files, never `git add -A`.
+
+Then the drive: `open -a Simulator`, `flutter run -d <iPhone>` with the
+dart-defines from §4. Maps should draw tiles, Google sign-in should reach
+the account picker (then the backend), push stays off (no APNs on a
+Simulator). If maps are blank, the SDK is not enabled yet or the
+restrictions are still propagating — the AppDelegate logs
+`Aajoo: GMSApiKey is not set` only when the placeholder is still there, so
+a blank map with no log line is a key/SDK problem, not a wiring one.
+
+### 5a.4 Put the same values into the repository secrets (the session, under Sumit's login)
+
+So the `testflight` job has them the day the Apple secrets arrive:
+
+```bash
+cd "aajoo admin website/aajoo_app_2026"
+. ~/.aajoo/ios.env
+R=isumitmalhotra/Ajoo-Admin-Website-
+gh secret set IOS_MAPS_KEY -R $R --body "$IOS_MAPS_KEY"
+gh secret set IOS_GOOGLE_CLIENT_ID -R $R --body "$(/usr/libexec/PlistBuddy -c 'Print :CLIENT_ID' ios/Runner/GoogleService-Info.plist)"
+gh secret set IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64 -R $R --body "$(base64 -i ios/Runner/GoogleService-Info.plist)"
+gh secret list -R $R     # the three IOS_* rows appear; values are never shown
+```
+
+Secrets on a public repo are fine — Actions exposes them only to workflows
+of this repository, never to a fork's pull request. After this, the
+readiness picture is: **Google side done; the eight Apple-side actions
+(§3) remain**, and the `testflight` job will list exactly the Apple secrets
+still missing when run.
+
+### 5a.5 Record it
+
+Add a dated `8a` entry to `MASTER_PENDING_TASKS.md` §8 saying the two
+Google items are done (key by last six characters, plist by its `GOOGLE_APP_ID`),
+tick step 4 and step 5 in `aajoo_app_2026/IOS_READINESS.md` §3, and push.
 
 ## 6. Non-negotiable rules (from the Windows machine's memory — keep them)
 
@@ -271,6 +445,10 @@ Before the first push of a day, clone the result and run `flutter test` on the c
 3. `aajoo_app_2026/tool/build_ios.sh`, `tool/verify_release_ipa.py`, `.github/workflows/ios-build.yml`.
 4. `aajoo_app_2026/REDESIGN_WIRING_STATUS.md` and `MOBILE_APP_TASKLIST.md` — app parity gaps.
 5. `report-2026-09-17/TEST_RUN_300/RESULTS.md` — the test-case run and its batch plan.
+
+**Then run §5a.0** — the three commands that say what is missing — and
+report the result to Sumit before starting; that is how the session
+identifies the Google items as the next step rather than re-deriving it.
 
 Suggested first memory notes for the Mac session (its own `memory/`): the four
 remotes and deploy targets; the "never on 100/101, use 179/194/177" rule; the
