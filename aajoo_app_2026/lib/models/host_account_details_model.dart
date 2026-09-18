@@ -81,21 +81,33 @@ class HostAccountDetails {
   String get verifyLabel {
     if (isVerified) return 'Verified';
     switch (verifyStatus) {
+      // Since 2026-09-18 the check is finance's own ₹1 transfer, not a
+      // provider's penny drop: a freshly saved account is awaiting a thing
+      // that will happen, and reads that way.
+      case 'awaiting_manual':
+        return 'Awaiting verification';
       case 'pending':
         return 'Verifying…';
       case 'mismatch':
         return 'Name mismatch';
       case 'failed':
-        return 'Verification failed';
+        return 'Needs attention';
       default:
         return 'Not verified';
     }
   }
 
+  /// A state that is on its way, rather than a failure — amber, not red.
+  bool get isAwaiting => !isVerified && (verifyStatus == 'pending' || verifyStatus == 'awaiting_manual');
+
   /// The sentence explaining the state, or null when there is nothing to add.
   String? get verifyExplanation {
     if (isVerified) return null;
     switch (verifyStatus) {
+      case 'awaiting_manual':
+        return "We'll send ₹1 to this account to confirm it's yours — "
+            'usually within a few working days. Payouts start from the '
+            'next run after that.';
       case 'pending':
         return "We've sent ₹1 to confirm the account is yours. "
             'This usually clears within a few hours.';

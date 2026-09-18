@@ -120,11 +120,14 @@ class _PayoutPageState extends State<PayoutPage> {
                             date: DateFormat('MMM dd, yyyy')
                                 .format(payoutRequest.createdAt),
                             amount: '₹${inr(payoutRequest.payReqAmount)}',
-                            status: payoutRequest.payoutStatusBsTitle,
-                            // Why it failed. Without it a host sees "FAILED"
-                            // and cannot tell whether to fix their bank
-                            // details or simply wait.
-                            note: payoutRequest.failureReason,
+                            status: payoutRequest.statusLabel,
+                            // What the bank did: "by NEFT · UTR …" once paid,
+                            // why it failed, or when it will move. And the
+                            // withheld line, when the run withheld anything.
+                            note: [
+                              payoutRequest.statusDetail,
+                              payoutRequest.withheldNote,
+                            ].whereType<String>().where((s) => s.trim().isNotEmpty).join('\n'),
                             context: context,
                           );
                         },
@@ -258,7 +261,7 @@ class _PayoutPageState extends State<PayoutPage> {
     final explanation = acc.verifyExplanation;
     final tone = acc.isVerified
         ? kIndigo600
-        : (acc.verifyStatus == 'pending' ? kClay : Colors.red.shade700);
+        : (acc.isAwaiting ? kClay : Colors.red.shade700);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -392,9 +395,10 @@ class _PayoutPageState extends State<PayoutPage> {
     String? note,
   }) {
     final s = status.toLowerCase();
-    final bool isPending = s.contains('pending') || s.contains('process');
-    final bool isFailed =
-        s.contains('fail') || s.contains('reject') || s.contains('cancel');
+    final bool isPending = s.contains('pending') || s.contains('process') ||
+        s.contains('queue') || s.contains('being paid');
+    final bool isFailed = s.contains('fail') || s.contains('reject') ||
+        s.contains('cancel') || s.contains('not paid');
 
     final Color statusFg =
         isFailed ? kDanger : (isPending ? kClay : kSuccess);
@@ -470,8 +474,13 @@ class _PayoutPageState extends State<PayoutPage> {
       ),
           if (trimmedNote.isNotEmpty) ...[
             const SizedBox(height: 8),
+            // Muted for a paid row (the UTR is a fact, not a warning); the
+            // status colour only when something is wrong or waiting.
             Text(trimmedNote,
-                style: inter(fontSize: 11.5, color: statusFg, height: 1.45)),
+                style: inter(
+                    fontSize: 11.5,
+                    color: isFailed || isPending ? statusFg : kMuted,
+                    height: 1.45)),
           ],
         ],
       ),

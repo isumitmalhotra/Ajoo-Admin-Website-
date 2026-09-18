@@ -74,6 +74,56 @@ class PayoutRequest {
   /// same order the website's table uses.
   final String? bookingId;
 
+  /// Manual payouts (2026-09-18): the bank's reference and the method, once
+  /// finance has recorded the transfer; and the run's note, which is how a
+  /// host learns that part of a batch was withheld for a pay-at-property
+  /// settlement.
+  final String? utr;
+  final String? method;
+  final String? note;
+
+  /// The status in the host's words, with the bank's reference once there is one.
+  String get statusLabel {
+    switch (payoutStatusBsTitle.toUpperCase()) {
+      case 'COMPLETED':
+        return 'Paid';
+      case 'PROCESSING':
+        return 'Being paid';
+      case 'QUEUED':
+        return 'Queued';
+      case 'FAILED':
+        return 'Not paid';
+      default:
+        return payoutStatusBsTitle;
+    }
+  }
+
+  String? get statusDetail {
+    switch (payoutStatusBsTitle.toUpperCase()) {
+      case 'COMPLETED':
+        final how = [
+          method != null && method!.isNotEmpty ? 'by $method' : 'by bank transfer',
+          if (utr != null && utr!.isNotEmpty) 'UTR $utr',
+        ].join(' · ');
+        return how;
+      case 'PROCESSING':
+        return "In this week's payout run — the bank reference appears here once it clears.";
+      case 'QUEUED':
+        return 'Released on the next payout run.';
+      case 'FAILED':
+        return failureReason;
+      default:
+        return null;
+    }
+  }
+
+  /// "₹1,200 withheld for pay-at-property settlement(s) …", when the run said so.
+  String? get withheldNote {
+    final n = note ?? '';
+    if (!n.toLowerCase().contains('withheld')) return null;
+    return n.replaceFirst(RegExp(r'^Paid in run [^;]*;\s*', caseSensitive: false), '');
+  }
+
   PayoutRequest({
     required this.payReqId,
     required this.payReqAmount,
@@ -83,6 +133,9 @@ class PayoutRequest {
     required this.payoutStatusBsCode,
     this.failureReason,
     this.bookingId,
+    this.utr,
+    this.method,
+    this.note,
   });
 
   /// Straight from a `tbl_payouts` row as `/host/payout/history` returns it.
@@ -99,6 +152,9 @@ class PayoutRequest {
       payoutStatusBsCode: j['po_status'],
       failureReason: (j['po_failure_reason'] ?? j['po_notes'])?.toString(),
       bookingId: (j['po_reference_id'] ?? j['po_booking_id'])?.toString(),
+      utr: j['po_utr']?.toString(),
+      method: j['po_mode']?.toString(),
+      note: j['po_note']?.toString(),
     );
   }
 }
