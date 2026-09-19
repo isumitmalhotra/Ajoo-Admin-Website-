@@ -289,6 +289,76 @@ that commission, four ledger rows per booking.
 
 ## 8. Closed since the last edition — do not redo
 
+### 8a44. Closed 2026-09-19 — two findings from the first iOS Simulator run, and what they really were
+
+The Mac session's first Simulator drive (Sumit, 19 Sep) reported two
+things from the request log. Both were checked here against the source.
+
+**1. "The app hardcodes credentials and auto-logs in" — NOT TRUE, but the
+account matters.** The log showed `POST /user/login` for
+`aajoo.renter1@mailinator.com`. That string is nowhere in the app: not in
+`lib/`, `test/`, `tool/`, any plist/json/yaml, no `TextEditingController(text:)`,
+no `String.fromEnvironment` login, no stored-password replay (only the
+email is persisted). The sign-in was typed on the Simulator. **The account
+is user 101 — the client's own test guest "Aajoo Renter"** (backend seed
+`scripts/seedBotpenguinTestData.js`: GUEST_ID 101, HOST_ID 100), the one
+account every rule here says never to drive as; its password was readable
+in this repository (below), which is how the Mac had it. Rule for the Mac
+(handoff §6): never sign in as 100/101; use 179 / 194 / 177.
+
+**2. The 401 on the first FCM token save — REAL, and shared.**
+`NotificationService.saveTokenToDatabase` posted
+`/user/notification/allow-notification` with whatever the session was,
+including none → `Bearer null` → 401 "jwt malformed"; it recovered only
+because the home screen re-runs init after sign-in. Same Dart on Android.
+**Fixed (monorepo `b5f450c`):** no session → the token is kept (it is
+already in storage) and nothing is posted; `syncTokenAfterLogin()` sends it
+right after sign-in, after the phone gate, off the critical path. Test
+`the_push_token_waits_for_a_session_test.dart` proves the guard RUNS
+(mock storage, no session, the call returns and logs "No session yet")
+and that sign-in calls the sync. App **530/530**, analyze 0 errors.
+
+**3. What the search for #1 actually found — credentials committed in the
+PUBLIC monorepo.** Checked by hash against the live `.env`, values never
+printed:
+
+| What | Where (tracked) | Live? |
+|---|---|---|
+| **Razorpay key id + key secret** | `aajooBackend-2026/config/payments.config.js` (a stale backend copy, untouched since 12 Aug) | **YES — equal to `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` on Render.** With the secret, anyone can forge a valid payment signature and mark a booking paid without paying. |
+| Client test-account passwords (guest 101, host 100) | 3 session handoffs, `testing-checklists/` (html + js), `_archive/` ×5 | yes — the accounts the client tests with |
+| Dev-admin email + password literal | `.env.example`, `src/features/admin/adminAuth/adminAuth.thunk.ts` (stale web copy) — and the **live web repo's** copy of the same file | the bypass runs only under `vite dev` with a flag, so the literal was dead in production; removed anyway (web `e590ec4`) |
+| A Clever Cloud DB user/password | `aajooBackend-2026/config/config.json` | no — the old dev database, different host/user/password from live |
+| An APK (build 31) | repo root | old Razorpay key id inside; key ids are public by nature |
+
+**Done here (working tree only, monorepo `b5f450c`):** the two Razorpay
+literals → empty (env-only), the DB creds blanked, `.env.example` and both
+`adminAuth.thunk.ts` without literals, the two passwords replaced in all
+eight docs/checklists with a redaction note, the APK untracked. Nothing
+password-shaped remains in any tracked text file (regex sweep, 0 left).
+
+**Still open — Sumit's / the client's decisions, in this order:**
+1. **Rotate the Razorpay test key** (Razorpay dashboard → Settings → API
+   keys → Regenerate). Then set the new pair on Render
+   (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`), the new id on Vercel
+   (`VITE_RAZORPAY_KEY`), and **cut build 106 with the new id** — every
+   circulating APK (102–105) has the old id compiled in and its checkout
+   stops working the moment the old key is disabled. Do the rotation and
+   the build in one sitting.
+2. **Make the monorepo private** (`gh repo edit isumitmalhotra/Ajoo-Admin-Website- --visibility private`,
+   or Settings → Danger Zone). History still holds every value above; a
+   private repo stops new readers, rotation makes the old values worthless.
+   CI cost trade-off in the handoff §1 (macOS minutes at 10× under Free).
+3. **Rotate the passwords of test accounts 100 and 101** (the client's; via
+   Profile → change password with the email OTP, or on request a script here
+   sets new ones and hands them over privately). Keep them in a password
+   manager, never in a repo document again.
+4. Optional: delete the stale copies `aajooBackend-2026/` (278 files) and
+   the root web copy `src/` + `package.json` (438 files) — both superseded by
+   the standalone repos since August; and/or rewrite history (BFG) once
+   private. Not done without a yes: 716 tracked files.
+
+---
+
 ### 8a43. Closed 2026-09-19 — a DIDIT approval is granted only when the document's name is the account's name
 
 **What the client found (18 Sep, with a screenshot of the DIDIT flow):** an
