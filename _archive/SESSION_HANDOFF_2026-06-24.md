@@ -8,7 +8,7 @@
 - **3 repos:** FE `D:/Projects/aajao-frontend-vercel` (→ Vercel) · BE `D:/Projects/aajaoBackend-render` (→ Render) · monorepo/docs `D:/Projects/ajoo admin website`.
 - **Push to `main` auto-deploys.** FE GitHub: `nameeshPatiyal100/Aajao-Admin-WebSIite`. BE GitHub: `nameeshPatiyal100/aajaoBackend`. Live: `https://aajoohomes.com` (web) + `https://aajaodev.onrender.com` (API).
 - **DB:** Clever Cloud MySQL (shared), reachable from sandbox via `node` in the BE repo (`require("./models")`).
-- **Test accounts:** Admin `admin@mailinator.com / Admin@123` (lives in `tbl_admins`) · Host1 `aajoo.host1@mailinator.com / Host@12345` (user_id **100**) · Renter1 `aajoo.renter1@mailinator.com / Renter@12345` (user_id **101**).
+- **Test accounts:** Admin `admin@mailinator.com / Admin@123` (lives in `tbl_admins`) · Host1 `aajoo.host1@mailinator.com / <password redacted 2026-09-19 — rotated; see the private credentials note>` (user_id **100**) · Renter1 `aajoo.renter1@mailinator.com / <password redacted 2026-09-19 — rotated; see the private credentials note>` (user_id **101**).
 - **Test mode:** OTP `000000` · **Razorpay payment = UPI `success@razorpay`** (cards like 4111… are rejected as "international" on this test account) · KYC bypassed until DIDIT live.
 - **Commit msgs end with:** `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`. Commit/push only when asked (user has been asking each time).
 

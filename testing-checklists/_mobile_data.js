@@ -1,7 +1,7 @@
 const DATA = [
   { t:"Before you start", d:"Two minutes of setup. Everything below assumes these.", items:[
     ["Install the build","Install the APK on a real Android phone or an emulator.","","","It installs and opens to the landing screen without a crash."],
-    ["Two accounts ready","Renter aajoo.renter1@mailinator.com / Renter@12345 · Host aajoo.host1@mailinator.com / Host@12345","","","Both sign in. The tab on the login screen decides WHICH side you enter — use the Host tab for the host account."],
+    ["Two accounts ready","Renter aajoo.renter1@mailinator.com / <password redacted 2026-09-19 — rotated; see the private credentials note> · Host aajoo.host1@mailinator.com / <password redacted 2026-09-19 — rotated; see the private credentials note>","","","Both sign in. The tab on the login screen decides WHICH side you enter — use the Host tab for the host account."],
     ["Location set to India","Allow location. On an emulator set it to Manali (32.2432, 77.1892) in Extended controls, then restart the app.","","","The home screen names an Indian place. A foreign location makes every distance check meaningless."],
     ["Know the test stays","29262 Malhotra Villa (weekend rates + extra-guest charge + capacity 8) · 29263 (extra guests, capacity 6) · 8 (legacy weekend rate) · 29253 (host blocked 25 and 27 Aug).","","","Pricing and capacity are EMPTY on almost every other listing, so a random stay looks broken when it is not. Use these."],
   ]},

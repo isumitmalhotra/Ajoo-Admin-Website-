@@ -312,8 +312,8 @@ believing they are real money owed.
 
 | Role | Credentials |
 |---|---|
-| Renter | `aajoo.renter1@mailinator.com` / `Renter@12345` |
-| Host | `aajoo.host1@mailinator.com` / `Host@12345` (host **100**, owns the 29,230 listings) |
+| Renter | `aajoo.renter1@mailinator.com` / `<password redacted 2026-09-19 — rotated; see the private credentials note>` |
+| Host | `aajoo.host1@mailinator.com` / `<password redacted 2026-09-19 — rotated; see the private credentials note>` (host **100**, owns the 29,230 listings) |
 | Admin | `admin@mailinator.com` / `Admin@123` — sign in at `/admin/login`, then `/admin/dashboard` |
 
 Note the admin routes are now `/admin/*`, not `/redesign/admin/*`.

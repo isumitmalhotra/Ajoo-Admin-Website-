@@ -86,7 +86,7 @@ host-driven** (host creates + lists from the portal). Also: [GO_LIVE_CHECKLIST.m
 - All three flows wired: **host creates property → renter books + pays (test) → shows in
   Host + Finance + Admin** with correct GST + commission + host net.
 - Test accounts (shared — don't break): admin `admin@mailinator.com / Admin@123`,
-  host `aajoo.host1@mailinator.com / Host@12345`, renter `aajoo.renter1@mailinator.com / Renter@12345`.
+  host `aajoo.host1@mailinator.com / <password redacted 2026-09-19 — rotated; see the private credentials note>`, renter `aajoo.renter1@mailinator.com / <password redacted 2026-09-19 — rotated; see the private credentials note>`.
 - Test mode: OTP `000000`, Razorpay card `4111 1111 1111 1111`, KYC bypassed.
 
 ---

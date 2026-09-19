@@ -364,7 +364,7 @@ Then: `git push origin HEAD:main` and deploy with the `--scope` flag from §1.
 
 | Role | Login | Notes |
 |---|---|---|
-| Host | `aajoo.host1@mailinator.com` / `Host@12345` | user 100 |
+| Host | `aajoo.host1@mailinator.com` / `<password redacted 2026-09-19 — rotated; see the private credentials note>` | user 100 |
 | Admin | `admin@mailinator.com` / `Admin@123` | field is `username`, not email |
 | Renter | `sumit.m@zyphextech.com` / `Haryana@2706` | user 126 |
 

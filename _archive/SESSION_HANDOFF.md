@@ -29,8 +29,8 @@ Three separate git repos on disk:
 | Role | URL | Email | Password |
 |------|-----|-------|----------|
 | Admin | `/admin/login` | `admin@mailinator.com` | `Admin@123` |
-| Host | `/auth/login` → Host tab | `aajoo.host1@mailinator.com` | `Host@12345` |
-| Renter | `/auth/login` → Renter tab | `aajoo.renter1@mailinator.com` | `Renter@12345` |
+| Host | `/auth/login` → Host tab | `aajoo.host1@mailinator.com` | `<password redacted 2026-09-19 — rotated; see the private credentials note>` |
+| Renter | `/auth/login` → Renter tab | `aajoo.renter1@mailinator.com` | `<password redacted 2026-09-19 — rotated; see the private credentials note>` |
 
 (Host + renter were created this session via signup → OTP bypass `000000` → admin activate. Renter has 2 test pay-on-arrival bookings.)
 

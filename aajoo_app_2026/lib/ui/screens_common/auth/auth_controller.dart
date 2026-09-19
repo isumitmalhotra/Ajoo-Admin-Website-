@@ -14,10 +14,11 @@ import '../../../data/models/update_user_model.dart';
 import '../../../service/auth_service.dart';
 import '../../../service/bookmark_service.dart';
 import '../../../service/notification_routing_service.dart';
+import '../../../service/notification_service.dart';
 import '../../../data/models/user_models.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
-
+
 import 'package:rent_home/utils/app_log.dart';
 class AuthController extends GetxController {
   final AuthService authService = AuthService();
@@ -273,6 +274,10 @@ class AuthController extends GetxController {
         return;
       }
     }
+
+    // The push token minted before sign-in could not be attached to anybody;
+    // attach it now, off the critical path.
+    unawaited(NotificationService().syncTokenAfterLogin());
 
     showAlert('Success', 'Login successful', false);
     if (Get.isRegistered<NotificationRoutingService>()) {

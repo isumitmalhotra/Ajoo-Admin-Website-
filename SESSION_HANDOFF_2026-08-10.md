@@ -283,8 +283,8 @@ Highlights (see `WEB_MOBILE_PARITY.md` for the full ledger):
 
 | Role | Credentials |
 |---|---|
-| Renter | `aajoo.renter1@mailinator.com` / `Renter@12345` |
-| Host | `aajoo.host1@mailinator.com` / `Host@12345` (host 100, "Aajoo Test Host") |
+| Renter | `aajoo.renter1@mailinator.com` / `<password redacted 2026-09-19 — rotated; see the private credentials note>` |
+| Host | `aajoo.host1@mailinator.com` / `<password redacted 2026-09-19 — rotated; see the private credentials note>` (host 100, "Aajoo Test Host") |
 | Admin | `admin@mailinator.com` / `Admin@123` — sign in at `/admin/login`, then go to `/redesign/admin/properties` |
 
 Emulator `emulator-5554` has `Aajoo-Homes-20260810-release.apk` installed. A

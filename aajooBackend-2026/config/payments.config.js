@@ -19,8 +19,8 @@
  * The secret stays server-only.
  */
 
-const FALLBACK_TEST_KEY_ID = "rzp_test_XUTODhUdMAshi6";
-const FALLBACK_TEST_KEY_SECRET = "pquKHeZnpWnSJgMGiqF6EuOy";
+const FALLBACK_TEST_KEY_ID = ""; // removed 2026-09-19: this stale copy sat in a public repository
+const FALLBACK_TEST_KEY_SECRET = "";
 
 const keyId = process.env.RAZORPAY_KEY_ID || FALLBACK_TEST_KEY_ID;
 const keySecret = process.env.RAZORPAY_KEY_SECRET || FALLBACK_TEST_KEY_SECRET;

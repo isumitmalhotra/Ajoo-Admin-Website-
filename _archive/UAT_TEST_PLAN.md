@@ -13,8 +13,8 @@
 | Role | Login | Password |
 |---|---|---|
 | Admin | `admin@mailinator.com` | `Admin@123` |
-| Host | `aajoo.host1@mailinator.com` | `Host@12345` |
-| Renter | `aajoo.renter1@mailinator.com` | `Renter@12345` |
+| Host | `aajoo.host1@mailinator.com` | `<password redacted 2026-09-19 — rotated; see the private credentials note>` |
+| Renter | `aajoo.renter1@mailinator.com` | `<password redacted 2026-09-19 — rotated; see the private credentials note>` |
 
 **Test-mode behavior (expected, not bugs):** OTP = `000000` · **Razorpay test payment → use UPI: type `success@razorpay` as the VPA → instant success** (cards like `4111 1111 1111 1111` are rejected as "international card" by this test account — don't use cards; UPI or Netbanking→Success works) · KYC "Verify identity" is bypassed · Admin → Settings is display-only.
 

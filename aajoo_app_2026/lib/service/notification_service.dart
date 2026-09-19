@@ -114,8 +114,24 @@ class NotificationService {
   // service follows the same base URL as the rest of the app. Was previously
   // pinned to a different deploy (onrender) which 404s.
   String get baseUrl => Apiconstants.baseUrl;
+
+  /// Attach this device's push token to the signed-in account.
+  ///
+  /// Only when there IS a signed-in account. This used to post whatever the
+  /// session was — including nothing — and the server answered the resulting
+  /// "Bearer null" with a 401 "jwt malformed" (seen in the iOS Simulator log,
+  /// 2026-09-19; the code is shared, so Android raced the same way). It
+  /// happened to recover because the home screen re-runs init after sign-in,
+  /// but a retry that depends on a screen being rebuilt is not a guarantee.
+  /// Now: no session → keep the token (it is already in storage under
+  /// `fcm_token`) and let [syncTokenAfterLogin] send it the moment there is
+  /// somebody to attach it to.
   Future<void> saveTokenToDatabase(String fcmToken) async {
     final token = await const FlutterSecureStorage().read(key: "user_token");
+    if (token == null || token.isEmpty) {
+      logger.w("No session yet — the push token will be registered after sign-in.");
+      return;
+    }
     _dio.options.baseUrl = baseUrl;
     _dio.options.headers["Authorization"] = 'Bearer $token';
     try {
@@ -133,6 +149,19 @@ class NotificationService {
       logger.w(e.response);
 
       logger.w("Error saving FCM Token: $e");
+    }
+  }
+
+  /// Called right after a successful sign-in: the device's push token, if
+  /// Firebase has already minted one, goes to the server now. Never throws —
+  /// push is a convenience and sign-in must not wait on it.
+  Future<void> syncTokenAfterLogin() async {
+    try {
+      final fcm = await _storage.read(key: "fcm_token");
+      if (fcm == null || fcm.isEmpty) return;
+      await saveTokenToDatabase(fcm);
+    } catch (e) {
+      logger.w("Push token sync after sign-in failed: $e");
     }
   }
 

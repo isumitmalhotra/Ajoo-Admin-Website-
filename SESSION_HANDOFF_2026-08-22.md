@@ -431,9 +431,9 @@ unaddressed work.
 
 | Role | Login | Notes |
 |---|---|---|
-| Host | `aajoo.host1@mailinator.com` / `Host@12345` | user 100 · phone `9625236254` |
+| Host | `aajoo.host1@mailinator.com` / `<password redacted 2026-09-19 — rotated; see the private credentials note>` | user 100 · phone `9625236254` |
 | Guest | `sumit.m@zyphextech.com` / `Haryana@2706` | user 126 |
-| Guest (BotPenguin) | phone `9611577338` / `Renter@12345` | user 101 |
+| Guest (BotPenguin) | phone `9611577338` / `<password redacted 2026-09-19 — rotated; see the private credentials note>` | user 101 |
 | Admin | `admin@mailinator.com` / `Admin@123` | field is `username`, **not** email |
 
 Login payload fields are `user_email` / `user_password` / `isHost`. **`user_email`

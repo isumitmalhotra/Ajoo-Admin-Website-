@@ -29,14 +29,14 @@
 ### 🏠 Host (already approved)
 - **Login page:** https://www.aajoohomes.com/auth/login
 - **Email:** `aajoo.host1@mailinator.com`
-- **Password:** `Host@12345`
+- **Password:** `<password redacted 2026-09-19 — rotated; see the private credentials note>`
 - Phone: `9000000111`
 - Use this to: list a new property (9-step wizard), manage bookings, view earnings/statements.
 
 ### 🧳 Renter / Guest
 - **Login page:** https://www.aajoohomes.com/auth/login
 - **Email:** `aajoo.renter1@mailinator.com`
-- **Password:** `Renter@12345`
+- **Password:** `<password redacted 2026-09-19 — rotated; see the private credentials note>`
 - Phone: `9000000211`
 - Use this to: browse, negotiate, book a stay, leave reviews.
 

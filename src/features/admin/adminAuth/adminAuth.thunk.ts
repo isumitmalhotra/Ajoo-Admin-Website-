@@ -26,10 +26,10 @@ const DEV_BYPASS_ENABLED =
     import.meta.env.VITE_ADMIN_BYPASS === "true");
 
 const DEV_BYPASS_EMAIL =
-  import.meta.env.VITE_DEV_ADMIN_EMAIL || "admin@aajao.test";
+  import.meta.env.VITE_DEV_ADMIN_EMAIL || "";
 
 const DEV_BYPASS_PASSWORD =
-  import.meta.env.VITE_DEV_ADMIN_PASSWORD || "Admin@12345";
+  import.meta.env.VITE_DEV_ADMIN_PASSWORD || "";
 
 export const adminLogin = createAsyncThunk<
   AdminLoginResult,
