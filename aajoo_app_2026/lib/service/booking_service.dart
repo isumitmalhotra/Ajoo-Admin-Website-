@@ -387,6 +387,31 @@ class BookingService {
   /// authorise that) and answers `otpRequired` without one — so a cancel
   /// sent from here without a code is refused outright, which is exactly
   /// what happened between the server change landing and this one.
+  /// The guest's own check-out (2026-09-19). Until now the stay only ended
+  /// when the guest submitted a review; a guest who skipped the review
+  /// stayed "Currently staying" for ever. Returns the server's data —
+  /// `reviewPrompt` says whether to open the review next.
+  Future<Map<String, dynamic>> checkOutBooking(String bookingId) async {
+    final url = "$baseUrl/user/booking/check-out";
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = "Bearer $token";
+    try {
+      final response = await _dio.post(url, data: {"bookingId": bookingId});
+      final body = response.data;
+      if (body is! Map || body['success'] != true) {
+        throw Exception((body is Map ? body['message'] : null)?.toString() ??
+            'Could not check out.');
+      }
+      final data = body['data'];
+      return data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
+    } on DioException catch (err) {
+      final data = err.response?.data;
+      final msg = data is Map ? data['message'] : null;
+      throw Exception(
+          msg is List ? msg.join(', ') : (msg?.toString() ?? 'Could not check out.'));
+    }
+  }
+
   Future<Map<String, dynamic>> cancelBooking(
       String bookingId, String reason, {String? otp}) async {
     final url = "$baseUrl/user/cancel/booking";

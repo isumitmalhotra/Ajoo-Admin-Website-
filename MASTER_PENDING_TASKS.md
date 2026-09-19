@@ -37,10 +37,10 @@
 > **Repos:** FE `D:/Projects/aajao-frontend-vercel` (React/Vite → Vercel) ·
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
-> Tester build in circulation: **105 (1.0.0+105)**, `aajoo-homes-1.0.0-build105-release.apk` at repo root
 > **Go-live sequence (2026-09-19, Render Pro + PlanetScale bought): `GO_LIVE_RUNBOOK_2026-09-19.md`** — steps 0.1–0.4 first (Razorpay key rotation, repo private, test passwords, build 106).
-> (2026-09-18 night, versionCode 105, 95.4 MB, sha256 `ccd571a87bc410e1…`), built with
-> `tool/build_release.ps1` and read back by the verifier with the endpoint named (§8a42). 100–104
+> Tester build in circulation: **106 (1.0.0+106)**, `aajoo-homes-1.0.0-build106-release.apk` at repo root
+> (2026-09-19 night, versionCode 106, 95.5 MB, sha256 `db27821d9ffc842d…`), built with
+> `tool/build_release.ps1` and read back by the verifier with the endpoint named (§8a45). 100–105
 > are superseded by it; **98 and 99 are withdrawn** (built with plain `flutter build apk`, no endpoint
 > compiled in — "This build is not configured"). 97 was the last of the previous line. Builds 88–96 are withdrawn: 88/89 lacked the pricing fixes, 90 and 91 each
 > carried a defect the emulator found the same hour, 92 lacked the afternoon's three fixes, **93 still
@@ -289,6 +289,72 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a45. Closed 2026-09-19 — the stay ends on both ends; a finished stay no longer blocks a new booking; build 106
+
+**The client's two reports (WhatsApp, 20:13):** "in mobile view I want to
+book the property, it already shows me View your booking — fix this flow";
+"check out process is still missing — both the ends." Screenshots: the
+property page for booking **B115781 (13→14 Sep)** on the 19th, sticky bar
+reading *View your booking*, the card reading *You're booked here*.
+
+**One root cause.** Check-in existed (host, status 6). The ONLY thing that
+ever set status 7 "Check Out" was the guest submitting a review from the
+app — the website could not, and the host never could — so a stay nobody
+reviewed stayed "Check In" for ever: "Staying now" on the host's list,
+"You're booked here" on the property page (the 2026-09-17 rule hides Book
+Now for a live booking), never "Completed". In the live table: 4 bookings
+in status 6, 0 in 7.
+
+**Built (backend `dc8cbbf`, web `8d1db05`, app in this build):**
+
+- **One transition** in `services/stayCompletion.js` — `completeStay`:
+  paid / booked / confirmed / checked-in AND started (check-in day reached,
+  IST) → status 7 on `tbl_bookings` + `tbl_book_details`, a history line
+  naming who ended it; already-7 answers `already: true` (a double tap is
+  a quiet yes). The guest is told and asked to review
+  (`booking_checked_out`, `reviewPrompt`); the host is told on the bell.
+- **Host end:** `POST /host/booking/check-out`. Web: `HostBookingActions`
+  used to return *nothing* for a checked-in stay — it now renders
+  **Check-out** (toast: "…asked to leave a review"). App: host booking
+  detail gets **Mark guest as checked-out** once the guest is in.
+- **Guest end:** `POST /user/booking/check-out`. Web: the stay-in-progress
+  page (`NextBooking`) gets **Check out** with a confirmation, then lands on
+  the review page with the listing in navigation state. App: the existing
+  *Checkout* button on the ongoing-stay screen now **ends the stay first**,
+  then opens the review (it used to open the review only, so a guest who
+  skipped it never checked out).
+- **The sweep** (`startStayCompletion`, hourly): a CHECKED-IN stay is closed
+  the day after its check-out date, guest and host told. Only status 6 — a
+  paid stay nobody checked in is either a no-show (the host's call,
+  non-refundable) or a host who forgot, and the platform cannot tell which.
+  The four live status-6 rows will be closed by the first tick after
+  deploy.
+- **The property page** decides "booked here" by the DATES first
+  (`hasEnded(bt_book_to)`), then the label — so a finished stay never blocks
+  a new booking whatever its status. And on the phone the sticky bar now
+  shows **Book other dates** beside *View your booking* — the 09-17 rule
+  says a booked guest is not shown Book Now by default, not that they
+  cannot book other dates; the bar was the only control in reach and read
+  as "you cannot book here".
+
+**Verified:** backend **158/158** (`theStayEndsOnBothEnds`: the IST day,
+started/overdue, the sweep's rule, host and guest transitions against the
+real controllers with stubbed tables, refusals, idempotence, a forgotten
+check-in), web **55/55** + `tsc` + build green, app **535/535**, analyze 0
+errors. **Build 106** (`aajoo-homes-1.0.0-build106-release.apk`, 95.5 MB,
+sha256 `db27821d9ffc842d…`) built with `tool/build_release.ps1` and read back by the
+verifier; also carries §8a44's push-token fix and §8a43's KYC wording.
+**Driven live by the deploy itself:** the sweep runs once at boot, and the
+first boot of `dc8cbbf` closed the four checked-in stays past their date at
+16:59 UTC — B153001, B244718, **B115781** (the client's screenshot) and
+B675275 — each with the history line *"Stay ended on its check-out date;
+closed by Aajoo Homes"*; B115781 reads "Check Out" now, so the property
+page no longer says "You're booked here" for it. The host/guest buttons are
+pinned by tests against the real controllers; a tap on the deployed stack
+needs a checked-in booking on one of our own accounts.
+
+---
 
 ### 8a44. Closed 2026-09-19 — two findings from the first iOS Simulator run, and what they really were
 

@@ -577,6 +577,33 @@ class HostService {
     }
   }
 
+  /// The other end of the stay (2026-09-19): the guest has left, and the
+  /// host says so. Same contract as check-in; the server answers
+  /// `already: true` for a second tap, which is not an error.
+  Future<void> markBookingCheckOut(String bookingId) async {
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final response = await _dio
+          .post("/host/booking/check-out", data: {"bookingId": bookingId});
+      final body = response.data;
+      if (body is! Map || body['success'] != true) {
+        throw Exception(
+            (body is Map ? body['message'] : null)?.toString() ??
+                'Could not check the guest out.');
+      }
+    } on DioException catch (err) {
+      final data = err.response?.data;
+      final msg = data is Map ? data['message'] : null;
+      final code = err.response?.statusCode;
+      throw Exception(msg is List
+          ? msg.join(', ')
+          : (msg?.toString() ??
+              'Could not check the guest out'
+                  '${code != null ? ' (the server answered $code)' : ' (no answer from the server)'}.'));
+    }
+  }
+
   Future<void> markBookingCheckIn(String bookingId) async {
     final token = await const FlutterSecureStorage().read(key: "user_token");
     _dio.options.headers['Authorization'] = 'Bearer $token';

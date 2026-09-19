@@ -10,6 +10,7 @@ import 'package:rent_home/ui/design/amount_breakdown.dart';
 import 'package:rent_home/utils/money.dart';
 import 'package:rent_home/constants/payment_config.dart';
 import 'package:rent_home/utils/booking_status.dart';
+import 'package:rent_home/service/booking_service.dart';
 import 'package:rent_home/ui/screens_renter/booking_controller.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
@@ -521,7 +522,7 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
                               width: double.infinity,
                               height: 55,
                               child: ElevatedButton.icon(
-                                onPressed: () {
+                                onPressed: () async {
                                   // The listing has to be loaded before a guest
                                   // can check out against it. This used to bang
                                   // through both nullables, which was safe only
@@ -541,6 +542,24 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
                                     );
                                     return;
                                   }
+                                  // End the stay FIRST (2026-09-19), then
+                                  // invite the review. This used to open the
+                                  // review page only, so a guest who skipped
+                                  // the review never checked out at all.
+                                  try {
+                                    await BookingService()
+                                        .checkOutBooking(widget.booking.bookId);
+                                  } catch (e) {
+                                    Fluttertoast.showToast(
+                                        msg: e
+                                            .toString()
+                                            .replaceFirst('Exception: ', ''),
+                                        toastLength: Toast.LENGTH_LONG);
+                                    return;
+                                  }
+                                  Fluttertoast.showToast(
+                                      msg:
+                                          'Checked out — thanks for staying with Aajoo Homes.');
                                   Get.to(() => HotelCheckoutPage(
                                         booking: widget.booking,
                                         property: pd,

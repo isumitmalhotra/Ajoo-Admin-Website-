@@ -226,6 +226,7 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
   }
 
   bool _checkingIn = false;
+  bool _checkingOut = false;
   bool _confirming = false;
   bool _cancelling = false;
   bool _markingNoShow = false;
@@ -292,6 +293,35 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
       }
     } finally {
       if (mounted) setState(() => _markingNoShow = false);
+    }
+  }
+
+  bool get _isCheckedOut {
+    final t = b.bookingStatusBsTitle.toLowerCase();
+    return t.contains('check out') || t.contains('check-out') || t.contains('checkout');
+  }
+
+  /// Check-out is offered once the guest is in. The step the host never
+  /// had anywhere (client, 2026-09-19): a checked-in stay stayed "Staying
+  /// now" for ever, and the guest's next booking here was blocked by their
+  /// last one on the website.
+  bool get _canCheckOut => _isCheckedIn && !_isCheckedOut && !_isCancelled;
+
+  Future<void> _markCheckedOut() async {
+    if (_checkingOut) return;
+    setState(() => _checkingOut = true);
+    try {
+      await HostService().markBookingCheckOut(b.bookId);
+      if (!mounted) return;
+      setState(() => b.bookingStatusBsTitle = 'Check Out');
+      Fluttertoast.showToast(
+          msg: "Guest checked out — they've been asked to leave a review.");
+    } catch (e) {
+      Fluttertoast.showToast(
+          msg: e.toString().replaceFirst('Exception: ', ''),
+          toastLength: Toast.LENGTH_LONG);
+    } finally {
+      if (mounted) setState(() => _checkingOut = false);
     }
   }
 
@@ -651,6 +681,24 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
         // offered Confirm, Check in, No-show and Decline in one column
         // (B386357, 2026-09-11); a guest cannot fail to arrive for a stay
         // the host has not yet said yes to.
+        if (_canCheckOut) ...[
+          ElevatedButton.icon(
+            onPressed: _checkingOut ? null : _markCheckedOut,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kIndigo,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            icon: const Icon(Icons.logout_rounded, size: 18),
+            label: Text(
+                _checkingOut ? 'Checking out…' : 'Mark guest as checked-out',
+                style: inter(fontSize: 14, fontWeight: FontWeight.w700)),
+          ),
+          const SizedBox(height: 10),
+        ],
         if (_canCheckIn && !_needsApproval) ...[
           // The arrival control the host portal never had: one tap says
           // "the guest is here", flips the booking to Check In everywhere
