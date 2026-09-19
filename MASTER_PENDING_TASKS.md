@@ -38,6 +38,7 @@
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
 > Tester build in circulation: **105 (1.0.0+105)**, `aajoo-homes-1.0.0-build105-release.apk` at repo root
+> **Go-live sequence (2026-09-19, Render Pro + PlanetScale bought): `GO_LIVE_RUNBOOK_2026-09-19.md`** — steps 0.1–0.4 first (Razorpay key rotation, repo private, test passwords, build 106).
 > (2026-09-18 night, versionCode 105, 95.4 MB, sha256 `ccd571a87bc410e1…`), built with
 > `tool/build_release.ps1` and read back by the verifier with the endpoint named (§8a42). 100–104
 > are superseded by it; **98 and 99 are withdrawn** (built with plain `flutter build apk`, no endpoint

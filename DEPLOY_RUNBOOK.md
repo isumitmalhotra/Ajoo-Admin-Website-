@@ -1,3 +1,5 @@
+> **Superseded 2026-09-19 by `GO_LIVE_RUNBOOK_2026-09-19.md`** (Render Pro Singapore + PlanetScale + the go-live gates). This file describes the June Clever Cloud setup and the stale `aajooBackend-2026/` copy; the backend now lives in its own repository.
+
 # AajooHomes Backend — Deploy Runbook
 
 > **Authored:** 2026-06-10 by Account A (A-16). Covers everything built in the Full Delivery sprint (A-02..A-14).
