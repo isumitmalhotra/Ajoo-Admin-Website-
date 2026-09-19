@@ -13,8 +13,27 @@ tables, 8 JSON columns, no triggers / views / routines / events, strict
 **Oregon**; the website on Vercel; `api.aajoohomes.com` still points at
 Vercel and serves nothing.
 
-The whole move is **about three working days** with **one 30-minute freeze**.
-Nothing here is destructive until step 4.6, which is explicitly the last.
+**Decision, 19 September (Sumit, for the client): the production database is
+a FRESH system — the live database's shape and its reference rows, none of
+the four months of test data.** That removes the data restore from the
+cutover and the "clean slate" question from §6; the tool for it is
+`scripts/freshDatabase.js` (backend `bfc01d8`). What "fresh" means, exactly:
+
+| Carried | Not carried |
+|---|---|
+| All 125 application tables (empty unless listed here), 39 foreign keys, ids restarting at 1 | The five scratch tables left by one-off scripts (`tbl_geo_cleanup_backup`, `tbl_lux_seed_backup`, `tbl_pricing_grid_backfill`, `tbl_seed_coord_backup`, the old lowercase `sequelizemeta`) — 60,677 rows nobody reads |
+| The migration ledger `SequelizeMeta` (168) — or every migration re-runs | Every user, credential, OTP, session — **including the client's test accounts 100 and 101; they register afresh on production** |
+| Admins (4, password hashes as they are — reset after launch) and the custom role | Every property and its 24 listing tables, media, offers, blocked dates |
+| Categories (22), amenities (44), tags, document lists, booking statuses, cancellation policies, states (37), cities (1,703) | Every booking, payment, invoice, payout, run, ledger row, due, earning, wallet, referral, boost |
+| CMS pages/sections/content, FAQs (41), legal versions (31), SEO settings and templates | Every notification, device token, email log, message, negotiation, chatbot session, support ticket, review, KYC row, audit row, coupon |
+| The 6 live platform blogs with their covers, admin avatars | Property blogs, all other attachments (user photos, ID documents, listing images) |
+
+2,109 rows in 26 tables; 99 tables empty. The Cloudinary URLs inside the
+carried rows (category icons, blog covers) still point at today's shared
+account until §3.4 moves the assets.
+
+The whole move is **about two working days**; the only freeze is the
+30-minute switch in §4, and that switch waits for the client's word.
 
 ---
 
@@ -42,67 +61,63 @@ sides, diff).
 
 ---
 
-## 1. PlanetScale — build the new database beside the old one (Day 1, no user impact)
+## 1. PlanetScale — the fresh database (now; no user impact)
 
-Owner: Sumit (console + CLI), with a session. Account ownership: the
-company's login, development team invited (as agreed in the 18 Sep document).
+Owner: Sumit in the PlanetScale console, a session for the import. Account
+ownership: the company's login, the development team invited.
 
 1.1 **Create the database in the API's region.** Console → New database →
 name `aajoo` → provider AWS → region **Singapore (`ap-southeast-1`)** — the
 same region as the Render service in §2, never Mumbai-with-Singapore-API
-(each query would cross the sea; the 18 Sep document has the arithmetic).
-Cluster **PS-10**.
+(each query would cross the sea). Cluster **PS-10**.
 
-1.2 **Turn on foreign key constraints BEFORE importing anything.**
-Database → Settings → General → *Allow foreign key constraints* → on. A dump
-restored with this off loses all 39 constraints silently.
+1.2 **Turn on foreign key constraints BEFORE importing.** Database →
+Settings → General → *Allow foreign key constraints* → on. Off, the 39
+constraints are silently dropped and the verify step fails on that count.
 
-1.3 **Turn safe migrations off on `main`** (Branch → Settings, or
-`pscale branch safe-migrations disable aajoo main`). Our migrations run
-`ALTER TABLE` directly with `sequelize-cli`; safe migrations would refuse
-them. (Deploy requests can come later if we want them.)
+1.3 **Turn safe migrations off on `main`** (Branch settings). Our
+migrations run `ALTER TABLE` directly through `sequelize-cli`.
 
-1.4 **Create a connection password** for the Render service:
-`pscale password create aajoo main render-singapore` → host
-(`aws.connect.psdb.cloud`), username, password. Store them in the password
-manager and in the Render environment group (§2.2) only. **Never in a repo.**
+1.4 **Create a connection password** (Database → Passwords → New → role
+*Admin*, name `render-singapore`). **Sumit copies the values himself** into
+a local, gitignored file in the backend repo — the session never sees them:
 
-1.5 **Dump Clever Cloud and restore into `main`** (a session runs this with
-the credentials in local, gitignored env files):
-
-```bash
-# from the backend repo, Windows Git Bash or the Mac
-mysqldump -h <clever-host> -P <port> -u <user> -p <db> \
-  --single-transaction --set-gtid-purged=OFF --no-tablespaces \
-  --skip-lock-tables --column-statistics=0 --no-create-db \
-  --routines=false --triggers=false > clever.sql          # ~21 MB
-pscale shell aajoo main < clever.sql                       # minutes; the dump's SET FOREIGN_KEY_CHECKS=0 is honoured
+```
+# aajaoBackend-render/.env.planetscale  (never committed; .env.* is ignored)
+DB_HOST=aws.connect.psdb.cloud
+DB_PORT=3306
+DB_USER=<username from the console>
+DB_PASSWORD=<password from the console>
+DB_NAME=aajoo
+DB_DIALECT=mysql
+DB_SSL_REJECT_UNAUTHORIZED=true
+DB_POOL_MAX=20
 ```
 
-1.6 **Prove the restore, table by table**, not "it finished":
+1.5 **Import the fresh database** (a session; the export from the live
+database was made on 19 Sep and sits in `fresh/`, regenerate it with
+`node scripts/freshDatabase.js export` if reference rows change first):
 
 ```bash
-node scripts/dbRowCounts.js > counts-clever.json
-DOTENV_CONFIG_PATH=.env.planetscale node scripts/dbRowCounts.js > counts-planetscale.json
-diff counts-clever.json counts-planetscale.json            # silence = identical (130 tables, 84,294 rows on 19 Sep)
+cd aajaoBackend-render
+DOTENV_CONFIG_PATH=.env.planetscale node scripts/freshDatabase.js import
 ```
 
-Then, in `pscale shell`: `SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_TYPE='FOREIGN KEY';` → **39**,
-and `SELECT COUNT(*) FROM SequelizeMeta;` → the same number as on Clever
-Cloud (so migrations do not re-run).
+The import refuses the live host and a non-empty target; it replays 156
+statements over TLS and then **verifies**: 125 tables present and no
+others, 39 foreign keys, each of the 26 reference tables at its exact
+count, every other table at 0. The last line must read
+*fresh database verified*. Anything else is a stop.
 
-1.7 **Run the backend against it once from a laptop** with
-`.env.planetscale` (`DB_HOST/USER/PASSWORD/NAME` from 1.4, `DB_PORT=3306`,
-`DB_SSL_REJECT_UNAUTHORIZED=true`, `DB_POOL_MAX=20`):
-`DOTENV_CONFIG_PATH=.env.planetscale npx sequelize-cli db:migrate` must say
-*No migrations were executed*; `node app.js` must answer `/health`. Then
-every backend test that touches the database, once.
+1.6 **Prove the platform runs on it** from a laptop, before any switch:
+`DOTENV_CONFIG_PATH=.env.planetscale npx sequelize-cli db:migrate` →
+*No migrations were executed*; `DOTENV_CONFIG_PATH=.env.planetscale node app.js`
+→ `/health` answers; the admin login with a carried admin account works
+against it (the web dev server with `VITE_API_BASE_URL` at the local API).
 
-1.8 **Backups:** Settings → Backups → daily, keep 7; note the first backup's
-time. A restore test of that backup into a branch is the last step of §4.
-
-This rehearsal (1.5–1.7) is repeated once more on cutover day; the first run
-is where surprises are allowed.
+1.7 **Backups:** Settings → Backups → daily, keep 7. A restore of the first
+backup into a branch, counted with `scripts/dbRowCounts.js`, is done before
+the old database is deleted (§4.6).
 
 ---
 
@@ -124,9 +139,12 @@ services. Two things about this step:
   both services to PlanetScale at once (no split-brain between old app
   builds and the website).
 
-Add to the group, with the values from §1: `DB_SSL_REJECT_UNAUTHORIZED=true`,
-`DB_POOL_MAX=20` — **not yet** the PlanetScale `DB_HOST/USER/PASSWORD/NAME`
-(those go in at 4.2). Set on the new service only, for now:
+Because the new database is fresh, the two services do **not** share data
+during the overlap: keep the Oregon service on Clever Cloud (testers keep
+their data until the switch) and give the **Singapore service its own**
+`DB_HOST/USER/PASSWORD/NAME` = the PlanetScale values from 1.4, plus
+`DB_SSL_REJECT_UNAUTHORIZED=true`, `DB_POOL_MAX=20`. The shared group holds
+everything else. Set on the new service only, for now:
 `PUBLIC_SITE_URL=https://www.aajoohomes.com`, `ALLOWED_ORIGINS` (the same
 list as Oregon), `APP_VERIFY_RETURN_URL=https://www.aajoohomes.com/verify/complete`.
 
@@ -135,12 +153,13 @@ list as Oregon), `APP_VERIFY_RETURN_URL=https://www.aajoohomes.com/verify/comple
 `api` record from Vercel to the CNAME Render shows. TLS is automatic.
 Proof: `curl -sI https://api.aajoohomes.com/health` → 200 from Render.
 
-2.4 **Drive the new service against the OLD database** (it is still on
-Clever Cloud via the group): sign in on the website with the API base
-overridden in the browser (`localStorage`/`.env.local` `VITE_API_BASE_URL`),
-search, open a listing, start a booking to the Razorpay sheet, open
-Payouts. Nothing has changed for users yet; this proves the Singapore
-service is equivalent.
+2.4 **Drive the new service on the fresh database** — it is the production
+stack, empty: register a guest and a host (our own accounts, never the
+client's), list a property through the five-step wizard, search for it,
+start a booking to the Razorpay sheet (test key until §3.1), open admin →
+categories, CMS, legal, Payouts readiness. Nothing has changed for anybody
+on the old stack; this proves the Singapore service and the fresh database
+work end to end.
 
 ---
 
@@ -165,42 +184,37 @@ rest gate a *good* one.
 
 ---
 
-## 4. Cutover — the 30-minute freeze (Day 2, evening IST)
+## 4. Cutover — the switch (when the client says go; 30 minutes)
 
-Announce a maintenance window to testers. Then:
+There is no data to move, so the freeze is only the time it takes to point
+everything at the new stack. **This step waits for the client's explicit
+confirmation** — from that moment the test data is behind us.
 
-4.1 **Freeze writes**: scale the Oregon service to 0 instances (Render →
-Manual scaling) — the website and apps show errors for the window; that is
-the point. Note the time.
+4.1 **Tell testers** the old stack is being retired; anything they want to
+keep from it (a screenshot, a booking id) is theirs to save now.
 
-4.2 **Final dump and restore** (repeat 1.5 into a **fresh** PlanetScale
-branch or after `DROP` of every table on `main` — cleaner: create the
-database's `main` again from empty, FK setting on, restore). Run 1.6 — the
-diff must be silent.
+4.2 **Point the website at Singapore**: Vercel →
+`VITE_API_BASE_URL=https://api.aajoohomes.com` → redeploy. From this
+moment the website is on the fresh database.
 
-4.3 **Switch the environment group**: `DB_HOST/USER/PASSWORD/NAME` → the
-PlanetScale values; `DB_SSL_REJECT_UNAUTHORIZED=true`; `DB_POOL_MAX=20`.
-Both services pick it up on restart. Scale Oregon back to 1 — **it now
-serves the same PlanetScale data as Singapore**, so every installed APK
-(102–106, compiled against `aajaodev.onrender.com`) keeps working with no
-split-brain.
-
-4.4 **Point the website at Singapore**: Vercel → `VITE_API_BASE_URL=https://api.aajoohomes.com` → redeploy.
-
-4.5 **Move the webhooks** to `https://api.aajoohomes.com/…`: Razorpay
+4.3 **Move the webhooks** to `https://api.aajoohomes.com/…`: Razorpay
 (payments), DIDIT (`/webhooks/didit`), BotPenguin. RazorpayX stays dormant.
 Firebase, Google Maps, Cloudinary, Vercel need nothing.
 
-4.6 **Smoke, then unfreeze**: sign in as **179 / 194 / 177** (never 100/101),
-search, a listing, a booking to the Razorpay sheet and back (test key),
-a KYC session created, a notification received, admin → Payouts → readiness
-loads, `/health` from both hostnames. Only then tell testers the window is
-over. Total freeze: dump 2 min, restore 5 min, checks 10 min, switch 5 min.
+4.4 **Point the Oregon service at PlanetScale too** (its `DB_*` on the
+service → the 1.4 values), so the installed APKs (102–106, compiled against
+`aajaodev.onrender.com`) land on the same fresh database as the website
+and nobody is on two systems at once. Testers sign up again.
 
-4.7 **Decommission, later**: after 48 hours with no requests in Oregon's
-logs, delete the Oregon service (the apps by then are on build 107, §5).
-Delete the Clever Cloud database **only after** a PlanetScale backup has
-been restored into a branch and `dbRowCounts` matches it.
+4.5 **Smoke as our own accounts** (never 100/101): register, verify email,
+list, search, book to the Razorpay sheet and back, a KYC session created,
+a notification received, admin sign-in, `/health` on both hostnames.
+
+4.6 **Retire, later**: after 48 hours with no requests on Oregon, delete
+that service (the apps by then are on build 107, §5). Delete the Clever
+Cloud database **only after** a PlanetScale backup has been restored into
+a branch and counted (1.7) — and after the client confirms nothing from
+the test period is wanted back.
 
 ---
 
@@ -220,21 +234,13 @@ job with the Apple secrets (§3.10).
 
 ---
 
-## 6. Data: launch clean or launch with what is there — the client decides
+## 6. Data — decided: fresh
 
-The database holds 98 users, 19 properties, 37 bookings and every test
-payout, ledger row and negotiation from four months of testing. Two options,
-both fine, one decision:
-
-- **Clean slate** (recommended): a session writes a script that deletes test
-  users (all but the admins and the two client accounts if wanted),
-  properties, bookings, payments, payouts, ledgers, notifications, KYC rows
-  and chatbot sessions, **keeping** CMS pages, categories, amenities, tags,
-  legal documents, admin users/roles and notification templates. Dry run
-  first (counts of what would go), then run on PlanetScale after 4.6, then
-  `dbRowCounts` again. Backup before.
-- **Keep everything**: nothing to do, but the first real host sees test
-  listings beside theirs, and finance sees test payouts in history.
+Decided 19 September: the production database starts fresh (the table at
+the top). Nothing to run here; the decision is executed by §1.5. Two
+consequences for the client to know: the test accounts 100 and 101 do not
+exist on production, and the four admin accounts arrive with their current
+passwords — reset them on the first day.
 
 ---
 
@@ -263,12 +269,12 @@ both fine, one decision:
 ## 8. What proves "ready to go live"
 
 - [ ] 0.1–0.4 done (key rotated, repo private, passwords changed, build 106 out)
-- [ ] §1 PlanetScale restored and proven (diff silent, 39 FKs, migrations no-op)
+- [ ] §1 fresh database imported and verified (125 tables, 39 FKs, 2,109 reference rows, migrations no-op)
 - [ ] §2 Singapore service on `api.aajoohomes.com`, driven against the old data
-- [ ] §4 cutover done; website and both services on PlanetScale; webhooks moved
+- [ ] §4 switch done on the client's word; website and both services on the fresh database; webhooks moved
 - [ ] Build 107 on the permanent API in testers' hands
 - [ ] 3.1 live Razorpay keys in place; 3.2 SMS OTP delivering to a real number; 3.3 mail authenticated; 3.4 Cloudinary owned
-- [ ] §6 decided and done
+- [ ] §6 fresh — done by §1.5; admin passwords reset on day one
 - [ ] Production build verified (live key, no test flags, production signing)
 - [ ] One PlanetScale backup restored and counted
 - [ ] External uptime monitor alerting the company
