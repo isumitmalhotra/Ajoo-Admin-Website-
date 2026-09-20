@@ -11,11 +11,11 @@
 | | Cases | PASS | FAIL | SPEC CONFLICT | BLOCKED | INFO | Not yet run |
 |---|---|---|---|---|---|---|---|
 | **BK — Booking** | 100 | 47 | 6 | 1 | 3 | 2 | 41 |
-| **NG — Negotiation** | 100 | 51 | 7 | 2 | 3 | 3 | 34 |
+| **NG — Negotiation** | 100 | 54 | 7 | 2 | 2 | 3 | 32 |
 | **HL — Host Listing** | 100 | 4 | 0 | 0 | 6 | 0 | 90 |
-| **Total** | **300** | **102** | **13** | **3** | **12** | **5** | **165** |
+| **Total** | **300** | **105** | **13** | **3** | **11** | **5** | **163** |
 
-**Batches 1–3 complete, batch 6 run (27 of 30), batches 4 and 7 part-run: 135 of 300 run.** Batch 6 (guest negotiation, 20 Sep evening): 18 PASS · 5 FAIL (4 fixed and re-proven the same evening, the app one in build 107) · 3 INFO · 1 BLOCKED · 3 not yet run. Fourteen batch-4 booking cases and four batch-7 host cases were proven on the same live loop (offer → counter → deal → pay-at-property booking → approval → check-in → guest check-out) with guest 101 on Chrome and host 100 on the emulator.
+**Batches 1–3 complete, batch 6 run (27 of 30), batches 4 and 7 part-run: 137 of 300 run.** Batch 6 (guest negotiation, 20 Sep evening): 18 PASS · 5 FAIL (4 fixed and re-proven the same evening, the app one in build 107) · 3 INFO · 1 BLOCKED · 3 not yet run. Fourteen batch-4 booking cases and four batch-7 host cases were proven on the same live loop (offer → counter → deal → pay-at-property booking → approval → check-in → guest check-out) with guest 101 on Chrome and host 100 on the emulator.
 
 **Defects found: 15.** Fourteen fixed and pinned by tests the same day (Defects 9–15 are this sitting's: an offer accepted on nights the guest had already booked, a zero-night offer, the booking gate's notice/season rules switched off since 9 Sep, two offers from one click, the host told twice, a stay sent without its listing, "Currently Staying" before the host approved). One reported for the client's decision because it moves money (the 28–31 night pricing cliff). One app defect (no live refresh on the host's Negotiations) goes into build 107.
 
@@ -238,7 +238,7 @@ Each case is proven the cheapest reliable way, and the report always records **t
 
 Also on this loop: the host's check-in **recorded the cash collection** (`book_is_paid = 1`, status 6) and the web showed *Paid* the next reload; the guest's check-out took the stay to status 7 on both ends and the host's card to *Completed · Paid* with no check-out button (Defect 8 of §8a45, verified live). The app files that completed stay under **Ongoing** (by its dates) rather than *Completed* (by its status) — Low, for build 107.
 
-**Batch 7 cases proven on the host's emulator:**
+**Batch 7 cases proven on the host's emulator** (and NG-042 from batch 3):
 
 | ID | Case | Actual | Verdict |
 |---|---|---|---|
@@ -246,6 +246,9 @@ Also on this loop: the host's check-in **recorded the cash collection** (`book_i
 | NG-026 | Host notified of offer | Bell: *New price offer — A guest offered ₹1,700/night for Aajoo Homes for 20-09-2026 → 21-09-2026. Review it in Negotiations.* (5 min after); tapping it lands on Negotiations. **But** the guest's counter produced **two** rows at the same minute (*The guest countered your price* + *The guest countered back*) — Defect 9, fixed. No push notification reached the emulator's shade (FCM on an emulator; the in-app rows and the email path are the record). | **PASS** (Defect 9 beside it) |
 | NG-029 | Host counters | ₹2,200 *"Weekend night - best I can do is 2200"* and ₹2,100 *"Meet you halfway - 2100"* → *Counter sent — the guest decides next.*; both reached the guest live | **PASS** |
 | NG-032 | Host sees offer amount | *₹1,700 · Round 9 · ~~was ₹2,500~~ · 32% below*, then *₹2,000 · Round 11 · 20% below* | **PASS** |
+| NG-062 | Fixed-price toggle works | Wizard step 4 *Negotiation → Accept offers on this listing* switched **off** on 29302, *Continue* (19:56): `pn_enabled = 0`; the guest's listing lost *Send an Offer* and read *"The host isn't taking offers on this stay — the listed price applies."*; the wizard read the saved state back as off. The **API** answered an offer with the date rule (*"Offers are for stays starting today…"*) — the host's switch sat behind the date guards; moved to the front (`f78d72b`, pinned). | **PASS** (UI) · API wording fixed |
+| NG-063 | Turn negotiation on | Toggle back **on**, *Continue* (20:01): `pn_enabled = 1`, floor ₹2,500 intact; *Send an Offer · Negotiate and save more* and *Price negotiable — send the host an offer* back on the guest's listing | **PASS** |
+| NG-042 | Offer on fixed-price listing (batch 3, was BLOCKED) | Same sitting as NG-062: the website refuses by hiding the button and saying why; the API's refusal is the date rule until `f78d72b` deploys, then *"This stay is not open to price offers. You can book it at the listed price."* first | **PASS** (web) · API re-proof pending a fixed-price listing |
 
 **Records this sitting created (host 100 / guest 101 — the client's own test accounts, by instruction):**
 - Host 100's calendar: block 19 *"QA end-to-end test block"* (20–22 Sep, 29291) **removed** through the app.
@@ -256,7 +259,7 @@ Also on this loop: the host's check-in **recorded the cash collection** (`book_i
 - The 29306 thread from batch 3: host counter 222 **declined** by the guest (NG-037).
 - No review was submitted; the *Write a Review* page was opened and left.
 
-**Found beside the cases, all fixed the same day and pinned by tests** (details under Defects 9–15): the host told twice for one counter; the deal percentage rounded by floating point; an offer accepted on the guest's own booked night; a zero-night offer and the booking gate's stay rules half switched off; an ongoing stay sent without its listing (cover, hours, pin); *Currently Staying* before the host approved; two offers from one click. **For build 107 (app):** the host's Negotiations list does not refresh live and keeps stale buttons after the host's own counter; a completed stay is filed by its dates under Ongoing; the app never subscribes to `negotiation:*` / `notification:new`. Also noted: the payment page said *"The host has 1 hours to approve"* (fixed with Defect 14).
+**Found beside the cases, all fixed the same day and pinned by tests** (details under Defects 9–15): the host told twice for one counter; the deal percentage rounded by floating point; an offer accepted on the guest's own booked night; a zero-night offer and the booking gate's stay rules half switched off; an ongoing stay sent without its listing (cover, hours, pin); *Currently Staying* before the host approved; two offers from one click. **For build 107 (app):** the host's Negotiations list does not refresh live and keeps stale buttons after the host's own counter; a completed stay is filed by its dates under Ongoing; the app never subscribes to `negotiation:*` / `notification:new`. Also noted: the payment page said *"The host has 1 hours to approve"* (fixed with Defect 14); the host's **Profile** screen on the app is still the pre-redesign teal slab (raw DOB *1995-05-05*, white-on-teal) — a design-parity item, not a defect; step 5's *Update listing* stays disabled on an approved listing until bank details exist (*readiness 95% — still to add: Bank details*), which is the publish gate doing its job.
 
 ---
 
@@ -559,7 +562,7 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 | NG-039 | High | Zero offer | PASS (20 Sep) |
 | NG-040 | High | Negative offer | PASS (20 Sep) |
 | NG-041 | Med | Non-numeric offer | PASS (20 Sep) |
-| NG-042 | High | Offer on fixed-price listing | BLOCKED — no live listing with negotiation off |
+| NG-042 | High | Offer on fixed-price listing | PASS web (20 Sep); API wording fixed f78d72b |
 | NG-043 | High | Offer without login | PASS (20 Sep) |
 | NG-090 | Med | Screenshot/replay attack | PASS (20 Sep) |
 | NG-091 | Critical | Tampered offer price | PASS (20 Sep) |
@@ -683,7 +686,7 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 | NG-089 | Med | Language in negotiation |  |
 | NG-092 | Med | Offer for 0 nights | FAIL → fixed bdab3b1 (Defect 12) |
 
-### Batch 7 — Negotiation — the host side, timing, bot, cross-flow (4 of 30 run on 20 Sep, on the host's emulator)
+### Batch 7 — Negotiation — the host side, timing, bot, cross-flow (6 of 30 run on 20 Sep, on the host's emulator)
 **Needs:** Host account + guest account together; BotPenguin for NG-056..058.  
 **Cases:** 30 · Critical: 3 · Already run: 0
 
@@ -708,8 +711,8 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 | NG-058 | High | Bot offer → host |  |
 | NG-060 | High | Host earnings reflect negotiated |  |
 | NG-061 | High | Commission on negotiated price |  |
-| NG-062 | High | Fixed-price toggle works |  |
-| NG-063 | High | Turn negotiation on |  |
+| NG-062 | High | Fixed-price toggle works | PASS (20 Sep, app + web); API order fixed f78d72b |
+| NG-063 | High | Turn negotiation on | PASS (20 Sep) |
 | NG-074 | Med | Host counters above displayed |  |
 | NG-077 | Med | Two-role user offers |  |
 | NG-083 | Med | Host bulk offers |  |
