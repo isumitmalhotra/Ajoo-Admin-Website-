@@ -290,6 +290,59 @@ that commission, four ledger rows per booking.
 
 ## 8. Closed since the last edition — do not redo
 
+### 8a46. Closed 2026-09-20 — "Chat doesn't know it's you" on a new account: what it was, what it was not, and what changed
+
+**The report (client, 20 Sep 04:44, with a screenshot from 19 Sep 21:30 IST):**
+a freshly registered guest ("Satish", iPhone Safari on 5G) saw the dashboard
+notice *Chat doesn't know it's you — We still couldn't reconnect your
+account… Try once more*. The client tested the chatbot from the dashboard
+only, not the bot. BotPenguin's team read the message text and concluded
+the account-to-chat handoff "does not return a chat token", and asked us to
+trace `/bp/handoff` for the account.
+
+**What was checked, and how:**
+- `/bp/handoff` for the client's own signed-in host session, called from
+  the live site: **200 in 1.9 s, token + phone + name + email +
+  `support_role: host`**. The route is the same for every account; the only
+  account-specific refusal it has is a deleted account.
+- The two calls from the phone at **21:26:21 and 21:27:14 IST** are in the
+  Render request log — they reached the server and were answered (the log
+  UI would not hold a filter under automation, so their status codes were
+  not read; the next fact settles it anyway).
+- A 401 is excluded by the screenshot itself: the site's interceptor ends
+  the session on any 401, and the dashboard was still signed in.
+- The module's own code: after the handoff succeeds it waits **6 seconds**
+  for BotPenguin's script (`cdn.botpenguin.com`) to draw its launcher, and
+  when that did not happen it reloaded once and then set `identityMissing`
+  — i.e. **a chat script that had not loaded on a phone link was reported
+  as an identity failure**. And on a genuine failure the handoff was tried
+  three times inside **1.6 s**, which on a Render Free instance that takes
+  "50 seconds or more" to wake is three attempts before the server exists.
+
+**So:** the message was wrong about what failed. Nothing indicates the
+handoff refused the account; BotPenguin's inference came from our wording.
+The bot itself was not tested by anyone.
+
+**Changed (web `6525a64`):** two states with two sentences — *Chat doesn't
+know it's you* (only when the handoff returned no token) and *Chat couldn't
+load* ("Your account is recognised — try again in a moment, or email us
+from Support"); the launcher gets **20 s** to draw; the handoff is retried
+for **about a minute** on retryable failures (0/1/2/4/8/15/15/15 s) and
+still stops at once on a definitive refusal — the older test that capped
+the budget at 3 s is reversed, with the reason in it. Web **56/56** + build.
+
+**What only the paid instance fixes:** the cold start itself (runbook §2,
+Render `1c-2g`). Until then a first visitor after 15 idle minutes waits for
+the server; the chat launcher now waits with them instead of giving up.
+
+**Not driven live:** a fresh account on a phone. The behaviour is pinned by
+`theChatSaysWhichThingFailed` (4) against the module; the client's
+"provide support to new accounts" is answered by the same handoff that
+already carries name, phone, email and role for every signed-in account —
+there is no new-account path to add.
+
+---
+
 ### 8a45. Closed 2026-09-19 — the stay ends on both ends; a finished stay no longer blocks a new booking; build 106
 
 **The client's two reports (WhatsApp, 20:13):** "in mobile view I want to
