@@ -10,14 +10,14 @@
 
 | | Cases | PASS | FAIL | SPEC CONFLICT | BLOCKED | INFO | Not yet run |
 |---|---|---|---|---|---|---|---|
-| **BK — Booking** | 100 | 47 | 6 | 1 | 3 | 2 | 41 |
+| **BK — Booking** | 100 | 48 | 7 | 1 | 3 | 2 | 39 |
 | **NG — Negotiation** | 100 | 54 | 7 | 2 | 2 | 3 | 32 |
 | **HL — Host Listing** | 100 | 4 | 0 | 0 | 6 | 0 | 90 |
-| **Total** | **300** | **105** | **13** | **3** | **11** | **5** | **163** |
+| **Total** | **300** | **106** | **14** | **3** | **11** | **5** | **161** |
 
-**Batches 1–3 complete, batch 6 run (27 of 30), batches 4 and 7 part-run: 137 of 300 run.** Batch 6 (guest negotiation, 20 Sep evening): 18 PASS · 5 FAIL (4 fixed and re-proven the same evening, the app one in build 107) · 3 INFO · 1 BLOCKED · 3 not yet run. Fourteen batch-4 booking cases and four batch-7 host cases were proven on the same live loop (offer → counter → deal → pay-at-property booking → approval → check-in → guest check-out) with guest 101 on Chrome and host 100 on the emulator.
+**Batches 1–3 complete, batch 6 run (27 of 30), batches 4 and 7 part-run, the guest half on the app: 139 of 300 run.** Batch 6 (guest negotiation, 20 Sep evening): 18 PASS · 5 FAIL (4 fixed and re-proven the same evening, the app one in build 107) · 3 INFO · 1 BLOCKED · 3 not yet run. Fourteen batch-4 booking cases and four batch-7 host cases were proven on the same live loop (offer → counter → deal → pay-at-property booking → approval → check-in → guest check-out) with guest 101 on Chrome and host 100 on the emulator.
 
-**Defects found: 15.** Fourteen fixed and pinned by tests the same day (Defects 9–15 are this sitting's: an offer accepted on nights the guest had already booked, a zero-night offer, the booking gate's notice/season rules switched off since 9 Sep, two offers from one click, the host told twice, a stay sent without its listing, "Currently Staying" before the host approved). One reported for the client's decision because it moves money (the 28–31 night pricing cliff). One app defect (no live refresh on the host's Negotiations) goes into build 107.
+**Defects found: 19.** Eighteen fixed and pinned by tests the same day (Defects 9–15 are this sitting's: an offer accepted on nights the guest had already booked, a zero-night offer, the booking gate's notice/season rules switched off since 9 Sep, two offers from one click, the host told twice, a stay sent without its listing, "Currently Staying" before the host approved). One reported for the client's decision because it moves money (the 28–31 night pricing cliff). One app defect (no live refresh on the host's Negotiations) goes into build 107.
 
 **Spec conflicts: 3.** Cases that describe behaviour the client themselves changed after the document was written — the cleaning fee (15 Sep), the round-one instant counter, and countering below the floor (9 Sep). The product is right; the document is stale.
 
@@ -217,6 +217,30 @@ Each case is proven the cheapest reliable way, and the report always records **t
 
 **Build 107 on the emulator (19:33):** with the host's Notifications list open and untouched, a chat message sent from the guest's website put *New message from Aajoo Renter — now* at the top and moved the count 68 → 69 — the app's new live channel (`LiveChannel`, one socket per person) works end to end. The guest-side negotiation screens on the app (NG-024 guest half, NG-022 app half) still want the emulator signed in as a guest.
 
+**Third sitting, 20 September 20:10—21:20 IST — the guest half on the app.** The emulator was signed in as guest 101 (build 107, then 108); Chrome stayed guest 101 for the API. The loop ran on **our own host 177's listing 29295 "Clamping suite for testing purpose"** (Nainital; flat ₹7,000, Sunday ₹9,500; instant book), which guest 101 had never offered on, so the engine's round-one answer could be watched without a host.
+
+| ID | Case | Sent / done | Actual | Verdict |
+|---|---|---|---|---|
+| NG-016 (app) | Make an Offer button | Listing → *Negotiate & Reserve* → sheet | *Negotiate* under *Book Now*; opens *Send an Offer* (placeholder = the DATED night ₹9,500, dates, *"Your deal, if accepted, will be locked to these 1 night."*) | **PASS** |
+| NG-017 (app) | Offer input validates | Send with the field empty | *"Enter the price you would like to pay per night."* | **PASS** |
+| NG-018 (app) | Offer confirmation | ₹8,400, 20→21 Sep, *"App test - one night tonight"* | The engine's tiers for the night were 8,000 / 8,300 / 9,500, so the offer met the target: *"Accepted at ₹8,400/night — Your price is locked in. It applies automatically at checkout — book before midnight tonight to keep it."* with the code **DEAL29295101234** and *Book at this price* (offers 233/234). | **PASS** (auto-accept path) |
+| NG-019 / NG-023 (app) | Status visible / thread readable | Dashboard → My Negotiations | *All (6) · Your move (0) · Waiting on host (0) · Accepted*; the 29295 card **Accepted** with the dated transcript (*You offered ₹8,400 · 20:38* → *Accepted ₹8,400*), the older threads (29306 *Expired*, 29291 …) below | **PASS** |
+| NG-024 (app, guest) | Mobile negotiation UI | The whole loop above | Offer sheet, confirmation, negotiations list and *Book at the agreed price* all on the app | **PASS** |
+| NG-022 (app, guest) | Real-time update | The socket joined `user_101` at 20:15:00 (server log) on build 107 | The engine's answer arrived inside the sheet's own request, so no live event was needed for this loop; the guest list's live reload is pinned by `the_app_hears_the_room_test.dart` and was proven on the host bell earlier | **PASS** (by the host-bell proof) |
+| NG-045 (app) | Offer after deal | The sheet after *Book at this price* | *Send an Offer — Already agreed for these dates*, disabled | **PASS** |
+| BK-086 (app) | Auto-accept → booking | *Book at this price* → pay at property → *Book Now* | **B326241** — *Booking Confirmed! Your stay is reserved. Pay when you arrive.* Room ₹9,500 — discount ₹1,100 + taxes ₹1,512 = **₹9,912** due on arrival; instant-book listing, so confirmed outright; exact pin + *Get Directions* | **PASS** |
+| BK-085 / BK-096 (app) | Negotiated price used / coupon applied | The sheet | *DEAL29295101234 — Negotiated deal — 11.58% off* applied itself; `book_coupon_code`, `book_discount_amt 1100.10`, `book_total_amt 9911.88` | **PASS** |
+| BK-049 (app) | Tax shown | The sheet, with the deal | *GST (18%) ₹1,511.98* on a ₹9,500 night — the high slab, as the server prices it. **But before the deal**, on picking 21 Sep, the sheet read *GST (5%) / Total ₹9,975* while the server said 18% / ₹11,210: the app's fallback banded on the listing's FLAT ₹7,000, not the night being charged. Fixed in build 108 (Defect 17). | **PASS** after fix |
+| BK-072 (app) | Booking detail accurate | *Your booking* for B326241 | *Room charge ₹8,400 — Discount ₹1,100 + Taxes ₹1,512 = Total ₹9,912* — **does not add up**: `book_price` is stored net of the deal and the screen subtracted the discount again. Fixed in build 108 (Defect 18): the room line is the listed room. | **FAIL → fixed** |
+| BK-073 (app) | Ongoing stay shown | Bookings → Ongoing | B326241 *Staying now · Pay at property · ₹9,912*; B021812 *Completed* filed under Ongoing by its dates (the guest tabs had the host tabs' fault) — fixed in build 108 | **PASS** after fix |
+| BK-074 (app) | Invoice download | *Download invoice* on the detail | Present; not exercised | not run |
+| Cancel (batch 5, app) | Guest cancels a pay-at-property stay | *Cancel booking* → reason *Booked by mistake* → *Cancel booking* | The policy card is right (*"Nothing has been charged … nothing to refund … cancellations after check-in are non-refundable"*), then **Confirm cancellation asks for a 6-digit code emailed to aajoo.renter1@mailinator.com** — a person's step; a session does not put an OTP through a tool. B326241 is left **confirmed on our host 177** for Sumit to cancel with the code. | **BLOCKED** (OTP) |
+| Search (BK-055 kin) | Destination search on the app | *Where to? → Nainital → Search* | **"No stays here yet"** while a name search on the same screen found 29295, and Kasauli worked. The request log showed the app's body was exactly one the browser answers with the row: the geocoder answers Nainital with **29295's own coordinates**, and `6371 * acos(x)` gives NULL for x = 1.0000000000000002 — the one stay under the pin was the one stay dropped. Fixed `aad3144` (all four distance literals clamped); re-run on the app after deploy: the listing shows. | **FAIL → fixed** (Defect 16) |
+
+**Records this sitting created (guest 101 on our host 177's listing):** offers **233** (₹8,400) and **234** (the platform's acceptance) on 29295; deal **DEAL29295101234** (11.58%, spent); booking **B326241** (pri 141) 20→21 Sep, pay at property, confirmed, **₹9,912 due** — not cancelled (OTP), and host-dues row **hd_id 50 (₹2,998.98, host 177)** that goes with it; one aborted cancellation (no state change). No record touched the client's host 100.
+
+**Beside the cases:** the spent deal's thread still read *Accepted — Book at the agreed price* on both surfaces (Defect 19, fixed: the list says **Booked** with the booking and links it); the guest Dashboard and host Profile screens are the pre-redesign teal design (parity list, not defects).
+
 **Batch 4 cases proven on the same loop** (the deal was booked pay-at-property, the host approved and checked the guest in on the app, the guest checked out on the website):
 
 | ID | Case | Actual | Verdict |
@@ -409,6 +433,22 @@ B021812 was requested at 18:26 with an hour for the host to answer; at 18:45 the
 
 Three identical submits fired in the same instant for 29306 produced two pending offers (230 and 231) and refused only the third. `claimNextRound` locked the guest's existing offer rows `FOR UPDATE` — nothing, for a guest with none — and **committed before `submitOffer` inserted**, so both requests read "no offer waiting" and both wrote. Fixed `62e652f`: the claim takes the listing's row (`tbl_properties … FOR UPDATE`, the row `createBooking` already serialises on) and hands its transaction back open; every offer row is written inside it and committed once the rows are in, before coupons, mail and sockets. The second request waits on the row until the first has written, then sees it. Pinned: `theOfferClaimHoldsItsLock.test.js`, which drives the claim against a fake that behaves like InnoDB for that one statement; the 16 Sep claim test is re-anchored on the open transaction.
 
+## Defect 16 — the stay sitting on the search point was dropped (High, backend)
+
+Every distance in `property.controller.js` is `6371 * acos(x)`. For a listing ON the search point x is 1.0000000000000002 in floating point and MySQL's `ACOS` answers NULL, so `distance <= radius` is not true and the one stay under the pin is the one stay left out. The platform's own geocoder answers a town with a listing's exact point (`/public/geocode/search?q=Nainital` returns 29295's coordinates), so this is the common case: *"Stays in Nainital"* showed *No stays here yet* on the app while a name search found it. Found by reading the app's exact request off the server log and replaying it. Fixed `aad3144`: the argument is clamped to [—1, 1] at all four sites; the test lifts each literal out of the source and evaluates it with MySQL's semantics (it measured x = 1.0000000000000002 on the raw formula).
+
+## Defect 17 — the app's GST slab followed the flat rate, not the night being charged (Medium, app, money)
+
+Before the server's per-night figures arrive, `priceStay()` banded the slab on `perNightTariff` — the listing's flat rate — so a ₹9,500 Sunday night on a ₹7,000 listing read *GST (5%) / ₹9,975* on the booking sheet while the server (and the sticky bar) said 18% / ₹11,210. Fixed in build 108: the fallback divides the discounted room by the night count and bands on that; the flat tariff only decides when the count is unknown. Pinned in `booking_pricing_test.dart`.
+
+## Defect 18 — the booking breakdown subtracted the discount twice (Medium, app, money display)
+
+`book_price` is stored net of any deal (createBooking subtracts the discount before the row is written). The ongoing-booking view and the history page passed it as the *Room charge* line and printed the discount on a line of its own, so B326241 read *Room ₹8,400 — Discount ₹1,100 + Taxes ₹1,512 = ₹9,912*. Fixed in build 108: the room line is net + discount (the listed room), the derived tax is total — net, and `book_price` is rounded rather than truncated (8399.90 is ₹8,400, not ₹8,399). Pinned in `the_breakdown_adds_up_test.dart`.
+
+## Defect 19 — a spent deal still said "Book at the agreed price" (Low, all three surfaces)
+
+After B326241 was booked on its deal, `/user/negotiations/list` still returned the thread as *accepted* and both clients offered *Book at the agreed price* over a coupon already used. Backend `60cbd41`: an accepted thread matched to a live, uncancelled booking by the same guest on the same stay with that thread's deal code now says **booked** with the `bookingId`. Web `501ad26` and build 108 render *Booked as B326241 — view booking*.
+
 ## Spec conflicts — the case sheet is behind the product
 
 Neither of these is a defect. Both describe behaviour the client **changed after the document was written**, and they are recorded so the document can be corrected rather than the code.
@@ -434,7 +474,11 @@ Neither of these is a defect. Both describe behaviour the client **changed after
 | `bdab3b1` | Defect 12: `stayRefusal` + `RULE_COLUMNS` — the host's stay rules bind offers, and the booking gate reads all of them again |
 | `4aab209` | Defect 13: `/user/ongoing/bookings` reads its listing id from the nested join — cover, hours, pin |
 | web `32fb9c1` | Defect 14: a request the host has not answered is not a stay in progress; "1 hour", not "1 hours" |
-| `62e652f` | Defect 15: the offer claim holds the listing's row lock across the insert. Backend 164/164; web 30/30 + `tsc -b` + build |
+| `62e652f` | Defect 15: the offer claim holds the listing's row lock across the insert |
+| `f78d72b` | A fixed-price listing says so before any date rule (NG-042/062) |
+| `aad3144` | Defect 16: `acos()` clamped at all four distance sites — the stay on the search point is found |
+| `60cbd41` · web `501ad26` · build 108 | Defect 19: a spent deal reads Booked, with its booking |
+| build 108 | Defects 17 and 18 (app slab fallback; breakdown adds up), the guest tabs file a checked-out stay under Completed. Backend 166/166; web 31/31 + `tsc -b` + build; app 558/558 |
 
 ---
 
@@ -593,7 +637,7 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 | BK-057 | Med | Minimum notice | FAIL → fixed bdab3b1 (Defect 12) |
 | BK-058 | Med | Same-day conflict |  |
 | BK-071 | High | My Bookings list |  |
-| BK-072 | High | Booking detail accurate |  |
+| BK-072 | High | Booking detail accurate | FAIL → fixed build 108 (Defect 18) |
 | BK-073 | Med | Ongoing stay shown | PASS after fix 32fb9c1 (Defect 14) |
 | BK-074 | High | Invoice download |  |
 | BK-075 | Med | Modify booking |  |
@@ -601,7 +645,7 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 | BK-077 | Med | Host contact revealed | PASS (20 Sep) |
 | BK-078 | Med | Review after stay | PASS (20 Sep) |
 | BK-085 | Critical | Negotiated price used | PASS (20 Sep) |
-| BK-086 | Critical | Auto-accept → booking |  |
+| BK-086 | Critical | Auto-accept → booking | PASS (20 Sep, app: B326241) |
 | BK-087 | Med | Guest count feeds capacity |  |
 | BK-088 | High | Price change reflects |  |
 | BK-089 | High | Deposit single-source |  |
@@ -660,9 +704,9 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 | NG-018 | High | Offer confirmation | PASS (20 Sep) |
 | NG-019 | High | Offer status visible | PASS (20 Sep) |
 | NG-020 | High | Counter shown to guest | PASS (20 Sep) |
-| NG-022 | High | Real-time update | PASS web · FAIL app → fixed in build 107, bell proven live (20 Sep) |
+| NG-022 | High | Real-time update | PASS web · app fixed in build 107, bell proven live; guest half by the same channel (20 Sep) |
 | NG-023 | Med | Offer thread readable | PASS (20 Sep) |
-| NG-024 | Med | Mobile negotiation UI | PASS host side (20 Sep) · guest side pending |
+| NG-024 | Med | Mobile negotiation UI | PASS both halves (20 Sep) |
 | NG-025 | Med | Waiting state | PASS (20 Sep) |
 | NG-034 | High | Guest counters back | PASS (20 Sep) |
 | NG-035 | Med | Multiple rounds | PASS (20 Sep) |

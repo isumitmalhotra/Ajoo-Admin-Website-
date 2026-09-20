@@ -38,7 +38,8 @@
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
 > **Go-live sequence (2026-09-19, Render Pro + PlanetScale bought): `GO_LIVE_RUNBOOK_2026-09-19.md`** — steps 0.1–0.4 first (Razorpay key rotation, repo private, test passwords, build 106).
-> Tester build in circulation: **107 (1.0.0+107)**, `aajoo-homes-1.0.0-build107-release.apk` at repo root
+> Tester build in circulation: **108 (1.0.0+108)**, `aajoo-homes-1.0.0-build108-release.apk` at repo root
+> (2026-09-20 21:25, versionCode 108, sha256 in §8a49), built with `tool/build_release.ps1`. Supersedes **107**
 > (2026-09-20 19:30, versionCode 107, 95.5 MB, sha256 `75f27c40a9ccfa4f…`), built with
 > `tool/build_release.ps1`; client repo `aajoo_app_latest` main = `050453b`. Supersedes **106**
 > (2026-09-19 night, versionCode 106, 95.5 MB, sha256 `db27821d9ffc842d…`), built with
@@ -291,6 +292,35 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a49. Closed 2026-09-20 (night) — the guest half on the app: four more defects, build 108
+
+**What ran (20:10—21:20 IST, emulator as guest 101, build 107 → 108):** the offer → instant
+acceptance → deal → pay-at-property booking loop on our own host 177's 29295 (Nainital), the
+guest Negotiations screen, the booking detail and tabs, and a cancellation up to its OTP.
+**139 of 300 run.** Report: `report-2026-09-17/TEST_RUN_300/RESULTS.md`, third sitting.
+
+| # | What | Where | Commit |
+|---|---|---|---|
+| 16 | **The stay sitting on the search point was dropped.** `6371 * acos(x)`: for a listing ON the point x is 1.0000000000000002 and MySQL's ACOS is NULL. The geocoder answers a town with a listing's own point, so *"Stays in Nainital"* showed nothing on the app while a name search found it. Found by reading the app's request off the Render log and replaying it. Clamped at all four sites; the test evaluates each literal with MySQL semantics. | backend, High | `aad3144` |
+| 17 | The app's **GST slab followed the flat rate**, not the night being charged: a ₹9,500 Sunday on a ₹7,000 listing read *GST (5%) / ₹9,975* on the sheet while the server said 18% / ₹11,210. The fallback now bands on the discounted room per night. | app, money | build 108 |
+| 18 | The **booking breakdown subtracted the discount twice**: `book_price` is stored net of the deal and two screens printed it as *Room charge* next to a *Discount* line (B326241: 8,400 — 1,100 + 1,512 = 9,912). The room line is now the listed room; `book_price` rounded, not truncated. | app, money display | build 108 |
+| 19 | A **spent deal still said "Book at the agreed price"** on both surfaces. The list now says *booked* with the booking (matched by guest + stay + this thread's deal code); web and app render *Booked as B326241 — view booking*. | all three | `60cbd41` · web `501ad26` · build 108 |
+
+Also in build 108: the guest Bookings tabs file a checked-out stay under Completed (the host tabs' rule).
+Backend 166/166 · web 31/31 + `tsc -b` + build · app 558/558, analyze 0.
+
+**Records (our host 177 only; nothing on the client's host 100 this sitting):** offers 233/234 on 29295,
+deal `DEAL29295101234` (spent), booking **B326241** (pri 141, 20→21 Sep, pay at property, confirmed,
+₹9,912 due) with dues row `hd_id 50` (₹2,998.98, host 177). **Its cancellation is gated by an email OTP**
+(aajoo.renter1@mailinator.com) — a person's step; Sumit cancels it with the code, or lets the sweep
+close it after 21 Sep.
+
+**Still open from the guest app half:** BK-074 (invoice download), the cancellation itself (OTP), NG-080
+(sign-out/in). The search sheet's *"1 guest"* default and the pre-redesign Dashboard/Profile screens are
+parity items, not defects.
+
+---
 
 ### 8a48. Closed 2026-09-20 (evening) — the 300-case run, batch 6 on a live loop: seven defects found and fixed, build 107
 
