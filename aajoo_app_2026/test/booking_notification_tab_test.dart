@@ -48,6 +48,15 @@ void main() {
     test('a cancelled stay is Cancelled whatever its dates say', () {
       expect(bookingTabIndex('Cancelled', from: futureFrom, to: futureTo), 3);
     });
+
+    test('a stay checked OUT early is Completed, whatever its dates say (2026-09-20)', () {
+      // B021812, 20-21 Sep, checked out on the 20th: sat under Ongoing,
+      // badged "Completed", on both the guest's and the host's tabs.
+      expect(bookingTabIndex('Check Out', from: futureFrom, to: futureTo), 2);
+      expect(bookingTabIndex('Checked-out', from: futureFrom, to: futureTo), 2);
+      // ...but cancelled still wins.
+      expect(bookingTabIndex('Cancelled', from: futureFrom, to: futureTo), 3);
+    });
   });
 
   test('a cancellation notification asks for the Cancelled tab', () {

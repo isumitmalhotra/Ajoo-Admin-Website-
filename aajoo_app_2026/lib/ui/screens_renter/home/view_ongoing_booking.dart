@@ -282,7 +282,9 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
                               // labelled, and no way for the guest to tell
                               // which one they owed.
                               AmountBreakdown(
-                                roomCharge: widget.booking.bookPrice.toDouble(),
+                                // The listed room, not the net one: the
+                                // discount is printed on its own line below.
+                                roomCharge: widget.booking.roomListed,
                                 taxes: widget.booking.taxesAndFees,
                                 discount: widget.booking.bookDiscountAmt,
                                 total: widget.booking.bookTotalAmt,

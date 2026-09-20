@@ -96,6 +96,21 @@ void main() {
     });
   });
 
+  group('a deal that has been booked reads Booked', () {
+    // After B326241 was booked on its deal (2026-09-20) the card still read
+    // "Accepted / Book at the agreed price" over a spent coupon.
+    test('the model carries the booking and the screen renders the state', () {
+      final m = read('lib/models/guest_negotiation.dart');
+      expect(m, contains("bookingId: _s(j['bookingId']),"));
+      final s = read('lib/ui/screens_renter/negotiations/guest_negotiations_screen.dart');
+      expect(s.indexOf("] else if (n.status == 'booked') ...[") < s.indexOf("] else if (n.status == 'accepted') ...["), isTrue,
+          reason: 'booked must be checked before accepted');
+      expect(s, contains("case 'booked':"));
+      expect(s, contains("'highlight': n.bookingId,"), reason: 'the button must open the booking');
+      expect(s, contains("n.status == 'accepted' || n.status == 'booked'"), reason: 'the Accepted tab keeps a booked deal');
+    });
+  });
+
   group('a checked-out stay is filed under Completed', () {
     // B021812 (20-21 Sep) was checked out on the 20th and sat under Ongoing,
     // badged "Completed", with no review link: the tab read the calendar and

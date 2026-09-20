@@ -149,4 +149,24 @@ void main() {
     expect(p.cleaningFee, 0);
     expect(p.chargeable, 6660);
   });
+
+  test('the slab fallback is per night of THIS stay, not the flat tariff (2026-09-20)', () {
+    // Listing 29295: flat Rs 7,000, Sunday Rs 9,500. Before the server quote
+    // arrives the sheet only knows the dated room subtotal and the night
+    // count. It banded on the flat 7,000 and printed GST (5%) Rs 475 /
+    // Rs 9,975; the server (and the sticky bar) said 18% / Rs 11,210.
+    final weekend = priceStay(roomSubtotal: 9500, perNightTariff: 7000, nights: 1);
+    expect(weekend.taxPct, 18);
+    expect(weekend.taxes, 1710);
+    expect(weekend.total, 11210);
+    // Two ordinary nights of that listing stay in the low band, as before.
+    final weekdays = priceStay(roomSubtotal: 14000, perNightTariff: 7000, nights: 2);
+    expect(weekdays.taxPct, 5);
+    // ...and with the deal applied, the band follows the post-discount night.
+    final deal = priceStay(roomSubtotal: 9500, perNightTariff: 7000, discount: 1100.10, nights: 1);
+    expect(deal.taxPct, 18);
+    expect(deal.total, closeTo(9911.88, 0.01));
+    // No night count (an undated quote): the flat tariff decides, as it always did.
+    expect(priceStay(roomSubtotal: 9500, perNightTariff: 7000).taxPct, 5);
+  });
 }

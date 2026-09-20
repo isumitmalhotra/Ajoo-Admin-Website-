@@ -147,6 +147,8 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
         return (label: 'Your move', fg: kInk, bg: kClay);
       case 'accepted':
         return (label: 'Accepted', fg: Colors.white, bg: kSuccess);
+      case 'booked':
+        return (label: 'Booked', fg: Colors.white, bg: kIndigo);
       case 'declined':
         return (label: 'Declined', fg: Colors.white, bg: kDanger);
       case 'expired':
@@ -377,7 +379,9 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
         const filters = [null, 'awaiting_you', 'awaiting_host', 'accepted'];
         final want = filters[tab.value];
         final visible =
-            want == null ? all : all.where((n) => n.status == want).toList();
+            want == null
+                ? all
+                : all.where((n) => n.status == want || (want == 'accepted' && n.status == 'booked')).toList();
 
         return RefreshIndicator(
           onRefresh: c.loadNegotiations,
@@ -418,7 +422,7 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
       all.length,
       all.where((n) => n.status == 'awaiting_you').length,
       all.where((n) => n.status == 'awaiting_host').length,
-      all.where((n) => n.status == 'accepted').length,
+      all.where((n) => n.status == 'accepted' || n.status == 'booked').length,
     ];
     const labels = ['All', 'Your move', 'Waiting on host', 'Accepted'];
     return SingleChildScrollView(
@@ -759,6 +763,36 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
             if (n.roundsYou > 1)
               Text('Round ${n.roundsYou + 1}',
                   style: inter(fontSize: 11.5, color: kMuted)),
+          ] else if (n.status == 'booked') ...[
+            // The deal was used: a booking exists for it. "Book at the
+            // agreed price" over a spent coupon sent the guest to a listing
+            // that could no longer honour it (B326241, 2026-09-20).
+            const Divider(height: 22, color: kLine),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: kIndigo,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () => Get.toNamed('/history', arguments: {
+                  'tab': 'Ongoing',
+                  if (n.bookingId != null) 'highlight': n.bookingId,
+                }),
+                icon: const Icon(Icons.event_available_rounded, size: 18),
+                label: Text(
+                    n.bookingId != null
+                        ? 'Booked as ${n.bookingId} — view booking'
+                        : 'Booked — view booking',
+                    style: inter(fontSize: 13.5, fontWeight: FontWeight.w600)),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text('The agreed price is on this booking. Nothing more to do here.',
+                style: inter(fontSize: 12, color: kMuted)),
           ] else if (n.status == 'accepted') ...[
             const Divider(height: 22, color: kLine),
             // The web's accepted state books the deal from right here; this

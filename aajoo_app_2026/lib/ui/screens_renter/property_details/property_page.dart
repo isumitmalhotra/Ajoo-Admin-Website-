@@ -1788,6 +1788,7 @@ class _PropertyPageState extends State<PropertyPage>
                                   pets: _pets,
                                   nightlyTotal: _nightlyTotal,
                       taxNights: _serverQuote?.taxNights ?? const [],
+                      nights: totalDays,
                                   longStayLabel: _longStay?.label,
                                 );
 
@@ -2019,6 +2020,7 @@ class _PropertyPageState extends State<PropertyPage>
                               pets: _pets,
                               nightlyTotal: _nightlyTotal,
                       taxNights: _serverQuote?.taxNights ?? const [],
+                      nights: totalDays,
                               longStayLabel: _longStay?.label,
                             );
 
@@ -2665,6 +2667,7 @@ onPressed: () async {
                       pets: _pets,
                       nightlyTotal: _nightlyTotal,
                       taxNights: _serverQuote?.taxNights ?? const [],
+                      nights: totalDays,
                       longStayLabel: _longStay?.label,
                     );
                     final double finalAmount =
@@ -4237,6 +4240,7 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
         pets: _pets,
         nightlyTotal: _nightlyTotal,
                       taxNights: _serverQuote?.taxNights ?? const [],
+                      nights: totalDays,
         longStayLabel: _longStay?.label,
       );
 

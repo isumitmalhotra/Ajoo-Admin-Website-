@@ -57,7 +57,10 @@ class BookingHistoryData {
   dynamic book_price;
 
   /// The room subtotal as a number, whatever shape the DECIMAL arrived in.
-  double get roomCharge => _toDouble(book_price) ?? 0;
+  /// `book_price` is stored NET of any deal or coupon; this adds the
+  /// discount back so a breakdown that prints the discount on its own line
+  /// does not subtract it twice (B326241, 2026-09-20).
+  double get roomCharge => (_toDouble(book_price) ?? 0) + (bookDiscountAmt ?? 0);
 
   /// What the guest owes — tax included. Falls back to the subtotal only when
   /// the server sent no total, which is the case that produced two different

@@ -166,7 +166,11 @@ class GuestNegotiation {
     this.guests,
     this.hostResponseHours,
     this.hostAway = false,
+    this.bookingId,
   });
+
+  /// The booking made on this deal, when [status] is `booked` (2026-09-20).
+  final String? bookingId;
 
   factory GuestNegotiation.fromJson(Map<String, dynamic> j) {
     final raw = j['messages'];
@@ -194,6 +198,7 @@ class GuestNegotiation {
       hostName: j['hostName']?.toString() ?? 'Host',
       // Absent, zero or unparseable all mean "the host never said".
       hostAway: j['hostAway'] == true || j['hostAway']?.toString() == '1',
+      bookingId: _s(j['bookingId']),
       hostResponseHours: (int.tryParse(j['hostResponseHours']?.toString() ?? '') ?? 0) > 0
           ? int.parse(j['hostResponseHours'].toString())
           : null,

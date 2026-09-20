@@ -94,10 +94,18 @@ class Booking {
 
   String bookId;
   String bookInvoice;
-  /// The room subtotal, BEFORE tax. Never show this on its own — see
-  /// [bookTotalAmt]. It is the "Room charge" line of a breakdown, nothing
-  /// more.
+  /// The room subtotal, BEFORE tax and AFTER any deal or coupon — the server
+  /// stores `book_price` net of the discount (createBooking subtracts it
+  /// before the row is written). Never show this on its own — see
+  /// [bookTotalAmt] — and never as the "Room charge" line NEXT TO a discount
+  /// line: B326241 (deal 11.58%) printed Room ₹8,400 − Discount ₹1,100 +
+  /// Tax ₹1,512 = ₹9,912, which does not add up, because the ₹8,400 was
+  /// already net (300-case run, 2026-09-20). Use [roomListed] for that line.
   int bookPrice;
+
+  /// What the room cost before the discount: the "Room charge" line a
+  /// breakdown prints when it also prints the discount.
+  double get roomListed => bookPrice + bookDiscountAmt;
 
   /// GST on this booking.
   double bookTax;
@@ -157,7 +165,9 @@ class Booking {
   /// odd, not that the guest is owed a negative tax.
   double get taxesAndFees {
     if (bookTax > 0) return bookTax;
-    final derived = bookTotalAmt - bookPrice + bookDiscountAmt;
+    // book_price is already net of the discount, so the tax is what is left
+    // after the room; adding the discount back counted it twice.
+    final derived = bookTotalAmt - bookPrice;
     return derived > 0 ? derived : 0;
   }
 
@@ -186,7 +196,8 @@ class Booking {
         bookPriId: (json["book_pri_id"] as num?)?.toInt() ?? 0,
         bookId: json["book_id"]?.toString() ?? "",
         bookInvoice: json["book_invoice"]?.toString() ?? "",
-        bookPrice: (json["book_price"] as num?)?.toInt() ?? 0,
+        // Rounded, not truncated: 8399.90 net of a deal is Rs 8,400, not 8,399.
+        bookPrice: (json["book_price"] as num?)?.round() ?? 0,
         // Loosely parsed: these are DECIMAL columns and Sequelize hands some
         // of them back as strings, so a blind cast drops them to zero.
         bookTax: _money(json["book_tax"]) ?? 0,

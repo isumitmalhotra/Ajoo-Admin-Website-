@@ -167,6 +167,14 @@ StayPrice priceStay({
   double nightlyTotal = 0,
   String? longStayLabel,
   List<double> taxNights = const [],
+  /// How many nights the stay is, for the slab when the server's per-night
+  /// figures ([taxNights]) have not arrived. Until 2026-09-20 that fallback
+  /// banded on [perNightTariff] — the listing's FLAT rate — so a ₹9,500
+  /// weekend night on a ₹7,000 listing was taxed at 5% (₹9,975) on the
+  /// booking sheet while the server said 18% (₹11,210) and the sticky bar
+  /// agreed with the server (300-case run, listing 29295). The band is per
+  /// night of what is actually charged, so the fallback divides by nights.
+  int nights = 0,
 }) {
   // [roomSubtotal] is ALREADY the host's long-stay rate when one applies —
   // the caller resolves it, the same way the server does in quoteRange. What
@@ -226,7 +234,10 @@ StayPrice priceStay({
     taxBands = bands;
   } else {
     // 7,500 exactly is the HIGH band — client rule, 2026-09-10.
-    taxPct = perNightTariff >= 7500 ? 18 : 5;
+    // Per night of THIS stay when the count is known; the flat tariff only
+    // when it is not (an undated quote), which is what it always was.
+    final perNight = nights > 0 ? discountedRoom / nights : perNightTariff;
+    taxPct = perNight >= 7500 ? 18 : 5;
     // Rounded to paise, the same way the backend rounds, so the total shown
     // here equals the Razorpay order amount exactly rather than a rupee out.
     taxes = (discountedRoom * taxPct).roundToDouble() / 100;
