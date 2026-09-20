@@ -5,6 +5,7 @@ import 'package:lottie/lottie.dart';
 import 'package:rent_home/controller/common_controller.dart';
 import 'package:rent_home/utils/secure_store.dart';
 import '../auth/auth_controller.dart';
+import 'package:rent_home/service/live_channel.dart';
 
 import 'package:rent_home/utils/app_log.dart';
 // class SplashScreen extends StatefulWidget {
@@ -280,6 +281,10 @@ class _SplashScreenState extends State<SplashScreen> {
         // prevent the app from opening.
         unawaited(Future(() => authController.getUserDetails())
             .catchError((Object e) => appLog('getUserDetails failed: $e')));
+        // A restored session gets its live room too, or only a fresh sign-in
+        // would ever see an offer arrive.
+        unawaited(LiveChannel.instance.connect()
+            .catchError((Object e) => appLog('live channel failed: $e')));
       }
       if (!mounted) return;
 

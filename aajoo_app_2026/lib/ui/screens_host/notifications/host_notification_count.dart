@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
 import 'package:rent_home/service/growth_service.dart';
+import 'package:rent_home/service/live_channel.dart';
 
 /// The host's unread count, for the surfaces that show a badge but no list.
 ///
@@ -15,6 +18,26 @@ import 'package:rent_home/service/growth_service.dart';
 class HostNotificationCount extends GetxController {
   final RxInt unread = 0.obs;
   final GrowthService _service = GrowthService.instance;
+
+  /// The badge moves when a row is written, not when the host next opens the
+  /// list: the server emits `notification:new` to the person for every bell
+  /// row (2026-09-20, batch 6). The controller is permanent, so this is one
+  /// subscription for the session.
+  StreamSubscription<LiveEvent>? _live;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _live = LiveChannel.instance
+        .on(const [LiveChannel.notificationEvent])
+        .listen((_) => reload());
+  }
+
+  @override
+  void onClose() {
+    _live?.cancel();
+    super.onClose();
+  }
 
   /// Ask the server. Never throws — a badge that cannot be counted stays at
   /// its last value rather than flashing a zero that claims all-clear.

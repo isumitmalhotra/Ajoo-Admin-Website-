@@ -112,6 +112,17 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
     // Upcoming until the 2pm check-in hour while their own card read
     // "Staying now": the same card disagreeing with the tab it was filed in.
     final checkedIn = s.contains('check in') || s.contains('check-in');
+    // ...and a stay that has been CHECKED OUT is over, whatever the calendar
+    // says: since 2026-09-19 either side can end a stay early, and the host
+    // marks the guest out. B021812 (20-21 Sep) was checked out on the 20th
+    // and sat under Ongoing, badged "Completed", with no review link
+    // (300-case run, batch 6). The explicit event beats the clock both ways.
+    final checkedOut = s.contains('check out') ||
+        s.contains('check-out') ||
+        s.contains('checkout') ||
+        s.contains('checked-out') ||
+        s.contains('complet');
+    if (checkedOut) return 2; // Completed
 
     if (parseStayDate(from) != null && parseStayDate(to) != null) {
       if (hasEnded(to, hours: hours)) return 2; // Completed

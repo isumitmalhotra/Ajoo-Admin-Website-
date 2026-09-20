@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+
 import 'package:get/get.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:rent_home/service/live_channel.dart';
 import 'package:rent_home/utils/money.dart';
 import 'package:rent_home/ui/screens_common/auth/auth_controller.dart';
 import 'package:rent_home/ui/screens_host/host_controller.dart';
@@ -59,6 +62,10 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
   static const int _dashboardTab = 2;
   bool _wasVisible = true;
 
+  StreamSubscription<LiveEvent>? _live;
+  late final LiveReload _liveReload =
+      LiveReload(() => hostController.getNegotiations());
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +73,18 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
     // The badge needs a number before the host looks at it, not after they
     // open the list.
     _notifCount.reload();
+    // "Offers to review" is read off the negotiations list; a new offer
+    // while the dashboard is up moves the tile (batch 6, 2026-09-20).
+    _live = LiveChannel.instance
+        .on(LiveChannel.negotiationEvents)
+        .listen((_) => _liveReload.poke());
+  }
+
+  @override
+  void dispose() {
+    _live?.cancel();
+    _liveReload.cancel();
+    super.dispose();
   }
 
   @override

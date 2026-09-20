@@ -10,6 +10,7 @@ import 'package:rent_home/ui/design/amount_breakdown.dart';
 import 'package:rent_home/utils/money.dart';
 import 'package:rent_home/constants/payment_config.dart';
 import 'package:rent_home/utils/booking_status.dart';
+import 'package:rent_home/utils/stay_clock.dart';
 import 'package:rent_home/service/booking_service.dart';
 import 'package:rent_home/ui/screens_renter/booking_controller.dart';
 import 'package:rent_home/controller/user_controller.dart';
@@ -48,6 +49,24 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
     SchedulerBinding.instance.addPostFrameCallback((_) {
       userController.getProperty(widget.booking.bookingPropertyPropertyId);
     });
+  }
+
+  /// Checkout is for a stay that is actually running: the host has answered
+  /// (a request still "Awaiting approval" is not a stay), and either they
+  /// checked the guest in or the listing's check-in hour has passed. The
+  /// button used to follow "paid" alone, so a paid request the host had an
+  /// hour left to answer offered Checkout — the website's Next Booking page
+  /// had the same fault the same evening (300-case run, batch 6, 2026-09-20).
+  bool get _stayIsRunning {
+    final b = widget.booking;
+    final label = lifecycleLabel(b.bookingStatusBsTitle);
+    if (label == 'Awaiting approval' || label == 'Cancelled' || label == 'Declined' || label == 'Completed') {
+      return false;
+    }
+    if (label == 'Staying now') return true;
+    final d = b.bookDetails;
+    if (d == null) return false;
+    return isStaying(d.btBookFrom, d.btBookTo, hours: b.stayHours);
   }
 
   @override
@@ -517,7 +536,7 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
                                 ),
                               ),
                             ),
-                          ] else ...[
+                          ] else if (_stayIsRunning) ...[
                             SizedBox(
                               width: double.infinity,
                               height: 55,

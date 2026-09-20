@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:rent_home/constants.dart';
+import 'dart:async';
+
 import 'package:rent_home/service/growth_service.dart';
+import 'package:rent_home/service/live_channel.dart';
 import 'package:rent_home/ui/widgets/load_failed.dart';
 import 'package:rent_home/utils/service_log.dart';
 import 'package:rent_home/utils/fonts.dart';
@@ -38,10 +41,22 @@ class _HostNotificationsScreenState extends State<HostNotificationsScreen> {
   int _unread = 0;
   bool _loading = true;
 
+  StreamSubscription<LiveEvent>? _live;
+
   @override
   void initState() {
     super.initState();
     _load();
+    // A row written while the list is open appears on it (batch 6, 2026-09-20).
+    _live = LiveChannel.instance
+        .on(const [LiveChannel.notificationEvent])
+        .listen((_) => _load());
+  }
+
+  @override
+  void dispose() {
+    _live?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {

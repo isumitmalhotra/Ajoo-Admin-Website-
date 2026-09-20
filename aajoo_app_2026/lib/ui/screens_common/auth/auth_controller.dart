@@ -4,6 +4,7 @@ import 'package:rent_home/constants.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/controller/alert_dialog.dart';
+import 'package:rent_home/service/live_channel.dart';
 import 'package:rent_home/service/messages_service.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/data/models/action_result.dart';
@@ -278,6 +279,9 @@ class AuthController extends GetxController {
     // The push token minted before sign-in could not be attached to anybody;
     // attach it now, off the critical path.
     unawaited(NotificationService().syncTokenAfterLogin());
+    // The person's live room — offers, replies, bell rows — for as long as
+    // they are signed in. Screens that show those reload on its events.
+    unawaited(LiveChannel.instance.connect());
 
     showAlert('Success', 'Login successful', false);
     if (Get.isRegistered<NotificationRoutingService>()) {
@@ -738,6 +742,8 @@ class AuthController extends GetxController {
       // so leaving it open would deliver the previous account's messages into
       // the next one's inbox.
       MessagesService.instance.dispose();
+      // Same for the live room: it is this person's, not the phone's.
+      LiveChannel.instance.dispose();
 
       // Best-effort cleanup. Neither of these is allowed to decide whether the
       // user gets signed out: deleteToken() throws when Firebase has no token

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
+import 'dart:async';
+
 import 'package:rent_home/models/host_negotiation.dart';
+import 'package:rent_home/service/live_channel.dart';
 import 'package:rent_home/ui/motion/aajoo_motion.dart';
 import 'package:rent_home/ui/screens_host/home/components/negotiation_card.dart';
 import 'package:rent_home/ui/screens_host/host_controller.dart';
@@ -27,6 +30,14 @@ class HostNegotiationsScreen extends StatefulWidget {
 class _HostNegotiationsScreenState extends State<HostNegotiationsScreen> {
   final hostController = Get.put(HostController());
 
+  /// The list reloads when the server says something moved: a new offer, a
+  /// guest's reply, the platform's own answer. Until 2026-09-20 (batch 6,
+  /// NG-022) a host watching this screen saw nothing until they pulled to
+  /// refresh, and after their own counter the card kept its buttons.
+  StreamSubscription<LiveEvent>? _live;
+  late final LiveReload _reload =
+      LiveReload(() => hostController.getNegotiations());
+
   @override
   void initState() {
     super.initState();
@@ -38,6 +49,17 @@ class _HostNegotiationsScreenState extends State<HostNegotiationsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       hostController.getNegotiations();
     });
+    LiveChannel.instance.connect();
+    _live = LiveChannel.instance
+        .on(LiveChannel.negotiationEvents)
+        .listen((_) => _reload.poke());
+  }
+
+  @override
+  void dispose() {
+    _live?.cancel();
+    _reload.cancel();
+    super.dispose();
   }
 
   /// Answer an offer. Accept and decline confirm first — both are final for

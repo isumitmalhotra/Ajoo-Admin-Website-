@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/controller/deals_controller.dart';
+import 'dart:async';
+
 import 'package:rent_home/models/guest_negotiation.dart';
+import 'package:rent_home/service/live_channel.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/ui/screens_renter/property_details/open_property.dart';
 import 'package:rent_home/utils/negotiation_unit.dart';
@@ -112,7 +115,16 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       c.loadNegotiations();
     });
+    // The host's answer, or the platform's, lands on the card without a pull
+    // — the website's page has done this since the socket; the app had not.
+    LiveChannel.instance.connect();
+    _live = LiveChannel.instance
+        .on(LiveChannel.negotiationEvents)
+        .listen((_) => _reload.poke());
   }
+
+  StreamSubscription<LiveEvent>? _live;
+  late final LiveReload _reload = LiveReload(() => c.loadNegotiations());
 
   static const _months = [
     '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -287,6 +299,13 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
     );
     priceCtl.dispose();
     msgCtl.dispose();
+  }
+
+  @override
+  void dispose() {
+    _live?.cancel();
+    _reload.cancel();
+    super.dispose();
   }
 
   static Widget _tile(String label, double value, Color fg, int? nights) => Container(
