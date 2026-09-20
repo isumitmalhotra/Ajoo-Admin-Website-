@@ -38,7 +38,9 @@
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
 > **Go-live sequence (2026-09-19, Render Pro + PlanetScale bought): `GO_LIVE_RUNBOOK_2026-09-19.md`** — steps 0.1–0.4 first (Razorpay key rotation, repo private, test passwords, build 106).
-> Tester build in circulation: **106 (1.0.0+106)**, `aajoo-homes-1.0.0-build106-release.apk` at repo root
+> Tester build in circulation: **107 (1.0.0+107)**, `aajoo-homes-1.0.0-build107-release.apk` at repo root
+> (2026-09-20 19:30, versionCode 107, 95.5 MB, sha256 `75f27c40a9ccfa4f…`), built with
+> `tool/build_release.ps1`; client repo `aajoo_app_latest` main = `050453b`. Supersedes **106**
 > (2026-09-19 night, versionCode 106, 95.5 MB, sha256 `db27821d9ffc842d…`), built with
 > `tool/build_release.ps1` and read back by the verifier with the endpoint named (§8a45). 100–105
 > are superseded by it; **98 and 99 are withdrawn** (built with plain `flutter build apk`, no endpoint
@@ -289,6 +291,57 @@ that commission, four ledger rows per booking.
 ---
 
 ## 8. Closed since the last edition — do not redo
+
+### 8a48. Closed 2026-09-20 (evening) — the 300-case run, batch 6 on a live loop: seven defects found and fixed, build 107
+
+**What ran (18:00—19:45 IST, `report-2026-09-17/TEST_RUN_300/RESULTS.md`):** guest 101 on
+Chrome, host 100 on the emulator (build 106, then 107), on host 100's own listing 29291 —
+offer → host counter → counter-back → host counter → accept → deal → pay-at-property
+booking **B021812** → host approval → check-in (cash recorded) → guest check-out → review
+prompt. Batch 6 (guest negotiation) 27 of 30 run; 14 batch-4 booking cases and 4 batch-7 host
+cases proven on the same loop. **135 of 300 run.**
+
+**Found and fixed the same evening, every one pinned by a test that fails on the old code:**
+
+| # | What | Where | Commit |
+|---|---|---|---|
+| 9 | The host was told **twice** for one guest counter (two bell rows, two pushes, two emails): the 09-17 `tellHost` fix added a second writer to a branch that already had one. Then the live `negotiation:guest_reply` event, which lived in the same helper, was put back for both counter paths after the website's test caught its loss. | backend | `0008c3e` + `a7a5929` |
+| 10 | ₹2,100 on a ₹2,500 night came out as **16.01%** off and billed ₹2,099.75: `1 - 2100/2500` is `0.16000000000000003` to the machine and a bare `Math.ceil` rounded it up. `dealPercent()` settles the fraction first. | backend, money | `54b13c8` |
+| 11 | An offer was **accepted on a night the guest had already booked** (offer 227 for B021812's night went to the host as pending). `submitOffer` now uses the booking guard's yardstick: an occupying booking or a host block refuses with a 409 that says whose it is. | backend, High | `4a88a61` |
+| 12 | A **zero-night offer** (20→20 Sep) was accepted on a listing asking two nights and six hours' notice — and the **booking gate's notice / advance / same-day / season rules had been inert since 9 Sep**: `c2dd020` fed `checkInAllowed` a rules row SELECTed for four other columns (the inert-SELECT trap). `stayRefusal()` + `RULE_COLUMNS`, spread into the SELECT; offers held to the same rules. | backend, High | `bdab3b1` |
+| 13 | `/user/ongoing/bookings` read its listing id from the dotted key of a `nest: true` row — `undefined` five times over: every ongoing stay went out **without its cover, with 2 PM / 11 AM instead of the host's hours, and with the pin withheld** (since June). | backend | `4aab209` |
+| 14 | The guest's Next Booking page read **"Currently Staying" / "Booking Confirmed" with a Check-out button while the host still had an hour to answer** (dates outranking approval, one layer above where `lifecycleLabel` had already fixed it); and *"The host has 1 hours to approve"*. | web | `32fb9c1` |
+| 15 | **Two offers from one click**: `claimNextRound` locked the guest's existing rows (none, for a first-timer) and committed before the insert. The claim now takes the listing's row and holds it across the insert; re-proven live — four simultaneous submits, one offer. | backend, race | `62e652f` |
+
+**App, build 107 (`4c30f5a`):** `lib/service/live_channel.dart` — **one socket per signed-in
+person** (`negotiation:*` + `notification:new`), connected at sign-in and on a restored session,
+dropped at sign-out; the host and guest Negotiations lists, the host bell and the dashboard's
+*Offers to review* reload on it (NG-022 had failed on the app: nothing moved until
+pull-to-refresh). Proven on the emulator: a guest chat message put *New message from Aajoo
+Renter — now* on the host's open list, 68 → 69, no touch. Also: the guest's *Checkout* on the ongoing
+view now waits for the host and the clock (the app's twin of Defect 14), and a stay checked out
+early is filed under **Completed** (B021812 sat under Ongoing by its dates). 551/551, analyze 0.
+
+**Backend 164/164 · web 30/30 + `tsc -b` + build.** Every fix is live on `aajaodev.onrender.com`
+and `www.aajoohomes.com` (verified against the deployed API: the five refusals answer as written).
+
+**Records on the client's test accounts (by Sumit's instruction of 20 Sep), all listed in the
+report:** host 100's calendar block *"QA end-to-end test block"* (20—22 Sep, 29291) removed through
+the app; offers 223—226 and deal `DEAL29291101C226` on 29291; **B021812** (pri 140, completed);
+probe offers 227—232 expired by direct update the moment their case was read (230 expired by
+itself — NG-046); one chat message 101 → 100.
+
+> **Needs an admin hand:** `tbl_host_dues` row **`hd_id 49` — ₹476.99 PENDING against host 100**
+> (commission ₹315 + GST ₹57 + accommodation tax ₹104.99) was raised by the test booking and will
+> surface in the client's payout ledger unless it is **voided with reason "test run"** from Admin →
+> Finance. A session cannot do this (no admin sign-in); listed here so it is not forgotten.
+
+**Still open from batch 6:** NG-076 (LUXE listing), NG-081 (accept exactly at expiry), NG-089
+(language); NG-080 is BLOCKED on a sign-in; the guest half of NG-024 / NG-022 on the app wants the
+emulator signed in as a guest. Batch 4 keeps 16 cases, batch 7 keeps 26 — most of the
+remaining host-side ones can now run because host 100 is on the emulator.
+
+---
 
 ### 8a47. Closed 2026-09-20 — an admin changes their own password (current password → new password), signed out everywhere
 
