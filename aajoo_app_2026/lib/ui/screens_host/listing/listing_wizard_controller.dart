@@ -1094,7 +1094,12 @@ class ListingWizardController extends GetxController {
     final adults = count('max_adults');
     final children = count('max_children');
     final bedrooms = count('bedrooms');
-    final beds = count('beds');
+    // The bed count that will be STORED: summed from the room cards once any
+    // names a bed, the typed number until then — exactly what the server
+    // writes to pc_beds. Checking the typed figure let "2 bedrooms, 1 queen
+    // bed, 4 guests" through on the phone (300-case run, HL-027/028,
+    // 2026-09-21); the website has derived it since 2026-08-31.
+    final beds = bedsAreDerived ? bedsFromRooms : count('beds');
     // DERIVED, not entered — same as the website since 2026-08-31. The host
     // used to type adults, children, infants AND a total, and the form then
     // policed the four against each other; every one of those errors was the
