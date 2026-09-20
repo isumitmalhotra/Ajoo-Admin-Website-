@@ -1,7 +1,7 @@
 # Aajoo — 300 Manual Test Cases: Execution Report
 
 **Source:** `Aajoo-300-Manual-Test-Cases.docx` (client, v1.0) — BK-001…100 Booking · NG-001…100 Negotiation · HL-001…100 Host Listing
-**Run started:** 17 September 2026 · **Environment:** `aajaodev.onrender.com` (dev API), `www.aajoohomes.com` (web), Android build 100 (emulator)
+**Run started:** 17 September 2026 · **Environment:** `aajaodev.onrender.com` (dev API), `www.aajoohomes.com` (web), Android build 100 (emulator; **build 106 from 20 September**)
 **This file is updated after every batch.** Nothing is marked PASS without a recorded actual value.
 
 ---
@@ -10,12 +10,12 @@
 
 | | Cases | PASS | FAIL | SPEC CONFLICT | BLOCKED | INFO | Not yet run |
 |---|---|---|---|---|---|---|---|
-| **BK — Booking** | 100 | 21 | 5 | 1 | 2 | 1 | 70 |
-| **NG — Negotiation** | 100 | 22 | 2 | 2 | 0 | 0 | 74 |
+| **BK — Booking** | 100 | 23 | 5 | 1 | 2 | 1 | 68 |
+| **NG — Negotiation** | 100 | 23 | 2 | 2 | 0 | 0 | 73 |
 | **HL — Host Listing** | 100 | 4 | 0 | 0 | 0 | 0 | 96 |
-| **Total** | **300** | **47** | **7** | **3** | **2** | **1** | **240** |
+| **Total** | **300** | **50** | **7** | **3** | **2** | **1** | **237** |
 
-**Batches 1 and 2 are complete: 60 of 300 run.**
+**Batches 1 and 2 are complete; batch 3 is in progress: 63 of 300 run.** Batches 3–10 are blocked on sign-ins — see *What is needed to unblock the rest*.
 
 **Defects found: 5.** Four fixed and pinned by tests (two Critical security leaks, a festival rate silently dropped, an accepted negotiation missing from the ledger). One reported for the client's decision because it moves money (the 28–31 night pricing cliff).
 
@@ -124,6 +124,22 @@ Each case is proven the cheapest reliable way, and the report always records **t
 **Batch 2: 26 PASS · 2 FAIL (both fixed) · 2 SPEC CONFLICT**
 
 > The four "by code" verdicts are the server-side rule confirmed in source. They are **exercised through the API in batch 10**, which needs a host token.
+
+---
+
+## Batch 3 — IN PROGRESS (3/30) · Security, ownership and rejected input
+
+**Run 20 September 2026** against the live dev API, by direct request. Only the cases that need **no account** were run: every other case in this batch needs a guest or host token, and the two sessions available on this machine that day were the client's own — host 100 in Chrome, guest 101 on the emulator — which rule §9 says are never to be driven, even for a refusal (a validation case that unexpectedly *succeeds* would create data on the client's account, which is how the earlier "test deal on 101" report happened).
+
+| ID | Case | What was sent | Actual | Verdict |
+|---|---|---|---|---|
+| BK-033 | Book without login | `POST /booking/create` with a body that passes validation (property 29306, 25→26 Sep, ₹2,000, 2 guests), **no token** | `401 {"success":false,"message":"Authorization token is required"}` — nothing created | **PASS** |
+| BK-083 | Auth required | `GET /user/booking-history` with no token; and `POST /booking/create` with a garbage bearer token | `401 "Authorization token is required"`; `401 "invalid token"` | **PASS** |
+| NG-043 | Offer without login | `POST /user/negotiations/offer` (property 29306, ₹1,500, 25→26 Sep), **no token** | `401 "Authorization token is required"` — nothing created | **PASS** |
+
+**Observation (not a defect, recorded):** `/booking/create` validates the body *before* checking the token, so an unauthenticated call with an incomplete body is answered `422` with the missing fields rather than `401`. No data is created either way and a complete body meets the auth wall; the order only means an anonymous caller can learn the field names, which the public API documentation already shows.
+
+**The remaining 27** (BK-026…032, 034…037, 079, 082; NG-039…042, 090, 091, 094, 096; HL-077, 079, 080, 098…100) run the moment a guest we own (179 "Renter test web") and a host we own (194, or 177 "Host Mobile") are signed in — web in Chrome, app on the emulator (build 106 installed 20 Sep).
 
 ---
 
@@ -256,8 +272,8 @@ Neither of these is a defect. Both describe behaviour the client **changed after
 
 ## What is needed to unblock the rest
 
-1. **A guest test account we own, with a password held by the client**, so booking, payment and negotiation cases can be driven without touching accounts 101/100. Roughly **120 of the 300** cases create data and need this.
-2. **A host test account on the same basis**, for the 100 HL listing cases.
+1. **A guest test account we own, with a password held by the client**, so booking, payment and negotiation cases can be driven without touching accounts 101/100. Roughly **120 of the 300** cases create data and need this. *(20 Sep: the account exists — guest 179 "Renter test web"; what is needed is a person signing it in on Chrome and on the emulator, because a session never types a password. On 20 Sep Chrome held host 100 and the emulator held guest 101.)*
+2. **A host test account on the same basis**, for the 100 HL listing cases. *(20 Sep: host 194 or 177 "Host Mobile", same condition.)*
 3. **A test payment method** for the BK payment cases (BK-038…BK-049).
 4. Confirmation that the **dev environment** is the right target, and that test bookings there are acceptable.
 
@@ -356,7 +372,7 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 
 ### Batch 3 — Security, ownership and rejected input
 **Needs:** A guest account and a host account we own (tokens only — these tests get REFUSED, they create nothing).  
-**Cases:** 30 · Critical: 8 · Already run: 0
+**Cases:** 30 · Critical: 8 · Already run: 3
 
 | ID | Pri | Case | Status |
 |---|---|---|---|
@@ -367,19 +383,19 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 | BK-030 | High | Guests over capacity |  |
 | BK-031 | High | Below min stay |  |
 | BK-032 | Med | Above max stay |  |
-| BK-033 | High | Book without login |  |
+| BK-033 | High | Book without login | PASS (20 Sep) |
 | BK-034 | Critical | Book without KYC |  |
 | BK-035 | Critical | Empty guest details |  |
 | BK-036 | Med | Invalid phone |  |
 | BK-037 | Med | Invalid email |  |
 | BK-079 | Critical | See only own bookings |  |
 | BK-082 | Critical | Tampered price rejected |  |
-| BK-083 | High | Auth required |  |
+| BK-083 | High | Auth required | PASS (20 Sep) |
 | NG-039 | High | Zero offer |  |
 | NG-040 | High | Negative offer |  |
 | NG-041 | Med | Non-numeric offer |  |
 | NG-042 | High | Offer on fixed-price listing |  |
-| NG-043 | High | Offer without login |  |
+| NG-043 | High | Offer without login | PASS (20 Sep) |
 | NG-090 | Med | Screenshot/replay attack |  |
 | NG-091 | Critical | Tampered offer price |  |
 | NG-094 | Med | Offer with expired session |  |
