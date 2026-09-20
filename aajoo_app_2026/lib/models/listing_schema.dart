@@ -64,14 +64,24 @@ class StatusOption extends Option {
 
 /// "Show this field only when a sibling currently equals X."
 class ShowIf {
-  const ShowIf({required this.key, required this.equals});
+  const ShowIf({required this.key, this.equals, this.inList});
 
   final String key;
   final dynamic equals;
 
+  /// `showIf: { key, in: [...] }` — one of several option values (slugs).
+  /// Added for "Number of parking spaces": shown for Covered/Open/Street,
+  /// hidden for None (HL-036/037, 2026-09-21).
+  final List<String>? inList;
+
   static ShowIf? fromJson(dynamic v) {
     if (v is! Map) return null;
-    return ShowIf(key: (v['key'] ?? '').toString(), equals: v['equals']);
+    final raw = v['in'];
+    return ShowIf(
+      key: (v['key'] ?? '').toString(),
+      equals: v['equals'],
+      inList: raw is List ? raw.map((e) => e.toString()).toList() : null,
+    );
   }
 }
 
@@ -160,6 +170,9 @@ bool isFieldVisible(SchemaField field, Map<String, dynamic> values) {
   final cond = field.showIf;
   if (cond == null) return true;
   final current = values[cond.key];
+  if (cond.inList != null) {
+    return current != null && cond.inList!.contains(current.toString());
+  }
   final want = cond.equals;
   if (want is bool) {
     final asBool = current == true || current == '1' || current == 1;
@@ -178,6 +191,9 @@ bool isGroupVisible(OptionGroup group, Map<String, dynamic> values) {
   final cond = group.showIf;
   if (cond == null) return true;
   final current = values[cond.key];
+  if (cond.inList != null) {
+    return current != null && cond.inList!.contains(current.toString());
+  }
   final want = cond.equals;
   if (want is bool) {
     final asBool = current == true || current == '1' || current == 1;

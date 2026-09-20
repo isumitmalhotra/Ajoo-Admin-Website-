@@ -163,6 +163,13 @@ class HostNegotiationMessage {
   final bool automatic;
   final DateTime? createdAt;
 
+  /// The stay THIS price was named for. A thread can span several stays,
+  /// and every price is recorded per night; a message shown in the unit of
+  /// the thread's latest stay rescales the old ones (a 3-night ask printed
+  /// as "for 30 nights" — 300-case run, NG-015, 2026-09-21).
+  final String? bookFrom;
+  final String? bookTo;
+
   const HostNegotiationMessage({
     required this.offerId,
     required this.from,
@@ -171,6 +178,8 @@ class HostNegotiationMessage {
     required this.status,
     this.automatic = false,
     this.createdAt,
+    this.bookFrom,
+    this.bookTo,
   });
 
   bool get mine => from == 'you';
@@ -201,6 +210,8 @@ class HostNegotiationMessage {
       createdAt: j['createdAt'] == null
           ? null
           : DateTime.tryParse(j['createdAt'].toString()),
+      bookFrom: j['bookFrom']?.toString(),
+      bookTo: j['bookTo']?.toString(),
     );
   }
 }

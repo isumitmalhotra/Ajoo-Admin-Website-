@@ -133,6 +133,7 @@ class Property {
         required this.isActive,
         required this.isVerify,
         this.isRejected = false,
+        this.reviewNotes = '',
         this.verificationStatus = 'unverified',
         this.propertyType = '',
         this.bookingPref = '',
@@ -180,6 +181,11 @@ class Property {
     /// True when the admin turned this listing down, so the host is told to
     /// re-apply instead of being left on "Pending review" forever.
     final bool isRejected;
+    /// The reviewer's own words when they rejected, sent back or suspended
+    /// the listing (review_notes on the list row). Empty otherwise — the
+    /// server withholds the last note once the listing is back under review
+    /// or live. Reached the host only as a notification before (HL-089).
+    final String reviewNotes;
     final String verificationStatus;
     final int isLuxury;
     // Host-onboarding (H1) fields — returned by /host/property-search so the
@@ -227,6 +233,7 @@ class Property {
         bool? isActive,
         bool? isVerify,
         bool? isRejected,
+        String? reviewNotes,
         String? verificationStatus,
         int? isLuxury,
         // Carried through explicitly — a copyWith that forgot these reset the
@@ -276,6 +283,7 @@ class Property {
             isActive: isActive ?? this.isActive,
             isVerify: isVerify ?? this.isVerify,
             isRejected: isRejected ?? this.isRejected,
+            reviewNotes: reviewNotes ?? this.reviewNotes,
             verificationStatus: verificationStatus ?? this.verificationStatus,
             isLuxury: isLuxury ?? this.isLuxury,
             propertyType: propertyType ?? this.propertyType,
@@ -329,6 +337,7 @@ class Property {
             isActive: json["is_active"] ?? false,
             isVerify: verifyIsApproved(json["is_verify"]),
             isRejected: verifyIsRejected(json["is_verify"]),
+            reviewNotes: (json["review_notes"] ?? '').toString().trim(),
             verificationStatus: json["verification_status"] ?? "unverified",
             propertyType: (json["property_type"] ?? '').toString(),
             bookingPref: (json["booking_pref"] ?? '').toString(),

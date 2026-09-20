@@ -15,6 +15,17 @@ import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
 
 import 'package:rent_home/utils/app_log.dart';
 import 'package:rent_home/data/source/remote/dio_config.dart';
+
+/// A verified payment the server refused on purpose: another guest took the
+/// nights while the gateway session was open, so the booking was cancelled
+/// and the money is being refunded in full (BK-051, 2026-09-21).
+class DatesTakenDuringPayment implements Exception {
+  final String message;
+  final double refundAmount;
+  const DatesTakenDuringPayment({required this.message, this.refundAmount = 0});
+  @override
+  String toString() => message;
+}
 /// When this host will take an arrival, and why.
 ///
 /// The listing wizard has always asked how much notice a host needs, how far
@@ -317,8 +328,24 @@ class BookingService {
       appLog(redact(response.data), tag: 'booking');
       return response.data['success'];
     } on DioException catch (err) {
+      // The server refuses a verified FIRST payment on purpose when another
+      // guest took the nights while the gateway was open: the booking is
+      // cancelled and the money is on its way back (booking.controller
+      // nightsTakenByAnother, BK-051, 2026-09-21). That is not "we couldn't
+      // confirm your payment" — it has its own exception so the screen can
+      // say what happened.
+      final body = err.response?.data;
+      final data = body is Map ? body['data'] : null;
+      if (data is Map && data['datesTaken'] == true) {
+        throw DatesTakenDuringPayment(
+          message: body['message']?.toString() ??
+              'Those dates were taken while you paid — your payment is being refunded in full.',
+          refundAmount: double.tryParse('${data['refundAmount'] ?? 0}') ?? 0,
+        );
+      }
       throw _handleError(err);
     } catch (e) {
+      if (e is DatesTakenDuringPayment) rethrow;
       throw _handleError(e);
     }
   }

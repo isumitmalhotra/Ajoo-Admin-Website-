@@ -563,7 +563,13 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
                 Text(m.label,
                     style: inter(fontSize: 11, color: kMuted)),
                 const SizedBox(height: 2),
-                Text('${priceParts(m.price, nights).amount}${priceParts(m.price, nights).unit}',
+                // In the unit of THIS message's own stay. A thread that moved
+                // from a 3-night ask to a month-long one printed the old
+                // ₹3,100/night as "₹93,000 for 30 nights" on the website
+                // (300-case run, NG-015, 2026-09-21); the thread's length is
+                // only the fallback for a message that carries no dates.
+                Text('${priceParts(m.price, nightsBetweenDmy(m.bookFrom, m.bookTo) ?? nights).amount}'
+                    '${priceParts(m.price, nightsBetweenDmy(m.bookFrom, m.bookTo) ?? nights).unit}',
                     style: inter(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,

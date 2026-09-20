@@ -31,9 +31,12 @@ class NegotiationCard extends StatelessWidget {
   /// guest typed their offer in (negotiation_unit.dart). Every price on this
   /// card is recorded per night and shown in the stay's unit.
   int? get _nights => nightsBetweenDmy(n.bookFrom, n.bookTo);
-  String _priced(double v) => isLongStay(_nights)
-      ? '₹${_money(stayTotal(v, _nights!).toDouble())}'
-      : '₹${_money(v)}';
+  String _priced(double v, [int? nights]) {
+    final len = nights ?? _nights;
+    return isLongStay(len)
+        ? '₹${_money(stayTotal(v, len!).toDouble())}'
+        : '₹${_money(v)}';
+  }
 
   (Color, Color, String) get _status {
     switch (n.status.toLowerCase()) {
@@ -241,7 +244,9 @@ class NegotiationCard extends StatelessWidget {
                         Text(m.label,
                             style: inter(fontSize: 10.5, color: kMuted)),
                         const SizedBox(height: 2),
-                        Text(_priced(m.price),
+                        // In the unit of THIS message's own stay; the
+                        // thread's length only when it carries no dates.
+                        Text(_priced(m.price, nightsBetweenDmy(m.bookFrom, m.bookTo)),
                             style: inter(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,

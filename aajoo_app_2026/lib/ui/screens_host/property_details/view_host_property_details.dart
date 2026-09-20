@@ -256,6 +256,34 @@ class _HostPropertyDetailsState extends State<HostPropertyDetails> {
           Text(p.propertyName,
               style: const TextStyle(
                   fontSize: 22, fontWeight: FontWeight.w800, color: kInk)),
+          // Why it is not live, in the reviewer's words. The badge alone said
+          // "Rejected" and the reason lived only in a notification (HL-089).
+          if (p.reviewNotes.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.warning_amber_rounded,
+                      size: 16, color: Color(0xFFB45309)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      '${_status.label == 'Rejected' ? 'Not approved' : 'From Aajoo'}: ${p.reviewNotes}',
+                      style: const TextStyle(
+                          fontSize: 13, color: Color(0xFF78350F), height: 1.35),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           if (p.propertyType.isNotEmpty) ...[
             const SizedBox(height: 2),
             Text(p.propertyType,

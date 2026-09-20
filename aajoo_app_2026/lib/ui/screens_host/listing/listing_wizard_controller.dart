@@ -69,6 +69,14 @@ class ListingWizardController extends GetxController {
   final RxBool busy = false.obs;
   final RxString loadError = ''.obs;
   final RxString error = ''.obs;
+
+  /// The reviewer's decision on the listing being edited — 'rejected',
+  /// 'changes_requested' or 'suspended' — and what they said. Empty for a
+  /// draft, a listing under review or a live one. Reached the host only as
+  /// a notification before; the wizard they were sent back into said nothing
+  /// (300-case run, HL-089, 2026-09-21).
+  final RxString reviewStatus = ''.obs;
+  final RxString reviewNotes = ''.obs;
   final RxInt step = 0.obs;
   final RxnInt propertyId = RxnInt();
 
@@ -380,6 +388,9 @@ class ListingWizardController extends GetxController {
     }
     merge(f, d['location'], 'pl_');
     merge(f, d['capacity'], 'pc_');
+    // max_pets is asked on step 4 beside the pet fee, but stored on capacity.
+    final cap = d['capacity'];
+    if (cap is Map && cap['pc_max_pets'] != null) p4['max_pets'] = cap['pc_max_pets'];
     // Per-room detail. The backend guarantees both keys and both arrays; the
     // fallbacks are for an older API that does not send `rooms` at all.
     final roomsJson = d['rooms'];
@@ -394,6 +405,21 @@ class ListingWizardController extends GetxController {
     merge(spec, d['specification'], 'ps_');
     merge(attrs, d['attributes']);
     merge(details, d['details']);
+    // A draft saved before this build never wrote has_pool, and one saved on
+    // the website may predate has_wifi: derive both from the chips when the
+    // detail is absent, so the questions they open are asked (HL-044).
+    if (d['amenities'] is Map) {
+      final am = d['amenities'] as Map;
+      List<String> of(String k) =>
+          (am[k] is List) ? (am[k] as List).map((e) => e.toString()).toList() : const [];
+      if (!details.containsKey('has_pool') && of('premium').contains('swimming_pool')) {
+        details['has_pool'] = true;
+      }
+      if (!details.containsKey('has_wifi') &&
+          of('internet').any((v) => v.toLowerCase().contains('wifi'))) {
+        details['has_wifi'] = true;
+      }
+    }
     // 'ppr_', not 'pp_'. The pricing columns are ppr_base_price, ppr_weekly_
     // price and so on, so a 'pp_' prefix matched nothing and every key stayed
     // as ppr_* — meaning Step 4 opened EMPTY when editing a listing that
@@ -536,6 +562,11 @@ class ListingWizardController extends GetxController {
       // map and the control reads another.
       if (rules['phr_self_checkin_method'] != null) {
         p4['self_checkin_method'] = rules['phr_self_checkin_method'];
+      }
+      // The pet fee and size are step-4 fields (p4) on the house-rules row;
+      // the merge into p5 above never reached them (HL-045).
+      for (final key in const ['pet_fee', 'pet_size']) {
+        if (rules['phr_$key'] != null) p4[key] = rules['phr_$key'];
       }
       for (final key in const [
         'pets_allowed', 'smoking', 'alcohol', 'visitors', 'parties',
@@ -698,6 +729,15 @@ class ListingWizardController extends GetxController {
           .whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e)));
     }
+    // What the reviewer decided and said, if they asked something of us.
+    final review = d['review'];
+    if (review is Map) {
+      reviewStatus.value = (review['status'] ?? '').toString();
+      reviewNotes.value = (review['notes'] ?? '').toString().trim();
+    } else {
+      reviewStatus.value = '';
+      reviewNotes.value = '';
+    }
     // Resume on the step after the last one completed, capped at the end.
     final done = d['stepCompleted'];
     if (done is num) {
@@ -707,11 +747,23 @@ class ListingWizardController extends GetxController {
 
   // ── Value setters ─────────────────────────────────────────────────────────
 
+  /// How many type-specific answers the host has given for the current
+  /// category — what a category change would clear. A switch, a blank or an
+  /// empty list is not an answer.
+  int get typeAnswersGiven => attrs.values.where((v) {
+        if (v == null || v == false) return false;
+        if (v is String) return v.trim().isNotEmpty;
+        if (v is List) return v.isNotEmpty;
+        return true;
+      }).length;
+
   void setF(String key, dynamic value) {
     f[key] = value;
     fieldErrors.remove(key);
     // Changing the category invalidates the answers that belonged to the old
     // one — leaving them would post a villa's pool questions on a tree house.
+    // The SCREEN asks first when there is something to lose (HL-034); this
+    // is the part that does the clearing.
     if (key == 'property_category') {
       attrs.clear();
       experiences.clear();
@@ -750,6 +802,46 @@ class ListingWizardController extends GetxController {
     if (group == 'internet') {
       setDetail('has_wifi', list.any((v) => v.toLowerCase().contains('wifi')));
     }
+    // The pool opens Pool Type (`showIf has_pool`) — the website has set
+    // has_pool from this chip since the field was added; this platform never
+    // did, so an app host could tick Swimming Pool and never be asked what
+    // kind (300-case run, HL-044, 2026-09-21).
+    if (group == 'premium' && value == 'swimming_pool') {
+      setDetail('has_pool', list.contains('swimming_pool'));
+    }
+  }
+
+  /// Every amenity chip on step 3, flat, for the search box: the schema
+  /// group it lives in, the group's label, and the option (HL-043).
+  List<AmenityHit> get amenityIndex {
+    final s = schema.value;
+    if (s == null) return const [];
+    final groups = <OptionGroup>[
+      ...s.essentialAmenities,
+      ...s.safetyGroups,
+      s.outdoorAmenities,
+      s.premiumAmenities,
+      s.accessibility,
+      s.familyAmenities,
+    ];
+    return [
+      for (final g in groups)
+        for (final o in g.options)
+          AmenityHit(group: g.key, groupLabel: g.label, option: o),
+    ];
+  }
+
+  /// What the host typed into "Find an amenity". Empty shows the groups.
+  final RxString amenityQuery = ''.obs;
+
+  List<AmenityHit> get amenityMatches {
+    final q = amenityQuery.value.trim().toLowerCase();
+    if (q.isEmpty) return const [];
+    return amenityIndex
+        .where((h) =>
+            h.option.label.toLowerCase().contains(q) ||
+            h.groupLabel.toLowerCase().contains(q))
+        .toList();
   }
 
   void toggleIn(RxList<String> list, String value) {
@@ -1112,6 +1204,43 @@ class ListingWizardController extends GetxController {
     return null;
   }
 
+  /// A smart or digital lock without self check-in.
+  ///
+  /// The Security chips (step 3) and the self check-in switch (step 4) live
+  /// two screens apart and nothing linked them: a host who listed a smart
+  /// lock was never asked whether guests may let themselves in (300-case run,
+  /// HL-049, 2026-09-21). A NOTE beside the chips; the switch itself stays on
+  /// step 4, where the method is chosen.
+  String? get smartLockNote {
+    final groups = schema.value?.safetyGroups ?? const [];
+    final picked = <String>{};
+    for (final g in groups) {
+      picked.addAll(amenities[g.key] ?? const <String>[]);
+    }
+    if (!picked.contains('smart_lock') && !picked.contains('digital_lock')) return null;
+    if (p4['self_checkin'] == true) return null;
+    return 'You have a smart or digital lock. Can guests let themselves in? '
+        'Turn on self check-in on the Pricing & Booking step and pick how it works.';
+  }
+
+  /// "Wheelchair accessible" with no way in.
+  ///
+  /// A host who ticks Wheelchair Accessible and none of Ramp, Lift or Ground
+  /// Floor has described an outcome without the means, and a guest in a chair
+  /// finds out at the kerb (300-case run, HL-046, 2026-09-21). A WARNING — the
+  /// step still saves — asked next to the chips, where the answer is one tap.
+  String? get wheelchairMismatch {
+    final key = schema.value?.accessibility.key;
+    if (key == null) return null;
+    final picked = (amenities[key] ?? const <String>[]).toSet();
+    if (!picked.contains('wheelchair_accessible')) return null;
+    const ways = {'ramp', 'lift', 'ground_floor'};
+    if (picked.any(ways.contains)) return null;
+    return 'You have marked the stay wheelchair accessible. How do guests get '
+        'in — a ramp, a lift, or is it on the ground floor? Pick one so a '
+        'guest in a chair knows before they arrive.';
+  }
+
   /// "2 BHK" against one bedroom, and anything like it.
   ///
   /// C14. The Apartment Type on step 2 states a bedroom count in its own name
@@ -1137,11 +1266,15 @@ class ListingWizardController extends GetxController {
               '$bedrooms bedrooms.'
           : null;
     }
-    final m = RegExp('^([0-9]+)[ ]*BHK', caseSensitive: false).firstMatch(type);
+    // The select stores the option's SLUG — "3_bhk", not "3 BHK" — and this
+    // matched only spaces before "BHK", so the check never fired for any BHK
+    // type at all (300-case run, HL-035, 2026-09-21: 3 BHK over two bedrooms,
+    // no warning on either client). Underscore or space, either case.
+    final m = RegExp(r'^([0-9]+)[ _]*bhk', caseSensitive: false).firstMatch(type);
     final bhk = m == null ? 0 : int.parse(m.group(1)!);
     if (bhk <= 0) return null; // Penthouse, Duplex — no count in the name
     if (bhk == bedrooms) return null;
-    return 'You have chosen $type but entered $bedrooms '
+    return 'You have chosen $bhk BHK but entered $bedrooms '
         'bedroom${bedrooms == 1 ? '' : 's'} on the first step. Guests read both.';
   }
 
@@ -1159,6 +1292,16 @@ class ListingWizardController extends GetxController {
     if (_s(p4['cancellation_policy']).trim().isEmpty) {
       errs['cancellation_policy'] =
           'Choose a cancellation policy — guests see it before booking.';
+    }
+
+    // A minimum stay above the maximum is a listing nobody can book. Neither
+    // client nor the server checked it, so 3 min / 2 max saved (300-case run,
+    // HL-075, 2026-09-21). Blank means no limit and is never compared.
+    if (set('min_stay_nights') && set('max_stay_nights') &&
+        val('min_stay_nights')! > val('max_stay_nights')!) {
+      errs['max_stay_nights'] =
+          "Maximum nights (${val('max_stay_nights')}) can't be below minimum "
+          "nights (${val('min_stay_nights')}).";
     }
 
     /**
@@ -1505,11 +1648,21 @@ class ListingWizardController extends GetxController {
   }
 
   /// Score the listing so step 5 can show what is still missing.
+  /// Which refresh is the latest. Two are often in flight at once — the step
+  /// change fires one, a document upload another — and the SLOWER answer
+  /// landed last: step 5 read "9 of 10 photos, tag one as exterior" over a
+  /// listing the server already had at 10 and tagged (300-case run,
+  /// 2026-09-21). Only the newest request's answer is kept.
+  int _readinessSeq = 0;
+
   Future<void> refreshReadiness() async {
     final id = propertyId.value;
     if (id == null) return;
+    final seq = ++_readinessSeq;
     try {
-      readiness.assignAll(await _service.getReadiness(id));
+      final fresh = await _service.getReadiness(id);
+      if (seq != _readinessSeq) return; // a newer answer is on its way
+      readiness.assignAll(fresh);
     } catch (_) {
       // A missing score is not worth an error banner over a form that works.
     }
@@ -1719,6 +1872,42 @@ class ListingWizardController extends GetxController {
     }
   }
 
+  /// Move a photograph one place earlier (-1) or later (+1) in the gallery.
+  ///
+  /// The server has taken `sortOrder` on PATCH /listing/media since the
+  /// engine shipped and nothing on either client ever sent it — the gallery
+  /// order was the upload order for good (300-case run, HL-055, 2026-09-21).
+  /// Every photo's position is sent, so the list the server sorts on is the
+  /// list the host sees.
+  Future<String?> movePhoto(int mediaId, int delta) async {
+    final id = propertyId.value;
+    if (id == null) return 'Finish step 1 first.';
+    final list = photos;
+    final at = list.indexWhere((m) => m['id'] == mediaId);
+    final to = at + delta;
+    if (at < 0 || to < 0 || to >= list.length) return null;
+    final next = List<Map<String, dynamic>>.from(list);
+    final moved = next.removeAt(at);
+    next.insert(to, moved);
+    try {
+      final res = await _service.updateMedia(
+        propertyId: id,
+        media: [
+          for (var i = 0; i < next.length; i++)
+            {'id': next[i]['id'], 'sortOrder': i + 1},
+        ],
+      );
+      if (res['media'] is List) {
+        media.assignAll((res['media'] as List)
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e)));
+      }
+      return null;
+    } catch (e) {
+      return e is ListingException ? e.message : 'Could not move it.';
+    }
+  }
+
   Future<void> removePhoto(int mediaId) async {
     try {
       final res = await _service.deleteMedia(mediaId);
@@ -1767,4 +1956,12 @@ class ListingWizardController extends GetxController {
       fieldErrors.clear();
     }
   }
+}
+
+/// One amenity chip, with the group it belongs to — a search hit (HL-043).
+class AmenityHit {
+  const AmenityHit({required this.group, required this.groupLabel, required this.option});
+  final String group;
+  final String groupLabel;
+  final Option option;
 }

@@ -139,5 +139,25 @@ void main() {
       expect(card, contains('Text(_priced(n.offerPrice),'));
       expect(card, contains("Text('for \$_nights nights',"));
     });
+
+    test("each transcript message is priced in ITS OWN stay's unit", () {
+      // A thread that moved from a 3-night ask to a month-long one printed the
+      // old ₹3,100/night as "₹93,000 for 30 nights" on the website (300-case
+      // run, NG-015, 2026-09-21). Every message carries the stay it was named
+      // for; the thread's length is only the fallback for one that does not.
+      final guest = codeOnly(File(
+              'lib/ui/screens_renter/negotiations/guest_negotiations_screen.dart')
+          .readAsStringSync());
+      expect(guest, contains('priceParts(m.price, nightsBetweenDmy(m.bookFrom, m.bookTo) ?? nights)'));
+      expect(guest, isNot(contains('priceParts(m.price, nights).amount')));
+
+      final card = codeOnly(File(
+              'lib/ui/screens_host/home/components/negotiation_card.dart')
+          .readAsStringSync());
+      expect(card, contains('Text(_priced(m.price, nightsBetweenDmy(m.bookFrom, m.bookTo)),'));
+      final model = codeOnly(File('lib/models/host_negotiation.dart').readAsStringSync());
+      expect(model, contains("bookFrom: j['bookFrom']?.toString(),"));
+      expect(model, contains("bookTo: j['bookTo']?.toString(),"));
+    });
   });
 }

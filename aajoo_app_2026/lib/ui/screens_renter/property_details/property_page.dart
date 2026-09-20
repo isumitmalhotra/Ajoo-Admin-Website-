@@ -4288,11 +4288,32 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
       '${d.day.toString().padLeft(2, '0')}-${d.month.toString().padLeft(2, '0')}-${d.year}';
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {
-    final result = await bookingController.verifyPayment(
-      response.orderId!,
-      response.paymentId!,
-      response.signature!,
-    );
+    bool result;
+    try {
+      result = await bookingController.verifyPayment(
+        response.orderId!,
+        response.paymentId!,
+        response.signature!,
+      );
+    } on DatesTakenDuringPayment catch (e) {
+      // Refused on purpose: the nights went to another guest while the
+      // gateway was open; the booking is cancelled and the money is coming
+      // back. Not a confirmed stay, and not "we couldn't confirm" either.
+      _showPaymentProblem(
+        title: 'Those dates were taken while you paid',
+        reason: e.message,
+      );
+      Get.find<UserController>().fetchOngoingBookings();
+      return;
+    } catch (_) {
+      _showPaymentProblem(
+        title: "We couldn't confirm your payment",
+        reason: 'Your bank may still have taken it. Do not pay again — check '
+            'My Bookings in a few minutes, and contact us if it still looks '
+            'unpaid.',
+      );
+      return;
+    }
     if (result) {
       Fluttertoast.showToast(msg: "Payment Successful: ${response.paymentId}");
       final bookingId =

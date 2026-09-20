@@ -24,6 +24,7 @@ import 'package:rent_home/ui/screens_renter/home/components/lux_theme.dart';
 import 'package:rent_home/models/listing_schema.dart';
 import 'package:rent_home/ui/responsive.dart';
 import 'package:rent_home/ui/screens_host/listing/listing_wizard_controller.dart';
+import 'package:rent_home/ui/screens_host/listing/listing_icons.dart';
 import 'package:rent_home/ui/screens_host/listing/widgets/listing_section.dart';
 import 'package:rent_home/ui/screens_host/listing/widgets/room_detail.dart';
 import 'package:rent_home/ui/screens_host/listing/widgets/schema_field_input.dart';
@@ -237,6 +238,7 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (c.error.value.isNotEmpty) _errorBanner(),
+                        if (c.reviewStatus.value.isNotEmpty) _reviewBanner(),
                         _stepBody(),
                       ],
                     ),
@@ -282,6 +284,53 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             '${kListingSteps[c.step.value]}',
             style:
                 inter(fontSize: 12, fontWeight: FontWeight.w600, color: kMuted),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// What the reviewer said, at the top of every step of the listing they
+  /// sent back (HL-089).
+  Widget _reviewBanner() {
+    final heading = switch (c.reviewStatus.value) {
+      'rejected' => 'Aajoo did not approve this listing',
+      'suspended' => 'Aajoo has suspended this listing',
+      _ => 'Aajoo asked for changes',
+    };
+    final body = c.reviewNotes.value.isEmpty
+        ? 'No reason was given. Check the details, then submit it again.'
+        : c.reviewNotes.value;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFDE68A)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.warning_amber_rounded,
+              size: 18, color: Color(0xFFB45309)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(heading,
+                    style: inter(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF78350F))),
+                const SizedBox(height: 2),
+                Text(body,
+                    style: inter(
+                        fontSize: 13, color: const Color(0xFF78350F), height: 1.4)),
+              ],
+            ),
           ),
         ],
       ),
@@ -382,10 +431,17 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
                                   // Named so the second press is a decision
                                   // rather than a confused re-tap of a button
                                   // that appeared to do nothing.
+                                  // "without photos" over a grid of nine
+                                  // photographs read as a bug (300-case run,
+                                  // 2026-09-21): the gap may be a count or a
+                                  // missing tag, so the second press says
+                                  // "anyway" once any photo is up.
                                   : (c.step.value == 2 &&
                                           c.photoWarned.value &&
                                           c.photoGapReason != null
-                                      ? 'Continue without photos'
+                                      ? (c.photos.isEmpty
+                                          ? 'Continue without photos'
+                                          : 'Continue anyway')
                                       : 'Continue'),
                               style: inter(
                                   fontSize: 15,
@@ -437,6 +493,56 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
   }
 
   // ── Step 1 — Property Foundation ──────────────────────────────────────────
+
+  /// Change the property type — after asking, when the old type has answers.
+  ///
+  /// The controller cleared the type-specific answers the moment a new
+  /// category was tapped, without a word: a host who mis-tapped lost every
+  /// Step 2 answer (300-case run, HL-034, 2026-09-21). One question when
+  /// there is something to lose; nothing asked when there is not.
+  Future<void> _changeCategory(String v, ListingSchema s) async {
+    final current = c.f['property_category']?.toString();
+    if (v == current) return;
+    final n = c.typeAnswersGiven;
+    if (n > 0) {
+      final oldLabel = s.categories
+          .where((o) => o.value == current)
+          .map((o) => o.label)
+          .firstOrNull ??
+          'current type';
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: kSurface,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18)),
+          title: Text('Change the property type?',
+              style: fraunces(
+                  fontSize: 19, fontWeight: FontWeight.w700, color: kInk)),
+          content: Text(
+            'The $n answer${n == 1 ? '' : 's'} you gave about the $oldLabel '
+            'will be cleared. You can fill in the details for the new type on '
+            'the next step.',
+            style: inter(fontSize: 14, color: kInk2, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('Keep it',
+                  style: inter(fontWeight: FontWeight.w700, color: kInk2)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('Change type',
+                  style: inter(fontWeight: FontWeight.w700, color: kDanger)),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    c.setF('property_category', v);
+  }
 
   Widget _step1() {
     final s = c.schema.value!;
@@ -495,7 +601,7 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             SingleChoiceRow(
               options: s.categories,
               value: category,
-              onSelect: (v) => c.setF('property_category', v),
+              onSelect: (v) => _changeCategory(v, s),
             ),
             if (c.fieldErrors['property_category'] != null)
               _fieldError(c.fieldErrors['property_category']!),
@@ -821,9 +927,59 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
     final experienceKeys = s.experiencesByCategory[category] ?? const [];
     final isPg = category == 'pg_long_stay';
 
+    // Find an amenity by name. Step 3 carries 88 chips in seven groups; a
+    // host looking for "wifi" or "generator" read every one of them
+    // (300-case run, HL-043, 2026-09-21). Typing replaces the groups with
+    // one list of the matching chips — the same chips, toggling the same
+    // lists — until the box is cleared.
+    final searching = c.amenityQuery.value.trim().isNotEmpty;
+    final matches = c.amenityMatches;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _KeyedField(
+          fieldKey: 'amenity_search',
+          initial: c.amenityQuery.value,
+          label: 'Find an amenity',
+          help: 'e.g. wifi, generator, ramp',
+          onChanged: (v) => c.amenityQuery.value = v,
+        ),
+        if (searching) ...[
+          ListingSection(
+            title: 'Amenities matching "${c.amenityQuery.value.trim()}"',
+            sub: matches.isEmpty
+                ? 'Nothing by that name. Try another word, or clear the box to see every group.'
+                : 'Tick them here; they stay ticked in their groups.',
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final h in matches)
+                    ListingPill(
+                      label: '${h.option.label} · ${h.groupLabel}',
+                      selected:
+                          (c.amenities[h.group] ?? const []).contains(h.option.value),
+                      icon: iconForAmenity(h.option.label, h.group),
+                      onTap: () => c.toggleAmenity(h.group, h.option.value),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () => c.amenityQuery.value = '',
+                child: Text('Show all groups',
+                    style: inter(fontWeight: FontWeight.w700, color: kIndigo)),
+              ),
+            ],
+          ),
+        ],
+        Offstage(
+          offstage: searching,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
         ListingSection(
           title: 'Essential amenities',
           sub: 'Shown for every property.',
@@ -877,6 +1033,8 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
               ),
             for (final field in s.safetyFields)
               _field(field, c.details, c.setDetail),
+            // A smart lock without self check-in is asked about (HL-049).
+            if (c.smartLockNote != null) _warn(c.smartLockNote!),
             // Where the three distances came from, said where they appeared.
             // A toast that has already faded explains nothing.
             if (c.safetyNotice.value.isNotEmpty)
@@ -935,6 +1093,8 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
               selected: c.amenities[s.accessibility.key] ?? const [],
               onToggle: (v) => c.toggleAmenity(s.accessibility.key, v),
             ),
+            // Accessible, but how? Asked beside the chips (HL-046).
+            if (c.wheelchairMismatch != null) _warn(c.wheelchairMismatch!),
           ],
         ),
 
@@ -951,6 +1111,9 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
               onToggle: (v) => c.toggleAmenity(s.familyAmenities.key, v),
             ),
           ],
+        ),
+            ],
+          ),
         ),
 
         if (experienceKeys.isNotEmpty)
@@ -1484,6 +1647,21 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
                   value: c.houseRules[f.key] == true,
                   onChanged: (v) => c.toggleHouseRule(f.key, v),
                 ),
+            // The fee, the size and the limit — the website has asked these
+            // under "Pets allowed" since the pet policy moved here; the app
+            // showed only the three switches, so a host on the phone could
+            // welcome pets and never name a price (300-case run, HL-045,
+            // 2026-09-21). Same keys the server reads: pet_fee, pet_size on
+            // the house-rules row, max_pets on capacity.
+            if (c.houseRules['pets_allowed'] == true) ...[
+              _p4Text('pet_fee', 'Pet fee (₹ per pet, per night)',
+                  numeric: true,
+                  help: 'Charged per pet for every night. Leave blank for none.'),
+              _p4Text('pet_size', 'Allowed pet size',
+                  help: 'Small / Medium / Large — what the place can take.'),
+              _p4Text('max_pets', 'Maximum pets (optional)',
+                  numeric: true, help: 'Leave blank for no limit.'),
+            ],
           ],
         ),
         ListingSection(
@@ -1660,13 +1838,23 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
                 numeric: true, maxLength: 10),
           ],
         ),
+        // Asked only when the host said there IS one — "Caretaker available?"
+        // sits with the house rules on the previous step. The website has
+        // gated these on that answer since it shipped; the phone asked for a
+        // caretaker's name under a switch that said there was none (300-case
+        // run, HL-082, 2026-09-21).
         ListingSection(
           title: 'Caretaker',
           children: [
-            _p5Text('caretaker_name', 'Caretaker name',
-                formatters: AppInputFormatters.name),
-            _p5Text('caretaker_phone', 'Caretaker number',
-                numeric: true, maxLength: 10),
+            if (c.houseRules['caretaker_available'] == true) ...[
+              _p5Text('caretaker_name', 'Caretaker name',
+                  formatters: AppInputFormatters.name),
+              _p5Text('caretaker_phone', 'Caretaker number',
+                  numeric: true, maxLength: 10),
+            ] else
+              _note('No caretaker on this listing. Turn on "Caretaker '
+                  'available?" under House rules on the previous step to add '
+                  'their name and number.'),
           ],
         ),
         // The website's six questions, under the website's keys. Until
@@ -2381,27 +2569,41 @@ class _PhotoStep extends StatelessWidget {
               spacing: 10,
               runSpacing: 10,
               children: [
-                for (final m in photos)
+                for (var i = 0; i < photos.length; i++)
                   _Thumb(
-                    url: m['url']?.toString(),
+                    url: photos[i]['url']?.toString(),
+                    // One place earlier or later, in the order guests will
+                    // see (HL-055). Disabled at either end.
+                    onMoveEarlier: i == 0
+                        ? null
+                        : () {
+                            final id = photos[i]['id'];
+                            if (id is num) controller.movePhoto(id.toInt(), -1);
+                          },
+                    onMoveLater: i == photos.length - 1
+                        ? null
+                        : () {
+                            final id = photos[i]['id'];
+                            if (id is num) controller.movePhoto(id.toInt(), 1);
+                          },
                     // The tag, on the picture. Blank until the host says what
                     // the room is — and the required ones cannot be satisfied
                     // any other way from a phone.
-                    category: m['category']?.toString(),
+                    category: photos[i]['category']?.toString(),
                     // The cover says so even before it is tagged: the flag is
                     // the server's, and the tile should not read "Tag this"
                     // over the picture that fronts the listing.
-                    categoryLabel: (m['category']?.toString() ?? '').isEmpty
-                        ? (m['isCover'] == true ? 'Cover Photo' : null)
-                        : labelFor(m['category'].toString()),
+                    categoryLabel: (photos[i]['category']?.toString() ?? '').isEmpty
+                        ? (photos[i]['isCover'] == true ? 'Cover Photo' : null)
+                        : labelFor(photos[i]['category'].toString()),
                     onRemove: () {
-                      final id = m['id'];
+                      final id = photos[i]['id'];
                       if (id is num) controller.removePhoto(id.toInt());
                     },
                     onTag: () {
-                      final id = m['id'];
+                      final id = photos[i]['id'];
                       if (id is num) {
-                        _tag(context, id.toInt(), m['category']?.toString());
+                        _tag(context, id.toInt(), photos[i]['category']?.toString());
                       }
                     },
                   ),
@@ -2796,10 +2998,16 @@ class _Thumb extends StatelessWidget {
     this.category,
     this.categoryLabel,
     this.onTag,
+    this.onMoveEarlier,
+    this.onMoveLater,
   });
 
   final String? url;
   final VoidCallback onRemove;
+
+  /// Reorder, one place at a time. Null at the ends of the gallery.
+  final VoidCallback? onMoveEarlier;
+  final VoidCallback? onMoveLater;
 
   /// What this photograph is of, and the word for it. Null means untagged,
   /// which is what every photograph the app uploaded used to be.
@@ -2883,10 +3091,36 @@ class _Thumb extends StatelessWidget {
               ),
             ),
           ),
+          // Reorder controls, top-left: earlier / later (HL-055).
+          Positioned(
+            top: 2,
+            left: 2,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _moveButton(Icons.chevron_left_rounded, onMoveEarlier),
+                const SizedBox(width: 2),
+                _moveButton(Icons.chevron_right_rounded, onMoveLater),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
+
+  Widget _moveButton(IconData icon, VoidCallback? onTap) => InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(onTap == null ? 0.2 : 0.55),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon,
+              size: 14, color: onTap == null ? Colors.white54 : Colors.white),
+        ),
+      );
 }
 
 /// Pick a file, upload it, and show what was uploaded — never a URL box.
