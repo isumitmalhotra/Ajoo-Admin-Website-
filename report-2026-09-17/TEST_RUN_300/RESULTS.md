@@ -1,7 +1,7 @@
 # Aajoo — 300 Manual Test Cases: Execution Report
 
 **Source:** `Aajoo-300-Manual-Test-Cases.docx` (client, v1.0) — BK-001…100 Booking · NG-001…100 Negotiation · HL-001…100 Host Listing
-**Run started:** 17 September 2026 · **Environment:** `aajaodev.onrender.com` (dev API), `www.aajoohomes.com` (web), Android build 100 (emulator; **build 106 from 20 September**)
+**Run started:** 17 September 2026 · **Environment:** `aajaodev.onrender.com` (dev API), `www.aajoohomes.com` (web), Android build 100 (emulator; **build 106 from 20 September**; the app fixes of 20 Sep evening go into build 107)
 **This file is updated after every batch.** Nothing is marked PASS without a recorded actual value.
 
 ---
@@ -10,14 +10,14 @@
 
 | | Cases | PASS | FAIL | SPEC CONFLICT | BLOCKED | INFO | Not yet run |
 |---|---|---|---|---|---|---|---|
-| **BK — Booking** | 100 | 34 | 5 | 1 | 3 | 2 | 55 |
-| **NG — Negotiation** | 100 | 29 | 2 | 2 | 2 | 0 | 65 |
+| **BK — Booking** | 100 | 47 | 6 | 1 | 3 | 2 | 41 |
+| **NG — Negotiation** | 100 | 50 | 7 | 2 | 3 | 3 | 35 |
 | **HL — Host Listing** | 100 | 4 | 0 | 0 | 6 | 0 | 90 |
-| **Total** | **300** | **67** | **7** | **3** | **11** | **2** | **210** |
+| **Total** | **300** | **101** | **13** | **3** | **12** | **5** | **166** |
 
-**Batches 1–3 are complete: 90 of 300 run** (batch 3: 20 PASS, 2 INFO, 8 BLOCKED — the host-side cases wait for a host sign-in). **Defects found: 8** (three in batch 3, all fixed the same day).
+**Batches 1–3 complete, batch 6 run (26 of 30), batches 4 and 7 part-run: 134 of 300 run.** Batch 6 (guest negotiation, 20 Sep evening): 17 PASS · 5 FAIL · 3 INFO · 1 BLOCKED · 4 not yet run. Fourteen batch-4 booking cases and four batch-7 host cases were proven on the same live loop (offer → counter → deal → pay-at-property booking → approval → check-in → guest check-out) with guest 101 on Chrome and host 100 on the emulator.
 
-**Defects found: 8.** Seven fixed and pinned by tests (two Critical security leaks, a festival rate silently dropped, an accepted negotiation missing from the ledger). One reported for the client's decision because it moves money (the 28–31 night pricing cliff).
+**Defects found: 15.** Fourteen fixed and pinned by tests the same day (Defects 9–15 are this sitting's: an offer accepted on nights the guest had already booked, a zero-night offer, the booking gate's notice/season rules switched off since 9 Sep, two offers from one click, the host told twice, a stay sent without its listing, "Currently Staying" before the host approved). One reported for the client's decision because it moves money (the 28–31 night pricing cliff). One app defect (no live refresh on the host's Negotiations) goes into build 107.
 
 **Spec conflicts: 3.** Cases that describe behaviour the client themselves changed after the document was written — the cleaning fee (15 Sep), the round-one instant counter, and countering below the floor (9 Sep). The product is right; the document is stale.
 
@@ -176,6 +176,89 @@ Each case is proven the cheapest reliable way, and the report always records **t
 
 ---
 
+## Batch 6 — RUN (26/30; 17 PASS · 5 FAIL · 3 INFO · 1 BLOCKED) · Negotiation — the guest side
+
+**Run 20 September 2026, 18:00–19:30 IST.** Guest 101 "Aajoo Renter" on Chrome (website), host 100 "Sam Tao" on the emulator (build 106) — both by Sumit's instruction that day. The loop was run on **host 100's own listing 29291 "Aajoo Homes"** (₹2,000/night, ₹2,500 on the weekend night of Sun 20 Sep; floor ₹1,500, target ₹1,700; approval required, 1 hour) so that the host half could be driven on the emulator; the API probes went to our own host 177's listing 29306 and to 29302. Every record created is listed at the end of this section.
+
+**First obstacle, and a host-calendar PASS:** 29291 carried a host block *"QA end-to-end test block"* for 20–22 Sep (left by the 10 Sep QA run), and offers are only for stays starting today. The host's calendar on the app showed the block (amber, *"September at a glance"*), *Unblock these dates* removed it, and the guest's offer calendar on the website offered 20 Sep on the next open — **BK-054 / BK-055 PASS** (blocked dates greyed on the guest side while blocked; accurate the moment the host changed it).
+
+| ID | Case | Sent / done | Actual | Verdict |
+|---|---|---|---|---|
+| NG-016 | Make an Offer button | Listing 29291, signed in | *Send an Offer · Negotiate and save more* under Book Now; opens *Send an Offer* (price per night placeholder = listed, dates, optional message) | **PASS** |
+| NG-017 | Offer input validates | Send with nothing; `abc`; `0`; `-500`; ₹1,700 with no dates | *"Enter the price you'd like to offer."* — `abc` and the minus sign are stripped at the keyboard; `0` → the same message; a price with no dates → *"Pick the dates you'd like to stay — the host agrees to them along with the price."* (API: 0 / −100 / abc → 422, batch 3) | **PASS** |
+| NG-018 | Offer confirmation | ₹1,700, 20→21 Sep, *"Test run NG-018 — one night, two of us."* | *"Your price is with the host — They can accept, decline or counter… we've emailed them as well."* with *View in My Negotiations* | **PASS** |
+| NG-019 | Offer status visible | My Negotiations | Card **Waiting on host**; tabs *All (5) · Your move (1) · Waiting on host (1) · Accepted (2)* move with every step | **PASS** |
+| NG-020 | Counter shown to guest | Host countered ₹2,200 on the app at 18:10 | *Host countered ₹2,200/night — "Weekend night - best I can do is 2200"* at 18:10, with **Accept ₹2,200/night · Counter · Decline** | **PASS** |
+| NG-022 | Real-time update | Watched both screens without reloading | **Web:** banner *"The host countered — ₹2,200/night"* and the card flipped to *Your move* without a reload (socket). **App (host):** the guest's ₹2,000 counter did **not** appear on the open Negotiations list — it needed pull-to-refresh; after the host's own second counter the card kept showing Accept/Counter/Decline. The app subscribes to no `negotiation:*` or `notification:new` event. | **PASS web · FAIL app** → build 107 |
+| NG-023 | Offer thread readable | The 29291 card | One transcript, dated (13 · 15 · 17 · 20 Sept), every price with its clock and its message, both directions, sessions separated | **PASS** |
+| NG-024 | Mobile negotiation UI | Host side on the emulator | Card: *Aajoo Renter offered ₹1,700 · Round 9 · ~~was ₹2,500~~ · 32% below · ⚠ This is below the minimum you set for this stay*, dates, the transcript, **Accept · Counter · Decline**; counter dialog *"Aajoo Renter offered ₹1,700/night against your ₹2,500/night"*. Guest side on the app not run (the emulator holds host 100). | **PASS** (host) · guest side pending sign-in |
+| NG-025 | Waiting state | After the ₹1,700 offer and after the ₹2,000 counter-back | *Waiting on host* badge; the *"host is away… usually reply within 1 hour"* line is written to appear after 90 s and was not seen because the host answered inside two minutes each time | **PASS** |
+| NG-034 | Guest counters back | Counter dialog | ₹2,300 refused: *"That is at or above the ₹2,200/night the host offered. Counter lower, or accept their price instead."*; ₹2,000 with *"Could you meet me at the weekday rate?"* sent → *Waiting on host* | **PASS** |
+| NG-035 | Multiple rounds | 1,700 → 2,200 → 2,000 → 2,100 | Rounds 9–12 on the thread (offers 223–226); the app labelled *Round 11* on the guest's second counter; no cap | **PASS** |
+| NG-036 | Guest accepts counter | Accept ₹2,100/night | Card **Accepted**; *Book at the agreed price · Your deal is applied at checkout and lasts until midnight tonight*; on the listing: *"Your negotiated deal is on — 16.01% off (code DEAL29291101C226) · Agreed for 20-09-2026 → 21-09-2026 · Expires in 5h 38m"*, ₹2,100 ~~₹2,500~~, dates locked (*Book different dates without the deal*) → booked as **B021812** | **PASS** (the 16.01% is Defect 10) |
+| NG-037 | Guest declines counter | *Decline* on the 29306 thread (host counter ₹3,800 from batch 3) | *"Offer declined."*; card **Declined**; the host's ₹3,800 marked declined. A guest decline sets no lock-out (only a host decline does) | **PASS** |
+| NG-038 | Round limit | — | No cap by the client's instruction of 12 Sep; twelve rounds ran on 29291 | **INFO** (spec behind the product) |
+| NG-044 | Offer on unavailable dates | API: offer for 20→21 Sep on 29291 **after** B021812 booked those nights; the website had greyed 20 Sep | `200` — **offer 227 created, pending, on the host's queue** for a night the guest already held. Fixed the same day (`4a88a61`): now `409 "You already have a booking here for these dates — there is nothing left to negotiate. Find it under My Bookings."`; someone else's booking → *"These dates are already booked for this property."*; a host block → *"The host has closed these dates…"* | **FAIL → fixed** (Defect 11) |
+| NG-045 | Offer after booking | Listing 29291 after B021812 | Sidebar: *You're booked here 20 Sep → 21 Sep · B021812 · View your booking · Book other dates*; today greyed in the offer calendar; 21→22 refused *"Offers are for stays starting today…"*. The API hole above is the same defect. | **FAIL → fixed** (Defect 11) |
+| NG-046 | Offer expiry | Offer 230 on 29306 (₹3,200, 19:03) left pending; platform default 30 min | *(read after 19:35 — see the note below the table)* | **pending** |
+| NG-071 | Rapid repeat offers | Three identical offers fired in the same instant (29306, ₹3,200, 20→23 Sep) | **Two created** (230, 231), only the third refused *"You already have an offer waiting on this stay."* The claim locked the guest's existing rows — none — and committed before the insert. Fixed (`62e652f`): the claim takes the listing row and holds it across the insert. Re-run after deploy: see the note. | **FAIL → fixed** (Defect 15) |
+| NG-072 | Offer then cancel | — | There is no way for a guest to withdraw a pending offer; it expires (30 min, or the host's window) or the host answers it. Recorded for the design pass. | **INFO** |
+| NG-073 | Guest edits offer before submit | Offer dialog and counter dialog | 2000 → abc → 0 → −500 → 1700 before *Send Offer*; 2300 (refused) → 2000 before *Send counter*; the field keeps the last edit | **PASS** |
+| NG-075 | Negotiate weekly then book nightly | The 29291 deal banner | A deal is pinned to its dates (`cpn_book_from/to`): *"The deal only applies to these dates"*, and the picker's only way out is *Book different dates without the deal* at the listed price. A weekly deal cannot price a single night. | **PASS** (by the date lock) |
+| NG-076 | Offer on LUXE listing | — | Not run this sitting | not run |
+| NG-078 | Offer notification failure | — | A failed notification never fails the reply — pinned (*"a failed notification cannot fail the reply"*, `theHostHearsEveryGuestReply.test.js`); failures are logged at WARN and the offer stands | **INFO** |
+| NG-079 | Currency in offer | Every screen and the API | ₹ with Indian grouping throughout — *₹2,200/night*, *₹43,050 for 7 nights*; an extra `currency: "USD"` field in the body is ignored | **PASS** |
+| NG-080 | Session lost mid-negotiation | — | Signing out means a password to sign back in, which a session never types. The expired-token refusal is pinned (NG-094). | **BLOCKED** |
+| NG-081 | Accept exactly at expiry | — | Not run this sitting (needs a counter timed to its own expiry) | not run |
+| NG-082 | Guest offers after decline | Offer on 29306 after the guest's own decline (NG-037) | `200` — offer 229 accepted and escalated (a guest decline sets no lock-out); expired again as clean-up | **PASS** |
+| NG-088 | Offer history after booking | The 29291 card after B021812 | Every round and the accepted ₹2,100 still on the thread; the card's badge follows the **latest** message, so after the expired probe 227 it read *Expired* while the deal below it had already been used — noted, not a defect | **PASS** |
+| NG-089 | Language in negotiation | — | Not run this sitting | not run |
+| NG-092 | Offer for 0 nights | API: 20→20 Sep on 29302 | `200` — **offer 228 created, pending**, on a listing that asks for two nights and six hours' notice. Fixed (`bdab3b1`): *"Choose a check-out after your check-in — a stay is at least one night."*; and the host's rules now bind offers: *"This host needs 6 hours notice before check-in, so the earliest available date is 21-09-2026."*, *"This host asks for a minimum stay of 2 nights."*, a past date → *"The earliest available check-in is 20-09-2026."* | **FAIL → fixed** (Defect 12) |
+
+**NG-046 / NG-071 follow-up:** _to be filled when offer 230 has expired and the three-at-once probe is repeated against the deployed lock._
+
+**Batch 4 cases proven on the same loop** (the deal was booked pay-at-property, the host approved and checked the guest in on the app, the guest checked out on the website):
+
+| ID | Case | Actual | Verdict |
+|---|---|---|---|
+| BK-022 | Confirmation created | *Request sent — Your request for Aajoo Homes has gone to the host. They have 1 hour to respond — if they don't, your booking is confirmed automatically.* Reference, payment, dates, ₹2,205 on arrival, *You saved ₹400* | **PASS** |
+| BK-025 | Booking ID generated | **B021812** (pri 140), on the confirmation, Next Booking and the host's card | **PASS** |
+| BK-048 | Currency correct | ₹ on every line, both surfaces | **PASS** |
+| BK-049 | Tax shown | *Taxes & GST (5%) ₹104.99* on the listing, review and payment pages; total ₹2,204.74 | **PASS** |
+| BK-054 | Blocked dates unbookable | 20–22 Sep greyed on the guest calendar while the host's block stood | **PASS** |
+| BK-055 | Availability calendar accurate | Open the moment the host removed the block; 20 Sep greyed again the moment B021812 held it | **PASS** |
+| BK-057 | Minimum notice | The calendars honoured 29302's six hours (*earliest 21-09-2026*) — but the **booking gate's SELECT dropped the notice, advance, same-day and season columns** (since `c2dd020`, 9 Sep), so `checkInAllowed` and `stayFitsSeason` were running on `undefined`. Proven by reading the code (a live probe was refused earlier by the one-unpaid-pay-on-arrival rule); fixed `bdab3b1` and pinned so the SELECT can never narrow again. | **FAIL → fixed** (Defect 12) |
+| BK-073 | Ongoing stay shown | Next Booking / Ongoing Stays showed B021812 — but read *Currently Staying* with a *Check out* button **before the host had approved** (Defect 14, web, fixed `32fb9c1`) | **PASS** after fix |
+| BK-076 | Check-in details | Host set 02:01 / 10:00 in the wizard. Review page: *check-in was 20 Sept, 2:01 am IST*; confirmation: *2 AM / 10 AM*; Next Booking: **2 PM / 11 AM** — `/user/ongoing/bookings` read its listing id from the wrong key and sent the platform default (Defect 13, fixed `4aab209`); after deploy: *20 Sept, 2 AM · 21 Sept, 10 AM* | **FAIL → fixed** |
+| BK-077 | Host contact revealed | Before approval: *"The exact address appears once the host accepts your request."* After the host confirmed (18:58): full address, map, *Get directions*, host phone link | **PASS** |
+| BK-078 | Review after stay | Guest *Check out* → *"Checked out — thanks for staying with Aajoo Homes."* → **Write a Review** (overall + six categories) | **PASS** |
+| BK-085 | Negotiated price used | ₹2,500 − 16.01% = ₹2,099.75 + GST ₹104.99 = **₹2,204.74**, `book_coupon_code = DEAL29291101C226`, `book_discount_amt = 400.25`. (Defect 10: the exact 16% became 16.01% in floating point — 25 paise under, fixed for the next deal.) | **PASS** |
+| BK-093 | Instant vs approval | Approval-required listing → *Request sent*, host card *Awaiting approval* with *Confirm this booking / Decline this request*; *Confirming…* → *Staying now* with *Mark guest as checked-in / Guest didn't arrive (no-show)* | **PASS** |
+| BK-096 | Coupon applied | The deal code applied itself at checkout: review page *Negotiated deal applied — Coupon DEAL29291101C226 — you save ₹400*, payment page *Discount (DEAL29291101C226) − ₹400.25* | **PASS** |
+
+Also on this loop: the host's check-in **recorded the cash collection** (`book_is_paid = 1`, status 6) and the web showed *Paid* the next reload; the guest's check-out took the stay to status 7 on both ends and the host's card to *Completed · Paid* with no check-out button (Defect 8 of §8a45, verified live). The app files that completed stay under **Ongoing** (by its dates) rather than *Completed* (by its status) — Low, for build 107.
+
+**Batch 7 cases proven on the host's emulator:**
+
+| ID | Case | Actual | Verdict |
+|---|---|---|---|
+| NG-021 | Accept/decline buttons (host) | *Accept · Counter · Decline* under the guest's latest offer; *Counter the offer* dialog with price and message | **PASS** |
+| NG-026 | Host notified of offer | Bell: *New price offer — A guest offered ₹1,700/night for Aajoo Homes for 20-09-2026 → 21-09-2026. Review it in Negotiations.* (5 min after); tapping it lands on Negotiations. **But** the guest's counter produced **two** rows at the same minute (*The guest countered your price* + *The guest countered back*) — Defect 9, fixed. No push notification reached the emulator's shade (FCM on an emulator; the in-app rows and the email path are the record). | **PASS** (Defect 9 beside it) |
+| NG-029 | Host counters | ₹2,200 *"Weekend night - best I can do is 2200"* and ₹2,100 *"Meet you halfway - 2100"* → *Counter sent — the guest decides next.*; both reached the guest live | **PASS** |
+| NG-032 | Host sees offer amount | *₹1,700 · Round 9 · ~~was ₹2,500~~ · 32% below*, then *₹2,000 · Round 11 · 20% below* | **PASS** |
+
+**Records this sitting created (host 100 / guest 101 — the client's own test accounts, by instruction):**
+- Host 100's calendar: block 19 *"QA end-to-end test block"* (20–22 Sep, 29291) **removed** through the app.
+- Negotiation on 29291: offers **223** (₹1,700) · **224** (host ₹2,200) · **225** (₹2,000) · **226** (host ₹2,100, accepted); deal coupon **DEAL29291101C226** (16.01%, used once).
+- Booking **B021812** (pri 140) on 29291, 20→21 Sep, pay at property, ₹2,204.74: approved 18:58, checked in 18:59 (cash recorded), guest check-out 19:00 → status 7. **Host dues row `hd_id 49` — ₹476.99 PENDING against host 100** (commission ₹315 + GST ₹57 + accommodation tax ₹104.99) was raised by this test booking and **needs an admin void with reason "test run"**, or it will surface in the client's payout ledger.
+- Probe offers, each set to *expired* by a direct database update the moment its case was read (there is no guest withdraw): **227** (29291), **228** (29302), **229** and **231** (29306). **230** (29306, ₹3,200) left pending for NG-046.
+- The 29306 thread from batch 3: host counter 222 **declined** by the guest (NG-037).
+- No review was submitted; the *Write a Review* page was opened and left.
+
+**Found beside the cases, all fixed the same day and pinned by tests** (details under Defects 9–15): the host told twice for one counter; the deal percentage rounded by floating point; an offer accepted on the guest's own booked night; a zero-night offer and the booking gate's stay rules half switched off; an ongoing stay sent without its listing (cover, hours, pin); *Currently Staying* before the host approved; two offers from one click. **For build 107 (app):** the host's Negotiations list does not refresh live and keeps stale buttons after the host's own counter; a completed stay is filed by its dates under Ongoing; the app never subscribes to `negotiation:*` / `notification:new`. Also noted: the payment page said *"The host has 1 hours to approve"* (fixed with Defect 14).
+
+---
+
 ## Defect 1 — the host's floor and accept line were public (Critical)
 
 **Cases:** BK-080, NG-003 · **Found:** 17 Sep 2026 · **Status:** fixed, pinned, awaiting deploy
@@ -294,6 +377,34 @@ For every wizard-built listing the booking sheet said *12:00PM / 12:00PM · set 
 
 Same fix set: a bedroom the host had not described was hidden, so a three-bedroom stay listed two bathrooms under that heading while the website listed the bedrooms. Every bedroom is shown now, as on the web.
 
+## Defect 9 — the host was told twice for one guest counter (Medium, backend)
+
+One guest counter of ₹2,000 put two rows in the host's bell at the same minute — *The guest countered your price* and *The guest countered back* — and since both writers push and mail, two pushes and two emails. The 17 Sep fix (`8e26e26`) put `tbl_notifications.notify` inside `tellHost` for accept, decline **and** counter on the premise that the endpoint had only ever sent a socket event; true of accept and decline, but the counter branch had told the host since 23 Aug through `methods.sendNotification`, and the merged notification list reads both stores. The same double row sat on the counter-that-meets-the-line path. Fixed `0008c3e`; the live `negotiation:guest_reply` event, which lived in the same helper, was restored for both paths in `a7a5929` after the website's `notificationsArriveLive` test caught its loss. One event, one row, still one live event.
+
+## Defect 10 — a deal that divides exactly was rounded up by floating point (Low, backend, money)
+
+₹2,100 agreed on a ₹2,500 night came out as *16.01% off* and billed ₹2,099.75: `1 − 2100/2500` is `0.16000000000000003` to the machine and a bare `Math.ceil` made an exact 16% into 16.01%. Under a rupee and in the guest's favour, which is the documented tolerance, but a deal that divides exactly should say so. Fixed `54b13c8`: the percentage is settled to a millionth before the ceiling, in one exported `dealPercent()` the test imports instead of copying.
+
+## Defect 11 — an offer was accepted on nights the guest could not book (High, backend)
+
+The website greys a booked night out of the offer calendar; the endpoint did not look. Guest 101 had just booked 29291 for 20→21 Sep (B021812) and an offer for the same night went straight to the host as *pending* (offer 227) — the host was asked to price a stay that was already theirs. Fixed `4a88a61`: `submitOffer` now measures the dates with the booking guard's own yardstick before it prices anything — an occupying booking overlapping the half-open stay, or a host block on any of its nights, refuses with a 409 that says what is true (the guest's own booking / somebody else's / the host's block). Pinned: `anOfferNeedsNightsThatCanBeBooked.test.js` (8 assertions, including the half-open check-out day and the inclusive block).
+
+## Defect 12 — a zero-night offer, and the booking gate's stay rules half switched off (High, backend)
+
+Two findings, one fix (`bdab3b1`). **(a)** The offer endpoint took a 20→20 Sep "stay" — zero nights — on 29302, which asks for two nights and six hours' notice (offer 228, pending); the booking gate had every one of those checks and the offer path never called them. An offer is a request for a stay, so it is now held to `stayRefusal()`: at least a night, inside the arrival window, in season, within the host's minimum and maximum. **(b)** The booking gate's own checks were only half alive: `c2dd020` (9 Sep) wired `checkInAllowed` and `stayFitsSeason` into `createBooking` but fed them a rules row SELECTed for four other columns, so `pbr_minimum_notice_hours`, `pbr_max_advance_days`, `pbr_same_day_booking` and `pbr_open_months` arrived as `undefined` and each rule answered "no rule" — the calendar greyed the day, the API took the booking (the inert-SELECT trap, eleven days). The columns the helpers read are now one exported list, `RULE_COLUMNS`, spread into that SELECT; the test reads the helpers' source and fails if anything they touch is missing from it. Pinned: `theStayRulesBindOffersAndBookingsAlike.test.js` (10 assertions).
+
+## Defect 13 — an ongoing stay was sent without its listing: cover, hours, pin (Medium, backend)
+
+`/user/ongoing/bookings` queries with `raw: true, nest: true`, so the join comes back as `item.bookingProperty.property_id` — while the endpoint read the dotted key `item['bookingProperty.property_id']` in five places, and every one got `undefined`. The cover map, the stay window and the exact-location flag were built for a list of `[undefined]`: each ongoing stay went out with no picture, the platform's 2 PM / 11 AM in place of the host's hours (29291 checks in at 02:01 by the host's own answer; the review page said so, Next Booking said *2 PM*), and the pin withheld whatever the host chose. Since June. Fixed `4aab209` with one helper that reads either shape; the test lifts it out and runs it on the nested row. The 18 Sep location test is re-anchored on it.
+
+## Defect 14 — "Currently Staying" and "Booking Confirmed" before the host approved (Medium, web)
+
+B021812 was requested at 18:26 with an hour for the host to answer; at 18:45 the guest's Next Booking page read **Currently Staying**, the timeline's first step said *Booking Confirmed — Your booking has been confirmed*, and a **Check out** button was offered — on a stay nobody had approved, let alone checked in. `lifecycleLabel` already refuses to call such a row *Staying now*; the `currentlyStaying` flag, computed from the clock alone, drove the badge, the timeline and the button on its own — the same fault the function's own note describes, one layer up. Fixed `32fb9c1`: the ongoing row says `awaitingApproval` by the same rule, `currentlyStaying` is false while it does, and the first timeline step reads *Awaiting host approval* until the host answers. The payment page's *"The host has 1 hours to approve"* goes through `answerWindowLabel` in the same commit. Pinned: `aRequestIsNotAStay.test.mjs`.
+
+## Defect 15 — two offers from one click (Medium, backend, race)
+
+Three identical submits fired in the same instant for 29306 produced two pending offers (230 and 231) and refused only the third. `claimNextRound` locked the guest's existing offer rows `FOR UPDATE` — nothing, for a guest with none — and **committed before `submitOffer` inserted**, so both requests read "no offer waiting" and both wrote. Fixed `62e652f`: the claim takes the listing's row (`tbl_properties … FOR UPDATE`, the row `createBooking` already serialises on) and hands its transaction back open; every offer row is written inside it and committed once the rows are in, before coupons, mail and sockets. The second request waits on the row until the first has written, then sees it. Pinned: `theOfferClaimHoldsItsLock.test.js`, which drives the claim against a fake that behaves like InnoDB for that one statement; the 16 Sep claim test is re-anchored on the open transaction.
+
 ## Spec conflicts — the case sheet is behind the product
 
 Neither of these is a defect. Both describe behaviour the client **changed after the document was written**, and they are recorded so the document can be corrected rather than the code.
@@ -312,6 +423,14 @@ Neither of these is a defect. Both describe behaviour the client **changed after
 |---|---|
 | `0e6d863` | Festival/season periods: wizard refuses a half-filled period by name; engine honours an existing start-only row for its start date. Accepted counter-backs now reach `tbl_negotiation_log`. 11 new assertions; 150/150 |
 | `656f6df` | `getProperty` strips the min/ideal tier grid for non-owners; `/properties/search` stops selecting `property_contact`; `tests/theHostsFloorIsNotPublic.test.js` adds 5 assertions pinning both doors, including that the host still sees their own figures. 148/148 backend tests pass |
+| `0d0afed` · web `9886e06` · app `f0ff3ba` | Defects 6–8 (batch 3): per-type capacity on all three surfaces; the app reads the wizard's stay hours; every bedroom listed |
+| `0008c3e` + `a7a5929` | Defect 9: the host hears a guest counter once — and still gets the live event |
+| `54b13c8` | Defect 10: `dealPercent()` settles the fraction before the ceiling |
+| `4a88a61` | Defect 11: `datesUnavailableRefusal` — an offer on nights nobody can book is refused at the door |
+| `bdab3b1` | Defect 12: `stayRefusal` + `RULE_COLUMNS` — the host's stay rules bind offers, and the booking gate reads all of them again |
+| `4aab209` | Defect 13: `/user/ongoing/bookings` reads its listing id from the nested join — cover, hours, pin |
+| web `32fb9c1` | Defect 14: a request the host has not answered is not a stay in progress; "1 hour", not "1 hours" |
+| `62e652f` | Defect 15: the offer claim holds the listing's row lock across the insert. Backend 164/164; web 30/30 + `tsc -b` + build |
 
 ---
 
@@ -452,39 +571,39 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 | HL-099 | Critical | Host sees own listings only | BLOCKED — needs host sign-in |
 | HL-100 | High | Docs access-controlled | BLOCKED — needs host sign-in |
 
-### Batch 4 — Booking — create, confirm, availability, after the stay
+### Batch 4 — Booking — create, confirm, availability, after the stay (14 of 30 run on 20 Sep, on the batch-6 loop)
 **Needs:** The guest account. Creates real test bookings on dev.  
 **Cases:** 30 · Critical: 3 · Already run: 0
 
 | ID | Pri | Case | Status |
 |---|---|---|---|
-| BK-022 | Critical | Confirmation created |  |
+| BK-022 | Critical | Confirmation created | PASS (20 Sep, B021812) |
 | BK-023 | High | Confirmation email/app |  |
 | BK-024 | High | Host notified |  |
-| BK-025 | High | Booking ID generated |  |
-| BK-048 | Med | Currency correct |  |
-| BK-049 | Med | Tax shown |  |
-| BK-054 | High | Blocked dates unbookable |  |
-| BK-055 | High | Availability calendar accurate |  |
+| BK-025 | High | Booking ID generated | PASS (20 Sep) |
+| BK-048 | Med | Currency correct | PASS (20 Sep) |
+| BK-049 | Med | Tax shown | PASS (20 Sep) |
+| BK-054 | High | Blocked dates unbookable | PASS (20 Sep) |
+| BK-055 | High | Availability calendar accurate | PASS (20 Sep) |
 | BK-056 | Med | Booking horizon |  |
-| BK-057 | Med | Minimum notice |  |
+| BK-057 | Med | Minimum notice | FAIL → fixed bdab3b1 (Defect 12) |
 | BK-058 | Med | Same-day conflict |  |
 | BK-071 | High | My Bookings list |  |
 | BK-072 | High | Booking detail accurate |  |
-| BK-073 | Med | Ongoing stay shown |  |
+| BK-073 | Med | Ongoing stay shown | PASS after fix 32fb9c1 (Defect 14) |
 | BK-074 | High | Invoice download |  |
 | BK-075 | Med | Modify booking |  |
-| BK-076 | High | Check-in details |  |
-| BK-077 | Med | Host contact revealed |  |
-| BK-078 | Med | Review after stay |  |
-| BK-085 | Critical | Negotiated price used |  |
+| BK-076 | High | Check-in details | FAIL → fixed 4aab209 (Defect 13) |
+| BK-077 | Med | Host contact revealed | PASS (20 Sep) |
+| BK-078 | Med | Review after stay | PASS (20 Sep) |
+| BK-085 | Critical | Negotiated price used | PASS (20 Sep) |
 | BK-086 | Critical | Auto-accept → booking |  |
 | BK-087 | Med | Guest count feeds capacity |  |
 | BK-088 | High | Price change reflects |  |
 | BK-089 | High | Deposit single-source |  |
-| BK-093 | High | Instant vs approval |  |
+| BK-093 | High | Instant vs approval | PASS (20 Sep) |
 | BK-094 | Med | Approval timeout |  |
-| BK-096 | Med | Coupon applied |  |
+| BK-096 | Med | Coupon applied | PASS (20 Sep) |
 | BK-097 | Med | Invalid coupon |  |
 | BK-099 | Med | Back button mid-booking |  |
 | BK-100 | High | Refresh mid-payment |  |
@@ -528,56 +647,56 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 
 ### Batch 6 — Negotiation — the guest side
 **Needs:** The guest account. Creates real test offers on dev.  
-**Cases:** 30 · Critical: 0 · Already run: 0
+**Cases:** 30 · Critical: 0 · Already run: 26 (17 PASS · 5 FAIL, 4 fixed same day · 3 INFO · 1 BLOCKED) — 20 Sep
 
 | ID | Pri | Case | Status |
 |---|---|---|---|
-| NG-016 | High | Make an Offer button |  |
-| NG-017 | High | Offer input validates |  |
-| NG-018 | High | Offer confirmation |  |
-| NG-019 | High | Offer status visible |  |
-| NG-020 | High | Counter shown to guest |  |
-| NG-022 | High | Real-time update |  |
-| NG-023 | Med | Offer thread readable |  |
-| NG-024 | Med | Mobile negotiation UI |  |
-| NG-025 | Med | Waiting state |  |
-| NG-034 | High | Guest counters back |  |
-| NG-035 | Med | Multiple rounds |  |
-| NG-036 | High | Guest accepts counter |  |
-| NG-037 | Med | Guest declines counter |  |
-| NG-038 | Low | Round limit |  |
-| NG-044 | Med | Offer on unavailable dates |  |
-| NG-045 | Low | Offer after booking |  |
-| NG-046 | High | Offer expiry |  |
-| NG-071 | Med | Rapid repeat offers |  |
-| NG-072 | Low | Offer then cancel |  |
-| NG-073 | Low | Guest edits offer before submit |  |
-| NG-075 | Med | Negotiate weekly then book nightly |  |
+| NG-016 | High | Make an Offer button | PASS (20 Sep) |
+| NG-017 | High | Offer input validates | PASS (20 Sep) |
+| NG-018 | High | Offer confirmation | PASS (20 Sep) |
+| NG-019 | High | Offer status visible | PASS (20 Sep) |
+| NG-020 | High | Counter shown to guest | PASS (20 Sep) |
+| NG-022 | High | Real-time update | PASS web · FAIL app (20 Sep) → build 107 |
+| NG-023 | Med | Offer thread readable | PASS (20 Sep) |
+| NG-024 | Med | Mobile negotiation UI | PASS host side (20 Sep) · guest side pending |
+| NG-025 | Med | Waiting state | PASS (20 Sep) |
+| NG-034 | High | Guest counters back | PASS (20 Sep) |
+| NG-035 | Med | Multiple rounds | PASS (20 Sep) |
+| NG-036 | High | Guest accepts counter | PASS (20 Sep) |
+| NG-037 | Med | Guest declines counter | PASS (20 Sep) |
+| NG-038 | Low | Round limit | INFO — no cap by client decision |
+| NG-044 | Med | Offer on unavailable dates | FAIL → fixed 4a88a61 (Defect 11) |
+| NG-045 | Low | Offer after booking | FAIL → fixed 4a88a61 (Defect 11) |
+| NG-046 | High | Offer expiry | pending — offer 230 left to expire |
+| NG-071 | Med | Rapid repeat offers | FAIL → fixed 62e652f (Defect 15) |
+| NG-072 | Low | Offer then cancel | INFO — no withdraw; offers expire |
+| NG-073 | Low | Guest edits offer before submit | PASS (20 Sep) |
+| NG-075 | Med | Negotiate weekly then book nightly | PASS by the date lock (20 Sep) |
 | NG-076 | Low | Offer on LUXE listing |  |
-| NG-078 | Med | Offer notification failure |  |
-| NG-079 | Low | Currency in offer |  |
-| NG-080 | Med | Session lost mid-negotiation |  |
+| NG-078 | Med | Offer notification failure | INFO — pinned by test |
+| NG-079 | Low | Currency in offer | PASS (20 Sep) |
+| NG-080 | Med | Session lost mid-negotiation | BLOCKED (needs a sign-in) |
 | NG-081 | Med | Accept exactly at expiry |  |
-| NG-082 | Low | Guest offers after decline |  |
-| NG-088 | Low | Offer history after booking |  |
+| NG-082 | Low | Guest offers after decline | PASS (20 Sep) |
+| NG-088 | Low | Offer history after booking | PASS (20 Sep) |
 | NG-089 | Med | Language in negotiation |  |
-| NG-092 | Med | Offer for 0 nights |  |
+| NG-092 | Med | Offer for 0 nights | FAIL → fixed bdab3b1 (Defect 12) |
 
-### Batch 7 — Negotiation — the host side, timing, bot, cross-flow
+### Batch 7 — Negotiation — the host side, timing, bot, cross-flow (4 of 30 run on 20 Sep, on the host's emulator)
 **Needs:** Host account + guest account together; BotPenguin for NG-056..058.  
 **Cases:** 30 · Critical: 3 · Already run: 0
 
 | ID | Pri | Case | Status |
 |---|---|---|---|
 | NG-015 | High | Monthly negotiation |  |
-| NG-021 | High | Accept/decline buttons (host) |  |
-| NG-026 | High | Host notified of offer |  |
+| NG-021 | High | Accept/decline buttons (host) | PASS (20 Sep, app) |
+| NG-026 | High | Host notified of offer | PASS (20 Sep) — Defect 9 beside it |
 | NG-027 | High | Host notified of auto-accept |  |
 | NG-028 | Critical | Host accepts |  |
-| NG-029 | High | Host counters |  |
+| NG-029 | High | Host counters | PASS (20 Sep, app) |
 | NG-030 | High | Host declines |  |
 | NG-031 | Med | Host ignores → expiry |  |
-| NG-032 | High | Host sees offer amount |  |
+| NG-032 | High | Host sees offer amount | PASS (20 Sep, app) |
 | NG-033 | Med | Host response-time honoured |  |
 | NG-048 | Critical | Two offers same unit |  |
 | NG-049 | High | Host accepts after unit booked |  |
