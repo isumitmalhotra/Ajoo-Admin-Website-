@@ -294,6 +294,31 @@ that commission, four ledger rows per booking.
 
 ## 8. Closed since the last edition — do not redo
 
+### 8a50. Closed 2026-09-20 (late) — the host half again on build 108: NG-028 accepted, three more defects, and the accept told once
+
+**What ran (23:05—23:50 IST, host 100 on the emulator, guest 101 on the API):** offer → host counter
+(above list) → guest counter-back → **host accepts** (NG-028, Critical) on 29291; earnings on the
+negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report: fourth sitting.
+
+| # | What | Where | Commit |
+|---|---|---|---|
+| 20 | **A host counter had no price bound**: ₹2,600 on a ₹2,500 night went through. Now refused above the dated list price, and at/under the guest's own figure, with the number quoted. | backend | `2bcf1cc` |
+| 21 | **A paused listing still took offers** — the tiers loader never read `is_active`; the refusal, when there was one, was for the notice hours. Says *paused* first now. | backend | `48d38b0` |
+| 19b | *Booked* was matched by the stay, so the fresh deal on the same night as a spent one came back *Booked* and the guest lost *Book at the agreed price* the moment the host said yes. Matched by the deal's own code now. | backend | `f8ec735` |
+| 9b | The plain accept path had the same two writers as the counter paths: two bell rows for one acceptance. One row now; and *"1 hour"*, not *"1 hours"*, on the approval request. | backend | `ac699fe` |
+
+**Proven:** NG-022 on the app for the host (the list moved with no touch on build 108), NG-028, NG-060/061
+(B021812's payout ₹1,728 = negotiated ₹2,099.75 — 15% commission — GST on it), BK-024.
+
+> **Finance note (not fixed):** B021812 was pay-at-property — the host holds the cash and owes ₹476.99 —
+> yet the host's Earnings screen lists it as a *queued payout* of ₹1,728 under a banner that says no payout is
+> scheduled for cash stays. Two ledgers, one stay; see `cash_collection_blocked.md`.
+
+**Records:** offers 235—237 on 29291 and the deal minted for 20→21 Sep (unused, expires midnight);
+29302 paused and un-paused. NG-030/095 (host decline + lock-out) run after midnight on a fresh day.
+
+---
+
 ### 8a49. Closed 2026-09-20 (night) — the guest half on the app: four more defects, build 108
 
 **What ran (20:10—21:20 IST, emulator as guest 101, build 107 → 108):** the offer → instant
