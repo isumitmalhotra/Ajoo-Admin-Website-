@@ -310,12 +310,38 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 **Proven:** NG-022 on the app for the host (the list moved with no touch on build 108), NG-028, NG-060/061
 (B021812's payout ₹1,728 = negotiated ₹2,099.75 — 15% commission — GST on it), BK-024.
 
-> **Finance note (not fixed):** B021812 was pay-at-property — the host holds the cash and owes ₹476.99 —
-> yet the host's Earnings screen lists it as a *queued payout* of ₹1,728 under a banner that says no payout is
-> scheduled for cash stays. Two ledgers, one stay; see `cash_collection_blocked.md`.
+> **Finance note (by design, one thing to confirm):** B021812 was pay-at-property — the host holds the cash and
+> owes ₹476.99 in `tbl_host_dues`; the ₹1,728 *queued payout* is the same stay's host share, and the payout run offsets
+> the one against the other (`cash_collection_blocked.md`). Confirm the offset shows on the host's payout statement so a
+> cash stay never reads as money owed both ways.
 
-**Records:** offers 235—237 on 29291 and the deal minted for 20→21 Sep (unused, expires midnight);
-29302 paused and un-paused. NG-030/095 (host decline + lock-out) run after midnight on a fresh day.
+**Records:** offers 235—237 on 29291 and the deal minted for 20→21 Sep (unused, expired at midnight);
+29302 paused and un-paused.
+
+---
+
+### 8a51. Closed 2026-09-21 (00:00—00:20) — the host's decline, the day's lock, and the guest told of it
+
+**What ran (after midnight so the decline could lock a fresh IST day; host 100 on the emulator, guest 101 on the API and
+the website):** NG-030 the host declines (offer 238 on 29291 → *Decline* → confirm), NG-095 the guest re-offers
+(two offers, same night and other dates → both refused with the day's lock), HL-077 and HL-099 from the host's own screens.
+**147 of 300 run.** Report: fourth sitting, after the row for NG-084.
+
+| # | What | Where | Commit |
+|---|---|---|---|
+| 22 | **The guest was not told the host declined.** A plain decline (no counter in the session, so no parting coupon and none of its notification) wrote no bell row — only the socket emit, which reaches a guest with the page open and nobody else. One row now, written only when the parting coupon's own notification did not go out; re-proven live on 29302 (offer 239, row 858). | backend | `d64abab` |
+
+**Proven:** the decline itself (thread *declined*, `host_decline` logged, the host's list emptied, the guest's website
+moved live), the lock-out for the IST day on any dates of that listing, HL-077 (*Identity verified* on the host's profile),
+HL-099 (*Properties 2*, the host's own; `/host/property-search` filters on the token's id).
+
+**Records:** offer 238 on 29291 and offer 239 on 29302, both declined; guest 101 locked out of both listings for 21 Sep
+(clears at midnight). No bookings.
+
+**Still needing a hand:** admin void of `tbl_host_dues hd_id 49` (₹476.99 on host 100, from test booking B021812);
+B326241 on 29303 awaits the guest's email-OTP cancel on the emulator (or the sweep); batch 5 payments need the Razorpay
+sheet; NG-048/049/050/093 need a second guest account; NG-056—058 need the bot; BK-094 (approval timeout) was
+not left overnight on the client's listing; HL batches 8—10 need one of our hosts (177/194) signed in.
 
 ---
 
