@@ -39,7 +39,8 @@
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
 > **Go-live sequence (2026-09-19, Render Pro + PlanetScale bought): `GO_LIVE_RUNBOOK_2026-09-19.md`** — steps 0.1–0.4 first (Razorpay key rotation, repo private, test passwords, build 106).
 > Tester build in circulation: **108 (1.0.0+108)**, `aajoo-homes-1.0.0-build108-release.apk` at repo root
-> (2026-09-20 21:25, versionCode 108, sha256 in §8a49), built with `tool/build_release.ps1`. Supersedes **107**
+> (2026-09-20 21:05, versionCode 108, 95.5 MB, sha256 `4cf75ddf44f5f5bf…`), built with `tool/build_release.ps1`;
+> client repo `aajoo_app_latest` main = `30edba5`. Supersedes **107**
 > (2026-09-20 19:30, versionCode 107, 95.5 MB, sha256 `75f27c40a9ccfa4f…`), built with
 > `tool/build_release.ps1`; client repo `aajoo_app_latest` main = `050453b`. Supersedes **106**
 > (2026-09-19 night, versionCode 106, 95.5 MB, sha256 `db27821d9ffc842d…`), built with
