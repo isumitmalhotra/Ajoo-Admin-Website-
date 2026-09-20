@@ -10,14 +10,14 @@
 
 | | Cases | PASS | FAIL | SPEC CONFLICT | BLOCKED | INFO | Not yet run |
 |---|---|---|---|---|---|---|---|
-| **BK — Booking** | 100 | 23 | 5 | 1 | 2 | 1 | 68 |
-| **NG — Negotiation** | 100 | 23 | 2 | 2 | 0 | 0 | 73 |
-| **HL — Host Listing** | 100 | 4 | 0 | 0 | 0 | 0 | 96 |
-| **Total** | **300** | **50** | **7** | **3** | **2** | **1** | **237** |
+| **BK — Booking** | 100 | 34 | 5 | 1 | 3 | 2 | 55 |
+| **NG — Negotiation** | 100 | 29 | 2 | 2 | 2 | 0 | 65 |
+| **HL — Host Listing** | 100 | 4 | 0 | 0 | 6 | 0 | 90 |
+| **Total** | **300** | **67** | **7** | **3** | **11** | **2** | **210** |
 
-**Batches 1 and 2 are complete; batch 3 is in progress: 63 of 300 run.** Batches 3–10 are blocked on sign-ins — see *What is needed to unblock the rest*.
+**Batches 1–3 are complete: 90 of 300 run** (batch 3: 20 PASS, 2 INFO, 8 BLOCKED — the host-side cases wait for a host sign-in). **Defects found: 8** (three in batch 3, all fixed the same day).
 
-**Defects found: 5.** Four fixed and pinned by tests (two Critical security leaks, a festival rate silently dropped, an accepted negotiation missing from the ledger). One reported for the client's decision because it moves money (the 28–31 night pricing cliff).
+**Defects found: 8.** Seven fixed and pinned by tests (two Critical security leaks, a festival rate silently dropped, an accepted negotiation missing from the ledger). One reported for the client's decision because it moves money (the 28–31 night pricing cliff).
 
 **Spec conflicts: 3.** Cases that describe behaviour the client themselves changed after the document was written — the cleaning fee (15 Sep), the round-one instant counter, and countering below the floor (9 Sep). The product is right; the document is stale.
 
@@ -127,7 +127,7 @@ Each case is proven the cheapest reliable way, and the report always records **t
 
 ---
 
-## Batch 3 — IN PROGRESS (3/30) · Security, ownership and rejected input
+## Batch 3 — COMPLETE (30/30 run; 20 PASS · 2 INFO · 8 BLOCKED) · Security, ownership and rejected input
 
 **Run 20 September 2026** against the live dev API, by direct request. Only the cases that need **no account** were run: every other case in this batch needs a guest or host token, and the two sessions available on this machine that day were the client's own — host 100 in Chrome, guest 101 on the emulator — which rule §9 says are never to be driven, even for a refusal (a validation case that unexpectedly *succeeds* would create data on the client's account, which is how the earlier "test deal on 101" report happened).
 
@@ -139,7 +139,40 @@ Each case is proven the cheapest reliable way, and the report always records **t
 
 **Observation (not a defect, recorded):** `/booking/create` validates the body *before* checking the token, so an unauthenticated call with an incomplete body is answered `422` with the missing fields rather than `401`. No data is created either way and a complete body meets the auth wall; the order only means an anonymous caller can learn the field names, which the public API documentation already shows.
 
-**The remaining 27** (BK-026…032, 034…037, 079, 082; NG-039…042, 090, 091, 094, 096; HL-077, 079, 080, 098…100) run the moment a guest we own (179 "Renter test web") and a host we own (194, or 177 "Host Mobile") are signed in — web in Chrome, app on the emulator (build 106 installed 20 Sep).
+**Second sitting, 20 September 17:00–19:00 IST — on guest 101 "Aajoo Renter", by Sumit's explicit instruction of 20 Sep** ("I logged in this account, you can use this for any testing"), signed in on both Chrome (website) and the emulator (build 106). Every request below was made against **listings owned by our own hosts** (177 "Host Mobile": 29306, 29295; 194: 29305, 29303), so the client's host inbox saw nothing. The API calls were sent from the signed-in page (the token never left the browser); the UI was driven on both surfaces.
+
+| ID | Case | Sent / done | Actual | Verdict |
+|---|---|---|---|---|
+| BK-026 | No dates | `POST /booking/create` with no dates | `422 "check in date is required \| check out date is required"`. Web: the bar reads *Select dates* and Book Now opens the calendar. App: *Book To* empty, the sheet will not price. | **PASS** |
+| BK-027 | Check-out before check-in | 28→26 Sep on 29295 | `400 "Booking must be at least 1 day."` Both pickers are ranges; the reversed order cannot be chosen. | **PASS** |
+| BK-028 | Past date | 10→12 Sep | `400 "Booking start date cannot be in the past."` Web calendar: 1–19 Sep greyed. App: 1–19 Sep greyed. | **PASS** |
+| BK-029 | Zero guests | `no_of_guests: 0` | `422 "Number of guests must be at least 1"`. Web: the adults minus stops at 1. App: minus disabled at 1. | **PASS** |
+| BK-030 | Over capacity | 6 guests on 29306 (sleeps 5) | `400 "This stay sleeps up to 5 guests."` Web: plus disabled at 5, *"that's the maximum"*. App: plus disabled at 5. **But** the host set *3 adults + 2 children + 2 infants* and **five adults were accepted by the API, the website and the app** — only the total bound anything. → **Defect 6**, fixed the same day (backend `0d0afed`, web `9886e06`, app in the next build). | **PASS** (total) · **Defect 6** (per-type) |
+| BK-031 | Below min stay | 1 night on 29306 (min 3), at the server's own quote of ₹4,500 | `400 "This host asks for a minimum stay of 3 nights."` Web calendar: *"Minimum 3 nights — check out 28 Sept or after"*, 26/27 unselectable. App picker: *MINIMUM STAY 3 NIGHTS*, 21/22 unselectable. | **PASS** |
+| BK-032 | Above max stay | 41 nights on 29306 (max 40), at the quote of ₹1,09,500 | `400 "This host accepts stays of up to 40 nights."` Footer on both pickers states the rule. | **PASS** |
+| BK-034 | Book without KYC | — | Guest 101 is verified; the gate (`blockUnlessVerified`) is pinned by `verificationIsCurrent.test.js` and §8a43's tests. A live refusal needs an unverified guest we own. | **BLOCKED** |
+| BK-035 | Empty guest details | — | The platform books for the **verified account** (name, phone and ID come from the profile); the checkout collects no guest details, and saved travellers are optional. There is no empty state to refuse. The case describes a form the product does not have. | **INFO** |
+| BK-036 | Invalid phone | `POST /user/update {user_pnumber: "12345"}` | `422 "Phone number must be exactly 10 digits"` | **PASS** |
+| BK-037 | Invalid email | `POST /user/update {user_email: "not-an-email"}` | `200 Success` — and the email on file **unchanged** (read back). Email is read-only platform-wide (§account security); the field is ignored rather than refused, and no screen offers it. | **PASS** · note |
+| BK-079 | Own bookings only | `GET /user/booking-history`; DB read | 3 rows (B115781, B675275, B939553), all `book_user_id = 101` in the table; 3 = every booking 101 has. `POST /admin/booking/detail` with the guest token: `401 "Invalid token"`. | **PASS** |
+| BK-082 | Tampered price | `price: 1` for 29295 (quote ₹7,650), pay-at-property | `400 "The price for these dates has changed. Please reload and try again."` — nothing created (the server compares the sent price with its own quote, ±₹1). | **PASS** |
+| NG-039 | Zero offer | `offerPrice: 0` | `422 "offer price must be greater than 0"` | **PASS** |
+| NG-040 | Negative offer | `offerPrice: -100` | `422 "offer price must be greater than 0"` | **PASS** |
+| NG-041 | Non-numeric offer | `offerPrice: "abc"` | `422 "offerPrice must be a number type…NaN"` | **PASS** |
+| NG-042 | Offer on fixed-price listing | — | Every active listing has negotiation on (DB read: none with `pn_enabled = 0`). Needs a host to switch one off (batch 8/10). | **BLOCKED** |
+| NG-090 | Replay | The identical offer sent twice (29306, today→23 Sep, ₹3,100) | Second: `400 "The host has countered your offer — accept or decline that first."` | **PASS** |
+| NG-091 | Tampered offer | Offer with `status: "accepted", agreedPrice: 1, finalPrice: 1, couponCode: "FREE100"` in the body | `200` — created as an ordinary offer; DB: offer 221 stored at **₹3,100, status countered**; the engine's counter 222 at ₹3,800 pending. None of the extra fields took effect. (An offer for October was first refused: *"Offers are for stays starting today. This is an advance booking, so the listed price applies"* — the platform's own rule.) | **PASS** |
+| NG-094 | Expired session | A token expired 60 s ago, through the real `authenticateJWT` | `401 "Session expired, please try again"`; a token signed with the wrong key: `401 "invalid signature"` (`anExpiredSessionIsRefused.test.js`). Live: the platform's secret is not the local one, so an expired live token cannot be minted on demand. | **PASS** by test |
+| NG-096 | Guest offers on own listing | — | 101 owns no listing. | **BLOCKED** (host) |
+| HL-077, 079, 080, 098, 099, 100 | Host-side | — | | **BLOCKED** (host sign-in) |
+
+**Records this sitting created on account 101** (so nobody reads them as a bug): negotiation thread on listing 29306 for 20→23 Sep — offer 221 (₹3,100, countered) and the engine's counter 222 (₹3,800, pending, expires by itself). No booking was created; every booking attempt was a refusal by design.
+
+**Found beside the cases (not in the sheet), all fixed the same day and pinned by tests:**
+- **Defect 6 (Medium, all three surfaces)** — per-type capacity not enforced; see BK-030.
+- **Defect 7 (Medium, app)** — the booking sheet printed *"Check-in/Check-out Time 12:00PM / 12:00PM · set by the host"* for a host who set 14:00 / 11:00: the app read only the legacy row and never the wizard's `stayWindow` (the API sends it). Fixed: the sheet now reads the wizard hours and prints *2:00 PM / 11:00 AM*.
+- **Defect 8 (Low, app parity)** — *"Where you'll sleep"* on a three-bedroom listing listed only *Bathroom 1, Bathroom 2*: a bedroom with no bed line was skipped, while the website lists every bedroom. Fixed: every bedroom is shown.
+- Observation (Low, app): the sticky bar prices *"1 night"* before any dates are chosen, on a listing with a 3-night minimum. Not changed; noted for the design pass.
 
 ---
 
@@ -248,6 +281,18 @@ Property 29307 carries "Diwali fest — from 8 Nov — ₹8,000". A night inside
 **Fix:** the branch logs with the same tier snapshot as its neighbour. `nl_final_outcome` is deliberately left NULL — it becomes "booked" via an UPDATE that only touches NULL rows, so writing anything there would have stopped that landing.
 
 ---
+
+## Defect 6 — the host's per-type capacity was decoration (Medium, all three surfaces)
+
+Listing 29306 is set to 3 adults, 2 children, 2 infants — 5 in all. The API, the website's picker and the app's counter all allowed **five adults**: only `pc_total_guests` was ever read. Fixed 20 Sep: `utils/partyCapacity.js` reads the per-type caps (0 = unanswered, exactly as pets), children count within guests so adults are what is left, and the booking passes children and infants; the website's picker stops at the caps and says them (*"Up to 3 adults · 2 children · 2 infants"*); the app's counter stops the same way. Backend `0d0afed`, web `9886e06`, app monorepo `f0ff3ba`. Pinned: `partyFitsProperty.test.js` (+5), web `theClientsFiveOf18September` re-anchored, app `the_party_fits_the_hosts_caps_test.dart`.
+
+## Defect 7 — the app told guests the wrong check-in time (Medium, app)
+
+For every wizard-built listing the booking sheet said *12:00PM / 12:00PM · set by the host* — the host's actual hours (`stayWindow`, sent by the API) were never read. Fixed 20 Sep (monorepo `f0ff3ba`): `StayWindow` on the model, the sheet reads it first and prints *2:00 PM / 11:00 AM*. Pinned: `the_listing_says_what_the_host_set_test.dart`.
+
+## Defect 8 — "Where you'll sleep" without the bedrooms (Low, app)
+
+Same fix set: a bedroom the host had not described was hidden, so a three-bedroom stay listed two bathrooms under that heading while the website listed the bedrooms. Every bedroom is shown now, as on the web.
 
 ## Spec conflicts — the case sheet is behind the product
 
@@ -372,40 +417,40 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 
 ### Batch 3 — Security, ownership and rejected input
 **Needs:** A guest account and a host account we own (tokens only — these tests get REFUSED, they create nothing).  
-**Cases:** 30 · Critical: 8 · Already run: 3
+**Cases:** 30 · Critical: 8 · Already run: 30 (20 PASS · 2 INFO · 8 BLOCKED)
 
 | ID | Pri | Case | Status |
 |---|---|---|---|
-| BK-026 | High | No dates selected |  |
-| BK-027 | High | Check-out before check-in |  |
-| BK-028 | High | Past date |  |
-| BK-029 | Med | Zero guests |  |
-| BK-030 | High | Guests over capacity |  |
-| BK-031 | High | Below min stay |  |
-| BK-032 | Med | Above max stay |  |
+| BK-026 | High | No dates selected | PASS (20 Sep) |
+| BK-027 | High | Check-out before check-in | PASS (20 Sep) |
+| BK-028 | High | Past date | PASS (20 Sep) |
+| BK-029 | Med | Zero guests | PASS (20 Sep) |
+| BK-030 | High | Guests over capacity | PASS · Defect 6 fixed (20 Sep) |
+| BK-031 | High | Below min stay | PASS (20 Sep) |
+| BK-032 | Med | Above max stay | PASS (20 Sep) |
 | BK-033 | High | Book without login | PASS (20 Sep) |
-| BK-034 | Critical | Book without KYC |  |
-| BK-035 | Critical | Empty guest details |  |
-| BK-036 | Med | Invalid phone |  |
-| BK-037 | Med | Invalid email |  |
-| BK-079 | Critical | See only own bookings |  |
-| BK-082 | Critical | Tampered price rejected |  |
+| BK-034 | Critical | Book without KYC | BLOCKED — needs an unverified guest |
+| BK-035 | Critical | Empty guest details | INFO — see batch 3 notes |
+| BK-036 | Med | Invalid phone | PASS (20 Sep) |
+| BK-037 | Med | Invalid email | PASS · note (20 Sep) |
+| BK-079 | Critical | See only own bookings | PASS (20 Sep) |
+| BK-082 | Critical | Tampered price rejected | PASS (20 Sep) |
 | BK-083 | High | Auth required | PASS (20 Sep) |
-| NG-039 | High | Zero offer |  |
-| NG-040 | High | Negative offer |  |
-| NG-041 | Med | Non-numeric offer |  |
-| NG-042 | High | Offer on fixed-price listing |  |
+| NG-039 | High | Zero offer | PASS (20 Sep) |
+| NG-040 | High | Negative offer | PASS (20 Sep) |
+| NG-041 | Med | Non-numeric offer | PASS (20 Sep) |
+| NG-042 | High | Offer on fixed-price listing | BLOCKED — no live listing with negotiation off |
 | NG-043 | High | Offer without login | PASS (20 Sep) |
-| NG-090 | Med | Screenshot/replay attack |  |
-| NG-091 | Critical | Tampered offer price |  |
-| NG-094 | Med | Offer with expired session |  |
-| NG-096 | Med | Guest offers on own listing |  |
-| HL-077 | High | Identity linked |  |
-| HL-079 | Critical | Bank details save |  |
-| HL-080 | High | Bank shown last-4 |  |
-| HL-098 | Critical | Host edits own only |  |
-| HL-099 | Critical | Host sees own listings only |  |
-| HL-100 | High | Docs access-controlled |  |
+| NG-090 | Med | Screenshot/replay attack | PASS (20 Sep) |
+| NG-091 | Critical | Tampered offer price | PASS (20 Sep) |
+| NG-094 | Med | Offer with expired session | PASS by test (20 Sep) |
+| NG-096 | Med | Guest offers on own listing | BLOCKED — needs host sign-in |
+| HL-077 | High | Identity linked | BLOCKED — needs host sign-in |
+| HL-079 | Critical | Bank details save | BLOCKED — needs host sign-in |
+| HL-080 | High | Bank shown last-4 | BLOCKED — needs host sign-in |
+| HL-098 | Critical | Host edits own only | BLOCKED — needs host sign-in |
+| HL-099 | Critical | Host sees own listings only | BLOCKED — needs host sign-in |
+| HL-100 | High | Docs access-controlled | BLOCKED — needs host sign-in |
 
 ### Batch 4 — Booking — create, confirm, availability, after the stay
 **Needs:** The guest account. Creates real test bookings on dev.  
