@@ -965,9 +965,13 @@ class _PropertyDetailPanelsState extends State<PropertyDetailPanels> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const PanelTitle("Where you'll sleep"),
-        for (final r in rooms.bedrooms)
-          if (r.beds.isNotEmpty || (r.bathroom ?? '').isNotEmpty)
-            card(r, Icons.bed_outlined),
+        // Every bedroom, described or not. This used to skip a bedroom with
+        // no bed line, so a three-bedroom listing read "Where you'll sleep:
+        // Bathroom 1, Bathroom 2" while the website listed the bedrooms —
+        // the 300-case run caught the two disagreeing (2026-09-20). A bare
+        // "Bedroom 2" says less than a described one, but it is not nothing,
+        // and it is what the website says.
+        for (final r in rooms.bedrooms) card(r, Icons.bed_outlined),
         for (final r in rooms.bathrooms) card(r, Icons.bathtub_outlined),
         const SizedBox(height: 8),
       ],

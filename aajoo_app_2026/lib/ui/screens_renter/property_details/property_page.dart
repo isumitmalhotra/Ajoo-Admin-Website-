@@ -129,6 +129,34 @@ class _PropertyPageState extends State<PropertyPage>
   /// while allowing 2 more at a price. Stopping at 8 would put those two out of
   /// reach and the charge with them, so the stepper reaches what the host is
   /// actually prepared to take.
+  /// The host's per-type caps (wizard step 3), 0/absent = none stated —
+  /// the same reading the server and the website give them (2026-09-20).
+  /// Children count within the party, so the adults are guests − children.
+  int? get _maxAdults { final v = _single?.capacity?.adults; return (v != null && v > 0) ? v : null; }
+  int? get _maxChildren { final v = _single?.capacity?.children; return (v != null && v > 0) ? v : null; }
+  bool get _canAddGuest {
+    final ceiling = _guestCeiling;
+    if (ceiling != null && _guests >= ceiling) return false;
+    final ma = _maxAdults;
+    // One more guest with the same children is one more adult.
+    if (ma != null && (_guests + 1 - _children) > ma) return false;
+    return true;
+  }
+  bool get _canAddChild {
+    if (_children >= _guests) return false;
+    final mc = _maxChildren;
+    return mc == null || _children < mc;
+  }
+  String get _capsLine {
+    final parts = <String>[];
+    final ma = _maxAdults, mc = _maxChildren;
+    final mi = _single?.capacity?.infants;
+    if (ma != null) parts.add('$ma adult${ma == 1 ? '' : 's'}');
+    if (mc != null) parts.add('$mc child${mc == 1 ? '' : 'ren'}');
+    if (mi != null && mi > 0) parts.add('$mi infant${mi == 1 ? '' : 's'}');
+    return parts.isEmpty ? '' : ' · up to ${parts.join(' · ')}';
+  }
+
   int? get _guestCeiling {
     // The wizard's capacity record first, the legacy table second — the same
     // order the spec row and the web use. Reading only propDetails left a
@@ -566,6 +594,20 @@ class _PropertyPageState extends State<PropertyPage>
   ///
   /// Treats the literal strings "null" and "" as absent: the callers stringify
   /// nullable fields, so absence arrives here as text rather than as null.
+  /// "14:00" → "2:00 PM"; anything that is not HH:mm comes back as it is;
+  /// null when there is nothing, so the caller can fall back.
+  static String? _clock(String? hhmm) {
+    final t = (hhmm ?? '').trim();
+    if (t.isEmpty) return null;
+    final m = RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch(t);
+    if (m == null) return t;
+    final h = int.parse(m.group(1)!);
+    final min = m.group(2)!;
+    final period = h >= 12 ? 'PM' : 'AM';
+    final h12 = h % 12 == 0 ? 12 : h % 12;
+    return '$h12:$min $period';
+  }
+
   static String _stayTime(String? detail, dynamic fallback) {
     for (final v in [detail, fallback?.toString()]) {
       final t = (v ?? '').trim();
@@ -1650,9 +1692,9 @@ class _PropertyPageState extends State<PropertyPage>
                   // these as `something.toString()` — and `null.toString()` is
                   // the STRING "null", which is not null. So a listing with no
                   // check-in time displayed "null / null · set by the host".
-                  '${_stayTime(_single?.propDetails?.inTime, widget.inTime)}'
+                  '${_clock(_single?.stayWindow?.checkIn) ?? _stayTime(_single?.propDetails?.inTime, widget.inTime)}'
                   ' / '
-                  '${_stayTime(_single?.propDetails?.outTime, widget.outTime)}'
+                  '${_clock(_single?.stayWindow?.checkOut) ?? _stayTime(_single?.propDetails?.outTime, widget.outTime)}'
                   ' · set by the host',
                   style: TextStyle(
                     color: Colors.grey[600],
@@ -1777,7 +1819,7 @@ class _PropertyPageState extends State<PropertyPage>
                                   style: inter(
                                       fontSize: 14, fontWeight: FontWeight.w600)),
                               if (_guestCeiling != null)
-                                Text('This place sleeps up to $_guestCeiling',
+                                Text('This place sleeps up to $_guestCeiling$_capsLine',
                                     style: inter(
                                         fontSize: 11.5, color: kMuted)),
                             ],
@@ -1812,8 +1854,7 @@ class _PropertyPageState extends State<PropertyPage>
                               IconButton(
                                 icon: const Icon(Icons.add_circle_outline),
                                 iconSize: 26,
-                                onPressed: (_guestCeiling == null ||
-                                        _guests < _guestCeiling!)
+                                onPressed: _canAddGuest
                                     ? () {
                                         setState(() => _guests += 1);
                                         _restayed();
@@ -1875,7 +1916,7 @@ class _PropertyPageState extends State<PropertyPage>
                                 iconSize: 26,
                                 // Never more children than guests: they are
                                 // part of the party, not additional to it.
-                                onPressed: _children < _guests
+                                onPressed: _canAddChild
                                     ? () {
                                         setState(() => _children += 1);
                                         _restayed();

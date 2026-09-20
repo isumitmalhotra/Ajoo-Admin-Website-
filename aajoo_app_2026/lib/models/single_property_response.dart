@@ -127,6 +127,13 @@ class SinglePropertyData {
   /// differently.
   final List<SafetyDistance> safetyDistances;
 
+  /// The stay clock the host set in the wizard — `stayWindow.checkIn` /
+  /// `checkOut` as "HH:mm". The booking sheet used to read only the legacy
+  /// flat row's in/out time and fall back to its own "12:00PM", so every
+  /// listing built by the wizard showed 12:00PM / 12:00PM "set by the host"
+  /// (found in the 300-case run, 2026-09-20, on a 14:00 / 11:00 listing).
+  final StayWindow? stayWindow;
+
   /// Per-room detail — "Where you'll sleep".
   ///
   /// Every line arrives already WRITTEN by the server
@@ -216,6 +223,7 @@ class SinglePropertyData {
     this.reviewCount = 0,
     this.isLuxury,
     this.bathrooms,
+    this.stayWindow,
     this.capacity,
     this.propDetails,
     this.images,
@@ -317,6 +325,10 @@ class SinglePropertyData {
               Map<String, dynamic>.from(json['houseRules'] as Map))
           : null,
       rooms: PropertyRooms.fromJson(json['rooms']),
+      stayWindow: json['stayWindow'] is Map
+          ? StayWindow.fromJson(
+              Map<String, dynamic>.from(json['stayWindow'] as Map))
+          : null,
       safetyDistances: SafetyDistance.listFrom(json['safetyDistances']),
       amenityGroups: (json['amenityGroups'] is List)
           ? (json['amenityGroups'] as List)
@@ -867,6 +879,21 @@ class NegotiationLock {
 
 
 /// One described bedroom, as the server wrote it.
+/// "HH:mm" strings as the server sends them; formatted where they are shown.
+class StayWindow {
+  const StayWindow({this.checkIn, this.checkOut});
+  final String? checkIn;
+  final String? checkOut;
+
+  factory StayWindow.fromJson(Map<String, dynamic> j) {
+    String? s(dynamic v) {
+      final t = (v ?? '').toString().trim();
+      return t.isEmpty || t.toLowerCase() == 'null' ? null : t;
+    }
+    return StayWindow(checkIn: s(j['checkIn']), checkOut: s(j['checkOut']));
+  }
+}
+
 class DescribedRoom {
   const DescribedRoom({
     required this.index,
@@ -918,9 +945,7 @@ class PropertyRooms {
   /// True once a host has described something. A page that renders a heading
   /// over three bare "Bedroom 1/2/3" lines has told the guest nothing and
   /// reads as a section that failed to load.
-  bool get hasDetail =>
-      bedrooms.any((r) => r.beds.isNotEmpty || (r.bathroom ?? '').isNotEmpty) ||
-      bathrooms.isNotEmpty;
+  bool get hasDetail => bedrooms.isNotEmpty || bathrooms.isNotEmpty;
 
   factory PropertyRooms.fromJson(dynamic raw) {
     if (raw is! Map) return const PropertyRooms();
