@@ -290,6 +290,41 @@ that commission, four ledger rows per booking.
 
 ## 8. Closed since the last edition — do not redo
 
+### 8a47. Closed 2026-09-20 — an admin changes their own password (current password → new password), signed out everywhere
+
+**The request (client, 20 Sep):** "an endpoint to update the password of
+super admin accounts — super admin enters the old password to verify their
+identity and then the new password."
+
+**Built (backend `88be2cf`, web `4fb5ded`):**
+
+- `POST /admin/change-password` — body `{ currentPassword, newPassword,
+  confirmPassword? }`, admin JWT required, behind the critical limiter, on
+  the RBAC `ALWAYS` list so **every admin role can change their own**
+  password (a support admin too); nobody can change somebody else's here —
+  that stays on the Members screen. The current password is checked against
+  the bcrypt hash; the new one must meet the platform policy
+  (`config/passwordPolicy.js`: 8+, upper, lower, digit, special, no spaces)
+  and differ from the current; the change is audited
+  (`admin_password_changed`, and `admin_password_change_refused` on a wrong
+  current password) with **no password or hash in the row**.
+- **Signed out everywhere:** `tbl_admins.admin_password_changed_at`
+  (migration `20260920100000`, **applied live**); `adminAuth` refuses any
+  token whose `iat` predates it — *"Your password was changed. Please sign in
+  again."* — including the token the change arrived on. Both clocks are the
+  API server's.
+- **Web:** Admin → **Settings → Your password** (top card): current, new
+  (live policy checklist), confirm; on success the page signs the admin out
+  and returns to `/admin/login`.
+
+**Verified:** backend **159/159** (`theAdminChangesTheirOwnPassword`, 9 —
+the schema, the sign-out rule, the controller with real bcrypt and the real
+audit helper against a stubbed table), web **57/57** + `tsc` + build.
+**Not driven live:** a real change signs the client's admin out on every
+device, and a session never types a stored password (house rule).
+
+---
+
 ### 8a46. Closed 2026-09-20 — "Chat doesn't know it's you" on a new account: what it was, what it was not, and what changed
 
 **The report (client, 20 Sep 04:44, with a screenshot from 19 Sep 21:30 IST):**
