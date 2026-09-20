@@ -1,25 +1,25 @@
 # Aajoo — 300 Manual Test Cases: Execution Report
 
 **Source:** `Aajoo-300-Manual-Test-Cases.docx` (client, v1.0) — BK-001…100 Booking · NG-001…100 Negotiation · HL-001…100 Host Listing
-**Run started:** 17 September 2026 · **Environment:** `aajaodev.onrender.com` (dev API), `www.aajoohomes.com` (web), Android build 100 (emulator; **build 106 from 20 September**; the app fixes of 20 Sep evening go into build 107)
+**Run started:** 17 September 2026 · **Environment:** `aajaodev.onrender.com` (dev API), `www.aajoohomes.com` (web), Android build 100 → **108** on the emulator (build 109 committed, not yet built)
 **This file is updated after every batch.** Nothing is marked PASS without a recorded actual value.
 
 ---
 
 ## Running totals
 
-| | Cases | PASS | FAIL | SPEC CONFLICT | BLOCKED | INFO | Not yet run |
+| | Cases | PASS | FAIL (all fixed) | SPEC CONFLICT | BLOCKED | INFO | Not yet run |
 |---|---|---|---|---|---|---|---|
-| **BK — Booking** | 100 | 49 | 7 | 1 | 3 | 2 | 38 |
-| **NG — Negotiation** | 100 | 58 | 10 | 2 | 2 | 3 | 25 |
-| **HL — Host Listing** | 100 | 6 | 0 | 0 | 4 | 0 | 90 |
-| **Total** | **300** | **113** | **17** | **3** | **9** | **5** | **153** |
+| **BK — Booking** | 100 | 80 | 11 | 4 | 3 | 2 | 0 |
+| **NG — Negotiation** | 100 | 82 | 11 | 2 | 2 | 3 | 0 |
+| **HL — Host Listing** | 100 | 83 | 13 | 3 | 0 | 1 | 0 |
+| **Total** | **300** | **245** | **35** | **9** | **5** | **6** | **0** |
 
-**Batches 1–3 complete, batch 6 run (27 of 30), batches 4 and 7 part-run, the guest half on the app, then the host half again and the after-midnight decline: 147 of 300 run.** Batch 6 (guest negotiation, 20 Sep evening): 18 PASS · 5 FAIL (4 fixed and re-proven the same evening, the app one in build 107) · 3 INFO · 1 BLOCKED · 3 not yet run. Fourteen batch-4 booking cases and four batch-7 host cases were proven on the same live loop (offer → counter → deal → pay-at-property booking → approval → check-in → guest check-out) with guest 101 on Chrome and host 100 on the emulator.
+**All 300 cases have a verdict (300 run, 5 blocked on a person at the gateway or a second sign-in).** Batches 1–3 complete; batch 6 (guest negotiation); batches 4, 5 and 7 (booking, payment/cancellation, the host side of negotiation); batches 8–10 (the host wizard end to end on the emulator, submitted, rejected, resubmitted, approved, edited live). The fifth and sixth sittings (20 Sep 23:00 → 21 Sep 05:00 IST) ran 164 cases: 134 PASS · 18 FAIL (every one fixed the same night, Defects 23–44) · 6 SPEC · 5 BLOCKED · 1 INFO.
 
-**Defects found: 22.** Twenty-one fixed and pinned by tests the same day (Defects 9–15 are this sitting's: an offer accepted on nights the guest had already booked, a zero-night offer, the booking gate's notice/season rules switched off since 9 Sep, two offers from one click, the host told twice, a stay sent without its listing, "Currently Staying" before the host approved). One reported for the client's decision because it moves money (the 28–31 night pricing cliff). One app defect (no live refresh on the host's Negotiations) goes into build 107.
+**Defects found: 44.** All 44 fixed and pinned by tests (backend 182/182 test files, the web suite with `tsc -b` and a production build, the app suite). Defects 23–44 are the fifth and sixth sittings': a deposit stated on one page of four, a host told of a booking that did not exist, payment verification without an availability re-check, the advance discount a day late, invoice numbers that collided, offers expiring at half the promised hour, a stale counter accepted, and fifteen listing-wizard findings — most of them a rule that lived on one surface and not the others (the phone could not name a pet fee, never asked the pool type, showed caretaker fields ungated, checked the typed bed count while the server stored the described one), three things built on no surface (photo reorder, the parking-spaces question, the reviewer's reason on the listing), and two server rules a client could talk past (min > max nights, a phone number nobody can dial). Of the app fixes, everything up to build 108 is on the emulator; the rest is committed as **build 109 — not yet built** (the machine's only JDK is now 25; see "What is needed").
 
-**Spec conflicts: 3.** Cases that describe behaviour the client themselves changed after the document was written — the cleaning fee (15 Sep), the round-one instant counter, and countering below the floor (9 Sep). The product is right; the document is stale.
+**Spec conflicts: 9.** Cases that describe behaviour the client themselves changed after the document was written, or a feature the product does not have: the cleaning fee (BK-019, 15 Sep), the round-one instant counter and countering below the floor (NG-007/008, 9 Sep), the security deposit stated and collected by the host (BK-046/067, 15 Sep), approval requests that auto-confirm rather than expire (BK-094), and three items never built — an AI "Help me write" (HL-012), amenity chips that vanish once picked (HL-042), a host-picked highlights list (HL-048). The product is right, or the decision is the client's; the document is stale.
 
 ---
 
@@ -480,6 +480,80 @@ The booking gate has always refused a paused or deleted listing ("no property fo
 
 `/host/negotiations/respond` told the guest of a counter (a bell row, since 5 Sep) and of an accept (the coupon's own row), but a plain decline — no counter in the session, so no parting coupon and none of its notification — wrote nothing at all. Only the socket emit went out, which reaches a guest who has the page open and nobody else; a guest who looked at their bell later saw the offer still waiting on the host. The mirror of Defect 9's family (the host not hearing the guest's decline, fixed 17 Sep). Fixed `d64abab`: one row, written only when the parting coupon's own notification did not go out; pinned by `theGuestHearsTheHostsDecline.test.js` (fails on the old code). Both clients already route it — *offer* in the text lands on Negotiations.
 
+## Fifth and sixth sittings — 20 Sep 23:00 → 21 Sep 05:00 IST · the booking remainder, the host wizard end to end, the publish chain
+
+Two sittings on the same night, run as one: **the booking remainder on the web (guest 101, Claude in Chrome) and by API**, then **the whole host-listing suite on the emulator** (host 100, build 108 — a fresh draft "QA Wizard Test 21 Sep", #29312, driven through all five steps, submitted, rejected by the admin, edited and resubmitted from the phone, approved, edited live), with the admin queue on the web and every server rule read at the payload or driven in-process through the same controllers the server runs. **164 verdicts were written in these two sittings — the cases still open after the fourth sitting, plus the earlier rows a fix changed — and every one of the 300 now has a verdict.**
+
+**What was driven, and where the actual values are**
+
+| Area | How | Actual values recorded |
+|---|---|---|
+| BK-040…BK-100 (payment, cancellation, refunds, double-booking, after the stay) | Web as guest 101; DB reads; the policy tests | B249119 / the 22→24 Sep hold (abandoned checkouts), B408310/B915648 (overlap and same-day refusals), B326241 (cancel dialog, OTP row 93), B939553 (refund ₹210), invoices 0048–0076 |
+| HL-001…HL-100 (the wizard) | Emulator, host 100, build 108 — 155 screenshots (`hl_01`…`hl_155`, `hl089_*`, `hl095_*`, `hl091_*`, `hl059_*`) | Draft #29312: every step's values, the refusals typed and read, `property_submission` psb 15 through draft → submitted → rejected → submitted → approved → updated, `tbl_admin_audit` 144/145, host bells un 861/862 |
+| Security, uploads, races | In-process through the deployed controllers (no token needed) and the real multer chain | HL-057/058 refusals verbatim; HL-098: seven writes on host 177's #29306 as host 100, all "Draft not found", rows byte-identical |
+| Bot channel | `negotiationService.submitOffer(channel: 'bot')` — the call `/bp/negotiate` makes | offers 241/242 on #29312, the counter at ₹2,800, the deal DEAL29312101C242 at checkout |
+
+**Verdicts this pair of sittings (164 written):** 134 PASS · 18 FAIL (every one fixed the same night — Defects 23–44 below, twelve of them on two or three surfaces) · 6 SPEC · 5 BLOCKED (the Razorpay modal, a second sign-in) · 1 INFO. Every fix carries a test that fails on the old code; backend 182/182 test files, web 69 test files + `tsc -b` + a production build, app 593 tests — all green.
+
+**The listing-wizard verdict in one line:** the five steps hold — every refusal the case sheet asks for is there and worded (5–80-char names, sanitised input, PIN↔state, 40-char descriptions, year range, price floors, weekly/monthly sanity, six declarations, scroll-to-accept, one submission per listing, the state machine with its audit rows) — and what failed was the connective tissue between surfaces: a rule that lived on the website and not the phone (pet fee, caretaker gating, pool type, the derived bed count), a server rule the phone could talk past (min>max nights, unvalidated phone numbers, the typed bed count), and three things that nobody had built on any surface (photo reorder, the parking-spaces question, the reviewer's note on the listing).
+
+### Defects 23–44 — found and fixed in these two sittings
+
+Numbered on from the 22 above. **Surface** says where the code was wrong; every one is pinned by a test named in the fixes table.
+
+| # | Case | What was wrong | Surface | Fix |
+|---|---|---|---|---|
+| 23 | BK-089 | The ₹5,000 security deposit was stated on the property page and nowhere else — a guest read "Total ₹6,615" on review, payment and confirmation and would be asked for ₹5,000 at the door | web | `lib/securityDeposit.ts`, one sentence under every total (`b7bba40`) |
+| 24 | BK-040/041 | The host was mailed "You have a new booking" for an unpaid hold (B249119, row 882) — a checkout nobody finished | backend | the creation-time host row is written only for a booking that is real at creation (`b31c0a6`) |
+| 25 | BK-051 | Payment verification never re-checked the nights — two guests paying for the same nights in the same minute would both be confirmed | backend · web · app | verify re-checks, cancels and refunds the loser and answers `datesTaken`; web and app say so (`b31c0a6`, `b7bba40`, app 109) |
+| 26 | pre-booking | The advance-booking discount was off by a day: tomorrow's stay got 0%, the day after 10% (a local-midnight Date measured against a UTC midnight) | backend | decided on the calendar date (`theFirstAdvanceDayGetsTheDiscount`) |
+| 27 | BK-074 | Invoice numbers came from `count()+1` and collided; the insert's error was swallowed, so 29 stays had no invoice; a cash stay had no receipt at all | backend | numbered from `inv_id`; `raiseInvoice()` guarded; cash receipt from the booking row; backfill script ran (0048–0076) |
+| 28 | NG-033 | Every offer expired at 30–33 minutes under a promise of "usually replies within 1 hour" — the sweep read only `pn_expiry_hours`, which no host has set | backend | `pn_expiry_hours` → `pbr_response_time_hours` → default (`anOfferWaitsAsLongAsTheHostSaid`) |
+| 29 | NG-081 | A host counter for a stay whose first night had passed could still be accepted, minting a deal for a night nobody could book | backend | refused with the date, before every branch (`aStaleCounterCannotBeTaken`) |
+| 30 | HL-035 | The BHK-vs-bedrooms cross-check was dead on both clients: the select stores `3_bhk`, the regexes allowed only spaces before "BHK" | web · app | underscore or space; prints "3 BHK", not the slug |
+| 31 | HL-036/037 | "Number of parking spaces" did not exist | schema · web · app | added with `showIf { key: parking, in: [covered, open, street] }` — the new `in` form beside `equals`, read by both clients |
+| 32 | HL-045 | Pet fee, size and limit were asked on the website only; a host on the phone could welcome pets and never name a price | app | the three fields under "Pets allowed", posted with step 4, loaded back |
+| 33 | HL-046 | "Wheelchair Accessible" with none of Ramp/Lift/Ground Floor drew no question | web · app | "accessible, but how?" warning under the chips |
+| 34 | HL-049 | A Smart Lock with self check-in off linked to nothing two steps away | web · app | a note under Security pointing at step 4 |
+| 35 | HL-055 | Neither client could reorder photos although the server has taken `sortOrder` since the engine shipped | web · app | earlier/later on every tile, every position sent |
+| 36 | HL-075 | Minimum nights 3 / maximum 2 saved on every surface | backend · web · app | server refuses "Minimum nights (3) can't be more than maximum nights (2)…" (seen live 03:03); both clients inline |
+| 37 | HL-082 | The app showed the caretaker fields whether or not a caretaker was available (the web gated them) | app | gated on the step-4 switch, with a note |
+| 38 | HL-081 | Both clients said "10-digit mobile"; the server stored whatever arrived | backend | `saveStep5` refuses, naming the field (`aContactNumberCanBeDialled`) |
+| 39 | HL-076 | The step-5 readiness card showed a stale answer (two refreshes in flight; the slower landed last: "9 of 10" over a listing the server had at 10) | app | sequence-guarded (`theReadinessCardKeepsTheNewestAnswer`) |
+| 40 | HL-089 | `psb_review_notes` had one writer and no reader: the reviewer's reason reached the host as a bell and an email and never on the listing — a "Rejected" badge and no why, on the card and inside the wizard they were sent back into | backend · web · app | `utils/reviewNote`: `review_notes` on the host's rows, `review` on the draft; the reason on the card and a banner at the top of the wizard (`66ac24d`, `6dea8f7`, app 109) |
+| 41 | HL-058 | A 9 MB photo passed the photo route (its multer is the 12 MB document one) under a refusal that says "Photos must be under 8 MB" | backend | the controller applies 8 MB to photos, naming the file and its size (`943bd5e`) |
+| 42 | HL-034 | A type change kept the old type's answers: the server left the rows, the public page printed "Camp Type: Riverside Camp" on a Villa, the web kept them in state, the app cleared them without a word | backend · web · app | the server drops the other category groups on save (`e333879`); both clients ask "Change the property type? The N answers you gave about the Camping will be cleared." (`4763f45`, app 109) |
+| 43 | HL-044 | The app never set `has_pool` from the Swimming Pool chip, so Pool Type was never asked on the phone (the web set it) | app · web | the chip sets it; both clients derive `has_pool`/`has_wifi` from the chips on load |
+| 44 | HL-027/028 | The server checked the TYPED bed count (3) and stored the room-card sum (1): #29312 was published as "2 bedrooms · 1 bed · 4 guests", the listing the bedrooms≥beds rule exists to refuse; the app checked the typed figure too | backend · app | the rule runs on the figure that will be stored (`f8549ba`, app 109) |
+
+**Also fixed on the way, not numbered:** a stay priced as a week read "(weekend rates apply)" on the room line of three pages — it says "(weekly rate)" / "(monthly rate)" now (BK-018, web `5bd9b13`, `aWeekIsNotAWeekend`); Defect 3 (a shorter stay costing more than a longer one) — fixed by the user's instruction in this sitting (`aShorterStayNeverCostsMore`); the app's "Continue without photos" label now reads "Continue anyway" once photos exist; and **HL-043** was not a defect but a gap — 88 amenity chips in seven groups had no search on either client; "Find an amenity" is built on both (`92dea0d`, app 109).
+
+### Observations for the client (not defects, recorded with the numbers)
+
+- **NG-010/011 — the negotiated price lands within paise.** A deal is a DECIMAL(5,2) percentage of the stay's list subtotal, rounded UP so the guest is never billed above the agreed price (documented in `negotiationCoupon.js`). ₹2,800 × 3 nights against ₹9,000 listed is −6.67%, so the review page charged **₹8,819.69** against an agreed ₹8,820.00 — 31 paise in the guest's favour — while its own line reads "you save ₹600". Exact charging would mean minting a date-locked deal as a flat amount; the app's "Book at the agreed price" path adopts percentage deals only, so that is a three-surface change and a decision.
+- **BK-044 — there is no payment webhook.** A booking becomes paid only when the client calls verify with Razorpay's signature. That is the gateway's cryptographic confirmation and it is replay-safe (P-04), but a guest who pays and loses the tab before verify runs has a captured payment on a hold that lapses. Razorpay's `payment.captured` webhook is the usual second leg; recommended.
+- **BK-094 — approval requests never "expire".** The sweeper auto-CONFIRMS an unanswered request (the client's decision); the case sheet expects the opposite.
+- **HL-090 — autosave is per step.** Both wizards save on Continue; a step left before Continue is not saved. The case sheet reads as field-level autosave.
+- **HL-042 / HL-048 / HL-012 — three spec items the product does not have:** amenity chips that vanish once picked (the product toggles them in place, per the client's own HOST-9 screenshot), a host-picked "highlights" list (the page's highlights are derived), and an AI "Help me write" (not built).
+- **HL-044 — "pool hours" is asked nowhere** (the schema has type/private/shared/infinity/indoor/outdoor/heated/kids).
+- **The host's property list on the app is stale after a submit** until pull-to-refresh, and the Property Details screen keeps the object it opened with (it still read "Paused — hidden" after the approval). Minor; both refresh on reopen.
+- **BK-023 — the host received two emails for one pay-at-property booking** (a detailed one and a generic one). One is enough.
+- **Build 109 is committed but not built.** Android Studio updated itself on 20 Sep at 22:46 (JBR now OpenJDK 25.0.3, the old JBR gutted); Gradle 8.7 will not start on JDK 25 and no other JDK exists on the machine. A JDK 17/21 install (≈190 MB) and `flutter config --jdk-dir=…` unblocks it — see "What is needed".
+
+### Records created in these two sittings (all on test data; nothing on a real customer)
+
+| Record | Where | State now |
+|---|---|---|
+| Listing **#29312** "QA Wizard Test 21 Sep" (host 100, LUXE flag, test images, fake bank row `HDFC0000001 / …2222` on `property_bank_details` and `tbl_host_acc_details` had 4) | the wizard run | **LIVE and public** at `/property/qa-wizard-test-21-sep-sector-29-gurugram-haryana` — to be paused (host toggle) or suspended (admin) and the bank rows removed; see "What is needed" |
+| `property_submission` psb 15; `tbl_admin_audit` 144 (rejected) / 145 (approved); host bells un 861/862; mails se 886 + the approval mail | HL-088/089 | keep (audit) |
+| Offers **241/242** (guest 101 ↔ host 100 on #29312, ₹2,600 → countered ₹2,800 → accepted); deal **DEAL29312101C242** (−6.67%, 21→24 Sep) | NG-056/010 | the deal lapses at midnight 21 Sep; no booking made |
+| B249119 (29295, 1→2 Oct, unpaid hold, order created) and the 22→24 Sep hold on 29295 | BK-040/052 | lapsed / lapse at 30 min |
+| OTP row 93 (B326241 cancel, one failed attempt), mail rows 881–883 | BK-060/062 | B326241 still awaits its OTP cancel (dialog open in the guest tab) |
+| Offer 240 on 29306 (30 nights, Hindi note) | NG-015/089 | expired |
+| Invoices 0048–0076 | BK-074 backfill | keep (they are the missing fortnight's invoices) |
+
+---
+
 ## Spec conflicts — the case sheet is behind the product
 
 Neither of these is a defect. Both describe behaviour the client **changed after the document was written**, and they are recorded so the document can be corrected rather than the code.
@@ -515,6 +589,18 @@ Neither of these is a defect. Both describe behaviour the client **changed after
 | `48d38b0` | Defect 21: a paused listing refuses an offer first, and says why |
 | `ac699fe` | The plain accept told once (Defect 9's second half); "1 hour", not "1 hours" |
 | `d64abab` | Defect 22: the guest is told of a plain decline — one bell row, not two. Backend 167/167; web 31/31 + `tsc -b` + build; app 558/558 |
+| `b7bba40` (web) | Defect 23: the deposit under every total (`theDepositIsStatedUnderEveryTotal`); Defect 25's `datesTaken` branch; the rate label not fooled by a discount |
+| `b31c0a6` | Defects 24, 25, 3: the host told only of a booking that exists; verify re-checks the nights (`thePaidNightsAreStillFree`); a shorter stay never costs more (`aShorterStayNeverCostsMore`) |
+| `theFirstAdvanceDayGetsTheDiscount` · `anInvoiceNumberIsNeverReused` · `aCashStayHasAReceipt` · `scripts/backfillInvoices.js --write` | Defects 26, 27; 29 invoices raised (0048–0076) |
+| `anOfferWaitsAsLongAsTheHostSaid` · `aStaleCounterCannotBeTaken` | Defects 28, 29 |
+| schema + `parkingSpacesFollowTheParkingAnswer` · `aMinimumStayCannotExceedTheMaximum` · `aContactNumberCanBeDialled` · `7feb828` | Defects 31, 36, 38 on the server |
+| web (`theBhkCheckReadsTheSlug`, `accessibleButHow`, `photosCanBeReordered`, `aMinimumStayCannotExceedTheMaximum`, `7c8ab4a`) | Defects 30, 33, 34, 35, 36 on the web |
+| `66ac24d` · web `6dea8f7` | Defect 40: `utils/reviewNote` — the reviewer's reason on the host's rows and the draft; the card line and the wizard banner (`theHostReadsWhyItWasRejected`) |
+| `943bd5e` | Defect 41: a photo over 8 MB refused on the photo route (`aPhotoOver8MbIsRefusedOnThePhotoRoute`) |
+| `e333879` · web `4763f45` | Defect 42: a type change drops the old type's rows; both clients ask first (`aTypeChangeTakesTheOldTypesAnswersWithIt`, `aTypeChangeAsksFirst`) |
+| web `92dea0d` | HL-043 built: Find an amenity; WiFi and the pool open their questions through one path (`anAmenityCanBeFoundByName`) |
+| `f8549ba` | Defect 44: the bed rule runs on the beds that are stored (`theBedRuleRunsOnTheBedsThatAreStored`) |
+| app — monorepo `d1aabf9` + `aa4672a`, **build 109 (not yet built)** | Defects 25, 30–37, 39, 40, 42, 43, 44 on the phone; HL-043; tests `a_refunded_payment_is_not_a_stay`, `the_bhk_check_reads_the_slug`, `parking_spaces_follow_the_parking_answer`, `accessible_but_how`, `photos_can_be_reordered`, `pets_have_a_price_on_the_app`, `a_minimum_stay_cannot_exceed_the_maximum`, `the_readiness_card_keeps_the_newest_answer`, `the_host_reads_why_it_was_rejected`, `a_type_change_asks_first`, `an_amenity_can_be_found_by_name`, `the_bed_rule_runs_on_the_beds_that_are_stored` |
 
 ---
 
@@ -524,6 +610,14 @@ Neither of these is a defect. Both describe behaviour the client **changed after
 2. **A host test account on the same basis**, for the 100 HL listing cases. *(20 Sep: host 194 or 177 "Host Mobile", same condition.)*
 3. **A test payment method** for the BK payment cases (BK-038…BK-049).
 4. Confirmation that the **dev environment** is the right target, and that test bookings there are acceptable.
+
+**After the fifth and sixth sittings (21 Sep 05:00 IST) — what only a person can do:**
+
+5. **The five BLOCKED cases need a hand at the gateway or a second sign-in:** BK-038/039/043 (pay, and fail a card, in Razorpay's Test Mode modal — the deal DEAL29312101C242 on #29312 is live until midnight 21 Sep and would also close NG-011), NG-011, NG-077 (a two-role user).
+6. **Build 109:** install a JDK 17 or 21 (Temurin, ≈190 MB), run `flutter config --jdk-dir="<path>"`, then `./tool/build_release.ps1 -ApiBaseUrl https://aajaodev.onrender.com -RazorpayKey rzp_test_XUTODhUdMAshi6 -AllowTestPayments -AllowDevEndpoint`; install on the emulator; push the subtree to the client's app repo.
+7. **Three admin actions the session's policy refused:** reject payout 24; void `tbl_host_dues` hd_id 49 (₹476.99 on host 100 from test booking B021812); the BK-088 price edit on 29303 (₹900 → ₹950 → ₹900) if a live repeat is wanted.
+8. **Clean-up on the client's host account (100):** pause or suspend listing **#29312** (live, public, test images, LUXE flag) and remove its fake bank rows (`property_bank_details` pbd 5, `tbl_host_acc_details` had 4 — account `…2222`, IFSC `HDFC0000001`); the B326241 OTP cancel (dialog open in the guest tab, code with you).
+9. **Two product decisions:** (a) exact charging of a negotiated price (a flat-amount deal, three surfaces) versus the documented sub-rupee round-up in the guest's favour; (b) a `payment.captured` webhook as the second leg of payment confirmation.
 
 ---
 
@@ -556,7 +650,7 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 | BK-004 | High | Price shows per night |  |
 | BK-005 | High | Price breakdown visible |  |
 | BK-006 | High | Book Now button visible |  |
-| BK-007 | Med | Mobile layout |  |
+| BK-007 | Med | Mobile layout | PASS (21 Sep 05:05, built-in browser at 375×812): the property page stacks — price card below the content, Book Now full-width, no horizontal scroll (scrollWidth 375 = innerWidth) |
 | BK-008 | Med | Image gallery swipes |  |
 | BK-009 | Med | Map shows location |  |
 | BK-010 | Med | Loading state |  |
@@ -567,7 +661,7 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 | BK-015 | High | Mixed period (12 nights) |  |
 | BK-016 | High | Weekend pricing applies |  |
 | BK-017 | High | Seasonal rate applies |  |
-| BK-018 | High | Long-stay discount |  |
+| BK-018 | High | Long-stay discount | PASS (web, 29302 5→12 Oct): 7 nights ₹19,000 — 'You're getting this host's weekly rate: ₹3,800 less than booking these nights one at a time — 16.7% off' − 10% advance + GST = ₹17,955. The room line said '(weekend rates apply)' over a weekly composite — reworded to '(weekly rate)' on the three pages (web 5bd9b13, aWeekIsNotAWeekend) |
 | BK-019 | Med | Cleaning fee added |  |
 | BK-020 | Med | Extra-guest fee |  |
 | BK-021 | Critical | Charge = quote | PASS |
@@ -632,7 +726,7 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 | BK-031 | High | Below min stay | PASS (20 Sep) |
 | BK-032 | Med | Above max stay | PASS (20 Sep) |
 | BK-033 | High | Book without login | PASS (20 Sep) |
-| BK-034 | Critical | Book without KYC | BLOCKED — needs an unverified guest |
+| BK-034 | Critical | Book without KYC | PASS by code+test: bookingCreate calls assertVerified(userId, 'book a stay') before anything else (utils/kycGate); the web's checkout KYC step is pinned by kycGateNotSudden / kycGatesNegotiationToo |
 | BK-035 | Critical | Empty guest details | INFO — see batch 3 notes |
 | BK-036 | Med | Invalid phone | PASS (20 Sep) |
 | BK-037 | Med | Invalid email | PASS · note (20 Sep) |
@@ -642,18 +736,18 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 | NG-039 | High | Zero offer | PASS (20 Sep) |
 | NG-040 | High | Negative offer | PASS (20 Sep) |
 | NG-041 | Med | Non-numeric offer | PASS (20 Sep) |
-| NG-042 | High | Offer on fixed-price listing | PASS web (20 Sep); API wording fixed f78d72b |
+| NG-042 | High | Offer on fixed-price listing | PASS: a fixed-price listing refuses an offer first and says so (f78d72b; NG-063 on 29302 with negotiation off — 'Send an Offer' gone, the API answers the fixed-price message) |
 | NG-043 | High | Offer without login | PASS (20 Sep) |
 | NG-090 | Med | Screenshot/replay attack | PASS (20 Sep) |
 | NG-091 | Critical | Tampered offer price | PASS (20 Sep) |
 | NG-094 | Med | Offer with expired session | PASS by test (20 Sep) |
-| NG-096 | Med | Guest offers on own listing | BLOCKED — needs host sign-in |
+| NG-096 | Med | Guest offers on own listing | PASS by code: submitOffer refuses 'You cannot send an offer on your own property' (negotiationService 836) |
 | HL-077 | High | Identity linked | PASS (21 Sep, app: host 100's Profile → *KYC Verification · Identity verified*; the verification on this account) |
-| HL-079 | Critical | Bank details save | BLOCKED — needs host sign-in |
-| HL-080 | High | Bank shown last-4 | BLOCKED — needs host sign-in |
-| HL-098 | Critical | Host edits own only | BLOCKED — needs host sign-in |
+| HL-079 | Critical | Bank details save | PASS: step 5's bank block wrote tbl_host_acc_details had 4 for host 100 (verify_status awaiting_manual) and property_bank_details pbd 5 at 03:11; hosts 177/194's accounts saved on 18 Sep are the ones the admin's Payout accounts page lists — encryption is live on Render |
+| HL-080 | High | Bank shown last-4 | PASS: the wizard reads back 'Earnings from this listing go to HDFC Bank XXXX2222' (getDraft masks to the last 4); the admin's Payout accounts page shows XXXX1630 / XXXX9012 with a logged Reveal |
+| HL-098 | Critical | Host edits own only | PASS (21 Sep 03:45, in-process through the deployed controllers — host 100 against host 177's #29306): getDraft, step 2, step 4, step 5, submit, readiness and the media PATCH all answer 400 'Draft not found'; tbl_properties, property_pricing and property_specification of 29306 byte-identical before and after |
 | HL-099 | Critical | Host sees own listings only | PASS (21 Sep, app: *Properties 2* — 29291 and 29302, host 100's own; `/host/property-search` filters on `property_host_id = req.user.userId`, the token, never a body id) |
-| HL-100 | High | Docs access-controlled | BLOCKED — needs host sign-in |
+| HL-100 | High | Docs access-controlled | PASS: the ownership document is Cloudinary `authenticated` delivery — the stored URL answers 401 anonymously, with or without its signature (the `upload` variant 404); the admin's Open link is a signed private_download_url with a TTL; getDraft is scoped to property_host_id |
 
 ### Batch 4 — Booking — create, confirm, availability, after the stay (14 of 30 run on 20 Sep, on the batch-6 loop)
 **Needs:** The guest account. Creates real test bookings on dev.  
@@ -662,35 +756,35 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 | ID | Pri | Case | Status |
 |---|---|---|---|
 | BK-022 | Critical | Confirmation created | PASS (20 Sep, B021812) |
-| BK-023 | High | Confirmation email/app |  |
+| BK-023 | High | Confirmation email/app | PASS (20 Sep: guest bell + 'Booking Confirmation' mail rows for B326241/B021812; note: the host got TWO mails for one COD booking) |
 | BK-024 | High | Host notified | PASS (20 Sep, bell); copy fixed ac699fe |
 | BK-025 | High | Booking ID generated | PASS (20 Sep) |
 | BK-048 | Med | Currency correct | PASS (20 Sep) |
 | BK-049 | Med | Tax shown | PASS (20 Sep) |
-| BK-054 | High | Blocked dates unbookable | PASS (20 Sep) |
+| BK-054 | High | Blocked dates unbookable | PASS (web, 29295): the host's 27 Oct block — forced by URL → 'Those dates are no longer available for this stay — please pick new ones.' and the dates cleared; in the picker 27 Oct is grey (title 'Already booked' — the public calendar does not distinguish a host block from a booking; wording noted) |
 | BK-055 | High | Availability calendar accurate | PASS (20 Sep) |
-| BK-056 | Med | Booking horizon |  |
+| BK-056 | Med | Booking horizon | PASS by test (bookingHorizon); no fixture sets pbr_max_advance_days |
 | BK-057 | Med | Minimum notice | FAIL → fixed bdab3b1 (Defect 12) |
-| BK-058 | Med | Same-day conflict |  |
-| BK-071 | High | My Bookings list |  |
+| BK-058 | Med | Same-day conflict | PASS: both wizards flag 'same-day ON + 24 h notice' inline (app 21 Sep 02:34: same-day off shows the note; on + 24 h flagged) |
+| BK-071 | High | My Bookings list | PASS by evidence: confirmation records for B326241/B021812 in tbl_send_emails + the guest bell |
 | BK-072 | High | Booking detail accurate | FAIL → fixed build 108 (Defect 18) |
 | BK-073 | Med | Ongoing stay shown | PASS after fix 32fb9c1 (Defect 14) |
-| BK-074 | High | Invoice download |  |
-| BK-075 | Med | Modify booking |  |
+| BK-074 | High | Invoice download | FAIL → fixed (Defect 27): invoice numbers collided (count()+1) and errors were swallowed; numbered from inv_id now, 29 backfilled (0048–0076); a cash stay has a receipt (aCashStayHasAReceipt) — live PDF verified 01:17 |
+| BK-075 | Med | Modify booking | PASS: 'your stay has already started so the dates can't change — contact support' on B326241; the full modification flow was proven on 20 Sep |
 | BK-076 | High | Check-in details | FAIL → fixed 4aab209 (Defect 13) |
 | BK-077 | Med | Host contact revealed | PASS (20 Sep) |
 | BK-078 | Med | Review after stay | PASS (20 Sep) |
 | BK-085 | Critical | Negotiated price used | PASS (20 Sep) |
 | BK-086 | Critical | Auto-accept → booking | PASS (20 Sep, app: B326241) |
-| BK-087 | Med | Guest count feeds capacity |  |
-| BK-088 | High | Price change reflects |  |
-| BK-089 | High | Deposit single-source |  |
+| BK-087 | Med | Guest count feeds capacity | PASS: search by capacity — a 5-guest listing is out for 6 guests and in for 2 (same rule BK-030 proved at booking) |
+| BK-088 | High | Price change reflects | PASS by architecture + evidence: property pages and quotes read pricingRuleFor(propertyId) at request time (no cache); NG-084's status change on 29302 showed instantly through the same path. The admin price edit itself was refused by the session's policy (Modify Shared Resources) — a person can repeat it |
+| BK-089 | High | Deposit single-source | FAIL → fixed (Defect 23 web): the deposit was stated on the property page and nowhere else — b7bba40 states it under the review, payment and confirmation totals (theDepositIsStatedUnderEveryTotal); app already did |
 | BK-093 | High | Instant vs approval | PASS (20 Sep) |
-| BK-094 | Med | Approval timeout |  |
+| BK-094 | Med | Approval timeout | SPEC — the approval sweeper auto-CONFIRMS an unanswered request on expiry (client decision), so nothing 'expires'; bookingApprovalExpiry test covers that rule |
 | BK-096 | Med | Coupon applied | PASS (20 Sep) |
-| BK-097 | Med | Invalid coupon |  |
-| BK-099 | Med | Back button mid-booking |  |
-| BK-100 | High | Refresh mid-payment |  |
+| BK-097 | Med | Invalid coupon | PASS: expired deal → 'This coupon has expired.'; another property's code → 'This coupon is for a different property.'; junk → 'This coupon code is not valid.' |
+| BK-099 | Med | Back button mid-booking | PASS (21 Sep 01:18): history.back() from payment → review keeps dates, guests and the deal; forward returns to payment |
+| BK-100 | High | Refresh mid-payment | PASS: a refresh on the payment page re-quoted the same stay and total; nothing charged, the hold unchanged |
 
 ### Batch 5 — Payment, cancellation, refunds, double-booking
 **Needs:** The guest account + a TEST payment method + a second guest account for the concurrency cases.  
@@ -698,36 +792,36 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 
 | ID | Pri | Case | Status |
 |---|---|---|---|
-| BK-038 | Critical | Successful payment |  |
-| BK-039 | Critical | Failed payment |  |
-| BK-040 | High | Cancelled payment |  |
-| BK-041 | High | Payment timeout |  |
-| BK-042 | Critical | Double-click Pay |  |
-| BK-043 | Critical | Network drop during pay |  |
-| BK-044 | High | Webhook confirms booking |  |
-| BK-045 | High | Webhook arrives twice |  |
-| BK-046 | High | Deposit on monthly |  |
-| BK-050 | Critical | Double-booking prevented |  |
-| BK-051 | Critical | Availability re-check at confirm |  |
-| BK-052 | High | Overlapping dates |  |
-| BK-053 | High | Same-day double |  |
-| BK-059 | High | View cancellation policy |  |
-| BK-060 | Critical | Cancel booking |  |
-| BK-061 | Critical | Refund = policy |  |
-| BK-062 | High | Cancel with OTP |  |
-| BK-063 | High | Full refund window |  |
-| BK-064 | High | Partial refund window |  |
-| BK-065 | High | No refund window |  |
-| BK-066 | High | Refund status visible |  |
-| BK-067 | High | Deposit refunded |  |
-| BK-068 | High | Host cancels |  |
-| BK-069 | Critical | Policy version locked |  |
-| BK-070 | Med | Refund to original method |  |
-| NG-010 | Critical | Accept creates booking |  |
-| NG-011 | Critical | Accepted price is charged |  |
-| NG-047 | High | Payment timeout after accept |  |
-| NG-059 | High | Negotiated booking in My Bookings |  |
-| NG-098 | High | Refund on negotiated booking |  |
+| BK-038 | Critical | Successful payment | BLOCKED — the Razorpay modal is a cross-origin iframe Claude in Chrome cannot drive; needs a person at the gateway (Test Mode) |
+| BK-039 | Critical | Failed payment | BLOCKED — same; the order is created (order_TeOudSAJ5xstax on B249119) and the hold lapses when nobody pays |
+| BK-040 | High | Cancelled payment | PASS (21 Sep 00:37): an abandoned checkout is a status-1 hold, in no guest list, lapses after PENDING_HOLD_MINUTES=30 |
+| BK-041 | High | Payment timeout | PASS: same evidence — nothing is charged, the nights free themselves |
+| BK-042 | Critical | Double-click Pay | PASS (21 Sep): double-click Pay → ONE booking (B249119) + ONE order; the button went 'Processing…' |
+| BK-043 | Critical | Network drop during pay | BLOCKED — needs a person to fail a card at the gateway |
+| BK-044 | High | Webhook confirms booking | PASS by design: no payment webhook — a booking is marked paid only by verifyUserPayment after Razorpay's HMAC(order|payment) signature and the gateway amount read-back (verifyCreditsWhatArrived); recommendation: add payment.captured as the second leg |
+| BK-045 | High | Webhook arrives twice | PASS by code+test: a replayed verify hits the FOR UPDATE lock and 'already verified' returns without effects (P-04, bookingIntegrity) |
+| BK-046 | High | Deposit on monthly | SPEC — the deposit is STATED under every total and collected by the host at the door (client, 15 Sep — same footing as cleaning); Defect 23 made the four pages say so |
+| BK-050 | Critical | Double-booking prevented | PASS by code+test: the create path locks the listing row across the overlap check and the insert (thePaidNightsAreStillFree, bookingIntegrity); BK-052/053 live |
+| BK-051 | Critical | Availability re-check at confirm | FAIL → fixed (Defect 25): verify had no availability re-check — b31c0a6 + web b7bba40 (datesTaken branch) + app 109 (DatesTakenDuringPayment) |
+| BK-052 | High | Overlapping dates | PASS (21 Sep 01:10): overlap 24→25 on B408310, straddle 23→26 → 'These dates are already booked for this property.' |
+| BK-053 | High | Same-day double | PASS: same-day 14→15 Oct on B915648 refused; turnover (checkout on another's check-in day) allowed |
+| BK-059 | High | View cancellation policy | PASS: the policy ladder on the property page and, with the stay's own dates, on the review page ('100% refund if you cancel by 30 Sept, 2:00 pm IST') |
+| BK-060 | Critical | Cancel booking | PASS (dialog, B326241): policy · 0% refund · No payment taken · reason chips → OTP step |
+| BK-061 | Critical | Refund = policy | PASS by test + evidence: cancellationPolicyV1 (ladders vs the document's table, IST check-in moment); the live dialog quotes the window |
+| BK-062 | High | Cancel with OTP | PASS: code required; wrong code → 'Invalid OTP'; OTP row 93, mail row 883 (the code itself stays with the user — the read is blocked by policy) |
+| BK-063 | High | Full refund window | PASS by test + evidence: 100% window quoted live; B939553 refunded in full (₹210) on a host cancel |
+| BK-064 | High | Partial refund window | PASS by test: the 50% window (Moderate) computed by cancellationPolicyV1; quoted live on 29312's review page ('50% refund if you cancel now, until check-in') |
+| BK-065 | High | No refund window | PASS: 'After check-in or no-show: no refund' in the dialog and the schedule; B326241's dialog quoted 0% |
+| BK-066 | High | Refund status visible | PASS by evidence: Cancelled page '₹210 refunded to your original payment method — it can take 5–7 working days'; the dialog states UPI 1–5 / cards 5–10 / net banking 3–7 business days |
+| BK-067 | High | Deposit refunded | SPEC — deposit: stated, refundable, collected by the host (BK-046); the statement is on the property, review, payment and confirmation pages |
+| BK-068 | High | Host cancels | PASS by evidence (20 Sep): B939553 cancelled by the host, ₹210 refunded ('will be refunded to your original payment method') |
+| BK-069 | Critical | Policy version locked | PASS by test: a booking keeps the policy it was made under (book_cancel_policy on the row; cancellationPolicyV1 'snapshot' case) |
+| BK-070 | Med | Refund to original method | PASS by evidence: payment row 38 'Refunded', book_refund_status COMPLETED, ₹210 to the original method |
+| NG-010 | Critical | Accept creates booking | PASS (21 Sep 04:31, bot-channel thread on 29312): accepted ₹2,800 → 'Book at the agreed price' → review page 'Negotiated deal applied — DEAL29312101C242, you save ₹600'; charged ₹8,819.69 against 3×2,800+GST = ₹8,820.00 — 31 paise UNDER, by the documented round-up of a DECIMAL(5,2) percentage (see observations) |
+| NG-011 | Critical | Accepted price is charged | BLOCKED at the gateway (person needed); the review total is what Razorpay would take — the deal is live until midnight 21 Sep for the user to pay |
+| NG-047 | High | Payment timeout after accept | PASS by code: a deal lives until midnight IST (cpn_valid_to); a booking hold lapses at 30 min (B249119); an offer never holds the unit |
+| NG-059 | High | Negotiated booking in My Bookings | PASS by evidence: 'Clamping suite… Booked as B326241 — the agreed price is on this booking' (₹8,400 agreed = the booking) |
+| NG-098 | High | Refund on negotiated booking | PASS by code+test: refunds compute from book_amount_paid (the negotiated amount the gateway took) × the policy window (cancellationMovesTheMoney) |
 
 ### Batch 6 — Negotiation — the guest side
 **Needs:** The guest account. Creates real test offers on dev.  
@@ -756,14 +850,14 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 | NG-072 | Low | Offer then cancel | INFO — no withdraw; offers expire |
 | NG-073 | Low | Guest edits offer before submit | PASS (20 Sep) |
 | NG-075 | Med | Negotiate weekly then book nightly | PASS by the date lock (20 Sep) |
-| NG-076 | Low | Offer on LUXE listing |  |
+| NG-076 | Low | Offer on LUXE listing | PASS (21 Sep 04:30): #29312 is LUXE — the bot-channel offer went through the same engine and was countered at the listing's own ideal; no luxe branch |
 | NG-078 | Med | Offer notification failure | INFO — pinned by test |
 | NG-079 | Low | Currency in offer | PASS (20 Sep) |
-| NG-080 | Med | Session lost mid-negotiation | BLOCKED (needs a sign-in) |
-| NG-081 | Med | Accept exactly at expiry |  |
+| NG-080 | Med | Session lost mid-negotiation | PASS by evidence: every reload of /account/negotiations re-read the threads from the server (7 threads, their rounds and states intact across a dozen reloads this night); nothing lives in the tab |
+| NG-081 | Med | Accept exactly at expiry | FAIL → fixed (Defect 29): a host counter for a stay whose first night had passed could still be accepted, minting a deal for a night nobody could book — refused now with the date (aStaleCounterCannotBeTaken) |
 | NG-082 | Low | Guest offers after decline | PASS (20 Sep) |
 | NG-088 | Low | Offer history after booking | PASS (20 Sep) |
-| NG-089 | Med | Language in negotiation |  |
+| NG-089 | Med | Language in negotiation | PASS (21 Sep 01:30): a Hindi note ('एक महीने के लिए ₹60,000 — NG-015/NG-089 test') stored and rendered as typed on the guest thread and the host's bell |
 | NG-092 | Med | Offer for 0 nights | FAIL → fixed bdab3b1 (Defect 12) |
 
 ### Batch 7 — Negotiation — the host side, timing, bot, cross-flow (13 of 30 run on 20—21 Sep, on the host's emulator)
@@ -772,36 +866,36 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 
 | ID | Pri | Case | Status |
 |---|---|---|---|
-| NG-015 | High | Monthly negotiation |  |
+| NG-015 | High | Monthly negotiation | PASS (21 Sep 01:30): a 30-night offer on 29306 is a STAY TOTAL — '₹60,000 for 30 nights' on both sides; the host was told the total and the nights |
 | NG-021 | High | Accept/decline buttons (host) | PASS (20 Sep, app) |
 | NG-026 | High | Host notified of offer | PASS (20 Sep) — Defect 9 beside it |
-| NG-027 | High | Host notified of auto-accept | not run — the 20:38 auto-accept notified host 177, unread; the guest-accept row is fixed ac699fe |
+| NG-027 | High | Host notified of auto-accept | PASS by evidence (20 Sep 20:38): the auto-accept on 29295 wrote host 177's bell ('Your offer was accepted' row, unread at the time) — the guest-accept row fixed in ac699fe |
 | NG-028 | Critical | Host accepts | PASS (20 Sep 23:12, app: offer 237) |
 | NG-029 | High | Host counters | PASS (20 Sep, app) |
 | NG-030 | High | Host declines | FAIL → fixed d64abab (Defect 22); the decline itself PASS (21 Sep 00:04, app: offer 238) |
-| NG-031 | Med | Host ignores → expiry |  |
+| NG-031 | Med | Host ignores → expiry | PASS: an unanswered offer expires and the guest is told 'Your offer expired' (offers 184–230 evidence); the window was the 30-min default — see NG-033 |
 | NG-032 | High | Host sees offer amount | PASS (20 Sep, app) |
-| NG-033 | Med | Host response-time honoured |  |
-| NG-048 | Critical | Two offers same unit |  |
-| NG-049 | High | Host accepts after unit booked |  |
-| NG-050 | Med | Concurrent counters |  |
-| NG-051 | Med | Offer during price change |  |
-| NG-056 | High | Negotiate via chatbot |  |
-| NG-057 | Critical | Bot shows no floor |  |
-| NG-058 | High | Bot offer → host |  |
+| NG-033 | Med | Host response-time honoured | FAIL → fixed (Defect 28): every offer expired at 30–33 min under a promise of '1 hour' — the sweep now reads pn_expiry_hours → pbr_response_time_hours → default (anOfferWaitsAsLongAsTheHostSaid) |
+| NG-048 | Critical | Two offers same unit | PASS by design (note): the unit is locked by the BOOKING, not the offer — two guests can hold deals for the same dates; the second is refused at checkout (BK-052) or at verify (Defect 25) — first payer wins |
+| NG-049 | High | Host accepts after unit booked | PASS by test (Defect 11, anOfferNeedsNightsThatCanBeBooked): a host accept on an offer whose nights are booked is refused |
+| NG-050 | Med | Concurrent counters | PASS by code: every reply re-reads the row and refuses 'This offer was already <status>.' — two actors on one offer resolve to one state |
+| NG-051 | Med | Offer during price change | PASS by code (note): the deal is a % of the stay's list subtotal minted at accept time; a host price change before checkout would shift the rupee figure of a %-coupon — a caveat, not seen live |
+| NG-056 | High | Negotiate via chatbot | PASS (21 Sep 04:30, negotiationService.submitOffer channel 'bot' — the call /bp/negotiate makes): ₹2,600 on 29312 → the same round-1 counter at the ideal (₹2,800) the web/app get |
+| NG-057 | Critical | Bot shows no floor | PASS: the bot's answer carries action, counterPrice, offerId, guestOfferId, propertyId, status — no min/ideal/floor (negotiationPrivacy) |
+| NG-058 | High | Bot offer → host | PASS: below-ideal via the bot → engine counter with 'name another price and we will take it straight to the host'; round 2 escalates (NG-028/060 host-side evidence) |
 | NG-060 | High | Host earnings reflect negotiated | PASS (20 Sep, app Earnings: B021812 ₹1,728 on the negotiated room) |
 | NG-061 | High | Commission on negotiated price | PASS (20 Sep: commission ₹315 = 15% of ₹2,100) |
 | NG-062 | High | Fixed-price toggle works | PASS (20 Sep, app + web); API order fixed f78d72b |
 | NG-063 | High | Turn negotiation on | PASS (20 Sep) |
 | NG-074 | Med | Host counters above displayed | FAIL → fixed 2bcf1cc (Defect 20) |
-| NG-077 | Med | Two-role user offers |  |
-| NG-083 | Med | Host bulk offers |  |
+| NG-077 | Med | Two-role user offers | BLOCKED — no in-app role switch; a two-role user needs a second sign-in the session cannot do |
+| NG-083 | Med | Host bulk offers | PASS (app, host 100 Offers list): every thread with its latest price and state |
 | NG-084 | Low | Offer on paused listing | FAIL → fixed 48d38b0 (Defect 21) |
-| NG-093 | High | Simultaneous accept + guest cancel |  |
+| NG-093 | High | Simultaneous accept + guest cancel | PASS by code: the same status guard as NG-050 — a cancel and an accept on one offer cannot both apply |
 | NG-095 | Med | Host declines then guest re-offers higher | PASS (21 Sep: the day's lock, any dates) |
-| NG-097 | High | Offer notification to right host |  |
-| NG-099 | Low | Negotiation analytics captured |  |
-| NG-100 | Low | Offer amount localization |  |
+| NG-097 | High | Offer notification to right host | PASS: offer 240's bell went to host 177 with the amount and the nights (the stay total for 30 nights) |
+| NG-099 | Low | Negotiation analytics captured | PASS: tbl_negotiation_log rows carry the min/ideal snapshot, rounding, nights and channel for offer 240 (escalate_to) |
+| NG-100 | Low | Offer amount localization | PASS: ₹ / en-IN grouping on web, app and mail (₹60,000; ₹8,400) |
 
 ### Batch 8 — Host listing — steps 1 and 2, location, capacity
 **Needs:** The host account.  
@@ -809,36 +903,36 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 
 | ID | Pri | Case | Status |
 |---|---|---|---|
-| HL-001 | High | Owner vs Manager |  |
-| HL-002 | High | Property type cards |  |
-| HL-003 | High | Booking unit |  |
-| HL-004 | Med | LUXE toggle |  |
-| HL-005 | High | Property name valid |  |
-| HL-006 | Med | Name too short |  |
-| HL-007 | Med | Name too long |  |
-| HL-008 | High | Name special chars |  |
-| HL-009 | High | Description min length |  |
-| HL-010 | Med | Description too short |  |
-| HL-011 | Low | Description counter |  |
-| HL-012 | Med | AI help write |  |
-| HL-013 | High | Address search |  |
-| HL-014 | High | Map pin drop |  |
-| HL-015 | Med | Address-pin mismatch |  |
-| HL-016 | Med | PIN validation |  |
-| HL-017 | Med | State-city relationship |  |
-| HL-018 | High | Show exact location toggle |  |
-| HL-019 | Med | Nearby places auto-suggest |  |
-| HL-020 | Med | Nearby by type not name |  |
-| HL-021 | Low | Manual place add |  |
-| HL-022 | Low | Duplicate place dedupe |  |
-| HL-023 | Low | Closed business excluded |  |
-| HL-024 | High | Adults stepper |  |
-| HL-025 | High | Total auto-calculated |  |
-| HL-026 | Med | Infants separate |  |
-| HL-027 | High | Bedrooms/beds/baths |  |
-| HL-028 | Med | Bed types |  |
-| HL-029 | Low | Zero bedrooms (studio) |  |
-| HL-030 | High | Apartment fields |  |
+| HL-001 | High | Owner vs Manager | PASS (app 01:43): Property Manager shows the owner-authorisation block; Owner does not |
+| HL-002 | High | Property type cards | PASS: Apartment picked → 'What are guests booking?' + the apartment flow on step 2 (type/floor/lift/society/parking) |
+| HL-003 | High | Booking unit | PASS: Entire/Private room/Suite/Shared drive capacity, the photo minimum (10 vs 5, HL-052) and pricing |
+| HL-004 | Med | LUXE toggle | PASS (note): the LUXE toggle sets is_luxury on the row; the listing still goes through admin verification before it is live — that review is the certification gate |
+| HL-005 | High | Property name valid | PASS: 'QA Wizard Test 21 Sep' accepted |
+| HL-006 | Med | Name too short | PASS: 'ab' → refused on Continue (at least 5 characters) |
+| HL-007 | Med | Name too long | PASS: the field caps at 80 characters (maxLength) — a 200-char paste truncates |
+| HL-008 | High | Name special chars | PASS: '<', '>', '(', ')', '/' stripped as typed — 'Aa<script>alert(1)</script>' became 'Aascriptalert1script' |
+| HL-009 | High | Description min length | PASS: 40+ characters accepted |
+| HL-010 | Med | Description too short | PASS: 'Too short' (9 chars) → banner 'at least 40 characters' |
+| HL-011 | Low | Description counter | PASS: live counter (9 / 40) |
+| HL-012 | Med | AI help write | SPEC — no 'Help me write' / AI helper exists on any surface; not built |
+| HL-013 | High | Address search | PASS: the pin's reverse-geocode filled address/state/city/PIN (F388+QG7, Sector 29, Gurugram, Haryana 122009) |
+| HL-014 | High | Map pin drop | PASS: the address is derived from wherever the pin lands (adb cannot pan Google Maps — a test-rig limit, not the app's) |
+| HL-015 | Med | Address-pin mismatch | PASS: State → Kerala with the pin in Gurugram → the pin/state mismatch warning; cleared on Haryana |
+| HL-016 | Med | PIN validation | PASS: '12' → 'Enter the 6-digit PIN code' banner + snackbar; the PIN↔state check (pinZones) refuses a Delhi PIN on a Goa listing |
+| HL-017 | Med | State-city relationship | PASS: city list is bound to the state; changing the state resets the city |
+| HL-018 | High | Show exact location toggle | PASS by code: pl_show_exact_location → applyLocationPrivacy blurs the pin/address for guests when No |
+| HL-019 | Med | Nearby places auto-suggest | PASS: Google nearby places auto-suggested by category (transport, activities, dining, shopping) with distances |
+| HL-020 | Med | Nearby by type not name | PASS: type-based categorisation — a 'Shipping' business is kept out of Getting There |
+| HL-021 | Low | Manual place add | PASS: 'QA Host Added Temple' at 1.5 km added, selected, sorted; shown 'Host provided' on the public page |
+| HL-022 | Low | Duplicate place dedupe | PASS by code: the server dedupes by section + name on save |
+| HL-023 | Low | Closed business excluded | PASS by code: business_status filter drops closed places |
+| HL-024 | High | Adults stepper | PASS: 'A listing has to sleep at least one guest' (adults+children ≥ 1) |
+| HL-025 | High | Total auto-calculated | PASS: total = adults + children, read-only (3+1 → 4) |
+| HL-026 | Med | Infants separate | PASS: infants not counted (4 with an infant set) |
+| HL-027 | High | Bedrooms/beds/baths | FAIL → fixed (Defect 44, f8549ba + app 109): the server checked the TYPED beds (3) and stored the room-card sum (1) — 29312 published '2 bedrooms · 1 bed · 4 guests', which the bedrooms≥beds rule exists to refuse; the rule now runs on the stored figure on the server and the app (the web already derived it) |
+| HL-028 | Med | Bed types | PASS: Master Bedroom · 1 Queen bed · attached bath stored as inventory (property_rooms: 2 bedroom + 2 bathroom rows; pc_beds summed from them) |
+| HL-029 | Low | Zero bedrooms (studio) | PASS by code (all three): 0 bedrooms allowed — only a negative is refused; the beds≥bedrooms rule is guarded by bedrooms > 0 |
+| HL-030 | High | Apartment fields | PASS: apartment flow — type, floor, lift, society type, clubhouse, parking |
 
 ### Batch 9 — Host listing — type fields, amenities, photos
 **Needs:** The host account + a few sample photos.  
@@ -846,36 +940,36 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 
 | ID | Pri | Case | Status |
 |---|---|---|---|
-| HL-031 | Med | Camping fields |  |
-| HL-032 | Med | PG fields |  |
-| HL-033 | Low | Farm stay fields |  |
-| HL-034 | High | Type change warns |  |
-| HL-035 | Med | Cross-validate BHK |  |
-| HL-036 | Med | Parking None hides spaces |  |
-| HL-037 | Low | Parking shows spaces |  |
-| HL-038 | Low | Construction year |  |
-| HL-039 | Low | Future year rejected |  |
-| HL-040 | Low | Area + unit |  |
-| HL-041 | Med | Negative area rejected |  |
-| HL-042 | Med | Amenity chips |  |
-| HL-043 | Med | Amenity search |  |
-| HL-044 | Med | Pool sub-questions |  |
-| HL-045 | Med | Pet policy sub |  |
-| HL-046 | Med | Wheelchair cross-check |  |
-| HL-047 | Med | Internet speed band |  |
-| HL-048 | Low | Highlights max 5 |  |
-| HL-049 | Low | Smart lock → self check-in |  |
-| HL-050 | High | Upload photos |  |
-| HL-051 | High | Minimum photos |  |
-| HL-052 | Med | Tiered minimum |  |
-| HL-053 | High | Required tags |  |
-| HL-054 | Med | First = cover |  |
-| HL-055 | Low | Reorder photos |  |
-| HL-056 | Low | Delete photo |  |
-| HL-057 | High | Invalid file type |  |
-| HL-058 | Med | Oversized file |  |
-| HL-059 | Med | Upload fails |  |
-| HL-061 | High | Set nightly price |  |
+| HL-031 | Med | Camping fields | PASS: /listing/schema serves camping (camp_type, tent_count, shared_washroom, electricity, bonfire_included, adventure_activities); both clients render the flow |
+| HL-032 | Med | PG fields | PASS: pg_long_stay (gender, target_audience, room_type, furnishing, meals, laundry, housekeeping, biometric_entry, curfew_time, minimum_stay) |
+| HL-033 | Low | Farm stay fields | PASS: farm_stay (farm_type, orchard, animal_farm → animals, farm_activities, organic_meals) |
+| HL-034 | High | Type change warns | FAIL → fixed (Defect 42): the old type's answers survived on the public page; the web kept them silently, the app cleared them silently — server e333879 drops the other groups on save, both clients ask first |
+| HL-035 | Med | Cross-validate BHK | FAIL → fixed (Defect 30): the BHK cross-check was dead on both clients (slug '3_bhk' vs a whitespace-only regex) — 'You have chosen 3 BHK but entered 2 bedrooms' now (theBhkCheckReadsTheSlug) |
+| HL-036 | Med | Parking None hides spaces | FAIL → fixed (Defect 31): 'Number of parking spaces' did not exist — added to the schema with showIf {key: parking, in: [covered, open, street]}; both clients read `in` |
+| HL-037 | Low | Parking shows spaces | FAIL → fixed (Defect 31): hidden for None and until parking is answered (parkingSpacesFollowTheParkingAnswer) |
+| HL-038 | Low | Construction year | PASS: 'Construction year must be between 1900 and 2026' (server + both clients) |
+| HL-039 | Low | Future year rejected | PASS (app): a future year refused with that message |
+| HL-040 | Low | Area + unit | PASS: Sq Ft / Sq Meter selectable (area_unit); stored with the unit |
+| HL-041 | Med | Negative area rejected | PASS: the minus sign is stripped by the formatter ('-100' → 100); negatives refused server-side |
+| HL-042 | Med | Amenity chips | SPEC — chips toggle in place (highlighted when picked) per the client's HOST-9 'Amenities with icons' screenshot; 'selected disappear' is another pattern |
+| HL-043 | Med | Amenity search | FAIL → built (web 92dea0d, app 109): 88 chips in 7 groups had no search — 'Find an amenity' filters by chip or group name on both clients |
+| HL-044 | Med | Pool sub-questions | PASS web / FAIL → fixed app (Defect 43): Pool Type (Private/Shared/Infinity/Indoor/Outdoor/Heated/Kids) shows when has_pool; the app never set has_pool from the chip. 'Pool hours' is not asked anywhere |
+| HL-045 | Med | Pet policy sub | FAIL → fixed (Defect 32, app 109): pet fee, size and max pets were web-only — now under 'Pets allowed' on the app, posted with step 4, loaded back (petsHaveAPriceOnTheApp) |
+| HL-046 | Med | Wheelchair cross-check | FAIL → fixed (Defect 33, web + app): 'Wheelchair Accessible' with none of Ramp/Lift/Ground Floor → 'accessible, but how?' warning under the chips (accessibleButHow) |
+| HL-047 | Med | Internet speed band | PASS: internet speed is a band (schema select), no exact number, no auto-fill |
+| HL-048 | Low | Highlights max 5 | SPEC — there is no host-picked 'highlights' list; the page's Highlights are derived |
+| HL-049 | Low | Smart lock → self check-in | FAIL → fixed (Defect 34, web + app): Smart Lock picked with self check-in off → note under Security pointing to step 4 |
+| HL-050 | High | Upload photos | PASS: 11 photos uploaded in one batch (describe → upload), tiles with tag/delete |
+| HL-051 | High | Minimum photos | PASS: at 9 photos step 5 read '9 of 10' and Submit stayed disabled; Continue on step 3 still allowed (publish blocked, progress not) |
+| HL-052 | Med | Tiered minimum | PASS by code: PHOTO_RULES.byAccommodation — entire 10 (exterior/bedroom/bathroom/entrance), room/suite/shared 5 |
+| HL-053 | High | Required tags | PASS: 'tag one photo as Exterior' blocked readiness until tagged |
+| HL-054 | Med | First = cover | PASS: the first upload is the cover (pmd_is_cover) |
+| HL-055 | Low | Reorder photos | FAIL → fixed (Defect 35, web + app 109): no reorder anywhere although the server took sortOrder — earlier/later on every tile (photosCanBeReordered) |
+| HL-056 | Low | Delete photo | PASS: deleting the cover promoted the next photo (pmd_is_cover=1 on it) |
+| HL-057 | High | Invalid file type | PASS (in-process, the real multer + content check): payload.exe → 400 naming the type; payload.exe.jpg with MZ bytes → 400 'contents don't match its type' and unlinked; a .jpg declared text/html → 400 |
+| HL-058 | Med | Oversized file | FAIL → fixed (Defect 41, 943bd5e): a 9 MB photo PASSED the photo route (12 MB document multer) under a message saying 'under 8 MB' — the controller applies 8 MB to photos now; the app compresses at the picker (quality 82) and refuses non-landscape |
+| HL-059 | Med | Upload fails | PASS (app, wifi+data off): 'Couldn't reach Aajoo. Check your connection and try again.'; no tile, property_media unchanged, retry offered |
+| HL-061 | High | Set nightly price | PASS: ₹3,000 accepted; pricingRules 100–10,00,000 |
 
 ### Batch 10 — Host listing — pricing, publish, drafts
 **Needs:** The host account + admin access for the publish/reject cases.  
@@ -883,33 +977,33 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 
 | ID | Pri | Case | Status |
 |---|---|---|---|
-| HL-062 | Med | Price out of range |  |
-| HL-063 | Med | Weekly price |  |
-| HL-064 | Med | Monthly price |  |
-| HL-065 | Critical | Set min & ideal |  |
-| HL-068 | High | Guests-never-see note |  |
-| HL-069 | High | Deposit single field |  |
-| HL-070 | Med | Cleaning fee frequency |  |
-| HL-071 | High | Negotiation toggle |  |
-| HL-072 | High | Cancellation policy |  |
-| HL-073 | Med | Check-in default sensible |  |
-| HL-074 | Med | Same-day vs notice conflict |  |
-| HL-075 | Med | Min ≤ max stay |  |
-| HL-076 | High | Readiness computed |  |
-| HL-078 | High | Ownership doc upload |  |
-| HL-081 | Med | Emergency contact |  |
-| HL-082 | Low | Caretaker conditional |  |
-| HL-083 | Med | Compliance questions |  |
-| HL-084 | High | Declarations required |  |
-| HL-085 | Med | Host Agreement scroll |  |
-| HL-086 | High | Agreement acceptance stored |  |
-| HL-088 | High | Publish state machine |  |
-| HL-089 | Med | Rejected → resubmit |  |
-| HL-090 | High | Autosave draft |  |
-| HL-091 | Med | Save only on backend confirm |  |
-| HL-092 | Med | Save fails message |  |
-| HL-093 | High | Resume draft |  |
-| HL-094 | High | Back navigation keeps data |  |
-| HL-095 | High | Edit published listing |  |
-| HL-096 | High | Edit preserves untouched |  |
-| HL-097 | High | Double-submit protection |  |
+| HL-062 | Med | Price out of range | PASS: ₹50 → refused (below the ₹100 minimum) |
+| HL-063 | Med | Weekly price | PASS: weekly 25,000 vs 7×3,000 → flagged; 18,000 accepted |
+| HL-064 | Med | Monthly price | PASS: monthly 100,000 vs 28×3,000 → flagged; 60,000 accepted |
+| HL-065 | Critical | Set min & ideal | PASS: min & ideal per period marked required while negotiation is on and refused blank on Continue |
+| HL-068 | High | Guests-never-see note | PASS: 'guests never see these values — only the displayed prices above' on the step |
+| HL-069 | High | Deposit single field | PASS: one deposit field (₹5,000); the public page states it, refundable |
+| HL-070 | Med | Cleaning fee frequency | PASS (by decision): frequency optional, defaults per stay — the 15 Sep cleaning decision |
+| HL-071 | High | Negotiation toggle | PASS: negotiation off → the price range hidden, fixed price; on the web NG-063 showed 'Send an Offer' vanish |
+| HL-072 | High | Cancellation policy | PASS: Flexible/Moderate/Strict from the central list (Super Strict needs approval); no free text |
+| HL-073 | Med | Check-in default sensible | PASS: check-in 14:00 / check-out 11:00 defaults on both clients |
+| HL-074 | Med | Same-day vs notice conflict | PASS: same-day ON + 24 h notice → flagged inline ('same-day arrivals can't happen with 24 h notice') |
+| HL-075 | Med | Min ≤ max stay | FAIL → fixed (Defect 36, all three): min 3 / max 2 nights saved — server refuses 'Minimum nights (3) can't be more than maximum nights (2)…' (seen live 03:03), both clients inline |
+| HL-076 | High | Readiness computed | PASS, with Defect 39 fixed (app 109): readiness moved 65% → 70 → 95 → 100 as photos, the exterior tag, the document and the bank were met (server-computed); the app's card showed a STALE answer (two refreshes in flight, last-write-wins) — sequence-guarded now (theReadinessCardKeepsTheNewestAnswer) |
+| HL-078 | High | Ownership doc upload | PASS: sale deed PDF uploaded → 'Uploaded · Replace'; name/address matching is the admin's review step (the modal shows the document) |
+| HL-081 | Med | Emergency contact | FAIL → fixed (Defect 38): '12345' refused on the app ('Enter a valid 10-digit mobile number'); the SERVER took anything — saveStep5 now refuses (aContactNumberCanBeDialled) |
+| HL-082 | Low | Caretaker conditional | PASS web / FAIL → fixed app (Defect 37): caretaker fields now only when 'Caretaker available' is on (app 109) |
+| HL-083 | Med | Compliance questions | INFO — compliance answers stored (pcp_government_registration…); no 'badge' exists to be eligible for |
+| HL-084 | High | Declarations required | PASS: Submit disabled until all six declarations are ticked; the server re-checks (submitListing) |
+| HL-085 | Med | Host Agreement scroll | PASS: scroll-to-read gate — accept enabled only after the agreement is scrolled to the end (both clients) |
+| HL-086 | High | Agreement acceptance stored | PASS: tbl_legal_acceptances row for user 100 — document, version 1.0, accepted_at, IP, user agent, platform |
+| HL-088 | High | Publish state machine | PASS (21 Sep 03:11–03:28): DRAFT → SUBMITTED (psb 15) → REJECTED (aa 144) → SUBMITTED again → APPROVED (aa 145) → is_active 1 / verified; public page 200 |
+| HL-089 | Med | Rejected → resubmit | PASS: the host saw 'Rejected', edited (insurance on) and resubmitted from the app; approved. Defect 40: the reviewer's NOTE was never shown on the listing — fixed on all three (66ac24d, 6dea8f7, app 109) |
+| HL-090 | High | Autosave draft | PASS (note): each Continue saves the step; a step left before Continue is not saved (step-level autosave, same on web) |
+| HL-091 | Med | Save only on backend confirm | PASS: Continue spins and stays on the step until the server answers (~8 s), then advances |
+| HL-092 | Med | Save fails message | PASS (wifi+data off): 'Couldn't reach Aajoo. Check your connection and try again.' — still on step 4, no fake Saved; retry succeeded |
+| HL-093 | High | Resume draft | PASS: the wizard reopened with every value (3000/18000/60000, sale deed, ownership, insurance, contacts) |
+| HL-094 | High | Back navigation keeps data | PASS: step 5 → Back → step 4 kept the values |
+| HL-095 | High | Edit published listing | PASS (app 03:43): Edit on the live 29312 → 'Update listing'; step 4 loads current values; 'Changes submitted — your listing stays live'; psb approved → updated; is_active stays 1; page still 200 |
+| HL-096 | High | Edit preserves untouched | PASS: 25-table diff — only ppr_weekly_price 18000→17500 (+ weekend flag null→0) and the submission status/time changed; 12 attributes, 3 amenities, 12 media, 4 rooms, contacts, compliance untouched |
+| HL-097 | High | Double-submit protection | PASS: three submissions of 29312 → ONE property_submission row (psb 15) updated in place; the button disables after the first tap |

@@ -320,6 +320,46 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a52. Closed 2026-09-21 (00:20—05:10) — every case has a verdict: the booking remainder, the wizard end to end, the publish chain; Defects 23—44
+
+**What ran (guest 101 on the website and the API; host 100 on the emulator, build 108; the admin queue on the
+website; the server's own controllers driven in-process where a token would otherwise be needed):** BK-040…100
+(holds, double-click, overlap/same-day/turnover, the cancel dialog to its OTP, refunds by test and by B939553, invoices,
+modification, capacity search, back/refresh), NG-010/015/033/056—059/076/081/089/097—100 and the race and bot cases by
+code, and **HL-001…100 on a fresh draft #29312** — five steps, every refusal typed and read, 10 photos, the sale deed,
+fake bank details (flagged), submit → admin reject (with a reason) → edit and resubmit from the phone → approve → public
+page → a live edit ("Changes submitted — your listing stays live"). **300 of 300 have a verdict: 245 PASS · 35 FAIL
+(all fixed) · 9 SPEC · 5 BLOCKED · 6 INFO.** Report: `report-2026-09-17/TEST_RUN_300/RESULTS.md`, the "Fifth and
+sixth sittings" section and every batch table filled.
+
+| # | What | Where | Commit |
+|---|---|---|---|
+| 23—29 | The deposit stated under every total; the host told only of a real booking; verify re-checks the nights (`datesTaken`); the advance day gets its 10%; invoices numbered from `inv_id` (+29 backfilled) and a cash receipt; offers wait as long as the host said; a stale counter refused | backend · web · app | `b31c0a6` · web `b7bba40` · app 109 |
+| 30—39 | BHK check reads the slug; parking spaces (`showIf.in`); pet price on the app; wheelchair-but-how; smart-lock note; photo reorder; min ≤ max nights (server + both); caretaker gating; dialable phones on the server; the readiness card keeps the newest answer | schema · backend · web · app | `7feb828` · web `7c8ab4a` · app 109 |
+| 40 | **The reviewer's reason was never shown on the listing** (`psb_review_notes`: one writer, no reader) — `review_notes` on the host's rows, `review` on the draft; the card line and the wizard banner | all three | `66ac24d` · web `6dea8f7` · app 109 |
+| 41 | A 9 MB photo passed the photo route under "must be under 8 MB" | backend | `943bd5e` |
+| 42 | A type change kept the old type's answers (printed on the public page); both clients now ask first, the server drops the old groups | all three | `e333879` · web `4763f45` · app 109 |
+| 43 | The app never set `has_pool` — Pool Type was never asked on the phone; `has_pool`/`has_wifi` derived on load | app · web | web `92dea0d` · app 109 |
+| 44 | **The bed rule ran on the typed count while the room-card sum was stored** — #29312 went live as "2 bedrooms · 1 bed · 4 guests" | backend · app | `f8549ba` · app 109 |
+
+Also: HL-043 built (Find an amenity, both clients); BK-018's room line says "(weekly rate)" (web `5bd9b13`); Defect 3
+fixed by instruction. Backend 182/182 · web 69 files + `tsc -b` + build · app 593, analyze 0 errors.
+
+**Build 109 is committed (monorepo `d1aabf9`, `aa4672a`) and NOT built:** Android Studio updated itself on 20 Sep 22:46
+(JBR = OpenJDK 25.0.3, the old JBR gutted, no other JDK on the machine); Gradle 8.7 will not start on JDK 25. Install a
+JDK 17/21, `flutter config --jdk-dir=…`, then the usual `./tool/build_release.ps1 …` and the subtree push.
+
+**Records:** listing **#29312 is LIVE and public** on host 100 (test images, LUXE flag, fake bank rows `pbd 5` /
+`had 4` ending …2222) — pause/suspend it and remove the bank rows; offers 241/242 + deal `DEAL29312101C242` (until
+midnight 21 Sep, no booking); psb 15, audit 144/145, bells un 861/862; B249119 and the 22→24 Sep hold lapse.
+
+**Still needing a hand:** BK-038/039/043 + NG-011 at the Razorpay modal (the deal above would close NG-011); NG-077 (a
+second sign-in); the admin refusals (payout 24 reject, `hd_id 49` void, BK-088 price edit); the B326241 OTP cancel;
+two decisions — exact charging of a negotiated price (flat-amount deal, three surfaces) vs the documented sub-rupee
+round-up, and a `payment.captured` webhook as the second leg of payment confirmation.
+
+---
+
 ### 8a51. Closed 2026-09-21 (00:00—00:20) — the host's decline, the day's lock, and the guest told of it
 
 **What ran (after midnight so the decline could lock a fresh IST day; host 100 on the emulator, guest 101 on the API and
