@@ -322,6 +322,37 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a56. Closed 2026-09-21 (17:40—19:00) — Bulk Import is a screen: the client uploads, checks and imports on their own
+
+**Asked (Sumit):** "there is no role of the Zyphex team in this — they should be able to do it on its own"; plus a client
+document on how to fill and upload.
+
+**Built.** Admin → Management → **Bulk Import** (web `0e59434`; backend `a066318`, `c0e7783`): *Download the template*
+(served by the API from `docs/templates`, always the current one) → choose the filled `.xlsx` → **Check the file** (nothing
+written; counts + one line per row, filter by result, CSV) → **Import N** (a confirm that repeats what will be left out; runs on
+the server after the click; progress bar polled every 2.5 s; one import at a time) → *Done* with ids → **Previous imports**
+(every job reopenable with its CSV). The engine moved to `services/bulkImport.service.js`; the CLI is a thin wrapper over it.
+Jobs in **`tbl_import_jobs`** (migration `20260921120000`, run on dev): the checked file is the very file the import reads and
+is removed when it ends; a job a restart left "running" reads *interrupted*; a check never imported **expires after 7 days**
+(file gone, report kept). Its own confined RBAC screen **`bulk-import`**; every check and import on the admin audit
+(`bulk_import_check` / `bulk_import_apply`). Tests `theAdminImportsFromTheScreen` (7, stubbed engine + models) — **187/187**;
+web `tsc -b` + build green, 69/69.
+
+**Driven live on dev as Super Admin:** trial workbook → *Checked: 1 can be imported, 1 refused* → Import 1 → progress →
+*Import done*: **#29314** "Import Trial Cottage Two" created as a draft under host 194 with 4 photos, the bad row refused with
+its five reasons, job #2 `done` in the table, two audit rows. (Job #1 is a check of the same file with a trial guest row — never
+imported; expires in 7 days.)
+
+**The client document:** `docs/templates/Aajoo-Bulk-Import-Guide.docx` (+ `.pdf`, 11 pages) — in one minute; what to have
+ready; how the workbook is laid out and the rules that apply everywhere; Hosts & Users; Properties across the eight sheets
+band by band; **how to upload on the Bulk Import screen** and what they will see after; what `submit_for_review = TRUE`
+needs; why rows get refused (the messages, with what to change); a two-minute checklist. No Zyphex step anywhere in it.
+
+**Still open:** photos as URLs (assumed) vs a folder of files — ask the client; 500 rows per file; one import at a time;
+`uploads/imports` is local disk on Render (fine for the single instance; a second instance would need shared storage).
+
+---
+
 ### 8a55. Closed 2026-09-21 (16:20—17:40) — bulk import: the Excel templates and the importer that drives the wizard
 
 **Asked (Sumit, for the client):** "an Excel template for uploading property data into the DB, bulk import, all fields, and the
