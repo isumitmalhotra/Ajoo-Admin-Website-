@@ -683,7 +683,7 @@ Neither of these is a defect. Both describe behaviour the client **changed after
 7. ~~Reject payout 24; void hd_id 49~~ — **done** (eighth sitting; payout 25 rejected as well). The BK-088 price edit on 29303 (₹900 → ₹950 → ₹900) only if a live repeat is wanted.
 8. **Clean-up on the client's host account (100):** #29312 is paused by the host and its stored data is now sound; **still to do by the user:** the fake bank rows (`tbl_host_acc_details` had 4 → `had_isDelete = 1`; delete `property_bank_details` pbd 5) — the script is written; the B326241 OTP cancel (dialog open in the guest tab, code with you).
 9. **Move the two test accounts to real mailboxes** — Mailinator dropped every mail this sitting and the cancellation codes never showed; the run read them from the dev database.
-10. **Product decisions:** (a) ~~exact charging of a negotiated price~~ — **decided 21 Sep: the documented round-up stays**; (b) a `payment.captured` webhook as the second leg of payment confirmation — explained to the user 21 Sep; needs a go-ahead, then the endpoint is written and whoever holds the Razorpay dashboard registers the URL with a secret that also goes on Render as `RAZORPAY_WEBHOOK_SECRET`.
+10. **Product decisions:** (a) ~~exact charging of a negotiated price~~ — **decided 21 Sep: the documented round-up stays**; (b) ~~a `payment.captured` webhook~~ — **go-ahead given and built 21 Sep** (`6fd10d1`, `POST /webhooks/razorpay`, one settle function shared with `/verify`, `theGatewayConfirmsOnItsOwn`); **with the user:** register it in the Razorpay dashboard (test mode) with a secret, set the same secret on Render as `RAZORPAY_WEBHOOK_SECRET`; the route answers 503 until then.
 
 ---
 

@@ -347,9 +347,19 @@ opened with after the wizard returns; the admin tab in Chrome hung once after a 
 
 **Still with the user:** host 100's fake payout account — `tbl_host_acc_details` had 4 (`had_isDelete = 1`) and
 `property_bank_details` pbd 5 (delete) — there is no host-side remove and the session's policy refused the write on the
-client's host row (script ready); the B326241 OTP cancel; real mailboxes for 100/101; the `payment.captured` webhook —
-explained, needs a go-ahead, then the endpoint is written and whoever holds the Razorpay dashboard registers the URL with
-a secret that also goes on Render as `RAZORPAY_WEBHOOK_SECRET` (test mode first).
+client's host row (script ready); the B326241 OTP cancel; real mailboxes for 100/101.
+
+**The `payment.captured` webhook — built the same afternoon (user: "go ahead with the webhook, I'll register it in Razorpay").**
+`POST /webhooks/razorpay` (`6fd10d1`): HMAC over the raw body with `RAZORPAY_WEBHOOK_SECRET`, constant-time; 503 until the
+secret is set (what dev answers now), 401 on a bad signature, 200 on anything verified and understood, 500 only when it
+could not be applied (retry wanted). A captured payment is settled by **the same function `/verify` uses** —
+`settleVerifiedPayment`, extracted from the handler, under the same FOR UPDATE lock — so the guest's call and Razorpay's
+arrive in any order and the second finds "already paid". The amount is checked against the order's (a mismatch confirms
+nothing and tells an admin); `payment.failed` writes the gateway's reason on the pending row. `theGatewayConfirmsOnItsOwn`
+drives it in-process (9 cases); 185/185. **With the user:** register it in the Razorpay dashboard (test mode) — Settings →
+Webhooks → `https://aajaodev.onrender.com/webhooks/razorpay`, events `payment.captured` + `payment.failed`, a secret of
+their choosing — and set that secret on Render as `RAZORPAY_WEBHOOK_SECRET`; then one test-mode payment with the tab
+closed at the modal proves it (runbook §3.1b for live mode).
 
 ---
 

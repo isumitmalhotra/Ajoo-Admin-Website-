@@ -168,6 +168,7 @@ work end to end.
 | # | Gate | Why it blocks go-live | Where it lands |
 |---|---|---|---|
 | 3.1 | **Razorpay LIVE activation** (business KYC on the Razorpay dashboard) → live key id + secret | Every payment today is test-mode | Env group `RAZORPAY_KEY_ID/SECRET` (live), Vercel `VITE_RAZORPAY_KEY`, app build (§5) |
+| 3.1b | **Razorpay payment webhook registered in LIVE mode** (dashboard → Settings → Webhooks → `https://api.aajoohomes.com/webhooks/razorpay`, events `payment.captured` + `payment.failed`, a secret of your choosing) — the test-mode one was registered 2026-09-21; live mode is a separate list | Without it a payment whose tab closed is money taken for a booking that expires; `/verify` alone hears only from the guest's device | `RAZORPAY_WEBHOOK_SECRET` on Render (the same string typed into the dashboard); `/health/env` lists it; the route answers 503 until it is set |
 | 3.2 | **SMS provider + DLT registration** (MSG91 or Fast2SMS; sender id, OTP template approved by the operator) | Phone OTP is dormant; sign-in by phone does not work for a real user | `SMS_PROVIDER`, `MSG91_AUTH_KEY`, `MSG91_SENDER_ID`, `SMS_OTP_TEMPLATE_ID`; `OTP_DEV_BYPASS` **unset** |
 | 3.3 | **Email sending domain authenticated** (Brevo → SPF + DKIM on `aajoohomes.com`) | Booking, payout and KYC mails otherwise land in spam | `BREVO_API_KEY`, `MAIL_FROM` on the domain |
 | 3.4 | **The company's own Cloudinary account** (the current one is a shared account that held other people's records — memory `cloudinary_shared_account`) | Guest ID photos and listing images must live in an account the company controls | `CLOUDINARY_*`; existing assets copied by a session |
@@ -198,7 +199,7 @@ keep from it (a screenshot, a booking id) is theirs to save now.
 moment the website is on the fresh database.
 
 4.3 **Move the webhooks** to `https://api.aajoohomes.com/…`: Razorpay
-(payments), DIDIT (`/webhooks/didit`), BotPenguin. RazorpayX stays dormant.
+(payments, `/webhooks/razorpay` — §3.1b), DIDIT (`/webhooks/didit`), BotPenguin. RazorpayX stays dormant.
 Firebase, Google Maps, Cloudinary, Vercel need nothing.
 
 4.4 **Point the Oregon service at PlanetScale too** (its `DB_*` on the
