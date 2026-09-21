@@ -174,6 +174,11 @@ class ListingWizardController extends GetxController {
   final RxMap<String, dynamic> p4 = <String, dynamic>{
     'currency': 'INR',
     'negotiation_enabled': true,
+    // The website's default too. Left unset, the server stored NULL and the
+    // listing booked as instant while its confirmation page said "request
+    // sent" (300-case run, NG-011 on #29312, 2026-09-21). A host who wants
+    // instant booking picks it on the step.
+    'booking_type': 'approval',
     // The platform's own stay window, and the website's defaults for the same
     // two fields. A listing that never touches them still has times a guest
     // can be told and a refund ladder can be measured from, rather than a
