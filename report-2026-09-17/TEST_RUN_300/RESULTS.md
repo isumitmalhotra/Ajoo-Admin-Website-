@@ -10,14 +10,14 @@
 
 | | Cases | PASS | FAIL (all fixed) | SPEC CONFLICT | BLOCKED | INFO | Not yet run |
 |---|---|---|---|---|---|---|---|
-| **BK — Booking** | 100 | 80 | 11 | 4 | 3 | 2 | 0 |
-| **NG — Negotiation** | 100 | 82 | 11 | 2 | 2 | 3 | 0 |
+| **BK — Booking** | 100 | 83 | 11 | 4 | 0 | 2 | 0 |
+| **NG — Negotiation** | 100 | 84 | 11 | 2 | 0 | 3 | 0 |
 | **HL — Host Listing** | 100 | 83 | 13 | 3 | 0 | 1 | 0 |
-| **Total** | **300** | **245** | **35** | **9** | **5** | **6** | **0** |
+| **Total** | **300** | **250** | **35** | **9** | **0** | **6** | **0** |
 
-**All 300 cases have a verdict (300 run, 5 blocked on a person at the gateway or a second sign-in).** Batches 1–3 complete; batch 6 (guest negotiation); batches 4, 5 and 7 (booking, payment/cancellation, the host side of negotiation); batches 8–10 (the host wizard end to end on the emulator, submitted, rejected, resubmitted, approved, edited live). The fifth and sixth sittings (20 Sep 23:00 → 21 Sep 05:00 IST) ran 164 cases: 134 PASS · 18 FAIL (every one fixed the same night, Defects 23–44) · 6 SPEC · 5 BLOCKED · 1 INFO.
+**All 300 cases have a verdict and nothing is blocked.** Batches 1–3 complete; batch 6 (guest negotiation); batches 4, 5 and 7 (booking, payment/cancellation, the host side of negotiation); batches 8–10 (the host wizard end to end on the emulator, submitted, rejected, resubmitted, approved, edited live); and, in a seventh sitting with the user at the Razorpay modal, the five gateway cases — two paid bookings, a failed and a dismissed attempt, a guest cancellation with its code and a host cancellation from the phone — every refund a real test-mode refund read back at the gateway, the ledger and the payout queue.
 
-**Defects found: 44.** All 44 fixed and pinned by tests (backend 182/182 test files, the web suite with `tsc -b` and a production build, the app suite). Defects 23–44 are the fifth and sixth sittings': a deposit stated on one page of four, a host told of a booking that did not exist, payment verification without an availability re-check, the advance discount a day late, invoice numbers that collided, offers expiring at half the promised hour, a stale counter accepted, and fifteen listing-wizard findings — most of them a rule that lived on one surface and not the others (the phone could not name a pet fee, never asked the pool type, showed caretaker fields ungated, checked the typed bed count while the server stored the described one), three things built on no surface (photo reorder, the parking-spaces question, the reviewer's reason on the listing), and two server rules a client could talk past (min > max nights, a phone number nobody can dial). Of the app fixes, everything up to build 108 is on the emulator; the rest is committed as **build 109 — not yet built** (the machine's only JDK is now 25; see "What is needed").
+**Defects found: 49.** All 49 fixed and pinned by tests (backend 183/183 test files, the web suite with `tsc -b` and a production build, the app suite). Defects 23–44 came from the fifth and sixth sittings (the booking remainder and the host wizard); 45–49 from paying for real in the seventh: the Defect-25 re-check refunding a good payment over the guest's own abandoned hold, two holds for one retry, **no refund ever recorded on the finance ledger (revenue overstated by ~18%)**, the Upcoming card confirming a request, and two opposite definitions of "does the host approve". Of the app fixes, everything up to build 108 is on the emulator; the rest is committed as **build 109 — not yet built** (the machine's only JDK is now 25; see "What is needed").
 
 **Spec conflicts: 9.** Cases that describe behaviour the client themselves changed after the document was written, or a feature the product does not have: the cleaning fee (BK-019, 15 Sep), the round-one instant counter and countering below the floor (NG-007/008, 9 Sep), the security deposit stated and collected by the host (BK-046/067, 15 Sep), approval requests that auto-confirm rather than expire (BK-094), and three items never built — an AI "Help me write" (HL-012), amenity chips that vanish once picked (HL-042), a host-picked highlights list (HL-048). The product is right, or the decision is the client's; the document is stale.
 
@@ -554,6 +554,35 @@ Numbered on from the 22 above. **Surface** says where the code was wrong; every 
 
 ---
 
+## Seventh sitting — 21 Sep 11:20 → 13:10 IST · the gateway, with the user at the Razorpay modal
+
+The five cases that needed a person at the gateway, run with the user paying in **Razorpay Test Mode** while the session drove everything up to and after the modal: two paid bookings, one failed attempt, one dismissed attempt, a guest cancellation with its email code, a host cancellation from the phone. **All five BLOCKED cases now have a verdict; nothing on the sheet is blocked.** The money moved for real (test mode) and was read back at the gateway, the ledger, the payouts and every notification store — and paying for real found five more defects, four of them money or state.
+
+| Case | What happened | Verdict |
+|---|---|---|
+| **BK-039** failed payment | B283961 ₹945 on our host 194's PG — declined at the mock bank → hold stays `Payment Pending`, paid 0.00, nothing told to anyone; Retry on the same order inside the modal | PASS |
+| **BK-043** network drop / dismissed | ✕ on the modal → our page back to "Pay ₹945 Securely" (silently — noted); retry opened a fresh order and, after the fix below, closed the abandoned hold ("Checkout restarted") | PASS, Defects 45–46 |
+| **BK-038** successful payment | B380412 ₹945 → `Paid & Verified`, gateway ₹945, invoice `AAJOO-INV-202609-0077`, ledger split, guest bells 868/869 + mail, host 194 bells 870/300/301 + mails, admin 302, "Request sent · Paid online" | PASS, Defect 48 |
+| **BK-061/064/066** refund by policy, partial, visible | Guest cancel of B380412 with the email code: dialog quoted **Moderate · 50% · ₹472.50**; Razorpay partial refund COMPLETED; "₹472.50 refunded to your original payment method — 5–7 working days"; host 194 and admin told; host's ₹741 payout **on hold** with the re-split reason | PASS, Defect 47 |
+| **NG-011** negotiated price is charged | The accepted deal on #29312 (₹2,800 × 3): review ₹9,000 − ₹600.30 + GST = **₹8,819.69**, paid, `Paid & Verified`, coupon spent 1/1, invoice 0078, thread reads "Booked as B146234" | PASS (31 paise under the agreed ₹8,820, the documented round-up), Defect 49 |
+| **BK-068** host cancels (live, on the host app) | "The guest gets back everything they have paid (₹8,820)" → full refund COMPLETED, payout retracted, credits reversed, guest/host/admin told | PASS |
+
+### Defects 45–49
+
+| # | Case | What was wrong | Surface | Fix |
+|---|---|---|---|---|
+| 45 | BK-043/038 | **Defect 25's own re-check refunded a good payment.** A guest who closed the gateway and pressed Pay again held two payment-pending rows for the same nights; the create path steps over the guest's own hold, the verify-time re-check did not — so the second, PAID booking (B653102, ₹945) was cancelled and refunded as "taken by another guest", the other guest being the guest's own abandoned hold | backend | the re-check knows who is paying; their own unpaid hold steps aside, their confirmed stay and anyone's hold still block (`3324f50`, `thePaidNightsAreStillFree` extended) |
+| 46 | BK-043 | A retried checkout held the nights twice under two orders | backend | `supersedeOwnPendingHolds`: the guest's own overlapping unpaid hold is cancelled inside the create transaction, "Checkout restarted" on its history (`5423467`, `aRestartedCheckoutClosesTheEarlierHold`) |
+| 47 | BK-061/066 | **No refund had ever reached the finance ledger.** The REFUND type existed and had zero rows; a cancelled stay kept its four credit rows COMPLETED, so the Finance dashboard counted refunded money as revenue and commission for good — **10 refunded bookings, ₹68,939, inflating revenue by ~18%** (₹4.6 lakh shown for ₹3.92 lakh held) | backend · web | `recordRefund` writes one DEBIT row per refund (gateway or wallet, keyed on its reference); a 100% refund reverses the booking's credits; dashboard revenue and the monthly series net the refunds of bookings whose credits still stand; backfill run on dev (10 rows, 16 credits reversed); the KPI relabelled "net of ₹… refunded" (`b1c0e92`, `4768bfc`, web `7e233d4`) |
+| 48 | BK-038 | The Upcoming card's badge said *Awaiting approval* while the line beneath said "Confirmed — you're all set for check-in" (Defect 14's fault one line lower) | web | "Waiting for the host — …confirmed automatically if they don't answer" (`c4eec51`) |
+| 49 | NG-011 | **"Does the host approve" was written twice with opposite defaults.** Creation asked `type === "instant"` and said "Request sent — the host has N hours" for anything else; verification and the sweeper asked `type === "approval"` and confirmed anything else outright. #29312's type was NULL (the app's wizard saved none): the guest read "request sent", the booking was confirmed on payment, the host app showed *Confirmed* and was never asked — and a pay-at-property booking on such a listing would have waited for a Confirm the sweeper never times out | backend · app | `utils/hostApproval` — approval only when the host chose it, unset and legacy are instant — read by creation, verify, the availability answer and the sweeper (`7380a98`); the app's wizard defaults booking type to *approval* like the web (`92c8b7c`, build 109) |
+
+**Observations from this sitting (not defects):** the OTP mails (four of them) all left Brevo as "Email sent successfully" and none showed in the Mailinator public inbox, which then dropped every other mail too — the two test accounts need real mailboxes (the code was read from the dev database for the run); after a dismissed modal our page says nothing (the hold is kept, silently); the invoice of a refunded booking stays GENERATED (no credit note or void on refund — a finance decision); the host's payout after a partial refund is held for a human re-split (by design). The emulator's Android hung in its boot animation once mid-sitting; `adb reboot` brought it back with the host still signed in.
+
+**Records:** B283961 (superseded), B653102 (paid ₹945, refunded in full by the platform — Defect 45's evidence), B380412 (paid ₹945, guest-cancelled, ₹472.50 refunded, payout po_25 on hold ₹741), B146234 (paid ₹8,819.69 on #29312, host-cancelled, refunded in full, payout po_26 retracted); invoices 0077/0078; offers 241–243 (243 expired at the host's hour); #29312 paused again. Every refund is a real Razorpay test-mode refund with its `rfnd_` reference on the booking.
+
+---
+
 ## Spec conflicts — the case sheet is behind the product
 
 Neither of these is a defect. Both describe behaviour the client **changed after the document was written**, and they are recorded so the document can be corrected rather than the code.
@@ -600,6 +629,10 @@ Neither of these is a defect. Both describe behaviour the client **changed after
 | `e333879` · web `4763f45` | Defect 42: a type change drops the old type's rows; both clients ask first (`aTypeChangeTakesTheOldTypesAnswersWithIt`, `aTypeChangeAsksFirst`) |
 | web `92dea0d` | HL-043 built: Find an amenity; WiFi and the pool open their questions through one path (`anAmenityCanBeFoundByName`) |
 | `f8549ba` | Defect 44: the bed rule runs on the beds that are stored (`theBedRuleRunsOnTheBedsThatAreStored`) |
+| `3324f50` · `5423467` | Defects 45, 46: the verify re-check knows who is paying; a restarted checkout closes the earlier hold (`thePaidNightsAreStillFree`, `aRestartedCheckoutClosesTheEarlierHold`) |
+| `b1c0e92` · `4768bfc` · web `7e233d4` | Defect 47: `recordRefund` — every refund on the ledger, a full refund reverses the credits, revenue net of refunds; backfill run on dev (10 rows, 16 credits reversed); the KPI relabelled (`cancellationMovesTheMoney` extended) |
+| web `c4eec51` | Defect 48: the Upcoming card says "Waiting for the host" over a request (`aRequestIsNotAStay` extended) |
+| `7380a98` · app `92c8b7c` | Defect 49: `utils/hostApproval` — one rule for creation, verify, availability and the sweeper; the app's wizard defaults to approval like the web (`approvalAppliesOnline` extended) |
 | app — monorepo `d1aabf9` + `aa4672a`, **build 109 (not yet built)** | Defects 25, 30–37, 39, 40, 42, 43, 44 on the phone; HL-043; tests `a_refunded_payment_is_not_a_stay`, `the_bhk_check_reads_the_slug`, `parking_spaces_follow_the_parking_answer`, `accessible_but_how`, `photos_can_be_reordered`, `pets_have_a_price_on_the_app`, `a_minimum_stay_cannot_exceed_the_maximum`, `the_readiness_card_keeps_the_newest_answer`, `the_host_reads_why_it_was_rejected`, `a_type_change_asks_first`, `an_amenity_can_be_found_by_name`, `the_bed_rule_runs_on_the_beds_that_are_stored` |
 
 ---
@@ -613,11 +646,12 @@ Neither of these is a defect. Both describe behaviour the client **changed after
 
 **After the fifth and sixth sittings (21 Sep 05:00 IST) — what only a person can do:**
 
-5. **The five BLOCKED cases need a hand at the gateway or a second sign-in:** BK-038/039/043 (pay, and fail a card, in Razorpay's Test Mode modal — the deal DEAL29312101C242 on #29312 is live until midnight 21 Sep and would also close NG-011), NG-011, NG-077 (a two-role user).
+5. ~~The five BLOCKED cases~~ — **done in the seventh sitting** (the user at the Razorpay modal; NG-077 answered by design: a host-also-guest is refused on their own listing and treated as any guest elsewhere).
 6. **Build 109:** install a JDK 17 or 21 (Temurin, ≈190 MB), run `flutter config --jdk-dir="<path>"`, then `./tool/build_release.ps1 -ApiBaseUrl https://aajaodev.onrender.com -RazorpayKey rzp_test_XUTODhUdMAshi6 -AllowTestPayments -AllowDevEndpoint`; install on the emulator; push the subtree to the client's app repo.
 7. **Three admin actions the session's policy refused:** reject payout 24; void `tbl_host_dues` hd_id 49 (₹476.99 on host 100 from test booking B021812); the BK-088 price edit on 29303 (₹900 → ₹950 → ₹900) if a live repeat is wanted.
-8. **Clean-up on the client's host account (100):** pause or suspend listing **#29312** (live, public, test images, LUXE flag) and remove its fake bank rows (`property_bank_details` pbd 5, `tbl_host_acc_details` had 4 — account `…2222`, IFSC `HDFC0000001`); the B326241 OTP cancel (dialog open in the guest tab, code with you).
-9. **Two product decisions:** (a) exact charging of a negotiated price (a flat-amount deal, three surfaces) versus the documented sub-rupee round-up in the guest's favour; (b) a `payment.captured` webhook as the second leg of payment confirmation.
+8. **Clean-up on the client's host account (100):** listing **#29312** is paused again (it was un-paused for NG-011 and B146234 host-cancelled with a full refund); its fake bank rows still need removing (`property_bank_details` pbd 5, `tbl_host_acc_details` had 4 — account `…2222`, IFSC `HDFC0000001`); the B326241 OTP cancel (dialog open in the guest tab, code with you).
+9. **Move the two test accounts to real mailboxes** — Mailinator dropped every mail this sitting and the cancellation codes never showed; the run read them from the dev database.
+10. **Two product decisions:** (a) exact charging of a negotiated price (a flat-amount deal, three surfaces) versus the documented sub-rupee round-up in the guest's favour; (b) a `payment.captured` webhook as the second leg of payment confirmation.
 
 ---
 
@@ -756,7 +790,7 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 | ID | Pri | Case | Status |
 |---|---|---|---|
 | BK-022 | Critical | Confirmation created | PASS (20 Sep, B021812) |
-| BK-023 | High | Confirmation email/app | PASS (20 Sep: guest bell + 'Booking Confirmation' mail rows for B326241/B021812; note: the host got TWO mails for one COD booking) |
+| BK-023 | High | Confirmation email/app | PASS live (12:18): guest 'Booking Confirmation' mail 896 + bells 868/869 for B380412; host 194 mails 895/897 (note: two mails to the host for one booking, as before) |
 | BK-024 | High | Host notified | PASS (20 Sep, bell); copy fixed ac699fe |
 | BK-025 | High | Booking ID generated | PASS (20 Sep) |
 | BK-048 | Med | Currency correct | PASS (20 Sep) |
@@ -766,7 +800,7 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 | BK-056 | Med | Booking horizon | PASS by test (bookingHorizon); no fixture sets pbr_max_advance_days |
 | BK-057 | Med | Minimum notice | FAIL → fixed bdab3b1 (Defect 12) |
 | BK-058 | Med | Same-day conflict | PASS: both wizards flag 'same-day ON + 24 h notice' inline (app 21 Sep 02:34: same-day off shows the note; on + 24 h flagged) |
-| BK-071 | High | My Bookings list | PASS by evidence: confirmation records for B326241/B021812 in tbl_send_emails + the guest bell |
+| BK-071 | High | My Bookings list | PASS live: confirmation records for B380412 (896) and B146234 (905) in tbl_send_emails |
 | BK-072 | High | Booking detail accurate | FAIL → fixed build 108 (Defect 18) |
 | BK-073 | Med | Ongoing stay shown | PASS after fix 32fb9c1 (Defect 14) |
 | BK-074 | High | Invoice download | FAIL → fixed (Defect 27): invoice numbers collided (count()+1) and errors were swallowed; numbered from inv_id now, 29 backfilled (0048–0076); a cash stay has a receipt (aCashStayHasAReceipt) — live PDF verified 01:17 |
@@ -792,14 +826,14 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 
 | ID | Pri | Case | Status |
 |---|---|---|---|
-| BK-038 | Critical | Successful payment | BLOCKED — the Razorpay modal is a cross-origin iframe Claude in Chrome cannot drive; needs a person at the gateway (Test Mode) |
-| BK-039 | Critical | Failed payment | BLOCKED — same; the order is created (order_TeOudSAJ5xstax on B249119) and the hold lapses when nobody pays |
-| BK-040 | High | Cancelled payment | PASS (21 Sep 00:37): an abandoned checkout is a status-1 hold, in no guest list, lapses after PENDING_HOLD_MINUTES=30 |
+| BK-038 | Critical | Successful payment | PASS (21 Sep 12:18, the user at Razorpay Test Mode): B380412 ₹945 on host 194's PG → 'Paid & Verified', gateway ₹945, invoice AAJOO-INV-202609-0077, ledger 366–369, guest bells 868/869 + mail 896, host bells 870/300/301 + mails 895/897, admin 302; 'Request sent · Paid online'. Defect 48 (Upcoming card copy) fixed. Later NG-011's B146234 the same way |
+| BK-039 | Critical | Failed payment | PASS (12:00): declined at the mock bank → B283961 stays Payment Pending, paid 0.00, payment row 'Not Verified Yet'; no bell, no mail; Retry on the same order in the modal |
+| BK-040 | High | Cancelled payment | PASS live (12:03): the dismissed checkout's hold B283961 kept nothing, charged nothing and was closed by the next checkout |
 | BK-041 | High | Payment timeout | PASS: same evidence — nothing is charged, the nights free themselves |
 | BK-042 | Critical | Double-click Pay | PASS (21 Sep): double-click Pay → ONE booking (B249119) + ONE order; the button went 'Processing…' |
-| BK-043 | Critical | Network drop during pay | BLOCKED — needs a person to fail a card at the gateway |
+| BK-043 | Critical | Network drop during pay | PASS (12:03–12:18): modal dismissed → hold kept, retry opened a fresh order; paying it exposed Defect 45 (the guest's own abandoned hold refunded the paid booking) and Defect 46 (two live holds) — both fixed and re-proven live: the retry now closes the earlier hold ('Checkout restarted') and the payment stands |
 | BK-044 | High | Webhook confirms booking | PASS by design: no payment webhook — a booking is marked paid only by verifyUserPayment after Razorpay's HMAC(order|payment) signature and the gateway amount read-back (verifyCreditsWhatArrived); recommendation: add payment.captured as the second leg |
-| BK-045 | High | Webhook arrives twice | PASS by code+test: a replayed verify hits the FOR UPDATE lock and 'already verified' returns without effects (P-04, bookingIntegrity) |
+| BK-045 | High | Webhook arrives twice | PASS by code+test (bookingIntegrity P-04); live: a second verify never fired — one 'Payment successful' per booking |
 | BK-046 | High | Deposit on monthly | SPEC — the deposit is STATED under every total and collected by the host at the door (client, 15 Sep — same footing as cleaning); Defect 23 made the four pages say so |
 | BK-050 | Critical | Double-booking prevented | PASS by code+test: the create path locks the listing row across the overlap check and the insert (thePaidNightsAreStillFree, bookingIntegrity); BK-052/053 live |
 | BK-051 | Critical | Availability re-check at confirm | FAIL → fixed (Defect 25): verify had no availability re-check — b31c0a6 + web b7bba40 (datesTaken branch) + app 109 (DatesTakenDuringPayment) |
@@ -807,20 +841,20 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 | BK-053 | High | Same-day double | PASS: same-day 14→15 Oct on B915648 refused; turnover (checkout on another's check-in day) allowed |
 | BK-059 | High | View cancellation policy | PASS: the policy ladder on the property page and, with the stay's own dates, on the review page ('100% refund if you cancel by 30 Sept, 2:00 pm IST') |
 | BK-060 | Critical | Cancel booking | PASS (dialog, B326241): policy · 0% refund · No payment taken · reason chips → OTP step |
-| BK-061 | Critical | Refund = policy | PASS by test + evidence: cancellationPolicyV1 (ladders vs the document's table, IST check-in moment); the live dialog quotes the window |
-| BK-062 | High | Cancel with OTP | PASS: code required; wrong code → 'Invalid OTP'; OTP row 93, mail row 883 (the code itself stays with the user — the read is blocked by policy) |
-| BK-063 | High | Full refund window | PASS by test + evidence: 100% window quoted live; B939553 refunded in full (₹210) on a host cancel |
-| BK-064 | High | Partial refund window | PASS by test: the 50% window (Moderate) computed by cancellationPolicyV1; quoted live on 29312's review page ('50% refund if you cancel now, until check-in') |
+| BK-061 | Critical | Refund = policy | PASS live (12:49): guest cancel of B380412 — the dialog quoted Moderate · 50% · ₹472.50 (within 5 days of a 14:00 check-in today); Razorpay partial refund COMPLETED (rfnd_Tearsm9I0ieW6b); by test: cancellationPolicyV1. Defect 47 (no refund on the ledger) found here |
+| BK-062 | High | Cancel with OTP | PASS live (12:49): the code was required and consumed (OTP row 96 → gone); wrong code earlier → 'Invalid OTP'. The mails (898–901) all left Brevo but Mailinator showed none — test-mailbox, see observations |
+| BK-063 | High | Full refund window | PASS live (13:02, host cancel of B146234 on the host app): full refund ₹8,819.69 COMPLETED (rfnd_TebcNwfgglCZ0K), credits reversed, REFUND row 384; earlier B653102 (platform) and B939553 (host) the same |
+| BK-064 | High | Partial refund window | PASS live: 50% window → ₹472.50 of ₹945, payment row 'Partly refunded ₹472.50', host's ₹741 payout on hold with the re-split reason |
 | BK-065 | High | No refund window | PASS: 'After check-in or no-show: no refund' in the dialog and the schedule; B326241's dialog quoted 0% |
-| BK-066 | High | Refund status visible | PASS by evidence: Cancelled page '₹210 refunded to your original payment method — it can take 5–7 working days'; the dialog states UPI 1–5 / cards 5–10 / net banking 3–7 business days |
+| BK-066 | High | Refund status visible | PASS live: Cancelled page '₹472.50 refunded to your original payment method — it can take 5–7 working days'; the guest's bell and mail name the window (UPI 1–5, cards 5–10, net banking 3–7 business days) |
 | BK-067 | High | Deposit refunded | SPEC — deposit: stated, refundable, collected by the host (BK-046); the statement is on the property, review, payment and confirmation pages |
-| BK-068 | High | Host cancels | PASS by evidence (20 Sep): B939553 cancelled by the host, ₹210 refunded ('will be refunded to your original payment method') |
+| BK-068 | High | Host cancels | PASS live on the HOST APP (13:02): 'The guest gets back everything they have paid (₹8,820)' + reason → refunded in full, payout po_26 retracted, guest bell 877 + mail 907, host bell 878 + mail 908, admin 306, history 'Host cancelled — full refund … (policy §7)' |
 | BK-069 | Critical | Policy version locked | PASS by test: a booking keeps the policy it was made under (book_cancel_policy on the row; cancellationPolicyV1 'snapshot' case) |
-| BK-070 | Med | Refund to original method | PASS by evidence: payment row 38 'Refunded', book_refund_status COMPLETED, ₹210 to the original method |
+| BK-070 | Med | Refund to original method | PASS live: payment 46 'Refunded' / 45 'Partly refunded ₹472.50'; book_refund_status COMPLETED with the rfnd_ reference on both |
 | NG-010 | Critical | Accept creates booking | PASS (21 Sep 04:31, bot-channel thread on 29312): accepted ₹2,800 → 'Book at the agreed price' → review page 'Negotiated deal applied — DEAL29312101C242, you save ₹600'; charged ₹8,819.69 against 3×2,800+GST = ₹8,820.00 — 31 paise UNDER, by the documented round-up of a DECIMAL(5,2) percentage (see observations) |
-| NG-011 | Critical | Accepted price is charged | BLOCKED at the gateway (person needed); the review total is what Razorpay would take — the deal is live until midnight 21 Sep for the user to pay |
-| NG-047 | High | Payment timeout after accept | PASS by code: a deal lives until midnight IST (cpn_valid_to); a booking hold lapses at 30 min (B249119); an offer never holds the unit |
-| NG-059 | High | Negotiated booking in My Bookings | PASS by evidence: 'Clamping suite… Booked as B326241 — the agreed price is on this booking' (₹8,400 agreed = the booking) |
+| NG-011 | Critical | Accepted price is charged | PASS (12:57): the accepted deal DEAL29312101C242 (₹2,800 × 3) → B146234 charged ₹8,819.69 (9,000 − 600.30 + GST 419.99; 31 paise under the agreed ₹8,820 by the documented round-up), 'Paid & Verified', coupon spent 1/1, invoice 0078; Defect 49 (two definitions of 'host approves') found on it and fixed |
+| NG-047 | High | Payment timeout after accept | PASS live: the accepted deal on #29312 lasted until midnight as promised and was spent by B146234; offer 243 on 29295 expired at the host's 1-hour window (bell 873, mail 904 — Defect 28's fix working) |
+| NG-059 | High | Negotiated booking in My Bookings | PASS live (12:58): the thread reads 'Booked as B146234 — view booking'; earlier B326241 the same |
 | NG-098 | High | Refund on negotiated booking | PASS by code+test: refunds compute from book_amount_paid (the negotiated amount the gateway took) × the policy window (cancellationMovesTheMoney) |
 
 ### Batch 6 — Negotiation — the guest side
@@ -888,7 +922,7 @@ Thirty cases each, grouped by **what unblocks them** and ordered so the earliest
 | NG-062 | High | Fixed-price toggle works | PASS (20 Sep, app + web); API order fixed f78d72b |
 | NG-063 | High | Turn negotiation on | PASS (20 Sep) |
 | NG-074 | Med | Host counters above displayed | FAIL → fixed 2bcf1cc (Defect 20) |
-| NG-077 | Med | Two-role user offers | BLOCKED — no in-app role switch; a two-role user needs a second sign-in the session cannot do |
+| NG-077 | Med | Two-role user offers | PASS by code: negotiationService.submitOffer refuses only the host's OWN property ('You cannot send an offer on your own property', NG-096); on any other listing a host is a guest like any other — one user id, no role switch exists or is needed (the app's host shell and the website's guest shell read the same account) |
 | NG-083 | Med | Host bulk offers | PASS (app, host 100 Offers list): every thread with its latest price and state |
 | NG-084 | Low | Offer on paused listing | FAIL → fixed 48d38b0 (Defect 21) |
 | NG-093 | High | Simultaneous accept + guest cancel | PASS by code: the same status guard as NG-050 — a cancel and an accept on one offer cannot both apply |

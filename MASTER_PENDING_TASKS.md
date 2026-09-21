@@ -320,6 +320,34 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a53. Closed 2026-09-21 (11:20—13:10) — the gateway with the user at the Razorpay modal: nothing blocked; Defects 45—49
+
+**What ran (guest 101 on the website, host 100 on the emulator, the user paying in Razorpay Test Mode):** BK-039 a failed
+payment, BK-043 a dismissed one, BK-038 a paid one (B380412 ₹945), the guest cancellation with its code (Moderate · 50% ·
+₹472.50, a real partial refund), NG-011 the accepted deal paid (B146234 ₹8,819.69 on #29312) and BK-068 the host cancelling
+it from the phone (full refund, payout retracted). **300 of 300: 250 PASS · 35 FAIL (all fixed) · 9 SPEC · 0 BLOCKED · 6 INFO.**
+Report: the "Seventh sitting" section.
+
+| # | What | Where | Commit |
+|---|---|---|---|
+| 45 | **Defect 25's own re-check refunded a good payment** — the guest's abandoned hold counted as "another guest" (B653102) | backend | `3324f50` |
+| 46 | A retried checkout held the nights twice; the earlier hold is now closed ("Checkout restarted") | backend | `5423467` |
+| 47 | **No refund had ever reached the finance ledger** — refunded money counted as revenue/commission forever (10 bookings, ₹68,939, ~18% of revenue); `recordRefund`, full refunds reverse the credits, dashboard net of refunds, backfill run on dev | backend · web | `b1c0e92` · `4768bfc` · web `7e233d4` |
+| 48 | The Upcoming card said "Confirmed — all set" under an *Awaiting approval* badge | web | `c4eec51` |
+| 49 | **"Does the host approve" written twice with opposite defaults** — a NULL booking type said "request sent" and confirmed on payment with the host never asked; `utils/hostApproval` one rule; the app's wizard defaults to approval like the web | backend · app | `7380a98` · app `92c8b7c` |
+
+**Test mailboxes:** four cancellation-code mails left Brevo ("Email sent successfully") and none showed in Mailinator, which then
+dropped every other mail too — move accounts 100/101 to real mailboxes; the run read the code from the dev database.
+
+**Records:** B283961 (superseded), B653102 (refunded in full by the platform), B380412 (₹472.50 refunded, payout po_25 on hold
+₹741 for a human re-split), B146234 (refunded in full, payout po_26 retracted); invoices 0077/0078 (GENERATED — no void on
+refund, a finance decision); #29312 paused again; its fake bank rows (`pbd 5`, `had 4`) still to remove.
+
+**Still with the user:** build 109 (JDK 17/21 install), the admin refusals (payout 24, `hd_id 49`), the bank rows, the two
+product decisions (exact negotiated charging; a `payment.captured` webhook).
+
+---
+
 ### 8a52. Closed 2026-09-21 (00:20—05:10) — every case has a verdict: the booking remainder, the wizard end to end, the publish chain; Defects 23—44
 
 **What ran (guest 101 on the website and the API; host 100 on the emulator, build 108; the admin queue on the
