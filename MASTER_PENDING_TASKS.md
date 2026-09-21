@@ -38,7 +38,9 @@
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
 > **Go-live sequence (2026-09-19, Render Pro + PlanetScale bought): `GO_LIVE_RUNBOOK_2026-09-19.md`** — steps 0.1–0.4 first (Razorpay key rotation, repo private, test passwords, build 106).
-> Tester build in circulation: **108 (1.0.0+108)**, `aajoo-homes-1.0.0-build108-release.apk` at repo root
+> Tester build in circulation: **109 (1.0.0+109)**, `aajoo-homes-1.0.0-build109-release.apk` at repo root
+> (2026-09-21 14:37, versionCode 109, 95.6 MB, sha256 `064cc19b501afd11…`), built with `tool/build_release.ps1`
+> on Temurin JDK 21 (§8a54); client repo `aajoo_app_latest` main = `f566782`. Supersedes **108**
 > (2026-09-20 21:05, versionCode 108, 95.5 MB, sha256 `4cf75ddf44f5f5bf…`), built with `tool/build_release.ps1`;
 > client repo `aajoo_app_latest` main = `30edba5`. Supersedes **107**
 > (2026-09-20 19:30, versionCode 107, 95.5 MB, sha256 `75f27c40a9ccfa4f…`), built with
@@ -320,6 +322,37 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a54. Closed 2026-09-21 (14:30—15:20) — build 109 on the phone, the admin clean-up, decision 1 taken; Defect 50
+
+**Build 109** built on the Temurin JDK 21 the user installed (`flutter config --jdk-dir` pointed at it): `app-release.apk`
+95.6 MB, sha256 `064cc19b501afd11…`, verifier reading the dev endpoint and the sandbox key out of the artifact; installed on
+the emulator (versionCode 109) and **every one of its fixes driven on the phone** as host 100 on #29312 — the rejection
+note on the details card and as the wizard's banner, the type-change dialog ("The 2 answers you gave about the Apartment
+will be cleared"), *Find an amenity* ("pool" → Swimming Pool · Premium), the booking-type default (*Approval Required*),
+the pet fields — and the bed rule **fired on #29312's own stored data** ("2 bedrooms need at least 2 beds between them":
+Bedroom 2 had no bed under the old rule; a Double was added, `pc_beds` 2). Client repo `aajoo_app_latest` main `30edba5` →
+**`f566782`**. Report: the "Eighth sitting" section.
+
+**The admin clean-up (user's go-ahead):** payouts **#24** (B021812, host 100) and **#25** (B380412, host 194) rejected
+with reasons; **hd_id 49** voided through `hostDues.voidFor` (Settlements has no per-row action). #29312 back to approved
+and **paused by the host**, page 404. **Decision 1:** the documented sub-rupee round-up stays (₹8,819.69 for ₹8,820).
+
+| # | What | Where | Commit |
+|---|---|---|---|
+| 50 | **An admin approval put a listing the host had paused back on the site.** Pause and Deactivate both write `is_active = 0`; both approve paths wrote `is_active = 1` regardless, with a "Your listing is live" bell. `property_paused_by_host` records the host's switch; approval leaves a paused listing paused and says so; migration run on dev; `approvalKeepsTheHostsPause` fails 2/2 on the old code | backend | `62bcf3f` |
+
+**Observations:** the admin's Rejected tab offers no action although the lifecycle allows rejected → approved (the host has
+to resubmit); step-5 declarations are not carried over on a resubmission; the Property Details screen keeps the object it
+opened with after the wizard returns; the admin tab in Chrome hung once after a rejection (a fresh tab was fine).
+
+**Still with the user:** host 100's fake payout account — `tbl_host_acc_details` had 4 (`had_isDelete = 1`) and
+`property_bank_details` pbd 5 (delete) — there is no host-side remove and the session's policy refused the write on the
+client's host row (script ready); the B326241 OTP cancel; real mailboxes for 100/101; the `payment.captured` webhook —
+explained, needs a go-ahead, then the endpoint is written and whoever holds the Razorpay dashboard registers the URL with
+a secret that also goes on Render as `RAZORPAY_WEBHOOK_SECRET` (test mode first).
+
+---
+
 ### 8a53. Closed 2026-09-21 (11:20—13:10) — the gateway with the user at the Razorpay modal: nothing blocked; Defects 45—49
 
 **What ran (guest 101 on the website, host 100 on the emulator, the user paying in Razorpay Test Mode):** BK-039 a failed
@@ -343,8 +376,8 @@ dropped every other mail too — move accounts 100/101 to real mailboxes; the ru
 ₹741 for a human re-split), B146234 (refunded in full, payout po_26 retracted); invoices 0077/0078 (GENERATED — no void on
 refund, a finance decision); #29312 paused again; its fake bank rows (`pbd 5`, `had 4`) still to remove.
 
-**Still with the user:** build 109 (JDK 17/21 install), the admin refusals (payout 24, `hd_id 49`), the bank rows, the two
-product decisions (exact negotiated charging; a `payment.captured` webhook).
+**Still with the user:** ~~build 109 (JDK 17/21 install), the admin refusals (payout 24, `hd_id 49`)~~ — done in §8a54;
+the bank rows; ~~exact negotiated charging~~ — decided, the round-up stays (§8a54); a `payment.captured` webhook.
 
 ---
 

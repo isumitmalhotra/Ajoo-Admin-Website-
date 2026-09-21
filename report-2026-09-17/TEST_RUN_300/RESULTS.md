@@ -1,7 +1,7 @@
 # Aajoo — 300 Manual Test Cases: Execution Report
 
 **Source:** `Aajoo-300-Manual-Test-Cases.docx` (client, v1.0) — BK-001…100 Booking · NG-001…100 Negotiation · HL-001…100 Host Listing
-**Run started:** 17 September 2026 · **Environment:** `aajaodev.onrender.com` (dev API), `www.aajoohomes.com` (web), Android build 100 → **108** on the emulator (build 109 committed, not yet built)
+**Run started:** 17 September 2026 · **Environment:** `aajaodev.onrender.com` (dev API), `www.aajoohomes.com` (web), Android build 100 → **109** on the emulator
 **This file is updated after every batch.** Nothing is marked PASS without a recorded actual value.
 
 ---
@@ -17,7 +17,7 @@
 
 **All 300 cases have a verdict and nothing is blocked.** Batches 1–3 complete; batch 6 (guest negotiation); batches 4, 5 and 7 (booking, payment/cancellation, the host side of negotiation); batches 8–10 (the host wizard end to end on the emulator, submitted, rejected, resubmitted, approved, edited live); and, in a seventh sitting with the user at the Razorpay modal, the five gateway cases — two paid bookings, a failed and a dismissed attempt, a guest cancellation with its code and a host cancellation from the phone — every refund a real test-mode refund read back at the gateway, the ledger and the payout queue.
 
-**Defects found: 49.** All 49 fixed and pinned by tests (backend 183/183 test files, the web suite with `tsc -b` and a production build, the app suite). Defects 23–44 came from the fifth and sixth sittings (the booking remainder and the host wizard); 45–49 from paying for real in the seventh: the Defect-25 re-check refunding a good payment over the guest's own abandoned hold, two holds for one retry, **no refund ever recorded on the finance ledger (revenue overstated by ~18%)**, the Upcoming card confirming a request, and two opposite definitions of "does the host approve". Of the app fixes, everything up to build 108 is on the emulator; the rest is committed as **build 109 — not yet built** (the machine's only JDK is now 25; see "What is needed").
+**Defects found: 50.** All 50 fixed and pinned by tests (backend 184/184 test files, the web suite with `tsc -b` and a production build, the app suite). Defects 23–44 came from the fifth and sixth sittings (the booking remainder and the host wizard); 45–49 from paying for real in the seventh: the Defect-25 re-check refunding a good payment over the guest's own abandoned hold, two holds for one retry, **no refund ever recorded on the finance ledger (revenue overstated by ~18%)**, the Upcoming card confirming a request, and two opposite definitions of "does the host approve". Defect 50 came from the clean-up in the eighth sitting: an admin approval put a listing the host had paused back on the site. Every app fix is on the emulator as **build 109** (built 21 Sep 14:37 IST on JDK 21, `app-release.apk` 95.6 MB, sha256 `064CC19B…B266D7`, client repo `aajoo_app_latest` main = `f566782`), and each was driven on the phone.
 
 **Spec conflicts: 9.** Cases that describe behaviour the client themselves changed after the document was written, or a feature the product does not have: the cleaning fee (BK-019, 15 Sep), the round-one instant counter and countering below the floor (NG-007/008, 9 Sep), the security deposit stated and collected by the host (BK-046/067, 15 Sep), approval requests that auto-confirm rather than expire (BK-094), and three items never built — an AI "Help me write" (HL-012), amenity chips that vanish once picked (HL-042), a host-picked highlights list (HL-048). The product is right, or the decision is the client's; the document is stale.
 
@@ -538,7 +538,7 @@ Numbered on from the 22 above. **Surface** says where the code was wrong; every 
 - **HL-044 — "pool hours" is asked nowhere** (the schema has type/private/shared/infinity/indoor/outdoor/heated/kids).
 - **The host's property list on the app is stale after a submit** until pull-to-refresh, and the Property Details screen keeps the object it opened with (it still read "Paused — hidden" after the approval). Minor; both refresh on reopen.
 - **BK-023 — the host received two emails for one pay-at-property booking** (a detailed one and a generic one). One is enough.
-- **Build 109 is committed but not built.** Android Studio updated itself on 20 Sep at 22:46 (JBR now OpenJDK 25.0.3, the old JBR gutted); Gradle 8.7 will not start on JDK 25 and no other JDK exists on the machine. A JDK 17/21 install (≈190 MB) and `flutter config --jdk-dir=…` unblocks it — see "What is needed".
+- ~~**Build 109 is committed but not built.**~~ Built in the eighth sitting once Temurin JDK 21 was installed (`flutter config --jdk-dir` pointed at it); see the eighth sitting below.
 
 ### Records created in these two sittings (all on test data; nothing on a real customer)
 
@@ -580,6 +580,37 @@ The five cases that needed a person at the gateway, run with the user paying in 
 **Observations from this sitting (not defects):** the OTP mails (four of them) all left Brevo as "Email sent successfully" and none showed in the Mailinator public inbox, which then dropped every other mail too — the two test accounts need real mailboxes (the code was read from the dev database for the run); after a dismissed modal our page says nothing (the hold is kept, silently); the invoice of a refunded booking stays GENERATED (no credit note or void on refund — a finance decision); the host's payout after a partial refund is held for a human re-split (by design). The emulator's Android hung in its boot animation once mid-sitting; `adb reboot` brought it back with the host still signed in.
 
 **Records:** B283961 (superseded), B653102 (paid ₹945, refunded in full by the platform — Defect 45's evidence), B380412 (paid ₹945, guest-cancelled, ₹472.50 refunded, payout po_25 on hold ₹741), B146234 (paid ₹8,819.69 on #29312, host-cancelled, refunded in full, payout po_26 retracted); invoices 0077/0078; offers 241–243 (243 expired at the host's hour); #29312 paused again. Every refund is a real Razorpay test-mode refund with its `rfnd_` reference on the booking.
+
+## Eighth sitting — 21 Sep 14:30 → 15:20 IST · build 109 on the phone, the admin clean-up, Defect 50
+
+The user installed Temurin **JDK 21** (21.0.12.1); `flutter config --jdk-dir` was pointed at it and `./tool/build_release.ps1 … -AllowTestPayments -AllowDevEndpoint` produced **build 109** — `app-release.apk`, 95.6 MB, sha256 `064CC19B501AFD11D8E8C1B7EA6CAC14A3998AEAD19138C63BBEA84830B266D7`, the verifier reading the dev endpoint and the sandbox key out of the artifact (versionCode 109 on the emulator). The app subtree was pushed to the client's repository: `aajoo_app_latest` main `30edba5` → **`f566782`** (three commits, APK blobs stripped, fast-forward checked).
+
+**Every build-109 fix driven on the phone as host 100, on #29312:**
+
+| Fix | Seen on device |
+|---|---|
+| The wizard says why it was rejected (Defect 42) | the Property Details card reads *"Not approved: QA check of build 109: please add a photo of the second bedroom…"* and step 5 opens under the banner *"Aajoo did not approve this listing"* with the same note |
+| A type change asks first (Defect 43) | tapping *Villa* on an Apartment: *"Change the property type? The 2 answers you gave about the Apartment will be cleared. You can fill in the details for the new type on the next step."* — Keep it / Change type |
+| Find an amenity (HL-043) | typing *pool* in *Find an amenity* lists *Swimming Pool · Premium* under *Amenities matching "pool"*, with *Show all groups* |
+| The bed rule runs on the beds the room cards describe (Defect 44) | **it fired on the listing's own stored data**: *"2 bedrooms need at least 2 beds between them"* — #29312 had been saved under the old rule with Bedroom 2 carrying no bed (Beds reads 1, greyed, derived). A Double was added to Bedroom 2; `pc_beds` is now 2 and the cards say queen×1 + double×1 |
+| A new listing asks the host to approve by default (Defect 49) | *How guests book → Booking type: Approval Required* selected; step 4 was saved so #29312's stored rule is `approval` (its NULL was Defect 49's evidence) |
+| Pet fee / allowed size / maximum pets; parking; reorder (Defects 33–37) | the fields render under House rules on step 4 |
+
+To read the rejection note on the phone the listing was rejected in admin with that note, read, resubmitted from step 5 (the six declarations ticked again — they are not carried over) and approved from the Submitted tab. That round trip found **Defect 50**.
+
+### Defect 50
+
+| # | Case | What was wrong | Surface | Fix |
+|---|---|---|---|---|
+| 50 | clean-up | **An admin approval put a listing the host had paused back on the site.** The host's Pause and an admin's Deactivate both write `is_active = 0`, and the approve branch of `reviewListing` (and the older Properties-dialog approve) wrote `is_active = 1` whatever the reason the listing was off — so a host who paused a listing and then edited it, or answered a rejection, had it published by the approval without pressing anything and with a bell saying "Your listing is live". #29312 (paused, hidden, page 404) came back live and had to be paused again from the card | backend | `property_paused_by_host` records the host's own switch (written by the host's pause/resume, migration `20260921100000`, run on dev); both approve paths publish a listing the host has not paused and leave alone one they have, the bell reads *"…is approved. It is still paused — switch it on from your properties when you are ready"*, and the API's `published` stops claiming otherwise (`62bcf3f`, `approvalKeepsTheHostsPause`, fails 2/2 on the old code) |
+
+**The admin clean-up (the user's go-ahead, 21 Sep):** payout **#25** (B380412, host 194, ₹741, was on hold) and payout **#24** (B021812, host 100, ₹1,727.75) **rejected** in the Payout Queue with reasons on the row; host due **hd_id 49** (₹476.99, B021812) **voided** through `hostDues.voidFor` with its reason (Settlements has no per-row action — dues are recovered from payouts, so a due on a stay that never happened has no button); host 100's fake payout account (**had 4**, `…2222 / HDFC0000001`) and its mirror row (**pbd 5**) are the one thing left — there is no host-side remove (only add) and the session's policy refused the write on the client's host row; a two-line script is ready for the user (`bank100_rm.js`: `had_isDelete = 1` on had 4, delete pbd 5).
+
+**Decision 1 taken (the user, 21 Sep):** a negotiated price is charged as the documented % coupon rounded up in the guest's favour (₹8,819.69 for an agreed ₹8,820); no change.
+
+**Observations (not defects):** the admin's Rejected tab lists a rejected listing with no action although the lifecycle allows rejected → approved ("Approving it or leaving it is the choice now") — the host has to resubmit; the step-5 declarations are not carried over on a resubmission (deliberate, but six taps); the Property Details screen keeps the object it opened with after the wizard returns (still "Rejected" after the resubmission until the list is refreshed); the admin tab in Chrome hung once after the rejection (script injection timed out for a minute; a fresh tab was fine); the wizard's back arrow steps one step at a time and the Android BACK key is swallowed on step 5.
+
+**Records:** #29312 — approved, **paused by the host** (`property_paused_by_host = 1`, page 404), Bedroom 2 now has a bed, booking type `approval`, submission psb approved 09:34 UTC; admin audit rows for the rejection and the approval; host bells for both; payouts po_24/po_25 FAILED with reasons; hd_id 49 VOID.
 
 ---
 
@@ -633,7 +664,8 @@ Neither of these is a defect. Both describe behaviour the client **changed after
 | `b1c0e92` · `4768bfc` · web `7e233d4` | Defect 47: `recordRefund` — every refund on the ledger, a full refund reverses the credits, revenue net of refunds; backfill run on dev (10 rows, 16 credits reversed); the KPI relabelled (`cancellationMovesTheMoney` extended) |
 | web `c4eec51` | Defect 48: the Upcoming card says "Waiting for the host" over a request (`aRequestIsNotAStay` extended) |
 | `7380a98` · app `92c8b7c` | Defect 49: `utils/hostApproval` — one rule for creation, verify, availability and the sweeper; the app's wizard defaults to approval like the web (`approvalAppliesOnline` extended) |
-| app — monorepo `d1aabf9` + `aa4672a`, **build 109 (not yet built)** | Defects 25, 30–37, 39, 40, 42, 43, 44 on the phone; HL-043; tests `a_refunded_payment_is_not_a_stay`, `the_bhk_check_reads_the_slug`, `parking_spaces_follow_the_parking_answer`, `accessible_but_how`, `photos_can_be_reordered`, `pets_have_a_price_on_the_app`, `a_minimum_stay_cannot_exceed_the_maximum`, `the_readiness_card_keeps_the_newest_answer`, `the_host_reads_why_it_was_rejected`, `a_type_change_asks_first`, `an_amenity_can_be_found_by_name`, `the_bed_rule_runs_on_the_beds_that_are_stored` |
+| `62bcf3f` | Defect 50: `property_paused_by_host` — an approval leaves a listing the host paused paused, and tells the host (`approvalKeepsTheHostsPause`; migration run on dev) |
+| app — monorepo `d1aabf9` + `aa4672a` + `92c8b7c`, **build 109** (sha256 `064CC19B…B266D7`, client repo `f566782`) | Defects 25, 30–37, 39, 40, 42, 43, 44 on the phone; HL-043; tests `a_refunded_payment_is_not_a_stay`, `the_bhk_check_reads_the_slug`, `parking_spaces_follow_the_parking_answer`, `accessible_but_how`, `photos_can_be_reordered`, `pets_have_a_price_on_the_app`, `a_minimum_stay_cannot_exceed_the_maximum`, `the_readiness_card_keeps_the_newest_answer`, `the_host_reads_why_it_was_rejected`, `a_type_change_asks_first`, `an_amenity_can_be_found_by_name`, `the_bed_rule_runs_on_the_beds_that_are_stored` |
 
 ---
 
@@ -647,11 +679,11 @@ Neither of these is a defect. Both describe behaviour the client **changed after
 **After the fifth and sixth sittings (21 Sep 05:00 IST) — what only a person can do:**
 
 5. ~~The five BLOCKED cases~~ — **done in the seventh sitting** (the user at the Razorpay modal; NG-077 answered by design: a host-also-guest is refused on their own listing and treated as any guest elsewhere).
-6. **Build 109:** install a JDK 17 or 21 (Temurin, ≈190 MB), run `flutter config --jdk-dir="<path>"`, then `./tool/build_release.ps1 -ApiBaseUrl https://aajaodev.onrender.com -RazorpayKey rzp_test_XUTODhUdMAshi6 -AllowTestPayments -AllowDevEndpoint`; install on the emulator; push the subtree to the client's app repo.
-7. **Three admin actions the session's policy refused:** reject payout 24; void `tbl_host_dues` hd_id 49 (₹476.99 on host 100 from test booking B021812); the BK-088 price edit on 29303 (₹900 → ₹950 → ₹900) if a live repeat is wanted.
-8. **Clean-up on the client's host account (100):** listing **#29312** is paused again (it was un-paused for NG-011 and B146234 host-cancelled with a full refund); its fake bank rows still need removing (`property_bank_details` pbd 5, `tbl_host_acc_details` had 4 — account `…2222`, IFSC `HDFC0000001`); the B326241 OTP cancel (dialog open in the guest tab, code with you).
+6. ~~**Build 109**~~ — **built, installed, verified on the phone, pushed to the client's repo** (eighth sitting).
+7. ~~Reject payout 24; void hd_id 49~~ — **done** (eighth sitting; payout 25 rejected as well). The BK-088 price edit on 29303 (₹900 → ₹950 → ₹900) only if a live repeat is wanted.
+8. **Clean-up on the client's host account (100):** #29312 is paused by the host and its stored data is now sound; **still to do by the user:** the fake bank rows (`tbl_host_acc_details` had 4 → `had_isDelete = 1`; delete `property_bank_details` pbd 5) — the script is written; the B326241 OTP cancel (dialog open in the guest tab, code with you).
 9. **Move the two test accounts to real mailboxes** — Mailinator dropped every mail this sitting and the cancellation codes never showed; the run read them from the dev database.
-10. **Two product decisions:** (a) exact charging of a negotiated price (a flat-amount deal, three surfaces) versus the documented sub-rupee round-up in the guest's favour; (b) a `payment.captured` webhook as the second leg of payment confirmation.
+10. **Product decisions:** (a) ~~exact charging of a negotiated price~~ — **decided 21 Sep: the documented round-up stays**; (b) a `payment.captured` webhook as the second leg of payment confirmation — explained to the user 21 Sep; needs a go-ahead, then the endpoint is written and whoever holds the Razorpay dashboard registers the URL with a secret that also goes on Render as `RAZORPAY_WEBHOOK_SECRET`.
 
 ---
 
