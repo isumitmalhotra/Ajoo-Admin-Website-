@@ -322,6 +322,56 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a57. Closed 2026-09-22 — two-sided reviews at check-out: a 14-day window, blind until both sides are in
+
+**Asked (client, via Sumit):** "before checkout both side user and host, we will take review from them — for the user: stay,
+host, platform, overall; for the host: user, platform, overall … this flow was there in the application but now it doesn't
+contain the checkout flow, it should be a standard flow like Airbnb."
+
+**What was actually there (checked first):** the flow existed in the **Android app only, guest only** — the home banner's
+"currently staying" → ongoing booking → a Checkout page with three sliders, posting `/review/user/checkout`, which wrote
+three reviews AND ended the stay. The **website had none of it**: one star for the property, and the six categories it drew
+(Cleanliness, Accuracy, Check-in, Communication, Location, Value) were collected and thrown away — the server's schema
+stripped them too, so **no listing has ever shown a breakdown**. The host could review a guest in the app and nowhere on
+the web, and **nobody could rate the platform as a host** (no table). Nothing was blind: every review published the moment
+it was written.
+
+**Decisions taken with the user (2026-09-22):** double-blind with a **14-day window**; **optional but prompted**; the
+listing's star is the **stay rating with the six categories shown** under it.
+
+**Built.** `services/reviewCycle` owns one window per stay, opened by `stayCompletion` at check-out — so the guest's own,
+the host's and the hourly sweep's all open exactly one, inside the transaction that ended the stay (and a window that
+cannot be written does not fail a check-out: `ensureCycle` reopens it on first use, loudly logged). Guest rates the stay on
+six, the host and the platform; host rates the guest on three and the platform. **Release is the only thing that stamps
+`*_visible_at`, and a stamp is the only thing that makes a review public** — `utils/reviewVisibility` is that rule, asked
+by all seven readers (three raw SQL), and the migration backfills every existing review as released or every rating on the
+site would go dark at deploy. The hourly tick publishes closed windows and nudges whoever has not written. Website: the
+guest's page asks all three in one sitting and says nothing publishes yet; a finished booking offers the host **Review
+guest**; the listing shows the breakdown. Backend `fe6a8e9`, `3a2c63e`, `9abcf87`; web `f3e1f8f`. **188/188** backend,
+**70/70** web with `tsc -b` + build.
+
+**Two security holes closed on the way.** `/review/host/add-user-review` found the booking by id and status **alone** and
+wrote the review as whoever that booking's host was — any signed-in account could review any guest, in a host's name, any
+number of times. `/user/review-add` checked only that the listing existed: anyone signed in could review any live property
+without ever having stayed, and a second stay silently overwrote the first. Both go through the window now, which is also
+the permission. Third: the app's checkout endpoint passed its transaction as a **third argument** to two `update()` calls
+(Sequelize ignores it — the trap already fixed in `cancelBooking` and `verifyUserPayment`) and ended stays without the
+history row or notifications; it calls `stayCompletion` now.
+
+**Driven against the dev database end to end** on B115781 (guest 101 / host 100, authorised): a stranger refused; the guest's
+review held with the star at 4.5 from the six; the listing's public rating ignoring it; the host told one exists and unable
+to read it; the host's review releasing both at once; both platform ratings stored by role; a second attempt refused — 16/16,
+and every row deleted afterwards (a review on a live listing is public). That run found the last defect: `hru_title` and
+`hru_description` were the only NOT NULL text columns of the four tables, so a host who rated without writing a title could
+not be saved (`9abcf87`, migration run on dev).
+
+**Still to do:** the **app** has the guest's old three-slider page (it works — it now ends the stay properly and its review
+is held like any other) but not the six categories, the host's platform rating, or the "waiting for the other side" state;
+app parity is the next build. The admin's Reviews screen still lists only property reviews — host, platform and guest
+reviews have no admin queue yet.
+
+---
+
 ### 8a56. Closed 2026-09-21 (17:40—19:00) — Bulk Import is a screen: the client uploads, checks and imports on their own
 
 **Asked (Sumit):** "there is no role of the Zyphex team in this — they should be able to do it on its own"; plus a client
