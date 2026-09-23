@@ -164,3 +164,43 @@ correct. `MAIL_EMAIL`/`MAIL_PASSWORD: false` — Brevo is set and Render blocks
 outbound SMTP, so the fallback could never have worked anyway.
 `ADMIN_API_TOKEN: false` — the `/bp/export/*` endpoints fall back to
 `BOTPENGUIN_API_TOKEN`.
+
+---
+
+## 7. Read-only drive, 23 September — 13 of 14 identical to production
+
+`ALLOW_TEST_PAYMENTS=true` took: `usableForPayments` flipped to **true**,
+`warning` cleared, `collectsMoney` correctly still **false** (test key, no real
+money). Everything else in the report unchanged and green.
+
+Fourteen public endpoints hit on both stacks and compared:
+
+| | Singapore (fresh) | Oregon (live) |
+|---|---|---|
+| amenities | 37 | 37 |
+| categories | 11 | 11 |
+| FAQ | 35 | 35 |
+| legal documents | 5 | 5 |
+| cancellation policies | 5 | 5 |
+| states / tags / doc list | 6 / 3 / 4 | 6 / 3 / 4 |
+| about-us, safety, T&C host, T&C user | present | present |
+| **properties/destinations** | **0** | **8** |
+
+Note the served counts differ from the raw table counts (44 amenities in the
+table, 37 served; 22 categories, 11 served) because these endpoints filter to
+active rows — and **both sides filter identically**, which is the actual proof.
+No 500s, no schema drift: the fresh 127-table build serves production's own
+reference data correctly.
+
+The single difference is `/properties/destinations` — 0 against 8 — which is
+the fresh database having no properties, exactly as decided in §6.
+
+### What is left of §2.4, and why a session cannot finish it
+
+The authenticated half: register a guest and a host, list a property through
+the five-step wizard, search for it, take a booking to the Razorpay sheet,
+open the admin screens. That needs accounts to be **created** and passwords
+**typed**, which a session must not do. It is yours or a tester's, on our own
+accounts, never 100 or 101.
+
+Once those accounts exist, a session can drive everything that follows them.
