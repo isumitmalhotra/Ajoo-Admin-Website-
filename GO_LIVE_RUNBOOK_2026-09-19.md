@@ -37,6 +37,71 @@ The whole move is **about two working days**; the only freeze is the
 
 ---
 
+## 0a. Corrections, 23 September — read before provisioning anything
+
+Checked against the live Render and PlanetScale consoles and the current
+backend. Four things in this runbook are wrong or incomplete, and three of them
+cost money or cause an outage if followed as written.
+
+**1. PlanetScale defaults to Postgres. Aajoo is MySQL.**
+The New-database form now offers three engines and **Postgres 18.6 is
+pre-selected**. Aajoo is Sequelize `dialect: "mysql"` with 173 MySQL
+migrations against MySQL 8.0.43. The engine to pick is **Vitess — "MySQL at
+hyperscale"**. Choosing the default silently produces a database nothing in
+this application can talk to.
+
+**2. The price is not $25.** There is no PS-5 on Vitess; the entry tier is
+**PS-10 at $39/month** (1/8 vCPU, 1 GB, 1 primary + 2 replicas, 10 GB storage,
+3 VTGates). The PS-5/$15 and PS-10/$30 figures on the form are the *Postgres*
+ladder. §7's estimate of "PlanetScale PS-10 25" is low by $14/month.
+For scale: the live database is 21.5 MB against 10 GB included.
+
+**3. Foreign keys are OFF by default on Vitess and must be turned on.**
+The schema carries **39 foreign keys across 21 tables**. PlanetScale's own
+documentation: *"At PlanetScale, we don't recommend using foreign key
+constraints. However, if you still want to use them, you can enable support for
+foreign key constraints in your database settings page."* Enable it **before**
+running the 173 migrations or `freshDatabase.js`, or the import fails partway
+and leaves a half-built schema on a paid database. (Only 3 migration files
+declare FKs; the other constraints came with the original schema, so a
+migration-only check would have missed this.)
+
+**4. §2.2's inventory command misses nine variables, including `DB_HOST`.**
+The command given is `grep -rhoE "process\.env\.[A-Z0-9_]+"`. `config/db.config.js`
+reads through a local `env()` helper, so that grep cannot see:
+
+    CLOUDINARY_API_KEY  CLOUDINARY_API_SECRET  CLOUDINARY_CLOUD_NAME
+    DB_DIALECT  DB_HOST  DB_PASSWORD  DB_PORT
+    MAIL_EMAIL  MAIL_PASSWORD
+
+A Singapore service built from that grep would come up with **no database host
+and no image uploads** — and a set-but-absent `DB_HOST` is the exact shape of
+the July outage this runbook already warns about twice.
+
+The corrected list of **100 names** is `GO_LIVE_ENV_INVENTORY.txt` beside this
+file. Note the spelling: the app reads **`DB_PASSWORD`** (`config/db.config.js:98`),
+not `DB_PASS`.
+
+**Also still open:** §0.2 has not been done — `isumitmalhotra/Ajoo-Admin-Website-`
+is **still PUBLIC** today, and its history still holds the old Razorpay secret
+and the test-account passwords. The other two repos are private. This runbook
+puts §0 before infrastructure for a reason.
+
+**Neither region can be changed after creation.** Render's documentation:
+*"Render doesn't currently support changing the region for an existing service
+or database."* PlanetScale sets the region on the create form only. So this is
+two new paid resources and a migration, not a setting — which is what §1 and §2
+already describe, and why the overlap in §2 is billed twice until §4 lands.
+
+**State of the accounts, 23 September:** Render workspace is **Pro** with a card
+on file, but the `aajaodev` service is still a **Free instance in Oregon**
+(Services line on the billing page: $0.00; projected September $10.06, all of it
+the workspace subscription). PlanetScale org `aajoolive` exists and is signed in
+with **zero databases**. Singapore is offered by both — Render as "Singapore",
+PlanetScale as `ap-southeast-1`.
+
+---
+
 ## 0. Before touching infrastructure (this week, in this order)
 
 These do not depend on Render or PlanetScale and two of them are security
