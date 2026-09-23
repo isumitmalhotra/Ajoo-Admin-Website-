@@ -322,6 +322,168 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a58. Closed 2026-09-23 — four bugs from the 09-22 sheet, and the one that could take the API down
+
+**Asked (client, via Sumit, 2026-09-22, with two screenshots and a 31s screen recording):**
+1. "while trying to sign up with a email which is already registered, something went wrong appears. It must show proper
+   validation message. Earlier it was fine"
+2. "on app it stopped working to select bathroom during listing, pls take a look check the recording and disect it frame
+   by frame"
+3. "here in app, I can only increase counts of beds like king, queen on master bedroom details..I cannot go back and
+   close it like the web. Try to manage this too."
+4. "any specific reason, web asks for 5 photos atleast, while on app it asks for atleast 10 pics?? make it 10 both sides
+   implement these fixes and make sure the porpperty registration form is exactly same on both sides"
+
+Backend `dcf3fb4` · web `5fc7a10` · monorepo `148a574`. **Not pushed — the web repo deploys to production, so the push is
+Sumit's call.** 189/189 backend test files · 72/72 web test files · 616 Flutter tests · `flutter analyze` 0 errors ·
+`tsc -b` and the real `npm run build` green.
+
+---
+
+#### Defect 51 — a refused signup never gave its database connection back (the API could be taken down by five requests)
+
+This is the one worth reading. `createUser` opened an **unmanaged** transaction on its first line:
+
+```js
+let transaction = await sequelize.transaction();
+```
+
+and then refused the request in **four** places before writing anything — the email is taken, the email is taken but
+unverified, the phone already has two accounts, the phone already has an account in this role. Every one of them is a bare
+`return common.response(...)`. Nothing commits, nothing rolls back, and an unmanaged transaction holds its pooled
+connection **until the connection dies**. `idle: 10000` never reclaims it: the connection is in use, not idle.
+
+`models/index.js` sets `pool.max` to **5**. So five people typing an address they had already registered with take every
+connection out of circulation, and from that moment **every request in the whole API** waits the full 30s `acquire` and
+fails with a connection-acquire timeout — which `utils/safeError` correctly refuses to show and replaces with
+
+> Something went wrong. Please try again.
+
+That is the exact string the tester was shown, and it explains the shape of the report: the **first** duplicate attempt
+answers correctly (verified live against dev: `HTTP 400 {"message":"User already exists"}`), a later one does not. It also
+explains "Earlier it was fine" — `safeMessage` landed in `e2471ea`, so before that the raw failure was visible.
+
+`/user/signup` is **unauthenticated**. Five requests was the cheapest way to take the platform down from outside.
+
+**Fix:** the transaction is opened where the first write is. Every refusal above it now returns without one to leak.
+
+**The test** (`tests/aRejectedSignupReleasesItsConnection.test.js`) drives the real handler down each refusal path with a
+transaction double that records whether it was settled. **4 of 4 failed before the change**, one leaked transaction each.
+
+**Wider than signup, and not fixed here.** A scan for `await sequelize.transaction()` with a `return` between it and the
+only `commit()` flags `booking.controller.js` heavily. That scan over-counts (it cannot see a rollback inside a nested
+block), so the number is not quoted here — but the class of fault is systemic and wants its own pass, ideally with a net
+that makes it impossible: register the transaction on the request and roll it back on `res.finish` if it is still open.
+**Open item.**
+
+#### Defect 52 — the one answer the email check existed to give was the one it threw away
+
+`/user/is-exist` answered **HTTP 400** for "yes, that address is taken". The app's caller:
+
+```dart
+if (response.statusCode < 200 || response.statusCode >= 300) {
+  throw Exception('Email check failed (${response.statusCode})');
+}
+```
+
+throws **before** parsing the body. So the taken case became `Exception('Email check unavailable')`, and
+`checkEmailAlreadyExists` caught that and replaced it with a hardcoded `'Something went wrong.'` — with the real error
+mapper sitting commented out on the same line. Three links in the chain, all three wrong, and the app therefore **never**
+told anyone their email was already registered.
+
+**Fixed in all three places.** The endpoint answers 200 for both outcomes with `data.exists`; the legacy message string is
+unchanged word for word, so **builds already in testers' hands start behaving correctly without a new APK**. The app reads
+the body whatever the status was, so it works against either server. An unreachable check is now its own exception and
+does **not** block the signup — the server refuses a duplicate on submit anyway.
+
+**A second bug found in the same place.** The check ignored the role. The same address may legitimately hold one guest
+account and one host account — `loginUser` resolves by email **and** role, and `createUser` enforces exactly that — so
+asked about a guest's address it said "taken" for a host signup the server would have accepted. It takes `isHost` now.
+
+**Both clients put the message on the email field.** On the website the address is collected on step 1 and only checked
+when the form is submitted from step 2, so the banner named a field that was not on the screen; the page now returns to
+step 1, marks the field and puts the cursor in it. A refusal carries `data.field` so neither client has to parse prose.
+
+#### Defect 53 — the bathroom selection: stored every time, drawn never
+
+Frame by frame in the recording (22.50s–24.25s): **Bathroom 1 and 2 hold a selection, 3, 4 and 5 never show one.**
+
+`setRoom` grows the list and writes the entry correctly. `RoomEntry.copyWith` keeps the other fields correctly. `_RoomCard`
+is a `StatelessWidget`. All fine. The fault is one word at `listing_wizard_screen.dart:835`:
+
+```dart
+Builder(builder: (_) {          // <- not Obx
+  final beds  = c.sizedRooms(c.bedroomDetail,  ...);
+  final baths = c.sizedRooms(c.bathroomDetail, ...);
+```
+
+`Obx` subscribes to the observables read **while its own builder runs**. A `Builder`'s callback runs later, when its child
+element builds, by which time the collection window has closed. So nothing ever subscribed to either list: choosing a
+bathroom stored the answer and never repainted it, and the section only caught up when some *other* observable fired —
+which is exactly why the first two cards, set before the count was last changed, looked correct.
+
+The screen never got GetX's "improper use of a GetX has been detected" warning either, **because its outer `Obx` had
+plenty of other things to listen to.** The two lists went missing in silence.
+
+**Fix:** `Obx` in place of `Builder`. **Test:** `the_bathroom_selection_repaints_test.dart` — a widget test that
+demonstrates the GetX rule in both directions (and that a nested read catches up when something else fires, which is the
+tester's symptom), plus a structural check on the screen. **Fails on the pre-fix source.**
+
+#### Defect 54 — a bed count that could only go up
+
+"I can only increase counts of beds like king, queen … I cannot go back and close it like the web." Removing a bed type was
+**long-press only** — no affordance, nothing on the screen said it existed.
+
+Fixing only the app would have left the two forms doing different things, because the **website's** control cleared the
+type outright: a host who tapped Queen once too many still had to start that type again. **Both sides now carry one
+visible control that takes one bed off and removes the type when the last one goes.**
+
+#### Item 4 — the photo minimum, and the premise behind the question
+
+**There is no web-versus-app difference, and never was.** Both clients read `photoRulesFor()` from
+`config/listingSchema.js`. The rule was **tiered by accommodation type**: 10 for an entire property, 5 for a private room,
+private suite or shared room — the client's own specification, on the argument that one bedroom cannot produce ten
+distinct photographs and has no exterior belonging to the guest. The two screenshots were two listings of different types.
+
+**Done as instructed: ten for every type.** The exterior is still only asked of a whole property. To restore the
+specification's split, put the 5s back in `PHOTO_RULES.byAccommodation` — nothing else changes.
+
+**A trap this would have sprung.** `isRoom` was computed as `tier.minimum < PHOTO_RULES.minimum`, which stops being true
+the moment the counts are equal — so levelling the tiers at ten would silently have started applying an admin's
+whole-property photo floor to a single bedroom, the precise thing the tier exists to prevent. All three places (server,
+website, app) read a **declared** `isRoom` now.
+
+**Worth a decision, Sumit:** requiring ten photographs of one private room is a higher bar than the client's own
+specification asked for, and it is the kind of thing a host abandons a listing over. One number reverts it.
+
+#### "exactly same on both sides" — what was compared, and what it found
+
+The **questions** cannot drift: both wizards render from one server schema, and `listing_wizard_keys_test.dart` already
+holds the app's step-4 keys against the server's. What can drift is hand-written UI — which is where all three of the
+tester's findings were.
+
+Comparing the two wizards' section titles found **one whole section the website has and the app did not: Damage policy.**
+`saveStep4` has always read `ppr_deposit_refundable`, `phr_damage_reporting` and `phr_compensation_rules`; the app sent
+**none** of them. A listing created on a phone had no damage policy, and the host found that out at the door.
+
+Added to the app: "Deposit is refundable" beside the amount, and the two free-text answers. The texts are `phr_` columns,
+which the draft loader merges into `p5`, read by controls in `p4` — **the fault this controller already carries three
+comments about** (`self_checkin_method`, `pet_fee`, `pet_size`). They are bridged. Getting it wrong does not merely show
+an empty box: step 4 posts the whole of `p4`, so it writes NULL over what the host saved.
+
+**Still to prove, and it needs a run rather than a diff:** a static key comparison across the two clients is too noisy to
+trust — most fields are schema-driven, so the keys never appear as literals. The only honest field-by-field proof is to
+drive both forms through all five steps and compare the captured payloads. **Open item, one QA sitting.**
+
+#### Also noted
+
+- `npm run test:smoke` on the web repo points at `scripts/financeSmoke.js`, which **does not exist**. Pre-existing and
+  unrelated; the 72 `tests/*.mjs` files are the real suite and all pass.
+- **No new build yet.** These app fixes are not in build 109 — the tester's build. A build 110 is needed before the
+  bathroom, bed and damage-policy fixes can be retested on a phone.
+
+---
+
 ### 8a57. Closed 2026-09-22 — two-sided reviews at check-out: a 14-day window, blind until both sides are in
 
 **Asked (client, via Sumit):** "before checkout both side user and host, we will take review from them — for the user: stay,
