@@ -100,6 +100,31 @@ void main() {
         reason: 'a row of unchosen types must stay as narrow as it was');
   });
 
+  testWidgets('the hint describes the control that actually exists',
+      (tester) async {
+    // Driving build 110 found this and the tests did not: the fix replaced the
+    // long-press with a visible control and left the sentence underneath
+    // saying "Long-press a bed to remove it." Every other test here asks what
+    // the controls DO; none of them reads the copy beside them. A gesture the
+    // app no longer honours is worse than no hint at all -- the host tries it,
+    // nothing happens, and they conclude the screen is broken.
+    await show(tester, const RoomEntry(
+      index: 1,
+      type: 'master_bedroom',
+      beds: [BedEntry(type: 'queen', count: 2)],
+    ));
+
+    expect(find.textContaining('Long-press'), findsNothing,
+        reason: 'the long-press was removed; the hint must not still promise it');
+    expect(find.textContaining('ake one off'), findsOneWidget,
+        reason: 'a host who has chosen a bed should be told how to undo it');
+  });
+
+  testWidgets('no hint at all until a bed is chosen', (tester) async {
+    await show(tester, const RoomEntry(index: 1, type: 'master_bedroom'));
+    expect(find.textContaining('ake one off'), findsNothing);
+  });
+
   testWidgets('tapping the pill still adds one', (tester) async {
     await show(tester, const RoomEntry(
       index: 1,

@@ -168,7 +168,13 @@ class _Beds extends StatelessWidget {
         ),
         if (beds.isNotEmpty) ...[
           const SizedBox(height: 6),
-          Text('Long-press a bed to remove it.',
+          // Was "Long-press a bed to remove it." -- which stopped being true
+          // the moment the long-press was replaced by the visible control, and
+          // would have sent hosts hunting for a gesture that does nothing.
+          // Found by driving build 110, not by a test: every test here asks
+          // what the controls DO, and none of them reads the sentence
+          // underneath.
+          Text('Tap a bed again to add another, or \u2212 to take one off.',
               style: inter(fontSize: 11.5, color: kMuted)),
         ],
       ],
