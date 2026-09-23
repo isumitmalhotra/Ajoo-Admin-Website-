@@ -50,11 +50,26 @@ migrations against MySQL 8.0.43. The engine to pick is **Vitess — "MySQL at
 hyperscale"**. Choosing the default silently produces a database nothing in
 this application can talk to.
 
-**2. The price is not $25.** There is no PS-5 on Vitess; the entry tier is
-**PS-10 at $39/month** (1/8 vCPU, 1 GB, 1 primary + 2 replicas, 10 GB storage,
-3 VTGates). The PS-5/$15 and PS-10/$30 figures on the form are the *Postgres*
-ladder. §7's estimate of "PlanetScale PS-10 25" is low by $14/month.
-For scale: the live database is 21.5 MB against 10 GB included.
+**2. §7's "PlanetScale PS-10 25" is stale — but nothing needs re-approving.**
+The approved figure is **$47/month**, and the client already has it.
+`AAJOO_INFRASTRUCTURE_STATUS_AND_DECISIONS_2026-09-19.html` — the document that
+asked for these approvals — states **"PlanetScale PS-10 in Singapore — $47
+(Mumbai: $39)"**, footnotes it as read off the dashboard on 19 September
+("PS-10 $47/month in ap-southeast-1 Singapore"), and explains the discrepancy in
+its own words: *"The 18 September document said $25: that was the price shown on
+PlanetScale's pricing page that day."* §7 here was never updated to match.
+
+So the approved monthly total is the one in that document: **$97 (Singapore)**
+— Pro workspace $25 (already bought) + Render 1c-2g $25 + PlanetScale $47.
+Mumbai at $89 was offered and not taken; the document's own latency argument
+against it is sound (server in Singapore, database in Mumbai = 40–60 ms per
+query, 300–700 ms of database time per screen).
+
+There is no PS-5 on the Vitess ladder, so PS-10 is the entry tier either way.
+**Do not quote $39 for Singapore** — that is the *Mumbai* price, and it is also
+what the create form shows while the region is still on its `us-east-1` default,
+which is an easy way to mis-read the console. For scale: the live database is
+21.5 MB against 10 GB included.
 
 **3. Foreign keys are OFF by default on Vitess and must be turned on.**
 The schema carries **39 foreign keys across 21 tables**. PlanetScale's own
@@ -81,6 +96,10 @@ the July outage this runbook already warns about twice.
 The corrected list of **100 names** is `GO_LIVE_ENV_INVENTORY.txt` beside this
 file. Note the spelling: the app reads **`DB_PASSWORD`** (`config/db.config.js:98`),
 not `DB_PASS`.
+
+**Decisions taken 23 September (Sumit):** foreign-key support **on** (see 3);
+repo visibility is Sumit's to change, so these corrections stay unpushed until
+then; price needs no re-approval — $47 was pitched and is what Singapore costs.
 
 **Also still open:** §0.2 has not been done — `isumitmalhotra/Ajoo-Admin-Website-`
 is **still PUBLIC** today, and its history still holds the old Razorpay secret
