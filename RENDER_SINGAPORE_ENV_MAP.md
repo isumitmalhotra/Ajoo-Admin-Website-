@@ -115,3 +115,52 @@ quietly rather than loudly:
    own accounts — never 100 or 101.
 
 Nothing a user can see changes until §4, which waits for the client's word.
+
+---
+
+## 6. Health report read, 23 September ~23:05 IST
+
+`ready: true` · `database.ok: true` · `missingRequired: []` · all nine REQUIRED set.
+
+**`dbCutoverSafe: true`, all five `dbChecks` "match".** The DB values are not
+merely present, they match what the service is actually running on — the July
+outage was a set-but-*stale* `DB_HOST`, and that shape is excluded.
+
+Set, and each one matters: `FIELD_ENCRYPTION_KEY` (host payouts),
+`BREVO_API_KEY` + `MAIL_FROM` (the only mail path that works on Render),
+`RAZORPAY_KEY_ID/SECRET`, `BOTPENGUIN_API_TOKEN`, `FIREBASE_PROJECT_ID`.
+`OTP_DEV_BYPASS` correctly **absent**.
+
+### Three to act on
+
+**1. Payments refuse outright — this blocks both the drive and the cutover.**
+
+    "mode": "test", "usableForPayments": false,
+    "warning": "A TEST key is configured on a production deploy."
+
+`config/payments.config.js:63`:
+`usableForPayments = isConfigured && (isLiveMode || !isProduction || allowTestPayments)`
+— on this service that is `true && (false || false || false)`.
+
+So §2.4's "book to the Razorpay sheet" cannot run, and a cutover today would
+put the website on a stack that takes no money. Either finish §3.1 (Razorpay
+LIVE activation — client KYC, days) or set `ALLOW_TEST_PAYMENTS=true` for the
+QA cycle only. The code supports the second deliberately; it must come off
+before real users arrive.
+
+**2. `RAZORPAY_WEBHOOK_SECRET: false`** — `/webhooks/razorpay` answers 503.
+Payments still complete; a guest whose tab closed is never confirmed. Register
+the webhook in the Razorpay dashboard and set the secret here.
+
+**3. `SAFETY_ALERT_EMAIL: false`** and every SMS variable false. SMS is the
+known dormant item (needs a provider and a DLT template, not code) so OTPs go
+by email only. But an SOS today reaches only admins who open the panel — no
+email goes anywhere. Worth setting before launch.
+
+### Fine as they are
+
+`FRONTEND_URL: false` — falls back to `https://www.aajoohomes.com`, which is
+correct. `MAIL_EMAIL`/`MAIL_PASSWORD: false` — Brevo is set and Render blocks
+outbound SMTP, so the fallback could never have worked anyway.
+`ADMIN_API_TOKEN: false` — the `/bp/export/*` endpoints fall back to
+`BOTPENGUIN_API_TOKEN`.
