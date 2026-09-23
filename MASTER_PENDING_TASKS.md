@@ -40,6 +40,10 @@
 > **Go-live sequence (2026-09-19, Render Pro + PlanetScale bought): `GO_LIVE_RUNBOOK_2026-09-19.md`** — steps 0.1–0.4 first (Razorpay key rotation, repo private, test passwords, build 106).
 > Tester build in circulation: **109 (1.0.0+109)**, `aajoo-homes-1.0.0-build109-release.apk` at repo root
 > (2026-09-21 14:37, versionCode 109, 95.6 MB, sha256 `064cc19b501afd11…`), built with `tool/build_release.ps1`
+> **110** — 2026-09-23, `sha256 d0adae9b…5057 5D`, 95.7 MB. The 09-22 sheet's four bugs (§8a58): the
+> bathroom repaint, the bed remove control, the Damage policy section, ten photos everywhere, and the
+> email-check fix. Client repo `aajoo_app_latest` main = `c253d4f`. **Built and verified, NOT driven** — the
+> emulator is wedged (clock 26h behind, `adb reboot` hangs). Supersedes **109**
 > on Temurin JDK 21 (§8a54); client repo `aajoo_app_latest` main = `f566782`. Supersedes **108**
 > (2026-09-20 21:05, versionCode 108, 95.5 MB, sha256 `4cf75ddf44f5f5bf…`), built with `tool/build_release.ps1`;
 > client repo `aajoo_app_latest` main = `30edba5`. Supersedes **107**
@@ -334,9 +338,39 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 4. "any specific reason, web asks for 5 photos atleast, while on app it asks for atleast 10 pics?? make it 10 both sides
    implement these fixes and make sure the porpperty registration form is exactly same on both sides"
 
-Backend `dcf3fb4` · web `5fc7a10` · monorepo `148a574`. **Not pushed — the web repo deploys to production, so the push is
-Sumit's call.** 189/189 backend test files · 72/72 web test files · 616 Flutter tests · `flutter analyze` 0 errors ·
-`tsc -b` and the real `npm run build` green.
+Backend `dcf3fb4` · web `5fc7a10` · monorepo `148a574` → `0ce55b2` · **client repo `aajoo_app_latest` main = `c253d4f`**.
+**All pushed and both deploys are live.** 189/189 backend test files · 72/72 web test files · 616 Flutter tests
+(615 + 1 skipped in a fresh clone of the client repo) · `flutter analyze` 0 errors · `tsc -b` and the real
+`npm run build` green.
+
+**Build 110** (`1.0.0+110`), `aajoo-homes-1.0.0-build110-release.apk`, 95.7 MB,
+`sha256 d0adae9bb869d5f9b059511a1789746add960b5153e33690bcd79a868650575d`. Points at `aajaodev.onrender.com` with the
+sandbox gateway key; `tool/verify_release_apk.py` read it back and confirms no developer path and no plain-http endpoint.
+Supersedes **109**, which contains none of the fixes below.
+
+#### Verified against the live services, not only in tests
+
+- `/user/is-exist` answers `HTTP 200 {"message":"User Already Exist","data":{"exists":true,"field":"user_email"}}`. The
+  message string is byte-identical to the old one, so **build 109 already in the tester's hands shows the right message
+  without a new APK.**
+- **The connection leak is provably gone.** Eight consecutive duplicate-email signups against the live service all
+  answered `HTTP 400 "This email already has a guest account…"`. On the old code attempts 6-8 would have been
+  "Something went wrong" — the pool is five. A read immediately afterwards returned in **0.49s**, not a 30s acquire
+  timeout, so nothing is starved. (The role-aware check then answered `429` — the signup rate limiter working as
+  designed after nine probes from one IP.)
+- The live Vercel bundle contains `Remove one` and no `Remove every`, so the bed control shipped to production.
+
+#### NOT driven on a device — the emulator is wedged
+
+Build 110 has **not** been driven, so by this file's own rule it is not yet the tester build. The emulator answers
+`adb shell` but its framework has stopped advancing: **device clock stuck at Sep 22 14:41:57 against a host clock of
+Sep 23 16:28**, logcat's newest line a day old, load average 6.87. `adb install` hung for 13 minutes with no output,
+`pm install` from `/data/local/tmp` hung for 40 more, and `adb reboot` hangs too. The APK pushes to the device in 2.6s,
+so the transport is fine — the VM is not. It needs killing at the host level and restarting, which will lose whatever
+state is in it.
+
+Still to drive once it is back: the bathroom cards 3-5 holding a selection, the bed minus control, the Damage policy
+section saving and reloading, and a duplicate-email signup showing the message on the email field.
 
 ---
 
