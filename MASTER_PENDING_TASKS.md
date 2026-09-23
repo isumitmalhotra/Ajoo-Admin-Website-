@@ -40,6 +40,9 @@
 > **Go-live sequence (2026-09-19, Render Pro + PlanetScale bought): `GO_LIVE_RUNBOOK_2026-09-19.md`** — steps 0.1–0.4 first (Razorpay key rotation, repo private, test passwords, build 106).
 > Tester build in circulation: **109 (1.0.0+109)**, `aajoo-homes-1.0.0-build109-release.apk` at repo root
 > (2026-09-21 14:37, versionCode 109, 95.6 MB, sha256 `064cc19b501afd11…`), built with `tool/build_release.ps1`
+> **111** — 2026-09-23, `sha256 fa6dacf5…85AA`, 95.7 MB. 110 plus the bed hint, which still told hosts to
+> long-press a gesture 110 had removed — found by driving, not by tests. Client repo `9768399`. **Driven:**
+> bathrooms 3/4/5 hold a selection, `King ×2` with a working −, corrected hint. Supersedes **110**
 > **110** — 2026-09-23, `sha256 d0adae9b…5057 5D`, 95.7 MB. The 09-22 sheet's four bugs (§8a58): the
 > bathroom repaint, the bed remove control, the Damage policy section, ten photos everywhere, and the
 > email-check fix. Client repo `aajoo_app_latest` main = `c253d4f`. **Built and verified, NOT driven** — the
@@ -360,17 +363,55 @@ Supersedes **109**, which contains none of the fixes below.
   designed after nine probes from one IP.)
 - The live Vercel bundle contains `Remove one` and no `Remove every`, so the bed control shipped to production.
 
-#### NOT driven on a device — the emulator is wedged
+#### The emulator was wedged, and that is what "install hangs" looked like
 
-Build 110 has **not** been driven, so by this file's own rule it is not yet the tester build. The emulator answers
-`adb shell` but its framework has stopped advancing: **device clock stuck at Sep 22 14:41:57 against a host clock of
-Sep 23 16:28**, logcat's newest line a day old, load average 6.87. `adb install` hung for 13 minutes with no output,
-`pm install` from `/data/local/tmp` hung for 40 more, and `adb reboot` hangs too. The APK pushes to the device in 2.6s,
-so the transport is fine — the VM is not. It needs killing at the host level and restarting, which will lose whatever
-state is in it.
+Before any of this could be driven: `adb install` hung 13 minutes with no output and `pm install` from
+`/data/local/tmp` hung 40 more. The cause was not the APK. The emulator answered `adb shell` but its framework had
+stopped advancing — **device clock stuck at Sep 22 14:41:57 against a host clock of Sep 23 16:28**, logcat's newest
+line a day old, load average 6.87. `adb reboot` hung too. `adb emu kill` (the emulator console, which bypasses the
+wedged framework) shut it down cleanly, and a cold restart with `-no-snapshot-load` brought it back with the clock
+matching the host to the second. **The same install then took 15 seconds.**
 
-Still to drive once it is back: the bathroom cards 3-5 holding a selection, the bed minus control, the Damage policy
-section saving and reloading, and a duplicate-email signup showing the message on the email field.
+Worth remembering: when an install hangs on this emulator, check `adb shell date` against the host before blaming the
+build. The likely cause is host CPU starvation — Flutter builds and test runs were going at the same time.
+
+#### Driven on a device at build 111
+
+- **Defect 53 — fixed, and seen.** Five bathroom cards. Tapping a type on **Bathroom 5** (Ensuite), **Bathroom 4**
+  (Attached) and **Bathroom 3** (Common) painted each one immediately. On 109 none of the three showed anything. The
+  selections also survived a rebuild caused by adding a bedroom.
+- **Defect 54 — fixed, and seen.** Queen tapped three times reads `Queen ×3` with a visible − beside it; − takes it to
+  ×2, and two more taps remove the type and the control together.
+- **Photographs.** The live schema endpoint — the exact payload both clients read — now serves `minimum 10` for
+  entire_property, private_room, private_suite and shared_room, with `isRoom` declared on the three room tiers.
+
+#### What driving found that 618 tests did not
+
+The bed hint underneath the pills still read **"Long-press a bed to remove it."** — the gesture build 110 had just
+removed. Worse than no hint: the host tries it, nothing happens, and concludes the screen is broken. Every test in that
+file asked what the controls DO; none read the copy beside them.
+
+**Build 111** fixes it to "Tap a bed again to add another, or − to take one off.", adds two tests for the hint, and was
+itself driven. `1.0.0+111`, `sha256 fa6dacf5…85AA`, 95.7 MB. Monorepo `bd7cda1`, client repo `9768399`.
+**Supersedes 110** — one build number, one artifact, so 110 is not rebuilt.
+
+#### Cloudflare is now challenging automated clients on the dev API
+
+`tool/build_release.ps1`'s pre-flight check began failing with **403 and `Cf-Mitigated: challenge`** ("Just a
+moment…"). It is Cloudflare's managed challenge on `aajaodev.onrender.com`, almost certainly tripped by this
+session's burst of automated requests from one IP. curl is not challenged and `GET /health` returns
+`200 {"status":"ok"}`, so the endpoint is fine; the build used `-SkipEndpointCheck` with the host verified by other
+means, and the verifier still read the endpoint back out of the APK. **Not worked around and not to be worked around**
+— defeating bot detection is off limits. It should decay on its own; if the tester or the app starts seeing it,
+that is the cause.
+
+#### Still not driven
+
+The **Damage policy** section and the photo counter on step 3 were not reached — both sit behind the whole of steps 1
+and 2 (description, state and city dropdowns, amenities). Both are data-driven rather than rendering bugs, both are
+test-covered, and the photo rule was verified at the live endpoint. The app-side duplicate-email path was **not**
+driven either: reaching the signup screen means signing out of host 100, and signing back in needs a password this
+session must not type.
 
 ---
 
