@@ -14,7 +14,8 @@ import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/ui/widgets/password_rules_checklist.dart';
 import '../auth_controller.dart';
 import '../../../../utils/email_validation.dart';
-
+
+
 import 'package:rent_home/utils/app_log.dart';
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -282,6 +283,15 @@ class _AuthPageState extends State<AuthPage> {
                                 controller: emailController,
                                 keyboardType: TextInputType.emailAddress,
                                 inputFormatters: AppInputFormatters.email,
+                                // The "already registered" answer belongs to
+                                // the address it was asked about, so editing
+                                // the address retires it.
+                                onChanged: (_) {
+                                  if (authController
+                                      .emailFieldError.value.isNotEmpty) {
+                                    authController.emailFieldError.value = '';
+                                  }
+                                },
                                 // Signing IN accepts an email OR a mobile
                                 // number — the backend resolves either (see
                                 // loginUser, which looks a phone up in
@@ -314,6 +324,14 @@ class _AuthPageState extends State<AuthPage> {
                                   }
                                   if (!isValidEmail(v)) {
                                     return 'Please enter a valid email address';
+                                  }
+                                  // What the server said about THIS address.
+                                  // Set by checkEmailAlreadyExists; a toast on
+                                  // its own left the person looking at a field
+                                  // with no indication of what to change.
+                                  if (authController
+                                      .emailFieldError.value.isNotEmpty) {
+                                    return authController.emailFieldError.value;
                                   }
                                   return null;
                                 },
@@ -441,7 +459,10 @@ class _AuthPageState extends State<AuthPage> {
                                           } else {
                                             await authController
                                                 .checkEmailAlreadyExists(
-                                                    emailController.text);
+                                                    emailController.text,
+                                                    isHost: userType.value == 1);
+                                            // Paint the answer onto the field.
+                                            _formKey.currentState?.validate();
                                             if (authController
                                                 .error.value.isEmpty) {
                                               final emailVal =

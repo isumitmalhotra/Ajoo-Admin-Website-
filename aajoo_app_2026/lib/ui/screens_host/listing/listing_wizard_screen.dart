@@ -832,7 +832,20 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
             // Sized here rather than in a listener: a listener runs a frame
             // late, so the screen would show the old number of cards for a
             // frame and a save fired in that frame would send the old list.
-            Builder(builder: (_) {
+            //
+            // Obx, NOT Builder. This read `c.bathroomDetail` and
+            // `c.bedroomDetail` inside `Builder(builder: ...)`, and a Builder's
+            // callback runs when its own child element builds — outside the
+            // window in which the enclosing Obx (see `body:` at the top of this
+            // screen) collects the observables it should listen to. So nothing
+            // ever subscribed to these two lists: tapping a bath type or a bed
+            // count stored the change and never repainted it, and the section
+            // only caught up when some OTHER observable happened to fire. That
+            // is why the tester's recording shows Bathroom 1 and 2 holding a
+            // selection — made before the count was changed, which did force a
+            // rebuild — while 3, 4 and 5 never showed one. Reported as
+            // "bathroom selection stopped working".
+            Obx(() {
               final vocab = c.schema.value?.roomDetail;
               if (vocab == null) return const SizedBox.shrink();
               int n(String k) => int.tryParse('${c.f[k] ?? ''}'.trim()) ?? 0;
@@ -1320,6 +1333,18 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
                 numeric: true,
                 help: 'Held against damage, commonly about one night\'s rate. '
                     'Leave blank for none.'),
+            // The website has asked this since the wizard shipped and this
+            // screen never did, so a deposit taken through the app was
+            // stored as whatever the column defaulted to and the guest was
+            // told the wrong thing about getting it back.
+            const SizedBox(height: 8),
+            ListingToggle(
+              label: 'Deposit is refundable',
+              value: c.p4['deposit_refundable'] == true ||
+                  c.p4['deposit_refundable'] == 1 ||
+                  c.p4['deposit_refundable'] == '1',
+              onChanged: (v) => c.setP4('deposit_refundable', v),
+            ),
           ],
         ),
         // The website's "Extra guests & children" section, missing here.
@@ -1662,6 +1687,38 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
               _p4Text('max_pets', 'Maximum pets (optional)',
                   numeric: true, help: 'Leave blank for no limit.'),
             ],
+          ],
+        ),
+        // The website's Damage policy section, which this screen did not
+        // have at all. saveStep4 reads all three of these; the app sent
+        // none of them, so a listing created on the phone had no damage
+        // policy and the host found out at the door. The deposit itself is
+        // asked for under Fees above and only reported here, because the
+        // website used to ask 'take a deposit?' twice and nothing
+        // reconciled the two answers.
+        ListingSection(
+          title: 'Damage policy',
+          children: [
+            Text(
+              (double.tryParse('${c.p4['security_deposit'] ?? ''}') ?? 0) > 0
+                  ? 'Guests are told a \u20b9${c.p4['security_deposit']} deposit '
+                      'applies'
+                      '${_p4Flag('deposit_refundable') ? ', refundable at the end of the stay' : ''}'
+                      '. Change it under Fees above.'
+                  : 'No deposit is set, so guests are told none applies. Add '
+                      'one under Fees above if you want it.',
+              style: inter(fontSize: 12.5, color: kMuted),
+            ),
+            const SizedBox(height: 12),
+            _p4Area('damage_reporting', 'How damage should be reported',
+                help: 'Who the guest tells, how soon, and what you need from '
+                    'them. For example: tell the caretaker the same day, or '
+                    'message me on Aajoo within 24 hours of checkout, with '
+                    'photos of anything broken.'),
+            _p4Area('compensation_rules', 'Compensation rules',
+                help: 'What you overlook, what you charge for, and how you '
+                    'work the amount out. Naming a figure prevents most '
+                    'arguments.'),
           ],
         ),
         ListingSection(
@@ -2253,6 +2310,24 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
         label: label,
         required: required,
         numeric: numeric,
+        help: help,
+        error: c.fieldErrors[key],
+        onChanged: (v) => c.setP4(key, v),
+      );
+
+  /// A step-4 yes/no as the form holds it: true, or MySQL's 1 back from a
+  /// draft, or the string '1' through a text channel. Anything else is no.
+  bool _p4Flag(String key) {
+    final v = c.p4[key];
+    return v == true || v == 1 || v == '1';
+  }
+
+  /// A step-4 answer that wants a few sentences rather than a word.
+  Widget _p4Area(String key, String label, {String? help}) => _KeyedField(
+        fieldKey: 'p4-$key',
+        initial: (c.p4[key] ?? '').toString(),
+        label: label,
+        maxLines: 3,
         help: help,
         error: c.fieldErrors[key],
         onChanged: (v) => c.setP4(key, v),

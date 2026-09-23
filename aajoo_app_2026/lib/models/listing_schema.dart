@@ -283,12 +283,14 @@ class PhotoRules {
   /// category while the web enforced the category's own number.
   final Map<String, int> byCategory;
 
-  /// Tiered by what is being LET: 10 photos and an exterior for a whole
-  /// property, 5 and no exterior for a room or a PG bed.
+  /// Tiered by what is being LET. Ten photos everywhere since 2026-09-23 at
+  /// the client's request; the exterior is still only asked of a whole
+  /// property, because there is no exterior belonging to the guest of a room.
   ///
-  /// A single room cannot produce ten distinct photographs, and there is no
-  /// exterior belonging to the guest. A host asked for them either uploads ten
-  /// near-identical shots of one wall to clear the bar, or never publishes.
+  /// The counts live on the server (config/listingSchema.PHOTO_RULES) and this
+  /// app and the website both read them from there — the "web asks for 5, the
+  /// app asks for 10" the tester saw was one rule seen through two listings of
+  /// different accommodation types, never a difference between the clients.
   final Map<String, PhotoTier> byAccommodation;
 
   /// The rule THIS listing is held to.
@@ -302,7 +304,7 @@ class PhotoRules {
     if (tier == null) {
       return PhotoTier(minimum: minimumFor(category), required: required);
     }
-    final isRoom = tier.minimum < minimum;
+    final isRoom = tier.isRoom;
     final adminMin = (category == null || category.isEmpty)
         ? 0
         : (byCategory[category] ?? 0);
@@ -337,6 +339,7 @@ class PhotoRules {
         if (v is Map) {
           byAccom[k.toString()] = PhotoTier(
             minimum: _int(v['minimum']),
+            isRoom: v['isRoom'] == true,
             required: (v['required'] is List)
                 ? (v['required'] as List).map((e) => e.toString()).toList()
                 : const [],
@@ -360,9 +363,22 @@ class PhotoRules {
 
 /// One photo rule: how many, and which categories must be tagged.
 class PhotoTier {
-  const PhotoTier({required this.minimum, required this.required});
+  const PhotoTier({
+    required this.minimum,
+    required this.required,
+    this.isRoom = false,
+  });
   final int minimum;
   final List<String> required;
+
+  /// Whether this tier describes a ROOM rather than a whole property.
+  ///
+  /// Sent by the server, not inferred from the count. It used to be worked out
+  /// as "this tier asks for fewer photos than the default", which silently
+  /// stops being true the moment the counts are equal — and they are equal now
+  /// that the client has asked for ten everywhere, which would have started
+  /// applying an admin's whole-property floor to a single bedroom.
+  final bool isRoom;
 }
 
 class PricingRules {

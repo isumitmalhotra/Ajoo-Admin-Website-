@@ -43,6 +43,11 @@ class AuthController extends GetxController {
   // State management
   final RxBool isLoading = false.obs;
   final RxString error = ''.obs;
+
+  /// The signup email field's own error, shown under the field. `error` alone
+  /// only ever reached a banner or a toast, so a taken address was reported
+  /// away from the box the person had to change.
+  final RxString emailFieldError = ''.obs;
   final RxBool isLoggedIn = false.obs;
   final Rx<UserDetail?> userData = Rx<UserDetail?>(null);
   final RxString token = ''.obs;
@@ -585,19 +590,41 @@ class AuthController extends GetxController {
     return true;
   }
 
-  Future<void> checkEmailAlreadyExists(String email) async {
+  /// Pre-flight: is this address already registered for [isHost]?
+  ///
+  /// Sets [emailFieldError] when it is, so the message lands on the field the
+  /// person is looking at rather than only in a toast. Reported by the tester:
+  /// signing up with an address that already had an account showed "Something
+  /// went wrong." -- because the server answered 400 for "taken", the service
+  /// threw that away as a transport failure, and this catch block replaced
+  /// whatever it was with a hardcoded string (note the real mapper sitting
+  /// commented out beside it). All three of those are fixed; this one keeps the
+  /// distinction the service now draws: an unreachable check must NOT be
+  /// reported as a taken address, and must not block the signup -- the server
+  /// checks again on submit and is the authority either way.
+  Future<void> checkEmailAlreadyExists(String email, {bool? isHost}) async {
     try {
       isLoading.value = true;
       error.value = '';
-      final response = await authService.isUserAlreadyExist(email);
-      if (response) {
-        showAlert('Error', 'Email already exists', true);
-        error.value = 'Email already exists';
+      emailFieldError.value = '';
+      final taken = await authService.isUserAlreadyExist(email, isHost: isHost);
+      if (taken) {
+        const message =
+            'This email is already registered. Sign in instead, or use a different email.';
+        emailFieldError.value = message;
+        error.value = message;
+        showAlert('Email already registered', message, true);
       }
+    } on EmailCheckUnavailable catch (e) {
+      // We do not know. Say so, and let the signup proceed -- the server
+      // refuses a duplicate on submit anyway.
+      appLog('email pre-check unavailable: $e');
+      showAlert('Could not check that email', e.toString(), true);
     } catch (e) {
-      const message = 'Something went wrong.'; //await handleApiError(e);
-      showAlert('Error', 'Something went wrong.', true);
+      final message = await handleApiError(e);
+      emailFieldError.value = message;
       error.value = message;
+      showAlert('Error', message, true);
     } finally {
       isLoading.value = false;
     }

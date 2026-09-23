@@ -36,7 +36,16 @@ void main() {
 
     test('and load back from the draft, into the map the fields read', () {
       final ctrl = codeOnly(File('lib/ui/screens_host/listing/listing_wizard_controller.dart').readAsStringSync());
-      expect(ctrl, contains("for (final key in const ['pet_fee', 'pet_size']) {"));
+      // Membership, not the list's exact spelling. This asserted the whole
+      // literal and failed the moment the damage-policy texts joined the same
+      // bridge on 2026-09-23 -- a test about pets breaking over a change that
+      // had nothing to do with pets.
+      final bridge = ctrl.substring(
+          ctrl.lastIndexOf('for (final key in const [',
+              ctrl.indexOf("if (rules['phr_\$key'] != null)")),
+          ctrl.indexOf("if (rules['phr_\$key'] != null)"));
+      expect(bridge, contains("'pet_fee'"));
+      expect(bridge, contains("'pet_size'"));
       expect(ctrl, contains("if (rules['phr_\$key'] != null) p4[key] = rules['phr_\$key'];"));
       expect(ctrl, contains("if (cap is Map && cap['pc_max_pets'] != null) p4['max_pets'] = cap['pc_max_pets'];"));
       // Step 4 posts the whole of p4, which is how the server receives them.

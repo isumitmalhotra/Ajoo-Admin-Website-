@@ -56,8 +56,14 @@ class _RoomPills extends StatelessWidget {
 ///
 /// A stepper per bed type would be eight rows of controls for a question most
 /// rooms answer with one tap. Tapping accumulates and the count rides on the
-/// pill, so "Queen ×2" is two taps and reads back at a glance; a long-press
-/// clears that type outright.
+/// pill, so "Queen ×2" is two taps and reads back at a glance.
+///
+/// Taking one back needs a control you can SEE. Removing used to be long-press
+/// only, which is no affordance at all: the tester reported "I can only
+/// increase counts of beds like king, queen ... I cannot go back and close it
+/// like the web". So a chosen type now carries a visible − that takes one off
+/// and removes the type at zero — the same control, in the same place, as the
+/// website's RoomDetail.
 class _Beds extends StatelessWidget {
   const _Beds({
     required this.types,
@@ -91,8 +97,18 @@ class _Beds extends StatelessWidget {
     ]);
   }
 
-  void _clear(String type) =>
+  /// One fewer of this type; the type itself goes when the last one does.
+  void _removeOne(String type) {
+    final current = _countOf(type);
+    if (current <= 1) {
       onChanged([for (final b in beds) if (b.type != type) b]);
+      return;
+    }
+    onChanged([
+      for (final b in beds)
+        if (b.type == type) b.copyWith(count: b.count - 1) else b,
+    ]);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,17 +125,43 @@ class _Beds extends StatelessWidget {
             for (final o in types)
               Builder(builder: (_) {
                 final n = _countOf(o.value);
-                return GestureDetector(
-                  // Long-press to clear, because a second control beside every
-                  // pill would double the width of a row that already wraps to
-                  // four lines on a phone.
-                  onLongPress: n > 0 ? () => _clear(o.value) : null,
-                  child: ListingPill(
-                    label: n > 0 ? '${o.label}  ×$n' : o.label,
-                    selected: n > 0,
-                    icon: iconForAmenity(o.label, 'bedroom'),
-                    onTap: () => _add(o.value),
-                  ),
+                // The remove control is drawn only for a type that HAS beds, so
+                // an untouched row is exactly as wide as it always was.
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListingPill(
+                      label: n > 0 ? '${o.label}  ×$n' : o.label,
+                      selected: n > 0,
+                      icon: iconForAmenity(o.label, 'bedroom'),
+                      onTap: () => _add(o.value),
+                    ),
+                    if (n > 0) ...[
+                      const SizedBox(width: 4),
+                      Semantics(
+                        button: true,
+                        label: 'Remove one ${o.label} bed',
+                        child: InkWell(
+                          onTap: () => _removeOne(o.value),
+                          borderRadius: BorderRadius.circular(999),
+                          child: Container(
+                            // 36 square: a comfortable touch target rather than
+                            // the size of the glyph inside it.
+                            width: 36,
+                            height: 36,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: kIndigo.withOpacity(0.12),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: kIndigo, width: 1.6),
+                            ),
+                            child: Icon(Icons.remove_rounded,
+                                size: 17, color: kIndigo),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 );
               }),
           ],

@@ -11,8 +11,44 @@ import 'package:rent_home/data/ApiConstants.dart';
 import 'package:rent_home/utils/upload_media_type.dart';
 import '../utils/service_log.dart';
 import 'package:rent_home/data/source/remote/utils/api_error_handler.dart';
-
+
+
 import 'package:rent_home/utils/app_log.dart';
+/// Does this /user/is-exist body say the address is taken?
+///
+/// Separate from the request so it can be tested against real payloads: the
+/// whole defect was that the ANSWER was never read. The server used to reply
+/// 400 for "yes, taken", the caller threw on any non-2xx before parsing, and
+/// the signup screen showed a generic failure for the one case the check exists
+/// to detect.
+///
+/// Returns null when the body says nothing either way, which the caller reports
+/// as unavailable rather than guessing.
+bool? emailIsTakenFrom(dynamic data) {
+  if (data is! Map) return null;
+  // What the server says now.
+  final payload = data["data"];
+  if (payload is Map && payload["exists"] is bool) {
+    return payload["exists"] as bool;
+  }
+  // The older contract, still true, so either server satisfies this.
+  final message = data["message"];
+  if (message != null) return message.toString() == "User Already Exist";
+  return null;
+}
+
+/// The address check could not be reached or could not be understood.
+///
+/// Distinct from a plain Exception so a caller can tell "we do not know" apart
+/// from "that address is taken" -- refusing a signup because a pre-flight check
+/// was unreachable is the wrong answer, and showing "Something went wrong" when
+/// the address really is registered is the bug this separation fixes.
+class EmailCheckUnavailable implements Exception {
+  @override
+  String toString() =>
+      "We could not check that email just now. Please try again.";
+}
+
 class AuthService {
   final Dio _dio = Dio();
   final String baseUrl = Apiconstants.baseUrl;
@@ -420,38 +456,54 @@ class AuthService {
     }
   }
 
-  Future<bool> userAlreadyExist(String email) async {
+  /// Is this address already registered for the account being created?
+  ///
+  /// The server used to answer 400 for "yes, it is taken", and the guard below
+  /// threw on any non-2xx BEFORE the body was read -- so the one answer this
+  /// call exists to obtain arrived as `Exception('Email check unavailable')`,
+  /// and the signup screen showed a generic failure instead of telling the
+  /// person their email was already registered. The server now answers 200 for
+  /// both outcomes; reading the body rather than the status code is what makes
+  /// that hold, and keeps working against either server.
+  ///
+  /// [isHost] is the role being signed up for. The same address may hold one
+  /// guest account and one host account -- login resolves an account by email
+  /// AND role -- so asking without the role refused host signups the server
+  /// would have accepted.
+  Future<bool> userAlreadyExist(String email, {bool? isHost}) async {
+    final http.Response response;
     try {
-      final response = await http
+      response = await http
           .post(
             Uri.parse("$baseUrl/user/is-exist"),
-            body: {"userEmail": email},
+            body: {
+              "userEmail": email,
+              if (isHost != null) "isHost": isHost.toString(),
+            },
           )
           // 30s tolerates a Render free-tier cold start (the first request
           // after the service idles can take 20-40s); warm requests are ~1s.
           .timeout(const Duration(seconds: 30));
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw Exception('Email check failed (${response.statusCode})');
-      }
+    } catch (err) {
+      // Only a genuine transport failure reaches here now. The caller must be
+      // able to tell this apart from "the address is taken", because blocking
+      // a signup over an unreachable check is the wrong answer.
+      appLog(err);
+      throw EmailCheckUnavailable();
+    }
 
-      final data = jsonDecode(response.body);
-      if (data is Map<String, dynamic>) {
-        final message = data["message"]?.toString();
-        if (message == null) {
-          throw Exception('Email check returned unexpected response');
-        }
-        return message == "User Already Exist";
-      }
-
-      throw Exception('Email check returned unexpected response');
+    try {
+      // The BODY is the answer, whatever the status code was.
+      final taken = emailIsTakenFrom(jsonDecode(response.body));
+      if (taken != null) return taken;
     } catch (err) {
       appLog(err);
-      throw Exception('Email check unavailable');
     }
+    throw EmailCheckUnavailable();
   }
 
-  Future<bool> isUserAlreadyExist(String email) async {
-    return userAlreadyExist(email);
+  Future<bool> isUserAlreadyExist(String email, {bool? isHost}) async {
+    return userAlreadyExist(email, isHost: isHost);
   }
 
   Future<Map<String, dynamic>> deleteAccount() async {

@@ -569,8 +569,16 @@ class ListingWizardController extends GetxController {
         p4['self_checkin_method'] = rules['phr_self_checkin_method'];
       }
       // The pet fee and size are step-4 fields (p4) on the house-rules row;
-      // the merge into p5 above never reached them (HL-045).
-      for (final key in const ['pet_fee', 'pet_size']) {
+      // the merge into p5 above never reached them (HL-045). The damage
+      // policy texts, added 2026-09-23 to match the website, are the same
+      // shape: phr_* columns read by controls in step 4. Fourth instance of
+      // one fault -- the row lands in one map and the control reads
+      // another -- and because step 4 posts the whole of p4, getting it
+      // wrong does not merely show a blank box, it writes NULL over what
+      // the host had saved.
+      for (final key in const [
+        'pet_fee', 'pet_size', 'damage_reporting', 'compensation_rules',
+      ]) {
         if (rules['phr_$key'] != null) p4[key] = rules['phr_$key'];
       }
       for (final key in const [
