@@ -8,6 +8,7 @@ import 'package:rent_home/ui/design/amount_breakdown.dart';
 import 'package:rent_home/ui/screens_renter/property_details/components/stay_map.dart';
 import 'package:rent_home/service/user_service.dart';
 import 'package:rent_home/utils/booking_status.dart';
+import 'package:rent_home/utils/money.dart';
 import 'package:rent_home/utils/fonts.dart';
 
 /// Booking confirmed.
@@ -46,6 +47,18 @@ class BookingConfirmedScreen extends StatefulWidget {
   /// Pay-on-arrival bookings are confirmed but not paid; say which.
   final bool isPayOnArrival;
 
+  /// What the guest actually paid just now, when that is LESS than [total].
+  ///
+  /// An advance booking is held with 10% and the rest falls due at check-in.
+  /// This screen asked one question -- "is it pay-on-arrival?" -- and called
+  /// everything else "Total paid", so a guest who had just paid Rs 168 of a
+  /// Rs 1,680 stay was told the whole stay was paid. Their own Bookings list
+  /// then showed the balance still owing, because that screen reads the
+  /// balance properly. Reported by the tester, 2026-09-23.
+  ///
+  /// Null means the stay was paid in full and "Total paid" is the truth.
+  final double? advancePaid;
+
   /// The host still has to approve this. Passed through from the booking
   /// response's `requiresApproval`.
   final bool awaitingApproval;
@@ -72,6 +85,7 @@ class BookingConfirmedScreen extends StatefulWidget {
     this.checkIn,
     this.checkOut,
     this.amount,
+    this.advancePaid,
     this.roomCharge,
     this.extras,
     this.taxes,
@@ -183,6 +197,16 @@ class _BookingConfirmedScreenState extends State<BookingConfirmedScreen> {
   String? get checkIn => widget.checkIn;
   String? get checkOut => widget.checkOut;
   String? get amount => widget.amount;
+  double? get advancePaid => widget.advancePaid;
+
+  /// Held with an advance: something was paid, and it was not everything.
+  /// The one-rupee floor keeps a rounding difference from reading as a debt.
+  bool get _isAdvance =>
+      !isPayOnArrival &&
+      advancePaid != null &&
+      total != null &&
+      advancePaid! > 0 &&
+      total! - advancePaid! > 1;
   double? get roomCharge => widget.roomCharge;
   double? get extras => widget.extras;
   double? get taxes => widget.taxes;
@@ -322,11 +346,15 @@ class _BookingConfirmedScreenState extends State<BookingConfirmedScreen> {
                           discount: discount ?? 0,
                           total: total!,
                           dense: true,
-                          totalLabel:
-                              isPayOnArrival ? 'Total due' : 'Total paid',
+                          totalLabel: isPayOnArrival
+                              ? 'Total due'
+                              : (_isAdvance ? 'Stay total' : 'Total paid'),
                           footnote: isPayOnArrival
                               ? 'Due at the property on arrival'
-                              : null,
+                              : (_isAdvance
+                                  ? 'Paid now ${rupees(advancePaid!)} · '
+                                      '${rupees(total! - advancePaid!)} due at check-in'
+                                  : null),
                         ),
                       ] else if (amount != null) ...[
                         const SizedBox(height: 8),
@@ -334,7 +362,9 @@ class _BookingConfirmedScreenState extends State<BookingConfirmedScreen> {
                             Icons.currency_rupee,
                             isPayOnArrival
                                 ? '$amount — due at the property'
-                                : '$amount paid'),
+                                : (_isAdvance
+                                    ? '${rupees(advancePaid!)} paid · rest due at check-in'
+                                    : '$amount paid')),
                       ],
                     ],
                   ),

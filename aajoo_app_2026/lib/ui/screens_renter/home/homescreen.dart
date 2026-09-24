@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:rent_home/utils/category_label.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/screens_renter/home/components/home_banner_rail.dart';
@@ -552,7 +553,9 @@ class _HomescreenState extends State<Homescreen> with TickerProviderStateMixin {
                             final byCategory = <String, List<Property>>{};
                             for (final p in all) {
                               for (final raw in (p.categoryTitles ?? const [])) {
-                                final label = raw.toString().trim();
+                                // A record here would become its own rail,
+                                // titled with the record.
+                                final label = categoryLabel(raw) ?? '';
                                 if (label.isEmpty) continue;
                                 if (kHiddenBrowseCategories
                                     .contains(label.toLowerCase())) {

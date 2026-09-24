@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rent_home/utils/sheet_insets.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -509,7 +510,9 @@ class _NewOfferSheetState extends State<_NewOfferSheet> {
         ),
         child: ListView(
           controller: controller,
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
+          // A fixed 28 is not a navigation bar. This sheet opens to 92% of the
+          // screen, so its last control lands where the system buttons are.
+          padding: EdgeInsets.fromLTRB(18, 12, 18, 28 + sheetBottomInset(context)),
           children: [
             Center(
               child: Container(

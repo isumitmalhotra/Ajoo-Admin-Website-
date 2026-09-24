@@ -1,5 +1,6 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
+import 'package:rent_home/utils/category_label.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/data/models/search_property_model.dart';
@@ -77,12 +78,7 @@ class PreBookingCard extends StatelessWidget {
   Property get _asProperty {
     final images =
         (property.images ?? const <String>[]).map((e) => e.toString()).toList();
-    final categories = () {
-      final ct = property.categoryTitles;
-      if (ct == null) return <String>[];
-      if (ct is List) return ct.map((e) => e.toString()).toList();
-      return <String>[ct.toString()];
-    }();
+    final categories = categoryLabels(property.categoryTitles);
 
     return Property(
       propertyId: property.propertyId,

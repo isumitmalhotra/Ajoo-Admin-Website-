@@ -691,7 +691,18 @@ class _HostHomeScreenState extends State<HostHomeScreen> {
     // The payment flags say it outright.
     // Ongoing stays only: a guest is checked in, so a deposit has been
     // settled and the two booleans are the whole story.
-    final pay = paymentBadge(isPaid: b.bookIsPaid, isCod: b.bookIsCod);
+    // Every field, or the badge cannot tell a 10% advance from a settled
+    // stay and quietly answers "Paid" -- which told the host they had been
+    // paid in full for a booking that had sent them a tenth.
+    final pay = paymentBadge(
+      isPaid: b.bookIsPaid,
+      isCod: b.bookIsCod,
+      payMode: b.bookPayMode,
+      total: b.bookTotalAmt > 0 ? b.bookTotalAmt : b.bookPrice,
+      amountPaid: b.bookAmountPaid,
+      refundAmount: b.bookRefundAmount,
+      refundStatus: b.bookRefundStatus,
+    );
     final status = pay.label;
     final badgeColor = pay.fg;
     final badgeBg = pay.bg;

@@ -10,6 +10,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:rent_home/utils/category_label.dart';
 import 'package:rent_home/utils/offer_ceiling.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -424,15 +425,10 @@ class _PropertyPageState extends State<PropertyPage>
   /// toString() prints the whole record. The Property fallback holds plain
   /// title strings. Both shapes are handled here.
   String? get _heroCategory {
-    String? titleOf(dynamic c) {
-      if (c == null) return null;
-      if (c is Map) {
-        final t = (c['cat_title'] ?? c['title'] ?? '').toString().trim();
-        return t.isEmpty ? null : t;
-      }
-      final s = c.toString().trim();
-      return s.isEmpty ? null : s;
-    }
+    // One helper for every shape: a record, a name, and a record that some
+    // other `.toString()` has already flattened into a String -- which is the
+    // one this used to print verbatim over the hero image.
+    String? titleOf(dynamic c) => categoryLabel(c);
 
     for (final source in [_single?.categories, widget.property.categoryTitles]) {
       if (source == null) continue;
@@ -1813,17 +1809,26 @@ class _PropertyPageState extends State<PropertyPage>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Guests',
-                                  style: inter(
-                                      fontSize: 14, fontWeight: FontWeight.w600)),
-                              if (_guestCeiling != null)
-                                Text('This place sleeps up to $_guestCeiling$_capsLine',
+                          // Expanded, or this Column takes its intrinsic width
+                          // and the capacity line pushes the counter off the
+                          // right edge -- which is how the tester saw a minus
+                          // with no number and no plus beside it. The Pets row
+                          // below was already wrapped; these two were not.
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Guests',
                                     style: inter(
-                                        fontSize: 11.5, color: kMuted)),
-                            ],
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600)),
+                                if (_guestCeiling != null)
+                                  Text(
+                                      'This place sleeps up to $_guestCeiling$_capsLine',
+                                      style: inter(
+                                          fontSize: 11.5, color: kMuted)),
+                              ],
+                            ),
                           ),
                           Row(
                             children: [
@@ -1880,17 +1885,19 @@ class _PropertyPageState extends State<PropertyPage>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Children',
-                                  style: inter(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600)),
-                              Text('Included in the guest count above',
-                                  style:
-                                      inter(fontSize: 11.5, color: kMuted)),
-                            ],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Children',
+                                    style: inter(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600)),
+                                Text('Included in the guest count above',
+                                    style:
+                                        inter(fontSize: 11.5, color: kMuted)),
+                              ],
+                            ),
                           ),
                           Row(
                             children: [
@@ -4276,6 +4283,11 @@ Book now: https://www.aajoohomes.com/property?id=${widget.id}
           discount: _confirmedPrice.discount,
           total: _confirmedPrice.total,
           isPayOnArrival: isCod,
+          // An advance booking charges 10% now (see the payMode: "deposit"
+          // sent at booking); the confirmation must not call that the whole
+          // stay paid. Same 10% the price panel above quotes.
+          advancePaid:
+              (isPrebooking && !isCod) ? _confirmedPrice.total * 0.10 : null,
           awaitingApproval: awaitingApproval,
           responseHours: responseHours,
           // The host's own "show exact location" setting, as the listing

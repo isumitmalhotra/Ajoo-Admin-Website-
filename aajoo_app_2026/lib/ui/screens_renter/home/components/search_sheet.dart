@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rent_home/utils/sheet_insets.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
@@ -233,7 +234,8 @@ class _SearchSheetState extends State<SearchSheet> {
         int local = _guests;
         return StatefulBuilder(
           builder: (ctx, setSheet) => Padding(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.fromLTRB(
+                24, 24, 24, 24 + sheetBottomInset(ctx)),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,

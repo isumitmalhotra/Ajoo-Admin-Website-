@@ -135,7 +135,14 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
       if (s.contains('cancel')) continue;
       // payableTotal is the total tax included — the room subtotal alone left
       // "Total Spent" short by every rupee of GST the guest had paid.
-      sum += b.bookIsPaid ? b.payableTotal : b.amountPaid;
+      // `bookIsPaid` means "a payment arrived", NOT "the stay is settled" --
+      // the server sets it on the first verified rupee, including the 10% of
+      // an advance booking. Counting payableTotal on that basis told the guest
+      // they had spent the whole stay's price when they had spent a tenth.
+      // What was actually paid is amountPaid; the flag only decides whether to
+      // trust the derived total when the booking carries no figure.
+      final settled = b.bookIsPaid && b.balanceDue <= 0;
+      sum += settled ? b.payableTotal : b.amountPaid;
     }
     return sum;
   }

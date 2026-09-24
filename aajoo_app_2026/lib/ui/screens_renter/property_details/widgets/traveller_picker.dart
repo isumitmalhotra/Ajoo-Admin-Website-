@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:rent_home/utils/sheet_insets.dart';
 import 'package:flutter/services.dart';
 import 'package:rent_home/utils/input_sanitizers.dart';
 import 'package:rent_home/constants.dart';
@@ -455,7 +456,9 @@ class _AddTravellerSheetState extends State<_AddTravellerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final inset = MediaQuery.of(context).viewInsets.bottom;
+    // viewInsets is the KEYBOARD alone; with it closed this was 0 and
+    // "Save guest" sat under the navigation bar, unreachable.
+    final inset = sheetBottomInset(context);
     return Padding(
       padding: EdgeInsets.only(bottom: inset),
       child: Container(

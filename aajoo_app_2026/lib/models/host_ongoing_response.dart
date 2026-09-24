@@ -86,6 +86,15 @@ class Booking {
     /// Payment is its own axis — the status title only sometimes mentions it.
     bool bookIsPaid;
     bool bookIsCod;
+    /// `bookIsPaid` alone cannot tell a 10% advance from a settled stay -- the
+    /// server sets it on the first verified rupee. These carry the rest of the
+    /// answer so the payment chip can say "Deposit paid - Rs X due".
+    String bookPayMode;
+    double bookTotalAmt;
+    double bookAmountPaid;
+    double bookPrice;
+    double bookRefundAmount;
+    String bookRefundStatus;
     dynamic bookingStatusBsCode;
     List<dynamic> attachments;
 
@@ -103,6 +112,12 @@ class Booking {
         required this.bookingStatusBsTitle,
         this.bookIsPaid = false,
         this.bookIsCod = false,
+        this.bookPayMode = '',
+        this.bookTotalAmt = 0,
+        this.bookAmountPaid = 0,
+        this.bookPrice = 0,
+        this.bookRefundAmount = 0,
+        this.bookRefundStatus = '',
         required this.bookingStatusBsCode,
         required this.attachments,
     });
@@ -122,6 +137,14 @@ class Booking {
         // MySQL TINYINT arrives as 0/1, JSON sometimes as a bool.
         bookIsPaid: json["book_is_paid"] == true || json["book_is_paid"] == 1,
         bookIsCod: json["book_is_cod"] == true || json["book_is_cod"] == 1,
+        // The money columns arrive as DECIMAL, which the driver hands over as
+        // strings -- parse, never cast.
+        bookPayMode: (json["book_pay_mode"] ?? '').toString(),
+        bookTotalAmt: double.tryParse('${json["book_total_amt"] ?? 0}') ?? 0,
+        bookAmountPaid: double.tryParse('${json["book_amount_paid"] ?? 0}') ?? 0,
+        bookPrice: double.tryParse('${json["book_price"] ?? 0}') ?? 0,
+        bookRefundAmount: double.tryParse('${json["book_refund_amount"] ?? 0}') ?? 0,
+        bookRefundStatus: (json["book_refund_status"] ?? '').toString(),
         bookingStatusBsCode: json["bookingStatus.bs_code"],
         attachments: List<dynamic>.from(json["attachments"].map((x) => x)),
     );

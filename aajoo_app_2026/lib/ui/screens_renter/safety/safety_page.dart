@@ -3,6 +3,7 @@ import 'package:rent_home/service/safety_service.dart';
 import 'package:rent_home/service/device_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
+import 'package:rent_home/utils/sheet_insets.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/service/static_page_service.dart';
 import 'package:rent_home/utils/fonts.dart';
@@ -370,8 +371,8 @@ class _SafetyPageState extends State<SafetyPage> {
       useSafeArea: true,
       builder: (sheetContext) => StatefulBuilder(
         builder: (sheetContext, setSheet) => Padding(
-          padding: EdgeInsets.only(
-              bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
+          // Keyboard OR navigation bar, whichever is covering the bottom.
+          padding: EdgeInsets.only(bottom: sheetBottomInset(sheetContext)),
           child: Container(
             decoration: const BoxDecoration(
               color: kCream,

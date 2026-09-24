@@ -36,6 +36,9 @@ void main() {
         paymentBadge(
                 isPaid: true,
                 isCod: false,
+                payMode: 'full',
+                total: 7518,
+                amountPaid: 7518,
                 refundAmount: 751.8,
                 refundStatus: 'COMPLETED')
             .label,
@@ -44,16 +47,52 @@ void main() {
         paymentBadge(
                 isPaid: true,
                 isCod: false,
+                payMode: 'full',
+                total: 6825,
+                amountPaid: 6825,
                 refundAmount: 6825,
                 refundStatus: 'PENDING')
             .label,
         'Refund of ₹6,825 pending');
   });
 
-  test('a caller with only the two booleans keeps the old answers', () {
-    expect(paymentBadge(isPaid: true, isCod: false).label, 'Paid');
-    expect(paymentBadge(isPaid: false, isCod: true).label, 'Pay at property');
-    expect(paymentBadge(isPaid: false, isCod: false).label, 'Payment pending');
+  /// This test used to read "a caller with only the two booleans keeps the old
+  /// answers", and asserted that `paymentBadge(isPaid: true, isCod: false)`
+  /// returns 'Paid'. It was blessing the default that caused the bug: the host
+  /// home screen called it exactly that way and told hosts they had been paid
+  /// in full for bookings that had sent them 10% (tester, 2026-09-23).
+  ///
+  /// `payMode`, `total` and `amountPaid` are required now, so that call no
+  /// longer compiles. What remains worth pinning is that a caller who supplies
+  /// them honestly still gets the plain answers.
+  test('the plain states still read plainly when the facts are supplied', () {
+    expect(
+        paymentBadge(
+                isPaid: true,
+                isCod: false,
+                payMode: 'full',
+                total: 5000,
+                amountPaid: 5000)
+            .label,
+        'Paid');
+    expect(
+        paymentBadge(
+                isPaid: false,
+                isCod: true,
+                payMode: '',
+                total: 5000,
+                amountPaid: 0)
+            .label,
+        'Pay at property');
+    expect(
+        paymentBadge(
+                isPaid: false,
+                isCod: false,
+                payMode: '',
+                total: 5000,
+                amountPaid: 0)
+            .label,
+        'Payment pending');
   });
 
   test('the host booking row carries what was paid and refunded', () {

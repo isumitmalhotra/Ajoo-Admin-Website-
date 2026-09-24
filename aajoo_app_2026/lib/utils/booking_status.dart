@@ -123,12 +123,22 @@ class PaymentBadge {
 /// guest cancelled and was refunded, the card went on saying "Paid". Pass
 /// [payMode], [total], [amountPaid] and the refund pair where the row has
 /// them; a caller with only the two booleans gets the old answers.
+/// The money badge for a booking.
+///
+/// `payMode`, `total` and `amountPaid` are REQUIRED, and that is the point.
+/// They used to default to `''`, `0` and `0`, so a caller that forgot them got
+/// a confident "Paid" for a booking that had been held with 10%. The host home
+/// screen did exactly that, and told hosts they had been paid in full for
+/// stays that had sent them a tenth (tester, 2026-09-23). The logic below was
+/// always right; it was being starved of the three facts it needed.
+///
+/// Required means the compiler now catches the next one.
 PaymentBadge paymentBadge({
   required bool isPaid,
   required bool isCod,
-  String payMode = '',
-  double total = 0,
-  double amountPaid = 0,
+  required String payMode,
+  required double total,
+  required double amountPaid,
   double refundAmount = 0,
   String refundStatus = '',
 }) {

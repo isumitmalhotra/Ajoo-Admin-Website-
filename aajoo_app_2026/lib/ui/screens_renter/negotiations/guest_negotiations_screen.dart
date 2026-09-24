@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rent_home/utils/sheet_insets.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/controller/deals_controller.dart';
@@ -179,7 +180,7 @@ class _GuestNegotiationsScreenState extends State<GuestNegotiationsScreen> {
             left: 18,
             right: 18,
             top: 18,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 18),
+            bottom: sheetBottomInset(ctx) + 18),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
