@@ -361,8 +361,13 @@ correctly says **"Pay ₹84"**, and the payment goes through for ₹84. Then at 
 
 The guest paid ₹84. The screen told them they had paid ₹840 — the whole stay — while the booking list further on
 still showed a balance. Nothing in the recording is a fifth bug; it confirms the three reported and the numbers behind
-them. The tester's second sentence, "there is no option to pay all during booking, it is only giving me 10% option",
-is the host's own setting on that listing (the "Allow paying 10% now" box on the offer/listing), not a defect.
+them. The tester's second sentence, "there is no option to pay all during booking, it is only giving me 10% option", is
+the **client's own advance-booking rule of 2026-09-06**, not a defect: a stay starting today is a normal booking (pay
+in full or at the property, negotiable), and a stay starting tomorrow or later is an advance booking, which cannot be
+negotiated and holds its dates with 10% online. `property_page.dart:2434` hides the pay-online / pay-at-property pair
+for that case deliberately rather than showing one half disabled. Worth putting back to the client as a product
+question, since it is their rule: should a guest be allowed to settle the other 90% before check-in, or pay the whole
+stay up front, instead of only at the property?
 
 #### What the four actually were
 
