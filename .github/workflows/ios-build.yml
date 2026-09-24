@@ -30,7 +30,10 @@ concurrency:
 
 env:
   FLUTTER_VERSION: "3.44.0"
-  API_BASE_URL: https://aajaodev.onrender.com
+  # api.aajoohomes.com since 24 September: the Render Singapore service on
+  # the fresh PlanetScale database. aajaodev.onrender.com is the OLD stack and
+  # an iOS build against it would reach data the website no longer serves.
+  API_BASE_URL: https://api.aajoohomes.com
 
 defaults:
   run:
@@ -63,7 +66,7 @@ jobs:
           KEY=$(grep -oE "'rzp_test_[A-Za-z0-9]+'" lib/constants/payment_config.dart | head -1 | tr -d "'")
           chmod +x tool/build_ios.sh
           tool/build_ios.sh --api "$API_BASE_URL" --razorpay "$KEY" \
-            --allow-test-payments --allow-dev-endpoint --no-codesign
+            --allow-test-payments --no-codesign
 
       - name: Package the unsigned app
         run: |
@@ -160,7 +163,7 @@ jobs:
           KEY=$(grep -oE "'rzp_test_[A-Za-z0-9]+'" lib/constants/payment_config.dart | head -1 | tr -d "'")
           chmod +x tool/build_ios.sh
           tool/build_ios.sh --api "$API_BASE_URL" --razorpay "$KEY" \
-            --allow-test-payments --allow-dev-endpoint --export ios/ExportOptions.plist
+            --allow-test-payments --export ios/ExportOptions.plist
 
       - name: Locate the .ipa
         id: ipa

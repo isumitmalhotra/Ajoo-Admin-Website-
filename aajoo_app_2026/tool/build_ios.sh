@@ -5,7 +5,7 @@
 # build, so the two artifacts of one build number are the same code with the
 # same configuration.
 #
-#   tool/build_ios.sh --api https://aajaodev.onrender.com --razorpay rzp_test_xxx \
+#   tool/build_ios.sh --api https://api.aajoohomes.com --razorpay rzp_test_xxx \
 #       [--allow-test-payments] [--allow-dev-endpoint] [--no-codesign | --export <ExportOptions.plist>]
 #
 # --no-codesign      compile only (build/ios/iphoneos/Runner.app); no Apple
@@ -38,8 +38,13 @@ case "$API" in
   https://*) ;;
   *) echo "the API base URL must be https: $API" >&2; exit 1;;
 esac
-if [[ "$API" == *"onrender.com"* && -z "$ALLOW_DEV" ]]; then
-  echo "$API is the development endpoint; pass --allow-dev-endpoint for a QA build" >&2; exit 1
+# The one endpoint a shipping build may point at, matching
+# build_release.ps1's $ProductionApiBase. This used to refuse only hosts
+# containing "onrender.com", which let through every OTHER wrong endpoint --
+# a typo'd domain, a tunnel, a laptop -- while claiming to guard the build.
+PRODUCTION_API="https://api.aajoohomes.com"
+if [ "$API" != "$PRODUCTION_API" ] && [ -z "$ALLOW_DEV" ]; then
+  echo "$API is not the production endpoint ($PRODUCTION_API); pass --allow-dev-endpoint for a QA build" >&2; exit 1
 fi
 if [[ "$KEY" == rzp_test_* && -z "$ALLOW_TEST" ]]; then
   echo "a sandbox Razorpay key needs --allow-test-payments" >&2; exit 1
