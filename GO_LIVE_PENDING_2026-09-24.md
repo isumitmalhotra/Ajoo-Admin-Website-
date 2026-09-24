@@ -68,7 +68,7 @@ anyway.
 
 | # | What | Who |
 |---|---|---|
-| 2.3 | Attach `api.aajoohomes.com` to the Singapore service; point the Vercel DNS `api` record at Render's CNAME | Sumit — dashboard |
+| ~~2.3~~ | ~~Attach `api.aajoohomes.com`~~ — **DONE 24 Sep 17:07 IST.** Render custom domain **Verified**, **Certificate Issued**; Vercel DNS `api CNAME aajoo-api-singapore.onrender.com` (TTL 60). `https://api.aajoohomes.com/health` answers `{"status":"ok"}` from the same process as the `.onrender.com` host, and plain HTTP 301s to HTTPS. Render's first two verification attempts failed on its own negative DNS cache — the record did not exist a minute earlier and the zone's negative TTL is 600s; it passed by itself two minutes later, with no second change. | — |
 | 2.4 | **Create one guest and one host account** on the new stack, our own, never 100/101 | Sumit or a tester — a session must not create accounts or type passwords |
 | 2.4 | Then: list a property through all five wizard steps, search it, book to the Razorpay sheet, admin screens, notifications | a session, once the accounts exist |
 | 3.1b | Register the payment webhook in Razorpay **live** mode and set `RAZORPAY_WEBHOOK_SECRET` | Sumit. The test-mode one (21 Sep) does not carry over; live is a separate list. |
@@ -90,6 +90,8 @@ and people are on two systems at once) → smoke as our own accounts.
 ---
 
 ## D. Apps
+
+> **`api.aajoohomes.com` now points at the Singapore service, and the Singapore service reads the EMPTY PlanetScale database.** So 5.1 is unblocked but must NOT go to the tester: an app built against that host today finds no accounts and no listings. Keep the tester on **build 112 (`aajaodev.onrender.com`)** until the cutover, and make the `api.aajoohomes.com` build the PRODUCTION build (5.2), not a QA one.
 
 | # | What | Gated on |
 |---|---|---|
