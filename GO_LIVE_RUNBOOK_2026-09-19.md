@@ -101,10 +101,13 @@ not `DB_PASS`.
 repo visibility is Sumit's to change, so these corrections stay unpushed until
 then; price needs no re-approval — $47 was pitched and is what Singapore costs.
 
-**Also still open:** §0.2 has not been done — `isumitmalhotra/Ajoo-Admin-Website-`
-is **still PUBLIC** today, and its history still holds the old Razorpay secret
-and the test-account passwords. The other two repos are private. This runbook
-puts §0 before infrastructure for a reason.
+**§0.2 is closed, not done — Sumit's call, 24 September:** "my monorepo has
+nothing to do with production, nobody needs that". Nothing deploys from
+`isumitmalhotra/Ajoo-Admin-Website-`; the three repos that do deploy
+(`nameeshPatiyal100/aajaoBackend`, `…/Aajao-Admin-WebSIite`,
+`…/aajoo_app_latest`) are all private. **§0.1 and §0.3 still stand on their own
+merit:** the old Razorpay secret and the 100/101 passwords were published, and
+only new values undo that — no repository setting can.
 
 **Neither region can be changed after creation.** Render's documentation:
 *"Render doesn't currently support changing the region for an existing service
@@ -129,7 +132,7 @@ holes today (master list §8a44):
 | # | Action | Who | Proof |
 |---|---|---|---|
 | 0.1 | **Rotate the Razorpay test key** (dashboard → Settings → API keys → Regenerate). Set the new pair on Render (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`) and the new id on Vercel (`VITE_RAZORPAY_KEY`). The old secret was in a public repository. | Sumit / client | Checkout on the website opens with the new key id in the request |
-| 0.2 | **Make the monorepo private** — `gh repo edit isumitmalhotra/Ajoo-Admin-Website- --visibility private` | Sumit | `gh repo view … --json visibility` → PRIVATE |
+| ~~0.2~~ | ~~Make the monorepo private~~ — **closed 24 Sep, not a production item** (see above) | — | — |
 | 0.3 | **Change the passwords of test accounts 100 and 101** (they were in repo docs); keep them in a password manager | Client | — |
 | 0.4 | **Build 106** against the *current* API with the *new* Razorpay id, so testers keep a working checkout after 0.1: `./tool/build_release.ps1 -ApiBaseUrl https://aajaodev.onrender.com -RazorpayKey rzp_test_<new> -AllowTestPayments -AllowDevEndpoint` | Sumit / session | `tool/verify_release_apk.py` names the endpoint and key |
 

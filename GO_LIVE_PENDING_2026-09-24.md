@@ -55,8 +55,8 @@ anyway.
 
 | # | What | State |
 |---|---|---|
-| 0.2 | Make `isumitmalhotra/Ajoo-Admin-Website-` private | **Still PUBLIC.** Seven commits of infrastructure documentation are held back locally because of it. |
-| 0.1 | Rotate the Razorpay **test** key | The old secret is in that repository's git history. Going private does not un-leak it. |
+| ~~0.2~~ | ~~Make `isumitmalhotra/Ajoo-Admin-Website-` private~~ | **Closed — Sumit's call, 24 Sep: "my monorepo has nothing to do with production, nobody needs that".** Nothing deploys from it, so it is not a production item. The consequence is that the go-live documents stay on Sumit's machine rather than in a repo; 0.1 and 0.3 below are unaffected, because rotating is what undoes an exposure, not visibility. |
+| 0.1 | Rotate the Razorpay **test** key | **This is the item that matters.** The old secret was published; a repository setting cannot un-publish it, only a new key can. |
 | 0.3 | Change the passwords of test accounts 100 and 101 | They were in repo docs |
 | new | **Rotate the PlanetScale password** | It appeared in a screenshot on 23 September and was not rotated — the value in `.env.planetscale` is still that one, and it is now also on the Render service. |
 | new | **Rotate `HEALTH_TOKEN`** | ~40 characters of it were pasted into a terminal error. Low stakes — it gates a read-only diagnostic — but free to change. |
