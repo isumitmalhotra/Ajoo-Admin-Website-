@@ -74,6 +74,60 @@ anyway.
 | 3.1b | Register the payment webhook in Razorpay **live** mode and set `RAZORPAY_WEBHOOK_SECRET` | Sumit. The test-mode one (21 Sep) does not carry over; live is a separate list. |
 | — | `SAFETY_ALERT_EMAIL` | Sumit. An SOS currently emails nobody. |
 
+### §4 — HALF DONE, 24 September 17:41 IST
+
+**The website is on the new stack.** Sumit's instruction, and he chose "website
+and apps together" knowing the site would empty.
+
+What was changed:
+
+* Vercel project `aajao-admin-web-s-iite-epy6` → **new Config variable**
+  `VITE_API_BASE_URL = https://api.aajoohomes.com`, Production, with a note
+  saying how to undo it. There was **no such variable before** — all three
+  resolvers in the frontend (`axios/axios.ts`, `configs/apiConfigs.ts`,
+  `configs/apis.ts`) were falling through to the hardcoded
+  `https://aajaodev.onrender.com`, so the switch is "add a variable", and the
+  undo is "delete it".
+* Redeployed **without** the build cache. That matters: Vite inlines
+  `import.meta.env` at build time, so a cached build would have shipped the old
+  URL with the new variable set and looked like a no-op.
+
+Verified from outside: the live bundle changed from `index-BIrwy6WC.js` to
+`index-DXku4bcc.js` and now contains `https://api.aajoohomes.com` and no
+`onrender.com`. The dashboard renders as **Guest** with every figure zero — the
+stale token in the browser is not a user on the new database, which is the
+expected outcome, not a fault. `api/seo-render.ts` follows the same variable at
+runtime, and a crawler fetch returns 200 with the right title.
+
+**Still to do, and it needs Sumit — Oregon's database.** Every installed APK
+(builds 106–112) still calls `aajaodev.onrender.com`, which still reads Clever
+Cloud. Until its `DB_*` variables point at PlanetScale, the app and the website
+are two different systems:
+
+| Variable | Value |
+|---|---|
+| `DB_HOST` `DB_USER` `DB_PASSWORD` `DB_NAME` `DB_PORT` | copy from the `aajoo-api-singapore` service's Environment page |
+| `DB_SSL_REJECT_UNAUTHORIZED` | **`true`** — add it. Default is `false` (Clever Cloud's certificate could not be chained). PlanetScale presents a public-CA certificate and MUST be verified, or a man-in-the-middle to the database is invisible. |
+| `DB_POOL_MAX` | `20`. The default is 5, which was Clever Cloud's account limit. |
+
+A session cannot do this one: the Render environment page is a page of
+production secrets and the password would have to be typed into a field.
+
+**Check after saving** (Render restarts the service by itself):
+`curl -s https://aajaodev.onrender.com/properties/destinations` must answer
+`{"destinations":[]}` — the same empty answer `api.aajoohomes.com` gives. While
+it still lists Uttarakhand and Haryana, the apps are on the old database.
+
+**Webhooks are NOT urgent any more.** Once both services read PlanetScale, a
+Razorpay/DIDIT/BotPenguin callback to either host writes to the same place.
+Move them at leisure; do not treat them as part of this window.
+
+**Nothing was deleted.** Clever Cloud is untouched and Oregon is still running.
+To undo the website: delete `VITE_API_BASE_URL` on Vercel and redeploy without
+the cache — about two minutes.
+
+---
+
 ### §4 — the switch itself. Two gates, not one.
 
 1. **The client's explicit word.** From that moment the test data is behind
