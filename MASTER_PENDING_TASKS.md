@@ -346,6 +346,80 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a61. 2026-09-24 — Sign in with Apple, on all three platforms
+
+**Why at all:** App Store Review Guideline 4.8. An app that offers Google sign-in must also offer a login that limits
+data to name and email, lets the user hide their address and does not track — and in practice only Sign in with Apple
+provably meets all three. The guideline's own escape clause ("your app exclusively uses your company's own account
+setup") would have let us ship iOS with email and password alone; Sumit chose to add Apple properly instead.
+
+**Why on Android and the web, not just iOS — Sumit's question, and it was the right one.** An account created on an
+iPhone with Apple has an **unusable password by design**: the server stores a random hash precisely so no password
+path can ever match it. An iOS-only button therefore locks that person out of their own account on every other
+surface. Firebase issues one user record per Apple identity per project, so the uid the server files the account
+under is identical on iOS, Android and the web — all three post to `/user/auth/apple`, and it is one account.
+
+Backend `db35e28` + `8a3b2fb` · app (monorepo) `c0ebe7b` · web `0f78f2b`. **All pushed; both services and the website
+are live.** 191/191 backend test files · 642 Flutter tests · 73/73 web test files · `flutter analyze` 0 errors · the
+real `npm run build` green.
+
+#### The three ways Apple is not Google
+
+1. **The email arrives once.** Apple returns the address on the FIRST authorization and never again; every later
+   sign-in carries the stable subject and nothing else. So the subject is the identity and the address is recorded at
+   creation. Matching on email would work exactly once per person — on their second sign-in it finds nothing, creates
+   a second account, and their bookings are gone as far as they can tell. This is the commonest way Sign in with Apple
+   is built wrong, and it is invisible in a first test, because the first sign-in is the one that carries the email.
+2. **The name is not in the token at all.** Apple hands it to the CLIENT on first authorization. It therefore reaches
+   the server only in the request body, which makes it a preference and never identity: cleaned, capped, used only at
+   creation. `appleFullName` also refuses to produce `"null null"`, which has shipped as a display name elsewhere.
+3. **The address may be a relay.** Hide My Email issues `@privaterelay.appleid.com`, deliverable only while our
+   sending domain is registered with Apple. `cred_apple_private_relay` records it so a bounce is not blamed on the
+   mailbox. **This is still broken: our SPF does not include Brevo** — see below.
+
+And one that is ours: a Firebase ID token is a Firebase ID token, and a **Google** one verifies on the Apple route
+perfectly well. It would be filed under provider `apple` with an empty apple id, and that person's next real Apple
+sign-in would create a duplicate. `firebase.sign_in_provider` is required to be `apple.com`.
+
+#### Two migrations, not one — and the reason is worth keeping
+
+Sequelize selects a model's declared attributes **explicitly**. The moment `cred_apple_id` was on the model, every
+query against `tbl_user_creds` named it — and Oregon deploys from the same branch as Singapore. Pushing with only
+PlanetScale migrated would have made **every login on the old stack** fail with `Unknown column 'cred_apple_id'`,
+which is every installed APK up to build 112. Both databases were migrated first, both verified column-by-column and
+index-by-index, and `/user/is-exist` was checked on both hosts afterwards — each answering correctly from its own
+database, which is the proof that neither stack broke.
+
+`config/sequelize-cli.config.js` had its SSL block commented out with a note that Clever Cloud connects without it.
+True of Clever Cloud, and fatal on PlanetScale, which refuses a plaintext connection outright. It mirrors the app now.
+
+#### What the client completed at Apple
+
+Enrolled (Individual, Team `MN75V92B83`), App ID `com.aajoo.aajoohomes` with **Push Notifications** and **Sign In with
+Apple**, an **APNs key** uploaded to Firebase for both environments, a **Sign in with Apple key**, and Services ID
+**`com.aajoo.aajoohomes.web`** with return URL `https://aajoo-bdb20.firebaseapp.com/__/auth/handler`. Firebase's Apple
+provider is enabled with the OAuth code flow configured.
+
+**Enrolled as an Individual, not an Organisation** — so the App Store will show a person's name as the seller, not
+"Aajoo". Changing it later means a fresh enrolment with a D-U-N-S number and a transfer. Flagged before the app record
+was created; the client's call.
+
+#### Not done, and not to be forgotten
+
+* **SPF still excludes Brevo** (`v=spf1 include:secureserver.net -all`). Until `include:spf.brevo.com` is added,
+  **Hide My Email is dead**: mail to a relay address is rejected. Also blocks Apple's "Register Email Sources for
+  Communication" step. Sumit has not given the go-ahead for the DNS change.
+* **Account deletion with Apple token revocation.** Apple requires any app offering account creation to offer
+  deletion, and an Apple-linked account must have its token revoked. This is the one piece that needs the Sign in with
+  Apple `.p8` **on our backend**, as a Render environment variable. Not built. It will be an App Review rejection if
+  it is still missing.
+* **Nothing has been driven end to end.** The button renders on the live website, the route answers a bad token with
+  the right refusal on both services, and every layer is test-covered — but completing a real Apple sign-in means
+  authenticating as a person, which a session must not do. The first genuine Apple sign-in will be the client's or
+  the tester's.
+
+---
+
 ### 8a60. 2026-09-24 — the website moved, and the app followed it
 
 **Asked (Sumit):** "stop those oregon and older parts and disconnect them from the live now and shift the site to
