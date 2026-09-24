@@ -30,10 +30,24 @@ None need code. All take days and all belong to the company.
 | **3.1** | **Razorpay LIVE activation** — business KYC on the Razorpay dashboard | Every payment is test-mode. `collectsMoney: false` today. The platform cannot take a rupee. |
 | **3.2** | **SMS provider + DLT registration** (MSG91 or Fast2SMS: sender id, operator-approved OTP template) | Phone OTP is dormant — every SMS variable is unset. A real user cannot sign in by phone. |
 | **3.4** | **The company's own Cloudinary account** | The current one is **shared** and has held other people's records. Guest ID photographs and listing images must live in an account the company controls. This is a privacy exposure, not a tidiness issue. |
-| **3.3** | **Email domain authenticated** — Brevo SPF + DKIM on `aajoohomes.com` | Booking, payout and KYC mail otherwise lands in spam. With SMS dormant, email is the *only* channel that works. |
+| ~~3.3~~ | ~~Email domain authenticated~~ **ALREADY DONE — verified 24 Sep** | DKIM is published under Brevo's `brevo1`/`brevo2._domainkey` CNAME selectors (both resolve to valid RSA keys) and Brevo reports the domain **Authenticated**. DMARC is `p=reject` and passes on DKIM alignment. An earlier note in this file claimed mail was being rejected; that was wrong — it checked `mail._domainkey`, which is not the selector Brevo uses. |
 
-3.3 is listed fourth but is arguably second: until SMS exists, email carries
-every OTP on the platform.
+**Client decisions, 24 September:** SMS (3.2) is **dropped** for now — email
+carries every OTP, which is fine because 3.3 turns out to be already done.
+Cloudinary (3.4) **stays as it is**; the client settled that on 13 September.
+Razorpay live keys are **held back deliberately** and go in after a live test.
+
+That leaves **one** hard blocker, and it is sequencing rather than process:
+the live Razorpay keys must be in before the public arrives, because a test
+key plus `ALLOW_TEST_PAYMENTS=true` lets a real guest complete a booking
+without paying.
+
+The only open item on SPF is optional: the record is
+`v=spf1 include:secureserver.net -all` and does not include Brevo, so Brevo
+mail fails SPF and passes DMARC on DKIM alone. Adding `include:spf.brevo.com`
+would make both mechanisms pass and give a fallback if the DKIM CNAMEs are
+ever removed. Not urgent; DKIM is the mechanism that survives forwarding
+anyway.
 
 ---
 
