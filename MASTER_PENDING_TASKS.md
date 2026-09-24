@@ -44,7 +44,8 @@
 > `https://api.aajoohomes.com` (Singapore + the fresh database). **Driven:** "Continue with Apple" renders on
 > ANDROID under Google's, black with Apple's glyph, on the login tab and as "Sign up with Apple" on the signup
 > tab. The sign-in itself is not driven — completing one means authenticating as a person. **The tester cannot
-> sign in with anything until a guest and a host account exist on the new database.** Supersedes **113**
+> sign in with anything until a guest and a host account exist on the new database.**
+> **Client repo `aajoo_app_latest` main = `3e05ec1`** (7 files, 467+/4-, 0 APKs, repo 22.5 MB). Supersedes **113**
 > **113** — 2026-09-24, `sha256 0226b16e…61bf`, 95.7 MB. **The first build that points at a production host:**
 > `https://api.aajoohomes.com` → Render Singapore → PlanetScale. Same code as 112; only the endpoint and the build
 > number differ. `tool/build_release.ps1` now carries `$ProductionApiBase = 'https://api.aajoohomes.com'` — empty
