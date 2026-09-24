@@ -45,6 +45,7 @@
 > says you paid all", and a category record printed where its name belongs. **Driven** — the host shell end to
 > end and one of the five repaired sheets; the guest-side screens need a guest signed in on the device, which
 > this session cannot do. Points at `aajaodev.onrender.com` (`api.aajoohomes.com` still answers 404).
+> **Client repo `aajoo_app_latest` main = `b2541a7`** (pushed 2026-09-24, 21 files, 499+/78-, 0 APKs, repo still 22 MB).
 > Supersedes **111**
 > **111** — 2026-09-23, `sha256 fa6dacf5…85AA`, 95.7 MB. 110 plus the bed hint, which still told hosts to
 > long-press a gesture 110 had removed — found by driving, not by tests. Client repo `9768399`. **Driven:**
@@ -344,7 +345,9 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 3. "see this, I paid only 10% and it says you paid all…however later on my bookings it shows remaining to pay."
 4. A category record — `{cat_id: 2, cat_title: Resort, cat_slug: resort}` — printed over the hero image of a listing.
 
-Monorepo `873693a`. 633 Flutter tests · `flutter analyze` 0 errors. **Build 112** (`1.0.0+112`),
+Monorepo `873693a` + `cd0e85c` (**held local — the monorepo is public and eleven go-live doc commits sit under
+them; §0.2 first**) · **client repo `aajoo_app_latest` main = `b2541a7`, pushed.** 633 Flutter tests, and **632 + 1
+skipped re-run in a fresh clone of the client repo before the push** · `flutter analyze` 0 errors. **Build 112** (`1.0.0+112`),
 `aajoo-homes-1.0.0-build112-release.apk`, 95.7 MB,
 `sha256 e64ae16e2b72d0defb6c9850c98c66dd416c99f3f83b5ec66e31f19433cb133c`.
 
