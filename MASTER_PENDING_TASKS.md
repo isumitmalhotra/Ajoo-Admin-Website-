@@ -40,6 +40,12 @@
 > **Go-live sequence (2026-09-19, Render Pro + PlanetScale bought): `GO_LIVE_RUNBOOK_2026-09-19.md`** — steps 0.1–0.4 first (Razorpay key rotation, repo private, test passwords, build 106).
 > Tester build in circulation: **109 (1.0.0+109)**, `aajoo-homes-1.0.0-build109-release.apk` at repo root
 > (2026-09-21 14:37, versionCode 109, 95.6 MB, sha256 `064cc19b501afd11…`), built with `tool/build_release.ps1`
+> **112** — 2026-09-24, `sha256 e64ae16e…4133`, 95.7 MB. The tester's four from the 09-23 sheet (§8a59):
+> the sheet buttons behind the navigation bar, the guests counter pushed off the right edge, "I paid 10% and it
+> says you paid all", and a category record printed where its name belongs. **Driven** — the host shell end to
+> end and one of the five repaired sheets; the guest-side screens need a guest signed in on the device, which
+> this session cannot do. Points at `aajaodev.onrender.com` (`api.aajoohomes.com` still answers 404).
+> Supersedes **111**
 > **111** — 2026-09-23, `sha256 fa6dacf5…85AA`, 95.7 MB. 110 plus the bed hint, which still told hosts to
 > long-press a gesture 110 had removed — found by driving, not by tests. Client repo `9768399`. **Driven:**
 > bathrooms 3/4/5 hold a selection, `King ×2` with a working −, corrected hint. Supersedes **110**
@@ -326,6 +332,81 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 **Records:** offers 235—237 on 29291 and the deal minted for 20→21 Sep (unused, expired at midnight);
 29302 paused and un-paused.
+
+---
+
+### 8a59. Closed 2026-09-24 — the tester's four, and the same faults where the tester had not looked yet
+
+**Asked (tester, via Sumit, 2026-09-23, four screenshots and a 66s screen recording):**
+1. "on app pls check these hidden buttons on renter — check below buttons hidden behind navigation buttons — Save
+   guest and apply"
+2. "Can you also check why there is only minus for guests, no plus here??"
+3. "see this, I paid only 10% and it says you paid all…however later on my bookings it shows remaining to pay."
+4. A category record — `{cat_id: 2, cat_title: Resort, cat_slug: resort}` — printed over the hero image of a listing.
+
+Monorepo `873693a`. 633 Flutter tests · `flutter analyze` 0 errors. **Build 112** (`1.0.0+112`),
+`aajoo-homes-1.0.0-build112-release.apk`, 95.7 MB,
+`sha256 e64ae16e2b72d0defb6c9850c98c66dd416c99f3f83b5ec66e31f19433cb133c`.
+
+#### The recording, frame by frame
+
+The 66s video is the third report end to end, and it settles it. At 06–09s the Guests row carries a ⊖ and nothing
+else. At 12s the sheet reads **"Advance (10%) ₹84 / Due at Check-in (90%) ₹756"**. At 30–36s the gateway sheet
+correctly says **"Pay ₹84"**, and the payment goes through for ₹84. Then at 56.00s:
+
+    Booking Confirmed!   Booking ID B714876
+    Room charge   ₹800
+    Taxes & fees   ₹40
+    Total paid    ₹840
+
+The guest paid ₹84. The screen told them they had paid ₹840 — the whole stay — while the booking list further on
+still showed a balance. Nothing in the recording is a fifth bug; it confirms the three reported and the numbers behind
+them. The tester's second sentence, "there is no option to pay all during booking, it is only giving me 10% option",
+is the host's own setting on that listing (the "Allow paying 10% now" box on the offer/listing), not a defect.
+
+#### What the four actually were
+
+- **`book_is_paid` means "money arrived", not "the stay is settled".** The server sets it on the first verified rupee.
+  Three screens read it as the second: the confirmation screen, the guest dashboard's lifetime spend, and the host home
+  badge. `paymentBadge` already knew how to say "Deposit paid · ₹X due" and could not reach it, because `payMode`,
+  `total` and `amountPaid` were **optional** and defaulted to `''`, `0`, `0` — so a caller who forgot them got a
+  confident "Paid". Those three are required now; the compiler found the remaining caller, and an existing test that
+  was blessing the default.
+- **`viewInsets.bottom` is the keyboard, not the navigation bar.** It is zero when the keyboard is closed. Sheets that
+  padded only by it look right while a field has focus and drop their button under the system buttons the moment it
+  closes. A sweep of all 15 modal sheets found **five** with the fault — the two reported plus safety, guest
+  negotiations and host offers. `utils/sheet_insets.dart` is the one answer now: `max(viewInsets.bottom,
+  viewPadding.bottom)`, never a sum.
+- **The guests plus was never missing — it was off-screen.** `Row(spaceBetween, [Column, Row])` with the Column
+  unconstrained: the capacity line ("This place sleeps up to 7 · up to 5 adults, 2 children") took its intrinsic
+  width and left the counter no room, so only the first icon survived. The Pets row below had already been wrapped in
+  `Expanded` by somebody who hit this once; Guests and Children had not.
+- **A category record is not a label.** The backend has two deliberate shapes — `category_titles` (strings, on list and
+  search) and `categories` (records, on detail). Five call sites mapped whichever they had through `.toString()`. The
+  model layer did it on the way in, so once flattened, no `is Map` check downstream could rescue it.
+  `utils/category_label.dart` handles all three shapes, including a record some other `.toString()` has already
+  flattened.
+
+#### Driven on a device at build 112
+
+- The **host shell end to end**: dashboard, the four booking tabs, the menu sheet, negotiations, transactions. No
+  crash, and the menu sheet's last row sits clear of the gesture bar.
+- **One of the five repaired sheets, seen:** Offers → "Start an offer" opens a sheet at 92% of the screen, and
+  **"Start this offer" now sits above the gesture bar with a clear gap.** That is the tester's report #1 exactly, on
+  the sheet that had a hardcoded 28px bottom.
+
+#### What could not be driven, and why
+
+The guest-side screens — the guests counter, the traveller picker, the confirmation screen's new three-way label —
+are reachable only from the renter shell. There is **no "switch to guest"** in the host menu (removed on request,
+`host_menu.dart:217`), every caller of `PropertyPage` is a renter surface, and the app has no deep links. Reaching
+them means signing out of host `aajoo.host1` and signing in as a guest, and **signing in needs a password this
+session must not type**. The emulator is left signed in as the host, with 112 installed (`versionCode=112`).
+
+For whoever can sign in, the four taps that settle it: open any listing → the Guests row shows **⊖ N ⊕**, not a lone
+⊖; tap Guests → the picker's "Save guests" sits above the system buttons with the keyboard closed; book with the 10%
+option → the confirmation reads **"Paid now ₹X · ₹Y due at check-in"** under a "Total due" heading, not "Total paid";
+and the hero pill on a listing reads `Resort`, never `{cat_id: 2, …}`.
 
 ---
 
