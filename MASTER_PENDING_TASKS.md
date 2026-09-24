@@ -40,6 +40,11 @@
 > **Go-live sequence (2026-09-19, Render Pro + PlanetScale bought): `GO_LIVE_RUNBOOK_2026-09-19.md`** — steps 0.1–0.4 first (Razorpay key rotation, repo private, test passwords, build 106).
 > Tester build in circulation: **109 (1.0.0+109)**, `aajoo-homes-1.0.0-build109-release.apk` at repo root
 > (2026-09-21 14:37, versionCode 109, 95.6 MB, sha256 `064cc19b501afd11…`), built with `tool/build_release.ps1`
+> **114** — 2026-09-24, `sha256 05a44304…0d835`, 95.8 MB. **113 plus Sign in with Apple.** Points at
+> `https://api.aajoohomes.com` (Singapore + the fresh database). **Driven:** "Continue with Apple" renders on
+> ANDROID under Google's, black with Apple's glyph, on the login tab and as "Sign up with Apple" on the signup
+> tab. The sign-in itself is not driven — completing one means authenticating as a person. **The tester cannot
+> sign in with anything until a guest and a host account exist on the new database.** Supersedes **113**
 > **113** — 2026-09-24, `sha256 0226b16e…61bf`, 95.7 MB. **The first build that points at a production host:**
 > `https://api.aajoohomes.com` → Render Singapore → PlanetScale. Same code as 112; only the endpoint and the build
 > number differ. `tool/build_release.ps1` now carries `$ProductionApiBase = 'https://api.aajoohomes.com'` — empty
