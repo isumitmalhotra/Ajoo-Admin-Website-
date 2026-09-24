@@ -37,13 +37,16 @@ param(
 
 # The one endpoint a shipping build may point at.
 #
-# EMPTY ON PURPOSE, and the script refuses a build without -AllowDevEndpoint
-# until it is filled in. As of 2026-09-07 there is no production API host:
-# api.aajoohomes.com resolves to VERCEL and answers 404, so it serves the
-# website, not the API. A build made with the endpoint the audit prescribes
-# would install and reach nothing at all. Set this the day the backend has a
-# production home, and the guard below starts doing its real job.
-$ProductionApiBase = ''
+# This was empty from 2026-09-07 until 2026-09-24, and the note here said to
+# fill it in the day the backend had a production home. That day is 24
+# September: api.aajoohomes.com is attached to the Render Singapore service,
+# verified, holding a certificate, and answering {"status":"ok"} on /health.
+# It used to resolve to VERCEL and return DEPLOYMENT_NOT_FOUND, which is why
+# an audit that prescribed it would have shipped an APK that reached nothing.
+#
+# The guard below now does its real job: a build pointed anywhere else -- the
+# Oregon service, a laptop, a tunnel -- has to say -AllowDevEndpoint out loud.
+$ProductionApiBase = 'https://api.aajoohomes.com'
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot

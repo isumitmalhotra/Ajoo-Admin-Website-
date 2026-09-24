@@ -40,6 +40,14 @@
 > **Go-live sequence (2026-09-19, Render Pro + PlanetScale bought): `GO_LIVE_RUNBOOK_2026-09-19.md`** — steps 0.1–0.4 first (Razorpay key rotation, repo private, test passwords, build 106).
 > Tester build in circulation: **109 (1.0.0+109)**, `aajoo-homes-1.0.0-build109-release.apk` at repo root
 > (2026-09-21 14:37, versionCode 109, 95.6 MB, sha256 `064cc19b501afd11…`), built with `tool/build_release.ps1`
+> **113** — 2026-09-24, `sha256 0226b16e…61bf`, 95.7 MB. **The first build that points at a production host:**
+> `https://api.aajoohomes.com` → Render Singapore → PlanetScale. Same code as 112; only the endpoint and the build
+> number differ. `tool/build_release.ps1` now carries `$ProductionApiBase = 'https://api.aajoohomes.com'` — empty
+> since 07 September with a note saying to fill it in the day the API had a home — so this build needed **no**
+> `-AllowDevEndpoint`, and from now on a build pointed anywhere else has to say so out loud. **Driven:** the dead
+> session from 112 dropped cleanly to the login screen (no crash, no spinner), and the signup screen accepted
+> `aajoo.host1@mailinator.com` as a free address — that address exists on the OLD database and not on the new one,
+> so the app is provably talking to Singapore. Supersedes **112**, which reaches the old database.
 > **112** — 2026-09-24, `sha256 e64ae16e…4133`, 95.7 MB. The tester's four from the 09-23 sheet (§8a59):
 > the sheet buttons behind the navigation bar, the guests counter pushed off the right edge, "I paid 10% and it
 > says you paid all", and a category record printed where its name belongs. **Driven** — the host shell end to
@@ -333,6 +341,47 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 **Records:** offers 235—237 on 29291 and the deal minted for 20→21 Sep (unused, expired at midnight);
 29302 paused and un-paused.
+
+---
+
+### 8a60. 2026-09-24 — the website moved, and the app followed it
+
+**Asked (Sumit):** "stop those oregon and older parts and disconnect them from the live now and shift the site to
+latest render and db", then "but why are we changing anything to oregon when we are shifting everything to new ones".
+
+That second question was the right one, and the answer was that the first plan was wrong.
+
+#### What was done
+
+1. **`api.aajoohomes.com` attached** to `aajoo-api-singapore` (Render) with `api CNAME
+   aajoo-api-singapore.onrender.com` on Vercel DNS. Verified, certificate issued, HTTP 301s to HTTPS. Render's first
+   two verification attempts failed on its OWN negative DNS cache — the name did not exist a minute earlier and the
+   zone's negative TTL is 600s. It passed by itself two minutes later. **Do not "fix" DNS that is already correct.**
+2. **The website moved.** Vercel gained `VITE_API_BASE_URL = https://api.aajoohomes.com` (Production, Config). There
+   was no such variable before — all three resolvers were falling through to a hardcoded `aajaodev.onrender.com` — so
+   the switch is "add a variable" and the undo is "delete it". Redeployed **without the build cache**, because Vite
+   inlines `import.meta.env` at build time and a cached build ships the old URL while the dashboard shows the new
+   value. Bundle `index-BIrwy6WC.js` → `index-DXku4bcc.js`, and it contains no `onrender.com`.
+3. **Build 113** against that host, and the tester moves to it rather than Oregon being reconfigured.
+
+#### The plan that was wrong, and why
+
+§4.4 of the runbook says to repoint Oregon's `DB_*` at PlanetScale so the installed APKs follow the new database. I
+passed that on as an instruction before thinking it through. Two things are wrong with it **here**:
+
+* **Oregon is in the US and the database is now in Singapore.** Every query would cross the Pacific, ~200ms each way.
+  A screen issuing ten queries gains two seconds. It keeps the app alive by making it worse.
+* **§4.4 was written for a public launch**, where thousands of installed apps cannot be updated overnight. The APK is
+  with one tester and the client. They can install a file today.
+
+So Oregon was left alone. It still serves the old database, harmlessly, and gets suspended once 113 is on the phones.
+Nothing was deleted: Clever Cloud is untouched.
+
+#### What this costs, and it is not optional
+
+**The new database is empty, so no existing account signs in — on the website or in build 113.** That is true of any
+route to the new stack, not a consequence of this one. The four admin accounts do exist. A guest and a host account
+have to be created on the new stack before anything authenticated can be tested, and a session cannot create them.
 
 ---
 
