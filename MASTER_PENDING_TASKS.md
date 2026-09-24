@@ -47,7 +47,9 @@
 > `-AllowDevEndpoint`, and from now on a build pointed anywhere else has to say so out loud. **Driven:** the dead
 > session from 112 dropped cleanly to the login screen (no crash, no spinner), and the signup screen accepted
 > `aajoo.host1@mailinator.com` as a free address — that address exists on the OLD database and not on the new one,
-> so the app is provably talking to Singapore. Supersedes **112**, which reaches the old database.
+> so the app is provably talking to Singapore. **Client repo `aajoo_app_latest` main = `9243987`** (2 files, 11+/8-,
+> 0 APKs, repo 22.4 MB, `build_release.ps1` keeps its BOM and CRLF). Supersedes **112**, which reaches the old
+> database.
 > **112** — 2026-09-24, `sha256 e64ae16e…4133`, 95.7 MB. The tester's four from the 09-23 sheet (§8a59):
 > the sheet buttons behind the navigation bar, the guests counter pushed off the right edge, "I paid 10% and it
 > says you paid all", and a category record printed where its name belongs. **Driven** — the host shell end to
