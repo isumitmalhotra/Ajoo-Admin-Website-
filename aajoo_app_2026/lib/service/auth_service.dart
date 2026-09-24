@@ -197,6 +197,40 @@ class AuthService {
     }
   }
 
+  /// Sign in with Apple — the server half of the flow in
+  /// service/apple_sign_in.dart.
+  ///
+  /// [fullName] rides along because Apple gives the name to the CLIENT on the
+  /// first authorization and never puts it in a token at all. The server uses
+  /// it only when it creates the row, and never as identity.
+  Future<LoginResponse> loginWithApple(
+    String idToken,
+    bool isHost, {
+    String? fullName,
+  }) async {
+    try {
+      final response = await _dio.post('/user/auth/apple', data: {
+        'idToken': idToken,
+        'isHost': isHost ? 1 : 0,
+        if (fullName != null && fullName.isNotEmpty) 'fullName': fullName,
+      });
+
+      final loginResponse = LoginResponse.fromJson(response.data);
+
+      if (loginResponse.success) {
+        setToken(loginResponse.data.token);
+        await storage.write(key: TOKEN_KEY, value: loginResponse.data.token);
+        await saveUserData(loginResponse.data.user.toJson());
+        // No password is stored: an Apple account does not have one, and a
+        // placeholder would let the silent re-login path try it.
+        await storage.delete(key: 'pass');
+      }
+      return loginResponse;
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   Future<SignupResponse> signup({
     required String fullName,
     required String dob,

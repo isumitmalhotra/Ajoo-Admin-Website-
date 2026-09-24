@@ -18,6 +18,10 @@ import '../../../service/notification_routing_service.dart';
 import '../../../service/notification_service.dart';
 import '../../../data/models/user_models.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:rent_home/service/apple_sign_in.dart' as apple;
+// The exception types are the package's own, so they are imported
+// unprefixed for the catch clauses to read plainly.
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 
 import 'package:rent_home/utils/app_log.dart';
@@ -216,6 +220,82 @@ class AuthController extends GetxController {
       });
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// Sign in with Apple, on iOS and on Android.
+  ///
+  /// Android is not an oversight to be removed later. An account created on an
+  /// iPhone with Apple has an unusable password by design — there is nothing
+  /// for the password screen to match — so without this button the same person
+  /// cannot reach their own account on an Android handset. Firebase issues one
+  /// user record per Apple identity per project, so the uid our server files
+  /// the account under is the same on both, and it IS the same account.
+  ///
+  /// The name is carried explicitly because Apple hands it to the client on
+  /// the first authorization and never sends it again, in any form.
+  Future<void> loginWithApple(bool isHost) async {
+    try {
+      isLoading.value = true;
+      error.value = '';
+
+      final result = await apple.signInWithApple();
+
+      final response = await authService.loginWithApple(
+        result.firebaseIdToken,
+        isHost,
+        fullName: result.fullName,
+      );
+
+      // The Firebase session was only ever proof of identity; ours is the
+      // session from here, so do not leave a second one to go stale.
+      await fb.FirebaseAuth.instance.signOut();
+
+      if (response.success) {
+        await _handleSuccessfulLogin(response.data);
+      } else {
+        _showLoginError(response.message);
+      }
+    } on apple.AppleSignInCancelled {
+      // Backing out of the sheet is not a failure and must not be reported as
+      // one. Google's path learned this too.
+      appLog('Apple sign-in cancelled');
+    } on SignInWithAppleNotSupportedException {
+      // Only reachable on an OS too old for it. The other buttons still work.
+      _showLoginError(
+          "Sign in with Apple needs a newer version of this device's software. "
+          "Please use your email and password, or continue with Google.");
+    } on SignInWithAppleAuthorizationException catch (e) {
+      // Apple's own codes mean nothing to a person, and showing them verbatim
+      // is what made "Google sign-in doesn't work" an unactionable report.
+      appLog('Apple sign-in failed: code=\${e.code} message=\${e.message}');
+      _showLoginError(_appleSignInMessage(e));
+    } catch (e) {
+      await handleApiError(e, onError: (message) async {
+        _showLoginError(message);
+      }, onUnauthorized: (message) async {
+        _showLoginError(message);
+      });
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// What an Apple sign-in failure actually means.
+  String _appleSignInMessage(SignInWithAppleAuthorizationException e) {
+    switch (e.code) {
+      case AuthorizationErrorCode.notHandled:
+      case AuthorizationErrorCode.failed:
+        // The usual cause on Android: the Services ID or the return URL do not
+        // match what Apple has registered, so the redirect never completes.
+        return "Sign in with Apple couldn't be completed. Please try again, "
+            "or use your email and password.";
+      case AuthorizationErrorCode.invalidResponse:
+        return "Apple sent back a response we couldn't read. Please try again.";
+      case AuthorizationErrorCode.unknown:
+      default:
+        // `unknown` is also what a dropped connection looks like.
+        return "Couldn't reach Apple. Check your internet connection and try again.";
     }
   }
 

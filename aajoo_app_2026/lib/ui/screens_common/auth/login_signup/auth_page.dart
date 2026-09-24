@@ -5,6 +5,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:rent_home/ui/screens_common/auth/basic_info/basic_info_screen.dart';
 import 'package:rent_home/widgets/option_button.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -599,6 +600,46 @@ class _AuthPageState extends State<AuthPage> {
                                             BorderRadius.circular(14)),
                                   ),
                                 )),
+                          ),
+                          const SizedBox(height: 10),
+                          // Apple's OWN button widget, not one of ours.
+                          //
+                          // Review Guideline 4.8 is about more than offering
+                          // the login: the control has to look like Apple's.
+                          // Drawing the mark ourselves would be exactly the
+                          // imitation problem noted above for Google's "G",
+                          // and this package ships the real thing.
+                          //
+                          // On Android as well as iOS, deliberately: an
+                          // account created on an iPhone with Apple has an
+                          // unusable password by design, so without this
+                          // button that person cannot reach their own account
+                          // on an Android handset. See
+                          // AuthController.loginWithApple.
+                          SizedBox(
+                            width: double.infinity,
+                            child: SignInWithAppleButton(
+                              height: 48,
+                              borderRadius: BorderRadius.circular(14),
+                              text: isLogin
+                                  ? 'Continue with Apple'
+                                  : 'Sign up with Apple',
+                              onPressed: authController.isLoading.value
+                                  ? () {}
+                                  : () => authController
+                                          .loginWithApple(userType.value == 1)
+                                          .then((_) {
+                                        final user =
+                                            authController.userData.value;
+                                        if (authController
+                                                .error.value.isEmpty &&
+                                            user != null) {
+                                          Get.offAllNamed(user.isHost
+                                              ? '/host/home'
+                                              : '/home');
+                                        }
+                                      }),
+                            ),
                           ),
                         ],
 

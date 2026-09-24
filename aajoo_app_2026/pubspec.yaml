@@ -63,6 +63,15 @@ dependencies:
   # is issued by Google, not Firebase, and verifyIdToken would reject it.
   firebase_auth: ^5.5.1
   google_sign_in: ^6.3.0
+  # Sign in with Apple. App Store Review Guideline 4.8 requires it wherever
+  # Google sign-in is offered, and it is on ANDROID as well as iOS on
+  # purpose: an account created on an iPhone with Apple has an unusable
+  # password by design, so without the button here the same person cannot
+  # reach their own account on an Android handset.
+  sign_in_with_apple: ^6.1.4
+  # For the nonce. Apple is given sha256(raw) and Firebase the raw string;
+  # sending the same form to both fails with a generic "invalid credential".
+  crypto: ^3.0.6
   get: ^4.6.6
   flutter_secure_storage: ^9.2.2
   dio: ^5.7.0
