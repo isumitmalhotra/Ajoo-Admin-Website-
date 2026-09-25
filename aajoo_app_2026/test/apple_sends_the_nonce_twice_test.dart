@@ -110,6 +110,28 @@ void main() {
             'up on an iPhone would have no way into their account');
   });
 
+  test('the authorization code is captured, with the client that issued it', () {
+    // Apple revokes a link in exchange for a REFRESH TOKEN, and a refresh
+    // token exists only if this one-time code is traded for one at sign-in.
+    // Without it, deleting an account leaves Apple believing the app is still
+    // authorised — and Apple then sends no email if that person ever signs up
+    // again, which the server refuses. So the code has to be carried now, for
+    // something that happens months later.
+    expect(service, contains('authorizationCode: credential.authorizationCode'),
+        reason: 'the one-time code is dropped, so the link can never be revoked');
+
+    // And WHICH client issued it. A native sign-in is against the bundle id,
+    // the web flow against the Services ID, and revoking with the wrong one
+    // answers invalid_client while looking like success from our side.
+    expect(service, contains('Platform.isIOS ? kAppleBundleId : kAppleServicesId'),
+        reason: 'the client id is assumed rather than reported');
+    expect(kAppleBundleId, 'com.aajoo.aajoohomes');
+    expect(kAppleBundleId, isNot(kAppleServicesId));
+
+    expect(controller, contains('authorizationCode: result.authorizationCode'));
+    expect(controller, contains('appleClientId: result.clientId'));
+  });
+
   test('backing out of the Apple sheet is not reported as a failure', () {
     expect(service, contains('AuthorizationErrorCode.canceled'));
     expect(service, contains('throw AppleSignInCancelled()'));

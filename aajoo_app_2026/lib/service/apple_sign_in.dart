@@ -26,6 +26,7 @@
 // what our server stores — is the same on both, and it is the same account.
 
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
@@ -36,6 +37,14 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 /// id for the web redirect flow (Android, and the website).
 const String kAppleServicesId = 'com.aajoo.aajoohomes.web';
 
+/// The bundle id, which is the OAuth client id for a NATIVE iOS sign-in.
+///
+/// Not interchangeable with the Services ID: Apple issues its tokens against
+/// whichever client asked, and a token minted for one cannot be revoked with
+/// the other — Apple answers invalid_client and revokes nothing. So the client
+/// is reported to the server alongside the code, rather than assumed there.
+const String kAppleBundleId = 'com.aajoo.aajoohomes';
+
 /// Firebase's auth handler, registered as the Return URL on that Services ID.
 /// The two must agree exactly or Apple refuses the redirect.
 const String kAppleRedirectUri =
@@ -44,12 +53,28 @@ const String kAppleRedirectUri =
 /// What an Apple sign-in produced: a Firebase token our server can verify, and
 /// the name if Apple happened to send one.
 class AppleSignInResult {
-  const AppleSignInResult({required this.firebaseIdToken, this.fullName});
+  const AppleSignInResult({
+    required this.firebaseIdToken,
+    required this.clientId,
+    this.fullName,
+    this.authorizationCode,
+  });
 
   final String firebaseIdToken;
 
+  /// Which Apple client this sign-in went through — the bundle id natively,
+  /// the Services ID through the web flow. The server stores it beside the
+  /// token, because revoking with the wrong one silently does nothing.
+  final String clientId;
+
   /// Only ever non-null on the FIRST authorization. Never treat it as identity.
   final String? fullName;
+
+  /// The one-time code the server trades for a refresh token, so it can revoke
+  /// this link when the account is deleted. Deleting without revoking leaves
+  /// Apple believing the app is still authorised — and Apple then sends no
+  /// email if the person ever signs up again, which the server cannot accept.
+  final String? authorizationCode;
 }
 
 /// Raised when the person backs out of the Apple sheet. Not an error.
@@ -126,6 +151,10 @@ Future<AppleSignInResult> signInWithApple() async {
 
   return AppleSignInResult(
     firebaseIdToken: token,
+    // iOS talks to Apple directly as the app; everywhere else goes through the
+    // web flow, which identifies itself with the Services ID.
+    clientId: Platform.isIOS ? kAppleBundleId : kAppleServicesId,
     fullName: appleFullName(credential.givenName, credential.familyName),
+    authorizationCode: credential.authorizationCode,
   );
 }

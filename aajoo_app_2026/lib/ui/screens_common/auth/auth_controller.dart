@@ -245,6 +245,8 @@ class AuthController extends GetxController {
         result.firebaseIdToken,
         isHost,
         fullName: result.fullName,
+        authorizationCode: result.authorizationCode,
+        appleClientId: result.clientId,
       );
 
       // The Firebase session was only ever proof of identity; ours is the

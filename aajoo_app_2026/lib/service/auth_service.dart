@@ -207,12 +207,22 @@ class AuthService {
     String idToken,
     bool isHost, {
     String? fullName,
+    String? authorizationCode,
+    String? appleClientId,
   }) async {
     try {
       final response = await _dio.post('/user/auth/apple', data: {
         'idToken': idToken,
         'isHost': isHost ? 1 : 0,
         if (fullName != null && fullName.isNotEmpty) 'fullName': fullName,
+        // The one-time code, and WHICH Apple client issued it. The server
+        // trades the code for a refresh token and keeps it until the account
+        // is deleted, because Apple revokes a link in exchange for a refresh
+        // token and nothing else.
+        if (authorizationCode != null && authorizationCode.isNotEmpty)
+          'authorizationCode': authorizationCode,
+        if (appleClientId != null && appleClientId.isNotEmpty)
+          'appleClientId': appleClientId,
       });
 
       final loginResponse = LoginResponse.fromJson(response.data);
