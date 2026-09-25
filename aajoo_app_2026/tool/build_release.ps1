@@ -32,7 +32,16 @@ param(
     [switch]$AllowDevEndpoint,
 
     # Skip the endpoint reachability probe (offline builds only).
-    [switch]$SkipEndpointCheck
+    [switch]$SkipEndpointCheck,
+
+    # Build an Android App Bundle (.aab) instead of an APK.
+    #
+    # Google Play has required a bundle for new apps since 2021 and will not
+    # accept an APK, so a Play release cannot be cut with the default. A
+    # tester still wants the APK -- they install it directly and Play is not
+    # involved -- so this is a switch rather than a replacement, and both go
+    # through the same verifier.
+    [switch]$AppBundle
 )
 
 # The one endpoint a shipping build may point at.
@@ -127,15 +136,23 @@ $defines = @(
 )
 if ($AllowTestPayments) { $defines += "--dart-define=ALLOW_TEST_PAYMENTS=true" }
 
-Write-Host "Building release APK" -ForegroundColor Cyan
+Write-Host $(if ($AppBundle) { "Building release App Bundle (.aab, for Google Play)" } else { "Building release APK" }) -ForegroundColor Cyan
 Write-Host "  endpoint : $ApiBaseUrl"
 Write-Host "  gateway  : $($RazorpayKey.Substring(0, [Math]::Min(12, $RazorpayKey.Length)))…"
 
-& flutter build apk --release @defines
+if ($AppBundle) {
+    & flutter build appbundle --release @defines
+} else {
+    & flutter build apk --release @defines
+}
 if ($LASTEXITCODE -ne 0) { throw "flutter build failed" }
 
-$apk = Join-Path $root 'build/app/outputs/flutter-apk/app-release.apk'
-if (-not (Test-Path $apk)) { throw "APK not found at $apk" }
+$apk = if ($AppBundle) {
+    Join-Path $root 'build/app/outputs/bundle/release/app-release.aab'
+} else {
+    Join-Path $root 'build/app/outputs/flutter-apk/app-release.apk'
+}
+if (-not (Test-Path $apk)) { throw "artifact not found at $apk" }
 
 Write-Host "`nVerifying the artifact" -ForegroundColor Cyan
 # The verifier has to be TOLD, or it fails a QA build on the very key that

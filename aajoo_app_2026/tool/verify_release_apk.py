@@ -38,11 +38,26 @@ HTTP_ALLOWED = (
 )
 
 
+# An APK and an App Bundle hold the same three things in different places:
+#
+#   APK   lib/arm64-v8a/libapp.so   classes.dex        AndroidManifest.xml
+#   AAB   base/lib/arm64-v8a/…      base/dex/classes…  base/manifest/…
+#
+# Matching the APK spelling exactly meant an .aab scanned only its libapp.so —
+# the dex and the manifest were silently skipped, and a bundle with a test
+# payment key in its Java would have passed. These patterns are path-aware, so
+# one verifier covers both, which is the point: Play takes the bundle and the
+# tester takes the APK, and they must be held to the same standard.
+DEX = re.compile(r"(?:.*/)?classes\d*\.dex")
+
+
 def scanned_entries(zf):
     for name in zf.namelist():
-        if name.endswith("libapp.so") or re.fullmatch(r"classes\d*\.dex", name):
+        if name.endswith("libapp.so") or DEX.fullmatch(name):
             yield name
-        elif name == "AndroidManifest.xml":
+        elif name.endswith("AndroidManifest.xml"):
+            # In a bundle this is protobuf rather than binary XML. The string
+            # scans below read raw bytes, so they work on either.
             yield name
 
 
@@ -93,8 +108,12 @@ def main() -> int:
     zf = zipfile.ZipFile(apk_path)
     blobs = {name: zf.read(name) for name in scanned_entries(zf)}
     if not blobs:
-        print("FAIL  nothing to scan — is this an APK?")
+        print("FAIL  nothing to scan — is this an APK or an .aab?")
         return 1
+
+    # Say which kind, so a bundle silently verified as though it were an APK
+    # cannot go unnoticed in a build log.
+    kind = "app bundle" if any(n.startswith("base/") for n in blobs) else "APK"
 
     failures = []
 
@@ -121,14 +140,14 @@ def main() -> int:
     if expected_api:
         host = expected_api.split(b"//", 1)[-1].rstrip(b"/")
         if not any(host in data for data in blobs.values()):
-            failures.append(f"the endpoint this build was given is not in the APK: {host.decode()}")
+            failures.append(f"the endpoint this build was given is not in the artifact: {host.decode()}")
         # Only other API-shaped hosts are a problem. The public website
         # (aajoohomes.com) is linked from the app on purpose — terms, sharing,
         # a listing's own page — and is not an endpoint.
         for m in {m.group(0) for data in blobs.values()
                   for m in re.finditer(rb"[a-z0-9\-]+\.onrender\.com", data)}:
             if m != host:
-                failures.append(f"an endpoint this build was NOT given is in the APK: {m.decode()}")
+                failures.append(f"an endpoint this build was NOT given is in the artifact: {m.decode()}")
 
     # Does the artifact know which build it is?
     #
@@ -145,7 +164,7 @@ def main() -> int:
                 "APP_VERSION was not passed, so Settings will say 'development build'"
             )
 
-    print(f"scanned: {', '.join(sorted(blobs))}")
+    print(f"scanned ({kind}): {', '.join(sorted(blobs))}")
     if failures:
         print(f"\n{len(failures)} problem(s):")
         for f in sorted(set(failures)):
