@@ -50,6 +50,22 @@ if [[ "$KEY" == rzp_test_* && -z "$ALLOW_TEST" ]]; then
   echo "a sandbox Razorpay key needs --allow-test-payments" >&2; exit 1
 fi
 
+# Entitlements the app cannot work without, checked BEFORE a four-minute build.
+#
+# Neither of these is visible to a Dart test, and neither fails at compile
+# time: the app builds, installs, and then the feature simply does not work,
+# with an error code that names nothing. Sign in with Apple shipped without
+# com.apple.developer.applesignin exactly once (2026-09-25, caught by reading
+# the file rather than by any tool) and the IPA verifier does not look at
+# entitlements at all.
+ENTITLEMENTS="ios/Runner/Runner.entitlements"
+for key in aps-environment com.apple.developer.applesignin; do
+  if ! grep -q "<key>$key</key>" "$ENTITLEMENTS"; then
+    echo "$ENTITLEMENTS is missing <key>$key</key> -- the build would install and the feature would not work" >&2
+    exit 1
+  fi
+done
+
 VERSION=$(grep -E '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//')
 echo "Building $VERSION for iOS"
 echo "  endpoint : $API"

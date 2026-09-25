@@ -10,5 +10,19 @@
 	     aps-environment entitlement" — see IOS_READINESS.md §4. -->
 	<key>aps-environment</key>
 	<string>development</string>
+
+	<!-- Sign in with Apple (Review Guideline 4.8).
+	     The package and the button are not enough: without this entitlement
+	     the authorization request fails at runtime with a code that says
+	     nothing about entitlements, and it fails ONLY on a real build, so no
+	     test catches it. "Default" means this app's own primary App ID, which
+	     is com.aajoo.aajoohomes with the Sign In with Apple capability
+	     enabled on it (done 2026-09-24). Xcode must ALSO show "Sign in with
+	     Apple" under Signing & Capabilities, or automatic signing will issue
+	     a profile that does not carry this and the archive will not sign. -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
 </dict>
 </plist>
