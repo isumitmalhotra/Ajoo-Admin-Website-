@@ -866,6 +866,34 @@ class _PropertyPageState extends State<PropertyPage>
     return (l != null && l.isBefore(platform)) ? l : platform;
   }
 
+  /// Why these dates cannot be booked, if they cannot.
+  ///
+  /// The picker already greys out anything that breaks the host's minimum
+  /// (`_checkoutAllowed` refuses a check-out before `firstCheckout`). What it
+  /// cannot police is the range the screen OPENS with: the default dates come
+  /// from the guest's search, and `_checkInWindow` only arrives afterwards, so
+  /// a one-night default sat priced and bookable under the host's own
+  /// "Minimum stay 3 nights" line. Photographed by the client on 26 September
+  /// 2026 — "Minimum stay 3 nights. Up to 40 nights." directly above a 1-night
+  /// stay with a total beside it.
+  ///
+  /// Deliberately NOT self-correcting. Silently moving somebody's dates to fit
+  /// a rule they have not read yet is worse than refusing: they came for those
+  /// nights. The website settled this the same way — see `stayRuleError` in
+  /// redesign/pages/PropertyDetail.tsx, whose wording this matches word for
+  /// word so the two platforms cannot describe one rule two ways.
+  String? get _stayRuleError {
+    final w = _checkInWindow;
+    if (w == null || selectedDateTo == null || totalDays <= 0) return null;
+    if (w.minNights > 1 && totalDays < w.minNights) {
+      return 'This host asks for a minimum stay of ${w.minNights} nights.';
+    }
+    if (w.maxNights > 0 && totalDays > w.maxNights) {
+      return 'This host accepts stays of up to ${w.maxNights} nights.';
+    }
+    return null;
+  }
+
   Future<void> _loadAvailability() async {
     final availability = await _bookingSvc.getAvailability(widget.id);
     final ranges = availability.ranges;
@@ -1638,6 +1666,34 @@ class _PropertyPageState extends State<PropertyPage>
                           ].join(' '),
                           style:
                               inter(fontSize: 12, color: kMuted, height: 1.35),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              // And when the CHOSEN dates break that rule, say so where the
+              // dates are, rather than leaving a neutral sentence above a
+              // priced stay that cannot be booked. The rule line above states
+              // the policy; this states the problem.
+              if (_stayRuleError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(top: 2),
+                        child: Icon(Icons.error_outline_rounded,
+                            size: 14, color: Color(0xFFB91C1C)),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          _stayRuleError!,
+                          style: inter(
+                              fontSize: 12,
+                              color: const Color(0xFFB91C1C),
+                              height: 1.35),
                         ),
                       ),
                     ],
@@ -2655,6 +2711,18 @@ class _PropertyPageState extends State<PropertyPage>
               const SizedBox(height: 16),
               ElevatedButton(
 onPressed: () async {
+                  // The host's stay limits, BEFORE the money.
+                  //
+                  // These were enforced by the booking endpoint alone, so a
+                  // guest could price a stay the host does not accept, tap
+                  // Book, and be refused by the server with the total already
+                  // on screen. The same dead end the website removed.
+                  final stayProblem = _stayRuleError;
+                  if (stayProblem != null) {
+                    bookingController.showSnackbar(
+                        'Change your dates', stayProblem, true);
+                    return;
+                  }
                   if (!_policyOk) {
                     bookingController.showSnackbar(
                         'Cancellation policy',

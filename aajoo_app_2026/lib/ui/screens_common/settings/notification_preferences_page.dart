@@ -244,7 +244,14 @@ class _NotificationPreferencesPageState
             ),
           ),
           const SizedBox(width: 12),
-          Switch.adaptive(
+          // Switch, NOT Switch.adaptive.
+          //
+          // .adaptive is the only widget in this app that renders differently
+          // on the two platforms: a Cupertino switch on iOS, a Material one on
+          // Android. Every other Cupertino widget here (the DOB wheel, the page
+          // routes) is used UNCONDITIONALLY, so it looks the same on both. This
+          // one did not, and the client asked for the two apps to match.
+          Switch(
             value: value,
             onChanged: busy ? null : onChanged,
             activeColor: kprimaryColor,
