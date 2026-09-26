@@ -112,6 +112,33 @@ void main() {
     });
   });
 
+  test('the app says WHY the price moved, as the website does', () {
+    // Verified on the live website for Saturday 3 October 2026, the same
+    // listing: it shows "₹9,000 / night" with "These dates are priced
+    // differently · usually ₹5,000/night" underneath, and itemises
+    // "1 night (weekend rates apply)". Showing 9,000 alone leaves a guest who
+    // saw 5,000 on the search card to conclude the price moved on its own.
+    expect(page, contains("if (_ratesDifferFromUsual)"),
+        reason: 'the app shows the dated price with no explanation');
+    expect(page, contains('These dates are priced differently'),
+        reason: 'the wording no longer matches the website');
+    // Read from the host's rule, not by comparing two rendered strings: a stay
+    // can differ by a rupee and round to the same number.
+    expect(page, contains('rule.differsFromFlat(selectedDate, selectedDateTo, totalDays)'));
+  });
+
+  test('the line stays away on an ordinary weekday stay', () {
+    final flat = PricingRule.fromJson(const {'base': 5000, 'weekendPricing': false})!;
+    // Monday to Tuesday, no weekend pricing at all.
+    expect(flat.differsFromFlat(DateTime(2026, 9, 28), DateTime(2026, 9, 29), 1), isFalse);
+    // And with weekend pricing on, a midweek night still matches the flat rate.
+    final wk = PricingRule.fromJson(const {
+      'base': 5000, 'weekendPricing': true, 'friday': 9000, 'saturday': 9000, 'sunday': 10000,
+    })!;
+    expect(wk.differsFromFlat(DateTime(2026, 9, 29), DateTime(2026, 9, 30), 1), isFalse);
+    expect(wk.differsFromFlat(DateTime(2026, 10, 3), DateTime(2026, 10, 4), 1), isTrue);
+  });
+
   test('the GST band is decided by what the night ACTUALLY costs', () {
     // Worth pinning because it is the other half of the same screen. The
     // Saturday rate of 9,000 is ABOVE the 7,500 band, so it attracts 18% —

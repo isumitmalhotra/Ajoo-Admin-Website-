@@ -307,6 +307,17 @@ class _PropertyPageState extends State<PropertyPage>
         basePrice: currentPrice,
       );
 
+  /// Do these nights cost something other than the listing's flat rate?
+  ///
+  /// Reads the host's own pricing rule rather than comparing two rendered
+  /// strings: a stay can differ by a rupee and round to the same number, and a
+  /// line that appears for a difference nobody can see is worse than none.
+  bool get _ratesDifferFromUsual {
+    final rule = _single?.pricing;
+    if (rule == null || selectedDateTo == null || totalDays <= 0) return false;
+    return rule.differsFromFlat(selectedDate, selectedDateTo, totalDays);
+  }
+
   NegotiationLock? get _negotiationLock {
     final lock = _single?.negotiationLock;
     if (lock == null || !lock.locked) return null;
@@ -1345,6 +1356,26 @@ class _PropertyPageState extends State<PropertyPage>
                       ],
                     ),
                   ),
+                  // Why the number is not the listing's usual one.
+                  //
+                  // The headline now shows what THESE nights cost, which is
+                  // right — but a guest who saw ₹5,000 on the search card and
+                  // ₹9,000 here is owed a reason, or the price looks like it
+                  // moved on its own. The website says exactly this, and
+                  // `differsFromFlat` was written in nightly_rates.dart for the
+                  // purpose and then never called from anywhere.
+                  //
+                  // Only when the two genuinely differ, so an ordinary weekday
+                  // stay carries no extra line.
+                  if (_ratesDifferFromUsual)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        'These dates are priced differently · usually '
+                        '${rupeesFrom(currentPrice.toStringAsFixed(0))}/night',
+                        style: inter(fontSize: 11, color: kMuted),
+                      ),
+                    ),
                 ],
               ),
             // Right — clay Reserve button
