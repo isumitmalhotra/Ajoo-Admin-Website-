@@ -1190,7 +1190,20 @@ class _PropertyPageState extends State<PropertyPage>
   Widget _buildBottomSheet() {
     if (!isExpanded) {
       // M8 — sticky bottom book bar
-      final perNight = currentPrice.toStringAsFixed(0);
+      //
+      // `_listedPerNight`, NOT `currentPrice`. currentPrice is property_price
+      // — the flat nightly column — and on a weekend stay that is simply not
+      // what a night costs. The listing the client photographed on 26
+      // September 2026 (a Saturday) has base 5,000 and saturday 9,000: this
+      // bar said "₹5,000 /night" and, two lines below in the same bar,
+      // "₹10,620 total · 1 night" — which is 9,000 + 18% GST. Both numbers
+      // came from the same screen and disagreed by 80%.
+      //
+      // The offer sheet hit this exact trap first and `listedPerNight` was
+      // written for it: the server's own room subtotal divided by its nights,
+      // falling back to the flat column only when there is no quote yet. The
+      // headline was left behind. One source, so the two cannot disagree.
+      final perNight = _listedPerNight.toStringAsFixed(0);
       final nights = totalDays == 1 ? '1 night' : '$totalDays nights';
       return Container(
         decoration: const BoxDecoration(
