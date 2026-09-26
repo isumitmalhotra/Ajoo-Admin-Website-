@@ -40,6 +40,14 @@
 > **Go-live sequence (2026-09-19, Render Pro + PlanetScale bought): `GO_LIVE_RUNBOOK_2026-09-19.md`** — steps 0.1–0.4 first (Razorpay key rotation, repo private, test passwords, build 106).
 > Tester build in circulation: **109 (1.0.0+109)**, `aajoo-homes-1.0.0-build109-release.apk` at repo root
 > (2026-09-21 14:37, versionCode 109, 95.6 MB, sha256 `064cc19b501afd11…`), built with `tool/build_release.ps1`
+> **116** — 2026-09-26, `sha256 0afb73e2…ac57`, 95.8 MB. The client's two from the 26 September screenshots:
+> the weekend headline (₹5,000/night above a ₹10,620 total for ONE night — the total was right, the headline read
+> the flat `property_price` column) and the minimum stay (a priced 1-night stay under "Minimum stay 3 nights").
+> **Both were on Android too** — one Flutter codebase; the real gap was app vs WEBSITE, which had fixed both.
+> Plus `Switch.adaptive` → `Switch`, the only widget in the app that rendered differently on the two platforms.
+> Client repo `bd1ddb3`. **115 was taken by the Mac** for the first iOS build. **Installed and launched; the two
+> fixes are NOT driven** — both are on the renter property page and "Start Exploring" goes straight to login,
+> because the new database still has no guest account. Supersedes **114**
 > **114** — 2026-09-24, `sha256 05a44304…0d835`, 95.8 MB. **113 plus Sign in with Apple.** Points at
 > `https://api.aajoohomes.com` (Singapore + the fresh database). **Driven:** "Continue with Apple" renders on
 > ANDROID under Google's, black with Apple's glyph, on the login tab and as "Sign up with Apple" on the signup
