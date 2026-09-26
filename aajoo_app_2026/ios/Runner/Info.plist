@@ -39,6 +39,35 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<!-- UIScene lifecycle. An app linked against the iOS 27 SDK that does not
+	     declare a scene is killed by UIKit on its first frame, on iOS 27
+	     (_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption,
+	     SIGTRAP) — found on the Simulator on 2026-09-25, the first time the
+	     app was built with Xcode 27. It compiles, it installs, it passes the
+	     verifier, and it dies on launch. FlutterSceneDelegate is the engine's
+	     own; it hands scene events (URLs, foreground/background) on to the
+	     plugins that still listen on the app delegate. -->
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneClassName</key>
+					<string>UIWindowScene</string>
+					<key>UISceneDelegateClassName</key>
+					<string>FlutterSceneDelegate</string>
+					<key>UISceneConfigurationName</key>
+					<string>flutter</string>
+					<key>UISceneStoryboardFile</key>
+					<string>Main</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
 	<!-- The Android build does not lock orientation, so neither does this one. -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>

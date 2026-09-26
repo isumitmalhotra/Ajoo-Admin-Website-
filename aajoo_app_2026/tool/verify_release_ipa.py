@@ -39,6 +39,14 @@ HTTP_ALLOWED = (
     b"http://schemas.",
     b"http://ns.adobe.com",
     b"http://xml.org",
+    # Apple's PKI. A SIGNED build carries Apple's certificate chain inside
+    # every code signature and in embedded.mobileprovision, and certificates
+    # name their revocation and issuer URLs over plain http. The unsigned
+    # compile check never has them; the first signed build (1.0.0+114,
+    # 2026-09-26) failed on exactly these five, all inside the signature.
+    b"http://crl.apple.com",
+    b"http://ocsp.apple.com",
+    b"http://certs.apple.com",
 )
 
 
@@ -118,6 +126,14 @@ def main() -> int:
                 failures.append(f"{key} missing — iOS refuses the permission prompt without it")
         if info.get("ITSAppUsesNonExemptEncryption") is not False:
             failures.append("ITSAppUsesNonExemptEncryption is not false — every TestFlight upload will stop to ask")
+        # Built with the iOS 27 SDK, an app without a scene is killed by UIKit
+        # on its first frame on iOS 27. It compiles, installs and passes every
+        # other check here; only launching it shows the crash.
+        scenes = (info.get("UIApplicationSceneManifest", {})
+                  .get("UISceneConfigurations", {})
+                  .get("UIWindowSceneSessionRoleApplication", []))
+        if not any(s.get("UISceneDelegateClassName") for s in scenes):
+            failures.append("no UIApplicationSceneManifest scene delegate — the app crashes on launch on iOS 27")
         if expect_version:
             name, _, number = expect_version.partition("+")
             got = f"{info.get('CFBundleShortVersionString')}+{info.get('CFBundleVersion')}"

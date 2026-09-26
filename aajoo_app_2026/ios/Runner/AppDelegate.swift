@@ -3,7 +3,7 @@ import GoogleMaps
 import UIKit
 
 @main
-@objc class AppDelegate: FlutterAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -22,8 +22,6 @@ import UIKit
       NSLog("Aajoo: GMSApiKey is not set in Info.plist — maps will render blank")
     }
 
-    GeneratedPluginRegistrant.register(with: self)
-
     // Push. firebase_messaging registers with APNs itself once the Dart side
     // asks for permission; setting the notification-centre delegate here lets
     // a notification tapped while the app is running reach the plugin.
@@ -32,5 +30,12 @@ import UIKit
     }
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  // Under the UIScene lifecycle (Info.plist UIApplicationSceneManifest) the
+  // engine is created by the scene's FlutterViewController, not here, so the
+  // plugins are registered when it exists rather than in didFinishLaunching.
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
   }
 }
