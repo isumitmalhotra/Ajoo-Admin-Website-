@@ -118,6 +118,44 @@ Backend `8481e88` + `203c0b8` · website `820b6f6`.
 | API unchanged | `/health` 200; `/common/categories` fingerprint `a1a4dda4140ad0ea`, identical to before the deploy |
 | Vercel | `www.aajoohomes.com` still served by Vercel (`Server: Vercel`), untouched |
 
+### What opening it in a BROWSER found, after curl said everything was fine
+
+Every crawler check passed — right statuses, right titles — and the site was a
+correct `<head>` above a **blank white page**. Two causes, both created by this
+service starting to serve the website:
+
+* **Every asset answered 500 with a JSON body.** A page loaded from
+  `api.aajoohomes.com` sends that host as its `Origin` on module scripts and
+  stylesheets. The allowlist held `www` and the apex, not the API's own name, so
+  `cors` threw for a request that is by definition same-origin. **curl saw 200
+  throughout, because curl sends no `Origin` header** — which is exactly why
+  nothing caught it.
+* **The first fix for that was inert.** It added the host to
+  `PRODUCTION_ORIGINS`, but `configuredOrigins()` reads
+  `fromEnv.length ? fromEnv : PRODUCTION_ORIGINS` — so on a deployment with
+  `ALLOWED_ORIGINS` set, that list is never consulted. The deploy went green and
+  nothing changed, and the only symptom was the one already being investigated.
+  The host now lives in `SELF_ORIGINS`, appended after that branch, with a test
+  that sets `ALLOWED_ORIGINS` to something excluding it.
+
+Backend `e9c5cd4` (inert) then **`538676d`** (the real one). Verified after:
+all three assets 200 with correct content types, a lookalike origin still
+refused, categories fingerprint `a1a4dda4140ad0ea` unchanged, and the home page
+renders.
+
+### Google Maps needs one referrer added — **not a defect in this work**
+
+`RefererNotAllowedMapError`, naming `https://api.aajoohomes.com/explore`. The
+key is baked into the bundle correctly; it is **restricted by HTTP referrer** in
+Google Cloud Console to `aajoohomes.com` and `www`. Maps will therefore work
+the moment `www` points at this service — but not while testing on the API
+hostname.
+
+To test before cutover, add `https://api.aajoohomes.com/*` to that key's
+referrer restrictions (Google Cloud Console → Credentials → the Maps key →
+Website restrictions). Worth doing rather than waiting, since the point of this
+phase is to find problems before the domain moves.
+
 ### Still to do
 
 1. Set `VITE_GOOGLE_MAPS_KEY` on the Singapore service — **maps are broken on
