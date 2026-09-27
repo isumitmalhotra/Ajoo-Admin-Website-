@@ -405,10 +405,37 @@ So: one genuine oversight inside an otherwise intentional clean start.
 > until someone has decided what else, if anything, is wanted. Ten minutes with it answered this question; a deleted
 > one would not have.
 
-**Still open for the client to decide:** the `Resort` category tile shows the Aajoo logo because the file uploaded
-as its icon **is** the logo (Cloudinary, 17 June). Nine of eleven categories have no icon at all and fall through to
-stock photography the frontend picks — fine as a gap filler, but it means the category row is not under the client's
-control. Fixed per category in Admin → Property Categories.
+**Resort icon — FIXED 2026-09-27.** The tile showed the Aajoo logo because the file uploaded as its icon **was** the
+logo (Cloudinary, 17 June). `cat_icon` cleared, so it now falls through to stock like the other nine. **Proper fix
+is still the client's:** upload a real resort photograph in Admin → Property Categories. Only `Villas -1` has a
+genuine icon; the other ten are showing Unsplash stock the frontend picks, so the category row is not under the
+client's control.
+
+### The hero images are blurry because four of the five are small
+
+Reported the same day. **Not a rendering, CDN or hosting problem — the source files are low-resolution.** Measured
+at Cloudinary (`fl_getinfo`, so the originals, not a transformation):
+
+| | Source | Displayed | |
+|---|---|---|---|
+| image 1 | **1440×961** (196 KB) | 1160×593 | downscaled — sharp |
+| images 2–5 | **547×365** (25–62 KB) | 1160×593 | **upscaled 2.1×** — blurry |
+
+At a device pixel ratio of 1.25 the hero is really asking for ~1450 px across, so a 547 px file is being stretched
+about **2.65×**. Nothing can recover that detail.
+
+`uploadImages` in `cmsContent.controller.js` applies **no transformation** — it sends the file to Cloudinary as-is —
+so nothing in our pipeline shrank them. They were uploaded small.
+
+**Fix:** re-upload those four at **1920 px wide or more** through Admin → CMS → Home. The first image is proof the
+path works when the source is big enough.
+
+**Worth building (not yet done):** the upload accepts anything and the page then silently stretches it, which is how
+this went unnoticed for a week. A minimum-width check on hero uploads — refuse or warn under ~1600 px — would turn a
+blurry homepage into an error message at the moment of upload. Small backend change; needs a deploy.
+
+---
+
 
 ---
 
