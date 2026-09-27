@@ -139,11 +139,11 @@
   <section class="cover">
     <div class="rule"></div>
     <h1>The website's hosting: stay on Vercel, or move it to Render?</h1>
-    <p class="sub">Whether to move www.aajoohomes.com off Vercel and onto the Render service that already runs the API — what is live on each today, what the move actually takes, what it costs, what it does to speed, and why the current Vercel plan is the item that cannot wait.</p>
+    <p class="sub">Whether to move www.aajoohomes.com off Vercel and onto Render — what is live on each today, what the move actually takes, what it costs, what it does to speed, and why the current Vercel plan is the item that cannot wait.</p>
     <div class="meta">
       <strong>Aajoo Homes &mdash; website hosting decision</strong><br>
-      Prepared 27 September 2026 by the Zyphex Tech development team<br>
-      Read from the live Vercel and Render dashboards and both providers' published pricing on the same day
+      Prepared 27 September 2026 by the Zyphex Tech development team &middot; revised the same day<br>
+      Read from the live Vercel and Render dashboards and both providers' published pricing; the port has since been built and tested against the live site
     </div>
   </section>
   <h2>1. The question, and the short answer</h2>
@@ -380,20 +380,30 @@ plan fixes that as a side effect.</p>
 <td>Viable and instant. Also buys team seats, spend controls and a day of logs instead of an hour</td>
 </tr>
 <tr>
-<td><strong>C. Fold into the Singapore API service</strong></td>
-<td><strong>$0 extra</strong></td>
+<td><strong>C. A second Render web service</strong></td>
+<td><strong>$7/mo ≈ ₹620</strong></td>
 <td>2–3 days</td>
-<td><strong>The destination.</strong> Capacity, domains and bandwidth are already paid for</td>
+<td><strong>The destination.</strong> Custom domains and bandwidth are already paid for on the workspace; only the instance is new</td>
 </tr>
 <tr>
-<td><strong>D. A separate Render web service</strong></td>
-<td>$7/mo ≈ ₹620</td>
+<td><strong>D. Fold into the existing API service</strong></td>
+<td>$0 extra</td>
 <td>2–3 days</td>
-<td>Same work as C for no benefit. A free instance would sleep and make the first visitor wait</td>
+<td><strong>Not available in practice</strong> — see below</td>
 </tr>
 </tbody></table>
-<p><strong>A fifth option does not exist, though it looks like it should.</strong> Render&#39;s
-static site hosting is genuinely free and would be the obvious home for a
+<p><strong>Why D is not the free lunch it appears to be.</strong> The API service is built
+from a Dockerfile whose build context is the <em>backend</em> repository, and the
+website lives in a different one. Sharing them means either a Git submodule or
+a credentialed clone inside the Docker build — and from then on every website
+change needs a backend commit to point at it. That couples two codebases that
+have no reason to be coupled, and slows down the faster-moving one, to save $7
+a month.</p>
+<p>An earlier draft of this document recommended D at <strong>$0 extra</strong>. Building the
+port established that it does not work cleanly, so the figure has been
+corrected rather than left flattering.</p>
+<p><strong>A further option does not exist at all, though it looks like it should.</strong>
+Render&#39;s static site hosting is genuinely free and would be the obvious home for a
 website — but Render&#39;s own documentation is explicit that a static site cannot
 run server-side code. Our SEO layer is server-side code. Choosing it would mean
 silently giving up SEO Phase 1, which was commissioned and delivered. That is
@@ -479,9 +489,12 @@ the page&#39;s data. After the move, everything is served from Singapore.</p>
 </tbody></table>
 <p>The second effect is real and measurable, and there is a specific fix: Render&#39;s
 <strong>Edge Caching</strong>, which serves static files from locations near the visitor.
-<strong>It is currently switched off</strong> on the Singapore service — the cache profile
-is set to None. Turning it on is part of the migration, not an afterthought,
-and we would measure load times from India before and after rather than assume.</p>
+It was switched off; it was <strong>turned on for the API service on 27 September</strong>
+using the &quot;Common static files&quot; profile, which caches images, scripts and
+stylesheets but deliberately <strong>not</strong> HTML or JSON — caching per-visitor JSON at
+an edge would be a data-protection problem, not an optimisation. The new web
+service will need the same setting turned on after its first deploy, and we
+would measure load times from India before and after rather than assume.</p>
 <p>Net expectation: <strong>broadly unchanged</strong>, provided edge caching is enabled. We
 would rather say that plainly now than present a saving as a performance win.</p>
 <hr>
@@ -509,22 +522,25 @@ would rather say that plainly now than present a saving as a performance win.</p
 <td>$240 ≈ ₹21,400</td>
 </tr>
 <tr>
-<td><strong>C. Into the Singapore service</strong></td>
-<td>$0 extra</td>
-<td><strong>$0</strong></td>
-<td><strong>$0</strong></td>
+<td><strong>C. A second Render service</strong></td>
+<td>$7/mo</td>
+<td><strong>$84</strong> ≈ ₹7,500</td>
+<td>$84 ≈ ₹7,500</td>
 </tr>
 <tr>
-<td><strong>D. Separate Render service</strong></td>
-<td>$7/mo</td>
-<td>$84 ≈ ₹7,500</td>
-<td>$84 ≈ ₹7,500</td>
+<td><strong>D. Fold into the API service</strong></td>
+<td>$0</td>
+<td>$0</td>
+<td>$0 — but couples the two codebases; not recommended</td>
 </tr>
 </tbody></table>
-<p><strong>The saving from moving is about $240 (₹21,400) a year.</strong> It is worth being
-clear-eyed about that figure: it is real and it recurs, but it is smaller than
-two to three days of engineering time in the first year. The move pays for
-itself from year two onward.</p>
+<p><strong>The saving from moving is about $156 (₹13,900) a year</strong> — $20 a month on
+Vercel against $7 on Render. It is worth being clear-eyed about that figure: it
+is real and it recurs, but it is smaller than two to three days of engineering
+time in the first year. The move pays for itself from year two onward.</p>
+<p>Both services sit in Singapore, so the website&#39;s call to the API is a
+same-region hop of about a millisecond. That is why running them as two
+services costs almost nothing in speed.</p>
 <p><strong>The stronger arguments for moving are not financial:</strong></p>
 <ul>
 <li>One provider, one dashboard, one bill, one place where both the website and
@@ -556,16 +572,28 @@ invisible for days and expensive to discover late.</p>
 <td>$20/mo</td>
 </tr>
 <tr>
+<td><del>This week</del> <strong>Done 27 Sep</strong></td>
+<td>Both old Oregon services suspended; Edge Caching enabled on the API service</td>
+<td>Zyphex</td>
+<td>$0</td>
+</tr>
+<tr>
+<td><del>After go-live</del> <strong>Done 27 Sep</strong></td>
+<td><strong>The port is built and tested.</strong> It answers with the same status and the same page titles as the live site on every URL checked, including the 404s</td>
+<td>Zyphex</td>
+<td>—</td>
+</tr>
+<tr>
 <td><strong>This week</strong></td>
-<td>Add the two environment variables to preview builds; delete the abandoned Vercel project; suspend the two old Oregon services</td>
+<td>Add the two environment variables to Vercel preview builds; delete the abandoned Vercel project</td>
 <td>Zyphex</td>
 <td>$0</td>
 </tr>
 <tr>
 <td><strong>After go-live</strong></td>
-<td>Build and verify the port on Render&#39;s own address, with nothing pointed at it</td>
+<td>Deploy the new service and verify it on Render&#39;s own address, with no domain pointed at it</td>
 <td>Zyphex</td>
-<td>2–3 days</td>
+<td>half a day</td>
 </tr>
 <tr>
 <td><strong>Then</strong></td>
@@ -606,8 +634,9 @@ that decision is taken.</p>
 <li><strong>Approve the Vercel Pro upgrade</strong> — $20/month, cancellable, ends the
 licensing exposure this week. This is the only item that cannot wait.</li>
 <li><strong>Confirm the migration is wanted</strong> at roughly two to three days of
-engineering, scheduled for after go-live, saving about ₹21,400 a year
-thereafter.</li>
+engineering, scheduled for after go-live, saving about ₹13,900 a year
+thereafter. <strong>The port itself is already built and tested</strong> (27 September);
+what remains is the deployment and the cutover.</li>
 <li><strong>Confirm SEO Phase 1 behaviour must be preserved</strong> through the move. We
 assume yes; it was commissioned and delivered, and it is the reason the
 cheaper static-hosting route is not available.</li>

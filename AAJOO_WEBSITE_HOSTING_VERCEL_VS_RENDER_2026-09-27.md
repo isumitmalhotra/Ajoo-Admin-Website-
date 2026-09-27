@@ -135,11 +135,23 @@ plan fixes that as a side effect.
 |---|---|---|---|
 | **A. Stay on Hobby** | $0 | none | **Not viable.** Prohibited use of the plan; the remedy is a pause |
 | **B. Vercel Pro** | $20/mo ≈ ₹1,780 | none | Viable and instant. Also buys team seats, spend controls and a day of logs instead of an hour |
-| **C. Fold into the Singapore API service** | **$0 extra** | 2–3 days | **The destination.** Capacity, domains and bandwidth are already paid for |
-| **D. A separate Render web service** | $7/mo ≈ ₹620 | 2–3 days | Same work as C for no benefit. A free instance would sleep and make the first visitor wait |
+| **C. A second Render web service** | **$7/mo ≈ ₹620** | 2–3 days | **The destination.** Custom domains and bandwidth are already paid for on the workspace; only the instance is new |
+| **D. Fold into the existing API service** | $0 extra | 2–3 days | **Not available in practice** — see below |
 
-**A fifth option does not exist, though it looks like it should.** Render's
-static site hosting is genuinely free and would be the obvious home for a
+**Why D is not the free lunch it appears to be.** The API service is built
+from a Dockerfile whose build context is the *backend* repository, and the
+website lives in a different one. Sharing them means either a Git submodule or
+a credentialed clone inside the Docker build — and from then on every website
+change needs a backend commit to point at it. That couples two codebases that
+have no reason to be coupled, and slows down the faster-moving one, to save $7
+a month.
+
+An earlier draft of this document recommended D at **$0 extra**. Building the
+port established that it does not work cleanly, so the figure has been
+corrected rather than left flattering.
+
+**A further option does not exist at all, though it looks like it should.**
+Render's static site hosting is genuinely free and would be the obvious home for a
 website — but Render's own documentation is explicit that a static site cannot
 run server-side code. Our SEO layer is server-side code. Choosing it would mean
 silently giving up SEO Phase 1, which was commissioned and delivered. That is
@@ -204,9 +216,12 @@ the page's data. After the move, everything is served from Singapore.
 
 The second effect is real and measurable, and there is a specific fix: Render's
 **Edge Caching**, which serves static files from locations near the visitor.
-**It is currently switched off** on the Singapore service — the cache profile
-is set to None. Turning it on is part of the migration, not an afterthought,
-and we would measure load times from India before and after rather than assume.
+It was switched off; it was **turned on for the API service on 27 September**
+using the "Common static files" profile, which caches images, scripts and
+stylesheets but deliberately **not** HTML or JSON — caching per-visitor JSON at
+an edge would be a data-protection problem, not an optimisation. The new web
+service will need the same setting turned on after its first deploy, and we
+would measure load times from India before and after rather than assume.
 
 Net expectation: **broadly unchanged**, provided edge caching is enabled. We
 would rather say that plainly now than present a saving as a performance win.
@@ -221,13 +236,17 @@ Converted at roughly ₹89 to the dollar. Vercel prices exclude GST.
 |---|---|---|---|
 | **A. Hobby** | $0 | $0 | $0 — but prohibited, and pausable without notice |
 | **B. Vercel Pro** | $20/mo | **$240** ≈ ₹21,400 | $240 ≈ ₹21,400 |
-| **C. Into the Singapore service** | $0 extra | **$0** | **$0** |
-| **D. Separate Render service** | $7/mo | $84 ≈ ₹7,500 | $84 ≈ ₹7,500 |
+| **C. A second Render service** | $7/mo | **$84** ≈ ₹7,500 | $84 ≈ ₹7,500 |
+| **D. Fold into the API service** | $0 | $0 | $0 — but couples the two codebases; not recommended |
 
-**The saving from moving is about $240 (₹21,400) a year.** It is worth being
-clear-eyed about that figure: it is real and it recurs, but it is smaller than
-two to three days of engineering time in the first year. The move pays for
-itself from year two onward.
+**The saving from moving is about $156 (₹13,900) a year** — $20 a month on
+Vercel against $7 on Render. It is worth being clear-eyed about that figure: it
+is real and it recurs, but it is smaller than two to three days of engineering
+time in the first year. The move pays for itself from year two onward.
+
+Both services sit in Singapore, so the website's call to the API is a
+same-region hop of about a millisecond. That is why running them as two
+services costs almost nothing in speed.
 
 **The stronger arguments for moving are not financial:**
 
@@ -251,8 +270,10 @@ invisible for days and expensive to discover late.
 | When | Step | Who | Cost |
 |---|---|---|---|
 | **This week** | Upgrade Vercel to Pro. Ends the licensing exposure immediately, requires no engineering, and can be cancelled any month | Client — billing details | $20/mo |
-| **This week** | Add the two environment variables to preview builds; delete the abandoned Vercel project; suspend the two old Oregon services | Zyphex | $0 |
-| **After go-live** | Build and verify the port on Render's own address, with nothing pointed at it | Zyphex | 2–3 days |
+| ~~This week~~ **Done 27 Sep** | Both old Oregon services suspended; Edge Caching enabled on the API service | Zyphex | $0 |
+| ~~After go-live~~ **Done 27 Sep** | **The port is built and tested.** It answers with the same status and the same page titles as the live site on every URL checked, including the 404s | Zyphex | — |
+| **This week** | Add the two environment variables to Vercel preview builds; delete the abandoned Vercel project | Zyphex | $0 |
+| **After go-live** | Deploy the new service and verify it on Render's own address, with no domain pointed at it | Zyphex | half a day |
 | **Then** | Switch one DNS record; keep Vercel deployable for 48 hours | both | $0 |
 | **48 hours later** | Turn off the Vercel project and cancel the Pro subscription | Client | back to $0 |
 
@@ -289,8 +310,9 @@ that decision is taken.
 1. **Approve the Vercel Pro upgrade** — $20/month, cancellable, ends the
    licensing exposure this week. This is the only item that cannot wait.
 2. **Confirm the migration is wanted** at roughly two to three days of
-   engineering, scheduled for after go-live, saving about ₹21,400 a year
-   thereafter.
+   engineering, scheduled for after go-live, saving about ₹13,900 a year
+   thereafter. **The port itself is already built and tested** (27 September);
+   what remains is the deployment and the cutover.
 3. **Confirm SEO Phase 1 behaviour must be preserved** through the move. We
    assume yes; it was commissioned and delivered, and it is the reason the
    cheaper static-hosting route is not available.
