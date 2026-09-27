@@ -68,7 +68,7 @@ Vercel's own types, so the logic moves as-is. Only two things are Vercel's:
 | # | Task | Why it is first |
 |---|---|---|
 | 0.1 | **Decide: same service, or its own?** Recommendation: same Singapore service. It already answers the SEO data, so the lookup becomes in-process and costs nothing. | Everything below assumes the same service. |
-| 0.2 | **Do NOT move DNS.** The nameservers are Vercel's and they hold the **MX records (GoDaddy), the SPF record, both Brevo DKIM CNAMEs**, and the `api` CNAME. Only the `www` record changes at cutover. | Vercel DNS stays free with nothing hosted on it. Moving DNS as part of this puts mail at risk for no benefit. |
+| 0.2 | **Do not move DNS in this change.** Only the `www` record changes at cutover. Moving the zone itself is a separate job for Phase 4 if we want it at all — see `DNS_ZONE_INVENTORY.md`, which lists all eleven records and the steps. | **Render has no DNS product**, so moving DNS consolidates nothing; it swaps Vercel for Cloudflare. And seven of the eleven records are mail — SPF, DMARC at `p=reject`, both Brevo DKIM CNAMEs, two MX. Every OTP on this platform is an email, so breaking them locks everyone out of the app. Do the two moves one at a time or a mail failure has two suspects. |
 | 0.3 | **Confirm with the client that SEO Phase 1 behaviour must survive the move**, in writing. | It was billed. If it silently regresses, that is the conversation nobody wants. |
 
 ---
@@ -135,8 +135,9 @@ still building from the same branch. Keep that true for 48 hours.
 2. **Vite bakes env vars at build time.** A variable added after the build is
    not in the bundle. This is how a site ends up silently pointing at the wrong
    API.
-3. **DNS holds the mail.** MX, SPF and both Brevo DKIM records live in Vercel
-   DNS. Touch only the `www` record.
+3. **DNS holds the mail.** MX, SPF, DMARC (`p=reject`) and both Brevo DKIM
+   records live in Vercel DNS, and every OTP on this platform is an email.
+   Touch only the `www` record. Full zone in `DNS_ZONE_INVENTORY.md`.
 4. **A page can render perfectly and answer 404.** Status codes are checked
    with a crawler user-agent, not by looking at the page in a browser.
 
