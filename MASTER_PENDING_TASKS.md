@@ -360,6 +360,93 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a62. Closed 2026-09-27 — the wizard bug: a column narrower than the rule on the screen
+
+**The report, 26 September:** *"bug show ho raha h pr highlight n h ky miss h continue nahi ho raha"* — a host
+stuck on Step 1 of the listing wizard, an error on screen, no field marked.
+
+**Where the previous session looked and found nothing:** every DB write, the catalogue, the columns, the env vars,
+the web's error reader. `saveStep1` called directly answered **"Step 1 saved"**. Reference codes were shipped so the
+next report would be one lookup, and the root cause was left open.
+
+**How it was actually found:** the old Oregon service `aajaodev` keeps 14 days of logs. Searching them for `saveStep`
+returned one line, from 17 September:
+
+```
+[ERROR]: listing saveStep1 failed: Data too long for column 'property_name' at row 1
+```
+
+**The fault.** `config/listingSchema.js` publishes `PROPERTY_NAME_RULES` to both clients with `maxLength: 80`, and the
+hint under the field reads *"Use 5–80 characters."* `tbl_properties.property_name` has been **VARCHAR(50)** since the
+table was created in `20241019204912` and was never altered. A name of **51–80 characters** therefore passes the
+browser, passes the server, and dies at the INSERT.
+
+Both halves of what the host saw were correct, and together they were a dead end — `safeMessage` suppresses an
+internal error because a SQL message is not the host's business, and **no field is highlighted because a crash has no
+field**; only a validation refusal names one. It did not reproduce from a direct call because a short name fits.
+
+**The fix.** Widened to VARCHAR(80) rather than tightening the rule to 50: 80 is what the rule says, what the message
+promises and what both clients enforce — the column was the one thing out of step. Migration
+`20260927120000-widen-property-name-to-match-its-rule.js`, applied to **live PlanetScale** and verified there
+(`varchar(80)`, NOT NULL; longest name stored is 41 characters, so nothing could have been truncated).
+
+`tests/theNameFitsTheColumn.test.js` is the part that prevents a repeat — the two numbers live in different files and
+nothing made them agree. **Confirmed to FAIL against the pre-fix model**, not merely to pass after it. Swept every
+other advertised `maxLength` against its column: this was the only mismatch. **194/194 backend test files pass.**
+
+Backend `ad5b5f9` → **`f39863e`**, pushed, auto-deployed to Singapore.
+
+---
+
+### 8a63. 2026-09-27 — Vercel vs Render, and what the two Oregon services were really doing
+
+**Client document:** `AAJOO_WEBSITE_HOSTING_VERCEL_VS_RENDER_2026-09-27.{md,html,pdf}`. Zone inventory and the
+DNS answer: `DNS_ZONE_INVENTORY.md`. Migration plan: `FRONTEND_MOVE_TO_RENDER_TASKLIST.md`.
+
+**The finding that reframes the hosting question.** The website is on Vercel **Hobby**, which is non-commercial
+personal use only. Vercel defines commercial use to include *a paid consultant writing the code*, and Aajoo Homes
+matches **three of the five examples they list** — it takes payment from visitors, advertises a service for sale, and
+we are paid to build it. The published remedy is pausing the deployment. Staying put is not the free option it looked
+like. **Recommendation: Vercel Pro now (~$20, minutes, no engineering), move after go-live, then cancel.**
+
+**Render does not sell DNS hosting at all**, so "move DNS with everything else" was never available. The zone is 17
+records — not the 11 a public `dig` shows — and **ten of them carry mail**, including two DKIM pairs (Brevo signs
+platform mail, GoDaddy signs mailbox mail). Every OTP on this platform is an email. The apex and wildcard are Vercel
+`ALIAS` records labelled *"may change without notice"*, so the zone must not move while Vercel still serves the site.
+
+**Two Oregon services, and they were not equivalent.**
+
+| | State |
+|---|---|
+| `aajooHomes` | Old frontend from `nameeshPatiyal100/aajoo_web`, last deploy **failed**, zero logs in 14 days. **Suspended 2026-09-27** (reversible — the button now reads Resume). |
+| `aajaodev` | **Still load-bearing.** Left running. |
+
+**Why `aajaodev` could not simply be switched off** — see [[old-build-phantom-database]]. Verified by grepping the
+APKs: `build112` contains `aajaodev.onrender.com`, `build113` and `build116` contain `api.aajoohomes.com`. Build 113
+was the first to name a production host.
+
+**And `DB_HOST` on the two services is not the same database:**
+
+| Service | Database |
+|---|---|
+| `aajoo-api-singapore` | `aws.connect.psdb.cloud` — **PlanetScale (live)** |
+| `aajaodev` | `…-mysql.services.clever-cloud.com` — **Clever Cloud (old)** |
+
+So there is **no double-writer on the live database** — the six schedulers running on Oregon sweep the old one. But
+anyone on build ≤112 is signing up, listing and booking **into a database the live website cannot see**. It does not
+error; it works perfectly against a world that does not exist. **Before triaging any report dated after the 09-24
+cutover, establish which build the reporter is on.**
+
+**Next, in order:** get the client and tester onto build 116 → then suspend `aajaodev` → turn on Render **Edge
+Caching** (currently `Cache Profile: None`, and it is the mitigation for the one real regression the website move
+causes) → port the SEO renderer into the API.
+
+**Also open on Vercel:** `VITE_API_BASE_URL` and `VITE_GOOGLE_MAPS_KEY` exist for **Production only**, so every
+preview build has neither and a preview link is not a valid test. The abandoned `aajao-frontend-vercel` project still
+serves an August build and should be deleted.
+
+---
+
 ### 8a61. 2026-09-24 — Sign in with Apple, on all three platforms
 
 **Why at all:** App Store Review Guideline 4.8. An app that offers Google sign-in must also offer a login that limits
