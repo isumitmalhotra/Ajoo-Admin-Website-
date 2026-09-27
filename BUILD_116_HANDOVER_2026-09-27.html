@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Build 116 — please install this before any further app testing</title>
+<style>
+  @page { size: A4; margin: 20mm 17mm 22mm; }
+
+  :root {
+    --navy: #1B2447;
+    --teal: #0F766E;
+    --ink:  #1F2937;
+    --muted:#5B6472;
+    --line: #D9DEE7;
+    --soft: #F4F6F9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: #fff;
+    /* Cambria before Georgia deliberately: Georgia ships OLD-STYLE figures, so
+       "six P0s" reads as "six Pos" and every number sits at a different
+       height. This document is full of IDs and money. Cambria has lining
+       figures and prints just as well. */
+    font-family: Cambria, "Palatino Linotype", Georgia, "Times New Roman", serif;
+    font-variant-numeric: lining-nums;
+    font-size: 10.4pt;
+    line-height: 1.58;
+    color: var(--ink);
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---- cover ------------------------------------------------------- */
+  .cover { page-break-after: always; padding-top: 58mm; }
+  .cover .rule { width: 54px; height: 4px; background: var(--teal); margin-bottom: 22px; }
+  .cover h1 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    font-size: 27pt; line-height: 1.2; color: var(--navy);
+    margin: 0 0 16px; font-weight: 600; letter-spacing: -0.4px;
+  }
+  .cover .sub { font-size: 11.5pt; color: var(--muted); margin: 0 0 40px; max-width: 118mm; }
+  .cover .meta {
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 9pt;
+    color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px;
+  }
+  .cover .meta strong { color: var(--navy); font-weight: 600; }
+
+  /* ---- headings ---------------------------------------------------- */
+  h2, h3, h4 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    color: var(--navy); font-weight: 600; page-break-after: avoid;
+  }
+  h2 {
+    font-size: 15pt; margin: 26px 0 12px; padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--line); letter-spacing: -0.2px;
+  }
+  h3 {
+    font-size: 11.4pt; margin: 18px 0 7px; color: var(--teal);
+    letter-spacing: .1px;
+  }
+  h4 { font-size: 10.6pt; margin: 14px 0 6px; }
+
+  p { margin: 0 0 10px; orphans: 3; widows: 3; }
+
+  /* ---- lists ------------------------------------------------------- */
+  ul, ol { margin: 0 0 11px; padding-left: 20px; }
+  li { margin-bottom: 5px; }
+  li > ul, li > ol { margin-top: 5px; }
+
+  /* ---- emphasis & code --------------------------------------------- */
+  strong { color: var(--navy); font-weight: 700; }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 8.7pt; background: var(--soft);
+    border: 1px solid var(--line); border-radius: 3px;
+    padding: 0.5px 4px; color: #33405A;
+    /* long identifiers must not push the page sideways */
+    word-break: break-word;
+  }
+  pre { background: var(--soft); border: 1px solid var(--line); border-radius: 5px;
+        padding: 10px 12px; overflow-x: auto; page-break-inside: avoid; }
+  pre code { border: 0; background: none; padding: 0; font-size: 8.6pt; }
+
+  /* ---- tables ------------------------------------------------------ */
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 16px;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.7pt;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }   /* repeat header across pages */
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  th {
+    background: var(--navy); color: #fff; text-align: left; font-weight: 600;
+    padding: 7px 9px; border: 1px solid var(--navy); line-height: 1.35;
+  }
+  td {
+    padding: 6px 9px; border: 1px solid var(--line); vertical-align: top;
+    line-height: 1.45;
+  }
+  tbody tr:nth-child(even) td { background: #FAFBFD; }
+  td code { font-size: 8.1pt; }
+
+  /* ---- callouts ---------------------------------------------------- */
+  blockquote {
+    margin: 14px 0; padding: 10px 14px;
+    background: #F2F8F7; border-left: 3px solid var(--teal);
+    page-break-inside: avoid;
+  }
+  blockquote p { margin: 0 0 6px; }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  /* ---- screenshots -------------------------------------------------- */
+  /* A screenshot is evidence, so it is framed like one: a hairline border
+     so the page edge is visible against white, and never split across a
+     page break, because half a screen proves nothing. */
+  img {
+    display: block; max-width: 100%; height: auto; margin: 10px auto 4px;
+    border: 1px solid var(--line); border-radius: 5px;
+    page-break-inside: avoid;
+  }
+  /* Markdown puts a lone image in its own paragraph; the alt text follows
+     as the caption. */
+  p > img + em, p > em:only-child {
+    display: block; text-align: center;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.2pt;
+    color: var(--muted); font-style: normal; margin-top: 2px;
+  }
+  p:has(> img) { page-break-inside: avoid; margin: 14px 0 18px; }
+
+  /* The cover meta and the first paragraph of the body were touching. */
+  .cover { margin-bottom: 26px; }
+
+  hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+
+  /* Keep a section heading with the text that follows it. */
+  h2 + p, h3 + p, h2 + table, h3 + table, h2 + ul, h3 + ul { page-break-before: avoid; }
+</style></head>
+<body>
+  <section class="cover">
+    <div class="rule"></div>
+    <h1>Build 116 — please install this before any further app testing</h1>
+    <p class="sub">Builds 112 and earlier talk to a different server and a different database, so testing on one proves nothing about the live platform. The file, how to install it, how to confirm which build you are on, and what changed.</p>
+    <div class="meta">
+      <strong>Aajoo Homes &mdash; app build 116</strong><br>
+      Prepared 27 September 2026 by the Zyphex Tech development team<br>
+      Endpoint, package and versionCode read from inside the artifact on the same day
+    </div>
+  </section>
+  <p><strong>27 September 2026.</strong> For Nameesh and the tester.</p>
+<h2>The file</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Filename</td>
+<td><code>aajoo-homes-1.0.0-build116-release.apk</code></td>
+</tr>
+<tr>
+<td>sha256</td>
+<td><code>0afb73e2f18cc6c4eb617f13473a6d0ed67a1d981db5ca84f4799ec83c8eac57</code></td>
+</tr>
+<tr>
+<td>Size</td>
+<td>100,477,287 bytes (95.8 MB)</td>
+</tr>
+<tr>
+<td>Package</td>
+<td><code>com.aajoo.aajoohomes</code></td>
+</tr>
+<tr>
+<td>versionName / versionCode</td>
+<td>1.0.0 / <strong>116</strong></td>
+</tr>
+<tr>
+<td>Points at</td>
+<td><code>https://api.aajoohomes.com</code> — verified inside the artifact</td>
+</tr>
+<tr>
+<td>Payments</td>
+<td><strong>Test mode</strong> (<code>rzp_test_…</code>). No real money can move.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Why this matters more than a normal update</h2>
+<p><strong>Any build numbered 112 or lower is talking to a different server <em>and</em> a
+different database.</strong></p>
+<p>We confirmed this by reading the compiled apps themselves, not from notes:
+build 112 contains <code>aajaodev.onrender.com</code>; builds 113 and 116 contain
+<code>api.aajoohomes.com</code>. Build 113 was the first one ever pointed at a production
+host.</p>
+<p>And those two servers do not share data. The old one is still connected to the
+original Clever Cloud database; the live platform moved to PlanetScale on
+24 September.</p>
+<p><strong>So an older build does not fail. It works perfectly — against a copy of the
+world that nobody else can see.</strong> Sign-ups, listings, bookings and
+negotiations made there are invisible to the website and to anyone on a newer
+build. Nothing errors, nothing warns.</p>
+<p>That is worth knowing for two reasons:</p>
+<ol>
+<li><strong>Testing done on an old build proves nothing</strong> about the live platform, in
+either direction.</li>
+<li><strong>Any &quot;it didn&#39;t save&quot; or &quot;my booking vanished&quot; report since 24 September
+may not be a defect at all</strong> — it may simply have happened in the other
+database.</li>
+</ol>
+<hr>
+<h2>How to install</h2>
+<p><strong>Please uninstall the existing Aajoo Homes app first, then install this
+file.</strong> Installing over the top would technically work, but the old app may be
+holding a saved login issued by the old server against the old database — and
+a stale session is exactly the kind of thing that produces a confusing failure
+an hour later. There is nothing worth keeping in the old install.</p>
+<ol>
+<li>Uninstall <strong>Aajoo Homes</strong> from the phone</li>
+<li>Install <code>aajoo-homes-1.0.0-build116-release.apk</code></li>
+<li>Sign in again</li>
+</ol>
+<hr>
+<h2>How to confirm you are on the right build</h2>
+<p><strong>The app itself will not tell you.</strong> Settings shows only &quot;Version 1.0.0&quot; —
+the build number is deliberately not shown to users, so 112 and 116 look
+identical from inside the app.</p>
+<p>Check it from Android instead:</p>
+<blockquote>
+<p><strong>Settings → Apps → Aajoo Homes → scroll to the bottom</strong>
+It should read <strong>1.0.0 (116)</strong>. The number in brackets is the one that
+matters.</p>
+</blockquote>
+<p>If you want to be certain the downloaded file is the right one before
+installing, its sha256 is above.</p>
+<hr>
+<h2>What is in 116</h2>
+<p>The two items from the 26 September screenshots:</p>
+<ul>
+<li><strong>The weekend price headline.</strong> A one-night Saturday stay showed
+&quot;₹5,000/night&quot; above a &quot;₹10,620 total&quot;. The total was correct — the host had
+set ₹9,000 for Saturdays, plus 18% GST. The headline was reading the flat
+price column instead of what those particular nights cost. It now shows the
+real nightly figure.</li>
+<li><strong>Minimum stay.</strong> A 1-night stay could be priced on a listing that says
+&quot;Minimum stay 3 nights&quot;. It is now refused, with the host&#39;s own rule quoted.</li>
+</ul>
+<p>Both were present on Android as well — it is one codebase, so this was never
+an iOS-specific fault. The real gap was between the app and the <strong>website</strong>,
+which had already fixed both.</p>
+<p>Also: one widget that rendered differently on iOS and Android was replaced, so
+the two platforms now draw the same control.</p>
+<p><strong>Not yet driven by us:</strong> both fixes are on the guest-facing property page,
+and we have not been able to exercise them on a device because the new database
+had no guest account at the time of the build. Worth a look when you are in
+there.</p>
+<hr>
+<h2>After everyone is on 116</h2>
+<p>Once you both confirm the install, we will switch off the old Oregon server.
+It is the last thing keeping the abandoned database reachable, and leaving it
+running is what allows an old build to quietly write to nowhere.</p>
+
+</body></html>
