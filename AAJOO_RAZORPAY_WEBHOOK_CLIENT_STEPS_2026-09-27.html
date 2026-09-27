@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>Razorpay: the three things we need from your dashboard</title>
+<html lang="en"><head><meta charset="utf-8"><title>Razorpay: one last thing we need from your dashboard</title>
 <style>
   @page { size: A4; margin: 20mm 17mm 22mm; }
 
@@ -138,55 +138,30 @@
 <body>
   <section class="cover">
     <div class="rule"></div>
-    <h1>Razorpay: the three things we need from your dashboard</h1>
-    <p class="sub">The three things only you can do in the Razorpay portal — the live API keys, the webhook, and getting all three values to us safely. About ten minutes.</p>
+    <h1>Razorpay: one last thing we need from your dashboard</h1>
+    <p class="sub">The live keys are in and the website is running on them. The only outstanding item is the payment webhook, which only you can create — about five minutes.</p>
     <div class="meta">
-      <strong>Aajoo Homes &mdash; Razorpay go-live</strong><br>
+      <strong>Aajoo Homes &mdash; Razorpay webhook</strong><br>
       Prepared 27 September 2026 by the Zyphex Tech development team<br>
-      Everything after these three steps is ours
+      Everything else is done and verified live
     </div>
   </section>
-  <p>Only you can do these — the Razorpay portal is in your name. It takes about ten
-minutes. Everything after this is ours.</p>
-<h2>Before you start</h2>
-<p><strong>Live mode only appears once Razorpay has approved your KYC.</strong> If you open
-Settings and see no Live option, activation is still pending and nothing below
-will work yet — tell us and we will wait.</p>
-<p>Make sure the dashboard is switched to <strong>Live</strong>, not Test. There is a toggle at
-the top of the screen. Every screen below looks identical in both modes, and the
-keys are completely different, so this is worth checking twice.</p>
+  <p>Everything else is done. The live keys are in and the website is running on
+them. <strong>The only outstanding item is the webhook</strong>, and only you can create it —
+the Razorpay portal is in your name. It takes about five minutes.</p>
+<h2>What a webhook is, in one paragraph</h2>
+<p>When a guest pays, Razorpay tells the browser and the browser tells us. That
+works — as long as the guest keeps the page open. If they pay and then close the
+tab, switch apps, or lose signal at the wrong moment, <strong>the money leaves their
+account and nothing tells us</strong>. The booking stays unconfirmed and the guest has
+paid for nothing.</p>
+<p>The webhook is Razorpay telling our server directly, regardless of what the
+guest&#39;s phone did. It is the difference between &quot;usually confirms&quot; and &quot;always
+confirms&quot;.</p>
 <hr>
-<h2>1. The Live API keys</h2>
-<p><strong>Settings → API Keys → Generate Live Key</strong></p>
-<p>You will be shown two values:</p>
-<table>
-<thead>
-<tr>
-<th></th>
-<th></th>
-</tr>
-</thead>
-<tbody><tr>
-<td><strong>Key ID</strong></td>
-<td>begins <code>rzp_live_</code> — this one is public and goes on the website</td>
-</tr>
-<tr>
-<td><strong>Key Secret</strong></td>
-<td>a long random string — this one is private</td>
-</tr>
-</tbody></table>
-<p><strong>The Key Secret is shown once.</strong> Copy it before closing the box. If you lose
-it the only option is to generate a new pair, and the old one stops working the
-moment you do — so do not regenerate later &quot;to check&quot;, because that will switch
-off payments.</p>
-<p>If a live key already exists and you do not have the secret, generate a fresh
-pair and send us both. Tell us you have done it, because the old key will stop
-working immediately.</p>
-<hr>
-<h2>2. The webhook</h2>
-<p>This is what tells us a payment succeeded <strong>after the customer has closed the
-page</strong>. Without it, a guest who pays and then shuts the tab has taken money out
-of their account with no confirmed booking at our end.</p>
+<h2>What to do</h2>
+<p>Make sure the dashboard is switched to <strong>Live</strong>, not Test — there is a toggle at
+the top. The screens look identical in both modes.</p>
 <p><strong>Settings → Webhooks → Add New Webhook</strong></p>
 <table>
 <thead>
@@ -201,38 +176,36 @@ of their account with no confirmed booking at our end.</p>
 </tr>
 <tr>
 <td><strong>Secret</strong></td>
-<td><strong>You choose this.</strong> Any long random string — 20+ characters, letters and numbers. Razorpay does not generate one for you. Write it down; you cannot read it back later.</td>
+<td><strong>You make this up.</strong> Any long random string — 20 or more characters, letters and numbers, no spaces. Razorpay does <strong>not</strong> generate one for you, and this is the step people get stuck waiting on.</td>
 </tr>
 <tr>
 <td><strong>Active Events</strong></td>
-<td>tick <strong><code>payment.captured</code></strong> and <strong><code>payment.failed</code></strong></td>
+<td>tick <strong><code>payment.captured</code></strong> and <strong><code>payment.failed</code></strong> — nothing else</td>
 </tr>
 <tr>
 <td><strong>Alert Email</strong></td>
 <td>your own address, so Razorpay tells you if it ever stops working</td>
 </tr>
 </tbody></table>
-<p>Leave every other event unticked. We only read those two.</p>
-<p>Save it. It will show as <strong>Active</strong>.</p>
+<p>Save. It should then show as <strong>Active</strong>.</p>
+<blockquote>
+<p><strong>Write the secret down before you save.</strong> Razorpay will not show it to you
+again afterwards. If it is lost, the webhook has to be deleted and made again.</p>
+</blockquote>
 <hr>
-<h2>3. Send us three values</h2>
-<ol>
-<li>the <strong>Key ID</strong> (<code>rzp_live_…</code>)</li>
-<li>the <strong>Key Secret</strong></li>
-<li>the <strong>Webhook Secret</strong> you chose in step 2</li>
-</ol>
-<p><strong>Please do not put these in a WhatsApp group or a forwarded email.</strong> Two of the
-three can move money. A direct message to one person, or a phone call for the
-secrets, is enough — and once we have entered them you can delete the message.</p>
+<h2>Then send us one value</h2>
+<p>Just the <strong>secret</strong> you chose. Nothing else — we already have the keys.</p>
+<p>It is not quite a password, but it is what proves a message really came from
+Razorpay, so please send it in a direct message rather than a group chat. You
+can delete the message once we confirm it is in.</p>
 <hr>
-<h2>What happens next</h2>
-<p>We put them into the server, switch off the test-payment setting, and rebuild
-the website and the app so everything is on the live key at the same time.</p>
-<p>Then we make <strong>one real booking for the smallest possible amount and pay for it
-properly</strong>, check it appears in your Razorpay dashboard, and refund it. A test
-payment cannot prove live keys work; only a real one can.</p>
-<p><strong>One thing to expect:</strong> the mobile app currently carries the test key, so the
-app on your phone will stop taking payments the moment we go live until you
-install the new build we send at the same time. The website is not affected.</p>
+<h2>What happens after that</h2>
+<p>We add it to the server, which takes a minute. Then we make <strong>one real booking
+for the smallest amount and pay for it properly</strong>, check it appears in your
+Razorpay dashboard, and refund it — because a test payment cannot prove live
+keys work.</p>
+<p><strong>One thing to expect:</strong> the app currently on your phone was built with the old
+test key, so payments in the app will not work until you install the new build
+we send you at the same time. The website is unaffected.</p>
 
 </body></html>
