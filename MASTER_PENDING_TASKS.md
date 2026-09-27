@@ -34,9 +34,17 @@
 > Supersedes the 2026-07-11 edition, which had drifted badly — nine of its open
 > items were already done and two of its "done" claims were wrong.
 >
-> **Repos:** FE `D:/Projects/aajao-frontend-vercel` (React/Vite → Vercel) ·
-> BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
-> Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
+> **Repos and where they run (rewritten 2026-09-27 — this changed materially):**
+> BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize) → Render **`aajoo-api-singapore`**, which serves
+> **both** `api.aajoohomes.com` **and the website** `www.aajoohomes.com`. `aajaodev.onrender.com` is
+> **SUSPENDED** — do not use it in any config, command or build. ·
+> FE `D:/Projects/aajao-frontend-vercel` (React/Vite) → **no longer deploys itself.** It is a git submodule at
+> `web/` of the backend repo, built inside that repo's Dockerfile. **A website change needs a commit here AND a
+> one-line submodule-pointer commit in the backend repo**, or it does not ship. Clone the backend with
+> `--recurse-submodules`. The Vercel project still exists as a 48-hour rollback and is deployable; do not delete it
+> yet. ·
+> Mobile `aajoo_app_2026/` (Flutter) → client repo `nameeshPatiyal100/aajoo_app_latest`.
+> Deploy = push to `main`; **DB migrations do NOT auto-run.**
 > **Go-live sequence (2026-09-19, Render Pro + PlanetScale bought): `GO_LIVE_RUNBOOK_2026-09-19.md`** — steps 0.1–0.4 first (Razorpay key rotation, repo private, test passwords, build 106).
 > Tester build to circulate: **117 (1.0.0+117)**, `aajoo-homes-1.0.0-build117-release.apk` at repo root
 > (2026-09-27, versionCode 117, 95.8 MB, sha256 `787f7aa4…4cc6`), built with `tool/build_release.ps1`.
@@ -370,6 +378,59 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a64. Closed 2026-09-27 — the website left Vercel, and it cost nothing
+
+**`www.aajoohomes.com` is served by the Singapore box that already runs the API**, at
+**$0 extra**. Full detail in `FRONTEND_MOVE_TO_RENDER_TASKLIST.md`; this is the summary.
+
+**Why it was a port, not a hosting swap.** Every page request goes through an SEO renderer that asks the API what
+the URL's `<head>` should be before the SPA boots — SEO Phase 1. Render's free static hosting cannot run code, so
+the renderer had to move too. It is the same file, bundled and reached the ordinary way, serving from
+`web/`, a **git submodule** of the backend repo built in its own Docker stage. Render checks out private submodules
+under the same account with no extra configuration.
+
+**The $7 was spent on coupling instead.** A website change now needs a one-line commit in the backend repo to move
+the submodule pointer, and clones need `--recurse-submodules`. That was the user's call, and the right one.
+
+**Two failure modes are gone by construction, not guarded:** the shell is read from disk, so the stale-CDN shell,
+the Vercel-login-page-as-the-site and the **508 loop that once took production down** are all unreachable; and a
+missing website build costs the website only — the Dockerfile tolerates an unchecked-out submodule and the API
+starts exactly as before.
+
+**Measured from India, and the prediction was wrong.** Every version of the plan said assets would get *slightly
+worse*. They are **faster**: TTFB 59–214 ms against Vercel's 124–669 ms, total 330–688 ms against 409–1,217 ms,
+same 0.83 MB on the wire. Render is behind Cloudflare, so a cached asset was never really coming from Singapore,
+and the `immutable` header this port sets beats Vercel's `must-revalidate` outright.
+
+**Four things only running it found**, none of which any test caught:
+
+| | |
+|---|---|
+| `app.js` answered `/` with "Hello Backend!" | Registered before the mount, so it won the **home page** — the one page that would never render, failing with a cheerful 200 |
+| Every asset 500'd in a browser | A page served from this host sends it as `Origin`; the allowlist lacked the service's own name. **curl sends no Origin, so every automated check passed** |
+| The first CORS fix was inert | `ALLOWED_ORIGINS` **replaces** `PRODUCTION_ORIGINS` rather than extending it. Green deploy, nothing fixed. Now in `SELF_ORIGINS`, appended after that branch |
+| Three files fell back to `aajaodev.onrender.com` | The service suspended that morning. Vite bakes it in at build time, so any build without `VITE_API_BASE_URL` shipped an app where every request failed |
+
+**The cutover took two attempts.** The first was rolled back after 15 minutes with no certificate. The diagnosis
+written then — that Vercel's "Connected Projects" was overriding the manual record — was **wrong**, and checking it
+before acting is what avoided an unnecessary change: Vercel's own nameservers were serving the CNAME correctly, and
+on the retry the public resolvers had swapped sides. It was ordinary cache expiry. Render's verifier simply had not
+seen the record yet; with DNS warm the certificate issued in **twenty seconds**. Also corrected: the certificate
+comes from **Google Trust Services via Cloudflare**, not Let's Encrypt, so the CAA entry that mattered was `pki.goog`.
+
+**Driven in a browser afterwards**, console empty on every page. The single most useful check was the pricing panel
+for 3–6 October — room ₹24,000, GST ₹3,670 shown as one night at 5% and two at 18%, total ₹27,670, reconciling
+exactly. That one screen exercises the renderer, the SPA, an API round trip from the `www` origin, the dated-pricing
+engine and the GST banding.
+
+Backend `8481e88` → `538676d` · website `820b6f6` · DNS: one record, `www CNAME aajoo-api-singapore.onrender.com`.
+
+**Do NOT turn the Vercel project off yet.** Rollback is deleting that one record, and that only works while the
+project is still deployable. After 48 quiet hours: move the apex to Render, **then** switch Vercel off — that order,
+because switching Vercel off first kills the apex redirect.
+
+---
+
 ### 8a62. Closed 2026-09-27 — the wizard bug: a column narrower than the rule on the screen
 
 **The report, 26 September:** *"bug show ho raha h pr highlight n h ky miss h continue nahi ho raha"* — a host
@@ -459,7 +520,7 @@ serves no static files yet — and ready for the website.
 so they do not appear in service logs or request metrics. After the website moves here, static-asset traffic will be
 invisible in logs and request volumes will look **lower**, not higher. That is the cache working, not a traffic drop.
 
-**Next:** the Oregon clean-up is **done** — both stale services suspended, Edge Caching on. What remains for the hosting move is the SEO renderer port into the API, plus the Vercel Pro decision (§3 of the client document). Circulate build 117 so nobody is left on a build that now has no API at all.
+**Superseded by §8a64 — the move is finished.** The Oregon clean-up, the renderer port and the cutover all happened the same day. The Vercel Pro decision (§3 of the client document) is now moot rather than urgent: the site is no longer on Vercel. Still outstanding: circulate build 117, so nobody is left on a build that now has no API at all.
 
 **Also open on Vercel:** `VITE_API_BASE_URL` and `VITE_GOOGLE_MAPS_KEY` exist for **Production only**, so every
 preview build has neither and a preview link is not a valid test. The abandoned `aajao-frontend-vercel` project still
