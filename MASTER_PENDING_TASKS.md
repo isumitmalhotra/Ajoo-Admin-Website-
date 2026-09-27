@@ -429,7 +429,7 @@ platform mail, GoDaddy signs mailbox mail). Every OTP on this platform is an ema
 | | State |
 |---|---|
 | `aajooHomes` | Old frontend from `nameeshPatiyal100/aajoo_web`, last deploy **failed**, zero logs in 14 days. **Suspended 2026-09-27** (reversible — the button now reads Resume). |
-| `aajaodev` | **Still load-bearing.** Left running. |
+| `aajaodev` | **SUSPENDED 2026-09-27** after build 117 shipped. Verified from outside: `aajaodev.onrender.com` answers **503**, while `api.aajoohomes.com` (200) and `www.aajoohomes.com` (200) are untouched. Last 6h of logs before suspending showed no user traffic — only the service idling itself out. **Resume is one click** if an old build turns out to still matter. |
 
 **Why `aajaodev` could not simply be switched off** — see [[old-build-phantom-database]]. Verified by grepping the
 APKs: `build112` contains `aajaodev.onrender.com`, `build113` and `build116` contain `api.aajoohomes.com`. Build 113
@@ -459,8 +459,7 @@ serves no static files yet — and ready for the website.
 so they do not appear in service logs or request metrics. After the website moves here, static-asset traffic will be
 invisible in logs and request volumes will look **lower**, not higher. That is the cache working, not a traffic drop.
 
-**Next, in order:** get the client and tester onto build 116 → then suspend `aajaodev` → port the SEO renderer into
-the API.
+**Next:** the Oregon clean-up is **done** — both stale services suspended, Edge Caching on. What remains for the hosting move is the SEO renderer port into the API, plus the Vercel Pro decision (§3 of the client document). Circulate build 117 so nobody is left on a build that now has no API at all.
 
 **Also open on Vercel:** `VITE_API_BASE_URL` and `VITE_GOOGLE_MAPS_KEY` exist for **Production only**, so every
 preview build has neither and a preview link is not a valid test. The abandoned `aajao-frontend-vercel` project still
