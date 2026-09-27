@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Razorpay: the three things we need from your dashboard</title>
+<style>
+  @page { size: A4; margin: 20mm 17mm 22mm; }
+
+  :root {
+    --navy: #1B2447;
+    --teal: #0F766E;
+    --ink:  #1F2937;
+    --muted:#5B6472;
+    --line: #D9DEE7;
+    --soft: #F4F6F9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: #fff;
+    /* Cambria before Georgia deliberately: Georgia ships OLD-STYLE figures, so
+       "six P0s" reads as "six Pos" and every number sits at a different
+       height. This document is full of IDs and money. Cambria has lining
+       figures and prints just as well. */
+    font-family: Cambria, "Palatino Linotype", Georgia, "Times New Roman", serif;
+    font-variant-numeric: lining-nums;
+    font-size: 10.4pt;
+    line-height: 1.58;
+    color: var(--ink);
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---- cover ------------------------------------------------------- */
+  .cover { page-break-after: always; padding-top: 58mm; }
+  .cover .rule { width: 54px; height: 4px; background: var(--teal); margin-bottom: 22px; }
+  .cover h1 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    font-size: 27pt; line-height: 1.2; color: var(--navy);
+    margin: 0 0 16px; font-weight: 600; letter-spacing: -0.4px;
+  }
+  .cover .sub { font-size: 11.5pt; color: var(--muted); margin: 0 0 40px; max-width: 118mm; }
+  .cover .meta {
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 9pt;
+    color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px;
+  }
+  .cover .meta strong { color: var(--navy); font-weight: 600; }
+
+  /* ---- headings ---------------------------------------------------- */
+  h2, h3, h4 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    color: var(--navy); font-weight: 600; page-break-after: avoid;
+  }
+  h2 {
+    font-size: 15pt; margin: 26px 0 12px; padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--line); letter-spacing: -0.2px;
+  }
+  h3 {
+    font-size: 11.4pt; margin: 18px 0 7px; color: var(--teal);
+    letter-spacing: .1px;
+  }
+  h4 { font-size: 10.6pt; margin: 14px 0 6px; }
+
+  p { margin: 0 0 10px; orphans: 3; widows: 3; }
+
+  /* ---- lists ------------------------------------------------------- */
+  ul, ol { margin: 0 0 11px; padding-left: 20px; }
+  li { margin-bottom: 5px; }
+  li > ul, li > ol { margin-top: 5px; }
+
+  /* ---- emphasis & code --------------------------------------------- */
+  strong { color: var(--navy); font-weight: 700; }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 8.7pt; background: var(--soft);
+    border: 1px solid var(--line); border-radius: 3px;
+    padding: 0.5px 4px; color: #33405A;
+    /* long identifiers must not push the page sideways */
+    word-break: break-word;
+  }
+  pre { background: var(--soft); border: 1px solid var(--line); border-radius: 5px;
+        padding: 10px 12px; overflow-x: auto; page-break-inside: avoid; }
+  pre code { border: 0; background: none; padding: 0; font-size: 8.6pt; }
+
+  /* ---- tables ------------------------------------------------------ */
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 16px;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.7pt;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }   /* repeat header across pages */
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  th {
+    background: var(--navy); color: #fff; text-align: left; font-weight: 600;
+    padding: 7px 9px; border: 1px solid var(--navy); line-height: 1.35;
+  }
+  td {
+    padding: 6px 9px; border: 1px solid var(--line); vertical-align: top;
+    line-height: 1.45;
+  }
+  tbody tr:nth-child(even) td { background: #FAFBFD; }
+  td code { font-size: 8.1pt; }
+
+  /* ---- callouts ---------------------------------------------------- */
+  blockquote {
+    margin: 14px 0; padding: 10px 14px;
+    background: #F2F8F7; border-left: 3px solid var(--teal);
+    page-break-inside: avoid;
+  }
+  blockquote p { margin: 0 0 6px; }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  /* ---- screenshots -------------------------------------------------- */
+  /* A screenshot is evidence, so it is framed like one: a hairline border
+     so the page edge is visible against white, and never split across a
+     page break, because half a screen proves nothing. */
+  img {
+    display: block; max-width: 100%; height: auto; margin: 10px auto 4px;
+    border: 1px solid var(--line); border-radius: 5px;
+    page-break-inside: avoid;
+  }
+  /* Markdown puts a lone image in its own paragraph; the alt text follows
+     as the caption. */
+  p > img + em, p > em:only-child {
+    display: block; text-align: center;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.2pt;
+    color: var(--muted); font-style: normal; margin-top: 2px;
+  }
+  p:has(> img) { page-break-inside: avoid; margin: 14px 0 18px; }
+
+  /* The cover meta and the first paragraph of the body were touching. */
+  .cover { margin-bottom: 26px; }
+
+  hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+
+  /* Keep a section heading with the text that follows it. */
+  h2 + p, h3 + p, h2 + table, h3 + table, h2 + ul, h3 + ul { page-break-before: avoid; }
+</style></head>
+<body>
+  <section class="cover">
+    <div class="rule"></div>
+    <h1>Razorpay: the three things we need from your dashboard</h1>
+    <p class="sub">The three things only you can do in the Razorpay portal — the live API keys, the webhook, and getting all three values to us safely. About ten minutes.</p>
+    <div class="meta">
+      <strong>Aajoo Homes &mdash; Razorpay go-live</strong><br>
+      Prepared 27 September 2026 by the Zyphex Tech development team<br>
+      Everything after these three steps is ours
+    </div>
+  </section>
+  <p>Only you can do these — the Razorpay portal is in your name. It takes about ten
+minutes. Everything after this is ours.</p>
+<h2>Before you start</h2>
+<p><strong>Live mode only appears once Razorpay has approved your KYC.</strong> If you open
+Settings and see no Live option, activation is still pending and nothing below
+will work yet — tell us and we will wait.</p>
+<p>Make sure the dashboard is switched to <strong>Live</strong>, not Test. There is a toggle at
+the top of the screen. Every screen below looks identical in both modes, and the
+keys are completely different, so this is worth checking twice.</p>
+<hr>
+<h2>1. The Live API keys</h2>
+<p><strong>Settings → API Keys → Generate Live Key</strong></p>
+<p>You will be shown two values:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Key ID</strong></td>
+<td>begins <code>rzp_live_</code> — this one is public and goes on the website</td>
+</tr>
+<tr>
+<td><strong>Key Secret</strong></td>
+<td>a long random string — this one is private</td>
+</tr>
+</tbody></table>
+<p><strong>The Key Secret is shown once.</strong> Copy it before closing the box. If you lose
+it the only option is to generate a new pair, and the old one stops working the
+moment you do — so do not regenerate later &quot;to check&quot;, because that will switch
+off payments.</p>
+<p>If a live key already exists and you do not have the secret, generate a fresh
+pair and send us both. Tell us you have done it, because the old key will stop
+working immediately.</p>
+<hr>
+<h2>2. The webhook</h2>
+<p>This is what tells us a payment succeeded <strong>after the customer has closed the
+page</strong>. Without it, a guest who pays and then shuts the tab has taken money out
+of their account with no confirmed booking at our end.</p>
+<p><strong>Settings → Webhooks → Add New Webhook</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>What to enter</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Webhook URL</strong></td>
+<td><code>https://api.aajoohomes.com/webhooks/razorpay</code></td>
+</tr>
+<tr>
+<td><strong>Secret</strong></td>
+<td><strong>You choose this.</strong> Any long random string — 20+ characters, letters and numbers. Razorpay does not generate one for you. Write it down; you cannot read it back later.</td>
+</tr>
+<tr>
+<td><strong>Active Events</strong></td>
+<td>tick <strong><code>payment.captured</code></strong> and <strong><code>payment.failed</code></strong></td>
+</tr>
+<tr>
+<td><strong>Alert Email</strong></td>
+<td>your own address, so Razorpay tells you if it ever stops working</td>
+</tr>
+</tbody></table>
+<p>Leave every other event unticked. We only read those two.</p>
+<p>Save it. It will show as <strong>Active</strong>.</p>
+<hr>
+<h2>3. Send us three values</h2>
+<ol>
+<li>the <strong>Key ID</strong> (<code>rzp_live_…</code>)</li>
+<li>the <strong>Key Secret</strong></li>
+<li>the <strong>Webhook Secret</strong> you chose in step 2</li>
+</ol>
+<p><strong>Please do not put these in a WhatsApp group or a forwarded email.</strong> Two of the
+three can move money. A direct message to one person, or a phone call for the
+secrets, is enough — and once we have entered them you can delete the message.</p>
+<hr>
+<h2>What happens next</h2>
+<p>We put them into the server, switch off the test-payment setting, and rebuild
+the website and the app so everything is on the live key at the same time.</p>
+<p>Then we make <strong>one real booking for the smallest possible amount and pay for it
+properly</strong>, check it appears in your Razorpay dashboard, and refund it. A test
+payment cannot prove live keys work; only a real one can.</p>
+<p><strong>One thing to expect:</strong> the mobile app currently carries the test key, so the
+app on your phone will stop taking payments the moment we go live until you
+install the new build we send at the same time. The website is not affected.</p>
+
+</body></html>
