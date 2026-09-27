@@ -239,18 +239,58 @@ the new record got a TLS failure. With no real customers the blast radius was
 small, but the duration was unknown and unreadable, and that is not a state to
 leave open.
 
+### Render's domain status — read at last
+
+The Custom Domains section is lazily rendered and only populates once scrolled
+into view; a first pass concluded the domains had been **removed**, which was
+wrong. They are there:
+
+```
+aajoohomes.com       VERIFIED STATUS: Waiting for DNS
+                     CERTIFICATE STATUS: Waiting for Verification
+www.aajoohomes.com   VERIFIED STATUS: Waiting for DNS
+                     CERTIFICATE STATUS: Waiting for Verification
+api.aajoohomes.com   live
+```
+
+So the chain is **DNS → verification → certificate**. No certificate was ever
+going to appear, because Render never got past the first step.
+
+### The likely reason: Vercel never stopped answering for `www`
+
+During the attempt the two public resolvers **disagreed, consistently, for
+fifteen minutes** on a record with a 60-second TTL:
+
+| Resolver | Answer |
+|---|---|
+| `1.1.1.1` | `www → aajoo-api-singapore.onrender.com → Cloudflare` — the new record |
+| `8.8.8.8` | `64.29.17.1`, `216.198.79.1` — Vercel, the whole time |
+
+Two public resolvers cannot disagree for that long about a TTL-60 record unless
+the **authoritative** answers differ. `www.aajoohomes.com` is a **Connected
+Project** on Vercel, and Vercel's nameservers appear to keep answering for a
+name attached to a project, regardless of a manually added record. If Render's
+verifier asked a resolver that got Vercel's answer — as Google's did, for the
+entire window — it would sit at "Waiting for DNS" exactly as observed.
+
+This is a hypothesis with strong circumstantial evidence, not a proven cause.
+It is also cheap to test.
+
 ### Before retrying — do these first
 
-1. **Read Render's Custom Domains status.** It shows a per-domain state and any
-   error, and it was never read before the DNS was changed; the section is
-   lazily rendered and refused to load during the attempt. That is the missing
-   diagnostic and the reason this was flown blind.
-2. **Consider removing the apex from Render.** Adding `www` also registered
-   `aajoohomes.com` automatically, and that name still points at Vercel. If
-   Render is validating them as a pair, the apex can never validate and may be
-   blocking issuance for both. Leaving only `www` registered isolates it.
-3. **Then re-add the record and watch the certificate**, not the DNS. DNS was
-   never the problem.
+1. **Disconnect `www.aajoohomes.com` from the Vercel PROJECT** (Vercel → the
+   domain → Connected Projects), so Vercel's nameservers stop claiming the name.
+   Leave the zone and every other record alone. This is the step the first
+   attempt missed entirely.
+2. **Then add the `www` CNAME** to `aajoo-api-singapore.onrender.com`, TTL 60.
+   Doing it in this order means the CNAME is the only answer for `www`, so
+   there is no gap and no split.
+3. **Watch Render's Custom Domains status, not the site.** Wait for
+   `www.aajoohomes.com` to reach **Verified**, and only then for the
+   certificate. Do not test the site until the certificate is issued — a TLS
+   failure before that point is expected, not a fault.
+4. Confirm both resolvers agree (`dig @1.1.1.1` and `@8.8.8.8`) before calling
+   it done.
 
 A retry is cheap — one record, ~10s each way — but it should be done with
 Render's domain status visible.
