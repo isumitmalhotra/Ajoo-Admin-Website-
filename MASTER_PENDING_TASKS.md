@@ -380,6 +380,153 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a66. Closed 2026-09-27/28 — two ways back in when an admin forgets their password
+
+**Why this came up now.** The client is taking ownership of the super admin
+accounts. Asked whether a reset existed, the answer was no: the only password
+route on the entire admin surface was `POST /admin/change-password`, which needs
+a live session **and** the current password. An admin who forgot theirs had no
+route back through the product at all — the only recovery was writing a bcrypt
+hash into `tbl_admins` by hand.
+
+That is an inconvenience while Zyphex holds the accounts. It stops being one the
+moment the client holds them: if the two people with `super_admin` both forget,
+there is **no higher authority inside the product** and the whole control panel
+is shut. The user's words: *"without them there will be a disaster for them if
+anything goes south."*
+
+**Two routes, for the two shapes the problem has.**
+
+| | Route | Who | Proof of identity |
+|---|---|---|---|
+| a super admin fixes somebody else | `POST /admin/members/password` | super admin, signed in | the caller's own super-admin token |
+| nobody left to ask | `POST /admin/forgot-password` → `/admin/forgot-password/reset` | any **active** admin, no session | a six-digit code emailed to the address on the account |
+
+Neither asks for a current password — the locked-out person is exactly the person
+who cannot supply one. Both set `admin_password_changed_at`, which is what
+"signed out everywhere" means here: `middleware/authorization.js` refuses a token
+issued before it. A reset that left an attacker's existing session alive would be
+theatre.
+
+**The self-service pair is unauthenticated by necessity**, so its rules are the
+renter reset's, which were argued out once already — six digits, five minutes,
+three attempts, destroyed on use, and the same answer whether or not the address
+belongs to an account. Four things are deliberately different:
+
+* **a deactivated admin cannot reset their way back in**, and is not told that is
+  why. Deactivation is the off-switch for someone who should no longer have
+  access; if a mailbox they still control could undo it, it would not be an
+  off-switch. The refusal is the same sentence everybody gets, so it does not
+  answer "is this account still live?"
+* **the code is redeemed against the ADDRESS, never `fpo_userId`.** That column
+  holds *renter* ids for every other type in this table. An id that means two
+  things in one column is how a row ends up belonging to the wrong person.
+* **`admin_email` has no UNIQUE index**, so an address shared by two rows is
+  refused and logged rather than guessed.
+* **the password policy is enforced in validation, before the controller runs**,
+  so a weak-password typo cannot burn the one code they were sent.
+
+`fpo_type 5` keeps the row out of every renter flow that shares
+`tbl_forget_pass_otp`, and `fpo_phone` stays NULL because the SMS flow deletes by
+phone alone.
+
+**Two bugs found in the renter reset while copying its rules.** It locks out one
+request **late** — the third wrong guess is told "that code is not correct", and
+the person learns the code is dead only by trying a fourth time. And its email
+promised **ten** minutes against a five-minute rule, so it told people to wait
+for a code that had already died. The admin flow destroys the code on the attempt
+that uses up the allowance and says so then; the renter email now interpolates
+the constant the server actually enforces.
+
+**The screens.** "Forgot password?" has been on the admin sign-in page for months
+popping a toast that read *"Please contact admin for access"* — which, for a
+super admin, named nobody. It now opens the two-step dialog. Roles & Permissions
+gets a per-member **Reset password** button, super admins only, offered for
+inactive members too. That dialog's one job beyond the form is being honest about
+the channel: the server never emails the password and never echoes it back, so
+whoever typed it has to pass it on, and the dialog says so before and after.
+
+**The bug that stopped it working at all — and had been live elsewhere.** The
+first live test returned *"We could not send the email just now"* and deleted the
+code. Not the mail provider: `tbl_send_emails.se_user_id` is `NOT NULL` with a
+foreign key to `tbl_users`, so mail to anyone who is **not a platform user**
+cannot be recorded. `utils/mailer.sendEmail` opened a transaction, sent the mail,
+inserted that audit row and committed — with **one catch around all of it**. So a
+failed INSERT, *after the provider had already accepted the mail*, was reported
+to the caller as a failed SEND. Every caller acts on that `false`:
+
+* `ForgetPasswordEmail` rolls the OTP back, destroying a code the user has
+* `safetyReport.controller` logs **"SAFETY ALERT NOT DELIVERED to &lt;admin&gt; —
+  the mail provider refused it"**
+* the new reset route deleted the code it had just emailed
+
+**So every SOS and safety alert to the admin team has been delivered and logged
+as refused, with no record kept.** That caller checks the return value
+deliberately — a comment there explains that a `.catch()` would never fire — and
+the value it was checking was wrong. `sendEmail` now sends first, outside any
+transaction, and records after: `false` means only "the provider did not accept
+it", a recording failure is loud but not fatal, mail to a non-user skips the audit
+row with a line saying why, and no pooled connection is held across the HTTP call
+to Brevo (the same shape as the signup leak that could take the API down).
+
+**Verified live** against `api.aajoohomes.com` and the live PlanetScale database:
+unknown address, deactivated admin and active admin all return byte-identical
+status and message; the code lands under type 5 with `fpo_phone` NULL; a wrong
+code increments the counter on the deployed build; no password was touched. The
+probe deliberately never redeems a code — that would change a real admin's
+password with no way to put it back — and never prints one.
+
+**An early version of that probe read the wrong database.** The local `.env`
+points at the old Clever Cloud instance, so the HTTP calls hit live PlanetScale
+while the row assertions were read from Clever Cloud. The responses were real;
+the row counts were meaningless until it was repointed at `.env.planetscale`.
+**Any live check that reads rows must say which database it read.**
+
+**Tests.** 27 new for the two reset routes, 6 for the mailer. Every guard checked
+by removing it and confirming a *named* test fails: 5 mutations on the super-admin
+route, 12 on the self-service pair, 3 on the mailer — none uncovered.
+`apkFindings`' "no /admin route is reachable without an admin guard" caught the
+two public routes, correctly; they are on its allowlist with the reasoning, and a
+**new invariant beside it requires every route on that list to carry a rate
+limiter**, since on a route with no session the limiter is the entire front door.
+200/200 files green.
+
+**Driven on the live site** (www.aajoohomes.com, admin sign-in page), and one
+bug found by looking that no test would have caught: the outstanding-rules line
+read **"an uppercase letter (a–z)"**. The labels from `PasswordRules` are right;
+joining them with `.toLowerCase()` to make a sentence lowercased the character
+class along with the leading capital, so the one hint whose content *is* a
+capital letter said the opposite of what it meant — to somebody already stuck on
+that rule. Fixed in web `9a326a6`.
+
+Also checked live: the dialog opens and carries the typed address across, step 1
+prints the server's bland sentence verbatim, a wrong code is refused with the
+same words an expired one gets, `/admin/members/password` answers **401** with no
+token and **401** with a bad one, and a weak password is refused **422 by
+validation** — before the controller, so no code is burned.
+
+**Not driven:** the **Reset password** button on Roles & Permissions. It sits
+behind an admin sign-in, and a session must not type a password. It is covered by
+9 tests and 5 mutations and a clean `tsc -b`, but a person should click it once.
+
+Backend `b6c8e37` + `24acdeb` · web `5087601` → `9a326a6` · submodule bumps `915f507`, `cf4acce`.
+
+**Open, and needing a decision:**
+
+* **`se_user_id` should be nullable** so admin and safety emails are *recorded*
+  rather than skipped. The migration was written and refused by the sandbox as a
+  production-deploy action, so it is the user's call. The mail itself works
+  either way; what is missing is the ledger row.
+* **Arrival at a real mailbox is unproven.** Brevo accepts the send (the route
+  answers 200), but the only active admin address is
+  `admintest@mailinator.com` and Mailinator drops our mail — the inbox is empty.
+  This is the same open item as the real mailboxes for 100/101.
+* **The two client super-admin accounts are still not created.** `createAdmin`
+  requires a password, which a session must not type. With this work in place
+  there is now a clean way to do it: the client creates the account with any
+  password, or uses **Forgot password?** to set their own — so no password ever
+  has to travel through a chat.
+
 ### 8a65. Closed 2026-09-27 — the client's hero slider had been gone since the DB cutover
 
 **Reported as:** *"there was a slider with 4 images uploaded by client, where did they go?"* — the home page was
