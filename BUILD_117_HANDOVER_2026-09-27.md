@@ -111,10 +111,19 @@ has always used.
 **Also:** one widget that rendered differently on iOS and Android was replaced,
 so the two platforms now draw the same control.
 
-**Not yet driven by us:** these changes are all on the guest-facing property
-page, and we have not been able to exercise them on a device because the new
-database had no guest account when the build was made. Worth a look when you
-are in there.
+**Driven on a device, 27 September.** Builds 112 and 116 both shipped with
+these fixes unverified, because the guest side needs a sign-in and the new
+database had no guest account. It does now, so this is the first time they
+have actually been seen working. On your own listing, *Villa in the hills of
+landour Uttarakhand*:
+
+| Dates | Shown |
+|---|---|
+| Sat 3 – Sun 4 Oct (one Saturday night) | **₹9,000/night**, ₹10,620 total, and *"These dates are priced differently · usually ₹5,000/night"* |
+| Mon 5 – Tue 6 Oct (one midweek night) | **₹5,000/night**, ₹5,250 total, **no extra line** — correct, these dates cost the usual rate |
+
+The headline and the total now agree in both cases (₹9,000 + 18% = ₹10,620;
+₹5,000 + 5% = ₹5,250). On the screenshot you sent, they disagreed by 80%.
 
 ---
 
