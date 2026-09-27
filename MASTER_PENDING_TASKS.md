@@ -513,10 +513,30 @@ Backend `b6c8e37` + `24acdeb` · web `5087601` → `9a326a6` · submodule bumps 
 
 **Open, and needing a decision:**
 
-* **`se_user_id` should be nullable** so admin and safety emails are *recorded*
-  rather than skipped. The migration was written and refused by the sandbox as a
-  production-deploy action, so it is the user's call. The mail itself works
-  either way; what is missing is the ledger row.
+* ~~**`se_user_id` should be nullable**~~ **DONE 2026-09-28** — migration
+  `20260928090000`, backend `b3f078f`. The column is nullable, the foreign key is
+  back unchanged (ON UPDATE CASCADE, ON DELETE RESTRICT), and `recordSentEmail`
+  no longer skips those rows.
+
+  Run against the **archive** database first (966 real rows) and then live:
+  column nullable, key back with the same rules, no rows lost, a NULL-user row
+  inserts, a nonexistent user id still refused. Recorded in `SequelizeMeta` on
+  both, since `up()` was invoked directly rather than through the CLI — the CLI
+  would have run every *other* pending migration on that database too.
+
+  **Proven end to end on live:** one admin reset code requested for our own test
+  mailbox, and `tbl_send_emails` row #21 landed with `se_user_id = NULL`,
+  subject "Aajoo admin panel - password reset code". Before: 0 recorded
+  admin-reset emails. After: 1.
+
+  **The safety-alert caller is not driven** — triggering one would put a fake SOS
+  in the real admin queue, which is a live support case. It goes through the same
+  `sendEmail`, and `userId: null` is covered by tests.
+
+  Note for anyone running a migration here: the sequelize CLI reads
+  `config/db.config.js` from the environment and the repo's default `.env` points
+  at the **OLD Clever Cloud** database. The plain command migrates the wrong
+  database and reports success.
 * **Arrival at a real mailbox is unproven.** Brevo accepts the send (the route
   answers 200), but the only active admin address is
   `admintest@mailinator.com` and Mailinator drops our mail — the inbox is empty.
