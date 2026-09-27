@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>The website's hosting: stay on Vercel, or move it to Render?</title>
+<style>
+  @page { size: A4; margin: 20mm 17mm 22mm; }
+
+  :root {
+    --navy: #1B2447;
+    --teal: #0F766E;
+    --ink:  #1F2937;
+    --muted:#5B6472;
+    --line: #D9DEE7;
+    --soft: #F4F6F9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: #fff;
+    /* Cambria before Georgia deliberately: Georgia ships OLD-STYLE figures, so
+       "six P0s" reads as "six Pos" and every number sits at a different
+       height. This document is full of IDs and money. Cambria has lining
+       figures and prints just as well. */
+    font-family: Cambria, "Palatino Linotype", Georgia, "Times New Roman", serif;
+    font-variant-numeric: lining-nums;
+    font-size: 10.4pt;
+    line-height: 1.58;
+    color: var(--ink);
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---- cover ------------------------------------------------------- */
+  .cover { page-break-after: always; padding-top: 58mm; }
+  .cover .rule { width: 54px; height: 4px; background: var(--teal); margin-bottom: 22px; }
+  .cover h1 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    font-size: 27pt; line-height: 1.2; color: var(--navy);
+    margin: 0 0 16px; font-weight: 600; letter-spacing: -0.4px;
+  }
+  .cover .sub { font-size: 11.5pt; color: var(--muted); margin: 0 0 40px; max-width: 118mm; }
+  .cover .meta {
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 9pt;
+    color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px;
+  }
+  .cover .meta strong { color: var(--navy); font-weight: 600; }
+
+  /* ---- headings ---------------------------------------------------- */
+  h2, h3, h4 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    color: var(--navy); font-weight: 600; page-break-after: avoid;
+  }
+  h2 {
+    font-size: 15pt; margin: 26px 0 12px; padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--line); letter-spacing: -0.2px;
+  }
+  h3 {
+    font-size: 11.4pt; margin: 18px 0 7px; color: var(--teal);
+    letter-spacing: .1px;
+  }
+  h4 { font-size: 10.6pt; margin: 14px 0 6px; }
+
+  p { margin: 0 0 10px; orphans: 3; widows: 3; }
+
+  /* ---- lists ------------------------------------------------------- */
+  ul, ol { margin: 0 0 11px; padding-left: 20px; }
+  li { margin-bottom: 5px; }
+  li > ul, li > ol { margin-top: 5px; }
+
+  /* ---- emphasis & code --------------------------------------------- */
+  strong { color: var(--navy); font-weight: 700; }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 8.7pt; background: var(--soft);
+    border: 1px solid var(--line); border-radius: 3px;
+    padding: 0.5px 4px; color: #33405A;
+    /* long identifiers must not push the page sideways */
+    word-break: break-word;
+  }
+  pre { background: var(--soft); border: 1px solid var(--line); border-radius: 5px;
+        padding: 10px 12px; overflow-x: auto; page-break-inside: avoid; }
+  pre code { border: 0; background: none; padding: 0; font-size: 8.6pt; }
+
+  /* ---- tables ------------------------------------------------------ */
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 16px;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.7pt;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }   /* repeat header across pages */
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  th {
+    background: var(--navy); color: #fff; text-align: left; font-weight: 600;
+    padding: 7px 9px; border: 1px solid var(--navy); line-height: 1.35;
+  }
+  td {
+    padding: 6px 9px; border: 1px solid var(--line); vertical-align: top;
+    line-height: 1.45;
+  }
+  tbody tr:nth-child(even) td { background: #FAFBFD; }
+  td code { font-size: 8.1pt; }
+
+  /* ---- callouts ---------------------------------------------------- */
+  blockquote {
+    margin: 14px 0; padding: 10px 14px;
+    background: #F2F8F7; border-left: 3px solid var(--teal);
+    page-break-inside: avoid;
+  }
+  blockquote p { margin: 0 0 6px; }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  /* ---- screenshots -------------------------------------------------- */
+  /* A screenshot is evidence, so it is framed like one: a hairline border
+     so the page edge is visible against white, and never split across a
+     page break, because half a screen proves nothing. */
+  img {
+    display: block; max-width: 100%; height: auto; margin: 10px auto 4px;
+    border: 1px solid var(--line); border-radius: 5px;
+    page-break-inside: avoid;
+  }
+  /* Markdown puts a lone image in its own paragraph; the alt text follows
+     as the caption. */
+  p > img + em, p > em:only-child {
+    display: block; text-align: center;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.2pt;
+    color: var(--muted); font-style: normal; margin-top: 2px;
+  }
+  p:has(> img) { page-break-inside: avoid; margin: 14px 0 18px; }
+
+  /* The cover meta and the first paragraph of the body were touching. */
+  .cover { margin-bottom: 26px; }
+
+  hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+
+  /* Keep a section heading with the text that follows it. */
+  h2 + p, h3 + p, h2 + table, h3 + table, h2 + ul, h3 + ul { page-break-before: avoid; }
+</style></head>
+<body>
+  <section class="cover">
+    <div class="rule"></div>
+    <h1>The website's hosting: stay on Vercel, or move it to Render?</h1>
+    <p class="sub">Whether to move www.aajoohomes.com off Vercel and onto the Render service that already runs the API — what is live on each today, what the move actually takes, what it costs, what it does to speed, and why the current Vercel plan is the item that cannot wait.</p>
+    <div class="meta">
+      <strong>Aajoo Homes &mdash; website hosting decision</strong><br>
+      Prepared 27 September 2026 by the Zyphex Tech development team<br>
+      Read from the live Vercel and Render dashboards and both providers' published pricing on the same day
+    </div>
+  </section>
+  <h2>1. The question, and the short answer</h2>
+<p>The proposal on the table is to move <code>www.aajoohomes.com</code> off Vercel and onto
+the Render service that already runs the API, so that everything sits with one
+provider and the Vercel bill goes away.</p>
+<p><strong>It is a sound move, and it should not be made this month.</strong> Three findings
+shape that answer, and the third one changes the question entirely:</p>
+<ol>
+<li><p><strong>The move is a software port, not a hosting change.</strong> The website is not a
+folder of files. A piece of server-side code rewrites every page&#39;s SEO
+information before the page loads, and Render&#39;s free static hosting cannot
+run that code. Moving means rebuilding that piece inside the API. Two to
+three working days, and it touches the one layer that Google, WhatsApp link
+previews and an App Store reviewer all depend on.</p>
+</li>
+<li><p><strong>It will not make the site faster.</strong> It saves money and removes a vendor.
+Anyone presenting it as a speed improvement is mistaken — the honest
+expectation is &quot;the same, with one part slightly better and one part
+slightly worse&quot;. Section 6 sets out both sides.</p>
+</li>
+<li><p><strong>The current Vercel plan does not permit this website to exist on it.</strong>
+Vercel&#39;s free &quot;Hobby&quot; plan is for non-commercial personal use. Aajoo Homes
+matches <strong>three</strong> of the five examples Vercel gives for prohibited
+commercial use. This is not a future risk to manage; it is today&#39;s status,
+and the published remedy is that Vercel pauses the deployment.</p>
+</li>
+</ol>
+<p><strong>The recommendation</strong> is therefore in two steps: put Vercel on a paid plan now
+to end the licensing exposure, which takes minutes and no engineering, and do
+the Render move in the quiet fortnight after go-live, then close the Vercel
+subscription. The bridging cost is roughly <strong>$40–60 (₹3,500–5,300) in total</strong>.</p>
+<h2>2. What is live today — read from both dashboards on 27 September 2026</h2>
+<h3>On Vercel</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Account</td>
+<td><code>nameeshpatiyal100&#39;s projects</code>, <strong>Hobby (free)</strong></td>
+</tr>
+<tr>
+<td>Live project</td>
+<td><code>aajao-admin-web-s-iite-epy6</code> — serves <code>www.aajoohomes.com</code>; the bare <code>aajoohomes.com</code> redirects to it</td>
+</tr>
+<tr>
+<td>Built from</td>
+<td><code>nameeshPatiyal100/Aajao-Admin-WebSIite</code>, connected 23 August 2025; every push to the main branch deploys automatically</td>
+</tr>
+<tr>
+<td>Framework</td>
+<td>Vite, with <strong>no custom build settings at all</strong></td>
+</tr>
+<tr>
+<td>Configuration</td>
+<td><strong>Two environment variables</strong>, both production-only: <code>VITE_API_BASE_URL</code> and <code>VITE_GOOGLE_MAPS_KEY</code></td>
+</tr>
+<tr>
+<td>Databases / file storage on Vercel</td>
+<td><strong>None</strong></td>
+</tr>
+<tr>
+<td>Third-party integrations</td>
+<td><strong>One</strong> — Entri Connect, a domain-setup helper</td>
+</tr>
+<tr>
+<td>Certificates</td>
+<td>Two, renewing automatically in late November 2026</td>
+</tr>
+<tr>
+<td>Also hosted here</td>
+<td><strong>The domain&#39;s entire DNS zone — 17 records</strong>, ten of which carry email</td>
+</tr>
+</tbody></table>
+<p>Usage over the last thirty days, against the free plan&#39;s ceilings — nothing is
+under any pressure:</p>
+<table>
+<thead>
+<tr>
+<th>Meter</th>
+<th>Used</th>
+<th>Included</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Function CPU time</td>
+<td>34m 42s</td>
+<td>4 hours</td>
+</tr>
+<tr>
+<td>Function invocations</td>
+<td>10,000</td>
+<td>1,000,000</td>
+</tr>
+<tr>
+<td>Edge requests</td>
+<td>38,000</td>
+<td>1,000,000</td>
+</tr>
+<tr>
+<td>Data transfer</td>
+<td>2.57 GB</td>
+<td>100 GB</td>
+</tr>
+<tr>
+<td>Build storage</td>
+<td>403 MB</td>
+<td>10 GB</td>
+</tr>
+</tbody></table>
+<p>Two housekeeping items surfaced while reading this:</p>
+<ul>
+<li>A <strong>second, abandoned Vercel project</strong> (<code>aajao-frontend-vercel</code>) is still
+serving a build from 17 August. It has no code repository connected, no
+configuration, and no domain. It should be deleted.</li>
+<li><strong>Neither environment variable is set for preview builds.</strong> Every pull-request
+preview is therefore built with no API address and no Maps key baked in, which
+means a preview link is not a valid way to check a fix. A five-minute change.</li>
+</ul>
+<h3>On Render</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Workspace plan</td>
+<td><strong>Pro</strong>, billed to AAJOO HOMES PRIVATE LIMITED</td>
+</tr>
+<tr>
+<td>Live API service</td>
+<td><code>aajoo-api-singapore</code> — Singapore region, <strong>1 CPU / 2 GB, $25 per month</strong></td>
+</tr>
+<tr>
+<td>Serving</td>
+<td><code>api.aajoohomes.com</code>, deploying automatically from <code>nameeshPatiyal100/aajaoBackend</code></td>
+</tr>
+<tr>
+<td>Load over the past 48 hours</td>
+<td><strong>CPU close to 1%. Memory under 10%.</strong> One instance.</td>
+</tr>
+<tr>
+<td>Custom domains</td>
+<td><strong>1 used of 15 included</strong></td>
+</tr>
+<tr>
+<td>Bandwidth</td>
+<td><strong>898 MB used of 25 GB included</strong></td>
+</tr>
+<tr>
+<td>Charges this month</td>
+<td>$9.93 to date, projected $16.15 for September — a part month, because the Singapore service is only days old</td>
+</tr>
+</tbody></table>
+<p><strong>The Singapore machine is almost entirely idle</strong>, and the plan already
+includes fourteen unused custom domains and 24 GB of unused monthly bandwidth.
+This is the single strongest fact in favour of the move: the capacity to serve
+the website has already been bought and is sitting unused.</p>
+<blockquote>
+<p><strong>Two old services are still running in Oregon.</strong> <code>aajaodev</code> and <code>aajooHomes</code>
+are both live, the second untouched for two years. They cost nothing — they
+are on free instances — but <code>aajaodev</code> still answers requests and still
+redeploys on every backend commit, which makes it a stale copy of the API
+that could be reached by mistake. These should be suspended. It is unrelated
+to the decision in this document and can be done this week.</p>
+</blockquote>
+<hr>
+<h2>3. The licensing problem, which is the real reason to act</h2>
+<p>Vercel&#39;s Hobby plan is free because it is not for businesses. Vercel&#39;s fair use
+guidelines restrict Hobby accounts to non-commercial personal use, and define
+commercial use as any deployment serving the financial gain of anyone involved
+in any part of producing the project — explicitly including a paid consultant
+writing the code.</p>
+<p>Vercel lists five examples. <strong>Aajoo Homes matches three of them:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Vercel&#39;s example</th>
+<th>Aajoo Homes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Requesting or processing payment from visitors of the site</td>
+<td>The Razorpay checkout</td>
+</tr>
+<tr>
+<td>Advertising the sale of a product or service</td>
+<td>Property listings and bookings</td>
+</tr>
+<tr>
+<td>Receiving payment to create, update, or host the site</td>
+<td>Zyphex Tech is engaged to build it</td>
+</tr>
+</tbody></table>
+<p>There is no interpretation under which this is a personal project. The site is
+not currently over any usage limit, so nothing has been flagged — but the
+published remedy for a policy breach is that Vercel pauses the account or the
+deployment, and a pause takes <code>www.aajoohomes.com</code> offline without notice.</p>
+<p><strong>Reading this changed our recommendation.</strong> Before it, the choice was between
+$0 and a two-to-three-day migration, and waiting looked free. It is not free —
+staying on Hobby is carrying an outage risk that has nothing to do with traffic
+and cannot be planned around.</p>
+<p>There is a second, quieter consequence. The Hobby plan has no team
+collaboration, so the entire production website sits inside one personal
+account with no second owner and no way to grant anyone defined access. A paid
+plan fixes that as a side effect.</p>
+<hr>
+<h2>4. The four options</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Cost</th>
+<th>Engineering</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>A. Stay on Hobby</strong></td>
+<td>$0</td>
+<td>none</td>
+<td><strong>Not viable.</strong> Prohibited use of the plan; the remedy is a pause</td>
+</tr>
+<tr>
+<td><strong>B. Vercel Pro</strong></td>
+<td>$20/mo ≈ ₹1,780</td>
+<td>none</td>
+<td>Viable and instant. Also buys team seats, spend controls and a day of logs instead of an hour</td>
+</tr>
+<tr>
+<td><strong>C. Fold into the Singapore API service</strong></td>
+<td><strong>$0 extra</strong></td>
+<td>2–3 days</td>
+<td><strong>The destination.</strong> Capacity, domains and bandwidth are already paid for</td>
+</tr>
+<tr>
+<td><strong>D. A separate Render web service</strong></td>
+<td>$7/mo ≈ ₹620</td>
+<td>2–3 days</td>
+<td>Same work as C for no benefit. A free instance would sleep and make the first visitor wait</td>
+</tr>
+</tbody></table>
+<p><strong>A fifth option does not exist, though it looks like it should.</strong> Render&#39;s
+static site hosting is genuinely free and would be the obvious home for a
+website — but Render&#39;s own documentation is explicit that a static site cannot
+run server-side code. Our SEO layer is server-side code. Choosing it would mean
+silently giving up SEO Phase 1, which was commissioned and delivered. That is
+covered next.</p>
+<hr>
+<h2>5. What moving actually takes</h2>
+<p>The website is a Vite application, which does produce a folder of static files.
+If that were all, this would be a half-day job.</p>
+<p>It is not all. Every page request is currently routed through a piece of
+server-side code (<code>api/seo-render.ts</code> and a supporting file, about 970 lines
+between them). It asks the API what that specific URL&#39;s title, description and
+preview image should be, and rewrites the page&#39;s <code>&lt;head&gt;</code> before the browser
+renders anything. That is SEO Phase 1.</p>
+<p><strong>Without it, every page ships the same generic information.</strong> Around 29,000
+listings would share one title and one preview image, and every link pasted
+into WhatsApp would preview as the home page.</p>
+<p>So the work is:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Task</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Rebuild the SEO renderer as a route inside the API service. Both files already use web-standard code rather than Vercel-specific code, so the logic transfers; it is the wiring that is new</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Replace its network call to the API with a direct internal call — this is where the one genuine speed gain comes from</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Serve the website&#39;s files ahead of the renderer: a real file wins, everything else gets rendered</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Move the website build into the deployment, with both environment variables present <strong>at build time</strong> — Vite writes them permanently into the files it produces, so setting them afterwards does nothing</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Delete the two Vercel-specific configuration files, which exist only to work around Vercel behaviour</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Automated tests covering each of the above</td>
+</tr>
+</tbody></table>
+<p>Then, before anything is pointed at it: deploy to Render&#39;s own address while
+nothing uses it, and check a dozen real URLs with a search-engine crawler —
+home page, a listing, FAQ, About, the account-deletion page, a blog post, a
+missing page — confirming each returns the correct status <strong>and</strong> the correct
+title. A page can look perfect in a browser and still tell Google it does not
+exist; that specific fault has occurred on this project before.</p>
+<p>Then the switch itself is one DNS record, and reversing it is the same record.
+The Vercel project stays deployable for 48 hours so that rollback stays real.</p>
+<p><strong>One known hazard, named so it cannot be stumbled into.</strong> The SEO renderer
+reads the page shell over the network. If that request is allowed to route back
+into the renderer, the site fails with an infinite loop. This has taken this
+site down once before. The port reads the shell directly from disk, which
+removes the possibility rather than guarding against it.</p>
+<hr>
+<h2>6. What changes for speed</h2>
+<p>Today the SEO renderer runs on Vercel&#39;s edge network, at a location near the
+visitor — Mumbai, for most Indian traffic — and makes one call to Singapore for
+the page&#39;s data. After the move, everything is served from Singapore.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Page HTML</strong></td>
+<td><strong>Slightly better.</strong> The SEO lookup stops being a network round trip and becomes an internal call</td>
+</tr>
+<tr>
+<td><strong>Images, scripts, styling</strong></td>
+<td><strong>Slightly worse.</strong> A 3.1 MB bundle travels from Singapore rather than from a Mumbai edge location</td>
+</tr>
+</tbody></table>
+<p>The second effect is real and measurable, and there is a specific fix: Render&#39;s
+<strong>Edge Caching</strong>, which serves static files from locations near the visitor.
+<strong>It is currently switched off</strong> on the Singapore service — the cache profile
+is set to None. Turning it on is part of the migration, not an afterthought,
+and we would measure load times from India before and after rather than assume.</p>
+<p>Net expectation: <strong>broadly unchanged</strong>, provided edge caching is enabled. We
+would rather say that plainly now than present a saving as a performance win.</p>
+<hr>
+<h2>7. What it costs, side by side</h2>
+<p>Converted at roughly ₹89 to the dollar. Vercel prices exclude GST.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Now</th>
+<th>Year 1</th>
+<th>Each year after</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>A. Hobby</strong></td>
+<td>$0</td>
+<td>$0</td>
+<td>$0 — but prohibited, and pausable without notice</td>
+</tr>
+<tr>
+<td><strong>B. Vercel Pro</strong></td>
+<td>$20/mo</td>
+<td><strong>$240</strong> ≈ ₹21,400</td>
+<td>$240 ≈ ₹21,400</td>
+</tr>
+<tr>
+<td><strong>C. Into the Singapore service</strong></td>
+<td>$0 extra</td>
+<td><strong>$0</strong></td>
+<td><strong>$0</strong></td>
+</tr>
+<tr>
+<td><strong>D. Separate Render service</strong></td>
+<td>$7/mo</td>
+<td>$84 ≈ ₹7,500</td>
+<td>$84 ≈ ₹7,500</td>
+</tr>
+</tbody></table>
+<p><strong>The saving from moving is about $240 (₹21,400) a year.</strong> It is worth being
+clear-eyed about that figure: it is real and it recurs, but it is smaller than
+two to three days of engineering time in the first year. The move pays for
+itself from year two onward.</p>
+<p><strong>The stronger arguments for moving are not financial:</strong></p>
+<ul>
+<li>One provider, one dashboard, one bill, one place where both the website and
+the API live.</li>
+<li>One fewer account whose terms are currently being breached.</li>
+<li>Capacity already purchased and sitting at 1% utilisation.</li>
+</ul>
+<p><strong>And the strongest argument against moving <em>right now</em> is sequencing.</strong> Ahead
+of it are Razorpay live activation, the host listing wizard fault, and getting
+an iOS build onto TestFlight. This work touches the layer that search engines,
+shared links and app-store reviewers all see, and a break in that layer is
+invisible for days and expensive to discover late.</p>
+<hr>
+<h2>8. The recommendation</h2>
+<p><strong>Move the website to Render — after go-live, not during it.</strong></p>
+<table>
+<thead>
+<tr>
+<th>When</th>
+<th>Step</th>
+<th>Who</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>This week</strong></td>
+<td>Upgrade Vercel to Pro. Ends the licensing exposure immediately, requires no engineering, and can be cancelled any month</td>
+<td>Client — billing details</td>
+<td>$20/mo</td>
+</tr>
+<tr>
+<td><strong>This week</strong></td>
+<td>Add the two environment variables to preview builds; delete the abandoned Vercel project; suspend the two old Oregon services</td>
+<td>Zyphex</td>
+<td>$0</td>
+</tr>
+<tr>
+<td><strong>After go-live</strong></td>
+<td>Build and verify the port on Render&#39;s own address, with nothing pointed at it</td>
+<td>Zyphex</td>
+<td>2–3 days</td>
+</tr>
+<tr>
+<td><strong>Then</strong></td>
+<td>Switch one DNS record; keep Vercel deployable for 48 hours</td>
+<td>both</td>
+<td>$0</td>
+</tr>
+<tr>
+<td><strong>48 hours later</strong></td>
+<td>Turn off the Vercel project and cancel the Pro subscription</td>
+<td>Client</td>
+<td>back to $0</td>
+</tr>
+</tbody></table>
+<p>Total bridging cost, assuming two to three months on Pro: <strong>$40–60
+(₹3,500–5,300)</strong>. Vercel also offers a Pro trial, which may reduce this further
+— worth checking at the point of upgrading.</p>
+<p><strong>What we are explicitly not recommending:</strong> starting the migration this month
+to avoid two months of subscription. Saving $40 by putting a high-consequence
+change onto the go-live critical path is a poor trade.</p>
+<h3>One thing that should not move with it</h3>
+<p>The domain&#39;s DNS — all 17 records — currently lives at Vercel. It is tempting
+to move it at the same time so that nothing is left behind.</p>
+<p><strong>Render does not offer DNS hosting at all</strong>, so there is no &quot;move it to
+Render&quot; option; the realistic destinations are the domain registrar or
+Cloudflare. More importantly, ten of those records carry email, and every
+one-time passcode on this platform is sent by email — signup, sign-in, password
+reset. A mistake there locks everyone out of the site and the apps, and looks
+exactly like a software fault.</p>
+<p>If the zone is moved at all, it should be a separate change made after the
+website move has been stable for two days — never in the same window, or a mail
+failure has two possible causes and no way to tell them apart. A full record
+inventory and a safe procedure are documented separately and are ready when
+that decision is taken.</p>
+<hr>
+<h2>9. Decisions needed from you</h2>
+<ol>
+<li><strong>Approve the Vercel Pro upgrade</strong> — $20/month, cancellable, ends the
+licensing exposure this week. This is the only item that cannot wait.</li>
+<li><strong>Confirm the migration is wanted</strong> at roughly two to three days of
+engineering, scheduled for after go-live, saving about ₹21,400 a year
+thereafter.</li>
+<li><strong>Confirm SEO Phase 1 behaviour must be preserved</strong> through the move. We
+assume yes; it was commissioned and delivered, and it is the reason the
+cheaper static-hosting route is not available.</li>
+</ol>
+<hr>
+<p><em>Prices read from Vercel&#39;s and Render&#39;s published documentation and from both
+live dashboards on 27 September 2026. Usage figures are the last thirty days as
+reported by each provider. The Vercel plan restrictions quoted are from
+Vercel&#39;s own fair use guidelines.</em></p>
+
+</body></html>
