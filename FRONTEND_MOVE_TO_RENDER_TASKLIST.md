@@ -207,6 +207,54 @@ than Vercel's `must-revalidate`: a returning visitor does not even ask.
 
 **The client document says "slightly worse" for assets and needs correcting.**
 
+## PHASE 3 ATTEMPTED AND ROLLED BACK — 27 September
+
+**The site is back on Vercel and healthy.** `/`, `/faq` and `/delete-account`
+all 200 with their own titles. The rollback took about ten seconds.
+
+### What was done
+
+There is **no `www` record in the zone** — which is why it could not be found
+to edit. `www` resolves through the `*` wildcard ALIAS plus the Vercel
+"Connected Projects" entry, both managed by Vercel. The move is therefore to
+**add** an explicit `www` CNAME, which beats the wildcard. Added:
+`www CNAME aajoo-api-singapore.onrender.com`, TTL 60.
+
+DNS worked exactly as intended. Cloudflare's resolver picked it up within
+seconds and followed the chain to Render.
+
+### Why it was rolled back
+
+**Render never issued a certificate for `www.aajoohomes.com`.** After 15+
+minutes the TLS handshake was still being refused:
+
+```
+SSL alert number 40 (handshake_failure)
+no peer certificate available
+```
+
+So for that window the site was in a split state: resolvers still holding the
+cached answer got Vercel and were fine, while any resolver that had picked up
+the new record got a TLS failure. With no real customers the blast radius was
+small, but the duration was unknown and unreadable, and that is not a state to
+leave open.
+
+### Before retrying — do these first
+
+1. **Read Render's Custom Domains status.** It shows a per-domain state and any
+   error, and it was never read before the DNS was changed; the section is
+   lazily rendered and refused to load during the attempt. That is the missing
+   diagnostic and the reason this was flown blind.
+2. **Consider removing the apex from Render.** Adding `www` also registered
+   `aajoohomes.com` automatically, and that name still points at Vercel. If
+   Render is validating them as a pair, the apex can never validate and may be
+   blocking issuance for both. Leaving only `www` registered isolates it.
+3. **Then re-add the record and watch the certificate**, not the DNS. DNS was
+   never the problem.
+
+A retry is cheap — one record, ~10s each way — but it should be done with
+Render's domain status visible.
+
 ### Still to do
 
 1. Set `VITE_GOOGLE_MAPS_KEY` on the Singapore service — **maps are broken on
