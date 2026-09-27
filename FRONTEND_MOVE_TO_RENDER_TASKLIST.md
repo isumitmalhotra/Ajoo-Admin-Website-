@@ -298,6 +298,25 @@ That single screen exercises the renderer, the SPA, an authenticated-shaped API
 round trip from the `www` origin, the dated-pricing engine and the GST banding.
 All correct.
 
+### What is on Render and what is still Vercel — measured 2026-09-27
+
+| | Serves | Who |
+|---|---|---|
+| `www.aajoohomes.com` | the website | **Render** (`Server: cloudflare`) |
+| `api.aajoohomes.com` | the API **and** the website | **Render** (`Server: cloudflare`) |
+| `aajoohomes.com` (apex) | a 307 to `www` | **Vercel** |
+| `*.aajoohomes.com` (wildcard) | 404 for any other subdomain | **Vercel** |
+| the DNS zone | all 18 records | **Vercel** (`ns1`/`ns2.vercel-dns.com`) |
+
+So the **site** is entirely off Vercel. What is left is the apex redirect, the
+catch-all wildcard, and the nameservers.
+
+**A correction to an earlier claim in this file.** It said the Vercel Pro
+licensing question became "moot" at cutover. It did not — it became *smaller*.
+Vercel is still serving the apex of a commercial site on a Hobby plan. The
+exposure ends when the apex moves and the project is switched off, not when
+`www` moved.
+
 ### Still open
 
 * **Do not turn the Vercel project off yet.** Rollback is deleting one DNS
