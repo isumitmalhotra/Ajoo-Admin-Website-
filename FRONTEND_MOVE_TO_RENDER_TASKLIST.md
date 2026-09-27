@@ -73,7 +73,66 @@ Vercel's own types, so the logic moves as-is. Only two things are Vercel's:
 
 ---
 
-## PHASE 1 — DONE, 27 September 2026
+## PHASE 1+2 — DONE AND DEPLOYED, 27 September 2026
+
+**The website is live on the Singapore service**, at `api.aajoohomes.com`,
+serving alongside the API. `www.aajoohomes.com` is **still on Vercel** — no DNS
+has changed, so this is Phase 2's "deploy it with nothing pointed at it", and
+the cutover is still one record away.
+
+**Corrected from the entry below: it is NOT a second $7 service.** The user
+overruled that, rightly. The website is a **git submodule at `web/`** of the
+backend repo; the Dockerfile builds it in its own stage and copies only `dist/`
+and the renderer into the runtime image. **$0 extra.** Render checks out private
+submodules under the same account without any extra configuration — confirmed
+in the build log, which printed `building the website` rather than the
+not-checked-out warning.
+
+The cost is coupling, not money: a website change now needs a one-line commit
+in the backend repo to move the pointer, and clones need `--recurse-submodules`.
+
+Backend `8481e88` + `203c0b8` · website `820b6f6`.
+
+### What running it found that no test did
+
+* **`app.js` answered `/` with "Hello Backend!"**, registered long before the
+  mount, so it won the home page outright — the one page on the site that would
+  never render, failing with a cheerful 200. Every test asserted "API routes
+  beat the website"; this is an API route named `/`. Fixed with
+  `websiteIsMounted()`, and there is a test for it now.
+* **Three files fell back to `https://aajaodev.onrender.com`** — the service
+  suspended the same morning. `apiConfigs.ts`, `apis.ts` and the axios instance.
+  Vite bakes the value in at build time, so any build without
+  `VITE_API_BASE_URL` shipped an app where every request failed. Now
+  `api.aajoohomes.com`, so an unset variable fails safe.
+* A first attempt to verify that proved nothing: `.env.local` sets the variable
+  to the dev proxy `/__api` and a real process env beats a `.env` file, so the
+  bundle under test was a development one. Re-verified with the file moved
+  aside.
+
+### Verified after deploy
+
+| | |
+|---|---|
+| Website on the service | `/` `/faq` `/about` `/delete-account` all 200 with their own titles; `/no-such-page` 404 |
+| API unchanged | `/health` 200; `/common/categories` fingerprint `a1a4dda4140ad0ea`, identical to before the deploy |
+| Vercel | `www.aajoohomes.com` still served by Vercel (`Server: Vercel`), untouched |
+
+### Still to do
+
+1. Set `VITE_GOOGLE_MAPS_KEY` on the Singapore service — **maps are broken on
+   the Render copy until this exists**, because Vite needs it at build time.
+   Then redeploy. (`VITE_API_BASE_URL` is no longer required thanks to the
+   fallback fix, but setting it explicitly is better than relying on a default.)
+2. Turn on **Edge Caching** — already on for this service, and it now serves the
+   3.1 MB bundle, so it is doing real work.
+3. Measure load times from India, before and after.
+4. Phase 3: point `www` at the service, keep Vercel deployable for 48 hours.
+
+---
+
+## SUPERSEDED — the second-service plan, 27 September
+
 
 Frontend repo `94d5cf1` + `424e91c`. Not deployed anywhere yet; Vercel is
 untouched and still serving the site.
