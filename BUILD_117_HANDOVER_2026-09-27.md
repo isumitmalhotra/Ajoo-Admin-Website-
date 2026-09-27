@@ -1,4 +1,4 @@
-# Build 116 — please install this before any further app testing
+# Build 117 — please install this before any further app testing
 
 **27 September 2026.** For Nameesh and the tester.
 
@@ -8,13 +8,15 @@
 
 | | |
 |---|---|
-| Filename | `aajoo-homes-1.0.0-build116-release.apk` |
-| sha256 | `0afb73e2f18cc6c4eb617f13473a6d0ed67a1d981db5ca84f4799ec83c8eac57` |
+| Filename | `aajoo-homes-1.0.0-build117-release.apk` |
+| sha256 | `787f7aa4ceeb91957b500a96906c7cbb9447fb7600e1154f1eb6285c26864cc6` |
 | Size | 100,477,287 bytes (95.8 MB) |
 | Package | `com.aajoo.aajoohomes` |
-| versionName / versionCode | 1.0.0 / **116** |
+| versionName / versionCode | 1.0.0 / **117** |
 | Points at | `https://api.aajoohomes.com` — verified inside the artifact |
 | Payments | **Test mode** (`rzp_test_…`). No real money can move. |
+
+This replaces build 116, which was never circulated.
 
 ---
 
@@ -24,7 +26,7 @@
 different database.**
 
 We confirmed this by reading the compiled apps themselves, not from notes:
-build 112 contains `aajaodev.onrender.com`; builds 113 and 116 contain
+build 112 contains `aajaodev.onrender.com`; builds 113 onward contain
 `api.aajoohomes.com`. Build 113 was the first one ever pointed at a production
 host.
 
@@ -56,7 +58,7 @@ a stale session is exactly the kind of thing that produces a confusing failure
 an hour later. There is nothing worth keeping in the old install.
 
 1. Uninstall **Aajoo Homes** from the phone
-2. Install `aajoo-homes-1.0.0-build116-release.apk`
+2. Install `aajoo-homes-1.0.0-build117-release.apk`
 3. Sign in again
 
 ---
@@ -64,13 +66,13 @@ an hour later. There is nothing worth keeping in the old install.
 ## How to confirm you are on the right build
 
 **The app itself will not tell you.** Settings shows only "Version 1.0.0" —
-the build number is deliberately not shown to users, so 112 and 116 look
+the build number is deliberately not shown to users, so 112 and 117 look
 identical from inside the app.
 
 Check it from Android instead:
 
 > **Settings → Apps → Aajoo Homes → scroll to the bottom**
-> It should read **1.0.0 (116)**. The number in brackets is the one that
+> It should read **1.0.0 (117)**. The number in brackets is the one that
 > matters.
 
 If you want to be certain the downloaded file is the right one before
@@ -78,9 +80,9 @@ installing, its sha256 is above.
 
 ---
 
-## What is in 116
+## What is in 117
 
-The two items from the 26 September screenshots:
+**The two items from the 26 September screenshots:**
 
 * **The weekend price headline.** A one-night Saturday stay showed
   "₹5,000/night" above a "₹10,620 total". The total was correct — the host had
@@ -94,17 +96,29 @@ Both were present on Android as well — it is one codebase, so this was never
 an iOS-specific fault. The real gap was between the app and the **website**,
 which had already fixed both.
 
-Also: one widget that rendered differently on iOS and Android was replaced, so
-the two platforms now draw the same control.
+**New in 117 — the app now says *why* a price moved.** Correcting the headline
+above fixed one confusion and created another: a guest who sees ₹5,000 on the
+search card and ₹9,000 on the listing has no way to know the host set a
+different weekend rate, so it looks as though the price changed on its own.
+The listing now adds, underneath the figure:
 
-**Not yet driven by us:** both fixes are on the guest-facing property page,
-and we have not been able to exercise them on a device because the new database
-had no guest account at the time of the build. Worth a look when you are in
-there.
+> *These dates are priced differently · usually ₹5,000/night*
+
+Only when the chosen dates genuinely cost something other than the usual rate —
+an ordinary midweek stay carries no extra line. This is the wording the website
+has always used.
+
+**Also:** one widget that rendered differently on iOS and Android was replaced,
+so the two platforms now draw the same control.
+
+**Not yet driven by us:** these changes are all on the guest-facing property
+page, and we have not been able to exercise them on a device because the new
+database had no guest account when the build was made. Worth a look when you
+are in there.
 
 ---
 
-## After everyone is on 116
+## After everyone is on 117
 
 Once you both confirm the install, we will switch off the old Oregon server.
 It is the last thing keeping the abandoned database reachable, and leaving it

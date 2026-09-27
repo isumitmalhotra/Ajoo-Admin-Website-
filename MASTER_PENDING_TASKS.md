@@ -38,8 +38,18 @@
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize → `aajaodev.onrender.com`) ·
 > Mobile `aajoo_app_2026/` (Flutter). Deploy = push to `main`; **DB migrations do NOT auto-run.**
 > **Go-live sequence (2026-09-19, Render Pro + PlanetScale bought): `GO_LIVE_RUNBOOK_2026-09-19.md`** — steps 0.1–0.4 first (Razorpay key rotation, repo private, test passwords, build 106).
-> Tester build in circulation: **109 (1.0.0+109)**, `aajoo-homes-1.0.0-build109-release.apk` at repo root
-> (2026-09-21 14:37, versionCode 109, 95.6 MB, sha256 `064cc19b501afd11…`), built with `tool/build_release.ps1`
+> Tester build to circulate: **117 (1.0.0+117)**, `aajoo-homes-1.0.0-build117-release.apk` at repo root
+> (2026-09-27, versionCode 117, 95.8 MB, sha256 `787f7aa4…4cc6`), built with `tool/build_release.ps1`.
+> **Anything ≤112 points at `aajaodev.onrender.com` AND the old Clever Cloud database** — it does not fail, it
+> works against a world the live site cannot see. See [[old-build-phantom-database]] and the handover note.
+> **117** — 2026-09-27, `sha256 787f7aa4…4cc6`, 95.8 MB, versionCode **117** (read with `aapt2 dump badging`,
+> not inferred). **116 plus one line:** when the chosen nights are not priced at the listing's usual rate, the
+> property page now says *"These dates are priced differently · usually ₹X/night"*, which is what the website has
+> always said. Without it a guest who saw ₹5,000 on the search card and ₹9,000 on the listing concludes the price
+> moved on its own. `differsFromFlat` had been written in `nightly_rates.dart` for exactly this and never called.
+> Verified inside the artifact: the string is present, `api.aajoohomes.com` is present, `aajaodev.onrender.com` is
+> absent. 657 tests pass, `flutter analyze` 0 errors / 0 warnings (367 style infos). Monorepo `93cc410`.
+> **This is the build to circulate** — handover note `BUILD_117_HANDOVER_2026-09-27.md`. Supersedes **116**
 > **116** — 2026-09-26, `sha256 0afb73e2…ac57`, 95.8 MB. The client's two from the 26 September screenshots:
 > the weekend headline (₹5,000/night above a ₹10,620 total for ONE night — the total was right, the headline read
 > the flat `property_price` column) and the minimum stay (a priced 1-night stay under "Minimum stay 3 nights").
