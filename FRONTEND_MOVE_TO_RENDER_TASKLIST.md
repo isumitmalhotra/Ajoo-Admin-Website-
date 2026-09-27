@@ -73,7 +73,83 @@ Vercel's own types, so the logic moves as-is. Only two things are Vercel's:
 
 ---
 
-## PHASE 1 — build it (Claude)
+## PHASE 1 — DONE, 27 September 2026
+
+Frontend repo `94d5cf1` + `424e91c`. Not deployed anywhere yet; Vercel is
+untouched and still serving the site.
+
+### The correction that changes the cost
+
+Phase 0.1 assumed the website would fold into the Singapore API service for
+**$0 extra**. **It cannot, cleanly.** That service is built from a Dockerfile
+whose build context is the *backend* repo (`COPY . .`), and the frontend is a
+different private repo. Folding them means a git submodule or a credentialed
+clone inside the Docker build — and then every frontend change needs a backend
+commit to bump the pointer, which is a bad trade for velocity.
+
+So this becomes a **second Render web service, built from the frontend repo**:
+
+| | |
+|---|---|
+| Cost | **$7/month** (Starter). A free instance spins down, and a 50-second cold start for whoever arrives first is not acceptable on a public site. |
+| Saving vs Vercel Pro | $20 − $7 = **$13/month, ~₹13,900/year** — not the $240/year quoted in the client document, which assumed $0 |
+| Custom domains | free — 1 of 15 used on the Pro workspace |
+| Bandwidth | free — 898 MB of 25 GB used; the site adds ~2.6 GB |
+
+**The in-process call (old task 1.2) is dropped and barely matters.** Both
+services sit in Singapore, so the resolver call is a same-region hop of roughly
+a millisecond rather than the cross-continent one it replaced.
+
+### What was built
+
+| | |
+|---|---|
+| `server.mjs` | The production server. No new runtime dependencies — `node:http`, gzip for text, content-hashed assets `immutable`, everything else short-TTL. Drains on SIGTERM. |
+| `api/seo-render.ts` | Two changes only: a `setShell()` export, and the API_BASE fallback moved off `aajaodev.onrender.com` (suspended today — a default that answers 503 makes every page render untitled and reads as a resolver bug). |
+| `package.json` | `esbuild` declared (`buildSeoHandler.mjs` always needed it and said so in its own comment; a production install would have dropped it). `build` left **byte-for-byte unchanged** because Vercel runs it; `build:web` is Render's. |
+| `tests/theServerReadsItsShellFromDisk.test.mjs` | Boots the real server against a fixture and a stub API. 8 tests. |
+
+### The two traps, closed by construction rather than guarded
+
+* **The 508 loop is gone.** The shell is read from `dist/index.html` at boot.
+  Nothing fetches it, so the stale-CDN shell, the Vercel-login-page-as-the-site
+  and the loop are all unreachable. The test asserts the stub API is never asked
+  for a shell — not that the source says the right thing.
+* **No middleware.** `middleware.ts` existed only because Vercel's filesystem
+  check beats its own rewrites. `/` is not a file, so it falls through to the
+  renderer normally. Verified: the home page renders its real title.
+
+### Verified against the LIVE API, and against live Vercel
+
+Same status **and** same `<title>` as `www.aajoohomes.com` on every path
+checked — `/`, `/faq`, `/about`, `/delete-account`, `/blog`, `/login`,
+`/properties` and a missing path, including both 404s. `robots.txt` comes from
+the API; assets serve from disk. 73/73 head-rewriting tests, 75/75 test files,
+full build green.
+
+One self-correction worth recording: the traversal test in that file originally
+pointed the server at a temp directory with nothing beside it, so **it passed
+with the guard deleted**. It now uses a sentinel file and was confirmed to fail
+without the guard.
+
+### Render service settings (Sumit)
+
+| Setting | Value |
+|---|---|
+| Type | Web Service, **Singapore**, Node |
+| Repository | `nameeshPatiyal100/Aajao-Admin-WebSIite`, branch `main` |
+| Instance | Starter ($7) |
+| Build command | `npm ci && npm run build:web` |
+| Start command | `node server.mjs` |
+| Env (**at build time** — Vite bakes them in) | `VITE_API_BASE_URL=https://api.aajoohomes.com`, `VITE_GOOGLE_MAPS_KEY=…` |
+| Env (runtime) | `SEO_API_BASE_URL=https://api.aajoohomes.com` |
+| After first deploy | turn on **Edge Caching → Common static files** (this service serves the 3.1 MB bundle; the API service's setting does not apply to it) |
+
+Deploy it with **no custom domain attached** first — that is Phase 2.
+
+---
+
+## PHASE 1 — the original plan, for reference
 
 | # | Task |
 |---|---|
