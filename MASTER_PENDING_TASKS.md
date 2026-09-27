@@ -36,7 +36,8 @@
 >
 > **Repos and where they run (rewritten 2026-09-27 — this changed materially):**
 > BE `D:/Projects/aajaoBackend-render` (Node/Express/Sequelize) → Render **`aajoo-api-singapore`**, which serves
-> **both** `api.aajoohomes.com` **and the website** `www.aajoohomes.com`. `aajaodev.onrender.com` is
+> **both** `api.aajoohomes.com` **and the website** `www.aajoohomes.com` **and the apex redirect**
+> `aajoohomes.com` → `www` (301). `aajaodev.onrender.com` is
 > **SUSPENDED** — do not use it in any config, command or build. ·
 > FE `D:/Projects/aajao-frontend-vercel` (React/Vite) → **no longer deploys itself.** It is a git submodule at
 > `web/` of the backend repo, built inside that repo's Dockerfile. **A website change needs a commit here AND a
@@ -425,7 +426,28 @@ engine and the GST banding.
 
 Backend `8481e88` → `538676d` · website `820b6f6` · DNS: one record, `www CNAME aajoo-api-singapore.onrender.com`.
 
-**Do NOT turn the Vercel project off yet.** Rollback is deleting that one record, and that only works while the
+**The apex moved the same day.** `aajoohomes.com` now redirects from Render — one A record to `216.24.57.1`,
+which won cleanly over Vercel's managed ALIAS. Certificate took ~11 minutes and **nothing broke during it**: caches
+were still serving Vercel's answer, so the apex kept working throughout. Deep paths are preserved
+(`/faq` → `www.aajoohomes.com/faq`). An unplanned gain: Vercel answered the apex with a **307**, Render answers
+**301**, so the redirect now passes ranking to the canonical `www`.
+
+**The wildcard was deliberately NOT removed.** `*.aajoohomes.com` still resolves to Vercel and 404s. It is
+Vercel-managed — it exists because the domain is connected to the Vercel project, so deleting it by hand would
+likely be undone — and the Vercel project is still the rollback. Nothing depends on it: every name that matters
+(`www`, `api`, `email`, all four `_domainkey` selectors) has an explicit record, and a wildcard that only ever
+returns 404 cannot have anything working through it. **It comes off when the project does.**
+
+> **Render's Custom Domains panel cannot be trusted.** It reported `www.aajoohomes.com` as *"Waiting for DNS /
+> Waiting for Verification"* while that domain had been serving for hours with a valid certificate, and
+> `api.aajoohomes.com` as certificate *"Unknown"* while working perfectly. An earlier version of the plan said to
+> watch that panel. **The TLS handshake is the only reliable signal** — poll the host, not the dashboard.
+
+**What is still Vercel:** only the **DNS zone** (`ns1`/`ns2.vercel-dns.com`, 19 records) and the project itself as
+rollback. Moving the zone is optional — Render sells no DNS product, so it would mean Cloudflare or GoDaddy, and
+ten of those records carry the mail that every OTP depends on. `DNS_ZONE_INVENTORY.md` has the full list.
+
+**Do NOT turn the Vercel project off yet.** Rollback is deleting those two records, and that only works while the
 project is still deployable. After 48 quiet hours: move the apex to Render, **then** switch Vercel off — that order,
 because switching Vercel off first kills the apex redirect.
 
