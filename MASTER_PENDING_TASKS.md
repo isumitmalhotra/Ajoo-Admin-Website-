@@ -437,9 +437,20 @@ anyone on build ≤112 is signing up, listing and booking **into a database the 
 error; it works perfectly against a world that does not exist. **Before triaging any report dated after the 09-24
 cutover, establish which build the reporter is on.**
 
-**Next, in order:** get the client and tester onto build 116 → then suspend `aajaodev` → turn on Render **Edge
-Caching** (currently `Cache Profile: None`, and it is the mitigation for the one real regression the website move
-causes) → port the SEO renderer into the API.
+**Edge Caching: ON as of 2026-09-27**, profile **"Common static files"**. Chosen deliberately over "All files
+(advanced)": Render's own description says the common profile caches images, PDFs, JS and CSS but **not HTML or
+JSON**, whereas "All files" caches every response unless a `Cache-Control` or `Set-Cookie` header prevents it — which
+on a service serving per-user JSON is a data leak waiting for one missing header. Verified after the change: two
+consecutive `/health` calls returned **different timestamps**, `cf-cache-status: DYNAMIC`, and `/common/categories`
+returned the same 11 rows with an identical fingerprint (`a1a4dda4140ad0ea`). It is a no-op today — this service
+serves no static files yet — and ready for the website.
+
+**Note for whoever reads the metrics later:** Render warns that cached responses never reach the application server,
+so they do not appear in service logs or request metrics. After the website moves here, static-asset traffic will be
+invisible in logs and request volumes will look **lower**, not higher. That is the cache working, not a traffic drop.
+
+**Next, in order:** get the client and tester onto build 116 → then suspend `aajaodev` → port the SEO renderer into
+the API.
 
 **Also open on Vercel:** `VITE_API_BASE_URL` and `VITE_GOOGLE_MAPS_KEY` exist for **Production only**, so every
 preview build has neither and a preview link is not a valid test. The abandoned `aajao-frontend-vercel` project still
