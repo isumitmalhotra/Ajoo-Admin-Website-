@@ -430,9 +430,21 @@ so nothing in our pipeline shrank them. They were uploaded small.
 **Fix:** re-upload those four at **1920 px wide or more** through Admin → CMS → Home. The first image is proof the
 path works when the source is big enough.
 
-**Worth building (not yet done):** the upload accepts anything and the page then silently stretches it, which is how
-this went unnoticed for a week. A minimum-width check on hero uploads — refuse or warn under ~1600 px — would turn a
-blurry homepage into an error message at the moment of upload. Small backend change; needs a deploy.
+**Guard added — backend `74ba667`, deployed.** The upload accepted anything and the page silently stretched it,
+which is how this went a week unnoticed. `uploadImages` now refuses a picture under **1600 px** wide, destroys the
+file it just refused (that orphan is ours, not the admin's), and says both the width it got and the width it needs —
+an instruction, not a complaint. Cloudinary reports dimensions on the upload response, so it costs no extra call.
+
+Two decisions inside it: **`allowSmall` is opt-OUT**, because the common case is a full-width picture and without an
+escape hatch the next person with a legitimate small logo is stuck; and **"too small" is reported separately from
+"could not upload"**, because they need different actions from the reader — try again, versus find a bigger file.
+Partial success is unchanged, so one bad file in a batch does not make anyone re-upload the good ones.
+
+Seven tests, confirmed to fail (4 of 7) with the guard removed. 196/196 backend test files pass.
+
+> The `/common/categories` fingerprint changed from `a1a4dda4140ad0ea` to `7efb7b404d908fec` on 27 September. That is
+> the Resort icon being cleared, not a regression — noted because that fingerprint was the unchanged-API check used
+> throughout the hosting move.
 
 ---
 
