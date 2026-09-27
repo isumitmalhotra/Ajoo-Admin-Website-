@@ -207,7 +207,79 @@ than Vercel's `must-revalidate`: a returning visitor does not even ask.
 
 **The client document says "slightly worse" for assets and needs correcting.**
 
-## PHASE 3 ATTEMPTED AND ROLLED BACK — 27 September
+## PHASE 3 — DONE. www.aajoohomes.com is served by Render.
+
+```
+HTTP/1.1 200 OK
+Server: cloudflare
+x-seo-render: render:static
+CF-RAY: a41a9374ca25a7f1-DEL
+<title>Explore Verified Homestays, Villas & Unique Stays Across India | Aajoo</title>
+```
+
+One record: `www CNAME aajoo-api-singapore.onrender.com`, TTL 60. The apex still
+307s to www. The API is untouched — categories fingerprint
+`a1a4dda4140ad0ea`, the same value as before any of this started.
+
+Checked on Render: `/`, `/faq`, `/about`, `/delete-account`, `/blog`, `/login`
+all 200 with their own titles; a missing path 404s; `robots.txt` serves from the
+API. Certificate `CN=www.aajoohomes.com`, valid to 26 December 2026.
+
+### The first attempt's diagnosis was wrong
+
+The previous entry blamed Vercel's "Connected Projects" for overriding the
+manual record, and prescribed disconnecting `www` from the Vercel project
+first. **That was wrong**, and testing it before acting is what stopped an
+unnecessary and more invasive change.
+
+Asking Vercel's authoritative nameservers directly:
+
+```
+ns1.vercel-dns.com  www.aajoohomes.com  canonical name = aajoo-api-singapore.onrender.com
+ns2.vercel-dns.com  www.aajoohomes.com  canonical name = aajoo-api-singapore.onrender.com
+```
+
+Vercel was serving the record correctly all along. And on the retry the public
+resolvers had **swapped sides** — `8.8.8.8` on Render, `1.1.1.1` on Vercel,
+the exact reverse of the first attempt. Two resolvers disagreeing, then
+disagreeing the other way, is ordinary cache expiry at different times. Nothing
+was overriding anything.
+
+**The real cause of the first failure was simply that Render's verifier had not
+yet seen the record, and fifteen minutes was not long enough.** On the retry the
+certificate issued in **twenty seconds**, because the DNS was already warm.
+
+Reverting the first attempt was still defensible — a broken path of unknown
+duration was open — but the diagnosis built on top of it was not.
+
+### And the certificate does not come from Let's Encrypt
+
+This plan said Render issues through Let's Encrypt and that the CAA record
+permitting `letsencrypt.org` was the precondition. The certificate actually
+presented is issued by **Google Trust Services (CN=WE1)** — Cloudflare's, since
+Render sits behind it. The CAA entry that mattered was **`pki.goog`**. Both were
+present, so it worked either way, but the stated reason was wrong.
+
+### No broken window this time
+
+During the split, `www` answered 200 with the correct title on **both** paths —
+Render for resolvers that had the new record, Vercel for those that had not.
+That is the difference from the first attempt, where Render had no certificate
+and one side failed.
+
+### Still open
+
+* **Do not turn the Vercel project off yet.** Rollback is deleting one DNS
+  record, and that only works while the project is still deployable. Leave it
+  48 hours.
+* Then move the apex to Render and turn Vercel off — **in that order**;
+  switching Vercel off first kills the apex redirect.
+* The Vercel Pro licensing question in the client document is now moot rather
+  than urgent: the site is off Vercel.
+
+---
+
+## SUPERSEDED — the first cutover attempt, 27 September
 
 **The site is back on Vercel and healthy.** `/`, `/faq` and `/delete-account`
 all 200 with their own titles. The rollback took about ten seconds.
