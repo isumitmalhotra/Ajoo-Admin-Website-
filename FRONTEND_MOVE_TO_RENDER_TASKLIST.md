@@ -317,6 +317,57 @@ Vercel is still serving the apex of a commercial site on a Hobby plan. The
 exposure ends when the apex moves and the project is switched off, not when
 `www` moved.
 
+## THE APEX MOVED TOO — 27 September
+
+`aajoohomes.com` now redirects from Render, not Vercel:
+
+```
+HTTP/1.1 301 Moved Permanently
+location: https://www.aajoohomes.com/
+Server: cloudflare
+/faq  →  https://www.aajoohomes.com/faq        (deep paths preserved)
+subject=CN=aajoohomes.com  ·  Google Trust Services  ·  valid to 26 Dec 2026
+```
+
+One A record, `@ → 216.24.57.1`, TTL 60. It won cleanly over Vercel's managed
+ALIAS with no conflict — authoritative DNS returned the new address
+immediately. The certificate took about **eleven minutes**, during which
+nothing broke: caches were still serving Vercel's answer, so the apex kept
+working throughout.
+
+**An unplanned improvement:** Vercel answered the apex with a **307** and Render
+answers with a **301**. A permanent redirect passes ranking to the canonical
+`www`; a temporary one does not.
+
+### Render's dashboard status cannot be trusted
+
+Worth recording, because an earlier entry in this file prescribed watching it:
+
+```
+aajoohomes.com      Waiting for DNS   Waiting for Verification
+www.aajoohomes.com  Waiting for DNS   Waiting for Verification   <- live, valid cert, serving
+api.aajoohomes.com  Verified          Unknown                    <- working perfectly
+```
+
+`www` had been serving for hours with a valid certificate while the panel still
+said "Waiting for DNS". **The TLS handshake is the only reliable signal.**
+
+### The wildcard stays, for now — deliberately
+
+`*.aajoohomes.com` still resolves to Vercel (`64.29.17.65`) and 404s. It was not
+removed, for two reasons:
+
+1. **It is Vercel-managed** — the record carries "Vercel automatically manages
+   this record", which means it exists because the domain is connected to the
+   Vercel project. Deleting it by hand would most likely be undone by Vercel.
+   It comes off when the project does.
+2. **The Vercel project is still the rollback.** Stripping its records makes
+   going back harder, for a record that currently serves nothing but 404s.
+
+Nothing depends on it — every name that matters (`www`, `api`, `email`, all four
+`_domainkey` selectors) has an explicit record, and the wildcard only ever
+returns a 404, so nothing can be working through it. Remove it with the project.
+
 ### Still open
 
 * **Do not turn the Vercel project off yet.** Rollback is deleting one DNS
