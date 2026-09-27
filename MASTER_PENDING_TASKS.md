@@ -49,7 +49,7 @@
 > moved on its own. `differsFromFlat` had been written in `nightly_rates.dart` for exactly this and never called.
 > Verified inside the artifact: the string is present, `api.aajoohomes.com` is present, `aajaodev.onrender.com` is
 > absent. 657 tests pass, `flutter analyze` 0 errors / 0 warnings (367 style infos). Monorepo `93cc410`.
-> **This is the build to circulate** — handover note `BUILD_117_HANDOVER_2026-09-27.md`. Supersedes **116**
+> **This is the build to circulate** — handover note `BUILD_117_HANDOVER_2026-09-27.md`. **Client repo `a8168a0`** (pushed 2026-09-27; 3 files, 59 insertions, 1 deletion, no line-ending noise; 656 pass + 1 skipped in a fresh standalone clone; 0 APKs in their tree). Supersedes **116**
 > **116** — 2026-09-26, `sha256 0afb73e2…ac57`, 95.8 MB. The client's two from the 26 September screenshots:
 > the weekend headline (₹5,000/night above a ₹10,620 total for ONE night — the total was right, the headline read
 > the flat `property_price` column) and the minimum stay (a priced 1-night stay under "Minimum stay 3 nights").
