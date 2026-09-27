@@ -379,6 +379,39 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a65. Closed 2026-09-27 — the client's hero slider had been gone since the DB cutover
+
+**Reported as:** *"there was a slider with 4 images uploaded by client, where did they go?"* — the home page was
+showing our bundled cabin photograph instead.
+
+**Not the Render move.** The hero reads CMS key `home / hero.images`, and `Explore.tsx` falls back to the shipped
+photo when it is empty — **by design, with no error**. The row held **five** Cloudinary URLs the client uploaded on
+**20 September**. It existed on Clever Cloud and **not** on PlanetScale, so it went missing at the **24 September
+database cutover**, three days before the hosting work.
+
+All five images were still on Cloudinary (200, 25–200 KB JPEGs). Only the row pointing at them was gone. **Restored**
+by copying that one row across; the API went 152 → 657 bytes and the slider is live, cycling all five.
+
+**The wider check, because one missing row invited it.** The PlanetScale database was **started clean, not copied**
+— 92 tables differ and almost all of it is deliberate: 19,144 chatbot logs, 29,239 pricing-grid rows, a 23,374-row
+geo backup, 7,653 seed coordinates. Of 13 blog posts not carried over, **nine are literally** `blog one`…`blog five`,
+`test blog`, `test`, `aajoo`, `QA draft check (delete me)`. Of the four that read as real, **three are soft-deleted**
+(`blog_isDelete=1`) and two are property-scoped to listings that do not exist on live. **None were restored** —
+restoring them would resurrect deleted content and create orphans.
+
+So: one genuine oversight inside an otherwise intentional clean start.
+
+> **The old Clever Cloud database is still the only copy of anything that did not come across. Do not delete it**
+> until someone has decided what else, if anything, is wanted. Ten minutes with it answered this question; a deleted
+> one would not have.
+
+**Still open for the client to decide:** the `Resort` category tile shows the Aajoo logo because the file uploaded
+as its icon **is** the logo (Cloudinary, 17 June). Nine of eleven categories have no icon at all and fall through to
+stock photography the frontend picks — fine as a gap filler, but it means the category row is not under the client's
+control. Fixed per category in Admin → Property Categories.
+
+---
+
 ### 8a64. Closed 2026-09-27 — the website left Vercel, and it cost nothing
 
 **`www.aajoohomes.com` is served by the Singapore box that already runs the API**, at
