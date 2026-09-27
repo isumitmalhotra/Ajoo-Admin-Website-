@@ -143,7 +143,27 @@ all three assets 200 with correct content types, a lookalike origin still
 refused, categories fingerprint `a1a4dda4140ad0ea` unchanged, and the home page
 renders.
 
-### Google Maps needs one referrer added — **not a defect in this work**
+### PHASE 2 COMPLETE — driven in a browser, 27 September
+
+After the referrer was added, a **clean tab** reports **no console logs at
+all** — no CORS 500s, no Maps error. The stale errors in the earlier check were
+accumulated from before the fixes; the pane keeps them across navigations,
+which is worth remembering before treating a console as evidence.
+
+Driven on the client's own listing,
+`/property/villa-in-the-hills-of-landour-uttarakhand-cantt-dehradun-uttarakhand`:
+
+| | |
+|---|---|
+| Title | `Villa in the hills of landour Uttarakhand in Cantt \| Villa \| Aajoo` — per-listing, from the renderer |
+| Page | Breadcrumbs, gallery (1/10, +7 photos), amenities, house rules, cancellation policy, host, ₹5,000/night |
+| **Maps** | **Working** — the page carries Google's own chrome (`Map data ©2026`, `Keyboard shortcuts`, `Report a map error`), which only renders once a map has loaded |
+| Console | **empty** |
+
+The site is fully functional on the Singapore service. What remains is
+measurement and the DNS cutover.
+
+### The Maps referrer — resolved, and worth remembering why
 
 `RefererNotAllowedMapError`, naming `https://api.aajoohomes.com/explore`. The
 key is baked into the bundle correctly; it is **restricted by HTTP referrer** in
