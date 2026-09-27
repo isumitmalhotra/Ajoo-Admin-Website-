@@ -267,6 +267,37 @@ Render for resolvers that had the new record, Vercel for those that had not.
 That is the difference from the first attempt, where Render had no certificate
 and one side failed.
 
+### Driven in a browser on www, after the cutover
+
+Fresh tab each time, **console empty on every page**.
+
+| | |
+|---|---|
+| Home | Hero, search bar, all nine category tiles, Trending Stays, Featured Destinations, the "Name your own price" section |
+| Listing | Breadcrumbs, gallery 1/10 with thumbnails and +7, section nav, host, cancellation policy |
+| **Map** | **Renders** — Mussoorie/Landour with labelled POIs, the approximate-area circle, controls. The Maps key's referrer restriction already allowed `www`. |
+| Login | Split layout, Guest/Host toggle, **Continue with Google and Continue with Apple** both present |
+
+**The pricing engine, end to end through Render** — 3–6 October, three nights
+spanning a Saturday, Sunday and Monday:
+
+```
+3 nights (weekend rates apply)      ₹24,000
+Taxes & GST                          ₹3,670
+  1 night at 5% · 2 nights at 18%
+Total                               ₹27,670
+```
+
+It reconciles exactly: 9,000 + 10,000 + 5,000 room; GST 1,620 + 1,800 + 250.
+The per-night band split is shown on the page, the cleaning fee is stated as
+paid to the host rather than added to the total, and the header carries
+**"These dates are priced differently · usually ₹5,000/night"** — the same line
+that went into app build 117.
+
+That single screen exercises the renderer, the SPA, an authenticated-shaped API
+round trip from the `www` origin, the dated-pricing engine and the GST banding.
+All correct.
+
 ### Still open
 
 * **Do not turn the Vercel project off yet.** Rollback is deleting one DNS
