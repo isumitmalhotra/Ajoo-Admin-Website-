@@ -176,6 +176,37 @@ referrer restrictions (Google Cloud Console → Credentials → the Maps key →
 Website restrictions). Worth doing rather than waiting, since the point of this
 phase is to find problems before the domain moves.
 
+### Measured from India, 27 September — and the prediction was wrong
+
+Every version of this plan said static assets would get **slightly worse**, and
+that the regression would have to be bought back with Edge Caching. Measured,
+Render is **faster on both**, and by a clear margin on assets.
+
+**HTML** — 5 runs each, median:
+
+| | Vercel | Render |
+|---|---|---|
+| `/` | 182 ms | **164 ms** |
+| a listing page | **141 ms** | 154 ms |
+
+A wash, as expected.
+
+**The 3.1 MB bundle** — 4 runs each, both gzipped to 0.83 MB on the wire, both
+a cache HIT:
+
+| | Vercel | Render |
+|---|---|---|
+| TTFB | 124–669 ms | **59–214 ms** |
+| Total | 409–1,217 ms | **330–688 ms** |
+| `Cache-Control` | `max-age=0, must-revalidate` | **`max-age=31536000, immutable`** |
+
+Two reasons the prediction was wrong. Render sits behind Cloudflare, so "from
+Singapore" was never true for a cached asset — it comes from a nearby PoP just
+as Vercel's does. And the `immutable` header this port sets is strictly better
+than Vercel's `must-revalidate`: a returning visitor does not even ask.
+
+**The client document says "slightly worse" for assets and needs correcting.**
+
 ### Still to do
 
 1. Set `VITE_GOOGLE_MAPS_KEY` on the Singapore service — **maps are broken on
