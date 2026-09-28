@@ -937,22 +937,43 @@ class PropertyRooms {
   const PropertyRooms({
     this.bedrooms = const [],
     this.bathrooms = const [],
-  });
+    bool? hasDetail,
+  }) : _hasDetail = hasDetail;
 
   final List<DescribedRoom> bedrooms;
   final List<DescribedRoom> bathrooms;
 
-  /// True once a host has described something. A page that renders a heading
-  /// over three bare "Bedroom 1/2/3" lines has told the guest nothing and
-  /// reads as a section that failed to load.
-  bool get hasDetail => bedrooms.isNotEmpty || bathrooms.isNotEmpty;
+  /// The server's answer, when this payload carries one.
+  final bool? _hasDetail;
+
+  /// True once a host has actually DESCRIBED something.
+  ///
+  /// This used to read `bedrooms.isNotEmpty || bathrooms.isNotEmpty`, which is
+  /// rows rather than detail. The server writes one row per room from the
+  /// COUNTS, so a listing stating five bedrooms and three bathrooms and
+  /// describing none of them has eight rows — and this page rendered eight
+  /// boxes reading "Bedroom 1 … Bathroom 3" and nothing else. That tells a
+  /// guest strictly less than the "5 bedrooms · 3 baths" already above it.
+  /// Reported by the client on 2026-09-28 against listing #1.
+  ///
+  /// `utils/propertyRooms.js` now answers it from the SOURCE rows and sends
+  /// it, so the app and the website cannot decide differently — they had
+  /// different spellings of this same mistake. The local fallback is for a
+  /// payload from a server that predates the flag: it tests the bed and
+  /// bathroom LINES, never the heading, because a heading is never empty (it
+  /// falls back to "Bedroom 2").
+  bool get hasDetail =>
+      _hasDetail ??
+      (bedrooms.any((r) => r.beds.isNotEmpty || (r.bathroom ?? '').isNotEmpty));
 
   factory PropertyRooms.fromJson(dynamic raw) {
     if (raw is! Map) return const PropertyRooms();
     final j = Map<String, dynamic>.from(raw);
+    final flag = j['hasDetail'];
     return PropertyRooms(
       bedrooms: DescribedRoom.listFrom(j['bedrooms']),
       bathrooms: DescribedRoom.listFrom(j['bathrooms']),
+      hasDetail: flag is bool ? flag : null,
     );
   }
 }
