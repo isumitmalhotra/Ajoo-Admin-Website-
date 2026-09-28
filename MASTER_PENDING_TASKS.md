@@ -380,6 +380,98 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a68. 2026-09-28 — the go-live blockers, answered by the client
+
+Sumit, relaying the client, against the Section-A list of 28 September. **Four of
+the five hard blockers are closed by accounts that already exist**, and three
+open decisions are taken off us entirely. What is left is smaller than the
+documents have been saying for a fortnight.
+
+| | Was | Now |
+|---|---|---|
+| **Apple Developer Program** | "enrol as an Organisation, needs a D-U-N-S number" | **Not needed.** Publishing under **Nameesh Patiyal's existing individual** developer account. D-U-N-S was the longest lead time in the whole plan and it is gone. |
+| **Play Console** | "developer account needed" | **Exists.** |
+| **Razorpay live** | "KYC, days of process" | **Live keys already held.** The webhook secret goes in **today or tomorrow morning**. |
+| **Cloudinary** | "Aajoo needs its own account" | **Client: the account IS Aajoo's** and stays. See the caveat below. |
+| **SMS / DLT** | dropped 24 Sep | still dropped — email carries every OTP |
+
+**Decisions taken off us:**
+
+* **Host payouts stay MANUAL**, recorded through the payout-run + UTR screens
+  built on 18 September. So §2.2 (Route vs RazorpayX vs Payroll) is **not a
+  blocker** — it is a later optimisation, and nothing waits on it.
+* **TDS §194-O** — the client handles it their side.
+* **Cash-collection timeout** (what happens when a host never confirms) — the
+  client handles it their side.
+
+---
+
+#### Two things that did not change, and one caveat
+
+**Apple: individual, not Organisation.** This works and removes weeks. Two
+consequences worth writing down rather than discovering at review:
+
+* the App Store listing will show **Nameesh Patiyal** as the seller/developer,
+  not "Aajoo Homes"
+* moving to a company account later is an **app transfer**, which Apple permits
+  but with conditions — it is not a setting
+
+Neither blocks launch. Both are easier to accept deliberately now than to
+discover after the first release.
+
+**Cloudinary: ownership is not the risk — exclusivity is.** The 13 September
+sweep found, among 228 unfoldered assets, **22 legible identity documents
+belonging to several different people** (Aadhaar numbers and QR codes readable;
+a college ID with a stranger's name, father's name, DOB, address, phone and
+blood group). That is not Aajoo's guest data, so *something else uploads into
+this account*. "Aajoo owns it" and "it is shared" are both able to be true.
+
+If Aajoo owns it, the fix is **not** a new account — it is **revoking every
+other API key and user on it**, which is free and takes minutes. That closes the
+real exposure: anyone else with access can read Aajoo's guest KYC. Two residual
+items either way: those 22 strangers' documents are still held in an account
+Aajoo owns (a retention question), and everything unresolved from August about
+whether those people have to be told.
+
+**Play upload key.** The account existing is not the same as the signing being
+right. Release still signs with `aajoo-testing.jks`. This is **less permanent
+than it looks**: new apps on Play must ship as an **.aab with Play App Signing**,
+so Google holds the app signing key and the upload key can be rotated later.
+Still worth generating a proper production upload key before the first upload
+rather than promoting a file that has been passed around — but it is not the
+one-shot decision it used to be. `tool/build_release.ps1 -AppBundle` already
+produces the .aab.
+
+---
+
+#### What actually remains
+
+Nothing needing a third party's process. In order:
+
+1. **Webhook secret in, live keys back on, `ALLOW_TEST_PAYMENTS` deleted** —
+   the platform is on **test keys right now** for bot testing, which means a
+   real visitor can complete a booking that collects nothing.
+2. **`SAFETY_ALERT_EMAIL`** — an SOS currently emails nobody.
+3. **`FIELD_ENCRYPTION_KEY`** — confirm it is on Render. `ready: true` does not
+   prove it; that gap is known.
+4. **Android production build** — production upload key, `.aab`, live Razorpay
+   key, no `-AllowTestPayments`. Build 117 carries the **test** key.
+5. **iOS**: the 8 Apple actions and 11 repository secrets
+   (`IOS_READINESS.md` §3), then TestFlight, then **the on-device drive** —
+   the Android drives found five defects no test had.
+6. **Both store listings** — screenshots, data-safety / privacy questionnaires,
+   a **1024px icon from the designer** (the current one is an upscale of the
+   512px Android master), review notes with a test account and test card.
+7. **Credential rotation** — Razorpay test secret, PlanetScale password,
+   `HEALTH_TOKEN`, accounts 100/101, the Render deploy-hook key. Deferred by
+   instruction; a repo setting cannot un-publish a secret, only a new key can.
+
+**Correction to our own documents:** `IOS_READINESS.md` §4.1 still lists **Sign
+in with Apple** as "a real work item on both sides, estimate a day". It is
+**built** — `sign_in_with_apple` in pubspec, `lib/service/apple_sign_in.dart`,
+the auth controller and page, and `POST /user/auth/apple` on the backend. That
+was the largest remaining iOS code item.
+
 ### 8a67. Closed 2026-09-28 — "at the end no end point": a grey button that explained nothing (Defects 55–56)
 
 **The report** (client, 09:37, with a screenshot of the admin property screen):
