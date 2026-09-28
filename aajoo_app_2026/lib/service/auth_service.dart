@@ -388,7 +388,12 @@ class AuthService {
 
   Future<BaseResponse> updateProfile(UserUpdateRequest request) async {
     try {
-      final token = await storage.read(key: TOKEN_KEY);
+      // `_token ??` like every sibling. This was the one method reading STORAGE
+      // ALONE, so it depended on the token having already been persisted rather
+      // than merely set — true today on every login path, but a silent
+      // dependency, and a session established with setToken() and nothing else
+      // would have sent "Bearer null" here.
+      final token = _token ?? await storage.read(key: TOKEN_KEY);
       // The backend stores one user_fullName column; the app edits first/last
       // separately. This used to send ONLY userFname — so saving your profile
       // truncated "Sumit Malhotra" to "Sumit" — and never sent user_state at

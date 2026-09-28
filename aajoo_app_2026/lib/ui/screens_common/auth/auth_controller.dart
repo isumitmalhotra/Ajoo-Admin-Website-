@@ -270,7 +270,10 @@ class AuthController extends GetxController {
     } on SignInWithAppleAuthorizationException catch (e) {
       // Apple's own codes mean nothing to a person, and showing them verbatim
       // is what made "Google sign-in doesn't work" an unactionable report.
-      appLog('Apple sign-in failed: code=\${e.code} message=\${e.message}');
+      // Was '\\${e.code}' — an ESCAPED dollar, so this logged the literal text
+      // "${e.code}" and never the code. The one line written to diagnose an
+      // Apple failure in the field carried no information at all.
+      appLog('Apple sign-in failed: code=${e.code} message=${e.message}');
       _showLoginError(_appleSignInMessage(e));
     } catch (e) {
       await handleApiError(e, onError: (message) async {
@@ -385,92 +388,144 @@ class AuthController extends GetxController {
 
   /// Blocking phone capture — the only exits are a saved 10-digit number or
   /// declining, which ends the session. Returns whether a number was saved.
+  ///
+  /// The save happens INSIDE the dialog, and a failure keeps the dialog open
+  /// with the server's own sentence under the field.
+  ///
+  /// It used to close the dialog first, save afterwards, and on failure show a
+  /// three-second snackbar and then tear the session down. So the person saw
+  /// the dialog vanish, landed back on the sign-in page, and the reason was
+  /// gone before they looked up. Signing in again re-created the same dialog,
+  /// which is why the client reported it as "stuck here, not going forward" on
+  /// 28 September — it was a loop with the explanation removed from it.
+  ///
+  /// Two rules behind this shape:
+  ///   - a failed save is RECOVERABLE. Losing the session over one is a
+  ///     punishment for a server error the person did not cause, and it makes
+  ///     the next attempt start from Google again.
+  ///   - whatever the server said is the only thing that explains this to
+  ///     either the person or to us. Throwing it away is what made the
+  ///     original report undiagnosable from outside.
   Future<bool> _requirePhone(LoginData data) async {
     final phoneController = TextEditingController();
     final formKey = GlobalKey<FormState>();
     final names = data.user.fullName.trim().split(RegExp(r'\s+'));
 
+    String? saveError;
+    bool saving = false;
+
     final result = await Get.dialog<bool>(
       PopScope(
         canPop: false,
-        child: AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('One last thing — your mobile number'),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Google doesn't share it, and hosts and our support team "
-                  'need a way to reach you about bookings. Every Aajoo '
-                  'account carries one.',
-                  style: TextStyle(fontSize: 13, color: kMuted),
-                ),
-                const SizedBox(height: 14),
-                TextFormField(
-                  controller: phoneController,
-                  keyboardType: TextInputType.phone,
-                  maxLength: 10,
-                  inputFormatters: AppInputFormatters.mobile,
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    labelText: 'Mobile number',
-                    counterText: '',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
+        child: StatefulBuilder(
+          builder: (context, setLocalState) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('One last thing — your mobile number'),
+            content: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Google doesn't share it, and hosts and our support team "
+                    'need a way to reach you about bookings. Every Aajoo '
+                    'account carries one.',
+                    style: TextStyle(fontSize: 13, color: kMuted),
                   ),
-                  validator: (v) {
-                    final t = (v ?? '').trim();
-                    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(t)) {
-                      return 'Enter a valid 10-digit mobile number';
-                    }
-                    return null;
-                  },
-                ),
-              ],
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    maxLength: 10,
+                    inputFormatters: AppInputFormatters.mobile,
+                    autofocus: true,
+                    enabled: !saving,
+                    decoration: InputDecoration(
+                      labelText: 'Mobile number',
+                      counterText: '',
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    validator: (v) {
+                      final t = (v ?? '').trim();
+                      if (!RegExp(r'^[6-9]\d{9}$').hasMatch(t)) {
+                        return 'Enter a valid 10-digit mobile number';
+                      }
+                      return null;
+                    },
+                  ),
+                  // The server's own words, where the person is already
+                  // looking. A snackbar behind a dismissed dialog is not an
+                  // error message.
+                  if (saveError != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      saveError!,
+                      style: const TextStyle(
+                          fontSize: 12.5,
+                          color: Color(0xFFDC2626),
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ],
+              ),
             ),
+            actions: [
+              TextButton(
+                onPressed: saving ? null : () => Get.back(result: false),
+                child: const Text('Sign out'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: kIndigo, foregroundColor: Colors.white),
+                onPressed: saving
+                    ? null
+                    : () async {
+                        if (!(formKey.currentState?.validate() ?? false)) return;
+                        setLocalState(() {
+                          saving = true;
+                          saveError = null;
+                        });
+                        final saved = await updateUserProfile(UserUpdateRequest(
+                          userFname:
+                              names.isNotEmpty ? names.first : data.user.fullName,
+                          userLname: names.length > 1
+                              ? names.sublist(1).join(' ')
+                              : '',
+                          userPnumber: phoneController.text.trim(),
+                          userAddress: data.user.address,
+                          userCity: data.user.city,
+                          userState: data.user.state,
+                          userZipcode: data.user.zipcode,
+                          docType: null,
+                          docNumber: null,
+                        ));
+                        if (saved.isSuccess) {
+                          Get.back(result: true);
+                          return;
+                        }
+                        // Logged as well as shown: the message is the only
+                        // evidence of WHY when this is reported from a handset
+                        // we cannot reach.
+                        appLog('phone capture failed: ${saved.message}');
+                        setLocalState(() {
+                          saving = false;
+                          saveError = saved.message.isNotEmpty
+                              ? saved.message
+                              : "We couldn't save that number. Please try again.";
+                        });
+                      },
+                child: Text(saving ? 'Saving\u2026' : 'Save and continue'),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Get.back(result: false),
-              child: const Text('Sign out'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: kIndigo, foregroundColor: Colors.white),
-              onPressed: () {
-                if (formKey.currentState?.validate() ?? false) {
-                  Get.back(result: true);
-                }
-              },
-              child: const Text('Save and continue'),
-            ),
-          ],
         ),
       ),
       barrierDismissible: false,
     );
 
-    if (result != true) return false;
-
-    final saved = await updateUserProfile(UserUpdateRequest(
-      userFname: names.isNotEmpty ? names.first : data.user.fullName,
-      userLname: names.length > 1 ? names.sublist(1).join(' ') : '',
-      userPnumber: phoneController.text.trim(),
-      userAddress: data.user.address,
-      userCity: data.user.city,
-      userState: data.user.state,
-      userZipcode: data.user.zipcode,
-      docType: null,
-      docNumber: null,
-    ));
-    if (!saved.isSuccess) {
-      showAlert('Error', saved.message, true);
-      return false;
-    }
-    return true;
+    return result == true;
   }
 
   Future<void> getUserDetails({bool skipLogoutOnError = false}) async {
