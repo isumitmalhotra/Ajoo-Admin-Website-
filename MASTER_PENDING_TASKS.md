@@ -380,6 +380,82 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a67. Closed 2026-09-28 — "at the end no end point": a grey button that explained nothing (Defects 55–56)
+
+**The report** (client, 09:37, with a screenshot of the admin property screen):
+*"i tried to list a property but at the end no end point … i can't submit my
+property and on admin side i received this message … it did not submit the
+property for review and there are missing details host property form."*
+
+**Nothing was broken.** Read against the live PlanetScale database, the listing
+— #3, *"Homestay luxe property at Gurgaon"*, host #3 "Aish Host"
+(`aishhost1@yopmail.com`), last touched 09:34, three minutes before the message —
+had **0 photographs against a minimum of 10**, and every server-side gate was
+right to refuse it:
+
+```
+lifecycle state = draft        may SUBMIT? YES
+identity        verified       legal outstanding: []   (both clear)
+readiness       70%            canSubmit: false
+blockedReason   "Before publishing, add 10 photos and tag one photo as
+                 exterior, bedroom, bathroom, entrance."
+missing         photos_minimum (0/10) · photos_required · bank
+```
+
+So the "missing details" the client saw **are** the readiness checklist: the
+photographs, and bank details (which count toward the score but do not block).
+Ten tagged photographs is the whole of what stands between that listing and
+review.
+
+**Defect 55 — the host is never told at the button.** The reason was on the
+page: in the readiness card, roughly **four hundred lines of markup above the
+button**, on the far side of the identity block, the payout block, every
+declaration and the entire Host Agreement with its scroll-to-read. The host
+scrolls past it, reaches a grey **Submit for verification** under an encouraging
+sentence about the team reviewing their listing, presses it, and nothing
+happens — a disabled button cannot even fire a handler to explain itself. *"No
+end point"* is precisely what that feels like.
+
+The reason now renders **immediately above the button**, derived from the *same*
+conditions as `disabled` so the two cannot drift apart — including the two that
+were explained nowhere at all: an unticked declaration, and an unaccepted Host
+Agreement. When photographs are the blocker it also offers the way back to them,
+since that is three steps behind and a reason you cannot act on is half an
+answer.
+
+**Defect 56 — the admin screen offered a refused decision.** The screenshot shows
+a live red **Reject** beside a greyed-out **Approve & publish**, under a notice
+reading *"there is nothing to approve before then"*. `utils/listingLifecycle`
+permits exactly **one** action from `draft` and it is SUBMIT, so the server
+refuses that Reject. Worse than a wasted click: rejecting a listing the host is
+still writing is not a decision anybody should be able to take by accident.
+Reject is now disabled for a draft with the reason on hover, matching what
+Approve already did.
+
+**Deliberately not changed:** the 10-photo minimum, and the rule that photographs
+block a first publication while only warning on an update. The platform was
+right; it was merely quiet about it. The wizard's "Continue without photos" is
+also left alone — saving a draft without photographs is legitimate, and the host
+*is* warned at that step; what was missing was the second half of the
+conversation, at the end.
+
+**Tests.** 16 assertions in `tests/aGreyButtonSaysWhyItIsGrey.test.mjs`, each
+checked by reverting the fix: putting Reject back live, removing the banner, and
+removing the jump to photos each fail it. One assertion pins that the reason
+stays **within 80 lines of the button**, because distance was the entire bug.
+
+Web `c905713` · submodule bump `6a6d4c2`.
+
+**Not driven in a browser.** The host wizard is behind a host sign-in and the
+admin screen behind an admin sign-in, and a session must not type a password.
+Evidence is the live-data diagnosis above, the tests, the mutation checks and a
+clean `tsc -b` — plus confirmation that the string reached the live bundle.
+
+**What to tell the client:** the listing is fine and still there as a draft. Add
+**10 photographs** to it and tag one each as exterior, bedroom, bathroom and
+entrance; Submit then goes green. Bank details are worth completing too but do
+not block.
+
 ### 8a66. Closed 2026-09-27/28 — two ways back in when an admin forgets their password
 
 **Why this came up now.** The client is taking ownership of the super admin
