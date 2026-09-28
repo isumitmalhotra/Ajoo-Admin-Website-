@@ -444,7 +444,12 @@ checked by reverting the fix: putting Reject back live, removing the banner, and
 removing the jump to photos each fail it. One assertion pins that the reason
 stays **within 80 lines of the button**, because distance was the entire bug.
 
-Web `c905713` · submodule bump `6a6d4c2`.
+Web `c905713` · submodule bump `6a6d4c2` · **live in bundle
+`index-BCfc2A6I.js`**, all seven strings confirmed present: the banner, the jump
+to photos, the declaration reason, the agreement reason, the null-blockedReason
+fallback, the admin Reject hover reason and the draft notice — with
+`photos_minimum`/`photos_required` still in the bundle, i.e. the rule itself
+untouched.
 
 **Not driven in a browser.** The host wizard is behind a host sign-in and the
 admin screen behind an admin sign-in, and a session must not type a password.
