@@ -456,6 +456,46 @@ admin screen behind an admin sign-in, and a session must not type a password.
 Evidence is the live-data diagnosis above, the tests, the mutation checks and a
 clean `tsc -b` — plus confirmation that the string reached the live bundle.
 
+**Follow-up the same day — catch it at the step, not at the end.** The client's
+actual point: *"if on the page something mandatory is missing it should show
+them only that this is missing and take user to that particular section so that
+user doesn't have to go to end and they realise they missed."*
+
+Worth being precise about what was already right: **every step validates its own
+mandatory fields and scrolls to the offending one** (`failStep` → `fe.set`, which
+seeks `[data-field=…]`, and falls back to saying the message when the error has
+nowhere to land). So nothing a *step* requires can be skipped. **Photographs are
+the deliberate exception** — a host may continue without them and add them later,
+which is a normal thing to want — and the price of that permission was learning
+about it at the very end.
+
+Two changes:
+
+* **readiness is now fetched on every step**, not only when step 5 opens. The one
+  thing that knows what is missing was arriving at the last screen, so nothing
+  earlier could have said anything even if it wanted to.
+* **a strip above the step card lists what the host has already walked PAST and
+  left undone**, each item a button to the step that fixes it.
+
+Deliberately only what is *behind* them. Not a checklist of everything ahead: a
+new listing opening with nine unfilled things is noise, and the readiness card on
+the last step already does that job. It also separates what **blocks** a
+submission (photographs) from what only lowers the score (bank details never
+block, and saying a host "needs" them would be untrue).
+
+**The item → step map is the fragile part, and it fails silently:** a key that does
+not exist never matches, so the item simply never offers a jump and nothing looks
+broken. Writing it from memory produced exactly that — `basics` for an item the
+server calls **`foundation`**, and **`authorization`** (the manager's, which
+`computeReadiness` adds conditionally) missing altogether. Both were caught by
+checking the map against `utils/listingSeo.js` in the backend source rather than
+against recollection, and that cross-check is now the test.
+
+45 assertions, each checked by reverting: the `basics` typo, dropping
+`authorization`, a step index off the end, showing items not yet reached, marking
+bank as blocking, and putting readiness back to step-5-only — all six fail it.
+Web `6d38a4e` · submodule bump `25c9f0b`.
+
 **What to tell the client:** the listing is fine and still there as a draft. Add
 **10 photographs** to it and tag one each as exterior, bedroom, bathroom and
 entrance; Submit then goes green. Bank details are worth completing too but do
