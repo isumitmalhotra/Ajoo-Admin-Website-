@@ -380,6 +380,120 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a69. 2026-10-02 — cropping, on every admin upload (the SEO team's ask), and a deploy that is holding all of it back
+
+The SEO team, 2026-09-30: *"for the image upload section, please consider adding
+an option to crop images so we can adjust them according to the required
+dimensions/aspect ratio before uploading."*
+
+**What they were doing instead.** Upload. Wait. Get refused by the server —
+*"Please use an image at least 1600px wide, or it will look blurry."* Open a
+separate tool. Crop. Come back. Upload again. The refusal was correct and it
+arrived at the worst possible moment: after the work, with no way to act on it
+from the page they were on.
+
+#### The thing this had to get right
+
+**Cropping REMOVES pixels.** Hand somebody a cropper for a slot that needs
+1600px and a picture exactly 1600px wide, and the crop they make is the thing
+that fails the check — strictly worse than the round trip it replaced, because
+now the work has been done twice and is still refused.
+
+So feasibility is decided on the **source**, before the dialog opens. Too small
+is answered with *"that image is 1200 × 800, a full-width picture needs at least
+1600 × 600, and cropping only makes a picture smaller — please use a larger
+one"*, in milliseconds, with no upload. The dialog then re-checks the **result**,
+because zooming in can take a feasible source under the minimum after it opens.
+
+Ratios are pinned only where the **frame** is pinned. A blog cover is 1.91:1
+because that is what every social platform crops a link preview to and what
+`SeoSharePreview` already draws. A category tile is square wherever it appears.
+Everything else — body photos, full-width pictures, card pictures, listing photos
+— is free above a minimum: a host shoots a room at whatever their phone gives,
+and forcing a crop throws part of the room away for no benefit.
+
+#### Every control that sends a picture, not just the one that was reported
+
+Wiring the blog editor alone is how this request comes back: somebody edits the
+homepage slider instead, meets the same 1600px refusal after the same upload, and
+files the same bug against a feature we called done. **Five controls, four
+surfaces:**
+
+| Where | Control | Slot | Was |
+|---|---|---|---|
+| Blog editor | cover + body photos | `blogCover` (1.91:1), `blogImage` | held already, uploaded on save |
+| CMS page editor | the slider (`images`) | `cmsWide` | **uploaded the instant a file was picked** |
+| CMS page editor | card rows — destination areas, featured collections | `cmsCard` | **uploaded the instant a file was picked** |
+| Homepage CMS | the promotional strip banner | `cmsWide` | held already |
+| Categories | the tile picture | `categoryIcon` (square) | held already |
+
+The two that uploaded on selection left **no moment in which a crop could
+happen**. They now hold the chosen file, measure it in the browser, and upload
+when asked. That is one more click, and it buys the refusal arriving instantly
+and on a page where the admin can fix it.
+
+`CropButton` is the shared control — measure, refuse what cannot yield the slot,
+open the dialog, hand back the file. Four copies of that is four chances for one
+to forget the check.
+
+**`cmsCard` is a smaller frame, not a looser upload.** Shorter floor (400 not
+600) and no fixed ratio, because a card is not the page. But the **width** is
+still 1600: these post to `/admin/cms/content/image` like every other CMS
+picture, that endpoint applies `MIN_IMAGE_WIDTH` to whatever arrives, and no
+caller sends `allowSmall`. A looser number would put the refusal back after the
+upload.
+
+#### Two of my own assertions proved nothing, and the mutation run is what said so
+
+`/CropButton/.test(source)` matched the **import line**, so deleting the
+homepage's crop button left the test green. `/cropFeasibility/.test(button)` and
+an `indexOf` ordering check had the same hole. Tightened to the JSX element and
+to the call site. **All eight mutations are now caught by a named assertion:**
+homepage button removed · category slot swapped · card width loosened · card
+ratio pinned · the measurement removed · the verdict computed and ignored · both
+CMS controls put back to uploading on selection.
+
+`croppingCannotMakeAnImageBigger` — 44 assertions (was 24), and the rule is
+EXECUTED rather than read: the test compiles `imageRules.ts` with the project's
+own TypeScript and calls the real function.
+
+`MIN_FULL_WIDTH_PX` mirrors the server's `MIN_IMAGE_WIDTH`, and the backend's
+`theCropTargetsMatchTheServer` fails if `cmsWide` **or** `cmsCard` stops agreeing
+with it — the same guard the property-name length has, for the same reason.
+
+#### ⚠ NOTHING OF THIS IS LIVE — Render auto-deploy is OFF
+
+Live is at `2b20028`. Confirmed on 2 October: `/admin/dashboard` answers
+`x-website-route: spa-shell` (so the routing fix IS deployed), while the live
+page still serves `assets/index-CYizrj82.js` and 404s on the bundle this build
+produces. **Two commits are sitting unbuilt:**
+
+| Commit | What |
+|---|---|
+| `be54bd5` | the crop dialog + the blog editor + the width guard (Phase 1) |
+| `fd5e98d` | the crop on all four surfaces, the `cmsCard` preset, the drift guard |
+
+Backend `fd5e98d` · web `bb82e11` · submodule bumped · 44 + 4 assertions green ·
+production build green (main bundle 3,227 kB).
+
+**Someone has to press Render → Manual Deploy → Deploy latest commit.** Until
+then the SEO team cannot see the feature they asked for, and a second "please add
+cropping" message is the expected outcome.
+
+#### Not in this work
+
+- **Phase 2 — listing photos** (`PhotoUploader`, the host wizard's step 2).
+  `listingPhoto` preset exists; the control is not wired. ~half a day.
+- **Phase 3 — the Flutter app** (`image_cropper`), which needs native
+  configuration on both platforms. Best done after the first TestFlight build,
+  not before.
+- **Not driven in a browser.** Every surface here is behind admin sign-in, and
+  the verification is the typecheck, the production build, 44 executed
+  assertions and the mutation run — not a screenshot. The visual behaviour of
+  the dialog itself was driven in Phase 1.
+
+---
+
 ### 8a68. 2026-09-28 — the go-live blockers, answered by the client
 
 Sumit, relaying the client, against the Section-A list of 28 September. **Four of
