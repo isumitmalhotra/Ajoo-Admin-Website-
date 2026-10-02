@@ -380,6 +380,92 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a70. Closed 2026-10-03 — "I can't save the blog SEO because of these fixed dimensions" — and the three true things that said so
+
+SEO team, 2026-10-02: *"@Sumit can we remove this fixed dimensions or is it
+necessary? … I mean rest is working fine but I'm unable to save the SEO settings
+for blog due to these fixed dimensions"*, quoting our own message:
+
+> 440×291 is too small — under 600px wide, Facebook and LinkedIn drop the large
+> card and show a thumbnail instead. 1200×630 is the size to aim for.
+
+#### Nothing was blocking the save. Everything on the screen said it was.
+
+Checked all four places a gate could live — **none of them look at a dimension**:
+
+| Where | What it actually does |
+|---|---|
+| `SeoSharePreview` | renders a `<Note>`. Advisory. No callback, no veto. |
+| `SEOPanel.save()` | posts. No image check. |
+| Save button | `disabled={busy \|\| !dirty}` — busy, or nothing edited. |
+| `pageSeoSaveSchema` | `og_image_url` is `urlish(500)`. A URL or a `/path`. |
+
+Then I opened the page they were on — `/admin/seo/page?type=blog&key=19`, signed
+in as Super Admin — and the report explained itself. **Three true signals that
+assemble into one wrong conclusion:**
+
+1. A **danger-red** note saying "440×291 is too small", styled identically to the
+   one verdict that IS a real failure (an image that cannot be fetched).
+2. **No Share image field anywhere in sight** — it lives in the `Sharing`
+   section, and only `meta` and `url` are open by default.
+3. A **greyed Save button** — greyed because nothing had been edited, which is
+   correct, and says "No unsaved changes" in small grey text beside it.
+
+Red error, no control, dead button. Anyone would read that as a block. The
+reader was right, so the screen is what changed.
+
+And the picture was never theirs to begin with: **`og_image_url` on blog 19 is
+empty** — every field is. The 440×291 is the post's own cover, inherited. The
+note never said so, so "set a share image" and "replace the post's cover" looked
+like the same impossible thing.
+
+#### The answer to their question
+
+**The advice is necessary; the gate never existed.** Under 600px Facebook and
+LinkedIn really do drop the large card — worth knowing before the link is
+shared, not after. So the guidance stays and the presentation changed:
+
+- An undersized or wrong-ratio image is a **warning**. The only red left is an
+  image that cannot be fetched — that one is a real failure, and keeping it the
+  only red is what makes it mean anything.
+- Every non-good verdict now says, in words: **"This is advice, not a block —
+  the page saves either way."**
+- It names where the picture came from, and the two different actions that
+  follow from inherited vs. overridden.
+- And it offers a button that **opens `Sharing` and puts the cursor in the Share
+  image field**, so the thing the message talks about is one click away.
+
+`theShareImageWarningDoesNotBlockSaving` holds this permanently: **29
+assertions**, including a case-insensitive scan that fails if anything in
+`save()` or the Save button's disabled condition ever mentions a dimension.
+**11 mutations, all caught by a named assertion.**
+
+#### Two of my own checks were worth less than they looked
+
+- **The forbidden-word scan was case-sensitive**, so a mutation inserting
+  `shareImageWidth < 600` walked straight through it. Lower-cased both sides.
+- **The "no timing guess" scan fired on its own explanatory comment.** Comment
+  lines are dropped before scanning now.
+
+#### And the fix shipped half-broken, which only the browser caught
+
+The "Open the Share image field" button opened the section and **focused
+nothing**. `requestAnimationFrame` fired before React committed the newly
+rendered section, so `getElementById` found nothing and the focus silently did
+not happen. Replaced with a request flag plus an effect keyed on
+`[wantShareImageFocus, open.social]`, which by construction runs after the commit
+that puts the field on the page.
+
+**The typecheck, 26 assertions and a clean production build all passed over
+this.** Only opening the page caught it — and then the live page confirmed the
+repair: `activeElement` is `pseo-og_image_url`.
+
+web `554ca92` → `83c263e` · backend `5a912ff` → `2e8feac` · **both auto-deployed
+and verified live in the served bundle**, which also corroborates §8a69's
+correction that auto-deploy works.
+
+---
+
 ### 8a69. 2026-10-02 — cropping, on every admin upload (the SEO team's ask), and a deploy that is holding all of it back
 
 The SEO team, 2026-09-30: *"for the image upload section, please consider adding
