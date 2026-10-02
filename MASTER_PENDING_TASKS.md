@@ -380,6 +380,80 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a71. 2026-10-03 — the category rail had one real picture out of eleven; and the test-data purge, prepared but NOT run
+
+Client, via Sumit: *"please add the final images on homes page related to their
+categories / fix all the categories. Also delete all the data from web apk and
+admin"*, then: *"only necessary data and policy will be there and other all the
+dummy data remove."*
+
+#### What the homepage rail was actually doing
+
+The screenshot showed nine circles that all had pictures. The catalogue did
+not: **`cat_icon` was NULL on ten of the eleven visible categories.** Only
+"Villas -1" had one.
+
+Those pictures came from `Explore.tsx` — `CATEGORY_FALLBACK` keyed on the
+lower-cased title, then `FALLBACK_ROTATION[id % 9]` for anything it had never
+heard of. So Resort (id 2) drew a lounge interior, and Pool House (id 22) would
+have drawn a forest. **The rail looked populated while the catalogue was
+empty** — the same shape as the listing-photo stock fallback that is on the
+do-not-repeat list.
+
+#### Fixed
+
+Eleven Unsplash photographs (the Unsplash Licence permits commercial use), each
+downloaded as a 1200×1200 centre crop because a category tile is square
+everywhere it appears, **and each one looked at before being accepted** — the
+first Cottages result was a Helen Allingham-style watercolour, not a
+photograph, and was rejected.
+
+Uploaded to Cloudinary `category_icons/` and written to `cat_icon` by id, never
+by title, so a rename cannot mis-assign one. Also: **category 1 was titled
+"Villas -1" with slug `villas-1`** — now "Villas" / `villas`. The slug is
+returned as data for building a browse link and is not a server route, so
+nothing 404s.
+
+Verified on the live site: `/common/categories` returns an image for all 11, and
+on `/explore` the rail draws **11 images from Cloudinary and 0 from the bundled
+fallback**.
+
+The admin can change any of them: Categories → edit a row → "Replace image
+(optional)" → optional Crop (square, 600×600 minimum) → Save, posting `cat_icon`
+to `/admin/category/create`. Confirmed in code; not clicked, because the admin
+session had expired and signing in is not something this session does.
+
+#### The purge: scoped, dry-run, and BLOCKED
+
+Agreed scope: delete the test data, keep policy/reference/SEO.
+
+**The live database is far emptier than anyone assumed** — the 24 Sep cutover
+did not bring the old corpus across. Not 29,000 listings: **4 properties, 7
+bookings, 10 users**.
+
+| | |
+|---|---|
+| **Delete (2,062 rows)** | 4 properties + all 21 `property_*` child tables · 7 bookings, details, histories · payments, invoices, ledger, host dues · negotiation offers + log · 10 users, creds, logins, KYC, notifications · attachments, revoked tokens, sent emails · 1,394 chatbot logs · admin audit + login logs · 11 junk category rows (`couple`, `party`, `Test Api…`, `ZZ Claude Renamed`, `Ghost House`) |
+| **Keep** | 1,703 cities · 37 states · 44 amenities · 41 FAQs · 31 terms · 5 cancellation policies · 14 booking statuses · doc lists · tags · CMS pages/sections/content · **7 blogs, 5 page_seo, 31 image_seo, 2 seo_templates** · 6 admins · SequelizeMeta |
+
+**The DELETE was refused by the safety classifier and has not run.** The script
+is at `purge_test_data.js` in the backend working copy (untracked). It dumps
+every affected table to JSON *before* deleting and aborts if the dump fails.
+Dry run verified.
+
+#### Two things for a person
+
+- **`admintest` / admin@mailinator.com is an ACTIVE SUPER ADMIN.** A Mailinator
+  address with full rights, on production. Out of the agreed scope so it was
+  left alone, but it should not survive go-live. `Satish` (admin, active) is
+  also a Mailinator address.
+- **All five `page_seo` rows will be orphans after the purge.** Four already
+  are — they point at properties 29253/29262/29263/29265, which do not exist in
+  PlanetScale. The fifth points at property 4, which the purge removes. They are
+  kept as agreed, but they describe nothing.
+
+---
+
 ### 8a70. Closed 2026-10-03 — "I can't save the blog SEO because of these fixed dimensions" — and the three true things that said so
 
 SEO team, 2026-10-02: *"@Sumit can we remove this fixed dimensions or is it
