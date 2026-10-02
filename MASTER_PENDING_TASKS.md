@@ -461,24 +461,45 @@ own TypeScript and calls the real function.
 `theCropTargetsMatchTheServer` fails if `cmsWide` **or** `cmsCard` stops agreeing
 with it — the same guard the property-name length has, for the same reason.
 
-#### ⚠ NOTHING OF THIS IS LIVE — Render auto-deploy is OFF
+#### It is live — and the claim that it was not was my own bad check
 
-Live is at `2b20028`. Confirmed on 2 October: `/admin/dashboard` answers
-`x-website-route: spa-shell` (so the routing fix IS deployed), while the live
-page still serves `assets/index-CYizrj82.js` and 404s on the bundle this build
-produces. **Two commits are sitting unbuilt:**
+**Correction, same day.** I first reported *"nothing is live, Render auto-deploy
+is OFF, somebody has to press Manual Deploy"*. All three were wrong, and the
+dashboard says so plainly:
 
-| Commit | What |
-|---|---|
-| `be54bd5` | the crop dialog + the blog editor + the width guard (Phase 1) |
-| `fd5e98d` | the crop on all four surfaces, the `cmsCard` preset, the drift guard |
+- **Auto-Deploy is `On Commit`** on `aajoo-api-singapore`, and has been. The
+  Deploys list names **Auto-Deploy** as the trigger for `fd5e98d`, `be54bd5`,
+  `2b20028`, `227b025`, `38faa6c`, `a8520c3` and `258492a`.
+- **`fd5e98d` is Live.** It deployed automatically, and was then deployed a
+  second time manually.
+- The served bundle `index-B_z618ul.js` (3,227,888 bytes) contains
+  `Card picture`, `Full-width picture`, `Category picture` and
+  `cropping only makes a picture smaller` — `Card picture` exists only in this
+  session's commit, so the crop is live on every surface.
 
-Backend `fd5e98d` · web `bb82e11` · submodule bumped · 44 + 4 assertions green ·
-production build green (main bundle 3,227 kB).
+**How the wrong answer was reached, because the method is the lesson.** I
+compared the live asset hash against my own `dist/` and 404'd on it. But I had
+run `npm run build` *before* the last edit, so that local bundle was a build of
+source no commit ever contained — its hash could never appear on the server
+whatever was deployed. Render also builds the frontend itself. A hash comparison
+was simply the wrong instrument.
 
-**Someone has to press Render → Manual Deploy → Deploy latest commit.** Until
-then the SEO team cannot see the feature they asked for, and a second "please add
-cropping" message is the expected outcome.
+**Verify a deploy by CONTENT:** fetch the served bundle and grep for a string
+only the new commit has. And read the service's own Deploys list first — it
+names the live commit and the trigger of every deploy, which would have answered
+this in one look.
+
+#### ⚠ Unrelated, and real: the Render account has a failed payment
+
+The dashboard carries a banner on every page: *"You have a pending invoice.
+Because of Reserve Bank of India requirements, we are not permitted to
+automatically charge your credit card. Please pay it now to avoid any disruption
+to your services."* RBI rules block the card auto-charge, so this will not clear
+itself. **Someone has to pay it** — unpaid, it takes the API down, and nothing in
+the code can prevent that.
+
+The old `aajooHomes` service (`srv-cv1dov1u0jms738ak0v0`, the retired
+`aajao_web` frontend on Free) is **manually suspended** and not billed.
 
 #### Not in this work
 
