@@ -380,6 +380,82 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a72. 2026-10-03 — "the server no longer finds accounts by phone": the lookup was fine, the phone was `{{phone}}`
+
+BotPenguin: *"after the latest deploy the server no longer finds accounts by
+phone number … /bp/session/start returns 200, but /bp/context then returns 404
+'User not found for the provided phone number' … in every format (10-digit,
++91, 91)."*
+
+#### The lookup was not broken
+
+`getContext` tries three things in order — the session's own `cs_user_id`, the
+number with the claimed role as a tie-break, then **the number alone** — against
+the right columns (`user_pnumber`, `user_isDelete`, `cred_user_isDelete`,
+all confirmed present in the live schema). It normalises with `slice(-10)`, so
+10-digit, +91 and 91 are the same ten digits; a test now asserts that, because
+"it fails in every format" reads like a formatting bug and is the opposite of one.
+
+**Of the six chatbot sessions in the database, four resolved to a live user.**
+The evidence came out of the purge backup rather than from reasoning:
+
+| session phone | resolved |
+|---|---|
+| ….8033, ….1388, ….1389, ….6254 | **yes** — cs_user_id 8, 2, 3, 10 |
+| ….0999 | no account on that number |
+| **`{{phone}}`** | **an unrendered template variable** |
+
+`String(phone).slice(-10)` took `{{phone}}` without a word, because the last ten
+characters of anything are ten characters. So start answered 200 (a session
+really was created) and context answered 404 two calls later with a message
+about the phone number — true, useless, and pointing at our lookup instead of at
+the template that never rendered.
+
+#### Fixed: refused at the door, by name
+
+`phoneDigits()` requires 10–15 digits; `looksLikeTemplate()` catches `{{x}}`,
+`${x}` and `<x>`. An unrendered template gets its own **422** saying the flow is
+sending the placeholder instead of the value, separately from "that is not a
+usable number". Only when a phone was actually sent — the SSO/token path has
+none and still works. **The lookup is untouched, because it was never the
+problem.**
+
+9 assertions, 4 mutations all caught. Backend `c20c8f4`, auto-deployed and live
+(uptime reset confirmed). The 422 itself is **not** exercised over the wire —
+`/bp/session/start` is behind `BOTPENGUIN_API_TOKEN`, which this session does not
+have; Rohan can confirm it from his API log.
+
+#### Two things that are NOT code, and matter more
+
+- **There are currently ZERO user accounts.** §8a71's purge ran an hour before
+  this report. Every phone lookup 404s today, by construction, until accounts
+  exist again. Nothing BotPenguin tests will resolve until then.
+- **Their test numbers were probably never in this database.** The 24 Sep
+  cutover was a clean start; accounts 100/101 live in the OLD Clever Cloud DB
+  behind `aajaodev.onrender.com`, which now answers 503. "It worked on 28 Sep"
+  is consistent with having been pointed at that old host.
+
+#### ⚠ And a mistake of mine, recorded in full
+
+`git add -A` on the fix commit swept in `db_backup_2026-10-03/` — the dump taken
+before the purge. **In plain JSON it held `cred_user_password` hashes,
+`cred_apple_refresh_token`, and `kv_document_number` / `kv_front_url` /
+`kv_back_url` / `kv_portrait_url` — government ID numbers and the document
+images — plus names, phones, dates of birth and addresses.**
+
+The repository is private, so this is not public exposure. Removed from the tip
+(`c2fef1a`), moved out of the working copy to
+`D:/Projects/aajoo_db_backup_2026-10-03`, and `.gitIgnore` now refuses
+`db_backup*/`, `*_backup_*/` and `purge_*.js` — note the capital I in that
+filename, which swallowed the first attempt silently.
+
+**HISTORY IS NOT SCRUBBED.** Commit `c20c8f4` still contains every byte. Removing
+a file from the tip does not remove it from history. Scrubbing needs a rewrite
+and a force-push of `main`, which Render deploys from — a decision for a person,
+not something to do unannounced.
+
+---
+
 ### 8a71. 2026-10-03 — the category rail had one real picture out of eleven; and the test-data purge, prepared but NOT run
 
 Client, via Sumit: *"please add the final images on homes page related to their
