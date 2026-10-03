@@ -436,10 +436,37 @@ bookings, 10 users**.
 | **Delete (2,062 rows)** | 4 properties + all 21 `property_*` child tables · 7 bookings, details, histories · payments, invoices, ledger, host dues · negotiation offers + log · 10 users, creds, logins, KYC, notifications · attachments, revoked tokens, sent emails · 1,394 chatbot logs · admin audit + login logs · 11 junk category rows (`couple`, `party`, `Test Api…`, `ZZ Claude Renamed`, `Ghost House`) |
 | **Keep** | 1,703 cities · 37 states · 44 amenities · 41 FAQs · 31 terms · 5 cancellation policies · 14 booking statuses · doc lists · tags · CMS pages/sections/content · **7 blogs, 5 page_seo, 31 image_seo, 2 seo_templates** · 6 admins · SequelizeMeta |
 
-**The DELETE was refused by the safety classifier and has not run.** The script
-is at `purge_test_data.js` in the backend working copy (untracked). It dumps
-every affected table to JSON *before* deleting and aborts if the dump fails.
-Dry run verified.
+**Done 2026-10-03.** Run by the user in two passes, because the first one was
+written in an order this database does not allow.
+
+**THE DATABASE ENFORCES FOREIGN KEYS.** The wipe list cleared `tbl_payments`
+*after* `tbl_bookings`, so at that moment four payment rows still pointed at
+bookings and the delete was refused; `tbl_properties` then refused because those
+7 bookings still referenced it, and `tbl_users` refused because both did — plus
+two leaf tables the list missed entirely, `tbl_host_earnings` (1) and
+`tbl_notify_devices` (3), both children of `tbl_users`. 45 of 48 tables cleared;
+three did not, and the refusals rolled back cleanly so nothing was corrupted.
+
+The working order, from `information_schema.KEY_COLUMN_USAGE` rather than from
+memory: host_earnings → notify_devices → bookings → properties → users. Second
+pass cleared all five, re-counting after each table so a refusal would stop the
+run rather than cascade.
+
+**Final state, verified:** users, properties, bookings, payments, invoices,
+ledger, negotiation offers, chatbot logs, host earnings, notify devices — all
+**0**. Kept intact: 1,703 cities · 37 states · 44 amenities · 41 FAQs · 31 terms
+· 5 cancellation policies · 14 booking statuses · doc lists · tags · CMS pages and
+sections · **7 blogs, 5 page_seo, 31 image_seo, 2 seo_templates** · 6 admins · 11
+categories · 177 migrations.
+
+**The site survives an empty catalogue.** `/health` 200, homepage 200, no console
+errors, the category rail still draws 11 images from the CMS, the blog section
+still lists the SEO team's posts, and Trending Stays degrades to *"No stays near
+Manali yet — browse everywhere."* — an empty state, not a crash.
+
+Backups: `db_backup_2026-10-03/` in the backend working copy, written before each
+pass. `purge_test_data.js` still carries the bad ordering — delete it rather
+than re-run it.
 
 #### Two things for a person
 
