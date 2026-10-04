@@ -380,6 +380,64 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a73. 2026-10-04 — go-live readiness sweep: NOT ready, and the gateway is the reason
+
+Asked before switching Razorpay to live keys. Swept the live site end to end.
+
+#### Verified working
+
+| | |
+|---|---|
+| Platform | `/health` 200 · homepage 200 · `robots.txt` 200 · `sitemap.xml` 200 |
+| Readiness | `/health/env` → `{"ready":true}` (required config present **and** DB reachable) |
+| Mail | Brevo HTTP active, key present and valid, sender verified on `aajoohomes.com` |
+| Policy & reference | states · amenities · cancellation policies · document list · FAQ · terms (guest **and** host) · privacy policy · safety · about us · tags — all 200 with real data |
+| Categories | 11, every one with an image |
+| Blogs | serving; the SEO team's posts are intact |
+| SEO | `/seo/resolve` 200, sitemap index 200 |
+| Onboarding | signup, login, verify-otp, admin login all wired and validating (422 with field names) |
+| Chatbot | 401 without the BotPenguin token — correct |
+
+#### ⛔ Blockers
+
+1. **The Razorpay webhook is not configured.** `/webhooks/razorpay` answers
+   **503 "webhook not configured"** — `RAZORPAY_WEBHOOK_SECRET` is not on
+   Render. Razorpay's callbacks are rejected, so a payment that SUCCEEDS at the
+   gateway is never confirmed here. **This has to be in place BEFORE the live
+   keys, not after**, or the first real payment is reconciled by hand. The
+   endpoint URL also has to be registered in the Razorpay dashboard.
+2. **The catalogue is empty.** `/properties/search` → "no record found",
+   `/properties/destinations` → `[]`. Nothing to book.
+3. **No user accounts.** All 10 were removed in §8a71. Onboarding works; the
+   platform simply starts from zero.
+
+#### ⚠ Security, before any live key
+
+4. **`admintest` / `admin@mailinator.com` is an ACTIVE SUPER ADMIN** — a
+   Mailinator inbox anyone can read, holding full admin rights including
+   password reset. `Satish` is active on a Mailinator address too.
+5. **The backend git history holds the database dump** (`c20c8f4`): password
+   hashes, Apple refresh tokens, KYC document numbers and ID image URLs.
+   Private repo; still needs scrubbing.
+6. **Render has a failed payment.** RBI rules block the card auto-charge, so
+   the pending invoice will not clear itself and unpaid it takes the API down.
+
+#### What only the key-holder can read
+
+`/health/env` with `x-health-token` reports `payments.mode`,
+`collectsMoney`, `missingRequired` and `dbCutoverSafe`. Worth reading before
+and after the key change. Note the deliberate behaviour: **a TEST key on a
+production deploy makes payment endpoints REFUSE** rather than complete without
+collecting — so checkout is inert until the live keys land.
+
+#### Recommended order
+
+webhook secret on Render → register the webhook URL in Razorpay → live keys →
+one small real payment → confirm it lands on the ledger and the booking
+confirms → then open the doors.
+
+---
+
 ### 8a72. 2026-10-03 — "the server no longer finds accounts by phone": the lookup was fine, the phone was `{{phone}}`
 
 BotPenguin: *"after the latest deploy the server no longer finds accounts by
