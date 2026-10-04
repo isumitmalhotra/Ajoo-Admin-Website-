@@ -519,14 +519,29 @@ reaches its real routes (dashboard, ledgers, payout search/initiate/approve);
 
 #### Three findings, none of them a breach
 
-1. **63 routes validate BEFORE they authenticate.** `[validation(schema),
-   adminAuthToken]` means an unauthenticated caller with an empty body gets a
-   **422 naming the required fields** instead of a 401. Confirmed harmless:
-   `/admin/user/single` with a well-formed `{"userId":1}` answers **401**, so
-   nothing is returned and nothing is done. What it costs is schema enumeration
-   and a misleading error — an integrator is told "User ID is required" when
-   the real problem is that they are not logged in. Fix is a token swap per
-   route; 63 routes is not a change to make on the day onboarding opens.
+1. ~~**63 routes validate BEFORE they authenticate.**~~ **Fixed and live
+   (`2657eb1`).** `[validation(schema), adminAuthToken]` meant an
+   unauthenticated caller was validated first and answered **422 naming the
+   required fields** rather than 401. Never a breach — nothing returned,
+   nothing done, and a well-formed body still ended in 401 — but it let an
+   anonymous caller enumerate the fields of 63 endpoints one empty POST at a
+   time, and told integrators the wrong thing about why they were refused.
+
+   **103 middleware arrays reordered across 17 files** (not 63: the other 40
+   had the same ordering and would have leaked the moment a required field was
+   added). Validation moved to the END, so the order is **auth → role →
+   validation**. 103 insertions, 103 deletions — one line per route, nothing
+   else touched. Two things the reorder had to not break, both verified:
+   `upload.fields([{ name: "propertyCover" }, …])` sits on the same line as the
+   guard array and is untouched, and `requireRole` still runs before validation
+   so a role refusal does not depend on a well-formed body.
+
+   **Re-probed all 227 routes after the deploy: 216 refused 401/403, 11
+   rate-limited, 0 anything else.** `adminRoutesAuthenticateBeforeTheyValidate`
+   parses the route tables and fails on any admin route that validates before
+   it authenticates, carries no guard, or validates before `requireRole` —
+   verified by putting one route back the old way, which fails and names it.
+
 2. **`/admin/finance/payout-accounts` is in no module.** The route grants
    `requireRole(FINANCE_READ)`, but the registry does not list it, and the
    central check runs first — so a **finance-role admin is refused the payout
