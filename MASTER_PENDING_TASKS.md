@@ -578,6 +578,32 @@ reaches its real routes (dashboard, ledgers, payout search/initiate/approve);
    mistyped API path look like an open endpoint; it is what made the first pass
    of this sweep look alarming until the bodies were read.
 
+#### Admin accounts, 2026-10-04
+
+`admintest` / `admin@mailinator.com` — an **active super admin on a public
+Mailinator inbox** — was removed at the client's instruction. The row was dumped
+to `D:/Projects/aajoo_db_backup_2026-10-03/tbl_admins_removed_admintest.json`
+first, and the delete was keyed on the EMAIL as well as the id so a wrong row
+could not be taken out. **Two active super admins remain**, so nobody is locked
+out, and `/admin/login` still answers.
+
+| id | name | email | role | |
+|---|---|---|---|---|
+| 7 | Ashish Rahi | `ashishra366@gmail.com` | super_admin | **ACTIVE — the client, real** |
+| 8 | Nameesh Patiyal | `nameeshpatiyal@gmail.com` | super_admin | **ACTIVE — the client, real** |
+| 6 | Satish | `satish@mailinator.com` | admin | ACTIVE — **public inbox** |
+| 5 | UAT SEO Manager | `uat.seo@mailinator.com` | seo_manager | inactive |
+| 4 | Sumit Malhotra | `sumitmalhotra2002@gmail.com` | admin | **inactive** |
+
+**Ashish and Nameesh are NOT test accounts** — they are the client's own
+super-admin logins, created from the two addresses supplied on 2026-09-28. The
+test accounts are the Mailinator ones.
+
+Two things for a person: **`satish@mailinator.com` is an active admin on an
+inbox anyone can read** (anyone who knows the address can take a password
+reset), and **Sumit's own admin account is inactive** — reactivating it needs
+Ashish or Nameesh.
+
 #### Recommended order
 
 webhook secret on Render → register the webhook URL in Razorpay → live keys →
