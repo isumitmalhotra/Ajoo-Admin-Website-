@@ -542,13 +542,37 @@ reaches its real routes (dashboard, ledgers, payout search/initiate/approve);
    it authenticates, carries no guard, or validates before `requireRole` —
    verified by putting one route back the old way, which fails and names it.
 
-2. **`/admin/finance/payout-accounts` is in no module.** The route grants
-   `requireRole(FINANCE_READ)`, but the registry does not list it, and the
-   central check runs first — so a **finance-role admin is refused the payout
-   accounts screen** while still being able to initiate and approve payouts.
-   Latent: all four active admins are super_admin or admin. **A decision, not a
-   bug** — bank details may well be meant for super admins only; the two layers
-   just disagree about it.
+2. ~~**`/admin/finance/payout-accounts` is in no module.**~~ **Fixed and live
+   (`6287a33`).** Client decision: **bank details are for super admins AND
+   finance.**
+
+   The real fault was worse than a missing grant. The payout-accounts screen
+   lives at `/admin/finance/payouts/accounts`, **under the `finance-payouts`
+   screen's UI prefix** — so a finance administrator could already open it from
+   their own sidebar, and every call it made answered 403. That is precisely
+   what `config/adminModules` opens by promising cannot happen: *"a screen
+   cannot be visible in the nav and refused by the API."*
+
+   The cause is the segment-aware prefix match, which is **correct and stays**:
+   `/admin/finance/payout` covers `/admin/finance/payout/123` but not
+   `/admin/finance/payout-accounts` — a different word that merely starts the
+   same way. A prefix meant for payouts must not quietly grant bank details; it
+   only had to be NAMED, and was not.
+
+   Named on `finance-payouts` rather than a key of its own, because that
+   screen's UI prefix already covers the page — a separate key would look
+   revocable on its own and would not be.
+
+   | | super_admin | admin | finance | support | seo_manager |
+   |---|---|---|---|---|---|
+   | list / reveal / verify / reject | **yes** | no | **yes** | no | no |
+
+   `aScreenInYourNavIsOneYouCanUse` pins the decision and the two general
+   rules: a role that can OPEN that screen can CALL it, and **every path a
+   screen declares is one it actually grants** — which catches a row listing an
+   endpoint the matcher never matches. Verified by typo'ing the path (declared,
+   unreachable, caught) and by removing the grant.
+
 3. **Any non-existent `/admin/*` GET returns 200 HTML**, not 404 — the SPA
    catch-all doing its job for client-side routing. Correct, but it makes a
    mistyped API path look like an open endpoint; it is what made the first pass
