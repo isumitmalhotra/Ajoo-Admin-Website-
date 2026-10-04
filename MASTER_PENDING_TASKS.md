@@ -400,12 +400,23 @@ Asked before switching Razorpay to live keys. Swept the live site end to end.
 
 #### ⛔ Blockers
 
-1. **The Razorpay webhook is not configured.** `/webhooks/razorpay` answers
-   **503 "webhook not configured"** — `RAZORPAY_WEBHOOK_SECRET` is not on
-   Render. Razorpay's callbacks are rejected, so a payment that SUCCEEDS at the
-   gateway is never confirmed here. **This has to be in place BEFORE the live
-   keys, not after**, or the first real payment is reconciled by hand. The
-   endpoint URL also has to be registered in the Razorpay dashboard.
+1. ~~**The Razorpay webhook is not configured.**~~ **CLOSED 2026-10-04.**
+   `RAZORPAY_WEBHOOK_SECRET` is on Render and the service has restarted.
+   `/webhooks/razorpay` moved from **503 "webhook not configured"** to **401
+   "invalid signature"** on both `api.aajoohomes.com` and `www.aajoohomes.com`,
+   and a deliberately wrong signature is rejected — so the secret is loaded and
+   the HMAC check is running.
+
+   **What that does NOT prove:** that a CORRECTLY signed callback is accepted.
+   That needs the secret, which this session does not have and should not. The
+   proof is **Send Test Webhook** in the Razorpay dashboard showing a 2xx — one
+   click, and worth doing before the live keys go in.
+
+   Note for whoever registers it: Test mode and Live mode are **separate
+   webhooks** in Razorpay. One created in Test mode does nothing for live
+   payments, and Render holds a single secret — so if both are wanted, both must
+   use the same string.
+
 2. **The catalogue is empty.** `/properties/search` → "no record found",
    `/properties/destinations` → `[]`. Nothing to book.
 3. **No user accounts.** All 10 were removed in §8a71. Onboarding works; the
