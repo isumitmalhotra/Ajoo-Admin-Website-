@@ -454,16 +454,35 @@ category-filtered search, and as Uncategorised in analytics. `resolveLegacyCatId
 falls back from the hand-written code map to the catalogue, matching on a
 normalised key (`pool-house` ↔ `pool_house`). Verified live: `pool_house` → 22.
 
-#### ⚠ Two category decisions for the client, before hosts pick wrong
+#### Closed — both decisions taken, and the drift made self-correcting
 
-1. **Four wizard choices still have no browse category** — `camping`,
-   `glamping`, `tree_house`, `pg_long_stay`. A host picking one gets a listing
-   nobody can find by category. Either give them catalogue rows or take them out
-   of the wizard.
-2. **Three homepage tiles can never receive a listing** — Boutique Stays,
-   Luxury Stays, Pet-Friendly Stays. No wizard choice maps to them, so a guest
-   clicking those tiles gets nothing, permanently. Ticking "offer in the wizard"
-   on each now works end to end, thanks to the fix above.
+**Every one of the fifteen categories a host is offered now resolves to a
+category a guest can browse.** Verified on the live `/listing/schema`.
+
+*Data, applied live:* catalogue rows created for **Camping, Glamping, Tree
+House and PG & Long Stay** (cat_id 23–26), each with an image and a slug that
+normalises to its wizard key (`pg-long-stay` ↔ `pg_long_stay`). **Boutique
+Stays, Luxury Stays and Pet-Friendly Stays** ticked into the wizard — they have
+no `CATEGORY_FLOWS` of their own, which catalogueSchema already treats as
+legitimate. The homepage rail now draws **15 images from the CMS and 0 from the
+bundled fallback**.
+
+*Code (`0f6e439`, live):* `utils/categoryBridge` is the single answer to "which
+catalogue row is this wizard key". It matches on a normalised form —
+`pool-house`, `pool_house` and "Pool House" are all `poolhouse` — so **a
+category an admin adds bridges itself, with no map to update**.
+
+And drift is now said out loud rather than discovered by a host whose listing
+went nowhere: `browsabilityOf` answers a whole list in one catalogue read and
+**logs any offered category with no row**, and `categoriesForWizard` marks each
+one `browsable`, so `/listing/schema` can be inspected without a database. A
+catalogue outage reports *unknown* rather than claiming nothing is browsable.
+
+The two lists still exist and neither could go: the code list owns the
+per-category question sets, the catalogue owns what guests see. What changed is
+that the JOIN between them is automatic and the gap is visible.
+
+13 assertions · 5 mutations all caught.
 
 #### Recommended order
 
