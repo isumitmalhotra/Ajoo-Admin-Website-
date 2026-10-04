@@ -484,6 +484,61 @@ that the JOIN between them is automatic and the gap is visible.
 
 13 assertions · 5 mutations all caught.
 
+#### Admin side, swept 2026-10-04
+
+**232 `/admin` routes across 55 route files. Every one of the 227 guarded
+routes was probed unauthenticated, with an explicit JSON Accept so the SPA
+shell could not answer for them. None returned data.**
+
+| | |
+|---|---|
+| Refused 401/403 | 153 |
+| Answered 422 (validation ran first) | 63 — see below |
+| Rate-limited | 11 — re-probed individually, all refuse |
+| **Returned data** | **0** |
+
+The four routes with no route-level guard are correct: `/admin/login`,
+`/admin/forgot-password`, `/admin/forgot-password/reset`, and `/admin/create` —
+which is a **bootstrap** endpoint guarded inside the controller
+(`adminCount > 0 && !req.admin` → 401, non-super → 403), open only when no
+admin exists.
+
+**Confinement is central, not per-route.** 158 routes carry `adminAuth` with no
+`requireRole`, and that is by design: `roleMayAccess` runs inside BOTH
+`adminAuth` and `adminAuthToken` against `config/adminModules.js` — the same
+registry that draws the sidebar — so a route added tomorrow is refused to a
+narrow role until somebody puts it on a screen. Fail-closed.
+`assertAdminStillActive` also means a deactivated admin's existing token stops
+working.
+
+**The role matrix is sane**, and the part that matters today holds: **`admin`
+(Satish) can reach the listing queue, listing detail and review** — host
+approvals do not need a super admin. `admin` cannot reach finance; `finance`
+reaches its real routes (dashboard, ledgers, payout search/initiate/approve);
+`seo_manager` gets SEO only.
+
+#### Three findings, none of them a breach
+
+1. **63 routes validate BEFORE they authenticate.** `[validation(schema),
+   adminAuthToken]` means an unauthenticated caller with an empty body gets a
+   **422 naming the required fields** instead of a 401. Confirmed harmless:
+   `/admin/user/single` with a well-formed `{"userId":1}` answers **401**, so
+   nothing is returned and nothing is done. What it costs is schema enumeration
+   and a misleading error — an integrator is told "User ID is required" when
+   the real problem is that they are not logged in. Fix is a token swap per
+   route; 63 routes is not a change to make on the day onboarding opens.
+2. **`/admin/finance/payout-accounts` is in no module.** The route grants
+   `requireRole(FINANCE_READ)`, but the registry does not list it, and the
+   central check runs first — so a **finance-role admin is refused the payout
+   accounts screen** while still being able to initiate and approve payouts.
+   Latent: all four active admins are super_admin or admin. **A decision, not a
+   bug** — bank details may well be meant for super admins only; the two layers
+   just disagree about it.
+3. **Any non-existent `/admin/*` GET returns 200 HTML**, not 404 — the SPA
+   catch-all doing its job for client-side routing. Correct, but it makes a
+   mistyped API path look like an open endpoint; it is what made the first pass
+   of this sweep look alarming until the bodies were read.
+
 #### Recommended order
 
 webhook secret on Render → register the webhook URL in Razorpay → live keys →
