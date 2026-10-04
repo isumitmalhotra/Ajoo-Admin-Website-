@@ -430,6 +430,41 @@ and after the key change. Note the deliberate behaviour: **a TEST key on a
 production deploy makes payment endpoints REFUSE** rather than complete without
 collecting — so checkout is inert until the live keys land.
 
+#### Host side, swept separately — onboarding opens today
+
+| | |
+|---|---|
+| Wizard config | `/listing/schema` 200, all sections, **12 categories** |
+| Wizard writes | `step1` / `submit` / `my-draft` → 401 unauthenticated — guarded |
+| Admin review | `/admin/listing/queue`, `/admin/listing/review` → 401 with `Accept: application/json` |
+| Reference data | amenities 44 · tags 6 · KYC doc types 4 · cancellation policies 5 · cities 1,703 · states 37 · booking statuses 14 — all survived the purge |
+| Ids | AUTO_INCREMENT continues (users→12, properties→5, bookings→8) — no reuse of a deleted id |
+| Publish gate | legal documents are CODE constants in `config/legalDocuments.js`, not rows — the purge could not break it |
+| Approvers | 4 active admins |
+
+**A 200 on `/admin/...` or `/host/...` from curl is the SPA shell**, not a leak —
+`x-website-route: spa-shell`, from the browser guard added in §8a68. With
+`Accept: application/json` both answer 401. Worth knowing before anyone reports
+it as an open admin endpoint.
+
+**Fixed today (`bc84dba`, live):** a category an admin ticks into the wizard now
+reaches the browse catalogue. "Pool House" was offered to hosts and bridged to
+nothing — the listing would have appeared under no category tile, in no
+category-filtered search, and as Uncategorised in analytics. `resolveLegacyCatId`
+falls back from the hand-written code map to the catalogue, matching on a
+normalised key (`pool-house` ↔ `pool_house`). Verified live: `pool_house` → 22.
+
+#### ⚠ Two category decisions for the client, before hosts pick wrong
+
+1. **Four wizard choices still have no browse category** — `camping`,
+   `glamping`, `tree_house`, `pg_long_stay`. A host picking one gets a listing
+   nobody can find by category. Either give them catalogue rows or take them out
+   of the wizard.
+2. **Three homepage tiles can never receive a listing** — Boutique Stays,
+   Luxury Stays, Pet-Friendly Stays. No wizard choice maps to them, so a guest
+   clicking those tiles gets nothing, permanently. Ticking "offer in the wizard"
+   on each now works end to end, thanks to the fix above.
+
 #### Recommended order
 
 webhook secret on Render → register the webhook URL in Razorpay → live keys →
