@@ -619,46 +619,34 @@ Ashish or Nameesh.
 
 Checked 2026-10-04. Two of these would stop that test at the first step.
 
-**1. The live site is still serving a TEST Razorpay key.** The served bundle
-`assets/index-vLfqKKgJ.js` contains `rzp_test_ThLpU683UsI1lp` and **zero**
-occurrences of `rzp_live_`. Checkout would open in test mode and no real money
-would move.
+~~**1. The live site is still serving a TEST Razorpay key.**~~ **CLOSED
+2026-10-04.** The first two manual redeploys did NOT change the bundle — it
+stayed `assets/index-vLfqKKgJ.js` with `rzp_test_ThLpU683UsI1lp`, and both
+builds finished in ~50s, the signature of the web stage coming from cache. The
+third took longer and produced **`assets/index-Co5lxB9k.js` carrying
+`rzp_live_TjqzCwo7CT9g4E` and zero test keys.**
 
-`VITE_RAZORPAY_KEY` is a **build-time** variable — Vite inlines
-`import.meta.env` into the bundle — so it is NOT like the webhook secret.
-Setting it on Render requires a **rebuild**, which an env change does trigger,
-but the proof is the bundle, not the dashboard. The Dockerfile already carries
-`ARG VITE_RAZORPAY_KEY` / `ENV VITE_RAZORPAY_KEY`, so the plumbing is there.
-
-**Frontend and backend keys must change together.** `RAZORPAY_KEY_ID` /
-`RAZORPAY_KEY_SECRET` are runtime backend vars; `VITE_RAZORPAY_KEY` is the
-public key baked into checkout. A live frontend against a test backend creates
-the order with one key and opens checkout with the other, and the order is not
-found.
-
-Verify after the deploy:
+Worth keeping: **the Render dashboard saying the variable is set is not
+evidence.** `VITE_RAZORPAY_KEY` is inlined at build time, so only the served
+bundle proves it. The check is two lines:
 
 ```
-curl -s https://www.aajoohomes.com/ | grep -o 'assets/index-[^"]*\.js'
-curl -s https://www.aajoohomes.com/<that file> | grep -o 'rzp_live_[A-Za-z0-9]*'
+b=$(curl -s https://www.aajoohomes.com/ | grep -o 'assets/index-[^"]*\.js' | head -1)
+curl -s "https://www.aajoohomes.com/$b" | grep -o 'rzp_live_[A-Za-z0-9]*' | head -1
 ```
 
-**2. KYC gates BOTH halves of that test, and readiness is silent about it.**
-`assertVerified` is called at `listingStep5.controller:821` ("publish a
-listing") and `booking.controller:1736` ("book a stay"). A brand-new account
-has no `verification_status`, so both answer *"Please verify your identity
-to …"*.
+~~**2. KYC gates BOTH halves of that test.**~~ **Configured.** All five
+variables are on Render — `DIDIT_API_KEY`, `DIDIT_BASE_URL`,
+`DIDIT_HOST_WORKFLOW_ID`, `DIDIT_GUEST_WORKFLOW_ID`, `DIDIT_WEBHOOK_SECRET` —
+alongside `FIELD_ENCRYPTION_KEY` and `HEALTH_TOKEN` (39 variables in total).
+The gate itself is unchanged: a new account must still complete a check before
+it can publish a listing or book a stay, so **both test accounts will be asked
+to verify**. Presence is not proof the values are right; the proof is one real
+account completing a check and not landing on a `stub_` session.
 
-If DIDIT is not configured, `diditClient.createSession` returns a **stub**
-session and `getDecision` returns null for it — so the host finishes nothing
-and stays blocked **forever**. Needed on Render: `DIDIT_API_KEY`,
-`DIDIT_BASE_URL`, `DIDIT_HOST_WORKFLOW_ID`, `DIDIT_GUEST_WORKFLOW_ID`,
-`DIDIT_WEBHOOK_SECRET`.
-
-⚠ **None of those are in `config/requiredEnv.js`**, so `/health/env` reports
-`ready: true` with KYC completely dead — the same shape as the
-FIELD_ENCRYPTION_KEY gap. Readiness is not evidence here; the only proof is a
-real account completing a check.
+Verified after the rebuild: health 200 · `ready: true` · webhook still 401
+(secret survived) · 15 categories with images · `/listing/schema` 200 · admin
+routes still 401.
 
 **3. Send Test Webhook → 2xx.** Our side rejects bad signatures, which is all a
 401 proves; a correct signature can only be tested from the Razorpay dashboard.
