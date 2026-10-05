@@ -380,6 +380,41 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a76. 2026-10-05 — the client's spare admin account is gone
+
+`satish@mailinator.com` (admin id 6, role `admin`) is **deleted from the live
+database.** Created by the client during testing and no longer wanted.
+
+**It was already deactivated when the delete ran** — `admin_isActive = 0`,
+where the readiness sweep earlier the same day found it `1`. Somebody turned it
+off in between, so the access route was shut before this removed the row; worth
+recording because a note written from the morning's sweep would now be wrong.
+
+Why it mattered while it was live: Mailinator is a **public inbox**. Anyone who
+knows the address reads it, requests a password reset and is in. The account
+could approve listings and change bookings (not payouts, not bank details).
+
+- Backed up first to `D:/Projects/aajoo_db_backup_2026-10-03/tbl_admins_removed_satish.json`
+  — outside every repo, because [[public-monorepo-held-secrets]].
+- Deleted on **`admin_id = 6 AND admin_email = 'satish@mailinator.com'`**, both
+  keys, so a wrong row could not be taken out by a stale id.
+- Checked first that **two active super admins** would remain
+  (`ashishra366@gmail.com`, `nameeshpatiyal@gmail.com`): a delete that empties
+  the super-admin set locks the panel against everybody. `/admin/login` still
+  answers 200.
+
+**Remaining admins:** Sumit (inactive) · UAT SEO Manager (inactive) ·
+Ashish (super_admin, active) · Nameesh (super_admin, active).
+`uat.seo@mailinator.com` is ours and is deactivated — left in place
+deliberately, but it is the same public-inbox risk if anybody re-enables it.
+
+The "optional, while you are in the admin panel" section asking the client to
+deal with this account has been **removed from
+`AAJOO_RAZORPAY_ACTIONS_2026-10-05.md`** — that doc is going to them and
+should not ask for something already done.
+
+---
+
 ### 8a75. 2026-10-05 — the refund the system never heard about
 
 Client, 01:44: *"I made refund of amount but for host Booking still show paid
