@@ -160,11 +160,64 @@ Live, but last touched **28 Oct 2025** — before the Sand & Indigo redesign and
 LUX mode. The screenshots show an app that no longer exists. Needs new phone
 screenshots, and the description re-read for anything now untrue.
 
-### 6. Re-check Data safety against what the app does *now*
+### 6. Data safety is WRONG in four ways — read from the live export
 
-Declared Oct 2025. Since then the app gained **KYC document capture (DIDIT)**
-and **live payments**. Data safety has to match reality or it is a policy
-violation, so this is a re-read, not a tick-through.
+Exported from the console 2026-10-05. What is declared today:
+
+* Personal info: **Name, Email address, Phone number**
+* Location: **Approximate, Precise**
+* **Files and docs**
+* Every item "Collected" (not shared), "required", purpose **App functionality**
+* Account creation: **username and password only**
+* Data deletion: **"No, but user data is automatically deleted within 90 days"**
+* Encrypted in transit: **false**
+
+Four of those are not true of the app that exists.
+
+#### a. "Encrypted in transit: false" — wrong, and it publishes badly
+
+There is no `usesCleartextTraffic`, no network security config, and **not one
+`http://` host anywhere in `lib/`**. Everything goes to
+`https://api.aajoohomes.com` and to HTTPS third parties. The declaration
+currently prints **"Data isn't encrypted in transit"** on the public store
+listing — a visible red flag to every person deciding whether to install, and
+untrue.
+
+#### b. Account creation says password-only, but the app has two OAuth paths
+
+`google_sign_in: ^6.3.0` and `sign_in_with_apple: ^6.1.4`, wired in
+`auth_controller.dart`, `apple_sign_in.dart` and `auth_page.dart`. Sign in with
+Apple has been live since 09-24. **`OAuth` has to be ticked.**
+
+#### c. It says there is no way to request deletion — there is one in the app
+
+Account deletion exists in `settings_page.dart`, `auth_service.dart` and
+`auth_controller.dart`. The honest answer is that users CAN request deletion.
+
+This one carries a second obligation: Play requires any app offering account
+creation to provide an account-deletion route **and a web URL** where deletion
+can be requested without installing the app. That URL does not exist yet and is
+a go-live item in its own right, not just a form field.
+
+#### d. Missing data types
+
+| Missing | Why it is collected |
+|---|---|
+| **Photos** | `ImagePicker` in 6 files — listing photos, profile photos, KYC capture. "Files and docs" is a different category and does not cover it |
+| **Purchase history** | the app shows booking and transaction history from our own backend |
+| **User payment info** | Razorpay collects card details inside the app. There is genuine ambiguity about the processor exemption — **check the policy before answering**, do not guess either way |
+| **User IDs** | the account id the backend issues and the client stores |
+| **Device or other IDs** | FCM push tokens, `firebase_messaging` |
+
+Identity documents (DIDIT KYC) have no category of their own; they land under
+Personal info → other, or Photos for the captured document. **Decide this
+deliberately** — identity documents and financial info are *sensitive* under
+Play policy, so getting these wrong is a policy violation rather than an
+untidy form.
+
+> Source export: `data_safety_export.csv`, pulled from the console on
+> 2026-10-05. Everything above was checked against the code, not inferred from
+> the form.
 
 ### 7. App access instructions — the one reviewers fail apps for
 
