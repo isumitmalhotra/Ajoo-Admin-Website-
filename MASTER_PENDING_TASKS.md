@@ -421,30 +421,49 @@ Backend `d51df9f` adds `book_no_of_guests`, `book_no_of_children`,
 `lib/bookingParty.ts` with the other booking logic, so they test without
 mounting a page.
 
-#### 2. Date of birth: three dropdowns, not a calendar
+#### 2. Date of birth: the house calendar — after I misread the ask
 
-*"please add new calendar."* The field was `<input type="date">`, whose native
-picker opens at the max — 18 years ago — and leaves an admin scrolling month by
-month back to 1985. **A calendar is the right instrument for a date days away
-and the wrong one for a date decades back**, so the fix removes the scrolling:
-pick the year directly.
+*"please add new calendar."* I read that as a usability complaint, shipped three
+dropdowns, and made the real problem worse. The clarification:
 
-The 18-to-100 rule is now **visible** rather than enforced after the fact —
-out-of-range years are not offered. Day options follow the chosen month, so 31
-February cannot be picked and January→February caps the day instead of silently
-becoming 3 March.
+> *"new calendar meaning was that new design we are using everywhere else, this
+> was stock calendar that was there, so there should be our custom new one at
+> that place."*
 
-`f.user_dob` stays the single source of truth; a part not yet chosen leaves its
-segment empty (`2008--04`), which fails the existing format check and shows
-*"Date of birth is required"* — the right message for a half-finished date, with
-no second piece of state to keep in step.
+A **consistency** ask. The field was `<input type="date">`, and
+`DateRangeCalendar` already had the same complaint written down about that exact
+control: the native picker **"is the one thing on the page that looks like it
+belongs to another product."**
 
-If the client specifically wants a calendar widget rather than dropdowns, it is
-a small change back — but worth asking what they found hard first.
+`DateOfBirthCalendar` borrows that calendar's visual language exactly — circular
+day cells, `--primary-dark` on the selected day, `--on-primary` for its text,
+`--primary-50` hover, the same weekday and month labels — as a **separate
+component**, not a mode on it. `DateRangeCalendar` is a RANGE picker wired to
+blocked nights, the three-month horizon, minimum stays and
+checkout-is-not-a-night; a birthday needs the inverse of most of that, and
+threading a dozen not-applicable props through the grid that prices every stay
+on the platform is not worth saving a file.
 
-20 assertions · 4 mutations all caught. web `23de59c` · backend `d51df9f`,
-**both live** — bundle `index-Dh3WGSK9.js`, live Razorpay key intact, webhook
-still armed, `ready: true`.
+**The year is a dropdown**, which is the one thing a birthday needs and a stay
+does not: the native control opened 18 years back and left an admin clicking an
+arrow ~300 times to reach 1985, so the brand look without it would have fixed
+the appearance and none of the pain. Only in-range years are offered, so the
+18-to-100 rule is visible rather than a message after the fact. `parseISO`
+rejects 31 February rather than letting `Date` roll it to 3 March and store a
+birthday nobody chose.
+
+**The test checks what was actually asked**: that the two calendars are built
+from the SAME tokens, not merely that a calendar exists. A first pass proved
+only that each token appeared *somewhere* in each file, and a mutation swapping
+the selected day's background for a literal `#0F766E` walked straight through
+it — so the selected day's two declarations are now pinned by name. That is
+also the LUXE contrast rule: white on that gold measures 2.10:1.
+
+24 assertions · 5 mutations all caught. web `16ab265` · backend `2c5b45f`,
+**live** — bundle `index-9oLV7qCk.js`, live Razorpay key intact.
+
+The bookings change: 20 assertions · 4 mutations all caught · web `23de59c` ·
+backend `d51df9f`, live.
 
 ---
 
