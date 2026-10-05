@@ -160,7 +160,7 @@ Live, but last touched **28 Oct 2025** — before the Sand & Indigo redesign and
 LUX mode. The screenshots show an app that no longer exists. Needs new phone
 screenshots, and the description re-read for anything now untrue.
 
-### 6. Data safety is WRONG in four ways — read from the live export
+### 6. Data safety — three corrected 2026-10-05, data types still open
 
 Exported from the console 2026-10-05. What is declared today:
 
@@ -236,6 +236,32 @@ untidy form.
 > Source export: `data_safety_export.csv`, pulled from the console on
 > 2026-10-05. Everything above was checked against the code, not inferred from
 > the form.
+
+#### Corrected and saved 2026-10-05 (verified after a full page reload)
+
+| Answer | Was | Now |
+|---|---|---|
+| Encrypted in transit | **No** | **Yes** — preview reads "Data is encrypted in transit" |
+| Account creation | password only | **password + OAuth** |
+| Partial-deletion question | "auto-deleted within 90 days" | **No** — the false retention promise is gone |
+
+Staged in **Publishing overview as "Changes not yet submitted for review"**, and
+deliberately NOT sent: the data-type corrections below are still outstanding and
+sending now would spend a review cycle on a half-corrected form. Send once, with
+the release.
+
+**Still open, needs a decision:** Photos, Purchase history, User IDs, Device or
+other IDs — all collected, none declared. And the payment-info question, which
+turns on whether Razorpay's in-app collection falls under the processor
+exemption. Sensitive category; read the policy rather than guessing.
+
+#### Managed publishing is now ON
+
+Was off, which means an approved release goes live the moment Google says yes.
+For a first production launch that hands the timing to the reviewer. With it on,
+approval parks the release in "Changes ready to publish" and **somebody has to
+press publish** — which is what you want when the release is coordinated with a
+client, a payment gateway switch or an announcement.
 
 ### 7. App access instructions — the one reviewers fail apps for
 
