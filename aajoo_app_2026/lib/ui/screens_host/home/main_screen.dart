@@ -14,6 +14,7 @@ import '../../../utils/fonts.dart';
 import '../../screens_common/auth/auth_controller.dart';
 import 'host_home_screen.dart';
 import '../../screens_common/legal/agreement_gate.dart';
+import '../../../utils/safe_bottom.dart';
 
 /// Host shell — new teal/orange design (scaffold host_shell): a bottom nav with
 /// a raised center "Add Property" FAB. Backed by HostTabProvider (so the drawer +
@@ -116,7 +117,12 @@ class _MainScreenState extends State<MainScreen> {
       elevation: 8,
       shape: const CircularNotchedRectangle(),
       notchMargin: 8,
-      padding: EdgeInsets.zero,
+      // This sits in the Scaffold's bottomNavigationBar slot, which does not
+      // inset for the gesture pill, and EdgeInsets.zero also threw away
+      // BottomAppBar's own default padding. The whole row of labels sat under
+      // the navigation on any gesture-nav phone. paddingOf returns 0 where an
+      // ancestor already inset, so this cannot double up — see safe_bottom.
+      padding: safeBottomInsets(context),
       child: SizedBox(
         height: 60,
         child: Row(

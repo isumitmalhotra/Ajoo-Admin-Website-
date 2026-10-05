@@ -138,8 +138,12 @@ class _CreateAccountLoadingScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return WillPopScope(
-      onWillPop: () async => !_isSubmitting,
+    // PopScope, not WillPopScope. At targetSdk 36 predictive back is on by
+    // default and the framework stops routing the gesture through the
+    // deprecated WillPopScope, so this guard quietly stopped running — and
+    // what it guards is somebody backing out of a HALF-SUBMITTED signup.
+    return PopScope(
+      canPop: !_isSubmitting,
       child: Scaffold(
         backgroundColor: Colors.white,
         body: SafeArea(

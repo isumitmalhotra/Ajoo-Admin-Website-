@@ -20,7 +20,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
 
     // ✅ Get data from previous screen
     final String url = Get.arguments['url'] ?? '';
-    final String title = Get.arguments['title'] ?? 'WebView';
 
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -33,20 +32,24 @@ class _WebViewScreenState extends State<WebViewScreen> {
       ..loadRequest(Uri.parse(url));
   }
 
-  Future<bool> _handleBack() async {
-    if (await controller.canGoBack()) {
-      controller.goBack();
-      return false;
-    }
-    return true;
-  }
-
   @override
   Widget build(BuildContext context) {
     final String title = Get.arguments['title'] ?? 'WebView';
 
-    return WillPopScope(
-      onWillPop: _handleBack,
+    // Same predictive-back reason as the signup screen: WillPopScope is no
+    // longer consulted at targetSdk 36, so back popped the whole screen
+    // instead of walking the web view's own history. canPop is false because
+    // whether this pops depends on the web view, which only answers async.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, Object? result) async {
+        if (didPop) return;
+        if (await controller.canGoBack()) {
+          controller.goBack();
+        } else {
+          Get.back();
+        }
+      },
       child: Scaffold(
         appBar: AppBar(title: Text(title)),
         body: Stack(

@@ -24,6 +24,35 @@ that could have cost two weeks. Neither applies.
 
 ---
 
+## ✅ BLOCKER 1 — upload key: reset REQUESTED 2026-10-05
+
+Play Console now reads *"There is a pending request for resetting the upload key
+of this app."* Submitted with reason **"I lost my upload key"**.
+
+| | |
+|---|---|
+| New upload key | `D:/Projects/aajoo_upload_key_2026-10-05/aajoo-upload.jks`, alias `upload` |
+| Its certificate | SHA-256 `D9:6D:EA:13:B0:DA:74:AE:6D:B3:59:25:21:E2:9C:AC:F2:2A:24:52:19:0A:B4:F7:58:76:C3:A5:26:83:49:8E` |
+| Key | 4096-bit RSA, SHA384withRSA, valid to **20 Feb 2054** |
+| Key Play still expects until approval | `55:A4:97:CB:77:BD:7C:AD:…:A6:34` |
+
+**Do not switch `key.properties` yet.** Until Google approves, Play still accepts
+only the old key — which we do not have — so nothing can be uploaded either way;
+after approval only the NEW key works. Switch `storeFile` and `keyAlias` to the
+new keystore at that point, in one change, so there is never a window where the
+file and the console disagree.
+
+**The keystore is the one secret that cannot be regenerated.** It sits outside
+every repo deliberately; `**/*.jks` and `key.properties` are gitignored and have
+never been committed (checked across all history). It needs a backup somewhere
+that is not this machine.
+
+The old `android/app/aajoo-testing.jks` is dead — it was never the upload key.
+
+---
+
+## Historic — how the mismatch was found
+
 ## 🔴 BLOCKER 1 — the upload key on this machine is the wrong key
 
 Play has registered this upload certificate:
