@@ -380,6 +380,72 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a75. 2026-10-05 — the refund the system never heard about
+
+Client, 01:44: *"I made refund of amount but for host Booking still show paid
+and confirmed … Same problem in admin dashboard … Also when change status
+notification not coming to host."*
+
+All three were true. The first two were one fault.
+
+#### The refund was issued from the Razorpay dashboard
+
+The webhook handled `payment.captured` and `payment.failed` **and nothing
+else**. `refund.processed` arrived, matched no branch, was logged *"event not
+handled"* and answered **200**. The money left the account and **not one row in
+this database moved** — B871634 was still `book_is_paid = 1`,
+`book_refund_amount = NULL`, `book_refund_status = NULL`.
+
+So the host dashboard and the admin dashboard were both reporting the database
+correctly. **The database was wrong.** Our own cancellation path had always done
+this properly — the gap was only ever the refund that STARTS at the gateway,
+where nothing of ours runs.
+
+`refund.created` / `refund.processed` / `refund.updated` / `payment.refunded`
+now reach `applyRefund`, which locks the booking row and records the amount,
+status and refund id; writes the **REFUND ledger row** and reverses the credits;
+**retracts the host payout**; and notifies **both** sides.
+
+**A full refund cancels; a partial one does not.** Returning everything ends the
+stay — what the client expected, and right. Returning part of it is a
+re-pricing (goodwill, a night knocked off), and cancelling a stay the guest is
+still coming on would be worse than the bug being fixed.
+
+`cancellationNotice` gained a **`refund`** originator: everything that was not a
+host cancellation used to fall through to *"cancelled by the guest"*, which was
+about to tell this host their guest did what the operator did.
+
+**Idempotence, because this pays money back.** Razorpay fires created AND
+processed for one refund and retries both until 2xx. The refund id sits on the
+locked booking row, and the ledger writer is keyed on the same id independently.
+
+#### The third report, separately true
+
+Changing a booking's status from the admin **notified nobody** — it wrote the
+booking, the history row and the audit log, three records none of which anybody
+outside the admin can see. Host and guest are now both told, after the commit
+and guarded so a mailer cannot turn a saved change into an error.
+
+15 assertions · 8 mutations all caught. Backend `5951c27`, live — and an
+unsigned `refund.processed` still answers 401, so the new events are not a way
+in.
+
+#### ⚠ TWO THINGS THE CODE CANNOT DO
+
+1. **Razorpay must be told to SEND the refund events.** The webhook was
+   registered for `payment.captured` (+ `payment.failed`) only — that was the
+   instruction given on 2026-10-04 and it was incomplete. **Add
+   `refund.processed`, `refund.created` and `refund.failed`** to the Live-mode
+   webhook's Active Events, or none of the above ever fires.
+2. **B871634 is still wrong in the database.** We answered that event 200, so
+   Razorpay will not retry it — the fix prevents the next one, it does not
+   repair this one. Either resend the event from the Razorpay dashboard once
+   the subscription is updated, or cancel the booking through the admin so the
+   normal refund path runs. **Not corrected by hand here:** the row is a real
+   money record and the choice of repair is the client's.
+
+---
+
 ### 8a74. 2026-10-05 — the live payment WORKED, and the two things the client asked for after it
 
 **The end-to-end test went through.** Live database: 5 users · 1 property
