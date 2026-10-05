@@ -33,7 +33,16 @@ android {
     defaultConfig {
         applicationId = "com.aajoo.aajoohomes"
         minSdk = flutter.minSdkVersion
-        targetSdk = 35
+        // Google Play requires targetSdk 36 to publish ANY update from
+        // 31 Aug 2026; pinned at 35 this app could not be released at all.
+        // Tracking flutter.targetSdkVersion rather than a second hardcoded
+        // number, so the next deadline is a Flutter upgrade and not an
+        // outage. compileSdk already resolves to 36 from the same source.
+        //
+        // API 36 forces EDGE-TO-EDGE with no opt-out: every bottom bar,
+        // sheet and sticky button needs driving on an Android 15/16 device
+        // before this ships.
+        targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
