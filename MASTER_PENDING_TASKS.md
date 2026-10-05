@@ -380,6 +380,74 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a74. 2026-10-05 — the live payment WORKED, and the two things the client asked for after it
+
+**The end-to-end test went through.** Live database: 5 users · 1 property
+(Green Hills Kasauli) · 1 booking (**B871634**, 07–09 Oct, 2 nights, ₹3.15,
+Paid, awaiting host approval) · 1 payment · **2 KYC verifications**. Host
+created, identity verified, listing published, renter booked, **money collected
+on the live gateway**. Every leg of the path this programme has been checking is
+now proven by a real transaction rather than by a probe.
+
+#### 1. The host's bookings list said nothing about the party
+
+*"can we show more details here related to booking like number of guests any
+other important item that also important for host … or we can show modal."*
+
+The expanded row carried dates, amount, status and payment. A host reading it
+is deciding whether to **accept**, and "two nights, ₹3.15" does not say whether
+to make up one bed or four, or whether a dog is coming.
+
+Added to the expanding row — not a modal, because it is one interaction already
+and a modal would be a second place to look:
+
+- **Guests**, as one line: `2 guests · 1 child · 1 pet`
+- **Cancellation**, the policy **as it stood at booking** — the terms the guest
+  agreed to, not whatever the listing says today
+- **Discount**, only when there was one
+
+Payment is deliberately **not** duplicated: `paymentBadge` already resolves pay
+mode, deposit-due and refunds from the same fields, and a second opinion about
+money on one screen is how two screens come to disagree.
+
+**The rule the tests pin: a count that was never recorded is not zero.**
+`book_no_of_children` and `book_no_of_pets` arrived after the first bookings, so
+older rows carry null — B871634 itself has `beds = null`. Printing "0 beds"
+claims something nobody recorded.
+
+Backend `d51df9f` adds `book_no_of_guests`, `book_no_of_children`,
+`book_no_of_beds`, `book_cancel_policy`, `book_coupon_code` and
+`book_discount_amt` to the host bookings query. The three display rules live in
+`lib/bookingParty.ts` with the other booking logic, so they test without
+mounting a page.
+
+#### 2. Date of birth: three dropdowns, not a calendar
+
+*"please add new calendar."* The field was `<input type="date">`, whose native
+picker opens at the max — 18 years ago — and leaves an admin scrolling month by
+month back to 1985. **A calendar is the right instrument for a date days away
+and the wrong one for a date decades back**, so the fix removes the scrolling:
+pick the year directly.
+
+The 18-to-100 rule is now **visible** rather than enforced after the fact —
+out-of-range years are not offered. Day options follow the chosen month, so 31
+February cannot be picked and January→February caps the day instead of silently
+becoming 3 March.
+
+`f.user_dob` stays the single source of truth; a part not yet chosen leaves its
+segment empty (`2008--04`), which fails the existing format check and shows
+*"Date of birth is required"* — the right message for a half-finished date, with
+no second piece of state to keep in step.
+
+If the client specifically wants a calendar widget rather than dropdowns, it is
+a small change back — but worth asking what they found hard first.
+
+20 assertions · 4 mutations all caught. web `23de59c` · backend `d51df9f`,
+**both live** — bundle `index-Dh3WGSK9.js`, live Razorpay key intact, webhook
+still armed, `ready: true`.
+
+---
+
 ### 8a73. 2026-10-04 — go-live readiness sweep: NOT ready, and the gateway is the reason
 
 Asked before switching Razorpay to live keys. Swept the live site end to end.
