@@ -189,15 +189,33 @@ untrue.
 `auth_controller.dart`, `apple_sign_in.dart` and `auth_page.dart`. Sign in with
 Apple has been live since 09-24. **`OAuth` has to be ticked.**
 
-#### c. It says there is no way to request deletion — there is one in the app
+#### c. FIXED (a) and (b); (c) was my mistake — read the question in full
 
-Account deletion exists in `settings_page.dart`, `auth_service.dart` and
-`auth_controller.dart`. The honest answer is that users CAN request deletion.
+**Corrected 2026-10-05.** I reported that the form "says there is no way to
+request deletion" and that the deletion URL "does not exist yet". Both wrong.
 
-This one carries a second obligation: Play requires any app offering account
-creation to provide an account-deletion route **and a web URL** where deletion
-can be requested without installing the app. That URL does not exist yet and is
-a go-live item in its own right, not just a form field.
+* A **Delete account URL is already filled in** and works:
+  `https://api.aajoohomes.com/account-deletion-policy` returns **200** and
+  serves a real Account Deletion Policy page. The Play account-deletion
+  requirement is already satisfied.
+* The question I misread is the **optional** one underneath it: *"Do you
+  provide a way for users to request that **some or all** of their data is
+  deleted, **without requiring them to delete their account**?"* That is about
+  PARTIAL deletion, which is a different thing from the Delete Account button
+  in `settings_page.dart`.
+
+**The real problem with that answer is different, and still a problem.** It
+currently claims *"No, but user data is automatically deleted within 90 days."*
+Nothing in the backend does that. The five scheduled services are
+`balanceReminders`, `bookingApprovalExpiry`, `negotiationExpiry`,
+`payoutRunReminder` and `stayCompletion` — reminders and expiries, none of
+which delete user data. A booking platform holding tax and payout records is
+unlikely to auto-purge at 90 days either.
+
+So the declaration promises users a retention behaviour that does not exist.
+The truthful answer is probably plain **"No"**, but that is a claim about the
+business's retention policy rather than something provable from the code, so
+**it is left unchanged pending a decision.**
 
 #### d. Missing data types
 
