@@ -160,7 +160,7 @@ Live, but last touched **28 Oct 2025** — before the Sand & Indigo redesign and
 LUX mode. The screenshots show an app that no longer exists. Needs new phone
 screenshots, and the description re-read for anything now untrue.
 
-### 6. Data safety — three corrected 2026-10-05, data types still open
+### 6. Data safety — COMPLETE 2026-10-05, staged, not yet sent for review
 
 Exported from the console 2026-10-05. What is declared today:
 
@@ -254,6 +254,43 @@ the release.
 other IDs — all collected, none declared. And the payment-info question, which
 turns on whether Razorpay's in-app collection falls under the processor
 exemption. Sensitive category; read the policy rather than guessing.
+
+#### The four missing data types, added 2026-10-05
+
+Verified by reloading the page and re-reading each section's own counter, not
+by trusting a save toast:
+
+| Section | After |
+|---|---|
+| Personal info | **4/9** — Name, Email, Phone + **User IDs** |
+| Financial info | **1/4** — **Purchase history** only |
+| Photos and videos | **1/2** — **Photos** (not Videos) |
+| Device or other IDs | **1/1** |
+| Files and docs | 1/1 (already there; it is where the KYC document belongs) |
+
+Each is **Collected**, not Shared — Cloudinary, Razorpay and Firebase are
+service providers processing on our behalf, and Play's own guidance says a
+transfer to a service provider is not sharing. None are ephemeral. Purposes:
+App functionality, plus Account management on User IDs.
+
+**Photos is the one marked "users can choose"**, the others required: a renter
+can use the whole app and never upload one, so it is an elected action rather
+than a condition of using the app.
+
+#### User payment info is deliberately NOT declared
+
+Play's guidance: you need not declare what a payment service collects *"if …
+Your app never accesses this information; and The payment service collects this
+information directly from the user, and collection is governed by that service's
+terms."*
+
+Both hold. Our code passes `amount`, `order_id` and prefill name/email/phone,
+then calls `razorpay.open()`; Razorpay's SDK draws its own checkout and no card
+number ever reaches our code. **Purchase history is still declared** — that is
+our own backend's booking and transaction records, which is a different thing.
+
+> This was the one genuine ambiguity. It was resolved by reading the policy,
+> not by guessing, and it resolved toward NOT declaring.
 
 #### Managed publishing is now ON
 
