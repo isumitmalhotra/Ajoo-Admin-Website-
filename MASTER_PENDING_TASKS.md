@@ -380,6 +380,90 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a79. 2026-10-07 — the admin sweep: 40 screens, 10 defects, and a monitor that could never say yes
+
+Full production sweep of the admin console as Super Admin, in the browser with
+every figure cross-checked against the live database. See
+`ADMIN_SWEEP_2026-10-07.md` for the screen-by-screen record.
+
+**Every API call returned 200.** Users, hosts, properties, bookings, payments,
+categories, blogs and coupons all reconciled. Nothing was broken in the
+plumbing — what was wrong were numbers and labels that disagreed with each
+other and with the data, which on a money platform is worse than an error page
+because nothing looks wrong.
+
+#### The worst one: the screen that reports what is broken was itself broken
+
+/admin/settings announced "Photo uploads not configured — listing photos stay on
+local disk and vanish on the next deploy" on a server holding all three
+Cloudinary variables, and "Maps not configured" on one holding
+`GOOGLE_PLACES_KEY`.
+
+```js
+const cloudinary = safely(() => require("../utils/cloudinary").isConfigured);
+```
+
+`utils/cloudinary` exports `{ CloudinaryManager }`, and `isConfigured` is an
+INSTANCE property. That expression is `undefined` — false on every deployment,
+whatever is set. The maps probe read `GOOGLE_MAPS_API_KEY`, a name that appears
+nowhere else in the repo.
+
+I only caught it by reading the Render environment: it had me chasing a go-live
+blocker that did not exist. **A monitor known to cry wolf is worse than none**,
+because the next person to see a real outage there will assume the same.
+
+Same check closed two long-standing items: `FIELD_ENCRYPTION_KEY` and
+`RAZORPAY_WEBHOOK_SECRET` are both present on the live service.
+
+#### The money one: a PAID booking reported ₹0
+
+Financial Overview showed ₹3.15 for B871634 (it sums the ledger — real money)
+while Booking Analytics and Property performance showed ₹0 for the same booking
+on the same day. `REVENUE_STATUSES` excludes status 1 as "an abandoned checkout
+is not income" — true of an UNPAID one, false here: with
+`pbr_booking_type = approval` a guest who HAS PAID sits at status 1 until the
+host confirms. **Status 1 holds two unrelated things.**
+
+`countsAsRevenue(status, isPaid)` + `REVENUE_SQL` now live beside the list they
+extend. Verified against production: Booking Analytics revenue ₹0 → ₹3.15,
+matching Finance. It is the mirror of the pair `availabilityRules.js` was
+taught on 05 Oct.
+
+#### And eight more
+
+- **Every admin screen called `lifecycleLabel()` without the paid flag**, so an
+  unpaid checkout and a paid-awaiting-approval booking BOTH read "Confirmed".
+  Six call sites; the row already carried `book_is_paid`/`book_is_cod`.
+- **The Revenue Report contradicted itself on one screen** — a back-compat
+  alias added to the totals and not to the per-period items.
+- **"7 Verified Users — KYC complete"** counted the account flag; real KYC was
+  4, and the Users and Hosts screens said 2 + 2.
+- **Ledger CREDITS/NET counted the same money twice** (₹6.30 on a ₹3.15 ledger):
+  every leg is stored as a CREDIT, so a payment and its split were both summed.
+- **"Avg booking value ₹1"** — money received divided by every booking.
+- **`admin_last_login` had two readers and no writer**, so Roles showed "Never"
+  for the account signed in at the time.
+- **Four unresolvable compliance holds on a purged user** sat atop the queue.
+- Plus: coupons shown "Active" while expired AND exhausted; a cancellation
+  caption reading "1 of 1 this year" against three bookings; no tile for
+  "Countered"; blank payout periods; `toISOString()` making the finance reports
+  default to a range ending YESTERDAY in IST; and "Admin #null" / "admin 0".
+
+#### A flaw caught in my own fix
+
+The orphan-flag filter first keyed on `nameById[id]` — `user_fullName` is
+NULLABLE, so a real account with a blank name would have had its compliance
+holds silently dropped. Re-keyed on existence and demonstrated both ways.
+
+**Also found by tooling, not by reading:** `tsc -b` caught six type errors on
+the first build, and the Render *deploys* list says "Deployed Xmin ago" as a
+TIMESTAMP next to a spinner — the service header and `/health` uptime are what
+actually say which commit is live.
+
+**Commits:** backend `c6ef130` → `3d7cdf3` — web `132530f`
+
+---
+
 ### 8a78. 2026-10-06 — "could not save the blog SEO": the first save of ANY page wrote null into a NOT NULL column
 
 Reported by the SEO team on 03 Oct and again today. §8a70 was the first pass at
