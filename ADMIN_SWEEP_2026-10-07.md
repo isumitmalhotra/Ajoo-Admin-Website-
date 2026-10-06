@@ -355,3 +355,53 @@ drops 8 AND 9; the existence-keyed one drops only 8. Shipped as `3d7cdf3`.
   Financial Overview; KYC count **7 → 4**, matching the Users and Hosts
   screens; report default range **31/12/2025 → 06/10/2026** becomes
   **01/01/2026 → 07/10/2026**.
+
+---
+
+# Verified on screen, live, 2026-10-07
+
+Driven as Super Admin after the deploy. Every row below was read off the
+production screen, not inferred from the code.
+
+| # | Was | Now |
+|---|---|---|
+| G1 | "Photo uploads not configured — photos vanish on next deploy" + "Maps not configured" | only **SMS** listed |
+| C1 | B935518 "Confirmed", B871634 "Confirmed" | **"Payment pending"** · **"Awaiting approval" / Paid** |
+| B1 | Booking Analytics revenue ₹0, Green Hills ₹0 | **₹3.15**, Green Hills **₹3.15** |
+| D2 | CREDITS ₹6.30 / NET ₹6.30 | MONEY IN ₹3.15 · OUT ₹0 · **NET ₹3.15** · ALLOCATED ₹3.15 |
+| E1 | row "Revenue ₹0" beside header ₹3.15 | row **₹3.15 \| 1 \| ₹3.15** |
+| E2 | 31/12/2025 → 06/10/2026 | **01/01/2026 → 07/10/2026** |
+| A1 | "7 Verified Users — KYC complete" | **4 KYC verified** · Account verified 7, kept separate |
+| A2 | Avg booking value ₹1 | **₹3** ("Revenue ÷ bookings paid") |
+| A3 | 100.0% "1 of 1 this year" | **50.0% "1 of 2 resolved this year"** |
+| D1 | 4 Open holds on purged user #8 | **0 — "No compliance holds recorded"** |
+| F1 | "2 Active", one at 80% | **0 Redeemable** · 2 × "expired — no guest can redeem it" |
+| D4 | 2 total vs 1 + 0 + 0 | **1 Pending · 1 Countered · 0 · 0** |
+| G2 | "Never" for the signed-in admin | **07 Oct 2026** |
+| D3 | "— → —" | **"Per booking"** |
+| G3 | "Admin #null" × 8 | **0** · "Unknown account" × 8 |
+
+## Three defects the on-screen pass found in my OWN fixes
+
+Shipping is not verifying. Driving the screens caught three things that the
+tests, the type-checker and the deploy all passed:
+
+1. **The KYC tile still read 7 of 7.** adminDashboard destructures a
+   Promise.all POSITIONALLY. The new name went in after `userCount` while the
+   new query went in after the `user_isVerified` count, so the two were
+   swapped and the tile reported the account flag again — the exact figure the
+   change existed to correct. (`0eff099`)
+2. **The coupon guard could not run.** `couponListing` selected seven columns
+   and none of the four the redeemability check reads, so it saw `undefined`
+   for every input and passed both coupons. The screen still said
+   "2 Redeemable". (`0eff099`)
+3. **A tile no row supported.** With the rows finally reading "Payment
+   pending" and "Awaiting approval", the counter above still said
+   "Confirmed 2" — it was `rows − cancelled`. Now it counts the label it
+   names, with an "Awaiting approval" tile beside it. (`2c40c47`)
+
+Plus one labelling wrinkle: the tile called two switched-on coupons "Inactive"
+while their toggles read "Active". Renamed "Not redeemable". (`22de132`)
+
+**Final commits:** backend `c6ef130` → `3d7cdf3` → `0eff099` → `40d535f` ·
+web `132530f` → `2c40c47` → `22de132`
