@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Aajoo ⇄ BotPenguin — API reference</title>
+<style>
+  @page { size: A4; margin: 20mm 17mm 22mm; }
+
+  :root {
+    --navy: #1B2447;
+    --teal: #0F766E;
+    --ink:  #1F2937;
+    --muted:#5B6472;
+    --line: #D9DEE7;
+    --soft: #F4F6F9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: #fff;
+    /* Cambria before Georgia deliberately: Georgia ships OLD-STYLE figures, so
+       "six P0s" reads as "six Pos" and every number sits at a different
+       height. This document is full of IDs and money. Cambria has lining
+       figures and prints just as well. */
+    font-family: Cambria, "Palatino Linotype", Georgia, "Times New Roman", serif;
+    font-variant-numeric: lining-nums;
+    font-size: 10.4pt;
+    line-height: 1.58;
+    color: var(--ink);
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---- cover ------------------------------------------------------- */
+  .cover { page-break-after: always; padding-top: 58mm; }
+  .cover .rule { width: 54px; height: 4px; background: var(--teal); margin-bottom: 22px; }
+  .cover h1 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    font-size: 27pt; line-height: 1.2; color: var(--navy);
+    margin: 0 0 16px; font-weight: 600; letter-spacing: -0.4px;
+  }
+  .cover .sub { font-size: 11.5pt; color: var(--muted); margin: 0 0 40px; max-width: 118mm; }
+  .cover .meta {
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 9pt;
+    color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px;
+  }
+  .cover .meta strong { color: var(--navy); font-weight: 600; }
+
+  /* ---- headings ---------------------------------------------------- */
+  h2, h3, h4 {
+    font-family: "Segoe UI Semibold", "Segoe UI", Calibri, sans-serif;
+    color: var(--navy); font-weight: 600; page-break-after: avoid;
+  }
+  h2 {
+    font-size: 15pt; margin: 26px 0 12px; padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--line); letter-spacing: -0.2px;
+  }
+  h3 {
+    font-size: 11.4pt; margin: 18px 0 7px; color: var(--teal);
+    letter-spacing: .1px;
+  }
+  h4 { font-size: 10.6pt; margin: 14px 0 6px; }
+
+  p { margin: 0 0 10px; orphans: 3; widows: 3; }
+
+  /* ---- lists ------------------------------------------------------- */
+  ul, ol { margin: 0 0 11px; padding-left: 20px; }
+  li { margin-bottom: 5px; }
+  li > ul, li > ol { margin-top: 5px; }
+
+  /* ---- emphasis & code --------------------------------------------- */
+  strong { color: var(--navy); font-weight: 700; }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 8.7pt; background: var(--soft);
+    border: 1px solid var(--line); border-radius: 3px;
+    padding: 0.5px 4px; color: #33405A;
+    /* long identifiers must not push the page sideways */
+    word-break: break-word;
+  }
+  pre { background: var(--soft); border: 1px solid var(--line); border-radius: 5px;
+        padding: 10px 12px; overflow-x: auto; page-break-inside: avoid; }
+  pre code { border: 0; background: none; padding: 0; font-size: 8.6pt; }
+
+  /* ---- tables ------------------------------------------------------ */
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 16px;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.7pt;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }   /* repeat header across pages */
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  th {
+    background: var(--navy); color: #fff; text-align: left; font-weight: 600;
+    padding: 7px 9px; border: 1px solid var(--navy); line-height: 1.35;
+  }
+  td {
+    padding: 6px 9px; border: 1px solid var(--line); vertical-align: top;
+    line-height: 1.45;
+  }
+  tbody tr:nth-child(even) td { background: #FAFBFD; }
+  td code { font-size: 8.1pt; }
+
+  /* ---- callouts ---------------------------------------------------- */
+  blockquote {
+    margin: 14px 0; padding: 10px 14px;
+    background: #F2F8F7; border-left: 3px solid var(--teal);
+    page-break-inside: avoid;
+  }
+  blockquote p { margin: 0 0 6px; }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  /* ---- screenshots -------------------------------------------------- */
+  /* A screenshot is evidence, so it is framed like one: a hairline border
+     so the page edge is visible against white, and never split across a
+     page break, because half a screen proves nothing. */
+  img {
+    display: block; max-width: 100%; height: auto; margin: 10px auto 4px;
+    border: 1px solid var(--line); border-radius: 5px;
+    page-break-inside: avoid;
+  }
+  /* Markdown puts a lone image in its own paragraph; the alt text follows
+     as the caption. */
+  p > img + em, p > em:only-child {
+    display: block; text-align: center;
+    font-family: "Segoe UI", Calibri, sans-serif; font-size: 8.2pt;
+    color: var(--muted); font-style: normal; margin-top: 2px;
+  }
+  p:has(> img) { page-break-inside: avoid; margin: 14px 0 18px; }
+
+  /* The cover meta and the first paragraph of the body were touching. */
+  .cover { margin-bottom: 26px; }
+
+  hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+
+  /* Keep a section heading with the text that follows it. */
+  h2 + p, h3 + p, h2 + table, h3 + table, h2 + ul, h3 + ul { page-break-before: avoid; }
+</style></head>
+<body>
+  <section class="cover">
+    <div class="rule"></div>
+    <h1>Aajoo ⇄ BotPenguin — API reference</h1>
+    <p class="sub">Every endpoint the chatbot can call, what it must send, and what comes back. Read off the live routing table on 6 October 2026.</p>
+    <div class="meta">
+      <strong>Aajoo Homes &mdash; BotPenguin integration</strong><br>
+      Prepared 6 October 2026 by the Zyphex Tech development team<br>
+      Verified against the live production backend (api.aajoohomes.com)
+    </div>
+  </section>
+  <p><strong>For:</strong> the BotPenguin team, and anyone wiring a chat flow to Aajoo
+<strong>Date:</strong> 6 October 2026 · <strong>Endpoints:</strong> 28 · <strong>Base URL:</strong> <code>https://api.aajoohomes.com</code></p>
+<p>Everything the chatbot can ask our backend for, what it must send, and what
+comes back. Taken from the live routing table and controller, not from an
+older design document.</p>
+<h2>1. How BotPenguin authenticates</h2>
+<p>Every bot-facing endpoint requires one header:</p>
+<pre><code>x-botpenguin-token: &lt;shared token&gt;
+</code></pre>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Where the value lives</td>
+<td>Render environment variable <code>BOTPENGUIN_API_TOKEN</code></td>
+</tr>
+<tr>
+<td>How you get it</td>
+<td><strong>Sent to you separately — never in this document, a repository, or a chat message</strong></td>
+</tr>
+<tr>
+<td>Wrong or missing</td>
+<td><code>401 Unauthorized</code></td>
+</tr>
+<tr>
+<td>Not configured on our side</td>
+<td><code>500 BOTPENGUIN_API_TOKEN is not configured in env</code></td>
+</tr>
+</tbody></table>
+<p>Three endpoints use a different key, and each is called out where it appears:
+the two <code>/bp/export/*</code> endpoints use an <strong>admin</strong> token, and <code>/bp/handoff</code> is
+called by the <strong>visitor&#39;s browser</strong> with their own login rather than by
+BotPenguin.</p>
+<h2>2. The envelope</h2>
+<p>Every response has the same two-layer shape. The payload is always under
+<code>data</code>:</p>
+<pre><code class="language-json">{ &quot;success&quot;: true, &quot;data&quot;: { &quot;…&quot;: &quot;…&quot; } }
+</code></pre>
+<p>Errors keep the shape and carry a message:</p>
+<pre><code class="language-json">{ &quot;success&quot;: false, &quot;message&quot;: &quot;Session not found&quot; }
+</code></pre>
+<p>Common statuses: <code>400</code> bad input · <code>401</code> bad or missing token · <code>403</code> session
+not identified, or needs OTP · <code>404</code> no session, or no such record <strong>for this
+account</strong> · <code>429</code> rate limited · <code>500</code> our side.</p>
+<h2>3. The session is the thread of identity</h2>
+<p><strong>Almost every call takes <code>session_id</code>.</strong> Open one with <code>/bp/session/start</code>;
+everything after it is answered in the context of that session.</p>
+<p>This matters for a reason worth stating plainly: <strong>we do not trust record ids
+sent by the bot.</strong> Where a request names a <code>booking_id</code>, <code>host_id</code> or
+<code>property_id</code>, we check that it belongs to the account the session is linked
+to. A session not linked to a verified account is refused rather than served.</p>
+<p>Three consequences for your flows:</p>
+<ol>
+<li><strong>An anonymous session can browse, not retrieve.</strong> Search and public
+property data work; bookings, payouts and invoices do not.</li>
+<li><strong>Money and private detail need a recent OTP.</strong> A verification lasts
+<strong>30 minutes</strong>, after which the bot must ask again.</li>
+<li><strong>Failures are deliberately vague.</strong> &quot;No such record for this account&quot; comes
+back whether the record is missing or simply someone else&#39;s, so nobody can
+discover valid booking ids by watching which error returns.</li>
+</ol>
+<hr>
+<h2>4. Endpoints</h2>
+<h3>Session</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>POST</td>
+<td><code>/bp/session/start</code></td>
+<td>Opens a chat session and returns its <code>session_id</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/bp/session/get-by-phone</code></td>
+<td>Finds an existing session for a phone number</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/bp/session/analyze</code></td>
+<td>Scores a message for intent, sentiment and urgency</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/bp/context</code></td>
+<td>Who this session is, and what it may do</td>
+</tr>
+</tbody></table>
+<p><strong><code>/bp/session/start</code></strong>
+Send — <code>phone</code>, <code>channel_type</code> (<code>web</code> / <code>whatsapp</code> / …), <code>user_role</code>, <code>language</code>, and <code>token</code> (an optional handoff token, see below)
+Returns — <code>session_id</code>, <code>authenticated</code>, <code>token_status</code> (<code>absent</code> / <code>valid</code> / <code>expired</code> / <code>invalid</code>), <code>user_name</code>, <code>user_role</code>, <code>phone</code>, <code>language</code></p>
+<p><strong><code>/bp/session/get-by-phone</code></strong>
+Send — <code>phone</code>, <code>channel_type</code> · Returns — <code>session_id</code>, <code>user_role</code>, <code>language</code>, <code>channel_type</code>, <code>message</code></p>
+<p><strong><code>/bp/session/analyze</code></strong>
+Send — <code>session_id</code>, <code>message</code>, <code>category</code> · Returns — <code>reply_text</code>, <code>intent</code>, <code>sentiment_score</code>, <code>sentiment_label</code>, <code>urgency_score</code>, <code>urgency_label</code>, <code>needs_escalation</code></p>
+<p><strong><code>/bp/context</code></strong>
+Send — <code>session_id</code> · Returns — <code>user_role</code>, <code>user_id</code>, <code>otp_verified</code>, and the session&#39;s stored context.
+Use this to decide what to offer <em>before</em> offering it.</p>
+<h3>Listings and property</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>POST</td>
+<td><code>/bp/listings/search</code></td>
+<td>Search stays by city and dates</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/bp/property/location</code></td>
+<td>Where a property is</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/bp/property/amenities</code></td>
+<td>What a property offers</td>
+</tr>
+</tbody></table>
+<p><strong><code>/bp/listings/search</code></strong>
+Send — <code>session_id</code>, <code>city</code>, <code>checkin</code>, <code>checkout</code>, <code>guests</code>, <code>page</code>, <code>limit</code>
+Returns — <code>listings_text</code> (ready to speak), <code>listings_status</code>, <code>prop_image</code>, <code>pagination</code>, <code>has_more</code>, <code>next_page</code></p>
+<p><strong><code>/bp/property/location</code></strong>
+Send — <code>session_id</code>, <code>property_id</code> · Returns — <code>location_text</code>, <code>detail_level</code>, <code>note</code></p>
+<p><strong><code>/bp/property/amenities</code></strong>
+Send — <code>session_id</code>, <code>property_id</code> · Returns — <code>amenities_text</code>, <code>detail_level</code>, <strong><code>wifi_name</code>, <code>wifi_password</code></strong></p>
+<blockquote>
+<p><strong><code>detail_level</code> is the privacy switch.</strong> The exact address and the wi-fi
+credentials are released only to a guest with a confirmed stay at that
+property. Everyone else gets the general area and no credentials. Do not
+cache these fields across sessions.</p>
+</blockquote>
+<h3>Booking</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>POST</td>
+<td><code>/bp/booking/details</code></td>
+<td>A booking&#39;s particulars</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/bp/booking/policy</code></td>
+<td>Cancellation policy, and what a refund would be</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/bp/booking/modify</code></td>
+<td>Request a change or a cancellation</td>
+</tr>
+</tbody></table>
+<p>All three take <code>session_id</code> and <code>booking_id</code> — or <code>booking_id_manual</code>, the
+<code>B…</code> code a guest reads out — and all three check the booking belongs to this
+session&#39;s account.</p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/bp/booking/details</code></td>
+<td><code>details_text</code>, <code>booking_id</code>, <code>property_id</code></td>
+</tr>
+<tr>
+<td><code>/bp/booking/policy</code></td>
+<td><code>policy_text</code>, <code>policy_name</code>, <code>policy_key</code>, <code>policy_terms</code>, <code>refund_eligibility</code>, <code>refund_eligibility_percent</code>, <code>refund_amount</code>, <code>manual_review</code></td>
+</tr>
+<tr>
+<td><code>/bp/booking/modify</code></td>
+<td><code>success</code>, <code>message</code>, <code>booking_context</code>, <code>booking_id</code>, <code>property_name</code>, <code>property_id</code>, <code>open_case_id</code>, <code>open_case_status</code>, <code>refund_text</code>, <code>refund_amount</code>, <code>refund_expected_by</code></td>
+</tr>
+</tbody></table>
+<p><code>/bp/booking/modify</code> also takes an <code>action</code>.</p>
+<h3>Identity (OTP)</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>POST</td>
+<td><code>/bp/otp/send</code></td>
+<td>Send a one-time code</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/bp/otp/verify</code></td>
+<td>Check the code and privilege the session</td>
+</tr>
+</tbody></table>
+<p><strong><code>/bp/otp/send</code></strong> — Send <code>session_id</code>, <code>otp_action</code> · Returns <code>success</code>, <code>verified</code>, <code>message</code>
+<strong><code>/bp/otp/verify</code></strong> — Send <code>session_id</code>, <code>otp</code> · Returns <code>verified</code>, <code>failure_attempts</code>, <code>message</code></p>
+<p>A verified code privileges the session for <strong>30 minutes</strong>. After that, the
+money and private-detail endpoints ask again.</p>
+<h3>Payment and documents</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>POST</td>
+<td><code>/bp/payment/check-transaction</code></td>
+<td>Did this payment go through?</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/bp/payment/refund-status</code></td>
+<td>Where is my refund?</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/bp/document/invoice</code></td>
+<td>The invoice for a stay</td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Send</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/bp/payment/check-transaction</code></td>
+<td><code>session_id</code>, <code>booking_id</code> / <code>booking_id_manual</code></td>
+<td><code>status_text</code>, <code>case_id</code>, <code>message</code></td>
+</tr>
+<tr>
+<td><code>/bp/payment/refund-status</code></td>
+<td><code>session_id</code>, <code>booking_id</code></td>
+<td><code>refund_outcome</code>, <code>refund_amount</code>, <code>refund_percent</code>, <code>refund_text</code>, <code>expected_by</code></td>
+</tr>
+<tr>
+<td><code>/bp/document/invoice</code></td>
+<td><code>session_id</code>, <code>booking_id</code></td>
+<td><code>invoice_text</code>, <code>invoice_status</code>, <code>invoice_url</code>, <code>cloudinary_invoice_url</code>, <code>invoice_note</code></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>The invoice link is a <strong>signed URL</strong>. Treat it as short-lived and private —
+do not store it, and do not repeat it into another conversation.</p>
+</blockquote>
+<h3>Negotiation</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>POST</td>
+<td><code>/bp/negotiate</code></td>
+<td>Make the host a price offer</td>
+</tr>
+</tbody></table>
+<p>Send — <code>session_id</code>, <code>property_id</code>, <code>offer_price</code>, <code>book_from</code>, <code>book_to</code>
+Returns — the engine&#39;s own result, plus <code>message</code>.</p>
+<p>This is <strong>the same negotiation engine the website and the app use</strong>, not a
+second copy of the rules. The guest is resolved from the session&#39;s phone and
+never taken from the request body: a bot that could name its own guest id
+could negotiate as anybody.</p>
+<h3>Support</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Send</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>POST</td>
+<td><code>/bp/support/create-case</code></td>
+<td><code>session_id</code>, <code>category</code>, <code>priority</code></td>
+<td><code>case_id</code>, <code>category</code>, <code>sla</code>, <code>message</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/bp/support/close-case</code></td>
+<td><code>session_id</code>, <code>case_id</code>, <code>confirmed</code></td>
+<td><code>case_id</code>, <code>status</code>, <code>message</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/bp/support/housekeeping</code></td>
+<td><code>session_id</code>, <code>request_type</code></td>
+<td><code>case_id</code>, <code>sla</code> (30 minutes), <code>message</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/bp/support/log-event</code></td>
+<td><code>session_id</code>, <code>type</code>, <code>data</code></td>
+<td><code>message</code></td>
+</tr>
+</tbody></table>
+<p><code>category</code> is checked against a fixed list — an unknown category is rejected
+rather than filed somewhere nobody is watching.</p>
+<h3>Host</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>POST</td>
+<td><code>/bp/host/listing</code></td>
+<td><code>listing_text</code>, <code>completion_percent</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/bp/host/calendar</code></td>
+<td><code>calendar_text</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/bp/host/payout</code></td>
+<td><code>payout_text</code>, <code>case_id</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/bp/host/analytics</code></td>
+<td><code>analytics_text</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/bp/host/guest-issues</code></td>
+<td><code>report_text</code>, <code>csv_url</code>, <code>total_issues</code></td>
+</tr>
+</tbody></table>
+<p>All take <code>session_id</code> and <code>host_id</code>, and <strong>all verify the session belongs to
+that host.</strong> A host id on its own proves nothing.
+<code>/bp/host/guest-issues</code> also takes <code>user_id</code>.</p>
+<h3>Not called by BotPenguin</h3>
+<p><strong><code>POST /bp/handoff</code></strong> is called by the <strong>visitor&#39;s own browser</strong>, authenticated
+by their Aajoo login rather than the vendor token. It returns a <strong>15-minute</strong>
+handoff token that the web widget passes to <code>/bp/session/start</code>, so a
+signed-in visitor does not have to identify themselves again in chat.
+BotPenguin only ever forwards the token it is handed.</p>
+<p><strong><code>GET /bp/export/leads</code></strong> and <strong><code>GET /bp/export/logs</code></strong> are operations
+exports, guarded by <code>x-admin-token</code> — <strong>not</strong> the BotPenguin token.
+Query — <code>from</code>, <code>to</code>, plus <code>status</code> (leads) or <code>type</code> (logs).
+Return — <code>count</code> and <code>data</code>.</p>
+<hr>
+<h2>5. What the bot cannot do</h2>
+<p>Worth being explicit, because it shapes what a flow can promise a user:</p>
+<ul>
+<li><strong>It cannot take a payment.</strong> No endpoint charges a card. The bot can report
+on a payment and hand over a link; the transaction happens on the website or
+in the app.</li>
+<li><strong>It cannot create or approve a booking.</strong> It can request a modification,
+which joins the normal queue.</li>
+<li><strong>It cannot read across accounts.</strong> Every record id is checked against the
+session&#39;s identity.</li>
+<li><strong>It cannot hold a privilege.</strong> OTP verification expires after 30 minutes.</li>
+</ul>
+<h2>6. Rate limiting</h2>
+<p>Every endpoint sits behind a general rate limiter. On trip you get <code>429</code> — back
+off rather than looping, and show the user &quot;give me a moment&quot; rather than an
+error.</p>
+<h2>7. If something looks wrong</h2>
+<p>Send us the <strong>endpoint path, the <code>session_id</code>, the time, and the full response
+body</strong>. The <code>session_id</code> is what lets us find the exact exchange in our logs;
+without it, tracing a report takes far longer.</p>
+<p><strong>Please do not send us the shared token, an admin token, or a handoff token.</strong>
+They should exist only in the Render environment and in BotPenguin&#39;s own
+configuration.</p>
+
+</body></html>
