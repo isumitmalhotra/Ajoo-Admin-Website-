@@ -380,6 +380,106 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a78. 2026-10-06 — "could not save the blog SEO": the first save of ANY page wrote null into a NOT NULL column
+
+Reported by the SEO team on 03 Oct and again today. §8a70 was the first pass at
+it — a red advisory, a hidden field and a greyed Save that together READ like a
+block. That was real and is fixed, but it was not this. This one was a 400 with
+"Could not save page SEO", every time, and it was never about blogs.
+
+#### The cause
+
+`page_seo.content_status` is `varchar(16) NOT NULL DEFAULT 'published'`.
+
+`savePage` posts all 35 writable fields, and a page with no row yet posts `""`
+for most of them. The loop mapped `""` → `null` for every one — correct for the
+nullable columns, fatal for this one:
+
+```
+first save of a page   INSERT with content_status = null   errno 1048
+later saves of it      the row now holds "published", the form
+                       posts it back, the UPDATE succeeds
+```
+
+**Every property they tried already had a row. No blog ever did.** That is the
+whole of "property works, blog is broken", and why all five rows in `page_seo`
+are properties. The Render log had been saying it plainly for three days:
+
+```
+adminSeo.savePage failed: Column 'content_status' cannot be null (errno 1048)
+```
+
+Nobody could see it, because the form only ever said "Could not save page SEO"
+— which is why `98081ab` (making the error name the field) came first.
+
+#### Fixed, in four places
+
+1. **`savePage`** — blank now means LEAVE IT ALONE for a column that cannot hold
+   null. On a create the DB default applies; on an update the stored value
+   stands. Clearing a *nullable* field still clears it.
+2. **The NOT NULL set is derived from the model**, not hand-listed, so the next
+   such column is covered without anyone remembering this.
+3. **`models/page_seo.js`** — declared six NOT NULL columns it had said nothing
+   about. Without this, point 1 asks the model and is told "nullable", so the
+   guard was INERT. Verified against the live table: those six are exactly the
+   NOT NULL writable columns, with the same defaults.
+4. **Frontend `normalise()`** — a page with no row sends `"published"` rather than
+   blank, so the draft/published control reads correctly before any save.
+
+#### And a second round, because the first fix was incomplete
+
+Running the real payload against the live database (rather than trusting the
+tests) showed it still failing — on FIVE violations now, not one:
+
+```
+notNull Violation: page_seo.robots_index cannot be null
+...robots_follow, robots_snippet, robots_archive, sitemap_exclude
+```
+
+**yup casts a blank numeric field to `null`, not `""`.** The guard tested `""`
+and `undefined`, so every toggle went straight through it. Production never
+showed this because the admin form posts real 0/1 for the checkboxes — which is
+precisely why it only ever failed on `content_status`.
+
+**The same defect was next door.** `saveGlobal` had the identical blanket
+mapping over `global_seo`, which has three NOT NULL writable toggles
+(`analytics_enabled`, `robots_sitemap_enabled`, `sitemap_include_images`), all
+three undeclared in the model. Both saves now go through one function,
+`writableUpdate`, and a test fails if either grows its own copy again.
+
+#### Two traps worth remembering
+
+- **A source-text assertion proves nothing about behaviour.** My first tests
+  matched the guard's source with a regex. They passed over a guard that tested
+  the wrong shape. The loop is a function now and the tests call it with a
+  payload that has been through the real yup schema.
+- **A test file can die at load and exit 0, printing NOTHING** — which in a
+  terminal is indistinguishable from a pass. The old `new Function()` source
+  slice swallowed a newly added export line and threw at require time. The
+  runner now reports a run that never reached its last test as a failure.
+  Same round, the controller nearly shipped unable to LOAD: `pageUpdateFrom`
+  became a const arrow and the export above it read it in its temporal dead
+  zone — on Render, a service that does not boot.
+
+#### Verified
+
+- Both commits **Deployed** on Render (`6fe5543`, `484605c`); service boots and
+  answers healthy, which is what disproves the require-time fault above.
+- The exact reported payload (toggles 0/1, `content_status` blank) inserts
+  against the **live** database: `content_status="published"`, `robots_*=1`,
+  `sitemap_exclude=0` — the table's own defaults. Test rows deleted; `page_seo`
+  back to its 5 property rows.
+- 11 assertions; each of the five guards removed in turn fails the suite. All
+  14 SEO test files pass. Frontend half confirmed in the served bundle.
+
+**Not verified:** a human clicking Save in the deployed admin UI. There is no
+admin session in the browser and signing in is the user's to do. Worth one
+click from the SEO team to close it off.
+
+**Commits:** backend `98081ab` → `6fe5543` → `484605c` — web `c73bc55`
+
+---
+
 ### 8a77. 2026-10-06 — two from video: the deposit a gateway would not take, and a selfie that was not one
 
 Client sent two screen recordings. Read frame by frame with ffmpeg rather than
