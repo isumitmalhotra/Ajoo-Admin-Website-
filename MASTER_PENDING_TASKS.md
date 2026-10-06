@@ -380,6 +380,71 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a77. 2026-10-06 — two from video: the deposit a gateway would not take, and a selfie that was not one
+
+Client sent two screen recordings. Read frame by frame with ffmpeg rather than
+from the description, which mattered: the DevTools panel was open in the second
+one and held the whole answer.
+
+#### Bookings failing — `POST /booking/create` 400
+
+```
+{"success":false,"message":"Something went wrong, while creating order","data":[]}
+```
+
+Green Hills Kasauli, 1 night, total **₹3.15**. The guest chose **"Pay 10%% now
+— ₹0.32"**. Razorpay refuses any order below **₹1.00**, so 32 paise was
+rejected, `createOrder` caught it and returned `null`, and the caller turned
+that into a message naming no cause.
+
+`depositFor()` already meant to handle this — *"a booking cheap enough to round
+to zero is one the guest should simply pay in full"* — but **floored at zero
+where the gateway floors at one**. The floor now lives once in
+`payments.config.js`.
+
+**The server falls back to charging IN FULL, so the checkout had to change in
+the same build**, or a page still offering "pay 10%%" bills the whole stay —
+worse than the bug. `Payment.tsx` gates on the same floor; they ship together
+because web is the backend's `web/` submodule.
+
+**Scope, before this is called "bookings fixed": it only bites stays under
+₹9.95.** The test property is ₹3/night. On a ₹2,000 booking the deposit is
+₹200 and none of this applies, and "Pay in full" worked on that same ₹3.15
+booking. **A failure on normally-priced inventory is a different bug and needs
+its own capture.**
+
+8 assertions, mutation-tested. Two honest notes: one of my tests was wrong and
+the code right — 10%% of ₹9.99 rounds to exactly ₹1.00, so the cut-off is
+₹9.95 — and the `createOrder` guard turns out not to be what fixes this
+(disabled, the call still returns null, just after a wasted round trip).
+
+#### "Live selfie" opened a file browser
+
+Host panel → Identity verification → the manual path. The code comment framed
+it as hardware: *"a laptop without one falls back to the file picker on its
+own"*. **It is not hardware.** `<input capture>` is honoured only by mobile
+browsers; desktop Chrome, Edge and Firefox ignore it outright. So the button
+read "Take a selfie" under a camera icon and opened a file browser on every
+desktop.
+
+`capture="user"` stays — on a phone it opens the front camera, which is what a
+selfie wants. Only the wording stops over-claiming: the field is **"Selfie"**,
+and the button reads **"Upload a selfie"** where it is an upload.
+
+An uploaded photo proves liveness to nobody. That path is human-reviewed; the
+DIDIT check above it is the one that proves something.
+
+#### Also seen, not changed
+
+The summary reads **"1 night (weekly rate)"**. The frontend renders that
+faithfully from the server's `longStayKey`, so it is a pricing-config question,
+and may be correct if that listing carries only a weekly tier. Not touched
+speculatively.
+
+backend `0b50180` + submodule bump `6354d67` · web `ea59858`.
+
+---
+
 ### 8a76. 2026-10-05 — the client's spare admin account is gone
 
 `satish@mailinator.com` (admin id 6, role `admin`) is **deleted from the live
