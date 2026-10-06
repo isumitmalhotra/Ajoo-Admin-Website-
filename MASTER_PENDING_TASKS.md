@@ -472,9 +472,23 @@ three undeclared in the model. Both saves now go through one function,
 - 11 assertions; each of the five guards removed in turn fails the suite. All
   14 SEO test files pass. Frontend half confirmed in the served bundle.
 
-**Not verified:** a human clicking Save in the deployed admin UI. There is no
-admin session in the browser and signing in is the user's to do. Worth one
-click from the SEO team to close it off.
+#### Verified in the live UI, as Super Admin
+
+Driven in the browser on the aajoo profile, on the exact page the SEO team
+reported — `/admin/seo/page?type=blog&key=19`, a blog with no row, every field
+empty, Save disabled on "No unsaved changes":
+
+- Edited one field, Save enabled, clicked → **`POST /admin/seo/page` 200** and
+  "Saved. The live page is updated". The header then showed **Page id 13** — the
+  row that could not be created before.
+- In the live DB: `id 13, blog/19, content_status="published", robots_*=1,
+  sitemap_exclude=0` — the table's own defaults, applied precisely because the
+  guard skipped the blanks. **The first blog row `page_seo` has ever held**
+  (blog=1, property=5), which is the whole of "property works, blog does not".
+- Cleared the field and saved again → 200, the column is now `null` while
+  `content_status` stayed `"published"`. A nullable field still clears; the NOT
+  NULL one is left alone. Blog 19 is back to serving its generated title and
+  description, with the row in place.
 
 **Commits:** backend `98081ab` → `6fe5543` → `484605c` — web `c73bc55`
 
