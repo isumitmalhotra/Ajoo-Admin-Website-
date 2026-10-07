@@ -900,6 +900,7 @@ class DescribedRoom {
     required this.heading,
     this.beds = '',
     this.bathroom,
+    this.type,
   });
 
   final int index;
@@ -914,11 +915,21 @@ class DescribedRoom {
   /// "Attached bathroom" / "Shared bathroom", or null.
   final String? bathroom;
 
+  /// A BATHROOM's own type — "Attached", "Shared", "Ensuite" — or null.
+  ///
+  /// The server used this only as a fallback heading, so a host who named the
+  /// room lost it: "Bathroom 1 · Bathroom 2 · Bathroom 3" printed with
+  /// nothing saying which were shared. It is sent as its own field now, and
+  /// is null when the heading already IS the type, so no bathroom reads
+  /// "Shared / Shared". Client, 2026-10-07.
+  final String? type;
+
   factory DescribedRoom.fromJson(Map<String, dynamic> j) => DescribedRoom(
         index: (j['index'] is num) ? (j['index'] as num).toInt() : 0,
         heading: (j['heading'] ?? '').toString(),
         beds: (j['beds'] ?? '').toString(),
         bathroom: (j['bathroom'] as Object?)?.toString(),
+        type: (j['type'] as Object?)?.toString(),
       );
 
   static List<DescribedRoom> listFrom(dynamic raw) => raw is List

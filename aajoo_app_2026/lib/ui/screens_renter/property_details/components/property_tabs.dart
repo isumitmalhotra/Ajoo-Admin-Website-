@@ -957,6 +957,13 @@ class _PropertyDetailPanelsState extends State<PropertyDetailPanels> {
                 const SizedBox(height: 4),
                 Text(r.bathroom!, style: inter(fontSize: 12.5, color: kMuted)),
               ],
+              // A BATHROOM's own type, the same way a bedroom prints whose
+              // bathroom it has. The server sends null when the heading is
+              // already the type, so none of these reads "Shared / Shared".
+              if ((r.type ?? '').isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(r.type!, style: inter(fontSize: 12.5, color: kMuted)),
+              ],
             ],
           ),
         );
