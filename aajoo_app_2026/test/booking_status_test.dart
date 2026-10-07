@@ -113,4 +113,51 @@ void main() {
       expect(lifecycleLabel('Cancelled', isPaid: true), 'Cancelled');
     });
   });
+
+  /// Precedence: approval outranks the clock, for a PAID request too.
+  ///
+  /// The guard for this existed only for status 5 'Booked' (it tested for the
+  /// word 'book'). A paid online booking waiting on the same approval sits at
+  /// 'Payment Pending', contains no such word, and so fell through to
+  /// [started]. On 2026-10-07 B871634 — paid, never approved, check-in 2 PM —
+  /// read 'Awaiting approval' at 00:30 and 'Staying now' at 14:18 on both the
+  /// app and the website. Nothing was approved in between; the clock moved.
+  group('the clock cannot approve a booking', () {
+    test('a PAID unapproved request is not "Staying now" once check-in passes', () {
+      expect(
+        lifecycleLabel('Payment Pending', isPaid: true, started: true),
+        'Awaiting approval',
+      );
+    });
+
+    test('nor after the whole window has opened and the dates say staying', () {
+      expect(
+        lifecycleLabel('Payment Pending', isPaid: true, started: true, ended: false),
+        'Awaiting approval',
+      );
+    });
+
+    test('status 5 "Booked" keeps the protection it already had', () {
+      expect(lifecycleLabel('Booked', started: true), 'Awaiting approval');
+    });
+
+    test('but a real check-in event still outranks everything', () {
+      // The host recorded the arrival, so the guest IS there.
+      expect(lifecycleLabel('Check In', isPaid: true, started: true), 'Staying now');
+    });
+
+    test('and an APPROVED stay still reads Staying now', () {
+      expect(
+        lifecycleLabel('Booking Confirmed', isPaid: true, started: true),
+        'Staying now',
+      );
+    });
+
+    test('a finished stay is still Completed', () {
+      expect(
+        lifecycleLabel('Payment Pending', isPaid: true, started: true, ended: true),
+        'Completed',
+      );
+    });
+  });
 }

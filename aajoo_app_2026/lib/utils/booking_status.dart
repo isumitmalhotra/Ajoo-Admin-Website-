@@ -56,7 +56,23 @@ String lifecycleLabel(
   // Same fault the note further down describes fixing for "Confirmed", one
   // branch higher. "Booking Confirmed" also contains "book", hence the
   // exclusion.
-  final awaitingApproval = s.contains('book') && !s.contains('confirm');
+  // ...and that is true of a PAID request too, which this missed.
+  //
+  // The rule was written for status 5 'Booked', so it tested for the word
+  // 'book'. An online booking awaiting the same approval sits at 'Payment
+  // Pending' with bookIsPaid = true and contains no such word, so it fell
+  // through to [started] below and was labelled 'Staying now' the moment its
+  // check-in time passed.
+  //
+  // Seen on production 2026-10-07, on BOTH platforms at once: B871634, paid
+  // ₹3.15, never approved, check-in 2 PM. The app's Ongoing tab badged it
+  // 'Staying now' and the website said 'Stays you're checked into right now'.
+  // Nobody had approved anything; the clock had simply moved.
+  //
+  // Decided ABOVE [started], which is the only place it can mean anything.
+  final paidAndUnapproved = isPaid == true && s.contains('payment pending');
+  final awaitingApproval =
+      (s.contains('book') && !s.contains('confirm')) || paidAndUnapproved;
   if (awaitingApproval) return 'Awaiting approval';
   if (started) return 'Staying now';
   if (s.contains('complet')) return 'Completed';
@@ -82,7 +98,7 @@ String lifecycleLabel(
   //
   // Checked BEFORE the _paymentTitles fold, because that fold is what turns it
   // into "Confirmed".
-  if (isPaid == true && s.contains('payment pending')) return 'Awaiting approval';
+  // (decided above [started]; this would be unreachable for that case)
   // "Paid" / "Payment Pending" only ever described the money. A booking that
   // exists and is not cancelled is confirmed, whatever its payment says.
   if (s.isEmpty || _paymentTitles.contains(s)) return 'Confirmed';
