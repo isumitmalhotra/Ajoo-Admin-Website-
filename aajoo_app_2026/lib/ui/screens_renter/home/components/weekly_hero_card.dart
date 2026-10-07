@@ -149,9 +149,20 @@ class WeeklyHeroCard extends StatelessWidget {
                 // them the stays were near them in California. Naming the place
                 // is right in both cases — unsearched, the region IS where they
                 // are.
+                // "around", not "in". The search widens on its own when a
+                // place has nothing: on 2026-10-07 a Gurugram search found
+                // nothing at 50km, retried at 500km, and this card announced
+                // "2 homes in Gurugram" over stays in Ramnagar and Kasauli,
+                // 250-300km away. Its OWN subtitle said "Showing stays around
+                // Gurugram" on the same card, so the two lines contradicted
+                // each other and the headline was the one over-claiming.
+                //
+                // "around" is true at any radius, which is the point: the card
+                // does not know how far the retry reached, so it must not
+                // assert containment.
                 ? region.isEmpty
                     ? '$_formattedCount ${homesNearby == 1 ? 'home' : 'homes'} near you.'
-                    : '$_formattedCount ${homesNearby == 1 ? 'home' : 'homes'} in $region.'
+                    : '$_formattedCount ${homesNearby == 1 ? 'home' : 'homes'} around $region.'
                 : unreachable
                     ? "Couldn't load stays."
                     // Nothing found. Saying "Homes near you." over an empty
