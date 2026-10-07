@@ -128,3 +128,46 @@ check; a copy string is only safe when the copy itself is new.**
 ## Not verifiable from here
 `host/HostDashboard.tsx` was fixed in the same commit, but confirming it needs a
 host sign-in. The guest and admin halves of the same defect are both confirmed.
+
+---
+
+# GU3 resolved from the Render logs: NOT a defect
+
+Searched the application log for `B871634` over 7 days, then re-ran the admin
+audit query that had failed earlier on a bad column name. Together they give
+the whole sequence, in IST:
+
+    01:27:51  booking created
+    01:28:09  finance recorded (commission ₹0, host net ₹3)
+    01:28:09  guest told "Booking successful"; host told "Your Property has been Booked"
+    01:31:32  guest told "Your booking is confirmed — The host confirmed your stay"
+    01:47:56  GET /admin/booking/refund-override/B871634   (a read)
+    01:49:24  tbl_admin_audit #24  status_update booking:8  by Ashish Rahi
+              before {"book_status":8}  ->  after {"book_status":1}
+    01:49:42  tbl_admin_audit #25  status_update booking:8  by Ashish Rahi
+              before {"book_status":1}  ->  after {"book_status":1}
+    01:52:23  GET /admin/booking/refund-override/B871634   (a read)
+
+**An admin set the booking back to Payment Pending**, 18 minutes after the host
+confirmed it. The platform did exactly what it was told, and the audit trail
+recorded who did it, when, and the before and after values — which is the whole
+point of having one. There is no bug here, and nothing to fix.
+
+The refund-override calls were GETs; that controller only READS `book_status`.
+
+**Why the guest was never told it had been un-confirmed:** at 01:49 on 05 Oct
+nothing notified anyone when an admin changed a booking's status. That is the
+third report fixed in `5951c27`, which landed at **13:07 the same day** — eleven
+hours later. `adminBookings.controller` now calls
+`notifyStatusChange(findBooking, statusId)` after the update and tells both
+sides. So this cannot recur.
+
+What remains is a stale notification in that guest's list, which was true when
+it was sent.
+
+**Correction to this report:** GU3 was filed as "needs investigation" on the
+reasoning that a committed transaction should have left the status at 8. That
+reasoning was sound and the conclusion was wrong — the status DID reach 8, and
+was changed afterwards by a person. Worth recording that the first instinct on
+an impossible-looking state was "the code lost a write", when the answer was in
+the audit log the platform already keeps.
