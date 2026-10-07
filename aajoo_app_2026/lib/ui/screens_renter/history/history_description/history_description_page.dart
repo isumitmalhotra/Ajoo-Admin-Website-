@@ -692,6 +692,8 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
               started: isStaying(booking.bookDetailsBtBookFrom,
                   booking.bookDetailsBtBookTo,
                   hours: booking.stayHours),
+              isPaid: booking.bookIsPaid,
+              isCod: booking.bookIsCod,
             )),
             _payBadge(booking),
           ],

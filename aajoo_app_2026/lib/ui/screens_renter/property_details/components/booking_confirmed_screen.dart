@@ -158,7 +158,11 @@ class _BookingConfirmedScreenState extends State<BookingConfirmedScreen> {
       final rows = history.data;
       for (final r in rows) {
         if ((r.bookId ?? '').trim() != widget.bookingId) continue;
-        final label = lifecycleLabel(r.bookingStatusBsTitle);
+        // This decides what the guest is TOLD right after paying, so the paid
+        // flag matters most here: without it a request still waiting on its
+        // host settles as "confirmed".
+        final label = lifecycleLabel(r.bookingStatusBsTitle,
+            isPaid: r.bookIsPaid, isCod: r.bookIsCod);
         if (label == 'Declined' || label == 'Cancelled') {
           _settle(_Decision.declined);
         } else if (label != 'Awaiting approval') {

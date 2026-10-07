@@ -71,6 +71,18 @@ String lifecycleLabel(
       s.contains('payment pending')) {
     return 'Payment pending';
   }
+  // PAID and STILL sitting at "payment pending" means the host has not
+  // approved it yet.
+  //
+  // The web helper has had this branch since 2026-10-06; this one had only the
+  // UNPAID case above, so a guest who had paid and was waiting on their host
+  // fell through to the fold below and read "Confirmed" — on a stay the host
+  // had not accepted. Found in the emulator pass of 2026-10-07, after the same
+  // defect was fixed across every web surface the day before.
+  //
+  // Checked BEFORE the _paymentTitles fold, because that fold is what turns it
+  // into "Confirmed".
+  if (isPaid == true && s.contains('payment pending')) return 'Awaiting approval';
   // "Paid" / "Payment Pending" only ever described the money. A booking that
   // exists and is not cancelled is confirmed, whatever its payment says.
   if (s.isEmpty || _paymentTitles.contains(s)) return 'Confirmed';

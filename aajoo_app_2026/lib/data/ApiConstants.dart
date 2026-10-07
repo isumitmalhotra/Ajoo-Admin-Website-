@@ -46,8 +46,14 @@ class Apiconstants {
   ///
   /// and [isConfigured] is false without it, which main() refuses to start on.
   /// Debug and profile builds keep working with no flags, as before.
+  ///
+  /// Updated 2026-10-07: this was `https://aajaodev.onrender.com`, which has
+  /// answered **503 since the cutover** — the two hosts swapped, and
+  /// api.aajoohomes.com is the live one. So every debug build started without
+  /// flags was talking to a host that is gone, and the failure looks like the
+  /// app being broken rather than the endpoint being wrong.
   static const String _defaultBaseUrl =
-      kReleaseMode ? '' : 'https://aajaodev.onrender.com';
+      kReleaseMode ? '' : 'https://api.aajoohomes.com';
 
   /// Build-time override. Empty unless `--dart-define=API_BASE_URL=…` is passed.
   static const String _buildTimeBaseUrl = String.fromEnvironment(

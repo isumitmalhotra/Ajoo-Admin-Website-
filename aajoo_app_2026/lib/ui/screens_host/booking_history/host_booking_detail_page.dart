@@ -71,6 +71,8 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
         ended: hasEnded(b.bookDetailsBtBookTo, hours: b.stayHours),
         started: isStaying(b.bookDetailsBtBookFrom, b.bookDetailsBtBookTo,
             hours: b.stayHours),
+        isPaid: b.bookIsPaid,
+        isCod: b.bookIsCod,
       );
 
   bool get _needsApproval =>
@@ -585,7 +587,9 @@ class _HostBookingDetailPageState extends State<HostBookingDetailPage> {
                             hours: b.stayHours),
                         started: isStaying(b.bookDetailsBtBookFrom,
                             b.bookDetailsBtBookTo,
-                            hours: b.stayHours)),
+                            hours: b.stayHours),
+                        isPaid: b.bookIsPaid,
+                        isCod: b.bookIsCod),
                     style: inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,

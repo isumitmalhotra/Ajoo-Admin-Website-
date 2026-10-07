@@ -78,4 +78,39 @@ void main() {
       expect(lifecycleLabel('Paid'), 'Confirmed');
     });
   });
+
+  /// A PAID booking still sitting at Payment Pending is waiting on its HOST.
+  ///
+  /// The web helper gained this branch on 2026-10-06; this one had only the
+  /// UNPAID case, so a guest who had paid fell through to the payment-title
+  /// fold and was told "Confirmed" for a stay no host had accepted. Found in
+  /// the emulator pass of 2026-10-07 by auditing the callers of this function
+  /// the same way the web ones were audited.
+  group('a paid booking awaiting its host', () {
+    test('reads "Awaiting approval", not "Confirmed"', () {
+      expect(lifecycleLabel('Payment Pending', isPaid: true), 'Awaiting approval');
+      expect(lifecycleLabel('payment pending', isPaid: true, isCod: false),
+          'Awaiting approval');
+    });
+
+    test('an UNPAID one is still "Payment pending"', () {
+      expect(lifecycleLabel('Payment Pending', isPaid: false, isCod: false),
+          'Payment pending');
+    });
+
+    test('pay-at-property keeps its own meaning', () {
+      // Unpaid is the normal state of a cash booking, so it must not be
+      // demoted to "Payment pending".
+      expect(lifecycleLabel('Payment Pending', isPaid: false, isCod: true),
+          'Confirmed');
+    });
+
+    test('without the flag nothing changes for anyone else', () {
+      // Callers that genuinely have no payment facts keep the old answer
+      // rather than being told something the data does not support.
+      expect(lifecycleLabel('Payment Pending'), 'Confirmed');
+      expect(lifecycleLabel('Booking Confirmed', isPaid: true), 'Confirmed');
+      expect(lifecycleLabel('Cancelled', isPaid: true), 'Cancelled');
+    });
+  });
 }

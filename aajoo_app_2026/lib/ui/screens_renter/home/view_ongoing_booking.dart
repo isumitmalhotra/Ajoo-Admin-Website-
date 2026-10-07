@@ -59,7 +59,8 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
   /// had the same fault the same evening (300-case run, batch 6, 2026-09-20).
   bool get _stayIsRunning {
     final b = widget.booking;
-    final label = lifecycleLabel(b.bookingStatusBsTitle);
+    final label = lifecycleLabel(b.bookingStatusBsTitle,
+        isPaid: b.bookIsPaid, isCod: b.bookIsCod);
     if (label == 'Awaiting approval' || label == 'Cancelled' || label == 'Declined' || label == 'Completed') {
       return false;
     }
@@ -403,7 +404,9 @@ class _OngoingBookingViewState extends State<OngoingBookingView> {
                           // everyone anyway; otherwise the area is enough
                           // until they confirm. This drew the exact pin on
                           // every row (client, 2026-09-18).
-                          if (lifecycleLabel(widget.booking.bookingStatusBsTitle) ==
+                          if (lifecycleLabel(widget.booking.bookingStatusBsTitle,
+                                      isPaid: widget.booking.bookIsPaid,
+                                      isCod: widget.booking.bookIsCod) ==
                                   'Awaiting approval' &&
                               !widget.booking.hostShowsExactLocation)
                             Container(

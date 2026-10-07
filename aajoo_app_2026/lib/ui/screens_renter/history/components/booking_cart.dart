@@ -81,6 +81,10 @@ class BookingCard extends StatelessWidget {
       started: isStaying(
           booking.bookDetailsBtBookFrom, booking.bookDetailsBtBookTo,
           hours: booking.stayHours),
+      // The same two fields the payment badge below already reads. Without
+      // them a PAID booking waiting on its host reads "Confirmed".
+      isPaid: booking.bookIsPaid,
+      isCod: booking.bookIsCod,
     );
     final lifeColors = lifecycleColors(life);
     final total = (booking.bookTotalAmt ?? 0) > 0
