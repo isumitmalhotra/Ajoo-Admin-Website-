@@ -82,3 +82,49 @@ own record of their money is wrong.
   the table is `tbl_book_histories`.
 - Ongoing Stays empty with a forward-looking message, Explore rendering all 15
   categories, Support, Refer and Profile all correct.
+
+---
+
+# GU1 verified on screen, live
+
+Render service header: **`d443869` — Live**. Driven as the same guest, on the
+served build `index-C28YC9E_.js`.
+
+**Upcoming Stays**
+
+    before   Confirmed · Paid
+             "Confirmed — you're all set for check-in."
+    after    Awaiting approval · Paid
+             "Waiting for the host — they have a set time to answer; if they
+              don't, your booking is confirmed automatically. You'll be told
+              either way."
+
+**Account dashboard card**
+
+    before   Green Hills Kasauli · 07 Oct — 09 Oct 2026 · Confirmed · Paid · ₹3.15
+    after    Green Hills Kasauli · 07 Oct — 09 Oct 2026 · Awaiting approval · Paid · ₹3.15
+
+The payment badge still reads "Paid", which is correct — the guest did pay. The
+branch that produces the "Waiting for the host" wording had existed unused
+since it was written; this is the first time it has rendered.
+
+## A verification mistake worth recording
+
+My first deploy watcher reported success before anything had shipped. I used
+"Waiting for the host" as the signature — but that copy was ALREADY in the old
+bundle, sitting in an unreachable branch, so it matched the build I was trying
+to replace. The rule it broke is one already written down: grep the served
+bundle for a string only the NEW commit can have.
+
+The second attempt matched on the bundle hash my local build produced, which
+also fails: Render builds independently and its hash differed
+(`index-C28YC9E_.js` vs `index-xANhy8RJ.js`) despite identical source.
+
+What actually settled it was the Render service header's Live commit, which is
+the same thing that caught the earlier "Deployed 2min ago" timestamp dressed up
+as a status. **For this project: the service header's Live SHA is the deploy
+check; a copy string is only safe when the copy itself is new.**
+
+## Not verifiable from here
+`host/HostDashboard.tsx` was fixed in the same commit, but confirming it needs a
+host sign-in. The guest and admin halves of the same defect are both confirmed.
