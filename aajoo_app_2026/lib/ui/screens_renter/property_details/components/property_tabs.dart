@@ -979,7 +979,46 @@ class _PropertyDetailPanelsState extends State<PropertyDetailPanels> {
         // "Bedroom 2" says less than a described one, but it is not nothing,
         // and it is what the website says.
         for (final r in rooms.bedrooms) card(r, Icons.bed_outlined),
-        for (final r in rooms.bathrooms) card(r, Icons.bathtub_outlined),
+        // ONE card for every bathroom, not one each. A bedroom card earns
+        // its place — each holds different beds — but a bathroom card held a
+        // type and nothing else, and a listing may state up to thirty rooms.
+        // The server counts them by type so this screen and the website read
+        // identically. Client, 2026-10-08.
+        if (rooms.bathroomSummary != null)
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              border: Border.all(color: kLine),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.bathtub_outlined, size: 16, color: kInk),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(rooms.bathroomSummary!.heading,
+                          style: inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: kInk)),
+                    ),
+                  ],
+                ),
+                // Empty when the host typed no types, and the heading then
+                // stands alone rather than over a blank line.
+                if (rooms.bathroomSummary!.detail.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(rooms.bathroomSummary!.detail,
+                      style: inter(fontSize: 12.5, color: kMuted)),
+                ],
+              ],
+            ),
+          ),
         const SizedBox(height: 8),
       ],
     );

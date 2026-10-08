@@ -941,6 +941,42 @@ class DescribedRoom {
       : const <DescribedRoom>[];
 }
 
+/// Every bathroom as ONE line, counted by type.
+///
+/// A bedroom card earns its place — each holds different beds. A bathroom
+/// card held a type and nothing else, so five bathrooms were five boxes
+/// saying five words, and a listing may state up to thirty rooms. Written on
+/// the SERVER (utils/propertyRooms.js) so this app and the website cannot
+/// phrase the same bathrooms differently. Client, 2026-10-08.
+class BathroomSummary {
+  const BathroomSummary({
+    required this.count,
+    required this.heading,
+    this.detail = '',
+  });
+
+  final int count;
+
+  /// "5 bathrooms", or "1 bathroom".
+  final String heading;
+
+  /// "1 Attached · 2 Ensuite · 1 Shared". EMPTY when the host typed no
+  /// types at all, and the heading then stands alone.
+  final String detail;
+
+  static BathroomSummary? fromJson(dynamic raw) {
+    if (raw is! Map) return null;
+    final j = Map<String, dynamic>.from(raw);
+    final heading = (j['heading'] ?? '').toString();
+    if (heading.isEmpty) return null;
+    return BathroomSummary(
+      count: (j['count'] is num) ? (j['count'] as num).toInt() : 0,
+      heading: heading,
+      detail: (j['detail'] ?? '').toString(),
+    );
+  }
+}
+
 /// Both lists, always. A listing with no rooms answers with two empty ones —
 /// "no record" replying with a different SHAPE from "here is the record" is
 /// what stopped two screens in this app opening at all.
@@ -948,11 +984,17 @@ class PropertyRooms {
   const PropertyRooms({
     this.bedrooms = const [],
     this.bathrooms = const [],
+    this.bathroomSummary,
     bool? hasDetail,
   }) : _hasDetail = hasDetail;
 
   final List<DescribedRoom> bedrooms;
   final List<DescribedRoom> bathrooms;
+
+  /// The bathrooms as one line. Null when the listing states none. The
+  /// per-bathroom list above is still sent and still parsed — the
+  /// presentation collapses, the data does not.
+  final BathroomSummary? bathroomSummary;
 
   /// The server's answer, when this payload carries one.
   final bool? _hasDetail;
@@ -984,6 +1026,7 @@ class PropertyRooms {
     return PropertyRooms(
       bedrooms: DescribedRoom.listFrom(j['bedrooms']),
       bathrooms: DescribedRoom.listFrom(j['bathrooms']),
+      bathroomSummary: BathroomSummary.fromJson(j['bathroomSummary']),
       hasDetail: flag is bool ? flag : null,
     );
   }
