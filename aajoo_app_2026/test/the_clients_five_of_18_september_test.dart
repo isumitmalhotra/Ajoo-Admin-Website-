@@ -87,7 +87,20 @@ void main() {
     });
 
     test('the ongoing-booking screen holds the pin on an unanswered request the host keeps back', () {
-      expect(ongoing, contains("lifecycleLabel(widget.booking.bookingStatusBsTitle) ==\n                                  'Awaiting approval' &&\n                              !widget.booking.hostShowsExactLocation)"));
+      // The condition, not its formatting.
+      //
+      // This pinned the whole expression as one string, indentation
+      // included, so adding isPaid/isCod to lifecycleLabel reflowed the
+      // lines and the match failed while the guard itself was untouched.
+      // Assert the three parts inside the slice that follows the call: an
+      // exact-text copy of a widget tree is a test of the formatter.
+      final guard = ongoing.substring(
+          ongoing.indexOf('lifecycleLabel(widget.booking.bookingStatusBsTitle'));
+      final condition = guard.substring(0, guard.indexOf('Container('));
+      expect(condition, contains("'Awaiting approval'"),
+          reason: 'the pin is held for some state other than an unanswered request');
+      expect(condition, contains('!widget.booking.hostShowsExactLocation'),
+          reason: "the host's own setting no longer decides whether the pin opens");
       expect(ongoing, contains('The exact address and directions appear once the host accepts your request.'));
     });
   });

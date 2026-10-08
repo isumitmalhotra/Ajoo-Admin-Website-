@@ -40,7 +40,15 @@ void main() {
   test('and polls booking history as the fallback', () {
     expect(src, contains('Timer.periodic(const Duration(seconds: 30)'));
     expect(src, contains('UserService().getBookingHistory()'));
-    expect(src, contains("lifecycleLabel(r.bookingStatusBsTitle)"));
+    // The CALL, not its argument list. This pinned
+    // "lifecycleLabel(r.bookingStatusBsTitle)" with the closing paren, so it
+    // broke the day the function gained isPaid/isCod — a signature change the
+    // fix required, on a screen that was still doing exactly what this test
+    // is for. Match the call and the status it reads; what else is passed is
+    // the function's business.
+    expect(src, contains('lifecycleLabel(r.bookingStatusBsTitle'),
+        reason: 'the fallback poll must put the status through lifecycleLabel '
+            'rather than compare the raw title, or the two paths disagree');
   });
 
   test('both stop once the answer is known, and on dispose', () {
