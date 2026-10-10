@@ -5,6 +5,8 @@ import 'package:rent_home/utils/stay_clock.dart';
 
 import 'dart:convert';
 
+import 'package:rent_home/utils/cloudinary_url.dart';
+
 OnGoingBookingResponse onGoingBookingResponseFromJson(String str) =>
     OnGoingBookingResponse.fromJson(json.decode(str));
 
@@ -197,7 +199,11 @@ class Booking {
         bookId: json["book_id"]?.toString() ?? "",
         bookInvoice: json["book_invoice"]?.toString() ?? "",
         // Rounded, not truncated: 8399.90 net of a deal is Rs 8,400, not 8,399.
-        bookPrice: (json["book_price"] as num?)?.round() ?? 0,
+        // Parsed, not cast, like every other DECIMAL here: the server sends
+        // book_price as "3.00", and `as num?` threw on it — which failed the
+        // WHOLE ongoing-bookings parse, so a guest with two bookings saw none
+        // (renter 179, iOS Simulator, 2026-10-09; the same on Android).
+        bookPrice: _money(json["book_price"])?.round() ?? 0,
         // Loosely parsed: these are DECIMAL columns and Sequelize hands some
         // of them back as strings, so a blind cast drops them to zero.
         bookTax: _money(json["book_tax"]) ?? 0,
@@ -218,7 +224,10 @@ class Booking {
             ? BookingProperty.fromJson(
                 json["bookingProperty"] as Map<String, dynamic>)
             : null,
-        propertyImage: json["property_image"],
+        // Decodable URL (utils/cloudinary_url.dart).
+        propertyImage: json["property_image"] is String
+            ? deliverableImageUrl(json["property_image"] as String)
+            : json["property_image"],
       )
         // Set after construction: the generated constructor takes only the
         // fields it was written with, and this one arrives on the same row.

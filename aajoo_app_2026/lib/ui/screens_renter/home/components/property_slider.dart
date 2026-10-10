@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/ui/screens_renter/home/components/curated_card.dart';
 import 'package:rent_home/ui/screens_renter/home/components/section_header.dart';
+import 'package:rent_home/ui/widgets/cancellation_badge.dart';
+import 'package:rent_home/service/bookmark_service.dart';
 
 /// A horizontal row of properties under a heading with "See all" on the right.
 ///
@@ -21,6 +23,12 @@ class PropertySlider extends StatelessWidget {
   /// The sheet asks for 10–12 per rail.
   final int max;
 
+  /// What the heart on a card does. Defaults to saving through
+  /// [BookmarkService]; a parameter so a test can see that the heart is
+  /// wired to something at all — it was drawn on every rail card and wired
+  /// to nothing (test/a_rail_heart_saves_the_stay_test.dart).
+  final Future<bool> Function(Property property)? onToggleSaved;
+
   const PropertySlider({
     super.key,
     required this.title,
@@ -28,6 +36,7 @@ class PropertySlider extends StatelessWidget {
     required this.onOpen,
     this.onSeeAll,
     this.max = 12,
+    this.onToggleSaved,
   });
 
   @override
@@ -41,7 +50,13 @@ class PropertySlider extends StatelessWidget {
         SectionHeader(title: title, onViewAll: onSeeAll),
         const SizedBox(height: 12),
         SizedBox(
-          height: 268,
+          // One height for the whole rail, tall enough for the tallest card
+          // in it: a card with a cancellation badge is ~21 taller.
+          height: CuratedCard.extentFor(
+            context,
+            withCancellationBadge: items.any(
+                (p) => CancellationBadge.has(p.propertyCancellationPolicy)),
+          ),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: items.length,
@@ -51,6 +66,11 @@ class PropertySlider extends StatelessWidget {
               child: CuratedCard(
                 property: items[i],
                 onTap: () => onOpen(items[i]),
+                // The heart was drawn on every rail card and wired to
+                // nothing, so tapping it did nothing. The card already
+                // redraws it from BookmarkService.revision.
+                onFavoriteTap: () => (onToggleSaved ??
+                    BookmarkService().toggleBookmark)(items[i]),
               ),
             ),
           ),

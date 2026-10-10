@@ -3,6 +3,7 @@ import 'package:rent_home/models/property_offer.dart';
 import 'package:rent_home/models/pet_policy.dart';
 
 import 'package:rent_home/utils/app_log.dart';
+import 'package:rent_home/utils/cloudinary_url.dart';
 class SinglePropertyResponse {
   final bool? success;
   final String? message;
@@ -359,7 +360,10 @@ class SinglePropertyData {
       bathrooms: _parseIntSafely(json['bathrooms']),
       capacity: PropertyCapacity.fromJson(json['capacity']),
       propDetails: details,
-      images: json['images'] != null ? List<String>.from(json['images']) : [],
+      // The gallery: decodable URLs, or an AVIF upload is a blank tile here.
+      images: json['images'] != null
+          ? deliverableImageUrls(List<String>.from(json['images']))
+          : [],
       tags: json['tags'] != null ? List<dynamic>.from(json['tags']) : null,
       categories: json['categories'] != null
           ? List<dynamic>.from(json['categories'])

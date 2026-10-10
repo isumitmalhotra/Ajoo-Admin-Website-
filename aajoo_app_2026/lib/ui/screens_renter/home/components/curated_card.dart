@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:rent_home/constants.dart';
@@ -66,6 +68,61 @@ class CuratedCard extends StatelessWidget {
     );
   }
 
+  static const double _imageHeight = 150;
+  static const double _textPadding = 13;
+
+  /// The height this card needs, measured with the fonts and the text size
+  /// actually in use, for a parent that has to fix it in advance — the home
+  /// rail (a horizontal list must know its height) and the Saved grid.
+  ///
+  /// Both used constants: the rail 268 and the grid an aspect ratio of 0.72.
+  /// The image is a fixed 150 and the text does not grow with the tile, so a
+  /// ratio is wrong at any width but one, and 268 left ONE pixel of room —
+  /// spent the moment a property carries a cancellation policy, whose badge
+  /// adds about 21 (Kasauli and Kharar both overflowed by 5 on an iPhone 18
+  /// Pro Max), and by any accessibility text size before that. Measuring the
+  /// lines makes the height follow the text scale; [_headroom] is real room
+  /// for font rounding rather than a single pixel.
+  static const double _headroom = 8;
+
+  static double extentFor(BuildContext context,
+      {required bool withCancellationBadge}) {
+    final scaler = MediaQuery.textScalerOf(context);
+    // The card's Text widgets inherit the theme's bodyMedium through Material
+    // — including its line height — so the lines are measured in the same
+    // style they will be drawn in, not the bare style passed to them.
+    final base = Theme.of(context).textTheme.bodyMedium ?? const TextStyle();
+    double line(TextStyle style) {
+      final painter = TextPainter(
+        text: TextSpan(text: 'Hg₹', style: base.merge(style)),
+        textDirection: TextDirection.ltr,
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      return painter.height;
+    }
+
+    final location = math.max(12.0, line(inter(fontSize: 12)));
+    final badge = withCancellationBadge
+        ? line(inter(fontSize: 10, fontWeight: FontWeight.w700)) + 2 * 2 + 4
+        : 0.0;
+    final title = line(fraunces(fontSize: 15, fontWeight: FontWeight.w600));
+    final priceRow = [
+      14.0, // star icon
+      line(inter(fontSize: 12.5, fontWeight: FontWeight.w700)),
+      line(fraunces(fontSize: 15, fontWeight: FontWeight.w700)),
+    ].reduce(math.max);
+    return _imageHeight +
+        _textPadding * 2 +
+        location +
+        4 +
+        badge +
+        title +
+        8 +
+        priceRow +
+        _headroom;
+  }
+
   /// Indian digit grouping lives in one place — utils/money.dart.
   ///
   /// This screen carried its own copy of the last-three-then-pairs rule. Two
@@ -102,7 +159,7 @@ class CuratedCard extends StatelessWidget {
                     borderRadius:
                         const BorderRadius.vertical(top: Radius.circular(18)),
                     child: SizedBox(
-                      height: 150,
+                      height: _imageHeight,
                       width: double.infinity,
                       child: (property.coverImage != null &&
                               property.coverImage!.isNotEmpty)
@@ -232,7 +289,7 @@ class CuratedCard extends StatelessWidget {
               ),
               // Text
               Padding(
-                padding: const EdgeInsets.all(13),
+                padding: const EdgeInsets.all(_textPadding),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -266,8 +323,15 @@ class CuratedCard extends StatelessWidget {
                       children: [
                         // The real average, or "New" when nobody has reviewed
                         // it. This showed a hardcoded 4.5 on every card.
+                        // Gives way too: at a large text size on a narrow
+                        // two-column tile, "★ 4.8 (124)" alone is wider than
+                        // the card.
                         if (property.rating != null)
-                          Row(children: [
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
                             Icon(Icons.star_rounded,
                                 size: 14, color: skin.accent),
                             const SizedBox(width: 3),
@@ -279,15 +343,27 @@ class CuratedCard extends StatelessWidget {
                             const SizedBox(width: 3),
                             Text('(${property.reviewCount})',
                                 style: inter(fontSize: 11, color: skin.muted)),
-                          ])
+                          ]),
+                            ),
+                          )
                         else
                           Text('New',
                               style: inter(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w700,
                                   color: skin.muted)),
-                        RichText(
-                          text: TextSpan(children: [
+                        // Text.rich, not RichText: RichText ignores the
+                        // reader's text size, so the price stayed small while
+                        // the rest of the card grew. And it gives way rather
+                        // than overflowing when a struck price and a rating
+                        // share a narrow two-column tile.
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Text.rich(
+                          TextSpan(children: [
                             // The old price first, so the eye lands on the
                             // saving before the number being charged.
                             if (_shownOffer != null)
@@ -309,6 +385,9 @@ class CuratedCard extends StatelessWidget {
                                 text: '/night',
                                 style: inter(fontSize: 11, color: skin.muted)),
                           ]),
+                          maxLines: 1,
+                        ),
+                          ),
                         ),
                       ],
                     ),

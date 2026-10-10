@@ -17,7 +17,12 @@ import 'package:rent_home/utils/fonts.dart';
 class HomeFaqStrip extends StatefulWidget {
   final int max;
   final VoidCallback? onSeeAll;
-  const HomeFaqStrip({super.key, this.max = 5, this.onSeeAll});
+
+  /// Supplies the questions instead of the FAQ endpoint. Tests only.
+  @visibleForTesting
+  final Future<List<FaqDatum>> Function()? load;
+
+  const HomeFaqStrip({super.key, this.max = 5, this.onSeeAll, this.load});
 
   @override
   State<HomeFaqStrip> createState() => _HomeFaqStripState();
@@ -37,9 +42,11 @@ class _HomeFaqStripState extends State<HomeFaqStrip> {
 
   Future<void> _load() async {
     try {
-      final res = await _service.getFaqData();
+      final items = widget.load != null
+          ? await widget.load!()
+          : (await _service.getFaqData()).data.faqData;
       if (!mounted) return;
-      _items.assignAll(res.data.faqData.take(widget.max));
+      _items.assignAll(items.take(widget.max));
     } catch (_) {
       // Leave it empty — the section hides itself below.
     } finally {
@@ -74,32 +81,42 @@ class _HomeFaqStripState extends State<HomeFaqStrip> {
               child: Theme(
                 // The default divider lines fight the card border.
                 data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                child: ExpansionTile(
-                  key: ValueKey('faq_$i'),
-                  initiallyExpanded: open,
-                  onExpansionChanged: (v) => _openIndex.value = v ? i : -1,
-                  tilePadding: const EdgeInsets.symmetric(horizontal: 14),
-                  childrenPadding:
-                      const EdgeInsets.fromLTRB(14, 0, 14, 14),
-                  title: Text(
-                    item.title,
-                    style: inter(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: skin.ink),
-                  ),
-                  iconColor: skin.primary,
-                  collapsedIconColor: skin.muted,
-                  children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        item.description,
-                        style: inter(
-                            fontSize: 12.5, color: skin.muted, height: 1.5),
-                      ),
+                // The tile's tap ripple paints on the nearest Material, which
+                // was the page underneath this card's fill, so the ripple was
+                // hidden (Flutter flagged it on the iOS Simulator, 2026-10-10;
+                // the same Dart runs on Android). Its own transparent Material
+                // puts the ripple above the fill, clipped to the card corners.
+                child: Material(
+                  type: MaterialType.transparency,
+                  borderRadius: BorderRadius.circular(14),
+                  clipBehavior: Clip.antiAlias,
+                  child: ExpansionTile(
+                    key: ValueKey('faq_$i'),
+                    initiallyExpanded: open,
+                    onExpansionChanged: (v) => _openIndex.value = v ? i : -1,
+                    tilePadding: const EdgeInsets.symmetric(horizontal: 14),
+                    childrenPadding:
+                        const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                    title: Text(
+                      item.title,
+                      style: inter(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: skin.ink),
                     ),
-                  ],
+                    iconColor: skin.primary,
+                    collapsedIconColor: skin.muted,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          item.description,
+                          style: inter(
+                              fontSize: 12.5, color: skin.muted, height: 1.5),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );

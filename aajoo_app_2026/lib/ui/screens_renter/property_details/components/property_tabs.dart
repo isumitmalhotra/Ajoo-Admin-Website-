@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -516,7 +518,9 @@ class PropertyAreaMap extends StatelessWidget {
                     },
               zoomControlsEnabled: false,
               myLocationButtonEnabled: false,
-              liteModeEnabled: true,
+              // Android only: iOS has no lite mode and google_maps_flutter
+              // asserts on it there (see stay_map.dart).
+              liteModeEnabled: Platform.isAndroid,
             ),
             if (!exact)
             Positioned(

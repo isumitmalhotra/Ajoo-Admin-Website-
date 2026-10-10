@@ -47,24 +47,56 @@ class AmenityRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (amenities.isEmpty) return const SizedBox.shrink();
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: amenities.take(4).map((label) {
-        return _AmenityChip(label: label, icon: _iconFor(label));
-      }).toList(),
-    );
+    // The label had a fixed 64 and one line, so anything past ~9 characters
+    // was cut: "Fire exting…", "Dining tab…" on Green Hills Kasauli (iOS
+    // Simulator, 2026-10-09; Android draws the same). It now gets two lines
+    // and the width of its quarter of the row, up to 84 — wide enough that a
+    // word like "extinguisher" is never split, and never wider than a quarter
+    // so four of them still fit a 320-wide Android screen.
+    return LayoutBuilder(builder: (context, constraints) {
+      final quarter = constraints.maxWidth / 4;
+      final labelWidth = (quarter - 4).clamp(56.0, 84.0);
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: amenities.take(4).map((label) {
+          return _AmenityChip(
+              label: label, icon: _iconFor(label), labelWidth: labelWidth);
+        }).toList(),
+      );
+    });
   }
 }
 
 class _AmenityChip extends StatelessWidget {
   final String label;
   final IconData icon;
+  final double labelWidth;
 
-  const _AmenityChip({required this.label, required this.icon});
+  const _AmenityChip(
+      {required this.label, required this.icon, required this.labelWidth});
 
   @override
   Widget build(BuildContext context) {
+    final style = inter(fontSize: 11, fontWeight: FontWeight.w500, color: kMuted);
+    // At a large text size one word can outgrow a quarter of the row on any
+    // phone ("extinguisher" is ~88 wide at ×1.3), and Flutter would then
+    // split it mid-word. These labels grow with the reader's text size only
+    // as far as their longest word still fits; the full amenities list below
+    // scales without limit.
+    // Measured in the style the Text will actually draw with: it inherits the
+    // theme's body style, letter-spacing included.
+    final drawn = DefaultTextStyle.of(context).style.merge(style);
+    final longestWord = label.split(' ').map((w) {
+      final p = TextPainter(
+        text: TextSpan(text: w, style: drawn),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      return p.width;
+    }).fold<double>(0, (a, b) => a > b ? a : b);
+    final fitScale = longestWord > 0 ? labelWidth / longestWord : 1.0;
+    final scaler =
+        MediaQuery.textScalerOf(context).clamp(maxScaleFactor: fitScale);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -80,17 +112,14 @@ class _AmenityChip extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         SizedBox(
-          width: 64,
+          width: labelWidth,
           child: Text(
             label,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: inter(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: kMuted,
-            ),
+            textScaler: scaler,
+            style: style,
           ),
         ),
       ],

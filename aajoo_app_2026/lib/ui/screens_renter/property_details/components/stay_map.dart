@@ -94,7 +94,10 @@ class StayMap extends StatelessWidget {
               myLocationButtonEnabled: false,
               // Lite mode keeps this cheap on a screen that is mostly text and
               // does not need panning; tapping through to Maps is the gesture.
-              liteModeEnabled: true,
+              // Android only: iOS has no lite mode, and google_maps_flutter
+              // asserts on it there, so a debug build drew an error box here
+              // on the iOS Simulator (2026-10-10). Release iOS ignored it.
+              liteModeEnabled: Platform.isAndroid,
               onTap: (_) => _directions(context),
             ),
           ),

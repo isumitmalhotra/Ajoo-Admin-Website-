@@ -134,6 +134,12 @@ def main() -> int:
                   .get("UIWindowSceneSessionRoleApplication", []))
         if not any(s.get("UISceneDelegateClassName") for s in scenes):
             failures.append("no UIApplicationSceneManifest scene delegate — the app crashes on launch on iOS 27")
+        # iPhone only, from 124 (Sumit, 2026-10-10). Xcode writes
+        # TARGETED_DEVICE_FAMILY into UIDeviceFamily at build time; a 2 here
+        # advertises iPad, and App Store Connect then asks for iPad
+        # screenshots and an iPad review.
+        if info.get("UIDeviceFamily") != [1]:
+            failures.append(f"UIDeviceFamily is {info.get('UIDeviceFamily')!r}, not [1] — the build advertises iPad")
         if expect_version:
             name, _, number = expect_version.partition("+")
             got = f"{info.get('CFBundleShortVersionString')}+{info.get('CFBundleVersion')}"

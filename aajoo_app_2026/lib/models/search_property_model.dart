@@ -5,6 +5,7 @@
 import 'dart:convert';
 import 'package:rent_home/models/property_offer.dart';
 import 'package:rent_home/models/pet_policy.dart';
+import 'package:rent_home/utils/cloudinary_url.dart';
 
 SearchResponse searchResponseFromJson(String str) =>
     SearchResponse.fromJson(json.decode(str));
@@ -183,8 +184,11 @@ class SearchPropertyModel {
         propDetailsPropDetailInTime: json["propDetails.propDetail_inTime"],
         propDetailsPropDetailOutTime: json["propDetails.propDetail_outTime"],
         propDetailsPropDetailExtra: json["propDetails.propDetail_extra"],
-        coverImage: json["coverImage"],
-        images: List<String>.from(json["images"].map((x) => x)),
+        // Decodable URLs (utils/cloudinary_url.dart): AVIF uploads otherwise
+        // paint the "not supported" placeholder.
+        coverImage: deliverableImageUrl(json["coverImage"]?.toString()),
+        images: deliverableImageUrls(
+            List<String>.from(json["images"].map((x) => x))),
         categoryTitles: json["category_titles"],
         rating: _asRating(json["rating"]),
         reviewCount: _asCount(json["review_count"] ?? json["reviewCount"]),

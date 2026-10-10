@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:rent_home/models/booking_history_response_model.dart';
 import 'package:rent_home/models/ongoing_reponse.dart';
 import 'package:rent_home/models/my_review.dart';
@@ -20,15 +19,9 @@ class UserService {
   final _dio = Dio();
   UserService() {
     DioConfig.sessionGuard(_dio);
-    _dio.interceptors.add(PrettyDioLogger(
-      requestHeader: true,
-      requestBody: true,
-      responseBody: true,
-      responseHeader: false,
-      error: true,
-      compact: true,
-      maxWidth: 100,
-    ));
+    // Debug builds only. This logged the bearer token and a password change's
+    // current and new password to the device log in release builds.
+    _dio.interceptors.add(DioConfig.logger());
   }
   final String baseUrl = Apiconstants.baseUrl;
   Future<BookingHistoryResponse> getBookingHistory() async {

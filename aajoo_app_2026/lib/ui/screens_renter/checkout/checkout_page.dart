@@ -3,8 +3,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:rent_home/data/models/ongoing_reponse.dart';
+import 'package:rent_home/data/source/remote/dio_config.dart';
 import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/design/amount_breakdown.dart';
 import 'package:rent_home/utils/fonts.dart';
@@ -90,14 +90,9 @@ class _HotelCheckoutPageState extends State<HotelCheckoutPage> {
         appLog('Error parsing outTime: $e');
       }
     }
-    _dio.interceptors.add(PrettyDioLogger(
-        requestHeader: true,
-        requestBody: true,
-        responseBody: true,
-        responseHeader: false,
-        compact: true,
-        error: true,
-        maxWidth: 90));
+    // Debug builds only. This logged the bearer token on the review upload to
+    // the device log in release builds.
+    _dio.interceptors.add(DioConfig.logger());
   }
 
   Future<void> _pickImages() async {

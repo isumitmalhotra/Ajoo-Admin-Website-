@@ -5,6 +5,8 @@ import 'package:rent_home/utils/stay_clock.dart';
 
 import 'dart:convert';
 
+import 'package:rent_home/utils/cloudinary_url.dart';
+
 BookingHistoryResponse bookingHistoryResponseFromJson(String str) =>
     BookingHistoryResponse.fromJson(json.decode(str));
 
@@ -173,7 +175,8 @@ class BookingHistoryData {
           bookIsPaid: _toBool(json["book_is_paid"]),
           bookIsCod: _toBool(json["book_is_cod"]),
           bookNoOfGuests: _toInt(json["book_no_of_guests"]),
-          coverImage: json["coverImage"]);
+          // Decodable URL (utils/cloudinary_url.dart).
+          coverImage: deliverableImageUrl(json["coverImage"]?.toString()));
 
   Map<String, dynamic> toJson() => {
         "book_id": bookId,

@@ -1,3 +1,5 @@
+import 'package:rent_home/utils/cloudinary_url.dart';
+
 class HostPropertiesResponse {
     HostPropertiesResponse({
         required this.success,
@@ -363,8 +365,12 @@ class Property {
             propDetailsPropDetailInTime: json["propDetails.propDetail_inTime"],
             propDetailsPropDetailOutTime: json["propDetails.propDetail_outTime"],
             propDetailsPropDetailExtra: json["propDetails.propDetail_extra"],
-            coverImage: json["coverImage"],
-            images: json["images"] == null ? [] : List<dynamic>.from(json["images"]!.map((x) => x)),
+            // Decodable URLs (utils/cloudinary_url.dart): a host's own AVIF
+            // upload otherwise shows them the "not supported" placeholder.
+            coverImage: json["coverImage"] is String
+                ? deliverableImageUrl(json["coverImage"] as String)
+                : json["coverImage"],
+            images: json["images"] == null ? [] : deliverableImageUrls(List<dynamic>.from(json["images"]!.map((x) => x))),
         );
     }
 

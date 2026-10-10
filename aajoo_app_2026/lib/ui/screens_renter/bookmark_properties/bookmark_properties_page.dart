@@ -4,6 +4,7 @@ import 'package:rent_home/constants.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/data/models/properties_response_model.dart';
 import 'package:rent_home/ui/screens_renter/home/components/curated_card.dart';
+import 'package:rent_home/ui/widgets/cancellation_badge.dart';
 import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';
 import 'package:rent_home/service/bookmark_service.dart';
 
@@ -127,12 +128,20 @@ class _BookmarkedPropertiesPageState extends State<BookmarkedPropertiesPage> {
                 : GridView.builder(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(16),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
+                    // A fixed extent, not an aspect ratio: the card's image is
+                    // a fixed 150 and its text does not grow with the tile, so
+                    // 0.72 was right at one width only and overflowed by the
+                    // cancellation badge or any larger text size.
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
-                      childAspectRatio: 0.72,
+                      mainAxisExtent: CuratedCard.extentFor(
+                        context,
+                        withCancellationBadge: _bookmarks.any((p) =>
+                            CancellationBadge.has(
+                                p.propertyCancellationPolicy)),
+                      ),
                     ),
                     itemCount: _bookmarks.length,
                     itemBuilder: (context, index) {

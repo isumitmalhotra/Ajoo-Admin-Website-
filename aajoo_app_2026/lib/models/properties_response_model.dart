@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:rent_home/utils/category_label.dart';
 import 'package:rent_home/models/property_offer.dart';
 import 'package:rent_home/models/pet_policy.dart';
+import 'package:rent_home/utils/cloudinary_url.dart';
 
 PropertiesResponse propertiesResponseFromJson(String str) =>
     PropertiesResponse.fromJson(json.decode(str));
@@ -180,11 +181,13 @@ class Property {
             json["propDetails.propDetail_outTime"]?.toString(),
         propDetailsPropDetailExtra:
             json["propDetails.propDetail_extra"]?.toString(),
-        coverImage: json["coverImage"]?.toString(),
+        // Decodable URLs: an AVIF upload otherwise paints the "not supported"
+        // placeholder in the app (see utils/cloudinary_url.dart).
+        coverImage: deliverableImageUrl(json["coverImage"]?.toString()),
         images: json["images"] == null
             ? <String>[]
-            : List<String>.from(
-                (json["images"] as List).map((x) => x.toString())),
+            : List<String>.from((json["images"] as List)
+                .map((x) => deliverableImageUrl(x.toString())!)),
         // NOT `.toString()`. When this field arrives as records rather
         // than names -- which the detail payload's `categories` are -- a bare
         // toString() stores "{cat_id: 2, cat_title: Resort, cat_slug: resort}"
