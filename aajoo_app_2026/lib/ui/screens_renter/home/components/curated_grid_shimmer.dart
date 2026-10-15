@@ -4,6 +4,7 @@ import 'package:rent_home/ui/design/aajoo_skin.dart';
 import 'package:rent_home/utils/lux_mode.dart';
 import 'package:shimmer/shimmer.dart';
 
+import 'package:rent_home/ui/responsive.dart';
 /// Skeleton placeholder for the "Curated for you" 2-col grid while the
 /// property list is loading. Mirrors [CuratedCard]'s shape (16:11 photo block
 /// + two text lines) so the layout doesn't jump when real data arrives.
@@ -38,8 +39,8 @@ class CuratedGridShimmer extends StatelessWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: itemCount,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: context.cardColumns(),
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
               childAspectRatio: 0.72,

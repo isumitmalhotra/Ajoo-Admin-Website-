@@ -8,6 +8,7 @@ import 'package:rent_home/ui/widgets/cancellation_badge.dart';
 import 'package:rent_home/ui/screens_renter/property_details/property_page.dart';
 import 'package:rent_home/service/bookmark_service.dart';
 
+import 'package:rent_home/ui/responsive.dart';
 /// Saved Stays — re-skinned to the new design (scaffold saved_screen): a 2-column
 /// grid of the shared CuratedCard. Bookmark load/remove + property navigation
 /// wiring unchanged.
@@ -133,7 +134,7 @@ class _BookmarkedPropertiesPageState extends State<BookmarkedPropertiesPage> {
                     // 0.72 was right at one width only and overflowed by the
                     // cancellation badge or any larger text size.
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
+                      crossAxisCount: context.cardColumns(),
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
                       mainAxisExtent: CuratedCard.extentFor(

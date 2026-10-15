@@ -14,6 +14,7 @@ import 'package:rent_home/ui/screens_renter/home/components/negotiated_deal_bann
 import 'package:rent_home/ui/screens_renter/guest_shell.dart';
 import 'package:rent_home/ui/screens_renter/negotiations/guest_negotiations_screen.dart';
 
+import 'package:rent_home/ui/responsive.dart';
 /// Renter account dashboard — the mobile mirror of the web GuestDashboard.
 /// Welcome header, negotiated-deal banner, at-a-glance stats (Upcoming / Saved /
 /// Reviews / Total Spent), an upcoming-stays list, and quick actions. Reachable
@@ -225,7 +226,7 @@ class _RenterDashboardScreenState extends State<RenterDashboardScreen> {
                   userController.userReviews.value?.data.review.length ?? 0;
               final spent = _totalSpent();
               return GridView.count(
-                crossAxisCount: 2,
+                crossAxisCount: context.cardColumns(target: 260),
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 mainAxisSpacing: 12,

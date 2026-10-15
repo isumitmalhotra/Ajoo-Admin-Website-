@@ -5,6 +5,7 @@ import 'package:rent_home/ui/screens_renter/home/components/section_header.dart'
 import 'package:rent_home/ui/widgets/cancellation_badge.dart';
 import 'package:rent_home/service/bookmark_service.dart';
 
+import 'package:rent_home/ui/responsive.dart';
 /// A horizontal row of properties under a heading with "See all" on the right.
 ///
 /// A-22 and A-24 both ask for the same shape — a slider of 10–12 stays with
@@ -62,7 +63,7 @@ class PropertySlider extends StatelessWidget {
             itemCount: items.length,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (_, i) => SizedBox(
-              width: 200,
+              width: context.railCardWidth,
               child: CuratedCard(
                 property: items[i],
                 onTap: () => onOpen(items[i]),

@@ -42,6 +42,28 @@ extension ResponsiveContext on BuildContext {
     final fits = (width / target).floor();
     return fits.clamp(1, max);
   }
+
+  /// How many columns a card grid should use, keeping the handset count.
+  ///
+  /// [gridColumns] collapses to one column on a phone, which is right for a
+  /// wide list card. A grid that already shows two across on a handset wants
+  /// the opposite: hold [phone] there and only add columns once there is room
+  /// for them. On a phone this returns [phone] without measuring anything, so
+  /// the handset layout is exactly what it was.
+  int cardColumns({int phone = 2, double target = 320, int max = 4}) {
+    if (isPhone) return phone;
+    final width = MediaQuery.of(this).size.width;
+    final fits = (width / target).floor();
+    return fits.clamp(phone, max);
+  }
+
+  /// How wide one card sits in a horizontal rail.
+  ///
+  /// 200 suits a 360-400pt handset. On a 13in iPad the same 200 leaves the
+  /// rail reading as a row of stamps against a 1300pt screen. The rail's
+  /// height already comes from CuratedCard.extentFor, which measures the text
+  /// at its drawn scale, so only the width needs to know about the device.
+  double get railCardWidth => isTablet ? 260 : 200;
 }
 
 /// Centres content and caps how wide it is allowed to grow.

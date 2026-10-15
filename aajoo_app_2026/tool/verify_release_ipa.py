@@ -134,12 +134,15 @@ def main() -> int:
                   .get("UIWindowSceneSessionRoleApplication", []))
         if not any(s.get("UISceneDelegateClassName") for s in scenes):
             failures.append("no UIApplicationSceneManifest scene delegate — the app crashes on launch on iOS 27")
-        # iPhone only, from 124 (Sumit, 2026-10-10). Xcode writes
-        # TARGETED_DEVICE_FAMILY into UIDeviceFamily at build time; a 2 here
-        # advertises iPad, and App Store Connect then asks for iPad
-        # screenshots and an iPad review.
-        if info.get("UIDeviceFamily") != [1]:
-            failures.append(f"UIDeviceFamily is {info.get('UIDeviceFamily')!r}, not [1] — the build advertises iPad")
+        # iPhone and iPad, from 125 (Sumit, 2026-10-15). 124 shipped with
+        # TARGETED_DEVICE_FAMILY = 1, and App Store Connect duly reported
+        # "Device Family: iPhone" on the build while the listing carried nine
+        # iPad screenshots - a product page promising a layout the binary
+        # could not render. Xcode writes the setting into UIDeviceFamily at
+        # build time, so this is the one place that can prove the artifact
+        # itself is an iPad app rather than the project merely saying so.
+        if info.get("UIDeviceFamily") != [1, 2]:
+            failures.append(f"UIDeviceFamily is {info.get('UIDeviceFamily')!r}, not [1, 2] — the build does not advertise both iPhone and iPad")
         if expect_version:
             name, _, number = expect_version.partition("+")
             got = f"{info.get('CFBundleShortVersionString')}+{info.get('CFBundleVersion')}"
