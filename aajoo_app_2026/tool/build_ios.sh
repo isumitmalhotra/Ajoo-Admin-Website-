@@ -66,6 +66,17 @@ for key in aps-environment com.apple.developer.applesignin; do
   fi
 done
 
+# A build for the store carries the real Maps key and Google client. They are
+# not in the repository (it is public): Info.plist keeps its REPLACE_WITH
+# placeholders and tool/ios_local_secrets.sh fills them for the build. An
+# export with the placeholders still in would ship blank maps and a dead
+# "Continue with Google", so refuse before building; verify_release_ipa.py
+# checks the finished artifact for the same thing.
+if [ "$MODE" = "--export" ] && grep -q 'REPLACE_WITH' ios/Runner/Info.plist; then
+  echo "ios/Runner/Info.plist still has REPLACE_WITH placeholders -- run tool/ios_local_secrets.sh first (and --restore after)" >&2
+  exit 1
+fi
+
 VERSION=$(grep -E '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//')
 echo "Building $VERSION for iOS"
 echo "  endpoint : $API"
