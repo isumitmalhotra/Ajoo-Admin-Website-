@@ -110,6 +110,11 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
   LatLng? _pendingCamera;
   double _pendingZoom = 16;
 
+  /// "My location" is working. Without this the button gave no sign at all
+  /// that anything was happening, so a host whose first fix was slow tapped
+  /// it again and again and concluded it was broken.
+  bool _locating = false;
+
   @override
   void initState() {
     super.initState();
@@ -272,29 +277,79 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
     });
   }
 
+  /// Put the pin on the host's own position.
+  ///
+  /// Reported by the client: a host adding a property could not pick their
+  /// current location. Four things were wrong with the old version, and each
+  /// one on its own looks identical to the host — a button that does nothing:
+  ///
+  ///   * `getCurrentPosition` had no time limit. Asked for a HIGH accuracy fix
+  ///     indoors, or on a handset whose GPS is cold, it simply does not return
+  ///     — so the sheet sat there for ever with no spinner and no message;
+  ///   * nothing checked whether location services were switched off at the OS
+  ///     level, which is the commonest cause of all and needs the host to go
+  ///     and turn them on, not to "search for the town instead";
+  ///   * `deniedForever` was folded in with `denied` and given the same
+  ///     message, although the system will never prompt again — only the app
+  ///     settings page can undo it;
+  ///   * the button had no busy state.
+  ///
+  /// Now: refuse early with the right sentence, bound the wait, fall back to
+  /// the last known fix (instant, and good enough to put a pin near) and only
+  /// then give up.
   Future<void> _useMyLocation({bool silent = false}) async {
+    if (_locating) return;
+    void note(String message) {
+      if (!silent && mounted) setState(() => _note = message);
+    }
+
+    if (mounted) setState(() => _locating = true);
     try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        note('Location is switched off on this phone. '
+            'Turn it on, or search for the town instead.');
+        return;
+      }
+
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        if (!silent && mounted) {
-          setState(() => _note =
-              'Location is off. Search for the town instead, or move the map.');
-        }
+      if (permission == LocationPermission.deniedForever) {
+        note('Location is blocked for Aajoo. Allow it in Settings, '
+            'or search for the town instead.');
         return;
       }
-      final p = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
-      );
+      if (permission == LocationPermission.denied) {
+        note('Location is off. Search for the town instead, or move the map.');
+        return;
+      }
+
+      Position? p;
+      try {
+        p = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            timeLimit: Duration(seconds: 12),
+          ),
+        );
+      } on TimeoutException {
+        // A cold GPS indoors. The last fix is usually minutes old and metres
+        // away, which is a far better starting pin than the country-level
+        // fallback the sheet opens on.
+        p = await Geolocator.getLastKnownPosition();
+      }
+
       if (!mounted) return;
+      if (p == null) {
+        note("Couldn't find you. Search for the town instead.");
+        return;
+      }
       _moveTo(LatLng(p.latitude, p.longitude));
     } catch (_) {
-      if (!silent && mounted) {
-        setState(() => _note = "Couldn't find you. Search for the town instead.");
-      }
+      note("Couldn't find you. Search for the town instead.");
+    } finally {
+      if (mounted) setState(() => _locating = false);
     }
   }
 
@@ -364,9 +419,15 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
             Align(
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
-                onPressed: () => _useMyLocation(),
-                icon: const Icon(Icons.my_location_rounded, size: 17),
-                label: Text('My location',
+                onPressed: _locating ? null : () => _useMyLocation(),
+                icon: _locating
+                    ? const SizedBox(
+                        width: 15,
+                        height: 15,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.my_location_rounded, size: 17),
+                label: Text(_locating ? 'Finding you…' : 'My location',
                     style: inter(fontSize: 12.5, fontWeight: FontWeight.w600)),
                 style: TextButton.styleFrom(
                   foregroundColor: kprimaryColor,
