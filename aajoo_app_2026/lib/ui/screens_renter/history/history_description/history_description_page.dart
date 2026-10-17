@@ -297,7 +297,23 @@ class _HistoryDescriptionPageState extends State<HistoryDescriptionPage> {
         InkWell(
           borderRadius: BorderRadius.circular(14),
           onTap: () {
-            DeviceService.launchDialPad(_single?.propertyContact ?? "");
+            /*
+             * `tel:` with nothing after it opens the dialler on an empty
+             * number, so the button looked like it did nothing at all —
+             * reported from the live Play build on 17 October. The number is
+             * genuinely absent: the property payload carries no contact field
+             * (checked against api.aajoohomes.com/properties/5 — there is no
+             * property_contact, nor any phone key), so this was never going
+             * to dial. Say so rather than opening an empty dialler, and point
+             * at the chat, which does reach the host today.
+             */
+            final number = (_single?.propertyContact ?? "").trim();
+            if (number.isEmpty) {
+              Fluttertoast.showToast(
+                  msg: 'No phone number for this stay — use Chat with host.');
+              return;
+            }
+            DeviceService.launchDialPad(number);
           },
           child: Container(
             height: 52,

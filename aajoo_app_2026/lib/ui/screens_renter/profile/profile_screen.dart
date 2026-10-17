@@ -1306,7 +1306,44 @@ class _ProfileScreenState extends State<ProfileScreen>
   /// instead of the legacy manual upload, which produced a document nothing
   /// verified.
   Widget _buildKycSection() {
-    if (authController.userData.value?.kycDocs == null) {
+    final user = authController.userData.value;
+    final verified = user?.isKycVerified ?? false;
+
+    /*
+     * A guest verified through DIDIT has no `kycDocs` row — DIDIT returns a
+     * result, not an uploaded document, and only the legacy manual upload
+     * ever wrote that record. Gating this section on `kycDocs == null` alone
+     * therefore told a verified guest to "Verify your identity" while the
+     * header a few pixels above showed the green Verified pill, which reads
+     * `isKycVerified`. Both were on screen at once on the live Play build
+     * (reported 17 October).
+     *
+     * One source of truth: if the server says verified, say verified. The
+     * document card below still needs `kycDocs` to render its type, number
+     * and image, so a verified guest without one gets this plainer
+     * confirmation rather than the nudge.
+     */
+    if (verified && user?.kycDocs == null) {
+      return Card(
+        color: Colors.green[50],
+        elevation: 0,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: const ListTile(
+          leading: Icon(Icons.verified_user, color: Colors.green, size: 24),
+          title: Text(
+            'Identity verified',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text(
+            'Nothing more to do — checkout stays instant.',
+            style: TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
+    if (user?.kycDocs == null) {
       return Card(
         color: kCream,
         elevation: 0,
