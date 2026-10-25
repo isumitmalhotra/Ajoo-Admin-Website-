@@ -93,7 +93,28 @@ class ListingWizardController extends GetxController {
     'country': 'India',
     'property_status': 'ready',
     'show_exact_location': true,
+    // Whole, always, until a host says otherwise. The server defaults a
+    // payload without this to the same value, so a new listing here and an
+    // older build out in the stores agree — which is the point of the default.
+    'rental_mode': 'whole',
+    'buyout_enabled': true,
   }.obs;
+
+  // ── Room types — only on a by-room property ───────────────────────────────
+  //
+  // Held apart from `f` for the same reason bedroomDetail is: these are maps,
+  // and everything in `f` is a scalar the numeric filters run over.
+  //
+  // Saved through their own endpoint rather than with a step, because a host
+  // reopens this screen long after the wizard is finished.
+  final RxList<Map<String, dynamic>> roomTypes = <Map<String, dynamic>>[].obs;
+  final RxBool roomTypesSaving = false.obs;
+  /// The server's refusal, shown as written. It is a sentence composed for
+  /// the host — "Deluxe Room: Weekly price is required" — and rewording it
+  /// here would be a second copy of a rule that lives in one place.
+  final RxString roomTypesError = ''.obs;
+
+  bool get isByRoom => f['rental_mode'] == 'by_room';
   final RxList<String> seasonalMonths = <String>[].obs;
 
   // ── Step 2 — specification + category attributes ──────────────────────────
@@ -362,6 +383,24 @@ class ListingWizardController extends GetxController {
     }
 
     merge(f, d['foundation'], 'pf_');
+
+    // `pf_rental_mode` and `pf_buyout_enabled` arrive through the strip above
+    // under the names the form uses, so neither needs mapping. Two things do
+    // need fixing on the way in:
+    //
+    //   * a draft saved before room types existed has NEITHER column, and
+    //     merge skips nulls — so the 'whole' default set at the top of this
+    //     controller survives, which is exactly right. Reopening an old
+    //     listing cannot change how it sells.
+    //   * MySQL hands a TINYINT back as 1 or 0, and the checkbox below tests
+    //     `== true`. Left alone, every by-room property would reopen with
+    //     "also let guests book the whole property" unticked, and a host who
+    //     pressed Continue would turn their own buyout off without being
+    //     asked.
+    final rawBuyout = f['buyout_enabled'];
+    if (rawBuyout != null && rawBuyout is! bool) {
+      f['buyout_enabled'] = '$rawBuyout' == '1' || '$rawBuyout' == 'true';
+    }
     /**
      * The manager block, under the names the FORM uses.
      *
@@ -1531,6 +1570,83 @@ class ListingWizardController extends GetxController {
       0, (sum, r) => sum + r.beds.fold(0, (n, b) => n + b.count));
 
   bool get bedsAreDerived => bedsFromRooms > 0;
+
+  // ── Room types ────────────────────────────────────────────────────────────
+
+  /// A new, empty card. Nothing is pre-filled — least of all a price.
+  Map<String, dynamic> blankRoomType() => <String, dynamic>{
+        'name': '',
+        'quantity': '1',
+        'totalGuests': '',
+        'guestsIncluded': '',
+        'extraGuestPrice': '',
+        'maxExtraGuests': '',
+        'nightlyPrice': '',
+        'nightlyMin': '',
+        'nightlyIdeal': '',
+        'weeklyPrice': '',
+        'weeklyMin': '',
+        'weeklyIdeal': '',
+        'monthlyPrice': '',
+        'monthlyMin': '',
+        'monthlyIdeal': '',
+      };
+
+  /// Load the rooms this property already has, or open one blank card.
+  ///
+  /// Failure is NOT surfaced: a host who has never saved a room type gets the
+  /// same blank card either way, and an error toast on a screen they have
+  /// only just opened reads as "something is broken" when nothing is.
+  Future<void> loadRoomTypes() async {
+    final id = propertyId.value;
+    if (id == null) return;
+    try {
+      final rows = await _service.getRoomTypes(id);
+      roomTypes.assignAll(rows.isEmpty ? [blankRoomType()] : rows);
+    } catch (_) {
+      if (roomTypes.isEmpty) roomTypes.add(blankRoomType());
+    }
+  }
+
+  void addRoomType() => roomTypes.add(blankRoomType());
+
+  /// Never removes the last card — a by-room property with no rooms is a
+  /// state the server refuses anyway, and an empty screen gives the host
+  /// nothing to type into.
+  void removeRoomType(int i) {
+    if (roomTypes.length <= 1 || i < 0 || i >= roomTypes.length) return;
+    roomTypes.removeAt(i);
+  }
+
+  void setRoomTypeField(int i, String key, dynamic value) {
+    if (i < 0 || i >= roomTypes.length) return;
+    roomTypes[i] = <String, dynamic>{...roomTypes[i], key: value};
+  }
+
+  /// Save the rooms. Returns the server's refusal, or null when it saved.
+  Future<String?> saveRoomTypes() async {
+    final id = propertyId.value;
+    if (id == null) return 'Save the first step before adding rooms.';
+    roomTypesSaving.value = true;
+    roomTypesError.value = '';
+    try {
+      final saved = await _service.saveRoomTypes(<String, dynamic>{
+        'property_id': id,
+        'room_types': roomTypes.toList(),
+      });
+      if (saved.isNotEmpty) roomTypes.assignAll(saved);
+      return null;
+    } catch (e) {
+      // ListingException carries the server's own sentence.
+      final msg = (e is ListingException)
+          ? e.message
+          : 'Could not save your rooms. Please try again.';
+      roomTypesError.value = msg;
+      return msg;
+    } finally {
+      roomTypesSaving.value = false;
+    }
+  }
 
   /// Save the current step and advance. Returns false if it did not save.
   Future<bool> saveAndContinue() async {

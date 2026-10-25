@@ -203,6 +203,33 @@ bool isGroupVisible(OptionGroup group, Map<String, dynamic> values) {
 }
 
 /// A labelled set of checkbox-style options (amenities, safety, views…).
+/// Whether a listing is one bookable thing or a building full of them.
+///
+/// Client, 2026-10-20: "add a host switch: 'rent by room' or 'rent whole.'
+/// Default whole." An Option with a sentence attached, because this is a
+/// business decision rather than a toggle and a label alone does not explain
+/// what changes.
+class RentalMode {
+  const RentalMode({required this.value, required this.label, this.help = ''});
+
+  final String value;
+  final String label;
+  final String help;
+
+  factory RentalMode.fromJson(Map<String, dynamic> j) => RentalMode(
+        value: (j['value'] ?? '').toString(),
+        label: (j['label'] ?? j['value'] ?? '').toString(),
+        help: (j['help'] ?? '').toString(),
+      );
+
+  static List<RentalMode> listFrom(dynamic v) => v is List
+      ? v
+          .whereType<Map>()
+          .map((e) => RentalMode.fromJson(Map<String, dynamic>.from(e)))
+          .toList()
+      : const [];
+}
+
 class OptionGroup {
   const OptionGroup({
     required this.key,
@@ -268,6 +295,7 @@ class PhotoRules {
     this.videoMaxMinutes = 0,
     this.byCategory = const {},
     this.byAccommodation = const {},
+    this.perRoomTypeMinimum = 0,
   });
 
   final int minimum;
@@ -275,6 +303,19 @@ class PhotoRules {
   final List<Option> categories;
   final List<String> required;
   final int videoMaxMinutes;
+
+  /// Photographs asked of one ROOM TYPE inside a by-room property — three,
+  /// not the listing's ten (client, 2026-10-21).
+  ///
+  /// A separate number because the arithmetic demands it: ten per room type
+  /// on the twelve-room guesthouse this feature exists for is a hundred and
+  /// twenty photographs, and a host faced with that uploads near-duplicates
+  /// or never publishes. That is the same failure `byAccommodation` exists to
+  /// prevent, returning at a larger scale.
+  ///
+  /// Zero when the server does not send it, which is how an app held against
+  /// an older backend simply never mentions the requirement.
+  final int perRoomTypeMinimum;
 
   /// Per-category overrides, when an admin set one in the flow editor —
   /// a villa can be required to show more photos than a room. Keyed by the
@@ -357,6 +398,12 @@ class PhotoRules {
       videoMaxMinutes: _int(j['videoMaxMinutes']),
       byCategory: byCat,
       byAccommodation: byAccom,
+      // `perRoomType` rides along on PHOTO_RULES, which getSchema spreads
+      // whole — so this needs nothing on the server beyond the constant
+      // existing. Absent reads as 0 and the requirement is simply not shown.
+      perRoomTypeMinimum: (j['perRoomType'] is Map)
+          ? _int((j['perRoomType'] as Map)['minimum'])
+          : 0,
     );
   }
 }
@@ -644,6 +691,7 @@ class ListingSchema {
     required this.categories,
     required this.accommodationTypes,
     required this.accommodationRules,
+    this.rentalModes = const [],
     required this.statuses,
     required this.specificationFields,
     this.roomDetail,
@@ -679,6 +727,14 @@ class ListingSchema {
 
   /// e.g. `{ pg_long_stay: { hide: ["entire_property"] } }`
   final Map<String, List<String>> accommodationRules;
+
+  /// Rent the whole place, or rent by room (client, 2026-10-20).
+  ///
+  /// EMPTY when the server does not send them, and the switch is then
+  /// never drawn — so a build held against an older backend keeps listing
+  /// whole properties exactly as it does today. That is the same fallback
+  /// the server applies to a payload that omits rental_mode.
+  final List<RentalMode> rentalModes;
   final List<StatusOption> statuses;
   final List<SchemaField> specificationFields;
 
@@ -738,6 +794,7 @@ class ListingSchema {
         categories: Option.listFrom(j['categories']),
         accommodationTypes: Option.listFrom(j['accommodationTypes']),
         accommodationRules: _hideRules(j['accommodationRules']),
+        rentalModes: RentalMode.listFrom(j['rentalModes']),
         statuses: (j['statuses'] is List)
             ? (j['statuses'] as List)
                 .whereType<Map>()

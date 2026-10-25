@@ -146,6 +146,45 @@ class ListingService {
   Future<void> saveStep5(Map<String, dynamic> payload) =>
       _post('listing/step5', payload);
 
+  // ── Room types — what a by-room property sells ────────────────────────────
+  //
+  // Their own endpoint, not a sixth step. A host reopens this screen long
+  // after the wizard is finished, to add a room or change a price, and
+  // folding it into a step would reopen a flow they have already completed.
+
+  /// The room types of a property. ALWAYS a list, never null — a property
+  /// with none answers `[]`, and a shape that varies with whether there is a
+  /// record is what stopped two screens in this app from opening at all.
+  Future<List<Map<String, dynamic>>> getRoomTypes(int propertyId) async {
+    try {
+      final res = await _dio.get('listing/room-types/$propertyId',
+          options: await _auth());
+      final data = _unwrap(res);
+      final list = (data is Map) ? data['roomTypes'] : null;
+      return (list is List)
+          ? list
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList()
+          : <Map<String, dynamic>>[];
+    } catch (e) {
+      _rethrowFriendly(e);
+    }
+  }
+
+  /// Save them. The server validates the nine price values with the SAME
+  /// validator a property's prices go through and refuses the first problem
+  /// it finds, in a sentence written for the host — so a caller shows that
+  /// message as written rather than inventing its own.
+  Future<List<Map<String, dynamic>>> saveRoomTypes(
+      Map<String, dynamic> payload) async {
+    final data = await _post('listing/room-types', payload);
+    final list = (data is Map) ? data['roomTypes'] : null;
+    return (list is List)
+        ? list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+        : <Map<String, dynamic>>[];
+  }
+
   Future<dynamic> _post(String path, Map<String, dynamic> payload) async {
     try {
       final res = await _dio.post(path, data: payload, options: await _auth());

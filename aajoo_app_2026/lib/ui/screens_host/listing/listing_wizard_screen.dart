@@ -23,6 +23,7 @@ import 'package:rent_home/constants.dart';
 import 'package:rent_home/ui/screens_renter/home/components/lux_theme.dart';
 import 'package:rent_home/models/listing_schema.dart';
 import 'package:rent_home/ui/responsive.dart';
+import 'package:rent_home/ui/screens_host/listing/widgets/room_types_editor.dart';
 import 'package:rent_home/ui/screens_host/listing/listing_wizard_controller.dart';
 import 'package:rent_home/ui/screens_host/listing/listing_icons.dart';
 import 'package:rent_home/ui/screens_host/listing/widgets/listing_section.dart';
@@ -619,6 +620,62 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
               ),
               if (c.fieldErrors['accommodation_type'] != null)
                 _fieldError(c.fieldErrors['accommodation_type']!),
+            ],
+          ),
+
+        // Rent the whole place, or rent by room (client, 2026-10-20).
+        //
+        // Drawn only when the server offers the modes, so a build held
+        // against an older backend never shows it and every listing stays
+        // whole — the same fallback the server applies to a payload that
+        // omits rental_mode.
+        //
+        // Sits under "What are guests booking?" because it answers the same
+        // question one level up: that control says what KIND of space a guest
+        // gets, this one says whether they get one of them or all of them.
+        if (category != null && category.isNotEmpty && s.rentalModes.isNotEmpty)
+          ListingSection(
+            title: 'How do guests book it?',
+            sub: 'A guesthouse, PG or homestay with several rooms can sell '
+                'them one at a time. Most properties are let as a whole.',
+            children: [
+              SingleChoiceRow(
+                options: s.rentalModes
+                    .map((m) => Option(value: m.value, label: m.label))
+                    .toList(),
+                value: (c.f['rental_mode'] ?? 'whole').toString(),
+                onSelect: (v) => c.setF('rental_mode', v),
+              ),
+              const SizedBox(height: 8),
+              Builder(builder: (_) {
+                final mode = (c.f['rental_mode'] ?? 'whole').toString();
+                final help = s.rentalModes
+                    .where((m) => m.value == mode)
+                    .map((m) => m.help)
+                    .join();
+                return help.isEmpty
+                    ? const SizedBox.shrink()
+                    : Text(help,
+                        style: inter(fontSize: 12.5, color: kMuted, height: 1.4));
+              }),
+              if (c.isByRoom) ...[
+                const SizedBox(height: 14),
+                // Buyout stays ON unless the host turns it off. A host
+                // switching a guesthouse to by-room almost certainly still
+                // wants the full-house booking they were taking yesterday,
+                // and the price for it is the one already on this listing.
+                _BuyoutToggle(
+                  on: c.f['buyout_enabled'] != false,
+                  onChanged: (v) => c.setF('buyout_enabled', v),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'You will add your rooms and their prices on the pricing '
+                  'step. Until every room has a price, this listing keeps '
+                  'selling exactly as it does now.',
+                  style: inter(fontSize: 12.5, color: kMuted, height: 1.4),
+                ),
+              ],
             ],
           ),
 
@@ -1220,9 +1277,32 @@ class _ListingWizardScreenState extends State<ListingWizardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // A by-room property prices its ROOMS here, and the price below
+        // becomes the price of booking the whole place.
+        //
+        // Shown only once the draft exists — the rooms are saved against a
+        // property id — and only when the host chose "Rent by room" on step
+        // 1, which is the same condition the server enforces on the endpoint.
+        // A whole-let property sees exactly the step it has always seen.
+        if (c.isByRoom && c.propertyId.value != null)
+          ListingSection(
+            title: 'Your rooms',
+            sub: "Each room type has its own price. Guests pick a room and "
+                "pay that room's rate.",
+            children: [
+              RoomTypesEditor(
+                controller: c,
+                photoMinimum: s.photoRules.perRoomTypeMinimum,
+              ),
+            ],
+          ),
+
         ListingSection(
-          title: 'Base price',
-          sub: 'What one night costs before any discount.',
+          title: c.isByRoom ? 'Whole-property price' : 'Base price',
+          sub: c.isByRoom
+              ? 'What one group pays to take the entire property — not the '
+                  'sum of the rooms.'
+              : 'What one night costs before any discount.',
           children: [
             _p4Text('base_price', 'Price per night (₹)',
                 required: true,
@@ -2473,6 +2553,61 @@ class _KeyedFieldState extends State<_KeyedField> {
 }
 
 /// The LUXE opt-in — the website's black-and-gold card.
+
+/// "Also let guests book the whole property."
+///
+/// A checkbox rather than a switch because it is a statement about the
+/// listing, not a mode the host toggles while they work — and because it
+/// defaults ON, which a switch would make look like something they turned on.
+class _BuyoutToggle extends StatelessWidget {
+  const _BuyoutToggle({required this.on, required this.onChanged});
+
+  final bool on;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => onChanged(!on),
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Checkbox(
+              value: on,
+              onChanged: (v) => onChanged(v ?? false),
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Also let guests book the whole property',
+                      style: inter(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: kInk)),
+                  const SizedBox(height: 2),
+                  Text(
+                    'One group takes every room, at the price already set for '
+                    'this listing — not the sum of the rooms. Leave this on '
+                    'unless you only ever let rooms singly.',
+                    style: inter(fontSize: 12, color: kMuted, height: 1.4),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _LuxeCard extends StatelessWidget {
   const _LuxeCard({required this.on, required this.onTap});
 
