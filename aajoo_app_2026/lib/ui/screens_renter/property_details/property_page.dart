@@ -61,6 +61,7 @@ import 'package:rent_home/ui/screens_renter/property_details/widgets/stay_cancel
 import 'package:rent_home/service/cancellation_policy_service.dart';
 
 import 'package:rent_home/utils/app_log.dart';
+import 'package:rent_home/ui/screens_renter/property_details/widgets/room_type_table.dart';
 class PropertyPage extends StatefulWidget {
   final String image;
   final String name;
@@ -194,6 +195,20 @@ class _PropertyPageState extends State<PropertyPage>
   /// reason infants are excluded from the guest total. Shown only where this
   /// host takes pets, and capped at the number they said they would take.
   int _pets = 0;
+
+  /// What the guest has chosen out of a by-room property's rooms.
+  ///
+  /// Reported by RoomTypeTable from the SERVER's answer, never from a tap, so
+  /// this never holds a selection nothing has priced. `byRoom` false — which
+  /// is almost every listing — leaves every gate below untouched.
+  RoomChoice? _roomChoice;
+
+  /// The stay dates as the API wants them, or null before they are chosen.
+  String? get _bookFromDmy =>
+      selectedDateTo == null ? null : DateFormat('dd-MM-yyyy').format(selectedDate);
+  String? get _bookToDmy => selectedDateTo == null
+      ? null
+      : DateFormat('dd-MM-yyyy').format(selectedDateTo!);
 
   PetPolicy get _petPolicy => _single?.pets ?? PetPolicy.none;
 
@@ -2104,6 +2119,29 @@ class _PropertyPageState extends State<PropertyPage>
 
                       const SizedBox(height: 8),
 
+                      // The room table of a by-room property.
+                      //
+                      // Renders nothing for a whole-let listing, which is
+                      // almost the entire catalogue, and nothing until the
+                      // dates are chosen — the prices depend on them.
+                      //
+                      // Placed ABOVE the price breakdown deliberately: on a
+                      // guesthouse the breakdown below is the BUYOUT, so a
+                      // guest who is choosing rooms should meet the rooms
+                      // first and the whole-property figure after.
+                      RoomTypeTable(
+                        propertyId: widget.id,
+                        bookFrom: _bookFromDmy,
+                        bookTo: _bookToDmy,
+                        pets: _pets,
+                        onChanged: (choice) {
+                          if (!mounted) return;
+                          // setState on the ANSWER, not on the tap: the table
+                          // reports only what the server priced.
+                          setState(() => _roomChoice = choice);
+                        },
+                      ),
+
                       // Price breakdown
                       Container(
                         padding: const EdgeInsets.all(12),
@@ -2761,6 +2799,30 @@ onPressed: () async {
                         true);
                     return;
                   }
+                  // On a by-room property the guest has to say WHICH rooms.
+                  //
+                  // Sending none is a request to buy the whole property —
+                  // a different booking at a different price — so an empty
+                  // selection is turned back here rather than quietly
+                  // becoming a buyout at the top of this sheet.
+                  if (_roomChoice?.byRoom == true &&
+                      (_roomChoice?.picks.isEmpty ?? true)) {
+                    bookingController.showSnackbar(
+                        'Choose your rooms',
+                        'Pick the rooms you need, or book the whole property '
+                            'from the panel below them.',
+                        true);
+                    return;
+                  }
+                  // The server's own words for a selection it will not price
+                  // — "Only 2 Deluxe room left" tells a guest what to do
+                  // where a generic refusal does not.
+                  final roomProblem = _roomChoice?.problem;
+                  if (roomProblem != null) {
+                    bookingController.showSnackbar(
+                        'Those rooms have changed', roomProblem, true);
+                    return;
+                  }
                   // Nothing in here may fail silently. Before this, an
                   // exception anywhere in the booking path closed the sheet
                   // with no message at all — the guest tapped Book Now and
@@ -2829,6 +2891,22 @@ onPressed: () async {
                       // so the two must be sent together or not at all.
                       "price": p.chargeable,
                       "no_of_guests": _guests,
+                      // The rooms chosen on a by-room property.
+                      //
+                      // The server re-prices every line against its own grid
+                      // under the property lock and IGNORES `price` on this
+                      // path, so nothing sent here decides what is charged.
+                      //
+                      // Dropping it silently is the failure to fear: the
+                      // booking would be created as a BUYOUT of the whole
+                      // guesthouse at whatever `price` said. Which is why the
+                      // gate above refuses to submit a by-room stay with no
+                      // rooms rather than letting one through.
+                      if (_roomChoice?.byRoom == true &&
+                          (_roomChoice?.picks.isNotEmpty ?? false))
+                        "rooms": _roomChoice!.picks
+                            .map((p) => p.toJson())
+                            .toList(),
                       "no_of_children": _children,
                       // Declared pets. The server prices them from its own
                       // policy and refuses a pet at a host who does not take

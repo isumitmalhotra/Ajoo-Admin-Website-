@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:rent_home/models/cancellation_quote.dart';
 import 'package:get/get.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
+import 'package:rent_home/models/room_quote_model.dart';
 import 'package:rent_home/controller/user_controller.dart';
 import 'package:rent_home/models/create_booking_response.dart';
 import 'package:rent_home/models/single_property_response.dart';
@@ -184,6 +185,67 @@ class BookingService {
       throw _handleError(err);
     } catch (e) {
       throw _handleError(e);
+    }
+  }
+
+  /// Price a by-room property's rooms, and a selection of them.
+  ///
+  /// Room-level booking, phase 2. ONE call answers both the room table and
+  /// the total for what the guest picked — two endpoints would be two chances
+  /// for the table's price and the footer to disagree, which is the failure
+  /// this whole feature is arranged against.
+  ///
+  /// Returns NULL on a network or server failure, and every caller must read
+  /// that as "we could not check" rather than as an empty table: an empty
+  /// table reads as sold out and loses the booking.
+  ///
+  /// `picks` null means "just the table". An empty list is a selection of
+  /// nothing and comes back with a `problem`, so the two are not the same
+  /// question — which is why it is omitted rather than sent empty.
+  ///
+  /// Public, like the availability call above it: an anonymous visitor
+  /// pricing a stay is the core browse funnel. The token is sent when there
+  /// is one, because the server lets a guest's OWN unpaid hold step aside
+  /// rather than counting it against them.
+  Future<RoomQuote?> getRoomQuote({
+    required int propertyId,
+    required String bookFrom,
+    required String bookTo,
+    List<RoomPick>? picks,
+    int pets = 0,
+    CancelToken? cancelToken,
+  }) async {
+    final url = '$baseUrl/pricing/rooms';
+    final token = await const FlutterSecureStorage().read(key: "user_token");
+    if (token != null && token.isNotEmpty) {
+      _dio.options.headers['Authorization'] = 'Bearer $token';
+    }
+    try {
+      final response = await _dio.post(
+        url,
+        data: {
+          'propertyId': propertyId,
+          'bookFrom': bookFrom,
+          'bookTo': bookTo,
+          'pets': pets < 0 ? 0 : pets,
+          if (picks != null && picks.isNotEmpty)
+            'rooms': picks.map((p) => p.toJson()).toList(),
+        },
+        cancelToken: cancelToken,
+      );
+      final data = response.data is Map ? response.data['data'] : null;
+      if (data is! Map) return null;
+      // `rentalMode` is what proves this is a room quote rather than an error
+      // envelope that slipped through.
+      if (data['rentalMode'] == null) return null;
+      return RoomQuote.fromJson(data.cast<String, dynamic>());
+    } on DioException catch (err) {
+      if (CancelToken.isCancel(err)) return null;
+      logServiceError('booking_service:roomQuote', err);
+      return null;
+    } catch (e) {
+      logServiceError('booking_service:roomQuote', e);
+      return null;
     }
   }
 
