@@ -38,6 +38,7 @@ class RoomChoice {
     required this.byRoom,
     this.grandTotal,
     this.problem,
+    this.rooms = const [],
   });
 
   final List<RoomPick> picks;
@@ -50,6 +51,15 @@ class RoomChoice {
 
   /// Why the selection cannot be booked, in the server's own words.
   final String? problem;
+
+  /// The room types as the server priced them.
+  ///
+  /// Carried so the page can offer them elsewhere — the negotiation sheet
+  /// asks which room an offer is for, and each room has its own floor and
+  /// ideal, so an offer that does not name one is judged against the
+  /// building's. Only priced rooms with something left: a sold-out room
+  /// cannot be negotiated, because there is nothing to agree a price for.
+  final List<RoomTypeOffer> rooms;
 }
 
 class RoomTypeTable extends StatefulWidget {
@@ -177,6 +187,9 @@ class _RoomTypeTableState extends State<RoomTypeTable> {
     widget.onChanged?.call(RoomChoice(
       picks: _picks,
       byRoom: _quote?.byRoom ?? false,
+      rooms: (_quote?.rooms ?? const <RoomTypeOffer>[])
+          .where((r) => r.priced && r.free > 0)
+          .toList(),
       grandTotal: priced?.grandTotal,
       problem: sel?.problem,
     ));

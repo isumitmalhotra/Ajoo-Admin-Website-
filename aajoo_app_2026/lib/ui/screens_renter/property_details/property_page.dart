@@ -3322,6 +3322,10 @@ onPressed: () async {
                       initialFrom: selectedDate,
                       guests: _guests,
                       initialTo: selectedDateTo,
+                      // The rooms a guest may offer on, as the server
+                      // priced them. Empty for a whole-let listing, and
+                      // the sheet then shows no choice at all.
+                      rooms: _roomChoice?.rooms ?? const [],
                     );
                     if (!mounted) return;
                     if (accepted) {

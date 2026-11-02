@@ -68,6 +68,13 @@ class DealsService {
     String? bookFrom,
     String? bookTo,
     int? guests,
+    /// The room type being negotiated, on a by-room property.
+    ///
+    /// Each room carries its own displayed, ideal and minimum (client
+    /// decision 4), so an offer that does not say which room is judged
+    /// against the BUILDING's floor — a price for a different thing. Null for
+    /// a whole-let listing, which is almost all of them.
+    int? roomTypeId,
   }) async {
     final token = await const FlutterSecureStorage().read(key: "user_token");
     if (token == null || token.isEmpty) {
@@ -87,6 +94,9 @@ class DealsService {
           // Declared server-side or stripUnknown drops it — the same way the
           // dates used to vanish before they were whitelisted.
           if (guests != null && guests > 0) 'guests': guests,
+          // Omitted rather than sent as null for the whole property: the
+          // server reads absent as "the building".
+          if (roomTypeId != null && roomTypeId > 0) 'roomTypeId': roomTypeId,
         },
       );
       final body = res.data;

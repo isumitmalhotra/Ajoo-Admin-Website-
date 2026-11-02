@@ -11,6 +11,7 @@ import 'package:rent_home/ui/screens_renter/negotiations/guest_negotiations_scre
 import 'package:rent_home/ui/design/aajoo_skin.dart';
 import 'package:rent_home/utils/fonts.dart';
 import 'package:rent_home/utils/money.dart';
+import 'package:rent_home/models/room_quote_model.dart';
 
 /// "Send an Offer" — the app's twin of the website's negotiation modal.
 ///
@@ -47,6 +48,7 @@ class SendOfferSheet extends StatefulWidget {
     this.initialFrom,
     this.initialTo,
     this.onAccepted,
+    this.rooms = const [],
     this.guests,
   });
 
@@ -79,11 +81,24 @@ class SendOfferSheet extends StatefulWidget {
   /// price and let the guest book at it.
   final VoidCallback? onAccepted;
 
+  /// The room types a guest may make an offer on, on a by-room property.
+  ///
+  /// EMPTY for a whole-let listing, which is almost all of them — the sheet
+  /// then shows no choice and the offer goes to the building exactly as it
+  /// always has. Only rooms that are priced and still have something left: a
+  /// sold-out room cannot be negotiated, because there is nothing to agree a
+  /// price for.
+  final List<RoomTypeOffer> rooms;
+
   @override
   State<SendOfferSheet> createState() => _SendOfferSheetState();
 }
 
 class _SendOfferSheetState extends State<SendOfferSheet> {
+  /// Which room the guest is negotiating. Null is the whole property, and
+  /// the only option a whole-let listing has.
+  int? _roomTypeId;
+
   final _price = TextEditingController();
   final _message = TextEditingController();
 
@@ -282,6 +297,8 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
       bookFrom: _api(_from),
       bookTo: _api(_to),
       guests: widget.guests,
+      // The room being negotiated. Null is the whole property.
+      roomTypeId: _roomTypeId,
     );
 
     if (!mounted) return;
@@ -366,6 +383,46 @@ class _SendOfferSheetState extends State<SendOfferSheet> {
   Widget _form(AajooSkin skin) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // WHICH ROOM is being negotiated.
+          //
+          // Only a property that sells rooms gets the choice; a whole-let
+          // listing has an empty list and the offer goes to the building
+          // exactly as it always has. Shown ABOVE the price, because the
+          // price only means something once the guest has said what it is for.
+          if (widget.rooms.isNotEmpty) ...[
+            _label(skin, 'What are you making an offer on?'),
+            DropdownButtonFormField<int?>(
+              initialValue: _roomTypeId,
+              isExpanded: true,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+              items: [
+                const DropdownMenuItem<int?>(
+                  value: null,
+                  child: Text('The whole property'),
+                ),
+                ...widget.rooms.map((r) => DropdownMenuItem<int?>(
+                      value: r.roomTypeId,
+                      child: Text(
+                        r.perUnitGrandTotal > 0
+                            ? '${r.name} - ${rupees(r.perUnitGrandTotal)} for your dates'
+                            : r.name,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    )),
+              ],
+              onChanged: _busy
+                  ? null
+                  : (v) => setState(() {
+                        _roomTypeId = v;
+                        _error = null;
+                      }),
+            ),
+            const SizedBox(height: 12),
+          ],
           _label(skin, offerInputLabel(_nights)),
           TextField(
             controller: _price,
@@ -760,6 +817,9 @@ Future<bool> showSendOfferSheet(
   DateTime? initialFrom,
   DateTime? initialTo,
   VoidCallback? onAccepted,
+  /// The rooms a guest may offer on. Empty for a whole-let listing,
+  /// which is almost all of them.
+  List<RoomTypeOffer> rooms = const [],
 }) async {
   final result = await showModalBottomSheet<bool>(
     context: context,
@@ -774,6 +834,7 @@ Future<bool> showSendOfferSheet(
       initialTo: initialTo,
       onAccepted: onAccepted,
       guests: guests,
+      rooms: rooms,
     ),
   );
   return result == true;
