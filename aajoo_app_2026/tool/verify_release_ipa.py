@@ -121,7 +121,17 @@ def main() -> int:
         schemes = [s for t in info.get("CFBundleURLTypes", []) for s in t.get("CFBundleURLSchemes", [])]
         if any("REPLACE_WITH" in s for s in schemes) and not allow_placeholders:
             failures.append("the Google Sign-In URL scheme is a placeholder — the sign-in sheet will never come back to the app")
-        for key in ("NSLocationWhenInUseUsageDescription", "NSPhotoLibraryUsageDescription"):
+        # NSLocationAlwaysAndWhenInUseUsageDescription is here for a different
+        # reason from the other two: iOS never shows it, because the app only
+        # ever asks for while-in-use. Apple's upload scan wants it anyway —
+        # geolocator_apple LINKS requestAlwaysAuthorization, and a linked
+        # sensitive API needs a purpose string whether or not it is called.
+        # Build 127 shipped without it and came back ITMS-90683 (17 October).
+        # The warning did not block that delivery, which is exactly why it
+        # belongs in a check: nothing else fails loudly enough to notice.
+        for key in ("NSLocationWhenInUseUsageDescription",
+                    "NSLocationAlwaysAndWhenInUseUsageDescription",
+                    "NSPhotoLibraryUsageDescription"):
             if not info.get(key):
                 failures.append(f"{key} missing — iOS refuses the permission prompt without it")
         if info.get("ITSAppUsesNonExemptEncryption") is not False:

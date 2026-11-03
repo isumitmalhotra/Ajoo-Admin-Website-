@@ -92,6 +92,16 @@
 	     location picker. Only while-in-use is ever requested. -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Aajoo Homes uses your location to show stays near you and to place your listing on the map.</string>
+	<!-- Build 127 was delivered with ITMS-90683 against this key (Apple, 17
+	     October): geolocator_apple links requestAlwaysAuthorization, and the
+	     App Store scan flags the linked API whether or not it is called. The
+	     app never asks for Always — safety_page.dart only READS
+	     LocationPermission.always as an already-granted state, and nothing
+	     requests it — so the string says what the app would do with it rather
+	     than claiming a background feature that does not exist. Same reason
+	     the camera and microphone strings below are here. -->
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Aajoo Homes only uses your location while you are using the app — to show stays near you, to place your listing on the map, and to attach your position to a safety alert you send.</string>
 	<!-- image_picker / file_picker: profile photos, listing photos, the
 	     documents a listing needs. The gallery is the only source the app
 	     uses; the camera and microphone strings are here because the
