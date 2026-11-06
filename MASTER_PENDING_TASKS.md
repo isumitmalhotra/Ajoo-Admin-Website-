@@ -380,6 +380,75 @@ negotiated price; a paused listing; the host's bell. **145 of 300 run.** Report:
 
 ---
 
+### 8a80. 2026-10-07 — build 121 went to Google, and the upload that silently did not happen
+
+Production release **121 (1.0.0)** submitted to the Play production track.
+Publishing overview now reads **Changes in review → Production → Start full
+rollout**; Google's own note says reviews typically complete within 7 days.
+
+**Managed publishing is ON, and that matters.** Google approving the review does
+NOT put the build in front of users. The change sits in "Ready to publish" until
+someone clicks Publish. That is the last gate and it is ours, not Google's.
+
+#### The draft that blocked the button
+
+"Create new release" was greyed out, with no explanation anywhere on the page.
+The cause: an **Untitled draft release already existed** on the production
+track, and Play refuses a second one. It is not stated — the only way through is
+the **Releases tab → Edit release**, which opens the existing draft. Navigating
+to `/tracks/production/create` directly answers `An unexpected error has
+occurred (662874FD)`, which is Play's way of saying the same thing badly.
+
+#### The upload cannot be automated, and its failure is silent
+
+The browser bridge caps a file transfer at **10 MB**; the bundle is
+**92,461,453 bytes**. So the file picker is the only route, and it has to be
+driven by a person.
+
+The first attempt reported success from the operator's side and **nothing
+reached Play**. Three independent tells, all needed, because the page looks
+identical either way:
+
+1. after a full reload the dropzone still read "Drop app bundles here";
+2. **Release name was blank** — Play auto-fills it from the first bundle, so an
+   empty name means no bundle;
+3. the **app bundle library held only version codes 3, 2 and 1** (Oct–Nov 2025).
+
+The second attempt took. The lesson is (2): the release-name field is the
+cheapest proof that an upload landed, and it costs one glance.
+
+#### The one warning, and why it is nothing
+
+"There is no deobfuscation file associated with this App Bundle." There is no
+`build/app/outputs/mapping/release/` at all, because the release build is not
+minified — so there is nothing to upload and nothing is lost. Stack traces will
+arrive unobfuscated on their own.
+
+**Delivery:** 36.1 MB per-device install, 20s download, API 24+, target SDK 36,
+177 countries.
+
+#### The webhook secret IS set — and that still is not the whole answer
+
+`RAZORPAY_WEBHOOK_SECRET` is configured on Render. Proven without the Razorpay
+dashboard and without `HEALTH_TOKEN`: the handler tests the secret **before** the
+signature and answers **503** when it is absent, so a deliberately-bad-signature
+probe coming back **401** can only have come from the branch below it.
+
+What this does **not** prove is that Razorpay's dashboard holds the *same*
+secret. A wrong secret rejects every genuine event in exactly the same way —
+the controller's own comment says so, and that endpoint has now received nothing
+for seven days. **Send test webhook** in the Razorpay dashboard is the only check
+that separates the two: 200 means wired, 401 means the two sides disagree and
+every refund event is being discarded.
+
+**Data safety published** the same day, on the client's go-ahead: Publishing
+overview's "Last published" moved from 29 Nov 2025 to 7 Oct 2026 and "Changes
+ready to publish" emptied. Play warns this one cannot be undone, and it is
+separate from the release — it goes live within the hour without review, while
+121 waits behind it.
+
+---
+
 ### 8a79. 2026-10-07 — the admin sweep: 40 screens, 10 defects, and a monitor that could never say yes
 
 Full production sweep of the admin console as Super Admin, in the browser with
