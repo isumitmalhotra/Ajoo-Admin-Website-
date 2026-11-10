@@ -4,8 +4,11 @@
 **Size:** 88.3 MB · **versionCode 129**
 **sha256** `6fdb0b3c8731294dc61b0458c36cacbfafde969af3a4b2bf6623a8c2c12d7f0a`
 
-Previous production build: **121**. (127 and 128 were cut but never uploaded
-to Play; 128 is the iOS build currently in App Review.)
+Previous production build: **127**, and it is live. Play Console reads
+"Active · Latest release: 127 (1.0.0) · 1 country/region · 118 installs"
+(checked 11 November). An earlier draft of this file said 121; that was wrong
+— 127 did reach Play. **128 was never uploaded to Play**: it is the iOS build
+now in App Review.
 
 **Why Android is 129 while iOS is 128.** They are not the same code this time.
 128 carries the iOS credential fix and went to App Review on 10 November. The
